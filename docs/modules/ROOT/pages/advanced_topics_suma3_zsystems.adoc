@@ -1,0 +1,228 @@
+[[art.suma.install.zsystems]]
+= {susemgr} on IBM {zseries}
+:linkattrs:
+:zseries: z Systems
+:ppc: POWER
+:ppc64le: ppc64le
+:ipf : Itanium
+:x86: x86
+:x86_64: x86_64
+// Rhel Entities
+:rhel: Red Hat Enterprise Linux
+:rhnminrelease6: Red Hat Enterprise Linux Server 6
+:rhnminrelease7: Red Hat Enterprise Linux Server 7
+:susemgrproxy: {productname} Proxy
+:productnumber: 3.2
+:saltversion: 2018.3.0
+:webui: WebUI
+// SUSE Product Entities
+:productname: Uyuni
+:sles-version: 12
+:sp-version: SP3
+:jeos: JeOS
+:scc: SUSE Customer Center
+:sls: SUSE Linux Enterprise Server
+:sle: SUSE Linux Enterprise
+:slsa: SLES
+:suse: SUSE
+:ay: AutoYaST
+// Asciidoctor Front Matter
+:doctype: book
+:sectlinks:
+
+:icons: font
+:experimental:
+:sourcedir: .
+:imagesdir: images
+
+== Introduction
+
+
+This best practice guide is intended for z/VM administrators responsible for operating the IBM {zseries}
+Mainframe.
+The goal of this guide is to lead an z/VM administrator trained on normal {zseries}
+operating protocols through the installation of {productname}
+onto an existing mainframe system.
+The intent of this article is not to cover the variety of hardware configuration profiles available on {zseries}
+but instead to provide a foundational overview of the procedure and requirements necessary for a successful {productname}
+server deployment.
+
+== Base System Requirements
+
+
+The z/VM administrator should acquire and prepare the following resources for a successful {productname}
+installation. {productname}{productnumber}
+is delivered as an extension.
+These sections will provide you with the minimum and recommended system requirements for {productname}
+.
+The base system for {productname}
+ {productnumber}
+is SLES {sles-version}{sp-version}
+.
+
+[cols="1,1", options="header"]
+|===
+|
+
+        Hardware
+
+
+|
+
+        Recommended Hardware
+
+
+
+
+|
+
+IBM Systems
+|
+
+* IBM zEnterprise System z196 _(z196)_
+* IBM zEnterprise System z114 _(z114)_
+* IBM zEnterprise EC12 _(zEC12)_
+* IBM zEnterprise EC12 _(zEC12)_
+* IBM zEnterprise BC12 _(zBC12)_
+* IBM z13 _(z13)_
+* LinuxOne Rockhopper
+* LinuxOne Emperor
+
+
+|
+
+RAM
+|
+
+_Split memory requirements across available RAM, VDISK and
+        swap to suit your environment. On a production system the ratio of
+        physical memory to VDISK will need to be re-evaluated based on the
+        number of clients which will be supported._
+
+Minimum 5{nbsp}
+ GB+ for test server _(3 GB RAM + 2 GB VDISK
+        Swap)_
+
+Minimum 16{nbsp}
+GB+ for base installation
+
+Minimum 32{nbsp}
+GB+ for a production server
+
+|
+
+Free Disk Space
+|
+
+Minimum 100{nbsp}
+GB for root partition
+
+Minimum 50{nbsp}
+GB for [replaceable]``/var/lib/pgsql``
+
+Minimum 50{nbsp}
+GB per {suse}
+product + 100 GB per Red Hat product [replaceable]``/var/spacewalk``
+
+|
+
+Network Connection
+|
+
+* OSA Express Ethernet _(including Fast and Gigabit Ethernet) _
+* HiperSockets or Guest LAN
+* 10 GBE, VSWITCH
+* RoCE _(RDMA over Converged Ethernet)_
+
+The following interfaces are still included but no longer supported:
+
+* CTC _(or virtual CTC)_
+* IP network interface for IUCV
+
+|===
+
+.Media Requirements
+* {sle} {sles-version}{sp-version} Installation Media for IBM {zsystems} :
++
+https://www.suse.com/products/server/download/
+
+
+== Additional Requirements
+
+
+There are a few additional resource requirements you will need to prepare before installing the {productname} extension on your system.
+This section overviews these requirements.
+
+The guest z/VM should be provided with a static IP address and hostname as these cannot be easily changed after initial setup.
+The hostname should contain less than 8 characters.
+
+For more information on {productname} additional requirements, see https://www.suse.com/documentation/suse-manager-3/book_suma_best_practices/data/mgr_conceptual_overview.html.
+
+You will need to ensure you have sufficient disk storage for {productname}
+before running [command]``yast2 susemanagersetup``.
+
+
+This section explains these requirements in more detail.
+
+.{productname}Default Volume Groups and Disk Space
+[WARNING]
+====
+By default the file system of {productname}, including the embedded database and patch directories, reside within the root volume.
+While adjustments are possible once installation is complete, it is the administrator's responsibility to specify and monitor these adjustments.
+
+If your {productname} runs out of disk space, this can have a severe impact on its database and file structure.
+Preparing storage requirements in accordance with this section will aid in preventing these harmful effects.
+{suse} technical services will not be able to provide support for systems suffering from low disk space conditions as this can have an effect on an entire system and therefore becomes unresolvable.
+A full recovery is only possible with a previous backup or a new {productname} installation.
+====
+
+.Required Storage Devices
+An additional disk is required for database storage.
+This should be an [systemitem]``zFCP`` or [systemitem]``DASD`` device as these are preferred for use with [systemitem]``HYPERPAV``.
+The disk should fulfill the following requirements:
+
+* At least 50{nbsp}GB for [path]``/var/lib/pgsql``
+* At least 50{nbsp}GB for each SUSE product in [path]``/var/spacewalk``
+* At least 100{nbsp}GB for each Red Hat product in [path]``/var/spacewalk``
+
+
+.Reclaiming Disk Space
+If you need to reclaim more disk space, try these suggestions:
+
+* Remove custom channels (you cannot remove official SUSE channels)
+* Use the [command]``spacewalk-data-fsck --help`` command to compare the spacewalk database to the filesystem and remove entries if either is missing.
+
+
+== SLES {sles-version}{sp-version} Installation and the {productname} Extension
+
+
+This section covers the installation of {productname}{productnumber}
+as an extension to SLES {sles-version}{sp-version}
+.
+
+For more information on deploying SLES {sles-version}{sp-version}
+on your hardware, see https://www.suse.com/documentation/sles-12/book_sle_deployment/data/cha_zseries.html.
+
+During installation of SLES {sles-version}{sp-version}
+select {productname}
+as an extension.
+
+After rebooting you will need to set up the additional storage required for [path]``/var/spacewalk`` and [path]``/var/lib/pgsql`` and swap space using the yast partitioner tool.
+This step is _required_ before running [command]``yast2 susemanagersetup``.
+
+After configuring the storage requirements, having executed a {yast}
+online update and completed a full system reboot, run {productname}
+setup to finalize the {productname}
+installation on your {zsystems}
+mainframe:
+
+----
+{prompt.root}yast2 susemanagersetup
+----
+
+
+This completes the installation of {productname}
+on your {zseries}
+.
+For more information on beginning management with {productname}
+, see <<suma-setup-with-yast-sumasetup#suma-setup-with-yast-sumasetup, Setup {productname} with YaST>>.

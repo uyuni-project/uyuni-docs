@@ -1,0 +1,297 @@
+[[bp.postgresql.database.migration]]
+= Postgresql Database Migration
+ifdef::env-github,backend-html5,backend-docbook5[]
+//Admonitions
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+:linkattrs:
+// SUSE ENTITIES FOR GITHUB
+// System Architecture
+:zseries: z Systems
+:ppc: POWER
+:ppc64le: ppc64le
+:ipf : Itanium
+:x86: x86
+:x86_64: x86_64
+// Rhel Entities
+:rhel: Red Hat Enterprise Linux
+:rhnminrelease6: Red Hat Enterprise Linux Server 6
+:rhnminrelease7: Red Hat Enterprise Linux Server 7
+// SUSE Manager Entities
+:productname: Uyuni
+:susemgr: SUSE Manager
+:susemgrproxy: SUSE Manager Proxy
+:productnumber: 3.2
+:saltversion: 2018.3.0
+:webui: WebUI
+// SUSE Product Entities
+:sles-version: 12
+:sp-version: SP3
+:jeos: JeOS
+:scc: SUSE Customer Center
+:sls: SUSE Linux Enterprise Server
+:sle: SUSE Linux Enterprise
+:slsa: SLES
+:suse: SUSE
+:ay: AutoYaST
+endif::[]
+// Asciidoctor Front Matter
+:doctype: book
+:sectlinks:
+
+:icons: font
+:experimental:
+:sourcedir: .
+:imagesdir: images
+
+[abstract]
+--
+{productname} 3 uses postgresql database version 9.4.
+Postgresql version 9.6 has been officially released for {sls} 12 SP3.
+In the near future postgresql 9.6 will become the base version provided by {productname}.
+Currently version 9.4 is hardcoded into SUSE Manager, therefore when installing {productname} it will explicitly use this version.
+This chapter provides guidance on migrating an existing 9.4 database to 9.6 on your {productname} Server.
+--
+:doctype: book
+:sectnums:
+
+:icons: font
+:experimental:
+:imagesdir: ./images
+
+[[bp.postgresql.database.migration.new.installations]]
+== New {productname} Installations
+
+
+Once support for postgresql version 9.6 has been officially released for SUSE Manager, no action will be required for new installations.
+The {productname} extension will pick up the latest version during installation on SLES 12 SP3.
+This will be fully transparent to the user.
+Check the active postgresql version with the following command:
+
+----
+suse-manager-example-srv:~ # psql --version
+psql (PostgreSQL) 9.6.3
+----
+
+[[bp.postgresql.database.migrating.existing.installations]]
+== Migrating an Existing Installation
+
+
+Before migrating to the new database version, ensure SUSE Manager is fully patched to the latest version.
+You can check if the system is ready to use postgresql 9.6 by issuing the following command:
+
+----
+suma-test-srv:~ # rpm -q smdba
+smdba-1.5.8-0.2.3.1.x86_64
+----
+
+[IMPORTANT]
+====
+Postgresql 9.6 requires smdba version 1.5.8 or higher
+====
+
+[WARNING]
+====
+Always create a database backup before performing a migration
+====
+
+
+$$.$$
+The database migration begins by executing the following command:
+
+----
+$> /usr/lib/susemanager/bin/pg-migrate.sh
+----
+
+
+The [path]``pg-migrate.sh``
+ script will automatically perform the following operations:
+
+* Stop spacewalk services
+* Shut down the running database
+* Check if postgresql 9.6 is installed and install it if not already present
+* Switch from postgresql 9.4 to postgresql 9.6 as the new default
+* Initiates the database migration
+* Creates a postgresql configuration file tuned for use by SUSE Manager (The reason for the latest version of smdba)
+* Start both the database and spacewalk services
+
+
+[NOTE]
+====
+Please note that during the migration the data directory of the database is copied for use by the postgresql 9.6.
+This results in temporarily doubling the amount of required disk space.
+In case of a failure, the migration script will attempt a restore to the original state.
+After a successful migration, you may safely delete the old database directory (renamed to /var/lib/pgsql/data-pg94) to reclaim lost disk space.
+====
+
+== Performing a Fast Migration
+
+
+There are two negative aspects to performing a regular migration:
+
+* You temporarily need double the disk space under [path]``/var/lib/pgsql``
+* Depending on the size of the database the migration can take up some time because the whole data directory needs to be copied.
+
+
+It is possible however to perform a ``fast migration``.
+In this case you do not need the additional disk space as the database files will not be copied but hard linked.
+This also has the natural effect of greatly increasing the speed of the migration process The entire migration could be completed in less than one minute.
+
+[WARNING]
+====
+Keep in mind if a fast migration fails, database restoration will only be possible with a database backup.
+Only perform a fast migration if you have an availabel database backup.
+====
+
+
+Perform a fast migration with the following command (Ensure you have a database backup):
+
+----
+$> /usr/lib/susemanager/bin/pg-migrate.sh fast
+----
+
+== Typical Migration Sample Session
+
+
+A slow migration should provide you with the following output:
+
+----
+d235:~ # /usr/lib/susemanager/bin/pg-migrate.sh
+15:58:00   Shut down spacewalk services...
+Shutting down spacewalk services...
+Done.
+15:58:03   Checking postgresql version...
+15:58:03   Installing postgresql 9.6...
+Dienst 'SUSE_Linux_Enterprise_Server_12_SP2_x86_64' wird aktualisiert.
+Dienst 'SUSE_Manager_Server_3.1_x86_64' wird aktualisiert.
+Repository-Daten werden geladen...
+Installierte Pakete werden gelesen...
+Paketabhängigkeiten werden aufgelöst...
+
+Die folgenden 3 NEUEN Pakete werden installiert:
+  postgresql96 postgresql96-contrib postgresql96-server
+
+3 neue Pakete zu installieren.
+Gesamtgröße des Downloads: 5,7 MiB. Bereits im Cache gespeichert: 0 B. Nach der Operation werden zusätzlich 25,3 MiB belegt.
+Fortfahren? [j/n/...? zeigt alle Optionen] (j): j
+Paket postgresql96-9.6.3-2.4.x86_64 abrufen (1/3),   1,3 MiB (  5,1 MiB entpackt)
+Abrufen: postgresql96-9.6.3-2.4.x86_64.rpm [fertig]
+Paket postgresql96-server-9.6.3-2.4.x86_64 abrufen (2/3),   3,7 MiB ( 17,9 MiB entpackt)
+Abrufen: postgresql96-server-9.6.3-2.4.x86_64.rpm [.fertig]
+Paket postgresql96-contrib-9.6.3-2.4.x86_64 abrufen (3/3), 648,9 KiB (  2,2 MiB entpackt)
+Abrufen: postgresql96-contrib-9.6.3-2.4.x86_64.rpm [fertig]
+Überprüfung auf Dateikonflikte läuft: [......fertig]
+(1/3) Installieren: postgresql96-9.6.3-2.4.x86_64 [............fertig]
+(2/3) Installieren: postgresql96-server-9.6.3-2.4.x86_64 [............fertig]
+(3/3) Installieren: postgresql96-contrib-9.6.3-2.4.x86_64 [............fertig]
+15:58:08   Ensure postgresql 9.6 is being used as default...
+15:58:09   Successfully switched to new postgresql version 9.6.
+15:58:09   Create new database directory...
+15:58:09   Initialize new postgresql 9.6 database...
+The files belonging to this database system will be owned by user "postgres".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "en_US.UTF-8".
+The default database encoding has accordingly been set to "UTF8".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory /var/lib/pgsql/data ... ok
+creating subdirectories ... ok
+selecting default max_connections ... 100
+selecting default shared_buffers ... 128MB
+selecting dynamic shared memory implementation ... posix
+creating configuration files ... ok
+running bootstrap script ... ok
+performing post-bootstrap initialization ... ok
+syncing data to disk ... ok
+
+WARNING: enabling "trust" authentication for local connections
+You can change this by editing pg_hba.conf or using the option -A, or
+--auth-local and --auth-host, the next time you run initdb.
+
+Success. You can now start the database server using:
+
+    pg_ctl -D /var/lib/pgsql/data -l logfile start
+
+15:58:12   Successfully initialized new postgresql 9.6 database.
+15:58:12   Upgrade database to new version postgresql 9.6...
+Performing Consistency Checks
+-----------------------------
+Checking cluster versions                                   ok
+Checking database user is the install user                  ok
+Checking database connection settings                       ok
+Checking for prepared transactions                          ok
+Checking for reg* system OID user data types                ok
+Checking for contrib/isn with bigint-passing mismatch       ok
+Checking for roles starting with 'pg_'                      ok
+Creating dump of global objects                             ok
+Creating dump of database schemas
+  postgres
+  susemanager
+  template1
+                                                            ok
+Checking for presence of required libraries                 ok
+Checking database user is the install user                  ok
+Checking for prepared transactions                          ok
+
+If pg_upgrade fails after this point, you must re-initdb the
+new cluster before continuing.
+
+Performing Upgrade
+------------------
+Analyzing all rows in the new cluster                       ok
+Freezing all rows on the new cluster                        ok
+Deleting files from new pg_clog                             ok
+Copying old pg_clog to new server                           ok
+Setting next transaction ID and epoch for new cluster       ok
+Deleting files from new pg_multixact/offsets                ok
+Copying old pg_multixact/offsets to new server              ok
+Deleting files from new pg_multixact/members                ok
+Copying old pg_multixact/members to new server              ok
+Setting next multixact ID and offset for new cluster        ok
+Resetting WAL archives                                      ok
+Setting frozenxid and minmxid counters in new cluster       ok
+Restoring global objects in the new cluster                 ok
+Restoring database schemas in the new cluster
+  postgres
+  susemanager
+  template1
+                                                            ok
+Copying user relation files
+  /var/lib/pgsql/data-pg94/base/12753/12710
+
+[...]
+
+  /var/lib/pgsql/data-pg94/base/1/12574
+                                                            ok
+Setting next OID for new cluster                            ok
+Sync data directory to disk                                 ok
+Creating script to analyze new cluster                      ok
+Creating script to delete old cluster                       ok
+
+Upgrade Complete
+----------------
+Optimizer statistics are not transferred by pg_upgrade so,
+once you start the new server, consider running:
+    ./analyze_new_cluster.sh
+
+Running this script will delete the old cluster's data files:
+    ./delete_old_cluster.sh
+15:58:51   Successfully upgraded database to postgresql 9.6.
+15:58:51   Tune new postgresql configuration...
+INFO: Database configuration has been changed.
+INFO: Wrote new general configuration. Backup as /var/lib/pgsql/data/postgresql.2017-07-26-15-58-51.conf
+INFO: Wrote new client auth configuration. Backup as /var/lib/pgsql/data/pg_hba.2017-07-26-15-58-51.conf
+INFO: Configuration has been changed, but your database is right now offline.
+Database is offline
+System check finished
+15:58:51   Successfully tuned new postgresql configuration.
+15:58:51   Starting spacewalk services...
+Starting spacewalk services...
+Done.
+----

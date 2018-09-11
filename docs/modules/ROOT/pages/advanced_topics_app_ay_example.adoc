@@ -1,0 +1,146 @@
+[appendix]
+[[advanced.topics.app.ay.example-simple]]
+= Minimalist AutoYaST Profile for Automated Installations and Useful Enhancements
+:linkattrs:
+:zseries: z Systems
+:ppc: POWER
+:ppc64le: ppc64le
+:ipf : Itanium
+:x86: x86
+:x86_64: x86_64
+:rhel: Red Hat Linux Enterprise
+:rhnminrelease6: Red Hat Enterprise Linux Server 6
+:rhnminrelease7: Red Hat Enterprise Linux Server 7
+:susemgrproxy: SUSE Manager Proxy
+:productnumber: 3.2
+:saltversion: 2018.3.0
+:webui: WebUI
+:productname: Uyuni Uyuni
+:sles-version: 12
+:sp-version: SP3
+:jeos: JeOS
+:scc: SUSE Customer Center
+:sls: SUSE Linux Enterprise Server
+:sle: SUSE Linux Enterprise
+:slsa: SLES
+:suse: SUSE
+:ay: AutoYaST
+:doctype: book
+:sectlinks:
+:icons: font
+:experimental:
+:sourcedir: .
+:imagesdir: images
+
+
+The {ay} profile in this section installs a {sls} system with all default installation options including a default network configuration using DHCP.
+After the installation is finished, a bootstrap script located on the {productname} server is executed in order to register the freshly installed system with {productname}.
+You need to adjust the IP address of the {productname} server, the name of the bootstrap script, and the root password according to your environment:
+
+----
+<user>
+ ...
+ <username>root</username>
+ <user_password>`linux`</user_password>
+</user>
+
+<location>http://`192.168.1.1`/pub/bootstrap/`my_bootstrap.sh`</location>
+----
+
+The complete {ay} file:
+
+----
+<?xml version="1.0"?>
+<!DOCTYPE profile>
+<profile xmlns="http://www.suse.com/1.0/yast2ns"
+         xmlns:config="http://www.suse.com/1.0/configns">
+ <general>
+  <mode>
+   <confirm config:type="boolean">false</confirm>
+  </mode>
+ </general>
+ <networking>
+  <keep_install_network config:type="boolean">true</keep_install_network>
+ </networking>
+ <software>
+  <install_recommended config:type="boolean">true</install_recommended>
+   <patterns config:type="list">
+    <pattern>base</pattern>
+   </patterns>
+ </software>
+ <users config:type="list">
+  <user>
+   <encrypted config:type="boolean">false</encrypted>
+   <fullname>root</fullname>
+   <gid>0</gid>
+   <home>/root</home>
+   <password_settings>
+    <expire></expire>
+    <flag></flag>
+    <inact></inact>
+    <max></max>
+    <min></min>
+    <warn></warn>
+   </password_settings>
+   <shell>/bin/bash</shell>
+   <uid>0</uid>
+   <username>root</username>
+   <user_password>linux</user_password>
+  </user>
+ </users>
+ <scripts>
+  <init-scripts config:type="list">
+   <script>
+    <interpreter>shell</interpreter>
+    <location>http://192.168.1.1/pub/bootstrap/my_bootstrap.sh</location>
+   </script>
+  </init-scripts>
+ </scripts>
+</profile>
+----
+
+
+Use this enhancement fragment to add child channels:
+
+----
+<add-on>
+ <add_on_products config:type="list">
+  <listentry>
+   <ask_on_error config:type="boolean">true</ask_on_error>
+   <media_url>http://$c_server/ks/dist/child/`channel-label`/`distribution-label`</media_url>
+   <name>$c_name</name>
+   <product>$c_product</product>
+   <product_dir>/</product_dir>
+  </listentry>
+...
+ </add_on_products>
+</add-on>
+----
+
+Replace [replaceable]``channel-label`` and [replaceable]``distribution-label`` with the correct labels (such as `sles11-sp1-updates-x86_64` and `sles11-sp2-x86_64`). Ensure that the distribution label corresponds to the Autoinstallable Distribution. Set the variables (such as ``$c_server``) according to your environment.
+For information about variables, see
+ifdef::env-github,backend-html5[]
+<<reference-webui-systems-autoinstallation.adoc#s4-sm-system-kick-dist-variables, Autoinstallable Distribution Variables>>.
+endif::[]
+ifndef::env-github,backend-html5[]
+<<s4-sm-system-kick-dist-variables>>.
+endif::[]
+
+[IMPORTANT]
+.Add the Updates Channel
+====
+It is required that you add the updates tools channel to the <add-on> AutoYaST snippet section.
+This ensures your systems are provided with an up-to-date version of the `libzypp` package.
+If you do not include the updates tools channel, you will encounter `400` errors.
+In this example, the (DISTRIBUTION_NAME) is replaced with the name of the autoinstallation distribution, as created previously, from menu:Systems[Autoinstallation > Distributions]
+
+----
+<listentry>
+     <ask_on_error config:type="boolean">true</ask_on_error>
+     <media_url>http://$redhat_management_server/ks/dist/child/sles12-sp2-updates-x86_64/(DISTRIBUTION_NAME)</media_url>
+     <name>sles12 sp2 updates</name>
+     <product>SLES12</product>
+     <product_dir>/</product_dir>
+  </listentry>
+----
+====

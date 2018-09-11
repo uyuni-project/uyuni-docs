@@ -1,0 +1,273 @@
+[[bp.sp.migration]]
+= {productname} Server Migration
+ifdef::env-github,backend-html5,backend-docbook5[]
+//Admonitions
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+:linkattrs:
+// SUSE ENTITIES FOR GITHUB
+// System Architecture
+:zseries: z Systems
+:ppc: POWER
+:ppc64le: ppc64le
+:ipf : Itanium
+:x86: x86
+:x86_64: x86_64
+// Rhel Entities
+:rhel: Red Hat Linux Enterprise
+:rhnminrelease6: Red Hat Enterprise Linux Server 6
+:rhnminrelease7: Red Hat Enterprise Linux Server 7
+// SUSE Manager Entities
+:productname: Uyuni
+:susemgr: SUSE Manager
+:susemgrproxy: SUSE Manager Proxy
+:productnumber: 3.2
+:saltversion: 2018.3.0
+:webui: WebUI
+// SUSE Product Entities
+:sles-version: 12
+:sp-version: SP3
+:jeos: JeOS
+:scc: SUSE Customer Center
+:sls: SUSE Linux Enterprise Server
+:sle: SUSE Linux Enterprise
+:slsa: SLES
+:suse: SUSE
+:ay: AutoYaST
+:yast: YaST
+endif::[]
+// Asciidoctor Front Matter
+:doctype: book
+:sectlinks:
+
+:icons: font
+:experimental:
+:sourcedir: .
+:imagesdir: images
+
+
+
+[[bp.sp.migration.sp.intro]]
+== Service Pack Migration Introduction
+
+You can upgrade the underlying operating system and also migrate {productname} server from one patch level to the other (SP migration) or from one version to the next.
+This works for migrating {productname} server 3.0 to version 3.1, or version 3.1 to version {productnumber}.
+For migrating version 3.0 to version 3.1, see the product documentation for {productname} 3.1:
+
+----
+https://www.suse.com/documentation/suse-manager-3/
+----
+
+
+
+[[bp.sp.migration.sp]]
+== Service Pack Migration
+
+SUSE Manager uses {sls} 12 as its underlying operating system.
+Therefore Service Pack migration (for example, from version 12 SP1 to 12 SP3) may be performed in the same way as a typical {slsa} migration.
+
+.Upgrading PostgreSQL to Version 9.6 Before Migrating to SLES12 SP3
+[WARNING]
+====
+Before migrating the underlying system to {sle} 12 SP3 you must upgrade PostgreSQL to version 9.6.
+
+The migration needs PostgreSQL 9.4 and 9.6 installed in parallel and PostgreSQL 9.4 is only available in {sle} 12 SP2.
+For more information, see <<sp.migration.postgresql>>.
+====
+
+{suse} offers a graphical and command line tool for upgrading to a new service pack.
+Comprehensive documentation for executing service pack migration scenarios is located in the {sls} documentation chapter https://www.suse.com/documentation/sles-12/book_sle_deployment/data/cha_update_sle.html.
+
+
+
+[[sp.migration.postgresql]]
+== Upgrading PostgreSQL to Version 9.6
+
+[WARNING]
+.Migrating to SLES 12 SP3
+====
+{productname} Server 3.1 must _not_ be migrated to SLES 12 SP3 before upgrading PostgreSQL to version 9.6.
+====
+
+
+The upgrade needs PostgreSQL 9.4 and 9.6 installed in parallel.
+PostgreSQL 9.4 is only available in SLES 12 SP2.
+
+Before starting the update, prepare an up-to-date backup of your database.
+
+On existing installations of {productname} Server 3.1 you must migrate from PostgreSQL 9.4 to version 9.6.
+
+----
+/usr/lib/susemanager/bin/pg-migrate.sh
+----
+
+During the upgrade your {productname} Server will not be accessible.
+
+The upgrade will create a copy of the database under [path]``/var/lib/pgsql`` and thus needs sufficient disk space to hold two copies (versions 9.4 and 9.6) of the database.
+Because it does a full copy of the database, it also needs considerable time depending on the size of the database and the I/O speed of the storage system.
+
+If your system is short on disk space you can do a fast, in-place upgrade by running
+
+----
+/usr/lib/susemanager/bin/pg-migrate.sh fast
+----
+
+The fast upgrade usually only takes a few minutes and uses no additional disk space.
+However, if the upgrade fails, you will need to restore the database from a backup.
+
+For more information, see https://wiki.microfocus.com/index.php?title=SUSE_Manager/postgresql96.
+
+
+
+[[update.suse.manager]]
+== Updating {productname}
+
+This section provides information on performing regular updates and running a [command]``spacewalk-schema-upgrade`` on your PostgreSQL database.
+
+.Procedure: Updating {productname}
+. As the root user, stop Spacewalk services:
++
+
+----
+spacewalk-service stop
+----
+. Apply the latest patches:
++
+
+----
+zypper patch
+----
+. You will be informed if a new database schema was included in the latest patch. Ensure the database service is running:
++
+
+----
+rcpostgresql start
+----
+. Perform the upgrade:
++
+
+----
+spacewalk-schema-upgrade
+----
+
+. Restart Spacewalk services:
++
+
+----
+spacewalk-service start
+----
++
+
+[IMPORTANT]
+.Restart of Services and Applications
+====
+Services affected by a package update are not automatically restarted after an update.
+You need to restart these services manually to avoid potential failures.
+
+You may use [command]``zypper ps`` to check for any applications which may be using old code.
+Restart these applications.
+====
+
+
+
+[[bp.sp.migration.version]]
+== Migrating {productname} version 3.1 to 3.2
+
+The migration can either be done with the Online Migration tool ({yast}) or with the Zypper command line tool.
+
+.Requirements
+{productname} {productnumber} requires {slsa} 12 SP3, with PostgreSQL version 9.6.
+Check the release notes for more information about these requirements.
+If you want to upgrade from an earlier version of {productname}, check the relevant product documentation.
+
+[NOTE]
+.Reduce Installation Size
+====
+When performing the migration, {yast} will install all recommended packages.
+Especially in the case of custom minimal installations, this may increase the installation size of the system significantly.
+
+To change this default behavior and allow only required packages, adjust [path]``/etc/zypp/zypp.conf`` and set the following variable:
+
+----
+solver.onlyRequires = true
+installRecommends=false # or commented
+----
+
+This changes the behavior of all package operations, such as the installation of patches or new packages.
+====
+
+
+
+[[bp.sp.migration.version.yast]]
+=== Using {yast}
+
+[WARNING]
+.Checking PostgreSQL Version
+====
+Before migrating to SLES 12 SP3, check whether PostgreSQL is already updated to version 9.6.
+For more information, see <<sp.migration.postgresql>>.
+====
+
+To perform the migration with {yast}, use the menu:Online Migration[] tool:
+
+.Procedure: Migrating using {yast}
+. If you are logged into a GNOME session running on the machine you are going to update, switch to a text console.
+Running the update from within a GNOME session is not recommended.
+This does not apply when being logged in from a remote machine (unless you are running a VNC session with GNOME).
+
+. Start in {yast}menu:System[Online Migration] ([command]``yast2 migration``).
+{yast} will show possible migration targets with detailed summaries.
++
+
+In case of trouble, resolve the following issues first:
++
+
+** If the menu:Online Migration[] is not available, install the [package]#yast2-migration# package and its dependencies.
+Restart {yast} , otherwise the newly installed module will not be shown in the control center.
+
+** If there are "`old`" online updates available for installation, the migration tool will warn and ask to install them now before starting the actual migration.
+It is recommended to install all updates before proceeding.
+
+
+
+[[bp.sp.migration.version.zypper]]
+=== Using zypper
+
+
+[WARNING]
+.Checking PostgreSQL Version
+====
+Before migrating to SLES 12 SP3, check whether PostgreSQL is already updated to version 9.6.
+For more information, see <<sp.migration.postgresql>>.
+====
+
+
+To perform the migration with Zypper on the command-line, use the [command]``zypper migration`` subcommand tool:
+
+.Procedure: Migrating using [command]``zypper migration``
+. If you are logged into a GNOME session running on the machine you are going to update, switch to a text console.
+Running the update from within a GNOME session is not recommended.
+This does not apply when being logged in from a remote machine (unless you are running a VNC session with GNOME).
+
+. The [command]``zypper migration`` subcommand show possible migration targets and a summary.
++
+
+In case of trouble, resolve the following issues first:
++
+
+** If the [command]``migration`` subcommand is not available install the [package]#zypper-migration-plugin# package and its dependencies.
+** If there are "`old`" online updates available for installation, the migration tool will warn and ask to install them now before starting the actual migration.
+It is recommended to install all updates before proceeding.
+
+. If more than one migration target is available for your system, select one from the list (specify the number).
+
+. Read the notification and update the {productname} database schema as described ([command]``spacewalk-schema-upgrade``).
+
+. Make sure {productname} is up and running ([command]``spacewalk-service start``).
+
+After finishing the migration procedure {productname} 3.2 on {slsa} 12 SP3 is available to be used.
+
+include::bp_sec_mgr_21_migration.adoc[leveloffset=1]

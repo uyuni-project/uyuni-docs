@@ -1,0 +1,140 @@
+[[bp.authentication.with.pam.and.ad]]
+= Authentication Methods
+:linkattrs:
+:zseries: z Systems
+:ppc: POWER
+:ppc64le: ppc64le
+:ipf : Itanium
+:x86: x86
+:x86_64: x86_64
+// Rhel Entities
+:rhel: Red Hat Enterprise Linux
+:rhnminrelease6: Red Hat Enterprise Linux Server 6
+:rhnminrelease7: Red Hat Enterprise Linux Server 7
+// SUSE Manager Entities
+:productname: Uyuni
+:susemgr: SUSE Manager
+:susemgrproxy: SUSE Manager Proxy
+:productnumber: 3.2
+:saltversion: 2018.3.0
+:webui: WebUI
+// SUSE Product Entities
+:sles-version: 12
+:sp-version: SP3
+:jeos: JeOS
+:scc: SUSE Customer Center
+:sls: SUSE Linux Enterprise Server
+:sle: SUSE Linux Enterprise
+:slsa: SLES
+:suse: SUSE
+:ay: AutoYaST
+// Asciidoctor Front Matter
+:doctype: book
+:sectlinks:
+:icons: font
+:experimental:
+:sourcedir: .
+:imagesdir: images
+
+== Authentication Via PAM
+
+
+As security measures become increasingly complex, SUSE Manager supports network-based authentication systems via Pluggable Authentication Modules (PAM). PAM is a suite of libraries that allows to integrate SUSE Manager with a centralized authentication mechanism, thus eliminating the need to remember multiple passwords.
+SUSE Manager supports LDAP, Kerberos, and other network-based authentication systems via PAM.
+To enable SUSE Manager to use PAM in your organization's authentication infrastructure, follow the steps below.
+
+
+. Set up a PAM service file (default location: [path]``/etc/pam.d/susemanager`` ) then enforce its use by adding the following line to [path]``/etc/rhn/rhn.conf`` :
++
+
+----
+pam_auth_service = susemanager
+----
++
+NOTE: This assumes the PAM service file is named susemanager.
++
+
+. To enable a new or existing user to authenticate with PAM, proceed to the menu:Create User[] page and select the checkbox labeled Pluggable Authentication Modules (PAM) positioned below the password and password confirmation fields.
+. To authenticate a {slsa} system against Kerberos add the following lines to [path]``/etc/pam.d/susemanager`` :
++
+
+----
+#%PAM-1.0
+ auth     include        common-auth
+ account  include        common-account
+ password include        common-password
+ session  include        common-session
+----
++
+NOTE: To register a Red Hat Enterprise Linux System against Kerberos add the following lines to [path]``/etc/pam.d/susemanager``
+
+----
+#%PAM-1.0
+ auth        required      pam_env.so
+ auth        sufficient    pam_krb5.so no_user_check
+ auth        required      pam_deny.so
+ account     required      pam_krb5.so no_user_check
+----
++
+
+. YaST can now be used to configure PAM, when packages such as yast2-ldap-client and yast2-kerberos-client are installed; for detailed information on configuring PAM, see the SUSE Linux Enterprise Server Security Guide https://www.suse.com/documentation/sles-12/book_security/data/part_auth.html. This example is not limited to Kerberos; it is generic and uses the current server configuration. Note that only network based authentication services are supported.
++
+.Changing Passwords
+IMPORTANT: Changing the password on the SUSE Manager Web interface changes only the local password on the SUSE Manager server.
+But this password may not be used at all if PAM is enabled for that user.
+In the above example, for instance, the Kerberos password will not be changed.
++
+
+
+
+== Authentication Via eDirectory and PAM
+
+
+. First check to ensure eDirectory authentication is working with your current OS for example:
++
+
+----
+#getent passwd
+----
+. If users are returned from eDirectory then create the following file:
++
+
+----
+# cat /etc/pam.d/susemanager
+----
+. And add the following content:
++
+
+----
+#%PAM-1.0
+ auth     include        common-auth
+ account  include        common-account
+ password include        common-password
+ session  include        common-session
+ #
+----
+. Finally add the following lines to the {productname} conf file:
++
+
+----
+# grep -i pam /etc/rhn/rhn.conf
+ pam_auth_service = susemanager
+----
+. You may now create users with the same id that appears on eDirectory and mark the Use PAM check-box from the SUSE Manager WebUI.
+
+
+
+== Example Quest VAS Active Directory Authentication Template
+
+
+If you are using Quest VAS for active directory authentication, you can use the following [path]``/etc/pam.d/susemanager``
+ file.
+
+----
+#%PAM-1.0
+auth       required       pam_env.so
+auth       sufficient     pam_vas3.so no_user_check
+auth       requisite      pam_vas3.so echo_return
+auth       required       pam_deny.so
+account    required       pam_vas3.so no_user_check
+----
