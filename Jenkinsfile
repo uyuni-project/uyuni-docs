@@ -2,6 +2,7 @@ pipeline {
   agent {
     docker {
       image 'antora/antora'
+      args 'c7b5af0b7694'
     }
 
   }
