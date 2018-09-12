@@ -1,7 +1,7 @@
 pipeline {
   agent {
-    node {
-      label 'runner'
+    docker {
+      image 'antora/antora'
     }
 
   }
@@ -9,7 +9,7 @@ pipeline {
     stage('Pull') {
       agent {
         docker {
-          image 'registry.mgr.suse.de/antora'
+          image 'antora/antora'
         }
 
       }
