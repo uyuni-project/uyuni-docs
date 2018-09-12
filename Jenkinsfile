@@ -27,12 +27,11 @@ cd ..'''
         stage('Clone Docs') {
           steps {
             echo 'Cloning Docs'
-            sh '''git clone https://github.com/uyuni-project/uyuni-docs \\
-cd uyuni-docs \\
+            sh '''git clone https://github.com/uyuni-project/uyuni-docs && cd uyuni-docs 
 
 '''
             echo 'Checking out gh-pages'
-            sh 'git checkout gh-pages \\'
+            sh 'git checkout gh-pages'
           }
         }
       }
