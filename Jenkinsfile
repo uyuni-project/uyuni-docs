@@ -3,7 +3,7 @@ pipeline {
   stages {
     stage('Build') {
       steps {
-        echo 'Jenkins Minute Pipeline'
+        echo 'New pull request accepted building master'
       }
     }
   }
