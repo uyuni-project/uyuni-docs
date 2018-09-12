@@ -1,5 +1,10 @@
 pipeline {
-  agent any
+  agent {
+    docker {
+      image 'registry.mgr.suse.de/antora'
+    }
+
+  }
   stages {
     stage('Build') {
       agent {
