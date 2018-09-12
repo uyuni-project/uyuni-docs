@@ -11,8 +11,7 @@ pipeline {
 
           }
           steps {
-            echo 'Cloning uyuni-docs-publisher'
-            sh '''git clone https://github.com/uyuni-project/uyuni-docs-publisher
+            sh '''clone https://github.com/uyuni-project/uyuni-docs-publisher
 cd uyuni-docs-publisher
 '''
           }
