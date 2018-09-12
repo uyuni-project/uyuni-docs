@@ -12,9 +12,9 @@ pdw \\
     }
     stage('Run Antora') {
       steps {
-        sh '''cd uyuni-docs-publisher;
-docker run -u $UID -v `pwd`:/antora --rm -t registry.mgr.suse.de/antora --cache-dir=./.cache antora uyuni-publisher.yml;
-cd ..;
+        sh '''cd uyuni-docs-publisher \\
+docker run -u $UID -v `pwd`:/antora --rm -t registry.mgr.suse.de/antora --cache-dir=./.cache antora uyuni-publisher.yml \\
+cd .. \\
 '''
       }
     }
