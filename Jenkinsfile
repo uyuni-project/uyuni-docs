@@ -19,7 +19,8 @@ pipeline {
         stage('Run antora') {
           steps {
             echo 'Building docs with antora'
-            sh 'docker run -u $UID -v `pwd`:/antora --rm -t registry.mgr.suse.de/antora --cache-dir=./.cache/antora uyuni-publisher.yml && cd ..'
+            sh '''docker run -u $UID -v `pwd`:/antora --rm -t registry.mgr.suse.de/antora --cache-dir=./.cache/antora uyuni-publisher.yml
+'''
           }
         }
         stage('Clone Docs') {
