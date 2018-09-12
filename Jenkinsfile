@@ -1,7 +1,7 @@
 pipeline {
   agent {
-    docker {
-      image 'registry.mgr.suse.de/antora'
+    node {
+      label 'runner'
     }
 
   }
