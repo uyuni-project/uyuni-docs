@@ -4,8 +4,8 @@ pipeline {
     stage('Clone repo') {
       steps {
         echo 'Cloning publisher repo'
-        sh '''sh git clone https://github.com/uyuni-project/uyuni-docs-publisher
-sh cd uyuni-docs-publisher
+        sh '''git clone https://github.com/uyuni-project/uyuni-docs-publisher
+cd uyuni-docs-publisher
 '''
       }
     }
