@@ -2,8 +2,14 @@ pipeline {
   agent any
   stages {
     stage('Build') {
+      agent {
+        docker {
+          image 'registry.mgr.suse.de/antora'
+        }
+
+      }
       steps {
-        echo 'New pull request accepted building master'
+        sh 'echo PATH =${PATH}'
       }
     }
   }
