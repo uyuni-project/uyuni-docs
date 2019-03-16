@@ -1,0 +1,313 @@
+[[retail-install]]
+= Installation
+// Antora entities
+ifndef::backend-pdf[]
+include::ROOT:partial$entities.adoc[]
+endif::[]
+
+// PDF entities
+ifdef::backend-pdf[]
+include::_partials/entities.adoc[]
+endif::[]
+
+
+
+[[retail.sect.install.requirements]]
+== Requirements
+
+Before you install {smr}, ensure your environment meets the minimum requirements.
+This section lists the requirements for your {smr} installation.
+These requirements are in addition to the {susemgr} requirements listed at
+https://www.suse.com/documentation/suse-manager-3/3.2/susemanager-getting-started/html/book.suma.getting-started/quickstart.chapt.overview.requirements.html#quickstart.sect.prereq
+
+[IMPORTANT]
+====
+{smr} is only supported on {x86_64} architecture.
+====
+
+
+.{susemgr} server requirements
+
+[cols="1,1", options="header"]
+.Hardware Requirements for {susemgr} server
+|===
+| Hardware                 | Recommended
+| CPU                      | Multi-core 64-bit CPU
+| RAM:                     | _Test Server_ Minimum 8{nbsp}GB
+|                          | _Base Installation_ Minimum 16{nbsp}GB
+|                          | _Production Server_ Minimum 32{nbsp}GB
+| Disk Space:              | [path]``/`` _(root)_ 100{nbsp}GB
+|                          | [path]``/var/lib/pgsql`` Minimum 50{nbsp}GB
+|                          | [path]``/srv/`` 50{nbsp}GB (Minimum 2{nbsp}GB per OS image)
+|                          | [path]``/var/spacewalk`` Minimum 50{nbsp}GB per SUSE product and 250{nbsp}GB per Red Hat product
+|===
+
+.Build host requirements
+
+.Hardware requirements for build host
+|===
+| Hardware                 | Recommended
+| CPU                      | Multi-core 64-bit CPU
+| RAM:                     | 4{nbsp}GB
+| Disk Space:              | [path]``/`` _(root)_ 50{nbsp}GB
+|===
+
+
+.Branch server requirements
+
+.Hardware requirements for branch server
+|===
+| Hardware                 | Recommended
+| CPU                      | Multi-core 64-bit CPU
+| RAM:                     | 8{nbsp}GB
+| Disk Space:              | [path]``/`` _(root)_ 100{nbsp}GB (Minimum 50{nbsp}GB per SUSE product and 2{nbsp}GB per OS image)
+|===
+
+
+.Network Requirements
+
+* The {susemgr} server requires a reliable and fast WAN connection
+* The branch server requires a reliable WAN connection, to reach the {susemgr} server
+* If you are using a shared network, ensure that DHCP requests are filtered before reaching the rest of your shared network
+* If you are using a dedicated network, the branch server requires at least two network interfaces: one connected to the WAN with reachable {susemgr} server, and one connected to the internal branch LAN.
+* Terminals require a LAN connection to the branch server network.
+
+
+
+[[retail.sect.install.install]]
+== Installation
+
+{smr} can be installed in various ways depending on individual needs.
+We recommend these steps:
+
+. Install the {susemgr} server
+. Configure the {susemgr} server
+. Install the {smr} pattern on the {susemgr} server
+. Install the build host and register it to {susemgr}
+. Configure the build host
+. Create required system group
+
+Branch server installation steps:
+
+. Install the branch server and register it to {susemgr}
+. Assign and configure branch server formulas
+. Synchronize images to the servers
+
+Each procedure is detailed in this section.
+
+
+
+=== Install the {susemgr} server
+
+For instructions to install {susemgr}, see the https://www.suse.com/documentation/suse-manager-3/3.2/susemanager-getting-started/html/book.suma.getting-started/quickstart.chapt.overview.requirements.html#quickstart.sect.introduction
+
+[WARNING]
+.Do Not Enable PXE Boot
+====
+Do not enable PXE boot functionality on the {susemgrproxy} during initial setup.
+This functionality will be installed later, after the initial setup.
+====
+
+
+
+[[retail.sect.install.install.config]]
+=== Configure the {susemgr} server
+
+It is important that all required SUSE channels are available on your system and synchronized in order for {smr} to operate correctly.
+For more information on channel management, see https://www.suse.com/documentation/suse-manager-3/3.2/susemanager-advanced-topics/html/book.suma.advanced.topics/suse.mgr.command.line.tools.html#syncing.suse.mgr.repositories.scc
+
+Channels required for {smr} functionality:
+----
+- SLES 12 SP3 (SP4 in the future) as a base
+  - SLES Pool
+    - SLES Update
+- SUSE Manager 3.2 Tools
+  - SUSE Manager 3.2 Tools Pool
+    - SUSE Manager 3.2 Tools Update
+- SUSE Manager 3.2 Proxy
+  - SUSE Manager 3.2 Proxy Pool
+    - SUSE Manager 3.2 Proxy Update
+- SUSE Manager 3.2 Proxy for Retail
+  - SUSE Manager 3.2 Proxy for Retail Pool
+    - SUSE Manager 3.2 Proxy for Retail Update
+----
+
+After you have synchronized the required SUSE channels, create channels for any custom software.
+Channels are used to provide custom software for OS image building.
+For more information on software channels, see https://www.suse.com/documentation/suse-manager-3/3.2/susemanager-reference/html/book.suma.reference.manual/ref.webui.channels.html
+
+
+
+
+=== Install the {smr} pattern on the {susemgr} server
+
+.Procedure: Installing the {smr} pattern on the {susemgr} server
+. Install the [package]``SUSE Manager for Retail`` pattern on the {susemgr} server:
++
+----
+zypper in -t pattern suma_retail
+----
+
+. Check that you have these packages installed and available, after installing {susemgr} and {smr} pattern:
+
+* bind-formula
+* branch-network-formula
+* dhcpd-formula
+* image-sync-formula
+* pxe-formula
+* saltboot-formula
+* susemanager-retail-tools
+* tftpd-formula
+* vsftpd-formula
++
+Install any missing packages with [command]``zypper``:
++
+----
+zypper install package_name
+----
+. Synchronize the salt filesystem and salt modules:
++
+----
+salt-run fileserver.update
+salt '*' saltutil.sync_all
+----
+. Restart the salt master service to pick up the changes:
++
+----
+Restart salt master service now.
+
+systemctl restart salt-master
+----
+
+For more information about formulas, see xref:retail_chap_formulas.adoc#retail.chap.formulas[Formulas].
+
+=== Install the build host and register it to {susemgr}
+
+Your build host should be a Salt minion, running {sls}{nbsp}12 SP3.
+For instructions to install Salt minion see https://www.suse.com/documentation/suse-manager-3/3.2/susemanager-getting-started/html/book.suma.getting-started/preparing.and.registering.clients.html
+
+[WARNING]
+====
+The build host must be a Salt minion.
+Do not install the build host as a traditionally managed client.
+====
+
+
+
+=== Configure the build host
+
+The build host must be set as an OS Image build host in the {susemgr} {webui}, and highstate applied.
+
+.Procedure: Configuring the build host
+
+. In the {susemgr} {webui}, navigate to menu:Systems[Overview].
+Locate the system to be made a build host, and click on its name.
+. In the [guimenu]``System Properties`` window, click btn:[Edit These Properties].
+. In the [guimenu]``Edit System Details`` window, ensure the [guimenu]``OS Image Build Host`` option is checked, and click btn:[Update Properties] to save your changes.
+. Select the [guimenu]``States`` tab, and navigate to the [guimenu]``Highstate`` window.
+. In the [guimenu]``States`` tab, click btn:[Apply Highstate].
+
+[IMPORTANT]
+====
+Check that the build host has these packages installed after you have run Highstate:
+
+- kiwi
+- kiwi-desc-saltboot
+
+If any package is missing, make sure the ``SUSE Manager 3.2 Tools`` repository is available on the build host and install any missing packages manually using ``zypper install``.
+====
+
+
+
+=== Create required system groups
+
+{smr} requires system groups for terminals and servers.
+Manually create these system groups during installation:
+
+* [systemitem]``TERMINALS``
+* [systemitem]``SERVERS``
+
+Additionally, you will need to create a system group for each branch server, and each terminal hardware type in your environment.
+
+You can create system groups using the {susemgr} {webui}.
+Navigate to menu:Systems[System Groups] and click on btn:[Create System Group].
+
+For more information about system groups, see https://www.suse.com/documentation/suse-manager-3/3.2/susemanager-reference/html/book.suma.reference.manual/ref.webui.systems.systems.html#ref.webui.systems.systemgroups
+
+
+[[retail.sect.install.branch]]
+=== Install the branch server and register it to {susemgr}
+
+Your branch server should be installed as a default Salt-based client ("minion"), running {susemgrproxy} 3.2.
+
+[WARNING]
+====
+Do not install the branch server as a traditionally managed client.
+====
+
+For instructions to install Salt-based proxy minions and register them to {susemgr}, see https://www.suse.com/documentation/suse-manager-3/3.2/susemanager-advanced-topics/html/book.suma.advanced.topics/advanced.topics.proxy.quickstart.html
+
+The activation key should have the following channels:
+
+----
+- SLES 12 SP3 (SP4 in the future) as a base
+  - SLES Pool
+    - SLES Update
+- SUSE Manager 3.2 Tools
+  - SUSE Manager 3.2 Tools Pool
+    - SUSE Manager 3.2 Tools Update
+- SUSE Manager 3.2 Proxy
+  - SUSE Manager 3.2 Proxy Pool
+    - SUSE Manager 3.2 Proxy Update
+- SUSE Manager 3.2 Proxy for Retail
+  - SUSE Manager 3.2 Proxy for Retail Pool
+    - SUSE Manager 3.2 Proxy for Retail Update
+----
+
+
+For mass deployments, see xref:retail_chap_admin.adoc#retail.sect.admin.branch_mass_config[Branch Server Mass Configuration].
+
+
+When you are installing the branch server with a dedicated internal network, check that you are using the same fully qualified domain name (FQDN) on both the external and internal branch networks.
+If the FQDN does not match on both networks, the branch server will not be recognized as a proxy server.
+
+=== Assign and configure branch server formulas
+
+Before you configure the branch server, ensure you have decided on networking topology, and know the Salt ID of the branch server.
+
+The branch server can be configured automatically using the [command]``retail_branch_init`` command, as shown in this section.
+If you prefer to manually configure the branch server, you can do so using formulas.
+For more information about formulas, see xref:retail_chap_formulas.adoc#retail.chap.formulas[Formulas].
+
+.Procedure: Configuring branch server formulas using helper script
+
+. Branch server configuration is performed using the [command]``retail_branch_init`` command:
++
+----
+retail_branch_init <branch_server_salt_id>
+----
++
+This command will configure branch server formulas with recommended values. You can use the [command]``retail_branch_init --help`` command for additional options.
+. Verify that your changes have been configured correctly by checking the {susemgr} {webui} branch server system formulas.
+. Apply highstate on the branch server.
+You can do this through the {webui}, or by running this command:
++
+----
+salt <branch_server_salt_id> state.apply
+----
+
+
+
+=== Synchronize images to the servers
+
+The OS image you use on the {susemgr} server must be synchronized for use on the branch server.
+You can do this with the Salt [command]``image-sync`` tool.
+
+.Procedure: Synchronize images with branch server
+
+. On the branch server, run this command:
++
+----
+salt <branch_server_salt_id> state.apply image-sync
+----
+. The image details will be transferred to [path]``/srv/saltboot`` on the branch server.

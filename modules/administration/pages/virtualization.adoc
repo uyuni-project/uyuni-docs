@@ -1,0 +1,496 @@
+[[virtualization]]
+= Virtualization
+// Antora entities
+ifndef::backend-pdf[]
+include::ROOT:partial$entities.adoc[]
+endif::[]
+
+// PDF entities
+ifdef::backend-pdf[]
+include::_partials/entities.adoc[]
+endif::[]
+
+
+{productname} allows you to autoinstall and manage {xen} and {kvm} {vmguest}s on a registered {vmhost}.
+To autoinstall a {vmguest}, an autoinstallable distribution and an autoinstallation profile ({ay} or {kickstart}) need to exist on {productname}.
+{vmguest}s registered with {productname} can be managed like "`regular`" machines.
+In addition, basic {vmguest} management tasks such as (re)starting and stopping or changing processor and memory allocation can be carried out using {productname}.
+
+The following documentation is valid in the context of traditional clients.
+Salt minions must be treated differently:
+
+* Autoinstallation is not supported, but creation of a guest from a template disk image is supported.
+
+.Limitation to Xen and KVM Guests
+[WARNING]
+====
+Autoinstalling and managing {vmguest}s via {productname} is limited to {xen} and {kvm} guests.
+{productname} uses [library]``libvirt`` for virtual machine management.
+Currently, virtual machines from other virtualization solutions such as VMware* or VirtualBox*, are recognized as {vmguest}s, but cannot be managed from within {productname}.
+====
+
+
+
+[[sec.virtualization.autoinstall]]
+== Autoinstalling {vmguest}s
+
+With {productname} you can automatically deploy {xen} and {kvm} {vmguest}s using {ay} or {kickstart} profiles.
+It is also possible to automatically register the {vmguest}s, so they can immediately be managed by {productname}.
+
+[[sec.virtualization.autoinstall.req_mgr]]
+=== Requirements on {productname}
+
+
+Setting up and managing {vmguest}s with {productname} does not require special configuration options.
+However, you need to provide activation keys for the {vmhost} and the {vmguest}s, an autoinstallable distribution and an autoinstallation profile.
+To automatically register {vmguest}s with {productname}, a bootstrap script is needed.
+
+[[sec.virtualzation.autoinstall.req-mgr.keys]]
+==== Activation Keys
+
+
+Just like any other client, {vmhost} and {vmguest}s need to be registered with {productname} using activation keys.
+Find details on how to set up activation keys at <<create.act.keys>>.
+While there are no special requirements for a {vmguest} key, at least the following requirements must be met for the {vmhost} activation key.
+
+.{vmhost} Activation Key: Minimum Requirements
+* Entitlements: Provisioning, Virtualization Platform.
+* Packages: [package]``rhn-virtualization-host``, [package]``osad``.
++
+If you want to manage the {vmhost} system from {productname} (for example, by executing remote scripts), the package [package]``rhncfg-actions`` needs to be installed as well.
+
+
+[[sec.virtualzation.autoinstall.req-mgr.inst-source]]
+==== Setting up an Autoinstallable Distribution
+
+
+To autoinstall clients from {productname}, you need to provide an "`autoinstallable distribution`", also referred to as autoinstallable tree or installation source.
+This installation source needs to be made available through the file system of the {productname} host.
+It can for example be a mounted local or remote directory or a "`loop-mounted`" ISO image.
+It must match the following requirements:
+
+* Kernel and initrd location:
+
+.{rhel} / Generic RPM
+** images/pxeboot/vmlinuz
+** images/pxeboot/initrd.img
+
+
+.SUSE
+** boot/[replaceable]``arch``/loader/initrd
+** boot/[replaceable]``arch``/loader/linux
+* The menu:Base Channel[] needs to match the autoinstallable distribution.
+
+
+.Autoinstallation package sources
+[IMPORTANT]
+====
+There is a fundamental difference between {rhel} and {suse} systems regarding the package sources for autoinstallation.
+The packages for a {rhel} installation are being fetched from the menu:Base Channel[].
+Packages for installing {suse} systems are being fetched from the autoinstallable distribution.
+
+As a consequence, the autoinstallable distribution for a {suse} system has to be a complete installation source (same as for a regular installation).
+====
+
+.Procedure: Creating Autoinstallable Distribution
+. Make sure an installation source is available from a local directory.
+The data source can be any kind of network resource, a local directory or an ISO image (which has to be "`loop-mounted`" ).
+Files and directories must be world readable.
+. Log in to the {productname} {webui} and navigate to menu:Systems[Autoinstallation > Distributions > Create Distribution].
+. Fill out the form [guimenu]``Create Autoinstallable Distribution`` as follows:
++
+
+[guimenu]``Distribution Label``:::
+Choose a unique name for the distribution.
+Only letters, numbers, hyphens, periods, and underscores are allowed; the minimum length is 4 characters.
+This field is mandatory.
+
+[guimenu]``Tree Path``:::
+Absolute local disk path to installation source.
+This field is mandatory.
+
+[guimenu]``Base Channel``:::
+Channel matching the installation source.
+This channel is the package source for non-{suse} installations.
+This field is mandatory.
+
+[guimenu]``Installer Generation``:::
+Operating system version matching the installation source.
+This field is mandatory.
+
+[guimenu]``Kernel Options``:::
+Options passed to the kernel when booting for the installation.
+There is no need to specify the [option]``install=`` parameter since it will automatically be added.
+Moreover, the parameters [option]``self_update=0 pt.options=self_update`` are added automatically to prevent AutoYaST from updating itself during the system installation.
+This field is optional.
+
+[guimenu]``Post Kernel Options``:::
+Options passed to the kernel when booting the installed system for the first time.
+This field is optional.
+. Save your settings by clicking btn:[Create Autoinstallable Distribution].
+
+
+To edit an existing [guimenu]``Autoinstallable Distribution``, go to menu:Systems[Autoinstallation > Distributions] and click on a [guimenu]``Label``.
+Save your settings by clicking btn:[Update Autoinstallable Distribution].
+
+
+
+[[sec.virtualzation.autoinstall.req-mgr.profile]]
+==== Providing an Autoinstallation Profile
+
+Autoinstallation profiles ({ay} or {kickstart} files) contain all the installation and configuration data needed to install a system without user intervention.
+They may also contain scripts that will be executed after the installation has completed.
+
+All profiles can be uploaded to {productname} and be edited afterwards.
+Kickstart profiles can also be created from scratch with {productname}.
+
+A minimalist {ay} profile including a script for registering the client with {productname} is listed in
+ifdef::env-github,backend-html5[]
+<<advanced_topics_app_ay_example.adoc#advanced.topics.app.ay.example-simple, AutoYaST Profile Example>>.
+endif::[]
+ifndef::env-github,backend-html5[]
+<<advanced.topics.app.ay.example-simple>>.
+endif::[]
+For more information, examples and HOWTOs on {ay} profiles, refer to [ref]_SUSE Linux Enterprise AutoYaST_ (https://www.suse.com/documentation/sles-12/book_autoyast/data/book_autoyast.html).
+For more information on {kickstart} profiles, refer to your {rhel} documentation.
+
+
+==== {sle} 15 Systems
+
+You need the installation media to setup the distribution.
+Starting with version 15, there is only one installation media.
+You will use the same one for {slsa}, {sleda}, and all the other {sle} 15 based products.
+
+In the {ay} profile specify which product is to be installed.
+For installing {sls} use the following snippet in [path]``autoyast.xml``:
+
+----
+<products config:type="list">
+  <listentry>SLES</listentry>
+</products>
+----
+
+Then then specify all the required modules as ``add-on`` in [path]``autoyast.xml``.
+This is a minimal ``SLE-Product-SLES15-Pool`` selection that will result in a working installation and can be managed by {productname}:
+
+* SLE-Manager-Tools15-Pool
+* SLE-Manager-Tools15-Updates
+* SLE-Module-Basesystem15-Pool
+* SLE-Module-Basesystem15-Updates
+* SLE-Product-SLES15-Updates
+
+It is also recommended to add the following modules:
+
+* SLE-Module-Server-Applications15-Pool
+* SLE-Module-Server-Applications15-Updates
+
+
+
+[[sec.virtualzation.autoinstall.req-mgr.profile.upload]]
+===== Uploading an Autoinstallation Profile
+
+
+. Log in to the {productname} Web interface and open menu:Systems[Autoinstallation > Profiles > Upload New Kickstart/AutoYaST File].
+. Choose a unique name for the profile.
+  Only letters, numbers, hyphens, periods, and underscores are allowed; the minimum length is 6 characters.
+  This field is mandatory.
+. Choose an [guimenu]``Autoinstallable Tree`` from the drop-down menu.
+  If no [guimenu]``Autoinstallable Tree`` is available, you need to add an Autoinstallable Distribution.
+  Refer to <<sec.virtualzation.autoinstall.req-mgr.inst-source>> for instructions.
+. Choose a [guimenu]``Virtualization Type`` from the drop-down menu. {kvm} and {xen} (para-virtualized and fully-virtualized) are available. Do not choose [guimenu]``Xen Virtualized Host`` here.
+. Scroll down to the [guimenu]``File to Upload`` dialog, click btn:[Browse] to select it, then click btn:[Upload File].
+. The uploaded file will be displayed in the [guimenu]``File Contents`` section, where you can edit it.
+. Click btn:[Create] to store the profile.
+
+
+To edit an existing profile, go to menu:Systems[Autoinstallation > Profiles] and click on a [guimenu]``Label``.
+Make the desired changes and save your settings by clicking btn:[Create].
+
+.Editing existing {kickstart} profiles
+[NOTE]
+====
+If you are changing the [guimenu]``Virtualization Type`` of an existing {kickstart} profile, it may also modify the bootloader and partition options, potentially overwriting any user customizations.
+Be sure to review the [guimenu]``Partitioning`` tab to verify these settings when changing the [guimenu]``Virtualization Type``.
+====
+
+
+
+[[sec.virtualzation.autoinstall.req-mgr.profile.generate]]
+===== Creating a Kickstart Profile
+
+[NOTE]
+====
+Currently it is only possible to create autoinstallation profiles for {rhel} systems.
+If installing a {sls} system, you need to upload an existing {ay} profile as described in <<sec.virtualzation.autoinstall.req-mgr.profile.upload>>.
+====
+
+[[pro.at.virtualzation.autoinstall.ks.profile.generate]]
+. Log in to the {productname} Web interface and go to menu:Systems[Autoinstallation > Profiles > Create New Kickstart File].
+. Choose a unique name for the profile.
+  The minimum length is 6 characters. This field is mandatory.
+. Choose a [guimenu]``Base Channel``.
+  This channel is the package source for non-{suse} installations and must match the [guimenu]``Autoinstallable Tree``.
+  This field is mandatory.
+. Choose an [guimenu]``Autoinstallable Tree`` from the drop-down menu.
+  If no [guimenu]``Autoinstallable Tree`` is available, you need to add an Autoinstallable Distribution.
+  Refer to <<sec.virtualzation.autoinstall.req-mgr.inst-source>> for instructions.
+. Choose a [guimenu]``Virtualization Type`` from the drop-down menu.
+  {kvm} and {xen} (para-virtualized and fully-virtualized) are available.
+  Do not choose [guimenu]``Xen Virtualized Host`` here.
+. Click the btn:[Next] button.
+. Select the location of the distribution files for the installation of your {vmguest}s.
+  There should already be a [guimenu]``Default Download Location`` filled out and selected for you on this screen.
+  Click the btn:[Next] button.
+. Choose a {rootuser} password for the {vmguest}s.
+  Click the btn:[Finish] button to generate the profile.
++
+This completes {kickstart} profile creation.
+After generating a profile, you are taken to the newly-created {kickstart} profile.
+You may browse through the various tabs of the profile and modify the settings as you see fit, but this is not necessary as the default settings should work well for the majority of cases.
+
+
+[[sec.virtualzation.autoinstall.req-mgr.profile.scripts]]
+===== Adding a Registration Script to the Autoinstallation Profile
+
+
+A {vmguest} that is autoinstalled does not get automatically registered.
+Adding a section to the autoinstallation profile that invokes a bootstrap script for registration will fix this.
+The following procedure describes adding a corresponding section to an {ay} profile.
+Refer to your {rhel} documentation for instructions on adding scripts to a {kickstart} file.
+
+
+. First, provide a bootstrap script on the {productname}:
++
+** Create a bootstrap script for {vmguest}s on the {productname} as described in <<generate.bootstrap.script>>.
+** Log in as {rootuser} to the konsole of {productname} and go to [path]``/srv/www/htdocs/pub/bootstrap``.
+   Copy [path]``bootstrap.sh`` (the bootstrap script created in the previous step) to for example, [path]``bootstrap_vm_guests.sh`` in the same directory.
+** Edit the newly created file according to your needs.
+   The minimal requirement is to include the activation key for the {vmguest}s (see <<sec.virtualzation.autoinstall.req-mgr.keys>> for details).
+   We strongly recommend to also include one or more GPG keys (for example, your organization key and package signing keys).
+. Log in to the {productname} Web interface and go to menu:Systems[Autoinstallation > Profiles].
+  Click on the profile that is to be used for autoinstalling the {vmguest}s to open it for editing.
++
+Scroll down to the menu:File Contents[] section where you can edit the {ay} XML file.
+Add the following snippet at the end of the XML file right before the closing `</profile>` tag and replace the given IP address with the address of the {productname} server.
+See <<advanced.topics.app.ay.example-simple>>for an example script.
++
+
+----
+<scripts>
+  <init-scripts config:type="list">
+    <script>
+      <interpreter>shell </interpreter>
+      <location>
+        http://`192.168.1.1`/pub/bootstrap/bootstrap_vm_guests.sh
+      </location>
+    </script>
+  </init-scripts>
+</scripts>
+----
++
+.Only one `<scripts>` section allowed
+IMPORTANT: If your {ay}
+profile already contains a `<scripts>` section, do not add a second one, but rather place the `<script>` part above within the existing `<scripts>` section!
++
+
+. Click menu:Update[] to save the changes.
+
+
+[[sec.virtualization.autoinstall.req_vmhost]]
+=== {vmhost} Setup
+
+
+A {vmhost} system serving as a target for autoinstalling {vmguest}s from {productname} must be capable of running guest operating systems.
+This requires either {kvm} or {xen} being properly set up.
+For installation instructions for {sls} systems refer to the [ref]_SLES Virtualization Guide_ available from https://www.suse.com/documentation/sles-12/book_virt/data/book_virt.html.
+For instructions on setting up a {rhel} {vmhost} refer to your {rhel} documentation.
+
+Since {productname} uses [library]``libvirt`` for {vmguest} installation and management, the [daemon]``libvirtd`` needs to run on the {vmhost}.
+The default [library]``libvirt`` configuration is sufficient to install and manage {vmguest}s from {productname}.
+However, in case you want to access the VNC console of a {vmguest} as a non-{rootuser} user, you need to configure [library]``libvirt`` appropriately.
+Configuration instructions for [library]``libvirt`` on {sls} are available in the [ref]_SLES Virtualization Guide_ available from https://www.suse.com/documentation/sles-12/book_virt/data/book_virt.html available from http://www.suse.com/documentation/sles11/.
+For instructions for a {rhel} {vmhost} refer to your {rhel} documentation.
+
+Apart from being able to serve as a host for {kvm} or {xen} guests, which are managed by [library]``libvirt``, a {vmhost} must be registered with {productname}.
+
+
+. Make sure either {kvm} or {xen} is properly set up.
+. Make sure the [daemon]``libvirtd`` is running.
+. Register the {vmhost} with {productname}:
++
+** Create a bootstrap script on the {productname} as described in <<generate.bootstrap.script>>.
+** Download the bootstrap script from `susemanager.example.com/pub/bootstrap/bootstrap.sh` to the {vmhost}.
+** Edit the bootstrap script according to your needs.
+   The minimal requirement is to include the activation key for the {vmhost} (see <<sec.virtualzation.autoinstall.req-mgr.keys>> for details).
+   We strongly recommend to also include one or more GPG keys (for example, your organization key and package signing keys).
+** Execute the bootstrap script to register the {vmhost}.
++
+
+
+[[sec.virtualization.autoinstall.req_vmhost.salt]]
+==== {vmhost} setup on Salt clients
+
+
+If the {vmhost} is registered as a Salt minion, a final configuration step is needed in order to gather all the guest VMs defined on the {vmhost}:
+
+
+. From the menu:System Details[Properties] page, enable the [guimenu]``Add-on System Type`` ``Virtualization Host`` and confirm with btn:[Update Properties].
+. Schedule a Hardware Refresh. On the menu:System Details[Hardware] page click btn:[Schedule Hardware Refresh].
+
+
+[[sec.virtualization.autoinstall.req_vmhost.traditional]]
+==== {vmhost} setup on Traditional clients
+
+
+Once the registration process is finished and all packages have been installed, enable the [daemon]``osad`` (Open Source Architecture Daemon).
+On a {sls} system this can be achieved by running the following commands as user {rootuser}:
+
+
+----
+systemctl stop rhnsd
+systemctl disable rhnsd
+----
+
+
+----
+systemctl enable osad
+systemctl start osad
+----
+
+.[daemon]``osad``Together with [daemon]``rhnsd``
+IMPORTANT: The [daemon]``rhnsd`` daemon checks for scheduled actions every four hours, so it can take up to four hours before a scheduled action is carried out.
+If many clients are registered with {productname}, this long interval ensures a certain level of load balancing since not all clients act on a scheduled action at the same time.
+
+However, when managing {vmguest}s, you usually want actions like rebooting a {vmguest} to be carried out immediately.
+Adding [daemon]``osad`` ensures that.
+The [daemon]``osad`` daemon receives commands over the jabber protocol from {productname} and commands are instantly executed.
+Alternatively you may schedule actions to be carried out at a fixed time in the future (whereas with [daemon]``rhnsd`` you can only schedule for a time in the future plus up to four hours).
+
+
+
+[[sec.virtualization.autoinstall.installation]]
+=== Autoinstalling {vmguest}s
+
+
+Once all requirements on the {productname} and the {vmhost} are met, you can start to autoinstall {vmguest}s on the host.
+Note that {vmguest}s will not be automatically registered with {productname}, therefore we strongly recommend to modify the autoinstallation profile as described in <<sec.virtualzation.autoinstall.req-mgr.profile.scripts>>.
+{vmguest}s need to be registered to manage them with {productname}.
+Proceed as follows to autoinstall a {vmguest}.
+
+.No parallel Autoinstallations on {vmhost}
+[IMPORTANT]
+====
+It is not possible to install more than one {vmguest} at a time on a single {vmhost}.
+When scheduling more than one autoinstallation with {productname} make sure to choose a timing, that starts the next installation after the previous one has finished.
+If a guest installation starts while another one is still running, the running installation will be cancelled.
+====
+
+
+. In the {webui} click the menu:Main Menu[Systems > Systems] tab.
+. Click the {vmhost}'s name to open its [guimenu]``System Status`` page.
+. Open the form for creating a new {vmguest} by clicking menu:Virtualization[Provisioning].
+  Fill out the form by choosing an autoinstallation profile and by specifying a name for the {vmguest} (must not already exist on {vmhost}).
+  Choose a proxy if applicable and enter a schedule.
+  To change the {vmguest}'s hardware profile and configuration options, click btn:[Advanced Options].
+. Finish the configuration by clicking btn:[Schedule Autoinstallation and Finish].
+  The [guimenu]``Session Status`` page opens for you to monitor the autoinstallation process.
+
+
+.Checking the Installation Log
+[NOTE]
+====
+To view the installation log, click menu:Events[History] on the [guimenu]``Session Status`` page.
+On the [guimenu]``System History Event`` page you can click a [guimenu]``Summary`` entry to view a detailed log.
+
+In case an installation has failed, you can btn:[Reschedule] it from this page once you have corrected the problem.
+You do not have to configure the installation again.
+
+If the event log does not contain enough information to locate a problem, log in to the {vmhost} console and read the log file for your package manager.
+If you are using the [daemon]``rhnsd``, you may alternatively immediately trigger any scheduled actions by calling [command]``rhn_check`` on the {vmhost}.
+Increase the command's verbosity by using the options [option]``-v``, [option]``-vv``, or [option]``-vvv``, respectively.
+====
+
+
+
+[[sec.virtualization.vmguest-manage]]
+== Managing {vmguest}s
+
+Basic {vmguest} management actions such as restarting or shutting down a virtual machine as well as changing the CPU and memory allocation can be carried out in the {productname} Web interface if the following requirements are met:
+
+* {vmhost} must be a {kvm} or {xen} host.
+* [daemon]``libvirtd`` must be running on {vmhost}.
+* {vmhost} must be registered with {productname}.
+
+In addition, if you want to see the profile of the {vmguest}, install packages, etc., you must also register it with {productname}.
+
+All actions can be triggered in the {productname} {webui} from the [guimenu]``Virtualization`` page of the {vmhost}.
+Navigate to this page by clicking the menu:Main Menu[Systems > Systems].
+On the resulting page, click the {vmhost}'s name and then on [guimenu]``Virtualization``.
+This page lists all {vmguest}s for this host, known to {productname}.
+
+
+
+[[sec.virtualization.vmguest-manage.details]]
+=== Displaying a {vmguest} 's Profile
+
+Click the name of a {vmguest} on the {vmhost}'s [guimenu]``Virtualization`` page to open its profile page with detailed information about this guest.
+For details, refer to <<ref.webui.systems.systems>>.
+
+A profile page for a virtual system does not differ from a regular system's profile page.
+You can perform the same actions (for example, installing software or changing its configuration).
+
+
+
+[[sec.virtualization.vmguest-manage.status]]
+=== Starting, Stopping, Suspending and Resuming a {vmguest}
+
+To start, stop, restart, suspend, or resume a {vmguest}, navigate to the {vmhost}'s [guimenu]``Virtualization`` page.
+Click the corresponding action button in the row of the {vmguest}.
+Alternatively, check one or more [guimenu]``Guests`` listed in the table and click the corresponding button above the table.
+btn:[Confirm] the action on the displayed popup dialog.
+
+.Automatically restarting a {vmguest}
+[NOTE]
+====
+Automatically restarting a {vmguest} when the {vmhost} reboots is not enabled by default on {vmguest}s and cannot be configured from {productname}.
+Refer to your {kvm} or {xen} documentation.
+Alternatively, you may use [library]``libvirt`` to enable automatic reboots.
+====
+
+
+
+=== Changing the CPU or RAM allocation of a {vmguest}
+
+To change the CPU or RAM allocation of a {vmguest} navigate to the {vmhost}'s [guimenu]``Virtualization`` page.
+Click the btn:[Edit] button on the {vmguest} row.
+Change the values to the desired ones in the next page and click the btn:[Update] button to apply.
+
+The memory allocation can be changed on the fly, provided the memory ballooning driver is installed on the {vmguest}.
+If this is not the case, or if you want to change the CPU allocation, you need to shutdown the guest first.
+Refer to <<sec.virtualization.vmguest-manage.status>> for details.
+
+You can also perform more advanced {vmguest} editing tasks on Salt minions, such as adding or removing disks and network interfaces, and changing the display type.
+
+
+
+[[sec.virtualization.vmguest-manage.delete]]
+=== Deleting a {vmguest}
+
+[IMPORTANT]
+====
+Deleting a {vmguest} is only possible on Salt minions, not on traditional clients.
+====
+
+To delete a {vmguest}, navigate to the {vmhost}'s [guimenu]``Virtualization`` page.
+Click the btn:[Delete] button on the {vmguest} row.
+Alternatively, check one or more [guimenu]``Guests`` listed in the table and click the btn:[Delete] button above the table.
+btn:[Confirm] the action on the displayed popup dialog.
+
+
+
+[[sec.virtualization.vmguest-manage.gui]]
+=== Displaying {vmguest} graphical console
+
+In order to be able to display a {vmguest} VNC or Spice graphical console, the virtual host corresponding port needs to be reachable by the server.
+The {vmguest} graphics settings also have to listen on at least the virtual host address.
+This is the default for any {vmguest} created using the web interface.

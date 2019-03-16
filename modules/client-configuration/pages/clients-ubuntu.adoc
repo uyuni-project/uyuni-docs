@@ -1,0 +1,146 @@
+[[clients-ubuntu]]
+= Ubuntu Clients
+// Antora entities
+ifndef::backend-pdf[]
+include::ROOT:partial$entities.adoc[]
+endif::[]
+
+// PDF entities
+ifdef::backend-pdf[]
+include::_partials/entities.adoc[]
+endif::[]
+
+[[bp.expanded-support.ubuntu]]
+== Managing {ubuntu} Clients
+// ianew: clientconfig/ubuntu-clients.adoc
+// iawho: lana 2019-03-01
+// Note that the chapter in the new structure is empty for now to prevent accidental publishing.
+
+Support for {ubuntu} Clients was added in {susemgr} 3.2.
+Currently, Salt minions running {ubuntu} 16.04 LTS and 18.04 LTS are supported.
+
+[NOTE]
+====
+{ubuntu} clients must be Salt minions.
+Traditional clients are not supported.
+====
+
+Bootstrapping is supported for starting {ubuntu} clients and performing initial state runs such as setting repositories and performing profile updates.
+However, the root user on {ubuntu} is disabled by default, so in order to use bootstrapping, you will require an existing user with [command]``sudo`` privileges for Python.
+
+Other supported features:
+
+* Synchronizing [systemitem]``.deb`` channels
+* Assigning [systemitem]``.deb`` channels to minions
+* GPG signing [systemitem]``.deb`` repositories
+* Minion cleanup on delete
+* Information displayed in System details pages
+* Package install, update, and remove
+* Package install using [systemitem]``Package States``
+* Configuration and state channels
+
+Some actions are not yet supported:
+
+* Patch and errata support
+* Bare metal installations, PXE booting, and virtual host provisioning
+* Live patching
+* CVE Audit
+* If you use are using a repository from storage media (`server.susemanager.fromdir = ...` option in rhn.conf), Ubuntu Client Tools will not work.
+// Reason: RMT and SMT cannot mirror Debian repositories (yet) and so cannot create it in that directory the correct files.
+// We are waiting for SMT to release the feature/fix to mirror Debian repositories. When this has been done, this comment and the limitation above can be removed.
+
+
+This section describes how to manually prepare {ubuntu} clients for registration to your {susemgr} Server and synchronize the repositories.
+
+
+.Procedure: Preparing an {Ubuntu} 16.04 Client for Registration
+
+. On the client, open the [filename]``/etc/apt/sources.list.d/suma_client_tools.list`` file, and add this line:
++
+----
+deb https://download.opensuse.org/repositories/systemsmanagement:/saltstack:/products:/debian/xUbuntu_16.04/ /
+----
++
+. From the command line, import the appropriate release key and add it to the keyring:
++
+----
+curl https://download.opensuse.org/repositories/systemsmanagement:/saltstack:/products:/debian/xUbuntu_16.04/Release.key
+sudo apt-key add -
+----
++
+. Update the repository list in the package manager:
++
+----
+sudo apt update
+----
++
+. Edit the [filename]``sudoers`` file:
++
+----
+sudo visudo
+----
++
+Grant [command]``sudo`` access to the user by adding this line to the [filename]``sudoers`` file. Replace [systemitem]``<user>`` with the name of the user that will bootstrap the client in the {webui}:
++
+----
+<user>   ALL=NOPASSWD: /usr/bin/python, /usr/bin/python2, /usr/bin/python3
+----
+
+.Procedure: Preparing an {Ubuntu} 18.04 Client for Registration
+
+. On the client, open the [filename]``/etc/apt/sources.list.d/suma_client_tools.list`` file, and add this line:
++
+----
+deb https://download.opensuse.org/repositories/systemsmanagement:/saltstack:/products:/debian/xUbuntu_18.04/ /
+----
++
+. From the command line, import the appropriate release key and add it to the keyring:
++
+----
+curl https://download.opensuse.org/repositories/systemsmanagement:/saltstack:/products:/debian/xUbuntu_18.04/Release.key
+sudo apt-key add -
+----
++
+. Update the repository list in the package manager:
++
+----
+sudo apt update
+----
++
+. Edit the [filename]``sudoers`` file:
++
+----
+sudo visudo
+----
++
+Grant [command]``sudo`` access to the user by adding this line to the [filename]``sudoers`` file. Replace [systemitem]``<user>`` with the name of the user that will be used to bootsrap the client in the {webui}:
++
+----
+<user>   ALL=NOPASSWD: /usr/bin/python, /usr/bin/python2, /usr/bin/python3
+----
+
+
+
+.Procedure: Synchronizing {ubuntu} Repositories
+
+
+. In the {susemgr} {webui}, navigate to menu:Software[Manage > Repositories] and click btn:[Create Repository].
+. In the [guimenu]``Create Repository`` dialog, use these values to create a new repository:
++
+* In the [guimenu]``Repository URL`` field, type the URL that contains the appropriate binary files, for example [path]``http://ubuntumirror.example.com/ubuntu/dists/bionic/main/binary-amd64/``.
+* In the [guimenu]``Repository Type`` field, select [systemitem]``deb``.
++
+. Click btn:[Create Repository] to create the repository.
+. Navigate to menu:Software[Manage > Channels] and click btn:[Create Channel].
+. In the [guimenu]``Create Software Channel`` dialog, create the channel as required for your environment.
+Ensure that in the [guimenu]``Architecture`` field, you select [systemitem]``AMD64 Debian``.
+. Click btn:[Create Channel] to create the software channel.
+. Navigate to menu:Software[Manage > Channels] and select your new channel from the channel list.
+. In the [guimenu]``Repositories`` tab, click the [guimenu]``Add/Remove`` tab, and select your new repository from the repository list.
+. Click the btn:[Update Repositories] button to synchronize the repository.
+
+
+You can check the progress of your synchronization from the command line using this command:
+----
+tail -f /var/log/rhn/reposync.log /var/log/rhn/reposync/*
+----
