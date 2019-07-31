@@ -1,30 +1,23 @@
 [[install-vm]]
 = Installing the virtual machine environment
-// Antora entities
-ifndef::backend-pdf[]
-include::ROOT:partial$entities.adoc[]
-endif::[]
-
-// PDF entities
-ifdef::backend-pdf[]
-include::_partials/entities.adoc[]
-endif::[]
 
 
 
 [[quickstart.sect.kvm.settings]]
 == Virtual Machine Manager (virt-manager) Settings
 
-This chapter provides the required (KVM) settings for installation of {sle} Just Enough Operating System (JeOS) 12 as the base for {productname}.
+This chapter provides the required (KVM) settings for installation of {sle} Just Enough Operating System (JeOS) 15 as the base for {productname}.
 A kernel virtual machine (KVM) combined with Virtual Machine Manager (_virt-manager_) will be used as a sandbox for your first installation.
 
-.{suse}Virtualization Guide
+.{suse} Virtualization Guide
 [TIP]
 ====
-For more information on virtualization, see: https://www.suse.com/documentation/sles-12/singlehtml/book_virt/book_virt.html[SUSE Linux Enterprise Virtualization Guide]
+For more information on virtualization, see: https://www.suse.com/documentation/sles-15/singlehtml/book_virt/book_virt.html[SUSE Linux Enterprise Virtualization Guide]
 ====
 
-//This section needs revision its ugly and outdated.
+// This section needs revision its still ugly (LKB, KE), but now updated (KE)
+// - 2019-06-19.
+
 Enter the following settings when creating a new virtual machine using *virt-manager*.
 In the following table replace _version_ with the actual product version string.
 
@@ -57,7 +50,7 @@ For more information on virtualization, see: https://www.suse.com/documentation/
 Create three additional virtual disks required for the {productname} storage partitions.
 
 .Procedure: Creating the Required Partitions with KVM
-. Create a new virtual machine using the downloaded JeOS KVM image and select menu:Import existing disk image[] .
+. Create a new virtual machine using the downloaded JeOS KVM image and select menu:Import existing disk image[].
 . Configure RAM and number of CPUs (At least 4 GB RAM and 2 CPUs).
 . Name your KVM machine and select the menu:Customize configuration before install[] check box.
 . Select the btn:[Add Hardware] button and create three new virtual disks with the following specifications.
@@ -83,29 +76,65 @@ During the basic installation prompts you are asked to enter the root password.
 Select a strong password and then in the next message box btn:[Confirm root Password].
 ====
 
+
+
 [[jeos.susemgr.prep]]
 == Preparing JeOS for {productname}
 
 [[proc.jeos.susemgr.prep]]
 .Procedure: Preparing JeOS for {productname} Installation
-. Register with SCC:
+
+. Log in as `root`.
+
+// 4.0 workaround
+. Uninstall the `sles-release` package:
 +
 
 ----
-SUSEConnect -e<EMAIL_ADDRESS> -r<SUSE_MANAGER_CODE>
+rpm -e --nodeps sles-release
 ----
+
+. Register {productname} with SCC (for example, replace `<productnumber>` with `{productnumber}` and `<architecture>` with `x86_64`):
++
+
+----
+SUSEConnect -e<EMAIL_ADDRESS> -r<SUSE_MANAGER_CODE> \
+  -p SUSE-Manager-Server/<productnumber>/<architecture>
+----
+
 . Add {productname} repositories:
 +
 
 ----
-SUSEConnect -p SUSE-Manager-Server/<productnumber>/x86_64 -r<SUSE_MANAGER_CODE>
+SUSEConnect -p sle-module-basesystem/15.1/x86_64
+SUSEConnect -p sle-module-python2/15.1/x86_64
+SUSEConnect -p sle-module-server-applications/15.1/x86_64
+SUSEConnect -p sle-module-web-scripting/15.1/x86_64
+SUSEConnect -p sle-module-suse-manager-server/<productnumber>/x86_64
 ----
-. Install [package]#yast2-storage# with all required dependencies (approx. 40 packages, 30 MB when installed).
++
+TIP: JeOS is configured to install only required packages.
+To get all features working you should allow to install also recommended packages.
+In `/etc/zypp/zypp.conf` change:
++
+
+----
+solver.onlyRequires = true
+----
++
+
+To:
++
+----
+solver.onlyRequires = false
+----
+
+. Install [package]#yast2-storage-ng# with all required dependencies (approx. 40 packages, 30 MB when installed).
 This basic administration package is required for preparing storage partitions:
 +
 
 ----
-zypper in -t package yast2-storage
+zypper in -t package yast2-storage-ng
 ----
 . Partition and mount the virtual disks at the following locations using {yast} Partitioner ([command]``yast2 disk``).
 +
@@ -118,27 +147,13 @@ zypper in -t package yast2-storage
 | VirtIO Disk 4        | [path]``swap``           | 4{nbsp}GB    | swap
 |===
 
-. If you are still using an older version than {susemgr}{nbsp}3.2 check [path]``/etc/fstab`` for correctness as follows (_updated tools shipped with recent SPs will no longer require human intervention._):
-Remove or comment out this mount point entry for [path]``/var/lib/pgsql/`` in the [path]``/etc/fstab`` file:
+. Exit the partitioner and install the {productname} pattern (approximately 730 packages, consuming 1.4 GB when installed):
 +
 
 ----
-/var/lib/pgsql btrfs subvol=@/var/lib/pgsql 0 0
-----
-+
-
-[WARNING]
-.Remove [path]``pgsql`` from the fstab Configuration File
-====
-If you do not remove the [path]``/var/lib/pgsql/`` line from fstab the first time you shut down the server you will lose your database because of duplicated entries in the fstab file.
-====
-+
-
-. Exit the partitioner and install the {productname} pattern:
-+
-
-----
-zypper in -t pattern suma_server
+zypper in pattern-suma_server
 ----
 
-For proceeding with {productname} setup, see xref:quickstart3_chap_sumasetup_with_yast.adoc#suma.setup.with.yast[SUSE Manager Setup].
+. Reboot.
+
+For proceeding with {productname} setup, see xref:installation:server-setup.adoc[SUSE Manager Setup].

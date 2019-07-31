@@ -1,13 +1,7 @@
 [[backup-restore]]
 = Backup and Restore
-// Antora entities
-ifndef::backend-pdf[]
-include::ROOT:partial$entities.adoc[]
-endif::[]
-// PDF entities
-ifdef::backend-pdf[]
-include::_partials/entities.adoc[]
-endif::[]
+
+
 
 
 Back up your {productname} installation regularly, in order to prevent data loss.
@@ -31,11 +25,11 @@ This can save you time in administering your backup, and can be faster to reinst
 However, this method requires significant disk space and could take a long time to perform the backup.
 
 
-If you want to only back up the required files and directories, use this list:
-
 [NOTE]
 ====
+If you want to only back up the required files and directories, use the following list.
 To make this process simpler, and more comprehensive, we recommend backing up the entire [path]``/etc`` and [path]``/root`` directories, not just the ones specified here.
+Some files only exist if you are actually using the related {susemgr} feature.
 ====
 
 
@@ -48,36 +42,56 @@ To make this process simpler, and more comprehensive, we recommend backing up th
 * [path]``/etc/sysconfig/rhn/``
 * [path]``/root/.gnupg/``
 * [path]``/root/.ssh``
-** This file exists if you are using an SSH tunnel or SSH [command]``push``. You will also need to have saved a copy of the ``id-susemanager`` key.
++
+
+This file exists if you are using an SSH tunnel or SSH [command]``push``.
+You will also need to have saved a copy of the ``id-susemanager`` key.
 * [path]``/root/ssl-build/``
+* [path]``/srv/formula_metadata``
 * [path]``/srv/pillar``
 * [path]``/srv/salt``
+* [path]``/srv/susemanager``
 * [path]``/srv/tftpboot/``
 * [path]``/srv/www/cobbler``
 * [path]``/srv/www/htdocs/pub/``
+* [path]``/srv/www/os-images``
+* [path]``/var/cache/rhn``
+* [path]``/var/cache/salt``
 * [path]``/var/lib/cobbler/``
-* [path]``/var/lib/rhn/kickstarts/``
+* [path]``/var/lib/cobbler/templates/`` (before version 4.0 it was [path]``/var/lib/rhn/kickstarts/``)
+* [path]``/var/lib/Kiwi``
+* [path]``/var/lib/rhn/``
 * [path]``/var/spacewalk/``
-* Any directories containing custom data (such as scripts, Kickstart profiles, AutoYaST, and custom RPMs).
+* Plus any directories containing custom data such as scripts, Kickstart profiles, AutoYaST, and custom RPMs.
 
 
 [IMPORTANT]
 ====
-You will also need to back up your database, which you can do by copying [path]``/var/spacewalk/db-backup`` or by using the [command]``smdba`` tool, which is explained later in this chapter.
+You will also need to back up your database, which you can do by using the [command]``smdba`` tool, which is explained in <<bp.sect.backup.smdba.admin>>.
 ====
 
 .Procedure: Restore from a Manual Backup
-. Re-install {productname}
-. Re-synchronize your installation with the [command]``mgr-sync`` tool.
+. Re-install {productname}.  For more information, see <<config-smdb.recover-root>>.
+. Re-synchronize your {productname} repositories with the [command]``mgr-sync`` tool.
+For more information about the [command]``mgr-sync`` tool, see <<syncing.suse.mgr.repositories.scc>>.
 . You can choose to re-register your product, or skip the registration and SSL certificate generation sections.
 . Re-install the [path]``/root/ssl-build/rhn-org-httpd-ssl-key-pair-MACHINE_NAME-VER-REL.noarch.rpm`` package.
 . Schedule the re-creation of search indexes next time the [command]``rhn-search`` service is started:
 +
 ----
-rcrhn-search cleanindex
+rhn-search cleanindex
 ----
++
+This command produces only debug messages.
+It does not produce error messages.
+. If you did not have [path]``/var/spacewalk/packages/`` in your backup, but the source repository still exists, you can restore it by performing a complete channel synchronization with:
++
+----
+mgr-sync refresh --refresh-channels
+----
++
+You can check the progress by running [command]``tail -f /var/log/rhn/reposync/``<CHANNEL_NAME>``.log`` as _root_.
 
-. If you did not have [path]``/var/spacewalk/packages/`` in your backup, but the source repository still exists, you can restore it by performing a complete channel synchronization.
 
 
 [[bp.sect.backup.smdba.admin]]
@@ -112,7 +126,7 @@ smdba db-status
 Checking database core...       online
 ----
 
-Starting and stopping the database can be performed with [command]``smdba db-start`` and [command]``smdba db-stop``
+Starting and stopping the database can be performed with [command]``smdba db-start`` and [command]``smdba db-stop``.
 
 ----
 smdba db-start
@@ -141,7 +155,7 @@ Ensure you have at least three times the current database size of space availabl
 You can check your current database size by navigating to [path]``/var/lib/pgsql/`` and running [command]``df -h``.
 
 The [command]``smdba`` tool also manages your archives, keeping only the most recent backup, and the current archive of logs.
-The log files can only be a maximum file size of 16{nbsp}MB, so a new log file will be created once the files reach this size.
+The log files can only be a maximum file size of 16{nbsp}MB, so a new log file will be created when the files reach this size.
 Every time you create a new backup, previous backups will be purged to release disk space.
 We recommend you use [command]``cron`` to schedule your [command]``smdba`` backups to ensure that your storage is managed effectively, and you always have a backup ready in case of failure.
 
@@ -155,12 +169,13 @@ We recommend you run a manual database backup immediately after installation, or
 ====
 When [command]``smdba`` is run for the first time, or if you have changed the location of the backup, it will need to restart your database before performing the archive.
 This will result in a small amount of downtime.
-Note that regular database backups will not require any downtime.
+Regular database backups will not require any downtime.
 ====
 
 
 .Procedure: Performing a Manual Database Backup
-. Allocate permanent storage space for your backup. In this procedure, we will be using an NFS share located at [path]``/var/spacewalk/``.
+. Allocate permanent storage space for your backup.
+This example uses a directory located at [path]``/var/spacewalk/``.
 This will become a permanent target for your backup, so ensure it will remain accessible by your server at all times.
 . In your backup location, create a directory for the backup:
 +
@@ -174,7 +189,7 @@ Or, as root:
 +
 
 ----
-install -d -o postgres /var/spacewalk/db-backup
+install -d -o postgres -g postgres -m 700 /var/spacewalk/db-backup
 ----
 
 . Ensure you have the correct permissions set on the backup location:
@@ -194,7 +209,15 @@ smdba backup-hot --enable=on --backup-dir=/var/spacewalk/db-backup
 ----
 +
 
-. Check that the backup files exist in the [path]``/mnt/backup/database`` directory, to ensure that your backup has been successful.
+This command produces debug messages and finishes sucessfully with the output:
++
+
+----
+INFO: Finished
+----
++
+
+. Check that the backup files exist in the [path]``/var/spacewalk/db-backup`` directory, to ensure that your backup has been successful.
 
 
 
@@ -218,12 +241,10 @@ You can check your current database size by navigating to [path]``/var/lib/pgsql
 +
 
 ----
-# mkdir /var/spacewalk/db-backup
-# chown -R postgres:postgres /var/spacewalk/db-backup
-# chmod 700 /var/spacewalk/db-backup
+# install -m 700 -o postgres -g postgres /var/spacewalk/db-backup
 ----
 
-. Open [path]``/etc/cron.d/db-backup-mgr``, or create it if it doesn't exist, and add the following line to create the cron job:
+. Open [path]``/etc/cron.d/db-backup-mgr``, or create it if it does not exist, and add the following line to create the cron job:
 +
 
 ----
@@ -241,7 +262,7 @@ You can check your current database size by navigating to [path]``/var/lib/pgsql
 The [command]``smdba`` tool can be used to restore from backup in the case of failure.
 
 .Procedure: Restoring from Backup
-. Shutdown the database:
+. Shut down the database:
 +
 
 ----
@@ -273,13 +294,13 @@ spacewalk-data-fsck
 == Archive Log Settings
 
 
-In {susemgr}
-with an embedded database, archive logging is enabled by default.
+In {susemgr} with an embedded database, archive logging is enabled by default.
 This feature allows the database management tool [command]``smdba`` to perform hot backups.
 
 With archive log enabled, even more data is stored on the hard disk:
 
-* Postgresql maintains a limited number of archive logs. Using the default configuration, approx. 64 files with a size of 16 MiB are stored.
+* PostgreSQL maintains a limited number of archive logs.
+Using the default configuration, approximately 64 files with a size of 16 MiB are stored.
 
 
 Creating a user and syncing the channels:
@@ -290,12 +311,10 @@ Creating a user and syncing the channels:
 * SLE-Manager-Tools12-Updates-x86_64-SP2
 
 
-Postgresql will generate an additional ~1 GB of data.
+PostgreSQL will generate an additional roughly 1 GB of data.
 So it is important to think about a backup strategy and create a backups in a regular way.
 
-Archive logs are stored at:
-
-* [path]``/var/lib/pgsql/data/pg_xlog/`` (postgresql)
+Archive logs are stored at [path]``/var/lib/pgsql/data/pg_xlog/`` (postgresql).
 
 
 [[config-smdb.spaces]]
@@ -317,7 +336,7 @@ susemanager | 776       | 48399      | 1.602
 ----
 
 
-The following command is available for Postgresql.
+The [command]``smdba`` command is available for PostgreSQL.
 For a more detailed report, use the [command]``space-tables`` subcommand.
 It lists the table and its size, for example:
 
@@ -347,39 +366,33 @@ For example if your database storage space is running low.
 The following procedure will guide you through moving the database to a new location for use by SUSE Manager.
 
 .Procedure: Moving the Database
-. The default storage location for {susemgr} is: [path]``/var/lib/pgsql/`` . You would like to move it, for example to: [path]``/storage/postgres/`` . To begin, stop the running database with:
+. The default storage location for {susemgr} is [path]``/var/lib/pgsql/``. If you would like to move it, for example to [path]``/storage/postgres/``, proceed as follows.
+
+. Stop the running database with:
 +
 
 ----
 # rcpostgresql stop
 ----
 +
-Shutdown running spacewalk services with:
+Shut down the running spacewalk services with:
 +
 
 ----
 # spacewalk-service stop
 ----
-. Copy the current working directory structure with the following syntax:
-+
-
-----
-cp [OPTION]... SOURCE... DIRECTORY
-----
-+
-using the [option]``-a, --archive`` option.
+. Copy the current working directory structure with [command]``cp`` using the [option]``-a, --archive`` option.
 For example:
 +
 
 ----
-# cp -ar /var/lib/pgsql/ /storage/postgres/
+# cp --archive /var/lib/pgsql/ /storage/postgres/
 ----
 +
 This command will copy the contents of [path]``/var/lib/pgsql/``
-to [path]``/storage/postgres/pgsql/``
-.
+to [path]``/storage/postgres/pgsql/``.
 +
-IMPORTANT: The contents of the /var/lib/pgsql needs to remain the same or the SUSE Manager database may malfunction.
+IMPORTANT: The contents of the [path]``/var/lib/pgsql`` directory needs to remain the same, otherwise the SUSE Manager database may malfunction.
 You also should ensure there is enough available disk space.
 +
 
@@ -389,16 +402,16 @@ You also should ensure there is enough available disk space.
 ----
 # mount /storage/postgres/pgsql
 ----
-. Make sure ownership is `postgres:postgres` and not `root:root` by changing to the new directory and running the following command:
+. Make sure ownership is `postgres:postgres` and not `root:root` by changing to the new directory and running the following commands:
 +
 
 ----
-/var/lib/pgsql/ # cd /storage/postgres/pgsql/
-/storage/postgres/pgsql/ # l
+# cd /storage/postgres/pgsql/
+# ls -l
 total 8
 drwxr-x---  4 postgres postgres   47 Jun  2 14:35 ./
 ----
-. Add the new database mount location to your servers fstab by editing  [path]``etc/fstab`` .
+. Add the new database mount location to your servers fstab by editing  [path]``etc/fstab``.
 . Start the database with:
 +
 
@@ -406,7 +419,7 @@ drwxr-x---  4 postgres postgres   47 Jun  2 14:35 ./
 # rcpostgresql start
 ----
 +
-Start spacewalk-services with:
+Start the spacewalk services with:
 +
 
 ----
@@ -414,6 +427,7 @@ Start spacewalk-services with:
 ----
 
 
+[[config-smdb.recover-root]]
 == Recovering from a Crashed Root Partition
 
 

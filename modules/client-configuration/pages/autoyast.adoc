@@ -1,0 +1,86 @@
+[[client-cfg-autoinstallation-autoyast]]
+= {ay}
+
+
+
+
+Using {ay}, a system administrator can create a single file containing the answers to all the questions that would normally be asked during a typical installation of a {sle} system.
+
+{ay} files can be kept on a single server system and read by individual computers during the installation.
+This way the same {ay} file is used to install {sle} on multiple machines.
+
+The [ref]_SUSE Linux Enterprise Server AutoYaST Guide_ at (https://www.suse.com/documentation/sles-15/) will contain an in-depth discussion of "`Automated Installation`" using {ay}.
+
+
+
+[[s4-system-ay-intro-explain]]
+== {ay} Explained
+
+When a machine is to receive a network-based {ay} installation, the following events must occur in this order:
+
+. After being connected to the network and turned on, the machine's PXE logic broadcasts its MAC address and requests to be discovered.
+. If no static IP address is used, the DHCP server recognizes the discovery request and offers network information needed for the new machine to boot. This includes an IP address, the default gateway to be used, the netmask of the network, the IP address of the TFTP or HTTP server holding the bootloader program, and the full path and file name to that program (relative to the server's root).
+. The machine applies the networking information and initiates a session with the server to request the bootloader program.
+. The bootloader searches for its configuration file on the server from which it was loaded. This file dictates which Kernel and Kernel options, such as the initial RAM disk (initrd) image, should be executed on the booting machine. Assuming the bootloader program is SYSLINUX, this file is located in the [path]``pxelinux.cfg`` directory on the server and named the hexadecimal equivalent of the new machine's IP address. For example, a bootloader configuration file for {sls} should contain:
++
+
+----
+port 0
+prompt 0
+timeout 1
+default autoyast
+label autoyast
+  kernel vmlinuz
+  append autoyast=http://`my_susemanager_server`/`path`\
+    install=http://`my_susemanager_server`/`repo_tree`
+----
+. The machine accepts and uncompresses the initrd and kernel, boots the kernel, fetches the instsys from the install server and initiates the {ay} installation with the options supplied in the bootloader configuration file, including the server containing the {ay} configuration file.
+. The new machine is installed based on the parameters established within the {ay} configuration file.
+
+
+[[s4-system-ay-intro-prereq]]
+== {ay} Prerequisites
+
+Some preparation is required for your infrastructure to handle {ay} installations.
+For instance, before creating {ay} profiles, you may consider:
+ifdef::showremarks[]
+#
+     2011-01-21 - ke: Does it make sense to mention this?
+     2011-01-24: Recommended by ug, there is now an item on HTTP and SM.
+     #
+endif::showremarks[]
+
+
+* A DHCP server is not required for {ay}, but it can make things easier. If you are using static IP addresses, you should select static IP while developing your {ay} profile.
+* Host the {ay} distribution trees via HTTP, properly provided by {productname}.
+* If conducting a so-called bare-metal {ay} installation, provide the following settings:
+** Configure DHCP to assign the required networking parameters and the bootloader program location.
+** In the bootloader configuration file, specify the kernel and appropriate kernel options to be used.
+
+
+[[s4-system-ay-iso]]
+== Building Bootable {ay} ISOs
+
+While you can schedule a registered system to be installed by {ay} with a new operating system and package profile, you can also automatically install a system that is not registered with {productname}, or does not yet have an operating system installed.
+One common method of doing this is to create a bootable CD-ROM that is inserted into the target system.
+When the system is rebooted or switched on, it boots from the CD-ROM, loads the {ay} configuration from your {productname}, and proceeds to install {sls} according to the {ay} profile you have created.
+
+To use the CD-ROM, boot the system and type `autoyast` at the prompt (assuming you left the label for the {ay}  boot as ``autoyast``). When you press kbd:[Enter], the {ay}  installation begins.
+
+For more information about image creation, refer to KIWI at http://doc.opensuse.org/projects/kiwi/doc/.
+
+
+
+[[s4-system-ay-pxe]]
+== Integrating {ay} with PXE
+
+In addition to CD-ROM-based installations, {ay} installation through a Pre-Boot Execution Environment (PXE) is supported.
+This is less error-prone than CDs, enables {ay} installation from bare metal, and integrates with existing PXE/DHCP environments.
+
+To use this method, make sure your systems have network interface cards (NIC) that support PXE, install and configure a PXE server, ensure DHCP is running, and place the installation repository on an HTTP server for deployment.
+Finally upload the {ay} profile via the Web interface to the {productname} server.
+Once the {ay} profile has been created, use the URL from the menu:Autoinstallation Overview[] page, as for CD-ROM-based installations.
+
+To obtain specific instructions for conducting PXE {ay} installation, refer to the _Using PXE Boot_ section of the [ref]_SUSE Linux Enterprise Deployment Guide_.
+
+For more information about Kickstart options, see xref:reference:systems/autoinst-profiles.adoc[].
