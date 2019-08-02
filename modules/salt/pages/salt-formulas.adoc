@@ -1,0 +1,1018 @@
+[[salt.formulas]]
+= Salt Formulas
+
+
+This chapter provides an introduction for using Salt Formulas with {productname}.
+Creation of custom formulas will also be introduced.
+
+
+
+[[best.practice.salt.formulas.what]]
+== What are Salt Formulas?
+
+Formulas are collections of Salt States that have been pre-written by other Salt users and contain generic parameter fields.
+Formulas allow for reliable reproduction of a specific configuration again and again.
+Formulas can be installed from RPM packages or an external git repository.
+
+This list will help you decide whether to use a state or a formula:
+
+.Formula Tips
+* When writing states for trivial tasks, formulas are probably not worth the time investment.
+* For large, non-trivial configurations use formulas.
+* Formulas and States both act as a kind of configuration documentation.
+Once written and stored you will have a snapshot of what your infrastructure should look like.
+* Pre-written formulas are available from the https://github.com/saltstack-formulas[Saltstack formula repository on Github].
+Use these as a starting point for your own custom formulas.
+* Formula data can be managed via the XMLRPC API.
+
+
+[NOTE]
+.Formula with Forms Improvements
+====
+Forms are a graphical representation of the formulas parameter data.
+You can customize these configuration data in the {productname} {webui}, with entry fields, drop-down, check boxes, etc.
+
+For more information, see https://www.suse.com/c/forms-formula-success/.
+====
+
+
+
+[[best.practice.salt.formulas.install]]
+== Installing Salt Formulas via RPM
+
+{suse} releases formulas as RPM packages.
+Available formulas can be located within the [systemitem]``SUSE-Manager-Server-3.2-Pool`` channel.
+
+
+.Salt State Name Clashes
+[IMPORTANT]
+====
+If a Salt Formula uses the same name as an existing Salt State, the two names will collide, and could result in the formula being used instead of the state.
+Always check states and formulas to avoid name clashes.
+====
+
+.Procedure: Installing Salt Formulas from an RPM
+. To search for available formulas, execute the following command on your {productname} server:
++
+
+----
+zypper se --type package formula
+----
++
+
+You will see a list of available Salt formulas:
++
+
+----
+S | Name              | Summary                                                    | Type
+--+-------------------+------------------------------------------------------------+-----------
+  | locale-formula    | Locale Salt Formula for SUSE Manager                       | package
+----
++
+////
+--+------------------------+-------------------------------------------+--------
+  | branch-network-formula | Salt formula for configuring Branch Ser-> | package
+  | image-sync-formula     | Salt formula for syncing images to Bran-> | package
+  | openstack-formula      | Example openstack Salt Formula collecti-> | package
+  | pxe-formula            | Formula for atftpd server on POS branch-> | package
+  | saltboot-formula       | Formula for boot image of POS terminal    | package
+  | timezone-formula       | Example timezone Salt Formula for SUSE -> | package
+
+--+------------------------+---------------------------------------------------+--------
+i | bind-formula   | Salt formula for configuring and running bind     | package
+i | dhcpd-formula  | Salt formula for configuring and running DHCP s-> | package
+i | locale-formula | Locale Salt Formula for SUSE Manager              | package
+i | tftpd-formula  | Formula for tftpd server on POS branchserver      | package
+i | vsftpd-formula | Formula for vsftpd server on POS branchserver     | package
+////
++
+
+. For more information about a formula, run the following command:
++
+
+----
+zypper info locale-formula
+----
++
+
+----
+Information for package locale-formula:
+-----------------------------------------
+Repository: SUSE-Manager-Server-{productnumber}-Pool
+Name:  locale-formula
+Version:  0.2-1.1
+Arch: noarch
+Vendor:  SUSE LLC <https://www.suse.com/>
+Support Level: Level 3
+Status: not installed
+Installed Size: 47.9 KiB
+Installed: No
+Source package : locale-formula-0.2-1.1.src
+Summary        : Locale Salt Formula for SUSE Manager
+Description    :
+    Salt Formula for SUSE Manager. Sets up the locale.
+----
+. To install a formula run as root:
++
+
+----
+zypper in locale-formula
+----
+
+
+
+[[best.practice.salt.formulas.filedir]]
+== File Structure Overview
+
+RPM-based formulas must be placed in a specific directory structure to ensure proper functionality.
+A formula always consists of two separate directories: The [path]``states`` directory and the [path]``metadata`` directory.
+Folders in these directories need to have an exactly matching name, for example ``locale``.
+
+The Formula State Directory::
+The formula states directory contains anything necessary for a Salt state to work independently.
+This includes [path]``.sls`` files, a [path]``map.jinja`` file and any other required files.
+This directory should only be modified by RPMs and should not be edited manually.
+For example, the [package]#locale-formula# states directory is located in:
++
+
+----
+/usr/share/salt-formulas/states/locale/
+----
+The Formula Metadata Directory::
+The metadata directory contains a [path]``form.yml`` file which defines the forms for {productname} and an optional [path]``metadata.yml`` file that can contain additional information about a formula.
+For example, the [package]#locale-formula# metadata directory is located in:
++
+----
+/usr/share/susemanager/formulas/metadata/locale/
+----
+
+Custom Formulas::
+Custom formula data or (non-RPM) formulas need to be placed into any state directory configured as a Salt file root:
+
+State directory:::
+Custom state formula data needs to be placed in:
++
+----
+/srv/salt/<custom-formula-name>/
+----
+
+Metadata Directory:::
+Custom metadata (information) needs to be placed in:
++
+
+----
+/srv/formula_metadata/<custom-formula-name>/
+----
+
+All custom folders located in the following directories need to contain a [path]``form.yml`` file.
+These files are detected as form recipes and may be applied to groups and systems from the {webui}:
+
+----
+/srv/formula_metadata/<custom-formula-name>/form.yml
+----
+
+[NOTE]
+====
+The Salt formula directory changed in {productname}{nbsp}4.0.
+The old directory location, [path]``/usr/share/susemanager/formulas``, will continue to work for some time.
+You should ensure that you update to the new directory location, [path]``/usr/share/salt-formulas/`` as soon as possible.
+====
+
+
+[[best.practice.salt.formulas.pillar]]
+== Editing Pillar Data in {productname}
+
+{productname} requires a file called [path]``form.yml``, to describe how formula data should look within the {webui}.
+[path]``form.yml`` is used by {productname} to generate the desired form, with values editable by a user.
+
+For example, the [path]``form.yml`` that is included with the [package]#locale-formula# is placed in:
+
+----
+/usr/share/susemanager/formulas/metadata/locale/form.yml
+----
+
+See part of the following [package]#locale-formula# example:
+
+----
+# This file is part of locale-formula.
+#
+# Foobar is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Foobar is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+
+timezone:
+  $type: group
+
+  name:
+    $type: select
+    $values: ["CET",
+              "CST6CDT",
+              "EET",
+              "EST",
+              "EST5EDT",
+              "GMT",
+              "GMT+0",
+              "GMT-0",
+              "GMT0",
+              "Greenwich",
+              "HST",
+              "MET",
+              "MST",
+              "MST7MDT",
+              "NZ",
+              "NZ-CHAT",
+              "Navajo",
+              "PST8PDT",
+              "UCT",
+              "UTC",
+              "Universal",
+              "W-SU",
+              "WET",
+              "Zulu",
+              "Etc/GMT+1",
+              "Etc/GMT+2",
+              "Etc/GMT+3",
+              "Etc/GMT+4",
+              "Etc/GMT+5",
+              "Etc/GMT+6",
+              "Etc/GMT+7",
+              "Etc/GMT+8",
+              "Etc/GMT+9",
+              "Etc/GMT+10",
+              "Etc/GMT+11",
+              "Etc/GMT+12",
+              "Etc/GMT-1",
+              "Etc/GMT-2",
+              "Etc/GMT-3",
+              "Etc/GMT-4",
+              "Etc/GMT-5",
+              "Etc/GMT-6",
+              "Etc/GMT-7",
+              "Etc/GMT-8",
+              "Etc/GMT-9",
+              "Etc/GMT-10",
+              "Etc/GMT-11",
+              "Etc/GMT-12",
+              "Etc/GMT-13",
+              "Etc/GMT-14",
+              "Etc/GMT",
+              "Etc/GMT+0",
+              "Etc/GMT-0",
+              "Etc/GMT0",
+              "Etc/Greenwich",
+              "Etc/UCT",
+              "Etc/UTC",
+              "Etc/Universal",
+              "Etc/Zulu"
+              ]
+    $default: CET
+
+  hardware_clock_set_to_utc:
+    $type: boolean
+    $default: True
+...
+----
+
+[path]``form.yml`` contains additional information that describes how the form for a pillar should look for {productname}.
+This information is contained in attributes that always start with a `$` sign.
+
+[IMPORTANT]
+.Ignored Values
+====
+All values that start with a `$` sign are annotations used to display the UI that users interact with.
+These annotations are not part of pillar data itself and are handled as metadata.
+====
+
+The following are valid attributes.
+
+$type::
+The most important attribute is the `$type` attribute.
+It defines the type of the pillar value and the form-field that is generated.
+The following represent the supported types:
+
+** `text`
+** `password`
+** `number`
+** `url`
+** `email`
+** `date`
+** `time`
+** `datetime`
+** `boolean`
+** `color`
+** `select`
+** `group`
+** `edit-group`
+** `namespace`
+** `hidden-group` (obsolete, renamed to ``namespace``)
+
+
+[NOTE]
+.Text Attribute
+====
+The text attribute is the default and does not need to be specified explicitly.
+====
+
+
+Many of these values are self-explanatory:
+
+** The `text` type generates a simple text field
+** The `password` type generates a password field
+** The `color` type generates a color picker
+
+
+The ``group``, ``edit-group``, and `namespace` (formerly ``hidden-group``) types do not generate an editable field and are used to structure form and pillar data.
+All these types support nesting.
+For providing default values with nesting, see <<salt.formulas.ex.edit-group-nesting>>.
+The difference between `group` and `namespace` is `group` generates a visible border with a heading, and `namespace` shows nothing visually (and is only used to structure pillar data).
+The difference between `group` and `edit-group` is: `edit-group` allows to structure and restrict editable fields in a more flexible way.
+`edit-group` is a collection of items of the same kind; collections can have the following four "shapes":
+
+** A list of primitive items
+** A list of dictionaries
+** A dictionary of primitive items
+** A dictionary of dictionaries
+
+The size of each collection is variable; users can add or remove elements.
+
+For example, `edit-group` supports the `$minItems` and `$maxItems` attributes, and thus it simplifies complex and repeatable input structures.
+These, and also `itemName`, are optional.
+For an `edit-group` example, see <<salt.formulas.ex.edit-group>>.
+
+$default::
+`$default` allows you to specify a default value that is displayed and used, if no other value is entered.
+In an `edit-group` it allows to create initial members of the group and populate them with specified data.
+
+$optional::
+`$optional` is a boolean attribute.
+If it is `true` and the field is empty in the form, then this field will not be generated in the formula data and the generated dictionary will not contain the field name key.
+If `$optional` is `false` and the field is empty, the formula data will contain a `<field name>: null` entry.
+
+$ifEmpty::
+The value to be used if the field is empty (because the user did not input
+any value).
+`ifEmpty` can only be used when `$optional` is `false` or not defined at all!
+If `$optional` is `true`, then `$ifEmpty` is ignored.
+In the following example, the `DP2` string would be used if user leaves the field empty:
++
+
+----
+displayName:
+  $type: string
+  $ifEmpty: DP2
+----
+
+$name::
+`$name` allows you to specify the name of a value that is shown in the form.
+If this value is not set, the pillar name is used and capitalized without underscores and dashes.
+You reference it in the same section with ``pass:c[${name}]``.
+
+$help and $placeholder::
+The `$help` and `$placeholder` attributes are used to give a user a better understanding of what the value should be.
+** `$help` defines the message a user sees when hovering over a field
+** `$placeholder` displays a gray placeholder text in the field
+
+`$placeholder` may only be used with text fields like text, password, email or date.
+It does not make sense to add a placeholder if you also use `$default` as this will hide the placeholder.
+
+$key::
+`$key` is applicable if the `edit-group` has the "shape" of a dictionary; you use it when the pillar data is supposed to be a dictionary.
+The `$key` attribute then determines the key of an entry in the dictionary.
+Example:
++
+
+----
+user_passwords:
+  $type: edit-group
+  $minItems: 1
+  $prototype:
+    $key:
+        $type: text
+    $type: text
+  $default:
+    alice: secret-password
+    bob: you-shall-not-pass
+----
++
+
+Pillar:
++
+
+----
+user_passwords:
+  alice:
+    secret-password
+  bob:
+    you-shall-not-pass
+----
+
+$minItems and $maxItems::
+In an ``edit-group``, `$minItems` and `$maxItems` allow you to specify the lowest and highest number the group can occur.
+
+$itemName::
+In an ``edit-group``, `$itemName` allows you to define a template for the name to be used for the members of the group.
+
+$prototype::
+In an ``edit-group``, `$prototype` is mandatory and allows to define default (or pre-filled) values for newly added members in the group.
+
+$scope::
+`$scope` allows you to specify a hierarchy level at which a value may be edited.
+Possible values are ``system``, `group`, and ``readonly``.
++
+
+The default `$scope: system` allows values to be edited at group and system levels.
+A value can be entered for each system but if no value is entered the system will fall back to the group default.
++
+
+If using ``$scope: group``, a value may only be edited for a group.
+On the system level you will be able to see the value, but not edit it.
++
+
+The `$scope: readonly` option makes a field read-only.
+It can be used to show a user data which should be known, but should not be editable.
+This option only makes sense in combination with the ``$default`` attribute.
+
+$visibleIf::
+`$visibleIf` allows you to show a field or group if a simple condition is met.
+A condition always looks similar to the following example:
++
+
+----
+some_group#another_group#my_checkbox == true
+----
++
+
+The left part of the above statement is the path to another value, and groups are separated by `$` signs.
+The middle section of the command should be either `==` for a value to be equal or `!=` for values that should be not equal.
+The last field in the statement can be any value which a field should have or not have.
++
+
+The field with this attribute associated with it will now be shown only when the condition is met.
+In this example the field will be shown only if `my_checkbox` is checked.
+The ability to use conditional statements is not limited to check boxes.
+It may also be used to check values of select-fields, text-fields, etc.
++
+
+A check box should be structured like the following example:
++
+
+----
+some_group:
+  $type: group
+
+  another_group:
+    $type: group
+
+      my_checkbox:
+        $type: boolean
+----
++
+
+Relative paths can be specified using prefix dots. One dot means sibling, 2 dots mean parent, etc. This is mostly useful for ``edit-group``.
++
+
+----
+some_group:
+  $type: group
+
+  another_group:
+    $type: group
+
+    my_checkbox:
+      $type: boolean
+
+    my_text:
+      $visibleIf: .my_checkbox
+
+  yet_another_group:
+    $type: group
+
+    my_text2:
+      $visibleIf: ..another_group#my_checkbox
+
+----
++
+
+By using multiple groups with the attribute, you can allow a user to select an option and show a completely different form, dependent upon the selected value.
++
+
+// [NOTE]
+// .Hidden Values
+// ====
+Values from hidden fields may be merged into the pillar data and sent to the client.
+A formula must check the condition again and use the appropriate data.
+For example:
+// ====
++
+----
+show_option:
+  $type: checkbox
+some_text:
+  $visibleIf: show_option == true
+----
++
+----
+{% if pillar.show_option %}
+do_something:
+  with: {{ pillar.some_text }}
+{% endif %}
+----
+
+$values::
+`$values` can only be used together with ``$type``: select to specify the different options in the select-field.
+`$values` must be a list of possible values to select.
+For example:
++
+
+----
+select_something:
+  $type: select
+  $values: ["option1", "option2"]
+----
++
+
+Or alternatively:
++
+
+----
+select_something:
+  $type: select
+  $values:
+    - option1
+    - option2
+----
+
+
+
+[[salt.formulas.ex.edit-group]]
+=== Simple edit-group Example
+
+See the following *edit-group* example:
+
+----
+partitions:
+  $name: "Hard Disk Partitions"
+  $type: "edit-group"
+  $minItems: 1
+  $maxItems: 4
+  $itemName: "Partition ${name}"
+  $prototype:
+    name:
+      $default: "New partition"
+    mountpoint:
+      $default: "/var"
+    size:
+      $type: "number"
+      $name: "Size in GB"
+  $default:
+    - name: "Boot"
+      mountpoint: "/boot"
+    - name: "Root"
+      mountpoint: "/"
+      size: 5000
+----
+
+After clicking btn:[Add] for one time you will see <<fig-formula-custom-harddisk-partitions>> filled with the default values.
+The formula itself is called [path]``hd-partitions`` and will appear as [guimenu]``Hd Partitions`` in the {webui}.
+
+.`edit-group` Example in the {webui}
+[[fig-formula-custom-harddisk-partitions]]
+image::formula-custom-harddisk-partitions.png[]
+
+To remove the definition of a partition click the minus symbol in the title line of an inner group.
+When form fields are properly filled confirm with clicking btn:[Save Formula] in the upper right corner of the formula.
+
+
+[[salt.formulas.ex.edit-group-nesting]]
+=== edit-group Example with Nesting
+
+See the following *edit-group* example:
+
+----
+users:
+  $name: "Users"
+  $type: edit-group
+  $minItems: 2
+  $maxItems: 5
+  $prototype:
+    name:
+      $default: "username"
+    password:
+      $type: password
+    groups:
+      $type: edit-group
+      $minItems: 1
+      $prototype:
+        group_name:
+          $type: text
+  $default:
+    - name: "root"
+      groups:
+        - group_name: "users"
+        - group_name: "admins"
+    - name: "admin"
+      groups:
+        - group_name: "users"
+----
+
+
+
+[[best.practice.salt.formulas.writing]]
+== Writing Salt Formulas
+
+Salt formulas are pre-written Salt states, which may be configured with pillar data.
+You can parametrize state files using Jinja.
+Jinja allows you to access pillar data by using the following syntax.
+This syntax works best when you are uncertain whether a pillar value exists as it will throw an error:
+
+----
+pillar.some.value
+----
+
+When you are sure a pillar exists you may also use the following syntax:
+
+----
+salt['pillar.get']('some:value', 'default value')
+----
+
+You may also replace the `pillar` value with `grains` (for example, ``grains.some.value``) allowing access to grains.
+
+Using data this way allows you to make a formula configurable.
+The following code snippet will install a package specified in the pillar ``package_name``:
+
+----
+install_a_package:
+  pkg.installed:
+    - name: {{ pillar.package_name }}
+----
+
+You may also use more complex constructs such as `if/else` and `for-loops` to provide greater functionality:
+
+----
+{% if pillar.installSomething %}
+something:
+  pkg.installed
+{% else %}
+anotherPackage:
+  pkg.installed
+{% endif %}
+----
+
+Another example:
+
+----
+{% for service in pillar.services %}
+start_{{ service }}:
+  service.running:
+    - name: {{ service }}
+{% endfor %}
+----
+
+Jinja also provides other helpful functions.
+For example, you can iterate over a dictionary:
+
+----
+{% for key, value in some_dictionary.items() %}
+do_something_with_{{ key }}: {{ value }}
+{% endfor %}
+----
+
+You may want to have Salt manage your files (for example, configuration files for a program), and you can change these with pillar data.
+For example, the following snippet shows how you can manage a file using Salt:
+
+----
+/etc/my_program/my_program.conf:
+  file.managed:
+    - source: salt://my_state/files/my_program.conf
+    - template: jinja
+----
+
+
+Salt will copy the file [path]``salt-file_roots/my_state/files/my_program.conf`` on the salt master to [path]``/etc/my_program/my_program.conf`` on the client and template it with Jinja.
+This allows you to use Jinja in the file, exactly like shown above for states:
+
+----
+some_config_option = {{ pillar.config_option_a }}
+----
+
+
+
+[[best.practice.salt.formulas.data]]
+== Separating Data
+
+It is often a good idea to separate data from a state to increase its flexibility and add re-usability value.
+This is often done by writing values into a separate file named [path]``map.jinja``.
+This file should be placed within the same directory as your state files.
+
+The following example will set `data` to a dictionary with different values, depending on which system the state runs on.
+It will also merge data with the pillar using the `some.pillar.data` value so you can access `some.pillar.data.value` by just using ``data.value``.
+
+You can also choose to override defined values from pillars (for example, by overriding `some.pillar.data.package` in the example).
+
+----
+{% set data = salt['grains.filter_by']({
+    'Suse': {
+        'package': 'packageA',
+        'service': 'serviceA'
+    },
+    'RedHat': {
+        'package': 'package_a',
+        'service': 'service_a'
+    }
+}, merge=salt['pillar.get']('some:pillar:data')) %}
+----
+
+After creating a map file like the above example, you can maintain compatibility with multiple system types while accessing "deep" pillar data in a simpler way.
+Now you can import and use `data` in any file.
+For example:
+
+----
+{% from "some_folder/map.jinja" import data with context %}
+
+install_package_a:
+  pkg.installed:
+    - name: {{ data.package }}
+----
+
+You can also define multiple variables by copying the `{% set ...%}` statement with different values and then merge it with other pillars.
+For example:
+
+----
+{% set server = salt['grains.filter_by']({
+    'Suse': {
+        'package': 'my-server-pkg'
+    }
+}, merge=salt['pillar.get']('myFormula:server')) %}
+{% set client = salt['grains.filter_by']({
+    'Suse': {
+        'package': 'my-client-pkg'
+    }
+}, merge=salt['pillar.get']('myFormula:client')) %}
+----
+
+To import multiple variables, separate them with a comma.
+For Example:
+
+----
+{% from "map.jinja" import server, client with context %}
+----
+
+Formulas utilized with {productname} should follow formula conventions listed in the official documentation:
+
+* https://docs.saltstack.com/en/latest/topics/development/conventions/formulas.html
+
+
+
+[[best.practice.salt.formulas.pillardata]]
+== {productname} Generated Pillar Data
+
+When pillar data is generated (for example, after applying the highstate) the following external pillar script generates pillar data for packages, group ids, etc. and includes all pillar data for a system:
+
+----
+/usr/share/susemanager/modules/pillar/suma_minion.py
+----
+
+The process is executed as follows:
+
+. The `suma_minion.py` script starts and finds all formulas for a system (by checking the `group_formulas.json` and `server_formulas.json` files).
+. `suma_minion.py` loads the values for each formula (groups and from the system) and merges them with the highstate (default: if no values are found, a group overrides a system if $scope: group etc.).
+. `suma_minion.py` also includes a list of formulas applied to the system in a pillar named formulas.
+This structure makes it possible to include states.
+The top file (in this case specifically generated by the `mgr_master_tops.py` script) includes a state called formulas for each system.
+This includes the `formulas.sls` file located in:
++
+----
+/usr/share/susemanager/formulas/states/
+----
++
+Or:
++
+----
+/usr/share/salt-formulas/states/
+----
++
+The content looks similar to the following:
++
+----
+include: {{ pillar["formulas"] }}
+----
++
+This pillar includes all formulas, that are specified in pillar data generated from the external pillar script.
+
+
+
+[[best.practice.salt.formulas.req]]
+== Formula Requirements
+
+Formulas should be designed/created directly after a {productname} installation, but if you encounter any issues check the following:
+
+* The external pillar script (``suma_minion.py``) must include formula data.
+* Data is saved to [path]``/srv/susemanager/formula_data`` and the [path]``pillar`` and [path]``group_pillar`` sub-directories.
+These should be automatically generated by the server.
+* Formulas must be included for every client listed in the top file.
+Currently this process is initiated by the [path]``mgr_master_tops.py`` script which includes the `formulas.sls` file located in:
++
+----
+/usr/share/susemanager/formulas/states/
+----
++
+Or:
++
+----
+/usr/share/salt-formulas/states/
+----
++
+
+This directory must be a salt file root.
+File roots are configured on the salt-master ({productname}) located in:
++
+
+----
+/etc/salt/master.d/susemanager.conf
+----
+
+
+
+[[best.practice.salt.formulas.using]]
+== Using Salt Formulas with {productname}
+
+The following procedure provides an overview on using Salt Formulas with {productname}.
+
+
+. Official formulas may be installed as RPMs.
+Place the custom states within [path]``/srv/salt/your-formula-name/`` and the metadata ([path]``form.yml`` and [path]``metadata.yml``) in [path]``/srv/formula_metadata/your-formula-name/``.
+After installing your formulas they will appear in menu:Salt[Formula Catalog].
+. To begin using a formula, apply it to a group or system.
+Apply a formula to a group or system by selecting the menu:System Details[Formulas] tab of a [guimenu]``System Details`` page or [guimenu]``System Group``. From the menu:System Details[Formulas] page you can select any formulas you wish to apply to a group or system.
+Click the btn:[Save] button to save your changes to the database.
+. After applying one or more formulas to a group or system, additional tabs will become available from the top menu, one for each formula selected.
+From these tabs you may configure your formulas.
+. When you have finished customizing your formula values you will need to apply the highstate for them to take effect.
+Applying the highstate will execute the state associated with the formula and configure targeted systems.
+You can use the btn:[Apply Highstate] button from any formulas page of a group.
+. When a change to any of your values is required or you need to re-apply the formula state because of a failure or bug, change values located on your formula pages and re-apply the highstate.
+Salt will ensure that only modified values are adjusted and restart or reinstall services only when necessary.
+
+
+For more information about Salt formulas, see https://docs.saltstack.com/en/latest/topics/development/conventions/formulas.html
+
+For more information about using Salt formulas in a {smr} environment, see xref:retail:retail-formulas-intro.adoc[].
+
+
+
+
+[[bp.saltforms.susemgr.locale]]
+=== Locale
+
+The locale formula allows setting [guimenu]``Timezone` and [guimenu]``Keyboard and Language`.
+
+
+
+[[bp.saltforms.susemgr.dns]]
+=== Domain Name System (Bind)
+
+With the bind formula you set up and configure a Domain Name System (DNS) server.
+For technical information about the bind formula and low-level pillar data, see the [path]``README.rst`` file on the {productname} server: [path]``/usr/share/salt-formulas/metadata/bind/README.rst``.
+
+DNS is needed to resolve the domain names and host names into IP addresses.
+For more information about DNS, see the SLES Administration Guide, Services, The Domain Name System.
+
+.Bind Formula
+[[fig-formula-bind-01]]
+image::formula-bind-01.png[]
+
+In the [guimenu]``Config`` group you can set arbitrary options such as ``directory`` where are the zone data files (usually [path]``/var/lib/named/``) or  ``forwarders``.
+Click btn:[Add Item] to provide more Key/Value fields for configuration.
+
+Check ``Include Forwarders`` if you want to rely on an external DNS server if your DNS is down (or is otherwise not able to resolve an address).
+
+
+
+At least, you will configure one zone.  In ``Configured Zones`` define
+your zone; for example, `example.com`.  Then in ``Available Zones``
+configure this zone: as ``Name`` enter your zone (in this case
+`example.com`) and the ``File`` to which this configuration should be
+written (`example.com.txt`).  Enter the mandatory ``SOA`` record (start
+of authority), and the A, NS, and CNAME ``Records`` you need.
+
+On the other hand, if no `records` entry exists, the zone file is not generated by this state rather than taken from `salt://zones`.  For how to overwrite
+this URL, see [path]``pillar.example``.
+
+
+.bind-02-zones
+[[fig-formula-bind-02]]
+image::formula-bind-02-zones.png[]
+
+.bind-03-records
+[[fig-formula-bind-03]]
+image::formula-bind-03-records.png[]
+
+.bind-03-records2
+[[fig-formula-bind-03-2]]
+image::formula-bind-03-records2.png[]
+
+In ``Generate Reverse``, and define reverse mapping and for which zones:
+
+.bind-04-reverse
+[[fig-formula-bind-04]]
+image::formula-bind-04-reverse.png[]
+
+When saved, data is written to [path]``/srv/susemanager/formula_data/pillar/<salt-client.example.com>_bind.json``.
+
+
+If you apply the highstate (menu:System Details[States > Highstate]), it first ensures that [package]``bind`` and all required packages will get installed.
+Then it will start the DNS service (``named``).
+
+
+
+[[bp.saltforms.susemgr.dhcp]]
+=== Dhcpd
+
+With the dhcpd formula you set up and configure a DHCP server (Dynamic Host Configuration Protocol).
+For technical information about the dhcpd formula and low-level pillar data, see the Pillar example file
+[path]``/usr/share/susemanager/formulas/metadata/dhcpd/pillar.example``.
+
+DHCP is needed to define network settings centrally (on a server) and let clients retrieve and use this information for local host configuration.
+For more information about DHCP, see the SLES Administration Guide, Services, DHCP.
+
+.dhcpd formula
+[[fig-formula-dhcpd-01]]
+image::formula-dhcpd-01.png[]
+
+Domain Name.
+
+``Domain Name Servers``.  One or more Domain Name Service (DNS) servers.
+
+On which interface(s) the DHCP server should listen (``Listen interfaces``).
+Set option for this interface:
+Authoritative:
+Max Lease Time:
+Default Lease Time:
+
+Next is at least one network in the ``Network configuration (subnet)`` group (with IP address, netmask, etc.).  You define every network with ``Dynamic IP range``, ``Routers``, and ``Hosts with static IP addresses (with defaults from subnet)`` (optionally).
+
+And finally ``Hosts with static IP addresses (with global defaults)``.
+
+If you apply the highstate (menu:System Details[States > Highstate]), it first ensures that [package]``dhcp-server`` and all required packages will get installed.
+Then it will start the DHCP service (``dhcpd``).
+
+
+
+[[bp.saltforms.susemgr.tftp]]
+=== Tftpd
+
+With the tftpd formula you set up and configure a TFTP server (Trivial File Transfer Protocol).
+A TFTP server is a component that provides infrastructure for booting with PXE.
+
+////
+For technical information about the dhcpd formula and low-level pillar data, see the Pillar example file
+[path]``/usr/share/susemanager/formulas/metadata/dhcpd/pillar.example``.
+////
+
+For more information about setting up TFTP, see the SLES Deployment Guide, Preparing Network Boot Environment, Setting Up a TFTP Server.
+// https://www.suse.com/documentation/sles-15/singlehtml/book_sle_deployment/book_sle_deployment.html#sec.deployment.tftp_server
+
+
+.tftpd formula
+[[fig-formula-tftpd-01]]
+image::formula-tftpd-01.png[]
+
+For setting up a TFTP server, specify the ``Internal Network Address``, ``TFTP base directory`` (default: [path]``/srv/tftpboot``), and ``run TFTP under user`` (default: [systemitem]``sftp``).
+
+If you apply the highstate (menu:System Details[States > Highstate]), it first ensures that [package]``atftp`` and all required packages will get installed.
+Then it will start TFTP (``atftpd``).
+
+
+
+[[bp.saltforms.susemgr.vsftp]]
+=== Vsftpd
+
+With the vsftpd formula you set up and configure Vsftpd.  Vsftpd is an FTP server or daemon, written with security in mind.  "vs" in its name stands for "Very Secure".
+
+
+
+.vsftpd formula
+[[fig-formula-vsftpd-01]]
+image::formula-vsftpd-01.png[]
+
+For configuring a VSFTP server, specify the settings and options in the Vsftpd formula.
+There are settings such as
+``FTP server directory``,
+``Internal Network Address``
+``Enable ssl``, etc.
+
+
+If you apply the highstate (menu:System Details[States > Highstate]), it first ensures that [package]``vsftpd`` and all required packages will get installed.
+Then it will start the VSFTP service (``vsftpd``).
+
+
+For more information about setting up and tuning Vsftpd, see the documentation coming with the [package]``vsftpd`` package ([path]``/usr/share/doc/packages/vsftpd/`` when the package is installed).

@@ -1,0 +1,188 @@
+[[kubernetes]]
+= Kubernetes
+
+
+
+[[at.k8s.integration.requires]]
+== Prerequisites
+
+The prerequisites listed below should be met before proceeding.
+
+* At least one _Kubernetes_ or _SUSE CaaS Platform _ cluster available on your network
+* {productname} configured for container management
++
+
+[NOTE]
+====
+Required channels are present, a registered container build host available, etc.
+====
++
+
+* [package]#virtual-host-gatherer-Kubernetes# package installed on your {productname} server
+
+
+
+[[at.requirements]]
+== Requirements
+
+
+* Kubernetes version 1.5.0 or higher.
+Alternatively use SUSE CaaS Platform _(SUSE CaaS Platform includes Kubernetes 1.5.0 by default)_
+* Docker version 1.12 or higher on the container build host
+
+[NOTE]
+====
+To enable all Kubernetes related features within the {webui}, the [package]#virtual-host-gatherer-Kubernetes# package must be installed.
+====
+
+
+
+[[at.registering.kubernetes.as.a.virtual.host.manager]]
+== Register Kubernetes as a Virtual Host Manager
+
+
+_Kubernetes_ clusters are registered with SUSE Manager as ``virtual host managers``.
+Registration and authorization begins with importing a `kubeconfig` file using Kubernetes official command line tool ``kubectl``.
+
+.Procedure: Registering a Kubernetes Cluster with {productname}
+. In the {productname} {webui}, navigate to menu:Systems[Virtual Host Managers].
+. In the [guimenu]``Create`` menu, select [guimenu]``Kubernetes Cluster``.
+. Enter a label for the new virtual host manager.
+. Select the `kubeconfig` file that contains the required data for the Kubernetes cluster.
+. Select the correct _context_ for the cluster, as specified in the kubeconfig file.
+. Click btn:[Create].
+
+
+
+[[at.view.the.list.of.nodes.in.a.cluster]]
+== View the List of Nodes in a Cluster
+
+. Select menu:Systems[Virtual Host Managers] from the navigation menu.
+. Select the Kubernetes cluster to view it.
+. Node data is not refreshed during registration.
+To refresh node data, click btn:[Schedule refresh data].
+. Refresh the browser.
+If the node data is not available wait a few moments, and try again.
+
+
+
+[[at.obtain.runtime.data.about.images]]
+== Obtain Runtime Data about Images
+
+
+See the following steps to find runtime data for images.
+
+. In the {productname} {webui}, navigate to menu:Images[Image List].
+. In the image list table, the runtime columns are labeled ``Revision``, ``Runtime``, and ``Instances``.
+In these columns find the following information:
+
+* ``Revision``: An artificial sequence number that increments on every rebuild for manager-built images or on every re-import for externally built images.
+* ``Runtime``: Overall status of the running instances of the image throughout the registered clusters.
+The status can be one of the following:
+** _All instances are consistent with SUSE Manager_: All the running instances are running the same build of the image as tracked by {productname}.
+** _Outdated instances found_: Some of the instances are running an older build of the image.
+A redeploy of the image into the pod may be required.
+** _No information_: The checksum of the instance image does not match the image data contained in {productname}.
+A redeploy of the image into the pod may be required.
+* ``Instances``: Number of instances running this image across all the clusters registered in {productname}.
+A breakdown of numbers can be seen by clicking the pop-up icon next to the number.
+
+
+
+[[at.build.an.image.for.deployment.in.kubernetes]]
+== Build an image for deployment in Kubernetes
+
+
+The following steps will help you build an image for deployment in Kubernetes.
+
+. Under menu:Images[Stores], create an image store.
+. In menu:Images[Profiles], create an image profile (with a dockerfile that is suitable to deploy to Kubernetes).
+. Under menu:Images[Build], build an image with the new profile and wait for the build to finish.
+. Deploy the image into one of the registered Kubernetes clusters using ``kubectl``.
+
+In the `Runtime` and `Instances` columns in the respective image row you can now see the updated data.
+
+
+
+[[at.import.a.previously.deployed.image.in.kubernetes]]
+== Import a Previously Deployed Image in Kubernetes
+
+
+The following steps will guide you through importing a previously deployed image in Kubernetes.
+
+. Select an image that has already been deployed to any of your registered Kubernetes clusters.
+. Add the registry owning the image to SUSE Manager as an image store.
+. Navigate to menu:Images[Image List], click `Import` from the top-right corner, fill in the form fields and click ``Import``.
+
+In the `Runtime` and `Instances` columns in the respective image row you can now see the updated data.
+
+
+
+[[at.obtain.additional.runtime.data]]
+== Obtain Additional Runtime Data
+
+
+The following steps will help you find additional runtime data.
+
+. Navigate to menu:Images[Image List], locate the row that contains the running instance, and click btn:[Details] on the right end.
+Under the `Overview` tab, notice the data in `Runtime` and `Instances` fields under the `Image Info` section.
+. Select the `Runtime` tab.
+. In the `Runtime` tab is a breakdown of the Kubernetes pods running this image in all the registered clusters including the following data:
++
+
+** Pod name
+** Namespace which the pod resides in
+** The runtime status of the container in the specific pod.
+For more about status icons, see the next section.
+
+
+
+[[at.rebuild.a.previously.deployed.image.in.kubernetes]]
+== Rebuild a Previously Deployed Image in Kubernetes
+
+
+These steps will guide you through rebuilding an image that has been deployed to a Kubernetes cluster.
+
+. Go to menu:Images[Image List].
+Click the `Details` button on the right end of a row that has running instances.
+The image must be manager-built.
+. Click the `Rebuild` button located under the `Build Status` section and wait for the build to finish.
+. Notice the change in the `Runtime` icon and title, reflecting the fact that now the instances are running a previous build of the image.
+
+
+[[at.role.based.access.control.permissions.and.certificate.data]]
+== Role Based Access Control Permissions and Certificate Data
+
+
+[IMPORTANT]
+====
+Currently, only kubeconfig files containing all embedded certificate data can be used with {productname}.
+====
+
+The API calls from {productname} are:
+
+* ``GET /api/v1/pods``
+* ``GET /api/v1/nodes``
+
+According to this list, the minimum recommended permissions for {productname} should be as follows:
+
+* A ClusterRole to list all the nodes:
++
+
+----
+resources: ["nodes"]
+verbs: ["list"]
+----
+
+* A ClusterRole to list pods in all namespaces (role binding must not restrict the namespace):
++
+
+----
+resources: ["pods"]
+verbs: ["list"]
+----
+
+
+Due to a a 403 response from ``/pods``, the entire cluster will be ignored by {productname}.
+
+For more information on working with RBAC Authorization, see https://kubernetes.io/docs/admin/authorization/rbac/.

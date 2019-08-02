@@ -1,0 +1,196 @@
+[[proxy-migration]]
+= Proxy Migration
+
+// also see client-migration.adoc
+Upgrading from {productname} Proxy 3.2 with the latest service pack (SP) to version 4 can be automated, but requires some preparation steps.
+
+////
+To upgrade the SP version on SLE{nbsp}12 (for example, upgrading from SLE{nbsp}12 or any SLE{nbsp}12{nbsp}SPx to SLE{nbsp}12{nbsp}SP4) can be fully automated and requires no additional preparation.
+////
+
+== Preliminary Considerations
+
+The recommended order for migrations is to first migrate the {productname} server and then the proxies.
+
+.Using {productname} Proxy 3.2 with {productname} 4
+[NOTE]
+====
+{productname} Proxy 3.2 is compatible with {productname} Server 4.
+After the server has been migrated to version 4, proxies can be automatically upgraded from the {productname} server using YaST autoinstallation.
+====
+
+Migrating {productname} Proxy 3.2 only works for proxies that have been registered as traditional clients.
+Proxies that are Salt clients cannot be migrated to the new version this way.
+
+
+
+[[proxy-migration-inplace]]
+== Upgrading {productname} Proxy In-place
+
+.Procedure: Preparing to Upgrade
+. Create an autoinstallation distribution based on SLE 15 SP1.
+Use the SLE Installer media.
+This is required because {productname} Proxy 4 is a product of the {sle} 15.1 product family.
+As the [guimenu]``Base Channel`` select [literal]``SLE-Product-SUSE-Manager-Proxy-4.0-Pool for x86_64`` and as the [guimenu]``Installer Generation`` select [literal]``SUSE Linux Enterprise 15``.
++
+image::autoinst_dist_proxy4.png[scaledwidth=80%]
++
+For information on creating an autoinstallation distribution, see xref:#ref.webui.systems.autoinst.distribution (menu:Main Menu[Systems > Autoinstallation > Distributions]).
+. Create an autoinstallation profile.
+xref:#proxy-migration-inplace-profile includes a template autoinstallation profile for your use.
+In this example, the label [literal]``proxy4`` is used for both the autoinstallation distribution and for the autoinstallation profile.
+Replace the label [literal]``proxy4`` with the one you use for your autoinstallation profile.
+
+
+
+[[proxy-migration-inplace-profile]]
+=== Autoinstallation Profile
+
+Use this autoinstallation profile as an example.
+
+----
+<?xml version="1.0"?>
+<!DOCTYPE profile>
+<profile xmlns="http://www.suse.com/1.0/yast2ns" xmlns:config="http://www.suse.com/1.0/configns">
+  <add-on>
+    <add_on_products config:type="list">
+      <listentry>
+        <ask_on_error config:type="boolean">true</ask_on_error>
+        <media_url>http://$redhat_management_server/ks/dist/child/sle-product-suse-manager-proxy-4.0-updates-x86_64/proxy4</media_url>
+        <name>sle-product-suse-manager-proxy-4.0-updates-x86_64</name>
+        <product>SUSE Manager Proxy 4.0</product>
+        <product_dir>/</product_dir>
+      </listentry>
+      <listentry>
+        <ask_on_error config:type="boolean">true</ask_on_error>
+        <media_url>http://$redhat_management_server/ks/dist/child/sle-module-basesystem15-sp1-pool-x86_64-proxy-4.0/proxy4</media_url>
+        <name>sle-module-basesystem15-sp1-pool-x86_64-proxy-4.0</name>
+        <product>SUSE Manager Proxy 4.0</product>
+        <product_dir>/</product_dir>
+      </listentry>
+      <listentry>
+        <ask_on_error config:type="boolean">true</ask_on_error>
+        <media_url>http://$redhat_management_server/ks/dist/child/sle-module-basesystem15-sp1-updates-x86_64-proxy-4.0/proxy4</media_url>
+        <name>sle-module-basesystem15-sp1-updates-x86_64-proxy-4.0</name>
+        <product>SUSE Manager Proxy 4.0</product>
+        <product_dir>/</product_dir>
+      </listentry>
+      <listentry>
+        <ask_on_error config:type="boolean">true</ask_on_error>
+        <media_url>http://$redhat_management_server/ks/dist/child/sle-module-server-applications15-sp1-pool-x86_64-proxy-4.0/proxy4</media_url>
+        <name>sle-module-server-applications15-sp1-pool-x86_64-proxy-4.0</name>
+        <product>SUSE Manager Proxy 4.0</product>
+        <product_dir>/</product_dir>
+      </listentry>
+      <listentry>
+        <ask_on_error config:type="boolean">true</ask_on_error>
+        <media_url>http://$redhat_management_server/ks/dist/child/sle-module-server-applications15-sp1-updates-x86_64-proxy-4.0/proxy4</media_url>
+        <name>sle-module-server-applications15-sp1-updates-x86_64-proxy-4.0</name>
+        <product>SUSE Manager Proxy 4.0</product>
+        <product_dir>/</product_dir>
+      </listentry>
+      <listentry>
+        <ask_on_error config:type="boolean">true</ask_on_error>
+        <media_url>http://$redhat_management_server/ks/dist/child/sle-module-suse-manager-proxy-4.0-pool-x86_64/proxy4</media_url>
+        <name>sle-module-suse-manager-proxy-4.0-pool-x86_64</name>
+        <product>SUSE Manager Proxy 4.0</product>
+        <product_dir>/</product_dir>
+      </listentry>
+      <listentry>
+        <ask_on_error config:type="boolean">true</ask_on_error>
+        <media_url>http://$redhat_management_server/ks/dist/child/sle-module-suse-manager-proxy-4.0-updates-x86_64/proxy4</media_url>
+        <name>sle-module-suse-manager-proxy-4.0-updates-x86_64</name>
+        <product>SUSE Manager Proxy 4.0</product>
+        <product_dir>/</product_dir>
+      </listentry>
+     </add_on_products>
+  </add-on>
+  <general>
+      $SNIPPET('spacewalk/sles_no_signature_checks')
+    <mode><confirm config:type="boolean">false</confirm></mode>
+  </general>
+  <upgrade>
+    <only_installed_packages config:type="boolean">false</only_installed_packages>
+    <stop_on_solver_conflict config:type="boolean">true</stop_on_solver_conflict>
+  </upgrade>
+  <backup>
+    <sysconfig config:type="boolean">true</sysconfig>
+    <modified config:type="boolean">true</modified>
+    <remove_old config:type="boolean">false</remove_old>
+  </backup>
+  <networking>
+    <keep_install_network config:type="boolean">true</keep_install_network>
+    <start_immediately config:type="boolean">true</start_immediately>
+  </networking>
+  <software>
+    <image/>
+    <install_recommended config:type="boolean">true</install_recommended>
+    <instsource/>
+    <patterns config:type="list">
+      <pattern>suma_proxy</pattern>
+    </patterns>
+    <products config:type="list">
+      <listentry>SUSE-Manager-Proxy</listentry>
+    </products>
+  </software>
+  <scripts>
+    <chroot-scripts config:type="list">
+      <script>
+        <filename>cleanup.sh</filename>
+        <chrooted config:type="boolean">true</chrooted>
+        <interpreter>shell</interpreter>
+        <source>
+        <![CDATA[
+#!/bin/sh
+         sysconf_addword /etc/sysconfig/apache2 APACHE_MODULES wsgi
+         if [ -e /etc/rhn/rhn.conf.rpmsave ]; then
+             cp /etc/rhn/rhn.conf.rpmsave /etc/rhn/rhn.conf
+         fi
+         zypper rr --all
+         ]]>
+        </source>
+      </script>
+    </chroot-scripts>
+  </scripts>
+</profile>
+----
+
+Before proceeding make sure all the channels referenced in the
+autoinstallation profile are available and fully synchronized.
+
+
+
+=== Running the In-place Upgrade
+
+.Procedure: Running the In-place Upgrade
+. In the {productname} {webui}, upload the edited autoinstallation profile to your {productname} server (menu:Main Menu[Systems > Autoinstallation > Profiles]).
+. In the [guimenu]``Kernel Options`` field, enter this value:
++
+----
+autoupgrade=1 Y2DEBUG=1
+----
++
+The debug setting is not required but can help with investigating future problems you might encounter.
+The [literal]``autoupgrade`` parameter, however, is mandatory.
+. Select the proxy from the system list in {productname}, click the [guimenu]``Provisioning`` tab, and select the profile you created earlier.
+. Click btn:[Schedule Autoinstallation and Finish].
+The system will download the needed files, change the bootloader entries, reboot, and start the upgrade.
+
+
+
+=== Cleaning Up After the In-place Upgrade
+
+After the proxy has completed the automatic upgrade process, it still will have the old channels from {productname} assigned.
+
+[WARNING]
+====
+If the server reports that there are updates available for the proxy, do not apply them.
+====
+
+Select the proxy from the system list and click menu:System Details Page[Software > Software Channels].
+Clear the old channels and assign the new ones, which have been used for the upgrade:
+As the [guimenu]``Base Channel``, select `SLE-Product-SUSE-Manager-Proxy-4.0-Pool for x86_64` and as [guimenu]``Child Channels`` all the recommended channels:
+
+image::proxy_channels.png[scaledwidth=80%]
+
+All the clients connected with the previous {productname} Proxy can access the {productname} Server again and the proxy itself can be managed by the server as before.

@@ -1,0 +1,247 @@
+[[clients-ubuntu]]
+= Ubuntu Clients
+
+
+Support for {ubuntu} Clients was added in {susemgr} 3.2.
+Currently, Salt clients running {ubuntu} 16.04 LTS and 18.04 LTS are supported.
+
+[NOTE]
+====
+{ubuntu} clients must be Salt clients.
+Traditional clients are not supported.
+====
+
+Bootstrapping is supported for starting {ubuntu} clients and performing initial state runs such as setting repositories and performing profile updates.
+However, the root user on {ubuntu} is disabled by default, so in order to use bootstrapping, you will require an existing user with [command]``sudo`` privileges for Python.
+
+Other supported features:
+
+* Synchronizing [systemitem]``.deb`` channels
+* Assigning [systemitem]``.deb`` channels to clients
+* GPG signing [systemitem]``.deb`` repositories
+* Information displayed in System details pages
+* Package install, update, and remove
+* Package install using [systemitem]``Package States``
+* Configuration and state channels
+
+Some actions are not yet supported:
+
+* Patch and errata support
+* Bare metal installations, PXE booting, and virtual host provisioning
+* Live patching
+* CVE Audit
+* If you use are using a repository from storage media (`server.susemanager.fromdir = ...` option in rhn.conf), Ubuntu Client Tools will not work.
+// Reason: RMT and SMT cannot mirror Debian repositories (yet) and so cannot create it in that directory the correct files.
+// We are waiting for SMT to release the feature/fix to mirror Debian repositories. When this has been done, this comment and the limitation above can be removed.
+
+== Prepare to Register {ubuntu} Clients
+
+Some preparation is required on before you can register {ubuntu} clients to {productname} Server.
+
+// ifndef works for displaying content when building uyuni
+// ifdef does not show the content for uyuni
+// ifeval works for displaying content
+
+ifeval::[{uyuni-content} == true]
+
+.**Procedure: Install spacewalk-utils and Add the Ubuntu Channels**
+
+. Install spacewalk-utils package
++
+----
+sudo zypper in spacewalk-utils
+----
+
+. As root add the Ubuntu channels (for example the channels for Ubuntu 18.04)
++
+
+----
+sudo spacewalk-common-channels ubuntu-1804-pool-amd64-uyuni ubuntu-1804-amd64-main-uyuni \
+ubuntu-1804-amd64-main-update-uyuni ubuntu-1804-amd64-main-security-uyuni \
+ubuntu-1804-amd64-universe-uyuni ubuntu-1804-amd64-uyuni-client
+----
+
+. Synchronize the new custom channels. You can check the progress of your synchronization from the command line with this command:
++
+----
+tail -f /var/log/rhn/reposync.log /var/log/rhn/reposync/*
+----
+. To use bootstrap with {ubuntu}, you will need to create a bootstrap repository.
+You can do this from the command line with [command]``mgr-create-bootstrap-repo``:
++
+----
+mgr-create-bootstrap-repo --with-custom-channels
+----
+
+For more information on creating custom repositories, see xref:administration:channel-management.adoc[].
+
+endif::[]
+
+ifeval::[{suma-content} == true]
+
+
+
+Before you begin, ensure you have the {ubuntu} product enabled, and have synchronized the {ubuntu} channels:
+
+For {ubuntu} 18.04:
+
+* Product: {ubuntu} Client 18.04
+* Mandatory channels: [systemitem]``ubuntu-18.04-pool-amd64``
+
+For {ubuntu} 16.04:
+
+* Product: {ubuntu} Client 16.04
+* Mandatory channels: [systemitem]``ubuntu-16.04-pool-amd64``
+
+[NOTE]
+====
+The mandatory channels do not contain {ubuntu} upstream packages.
+The repositories and channels for synchronizing upstream content must be configured manually.
+====
+
+
+
+// SUSE Manager specific instructions
+// Commented out for reviewing purposes ifeval::[{suma-webui-content} == true]
+
+.Procedure: Preparing to Register {ubuntu} Clients with Custom Channels
+
+. Ensure that you have the appropriate software channels available on your system.
+In the {productname} {webui}, navigate to menu:Software[Channel List > All].
+You should see a base channel and a child channel for your architecture, for example:
++
+----
+ ubuntu-18.04-pool for amd64
+ |
+ +- Ubuntu-18.04-SUSE-Manager-Tools for amd64
+----
+. Create custom repositories to mirror the {ubuntu} packages.
+For example:
++
+For `main`:
+
+* Repository Label: ubuntu-bionic-main
+* Repository URL: http://ubuntumirror.example.com/ubuntu/dists/bionic/main/binary-amd64/
+* Repository Type: deb
++
+For `main-updates`:
+
+* Repository Label: ubuntu-bionic-main-updates
+* Repository URL: http://ubuntumirror.example.com/ubuntu/dists/bionic-updates/main/binary-amd64/
+* Repository Type: deb
+
+. Create custom channels under the `pool` channel, mirroring the vendor channels.
++
+Ensure the custom channels you create have `AMD64 Debian` architecture.
++
+Create this structure:
++
+----
+ ubuntu-18.04-pool for amd64 (vendor channel)
+ |
+ +- Ubuntu-18.04-SUSE-Manager-Tools for amd64 (vendor channel)
+ |
+ +- ubuntu-18.04-amd64-main (custom channel)
+ |
+ +- ubuntu-18.04-amd64-main-updates (custom channel)
+----
+
+. Associate the custom channels with the appropriate custom repositories.
+. Synchronize the new custom channels.
+You can check the progress of your synchronization from the command line with this command:
++
+----
+tail -f /var/log/rhn/reposync.log /var/log/rhn/reposync/*
+----
+. To use bootstrap with {ubuntu}, you will need to create a bootstrap repository.
+You can do this from the command line with [command]``mgr-create-bootstrap-repo``:
++
+----
+mgr-create-bootstrap-repo --with-custom-channels
+----
+
+For more information on creating custom repositories, see xref:administration:channel-management.adoc[].
+endif::[]
+
+////
+// UPDATE August 2019: jcayouette: I do not think this commented section is relevant, can we remove it?
+
+// To be enabled once spacewalk-utils support status is clarified
+.Procedure: Preparing to Register {ubuntu} Clients with Spacewalk
+
+Before you begin, ensure you have installed the `spacewalk-common-channels` utility from the `spacewalk-utils` package.
+
+
+. Ensure that you have the appropriate software channels available on your system.
+In the {productname} {webui}, navigate to menu:Software[Channel List  > All].
+You should see a base channel and a child channel for your architecture, for example:
++
+----
+ ubuntu-18.04-pool for amd64
+ |
+ +- Ubuntu-18.04-SUSE-Manager-Tools for amd64
+----
+. Open the [path]``/etc/rhn/spacewalk-common-channels.ini`` file, and locate the sections that begin with [systemitem]``ubuntu`` and end with [systemitem]``main`` or [systemitem]``updates``.
+Change the `yumrepo_url` to an existing repository URL.
+Do not change the `ubuntu-$VERSION-pool-$ARCH` section.
++
+----
+[ubuntu-1804-pool-amd64]
+; do not change
+label    = ubuntu-18.04-pool-amd64
+checksum = sha256
+archs    = amd64-deb
+repo_type = deb
+name     = ubuntu-18.04-pool for amd64
+gpgkey_url =
+gpgkey_id =
+gpgkey_fingerprint =
+yumrepo_url = http://localhost/pub/repositories/empty-deb/
+
+[ubuntu-1804-amd64-main]
+label    = ubuntu-1804-amd64-main
+checksum = sha256
+archs    = amd64-deb
+repo_type = deb
+name     = Ubuntu 18.04 LTS AMD64 Main
+base_channels = ubuntu-18.04-pool-amd64
+; change URL
+yumrepo_url = http://mirror.example.com/ubuntu/dists/bionic/main/binary-amd64/
+
+[ubuntu-1804-amd64-updates]
+label    = ubuntu-1804-amd64-main-updates
+name     = Ubuntu 18.04 LTS AMD64 Updates
+archs    = amd64-deb
+repo_type = deb
+checksum = sha256
+base_channels = ubuntu-18.04-pool-amd64
+; change URL
+yumrepo_url = http://mirror.example.com/ubuntu/dists/bionic-updates/main/binary-amd64/
+----
++
+. Use the [command]``spacewalk-common-channels` command to create the required channels and repositories.
+Ensure you use the appropriate version number in this command, either [systemitem]``ubuntu-1604`` or [systeitem]``ubuntu-1804``:
++
+----
+spacewalk-common-channels -u <admin_user> -p <admin_pass> -a amd64-deb -v 'ubuntu-1804*'
+----
+////
+
+== Enable the {ubuntu} Root User
+
+The root user on {ubuntu} is disabled by default.
+You can enable it by editing the [filename]``sudoers`` file.
+
+.**Procedure: Granting Root User Access**
+
+. On the client, edit the [filename]``sudoers`` file:
++
+----
+sudo visudo
+----
++
+Grant [command]``sudo`` access to the user by adding this line to the [filename]``sudoers`` file. Replace [systemitem]``<user>`` with the name of the user that will be used to bootstrap the client in the {webui}:
++
+----
+<user>   ALL=NOPASSWD: /usr/bin/python, /usr/bin/python2, /usr/bin/python3
+----

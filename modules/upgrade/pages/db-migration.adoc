@@ -1,0 +1,244 @@
+[[db-migration]]
+= PostgreSQL Database Migration
+
+
+
+[[bp.chap.postgres.intro]]
+== Introduction to PostgreSQL Databases
+
+
+{productname}{nbsp}3 uses PostgreSQL{nbsp}9.4 by default.
+{sls}{nbsp}12{nbsp}SP3 uses PostgreSQL{nbsp}9.6 by default.
+
+When you installed {productname} Server 3.1 or earlier on {sls}{nbsp}12{nbsp}SP2 or earlier, it was based on a PostgreSQL{nbsp}9.4 database, which you can upgrade to PostgreSQL{nbsp}9.6.
+This chapter provides information on managing your PostgreSQL database, and provides instructions for upgrading your database to PostgreSQL{nbsp}9.6.
+{productname} 3.1 on {sls}{nbsp}12{nbsp}SP3 and {productname} 3.2 use PostgreSQL{nbsp}9.6 by default.  If you use one of those you can skip the following sections.
+
+PostgreSQL stores data at [path]``/var/lib/pgsql/data/``, and logs to [path]``/var/lib/pgsql/data/pg_xlog/``.
+
+
+
+[[bp.sect.postgresql.prepare.upgrade]]
+== Prepare to Upgrade PostgreSQL
+
+Before you begin upgrading you will need to check your existing system is ready for the upgrade, and prepare a database backup.
+
+.Procedure: Preparing to Upgrade PostgreSQL
+. Check the active PostgreSQL version:
++
+----
+suse-manager-example-srv:~ # psql --version
+psql (PostgreSQL) 9.x.y
+----
++
+If you are using PostgreSQL{nbsp}9.4, you can update to PostgreSQL{nbsp}9.6.
+. Check your system is fully updated:
++
+----
+suma-test-srv:~ # rpm -q smdba
+smdba-1.5.8-0.2.3.1.x86_64
+----
++
+PostgreSQL{nbsp}9.6 requires smdba version 1.5.8 or higher.
+. Perform a database backup before you begin.
+For more information on backing up, see xref:administration:backup-restore.adoc[].
+
+[WARNING]
+====
+Always create a database backup before performing a migration
+====
+
+
+
+[[bp.sect.postgresql.regular.upgrade]]
+== Upgrade PostgreSQL
+
+PostgreSQL upgrades can be performed in two ways: a regular upgrade, or a fast upgrade.
+A regular upgrade will create a complete copy of the database, so you will need double the existing database size of space available.
+Regular upgrades can take a considerable amount of time, depending on the size of the database and the speed of the storage system.
+Regular upgrades also require database downtime, your database will not be accessible while the upgrade is running.
+
+A fast upgrade only takes a few minutes, and uses no additional disk space.
+However, fast upgrades are more likely to fail, and if this occurs you will need to restore the database from backup.
+
+
+.Procedure: Performing a Regular PostgreSQL Upgrade
+. Perform a database backup before you begin.
+For more information on backing up, see xref:administration:backup-restore.adoc[].
+. Begin the upgrade:
++
+----
+/usr/lib/susemanager/bin/pg-migrate.sh
+----
++
+The [path]``pg-migrate.sh`` script performs these operations:
++
+* Stop spacewalk services
+* Shut down the running database
+* Check if PostgreSQL{nbsp}9.6 is installed and install it if not already present
+* Switch from PostgreSQL{nbsp}9.4 to PostgreSQL{nbsp}9.6 as the new default
+* Initiate the database migration
+* Create a PostgreSQL configuration file tuned for use by {productname}
+* Start the database and spacewalk services
++
+[NOTE]
+====
+If the upgrade fails, the migration script will attempt to restore the database to its original state.
+====
+. After the upgrade has successfully completed, you can safely delete the old database directory which will have been renamed to [path]``/var/lib/pgsql/data-pg94`` to reclaim lost disk space.
+
+
+.Procedure: Performing a Fast PostgreSQL Upgrade
+. Perform a database backup before you begin.
+For more information on backing up, see xref:administration:backup-restore.adoc[].
+. Begin the upgrade:
++
+----
+/usr/lib/susemanager/bin/pg-migrate.sh fast
+----
+
+////
+This seems overly long, and I'm not sure of the value. Plus we should also replace it with a fully en-US version. -LKB
+
+== Typical Migration Sample Session
+
+A slow migration should provide you with the following output:
+
+----
+d235:~ # /usr/lib/susemanager/bin/pg-migrate.sh
+15:58:00   Shut down spacewalk services...
+Shutting down spacewalk services...
+Done.
+15:58:03   Checking postgresql version...
+15:58:03   Installing postgresql 9.6...
+Dienst 'SUSE_Linux_Enterprise_Server_12_SP2_x86_64' wird aktualisiert.
+Dienst 'SUSE_Manager_Server_3.1_x86_64' wird aktualisiert.
+Repository-Daten werden geladen...
+Installierte Pakete werden gelesen...
+Paketabhängigkeiten werden aufgelöst...
+
+Die folgenden 3 NEUEN Pakete werden installiert:
+  postgresql96 postgresql96-contrib postgresql96-server
+
+3 neue Pakete zu installieren.
+Gesamtgröße des Downloads: 5,7 MiB. Bereits im Cache gespeichert: 0 B. Nach der Operation werden zusätzlich 25,3 MiB belegt.
+Fortfahren? [j/n/...? zeigt alle Optionen] (j): j
+Paket postgresql96-9.6.3-2.4.x86_64 abrufen (1/3),   1,3 MiB (  5,1 MiB entpackt)
+Abrufen: postgresql96-9.6.3-2.4.x86_64.rpm [fertig]
+Paket postgresql96-server-9.6.3-2.4.x86_64 abrufen (2/3),   3,7 MiB ( 17,9 MiB entpackt)
+Abrufen: postgresql96-server-9.6.3-2.4.x86_64.rpm [.fertig]
+Paket postgresql96-contrib-9.6.3-2.4.x86_64 abrufen (3/3), 648,9 KiB (  2,2 MiB entpackt)
+Abrufen: postgresql96-contrib-9.6.3-2.4.x86_64.rpm [fertig]
+Überprüfung auf Dateikonflikte läuft: [......fertig]
+(1/3) Installieren: postgresql96-9.6.3-2.4.x86_64 [............fertig]
+(2/3) Installieren: postgresql96-server-9.6.3-2.4.x86_64 [............fertig]
+(3/3) Installieren: postgresql96-contrib-9.6.3-2.4.x86_64 [............fertig]
+15:58:08   Ensure postgresql 9.6 is being used as default...
+15:58:09   Successfully switched to new postgresql version 9.6.
+15:58:09   Create new database directory...
+15:58:09   Initialize new postgresql 9.6 database...
+The files belonging to this database system will be owned by user "postgres".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "en_US.UTF-8".
+The default database encoding has accordingly been set to "UTF8".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory /var/lib/pgsql/data ... ok
+creating subdirectories ... ok
+selecting default max_connections ... 100
+selecting default shared_buffers ... 128MB
+selecting dynamic shared memory implementation ... posix
+creating configuration files ... ok
+running bootstrap script ... ok
+performing post-bootstrap initialization ... ok
+syncing data to disk ... ok
+
+WARNING: enabling "trust" authentication for local connections
+You can change this by editing pg_hba.conf or using the option -A, or
+--auth-local and --auth-host, the next time you run initdb.
+
+Success. You can now start the database server using:
+
+    pg_ctl -D /var/lib/pgsql/data -l logfile start
+
+15:58:12   Successfully initialized new postgresql 9.6 database.
+15:58:12   Upgrade database to new version postgresql 9.6...
+Performing Consistency Checks
+-----------------------------
+Checking cluster versions                                   ok
+Checking database user is the install user                  ok
+Checking database connection settings                       ok
+Checking for prepared transactions                          ok
+Checking for reg* system OID user data types                ok
+Checking for contrib/isn with bigint-passing mismatch       ok
+Checking for roles starting with 'pg_'                      ok
+Creating dump of global objects                             ok
+Creating dump of database schemas
+  postgres
+  susemanager
+  template1
+                                                            ok
+Checking for presence of required libraries                 ok
+Checking database user is the install user                  ok
+Checking for prepared transactions                          ok
+
+If pg_upgrade fails after this point, you must re-initdb the
+new cluster before continuing.
+
+Performing Upgrade
+------------------
+Analyzing all rows in the new cluster                       ok
+Freezing all rows on the new cluster                        ok
+Deleting files from new pg_clog                             ok
+Copying old pg_clog to new server                           ok
+Setting next transaction ID and epoch for new cluster       ok
+Deleting files from new pg_multixact/offsets                ok
+Copying old pg_multixact/offsets to new server              ok
+Deleting files from new pg_multixact/members                ok
+Copying old pg_multixact/members to new server              ok
+Setting next multixact ID and offset for new cluster        ok
+Resetting WAL archives                                      ok
+Setting frozenxid and minmxid counters in new cluster       ok
+Restoring global objects in the new cluster                 ok
+Restoring database schemas in the new cluster
+  postgres
+  susemanager
+  template1
+                                                            ok
+Copying user relation files
+  /var/lib/pgsql/data-pg94/base/12753/12710
+
+[...]
+
+  /var/lib/pgsql/data-pg94/base/1/12574
+                                                            ok
+Setting next OID for new cluster                            ok
+Sync data directory to disk                                 ok
+Creating script to analyze new cluster                      ok
+Creating script to delete old cluster                       ok
+
+Upgrade Complete
+----------------
+Optimizer statistics are not transferred by pg_upgrade so,
+once you start the new server, consider running:
+    ./analyze_new_cluster.sh
+
+Running this script will delete the old cluster's data files:
+    ./delete_old_cluster.sh
+15:58:51   Successfully upgraded database to postgresql 9.6.
+15:58:51   Tune new postgresql configuration...
+INFO: Database configuration has been changed.
+INFO: Wrote new general configuration. Backup as /var/lib/pgsql/data/postgresql.2017-07-26-15-58-51.conf
+INFO: Wrote new client auth configuration. Backup as /var/lib/pgsql/data/pg_hba.2017-07-26-15-58-51.conf
+INFO: Configuration has been changed, but your database is right now offline.
+Database is offline
+System check finished
+15:58:51   Successfully tuned new postgresql configuration.
+15:58:51   Starting spacewalk services...
+Starting spacewalk services...
+Done.
+----
+////
