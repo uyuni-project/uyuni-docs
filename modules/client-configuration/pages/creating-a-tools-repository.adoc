@@ -1,0 +1,75 @@
+[[client-cfg-tools-repository]]
+= Creating the {productname} Tools Repository
+
+
+
+
+//TODO This document is only relevant for SUSE Manager, we should probably add an <ifdef> for productname?
+
+In this section you will create a tools repository on the {productname} Server for providing client tools.
+The client tools repository contains packages for installing Salt on clients as well as required packages for registering traditional clients during the bootstrapping procedure.
+These packages will be installed from the newly generated repository during the registration process.
+In the following procedure you will create the {sle} tools repository.
+
+[IMPORTANT]
+.Creating a Tools Repository when an SCC Channel has not been Synced
+====
+Before following the procedure to create the tools repository make sure the {suse} vendor channel you will be using with your client has been completely synced.
+You can check this by running [command]``tail -f /var/log/rhn/reposync/``<CHANNEL_NAME>``.log`` as _root_.
+In the following example replace [replaceable]``version`` with the actual version string:
+
+----
+# tail -f /var/log/rhn/reposync/sles`version`-pool-x86_64.log
+----
+
+Once completed you should see the following output in your terminal:
+
+----
+2017/12/12 15:20:32 +02:00 Importing packages started.
+2017/12/12 15:22:02 +02:00 1.07 %
+...
+2017/12/12 15:34:25 +02:00 86.01 %
+2017/12/12 15:35:49 +02:00 Importing packages finished.
+2017/12/12 15:35:49 +02:00 Linking packages to channel.
+...
+2017/12/12 15:35:59 +02:00 Sync completed.
+----
+====
+
+.Procedure: Generating the Tools Repository for {sle}
+. Open a terminal on the server as root and enter the following command to list available bootstrap repositories:
++
+
+----
+mgr-create-bootstrap-repo -l SLE-`version`-x86_64
+----
+. Then invoke the same command using the listed repository as the product label to actually create the bootstrap repository:
++
+
+----
+mgr-create-bootstrap-repo -c SLE-`version`-x86_64
+----
+. {productname} will create and add the client tools to the newly created [path]``repositories`` directory located at [path]``/srv/www/htdocs/pub/repositories/``.
+
+This repository is suitable for both Server and Desktop of {sle}.
+
+[NOTE]
+.Support for {sle} 15 Products
+====
+If you have mirrored more than one {sle} 15 Product (for example, {slsa} and {slsa} for SAP Application), you can specify the one you are actually interested in. First check what is avaiable:
+
+----
+mgr-create-bootstrap-repo -c SLE-15-x86_64 --with-custom-channel
+Multiple options for parent channel found. Please use option
+--with-parent-channel <label> and choose one of:
+- sle-product-sles15-pool-x86_64
+- sle-product-sles_sap15-pool-x86_64
+- sle-product-sled15-pool-x86_64
+----
+
+Then specify it with [literal]``--with-parent-channel``:
+
+----
+mgr-create-bootstrap-repo -c SLE-15-x86_64 --with-parent-channel sle-product-sled15-pool-x86_64
+----
+====

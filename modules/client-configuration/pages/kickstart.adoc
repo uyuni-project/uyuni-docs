@@ -1,0 +1,126 @@
+[[client-cfg-reg-with-bootstrap-kickstart]]
+= Kickstart
+
+
+
+Using Kickstart, a system administrator can create a single file containing the answers to all the questions that would normally be asked during a typical installation of {rhel}.
+
+Kickstart files can be kept on a single server and read by individual computers during the installation.
+This method allows you to use one Kickstart file to install {rhel} on multiple machines.
+
+The [ref]_Red Hat Enterprise Linux System Administration Guide_ contains an in-depth description of Kickstart (https://access.redhat.com/documentation/en/red-hat-enterprise-linux/).
+
+
+
+[[s4-system-ks-intro-explain]]
+== Kickstart Explained
+
+When a machine is to receive a network-based {kickstart}, the following events must occur in this order:
+
+. After being connected to the network and turned on, the machine's PXE logic broadcasts its MAC address and requests to be discovered.
+. If no static IP address is used, the DHCP server recognizes the discovery request and offers network information needed for the new machine to boot. This information includes an IP address, the default gateway to be used, the netmask of the network, the IP address of the TFTP or HTTP server holding the bootloader program, and the full path and file name of that program (relative to the server's root).
+. The machine applies the networking information and initiates a session with the server to request the bootloader program.
+. The bootloader searches for its configuration file on the server from which it was loaded. This file dictates which kernel and kernel options, such as the initial RAM disk (initrd) image, should be executed on the booting machine. Assuming the bootloader program is SYSLINUX, this file is located in the [path]``pxelinux.cfg`` directory on the server and named the hexadecimal equivalent of the new machine's IP address. For example, a bootloader configuration file for Red Hat Enterprise Linux AS 2.1 should contain:
++
+
+----
+port 0
+prompt 0
+timeout 1
+default My_Label
+label My_Label
+      kernel vmlinuz
+      append ks=http://`my_susemanager_server`/`path`\
+          initrd=initrd.img network apic
+----
+. The machine accepts and uncompresses the init image and kernel, boots the kernel, and initiates a Kickstart installation with the options supplied in the bootloader configuration file, including the server containing the Kickstart configuration file.
+. This {kickstart} configuration file in turn directs the machine to the location of the installation files.
+. The new machine is built based on the parameters established within the Kickstart configuration file.
+
+
+
+[[s4-system-ks-intro-prereq]]
+== Kickstart Prerequisites
+
+Some preparation is required for your infrastructure to handle {kickstart}s.
+For instance, before creating Kickstart profiles, you may consider:
+
+* A DHCP server is not required for kickstarting, but it can make things easier. If you are using static IP addresses, select static IP while developing your Kickstart profile.
+* An FTP server can be used instead of hosting the Kickstart distribution trees via HTTP.
+* If conducting a bare metal {kickstart}, you should configure DHCP to assign required networking parameters and the bootloader program location. Also, specify within the bootloader configuration file the kernel to be used and appropriate kernel options.
+
+
+
+[[s4-system-ks-iso]]
+== Building Bootable Kickstart ISOs
+
+While you can schedule a registered system to be kickstarted to a new operating system and package profile, you can also {kickstart} a system that is not registered with {productname} or does not yet have an operating system installed.
+One common method of doing this is to create a bootable CD-ROM that is inserted into the target system.
+When the system is rebooted, it boots from the CD-ROM, loads the {kickstart} configuration from your {productname}, and proceeds to install {rhel} according to the Kickstart profile you have created.
+
+To do this, copy the contents of [path]``/isolinux`` from the first CD-ROM of the target distribution.
+Then edit the [path]``isolinux.cfg`` file to default to 'ks'. Change the 'ks' section to the following template:
+
+----
+label ks
+kernel vmlinuz
+  append text ks=`url`initrd=initrd.img lang= devfs=nomount \
+    ramdisk_size=16438`ksdevice`
+----
+
+
+IP address-based {kickstart} URLs will look like this:
+
+----
+http://`my.manager.server`/kickstart/ks/mode/ip_range
+----
+
+
+The {kickstart} distribution defined via the IP range should match the distribution from which you are building, or errors will occur. [replaceable]``ksdevice`` is optional, but looks like:
+
+----
+ksdevice=eth0
+----
+
+
+It is possible to change the distribution for a Kickstart profile within a family, such as Red Hat Enterprise Linux AS 4 to Red Hat Enterprise Linux ES 4, by specifying the new distribution label.
+Note that you cannot move between versions (4 to 5) or between updates (U1 to U2).
+
+Next, customize [path]``isolinux.cfg`` further for your needs by adding multiple Kickstart options, different boot messages, shorter timeout periods, etc.
+
+Next, create the ISO as described in the _Making an Installation Boot CD-ROM_ section of the [ref]_Red Hat Enterprise Linux Installation Guide_.
+Alternatively, issue the command:
+
+----
+mkisofs -o file.iso -b isolinux.bin -c boot.cat -no-emul-boot \
+  -boot-load-size 4 -boot-info-table -R -J -v -T isolinux/
+----
+
+
+Note that [path]``isolinux/`` is the relative path to the directory containing the modified isolinux files copied from the distribution CD, while [path]``file.iso`` is the output ISO file, which is placed into the current directory.
+
+Burn the ISO to CD-ROM and insert the disc.
+Boot the system and type "ks" at the prompt (assuming you left the label for the Kickstart boot as 'ks'). When you press kbd:[Enter], Kickstart starts running.
+
+
+
+[[s4-system-ks-pxe]]
+== Integrating Kickstart with PXE
+
+In addition to CD-ROM-based installs, Kickstart supports a Pre-Boot Execution Environment (PXE). This is less error-prone than CDs, enables kickstarting from bare metal, and integrates with existing PXE/DHCP environments.
+
+To use this method, make sure your systems have network interface cards (NIC) that support PXE.
+Install and configure a PXE server and ensure DHCP is running.
+Then place the appropriate files on an HTTP server for deployment.
+Once the {kickstart} profile has been created, use the URL from the menu:Kickstart Details[] page, as for CD-ROM-based installs.
+
+To obtain specific instructions for conducting PXE {kickstart}s, refer to the _PXE Network Installations_ chapter of the [ref]_Red Hat Enterprise Linux 4 System Administration    Guide_.
+
+[NOTE]
+====
+Running the Network Booting Tool, as described in the Red Hat Enterprise Linux 4: System Administration Guide, select "HTTP" as the protocol and include the domain name of the {productname} in the Server field if you intend to use it to distribute the installation files.
+====
+
+
+The following sections describe the autoinstallation options available from the menu:Systems[Autoinstallation] page.
+

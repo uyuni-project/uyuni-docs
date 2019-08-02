@@ -1,0 +1,141 @@
+[[clients-centos]]
+= Preparing Channels and Repositories for CentOS Traditional Clients
+
+
+
+
+This following section provides an example procedure for configuring CentOS channels and repositories and finally registering a CentOS client with {productname}.
+
+These steps will be identical for Scientific Linux and Fedora.
+
+.Procedure: Preparing Channels and Repositories
+. As {rootuser} install [package]#spacewalk-utils# on your {productname} server:
++
+
+----
+zypper in spacewalk-utils
+----
++
+.Supported Tools
+IMPORTANT: The [package]#spacewalk-utils# package contains a collection of upstream command line tools which provide assistance with spacewalk administrative operations.
+You will be using the [command]``spacewalk-common-channels`` tool.
+Keep in mind {suse} only provides support for [command]``spacewalk-clone-by-date`` and [command]``spacewalk-manage-channel-lifecycle`` tools.
++
+
+. Run the [command]``spacewalk-common-channels`` script to add the CentOS7 base, updates, and Spacewalk client channels.
++
+
+----
+spacewalk-common-channels -u admin -p`secret`-a x86_64 'centos7'
+spacewalk-common-channels -u admin -p`secret`-a x86_64 'centos7-updates'
+spacewalk-common-channels -u admin -p`secret`-a x86_64 'spacewalk26-client-centos7'
+----
++
+.Required Channel References
+NOTE: The [path]``/etc/rhn/spacewalk-common-channels.ini`` must contain the channel references to be added.
+If a channel is not listed, check the latest version here for updates: https://github.com/spacewalkproject/spacewalk/tree/master/utils
++
+
+. From the {webui} select menu:Main Menu[Software > Manage Software Channels > Overview]. Select the base channel you want to synchronize, in this case ``CentOS7 (x86_64)``. Select menu:Repositories[Sync]. Check the channels you want to synchronize and then click the btn:[Sync Now] button or, optionally, schedule a regular synchronization time.
+. Copy all relevant GPG keys to [path]``/srv/www/htdocs/pub``. Depending on what distribution you are interested in managing these could include an EPEL key, SUSE keys, Red Hat keys, and CentOS keys. After copying these you can reference them in a comma-delimited list within your bootstrap script (see <<proc.bp.expanded-support.centos-repos.trad.bsscript>>).
+** CentOS7 key files: http://mirror.centos.org/centos/RPM-GPG-KEY-CentOS-7
+** EPEL key file: http://mirrors.kernel.org/fedora-epel/RPM-GPG-KEY-EPEL-7
+** Spacewalk key: http://spacewalk.redhat.com/yum/RPM-GPG-KEY-spacewalk-2015
+** Red Hat keys: http://www.redhat.com/contact/security-response-team/gpg-keys.html
+. Install and setup a CentOS 7 client with the default installation packages.
+. Ensure the client machine can resolve itself and your {productname} server via DNS. Validate that there is an entry in [path]``/etc/hosts`` for the real IP address of the client.
+. Create an activation key (``centos7``) on the {productname} server that points to the correct parent/child channels, including the CentOS base repo, updates, and Spacewalk client.
+
+
+Now prepare the bootstrap script.
+
+[[proc.bp.expanded-support.centos-repos.trad.bsscript]]
+.Procedure: Preparing the Bootstrap Script
+. Create/edit your bootstrap script to correctly reflect the following:
++
+
+----
+# can be edited, but probably correct (unless created during initial install):
+
+# NOTE: ACTIVATION_KEYS *must* be used to bootstrap a client machine.
+
+ACTIVATION_KEYS=1-centos7
+
+ORG_GPG_KEY=res.key,RPM-GPG-KEY-CentOS-7,suse-307E3D54.key,suse-9C800ACA.key,RPM-GPG-KEY-spacewalk-2015
+
+FULLY_UPDATE_THIS_BOX=0
+
+yum clean all
+# Install the prerequisites
+yum -y install yum-rhn-plugin rhn-setup
+----
+. Add the following lines to the bottom of your script, (just before `echo "`-bootstrap complete -`"`):
++
+
+----
+# This section is for commands to be executed after registration
+mv /etc/yum.repos.d/Cent* /root/
+yum clean all
+chkconfig rhnsd on
+chkconfig osad on
+service rhnsd restart
+service osad restart
+----
+. Continue by following normal bootstrap procedures to bootstrap the new client.
+
+
+[[bp.expanded-support.centos_salt]]
+== Registering CentOS Salt Clients with {productname}
+
+
+The following procedure will guide you through registering a CentOS client.
+
+.Support for CentOS Patches
+[WARNING]
+====
+
+CentOS uses patches originating from CentOS is not officially supported by {suse}
+.
+See the matrix of {productname} clients on the main page of the {productname} wiki, linked from the [ref]_Quick Links_ section: https://wiki.microfocus.com/index.php?title=SUSE_Manager
+
+====
+
+.Procedure: Register a CentOS 7 Client
+. Add the Open Build Service repo for Salt:
++
+
+----
+yum-config-manager --add-repo http://download.opensuse.org/repositories/systemsmanagement:/saltstack:/products/RHEL_7/
+----
+. Import the repo key:
++
+
+----
+rpm --import http://download.opensuse.org/repositories/systemsmanagement:/saltstack:/products/RHEL_7/repodata/repomd.xml.key
+----
+. Check if there is a different repository that contains Salt. If there is more than one repository listed disable the repository that contains Salt apart from the OBS one.
++
+
+----
+yum list --showduplicates salt
+----
+. Install the Salt client:
++
+
+----
+yum install salt salt-minion
+----
+. Change the Salt configuration to point to the {productname} server:
++
+
+----
+mkdir -p /etc/salt/minion.d
+echo "master:`server_fqdn`" > /etc/salt/minion.d/susemanager.conf
+----
+. Restart the client
++
+
+----
+systemctl restart salt-minion
+----
+. Proceed to menu:Main Menu[Salt > Keys] from the {webui} and accept the client's key.

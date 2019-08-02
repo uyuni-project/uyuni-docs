@@ -1,0 +1,226 @@
+[[client-cfg-reg-with-bootstrap-disconnected]]
+= Disconnected Setup with RMT or SMT (DMZ)
+
+When it is not possible to connect {productname}
+directly or via a proxy to the Internet, a disconnected setup in combination with RMT or SMT is the recommended solution.
+
+In this scenario, RMT or SMT stays in an "`external`" network with a connection to {scc}
+ and synchronizes the software channels and repositories on a removable storage medium.
+Then you can separate the storage medium from RMT or SMT, and mount it locally on your {productname}
+ server to read the updated data.
+
+
+.Offline Usage Scenario
+[NOTE]
+====
+SMT and RMT are not made for server cascades.
+SUSE Manager always connects to SMT or RMT in an offline or disconnected scenario.
+====
+
+
+.RMT
+The successor of SMT and currently runs on the following systems:
+
+* {sle} 15, and later
+* Temporarily (for testing only): 12 SP2, and 12 SP3
+* Not officially supported: openSUSE Leap 42.2, Leap 42.3, and openSUSE Tumbleweed
+
+
+RMT allows you to provision updates for all of your devices running a product based on {sle}
+ 12 SPx and later as well as openSUSE Leap.
+
+
+.SMT
+The predecessor of RMT and is no longer actively developed.
+It runs on {sls}
+ 12 SPx and allows you to provision updates for products based on {sle}
+ 12 SPx and earlier.
+You will still need it, if you want to update {sle}
+ 11 clients.
+
+
+
+[[rmtool]]
+== RMT and Disconnected Setup (DMZ)
+
+The following procedure will guide you through using RMT.
+It will work best with a dedicated RMT instance per {productname}.
+.
+
+.Procedure: RMT: Fetching Repository Data from {scc}
+. Configure RMT in the external network with SCC. For details about configuring RMT, see the official guide (when available).
+.. Preparation work:
++
+Run [command]``rmt-cli sync`` to download available products and repositories data for your organization from SCC.
++
+Run [command]``rmt-cli products list --all`` to see the list of products that are available for your organization.
++
+Run [command]``rmt-cli repos list --all`` to see the list of all repositories available.
+.. With [command]``rmt-cli repos enable`` enable repositories you want to mirror.
+.. With [command]``rmt-cli products enable``enable products. For example, to enable {slsa} _15:
++
+
+----
+rmt-cli product enable sles/15/x86_64
+----
+. Using RMT, mirror all required repositories.
+. Get the required JSON responses from SCC and save them as files at the specified path (for example, [path]``/mnt/usb`` ).
++
+.Write Permissions for RMT User
+IMPORTANT: The directory being written to must be writeable for the same user as the rmt service.
+The rmt user setting is defined in the `cli` section of [path]``/etc/rmt.conf``
+.
++
+
+
++
+Enter:
++
+
+----
+rmt-cli export data /mnt/usb
+----
+. Export settings about repositories to mirror to the specified path (in this case, [path]``/mnt/usb`` ); this command will create a [path]``repos.json`` file there:
++
+
+----
+rmt-cli export settings /mnt/usb
+----
++
+
+[[pro-rmtool-export-repos]]
+. Mirror the repositories according to the settings in the [path]``repos.json`` file to the specified path (in this case, [path]``/mnt/usb`` ).
++
+
+----
+rmt-cli export repos /mnt/usb
+----
++
+. Unmount the storage medium and carry it securely to your {productname} server.
+
+
+On the {productname}
+server, continue with <<disconnect.mgr.update-repos>>.
+
+[[sub.mgr.tool]]
+== SMT and Disconnected Setup (DMZ)
+
+
+The following procedure will guide you through using SMT.
+
+.Procedure: SMT: Fetching Repository Data from {scc}
+. Configure SMT in the external network with SCC. For details about configuring SMT with {sle} 12, see https://www.suse.com/documentation/sles-12/book_smt/data/book_smt.html.
+. Using SMT, mirror all required repositories.
+. Create a "`database replacement file`" (for example, [path]``/tmp/dbrepl.xml`` ).
++
+
+----
+smt-sync --createdbreplacementfile /tmp/dbrepl.xml
+----
+
+[[pro.mgr.tool.mount.storage]]
+. Mount a removable storage medium such as an external hard disk or USB flash drive.
+. Export the data to the mounted medium:
++
+
+----
+smt-sync --todir /media/disk/
+smt-mirror --dbreplfile /tmp/dbrepl.xml --directory /media/disk \
+           --fromlocalsmt -L /var/log/smt/smt-mirror-export.log
+----
++
+.Write Permissions for SMT User
+IMPORTANT: The directory being written to must be writeable for the same user as the smt daemon (user=smt). The smt user setting is defined in [path]``/etc/smt.conf``
+.
+You can check if the correct user is specified via the following command:
+
+----
+egrep '^smtUser' /etc/smt.conf
+----
++
+
+
++
+.Keeping the Disconnected Server Up-to-date
+NOTE: [command]``smt-sync`` also exports your subscription data.
+To keep {productname}
+ up-to-date with your subscriptions, you must frequently import and export this data.
++
+
+. Unmount the storage medium and carry it securely to your {productname} server.
+
+
+On the {productname}
+server, continue with <<disconnect.mgr.update-repos>>.
+
+[[disconnect.mgr.update-repos]]
+== Updating Repositories on {productname} From Storage Media
+
+
+This procedure will show you how to update the repositories on the {productname}
+server from the storage media.
+
+.Procedure: Updating the {productname}Server from the Storage Medium
+. Mount the storage medium on your {productname} server (for example, at [path]``/media/disk`` ).
+. Specify the local path on the {productname} server in ``/etc/rhn/rhn.conf``:
++
+
+----
+server.susemanager.fromdir = /media/disk
+----
++
+This setting is mandatory for {scc}
+and [command]``mgr-sync``.
+. Restart Tomcat:
++
+
+----
+systemctl restart tomcat
+----
+
+[[pro.mgr.tool.sync]]
+. Before performing another operation on the server execute a full sync:
++
+
+----
+mgr-sync refresh   # SCC (fromdir in rhn.conf required!)
+----
+. [command]``mgr-sync`` can now be executed normally:
++
+
+----
+mgr-sync list channels
+mgr-sync add channel channel-label
+----
++
+.Data Corruption
+WARNING: The disk must always be available at the same mount point.
+To avoid data corruption, do not trigger a sync, if the storage medium is not mounted.
+If you have already added a channel from a local repository path, you will not be able to change its URL to point to a different path afterwards.
++
+
+
+
+Up-to-date data is now available on your {productname}
+server and is ready for updating client systems.
+According to your maintenance windows or update schedule refresh the data on the storage medium with RMT or SMT.
+
+== Refreshing Data on the Storage Medium
+
+.Procedure: Refreshing Data on the Storage Medium from RMT or SMT
+. On your {productname} server, unmount the storage medium and carry it to your RMT or SMT.
+. On your RMT or SMT system, continue with the synchronization step.
++
+
+[WARNING]
+.Data Corruption
+====
+The storage medium must always be available at the same mount point.
+To avoid data corruption, do not trigger a sync if the storage medium is not mounted.
+====
++
+
+
+
+This concludes using RMT or SMT with {productname}
+.
