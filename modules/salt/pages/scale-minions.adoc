@@ -1,0 +1,109 @@
+[[scale-salt-clients]]
+= Scaling Salt Clients
+
+
+
+
+== Salt Client Onboarding Rate
+
+
+The rate at which SUSE Manager can on-board clients (accept Salt keys) is limited and depends on hardware resources.
+On-boarding clients at a faster rate than SUSE Manager is configured for will build up a backlog of unprocessed keys slowing the process and potentially exhausting resources.
+It is recommended to limit the acceptance key rate pro-grammatically.
+A safe starting point would be to on-board a client every 15 seconds, which can be implemented via the following command:
+
+----
+for k in $(salt-key -l un|grep -v Unaccepted); do salt-key -y -a $k; sleep 15; done
+----
+
+[[bp.chap.salt.minion.scaleability.unaccepted]]
+== Clients Running with Unaccepted Salt Keys
+
+
+Clients which have not been on-boarded, (clients running with unaccepted Salt keys) consume resources, in particular inbound network bandwidth for ~2.5 Kb/s per client.
+1000 idle clients will consume around ~2.5 Mb/s, and this number will drop to almost 0 once on-boarding has been completed.
+Limit non-onboarded systems for optimal performance.
+
+
+
+[[bp.chap.salt.minion.scaleability.timeouts]]
+== Salt Timeouts
+
+=== Background Information
+
+
+Salt features two timeout parameters called `timeout` and `gather_job_timeout` that are relevant during the execution of Salt commands and jobs--it does not matter whether they are triggered using the command line interface or API.
+These two parameters are explained in the following article.
+
+This is a normal workflow when all clients are well reachable:
+
+* A salt command or job is executed:
++
+
+----
+salt '*' test.ping
+----
+* Salt master publishes the job with the targeted clients into the Salt PUB channel.
+* Clients take that job and start working on it.
+* Salt master is looking at the Salt RET channel to gather responses from the clients.
+* If Salt master gets all responses from targeted clients, then everything is completed and Salt master will return a response containing all the client responses.
+
+
+If some of the clients are down during this process, the workflow continues as follows:
+
+. If `timeout` is reached before getting all expected responses from the clients, then Salt master would trigger an aditional job (a Salt [command]``find_job`` job) targeting only pending clients to check whether the job is already running on the client.
+. Now `gather_job_timeout` is evaluated. A new counter is now triggered.
+. If this new [command]``find_job`` job responses that the original job is actually running on the client, then Salt master will wait for that client's response.
+. In case of reaching `gather_job_timeout` without having any response from the client (neither for the initial [command]``test.ping`` nor for the [command]``find_job`` job), Salt master will return with only the gathered responses from the responding clients.
+
+
+By default, {productname} globally sets `timeout` and `gather_job_timeout` to 120 seconds.
+So, in the worst case, a Salt call targeting unreachable clients will end up _with 240 seconds of waiting_ until getting a response.
+
+
+////
+This content is superceded by the content in modules/salt/pages/salt-rate-limiting.adoc
+Commenting rather than deleting for now, in case there's content in here that needs to be resurrected. LKB 2019-06-12
+
+[[bp.chap.salt.minion.scaleability.timeouts.presence]]
+=== A Presence Ping Mechanism for Unreachable Salt Clients
+
+
+In order to prevent waiting until timeouts are reached when some clients are down, {suse}
+introduced a so-called "presence mechanism" for Salt clients.
+
+This presence mechanism checks for unreachable Salt clients when {productname} is performing synchronous calls to these clients, and it excludes unreachable clients from that call.
+Synchronous calls are going to be displaced in favor of asynchronous calls but currently still being used during some workflows.
+
+The presence mechanism triggers a Salt [command]``test.ping`` with a custom and fixed short Salt timeout values.
+Default Salt values for the presence ping are: `timeout
+     = 4` and ``gather_job_timeout = 1``.
+This way, we can quickly detect which targeted clients are unreachable, and then exclude them from the synchronous call.
+
+=== Overriding Salt Presence Timeout Values
+
+{productname} administrators can increase or decrease default presence ping timeout values by removing the comment markers (``\#``) and setting the desired values for `salt_presence_ping_timeout` and `salt_presence_ping_gather_job_timeout` options in [path]``/etc/rhn/rhn.conf``:
+
+----
+# SUSE Manager presence timeouts for Salt clients
+# salt_presence_ping_timeout = 4
+# salt_presence_ping_gather_job_timeout = 1
+----
+
+////
+
+=== Salt SSH Clients (SSH Push)
+
+
+Salt SSH clients are slightly different that regular clients (zeromq). Salt SSH clients do not use Salt PUB/RET channels but a wrapper Salt command inside of an SSH call.
+Salt `timeout` and `gather_job_timeout` are not playing a role here.
+
+{productname} defines a timeout for SSH connections in [path]``/etc/rhn/rhn.conf``:
+
+----
+# salt_ssh_connect_timeout = 180
+----
+
+
+The presence ping mechanism is also working with SSH clients.
+In this case, {productname} will use `salt_presence_ping_timeout` to override the default timeout value for SSH connections.

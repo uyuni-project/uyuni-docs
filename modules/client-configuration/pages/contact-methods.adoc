@@ -1,14 +1,8 @@
 [[contact-methods]]
 = Contact Methods
-// Antora entities
-ifndef::backend-pdf[]
-include::ROOT:partial$entities.adoc[]
-endif::[]
 
-// PDF entities
-ifdef::backend-pdf[]
-include::_partials/entities.adoc[]
-endif::[]
+
+
 
 == Selecting a Contact Method
 
@@ -28,19 +22,17 @@ For general information about Salt clients, see <<salt.gs.guide.intro>>.
 == Default (the {productname} Daemon rhnsd)
 
 
-The {productname} daemon ([command]``rhnsd``) runs on client systems and periodically connects with {productname} to check for new updates and notifications.
-The daemon, which runs in the background, is started by [systemitem]``rhnsd.service``
-.
+The {productname} daemon ([command]``rhnsd``) runs on traditional client systems and periodically connects with {productname} to check for new updates and notifications.
+The daemon is started by [path]``/etc/init.d/rhnsd``.
+It is only still in use on {sle} 11 and {rhnminrelease6}{mdash}these are systems that are not based on systemd.
+On later systems, a systemd timer ([systemitem]``rhnsd.timer``) is used and controlled by [systemitem]``rhnsd.service``.
+
 By default, it will check every 4 hours for new actions, therefore it may take some time for your clients to begin updating after actions have been scheduled for them.
 
-To check for updates, [systemitem]``rhnsd``
- runs the external [systemitem]``mgr_check``
- program located in [path]``/usr/sbin/``
-.
+To check for updates, [systemitem]``rhnsd`` runs the external [systemitem]``mgr_check`` program located in [path]``/usr/sbin/``.
 This is a small application that establishes the network connection to {productname}.
 The SUSE Manager daemon does not listen on any network ports or talk to the network directly.
-All network activity is done via the [systemitem]``mgr_check``
- utility.
+All network activity is done via the [systemitem]``mgr_check`` utility.
 
 .Auto accepting (EULAs)
 [WARNING]
@@ -50,17 +42,15 @@ To review a package EULA, open the package detail page in the {webui}.
 ====
 
 
-This figure provides an overview of the default [systemitem]``rhnsd``
- process path.
-All items left of the [systemitem]``Python XMLRPC server``
- block represent processes running on a {productname} client.
+This figure provides an overview of the default [systemitem]``rhnsd`` process path.
+All items left of the [systemitem]``Python XMLRPC server`` block represent processes running on a {productname} client.
 
 .rhnsd Contact Method
 
 image::rhnsd-taigon.png[scaledwidth=80]
 
 
-=== Configuring {productname} rhnsd Daemon
+=== Configuring {productname} rhnsd Daemon or Timer
 
 
 The {productname} daemon can be configured by editing the file on the client:
@@ -69,11 +59,14 @@ The {productname} daemon can be configured by editing the file on the client:
 /etc/sysconfig/rhn/rhnsd
 ----
 
-
 This is the configuration file the rhnsd initialization script uses.
 An important parameter for the daemon is its check-in frequency.
-The default interval time is four hours (240 minutes). If you modify the configuration file, you must as {rootuser}
-restart the daemon with [command]``systemctl rhnsd restart``.
+The default interval time is four hours (240 minutes).
+If you modify the configuration file, you must as {rootuser} restart the daemon with:
+
+----
+/etc/init.d/rhnsd restart
+----
 
 .Minimum Allowed Check-in Parameter
 [IMPORTANT]
@@ -81,12 +74,39 @@ restart the daemon with [command]``systemctl rhnsd restart``.
 The minimum allowed time interval is one hour (60 minutes). If you set the interval below one hour, it will change back to the default of 4 hours (240 minutes).
 ====
 
+On systemd-based systems (for example, SLE 12 and later), the default time interval is set in [path]``/etc/systemd/system/timers.target.wants/rhnsd.timer``:
+
+----
+[Timer]
+OnCalendar=00/4:00
+RandomizedDelaySec=30min
+----
+
+You can create an overriding drop-in file of [path]``rhnsd.timer`` with:
+
+----
+systemctl edit rhnsd.timer
+----
+
+For example, if you want configure a two hour time interval, enter:
+
+----
+[Timer]
+OnCalendar=00/2:00
+----
+
+On write, the file will be saved as [path]``/etc/systemd/system/rhnsd.timer.d/override.conf``.
+For more information about system timers, see the manpages of [command]``systemd.timer`` and [command]``systemctl``.
+
+
+
 === Viewing rhnsd Daemon Status
 
+As the {rootuser} you may view the status of [command]``rhnsd`` with:
+----
+/etc/init.d/rhnsd status
+----
 
-You can view the status of rhnsd by typing the command [command]``systemctl status
-     rhnsd`` as {rootuser}
-.
 
 [[bp.contact.methods.ssh.push]]
 == Push via SSH
@@ -121,13 +141,12 @@ image::sshpush-taigon.png[scaledwidth=80%]
 === Configuring the Server for Push via SSH
 
 
-For tunneling connections via SSH, two available port numbers are required, one for tunneling HTTP and the second for tunneling via HTTPS (HTTP is only necessary during the registration process). The port numbers used by default are `1232` and ``1233``.
-To overwrite these, add two custom port numbers greater than 1024 to [path]``/etc/rhn/rhn.conf``
- like this:
+For tunneling connections via SSH, two available port numbers are required, one for tunneling HTTP and the second for tunneling via HTTPS (HTTP is only necessary during the registration process). The port numbers used by default are `1232` and `1233`.
+To overwrite these, add two custom port numbers greater than 1024 to [path]``/etc/rhn/rhn.conf`` like this:
 
 ----
-ssh_push_port_http = high port 1
-ssh_push_port_https = high port 2
+ssh_push_port_http = high_port_1
+ssh_push_port_https = high_port_2
 ----
 
 
@@ -140,9 +159,7 @@ ssh_push_use_hostname = true
 
 It is also possible to adjust the number of threads to use for opening client connections in parallel.
 By default two parallel threads are used.
-Set [systemitem]``taskomatic.ssh_push_workers``
- in [path]``/etc/rhn/rhn.conf``
- like this:
+Set [systemitem]``taskomatic.ssh_push_workers`` in [path]``/etc/rhn/rhn.conf``:
 
 ----
 taskomatic.ssh_push_workers = number
@@ -152,27 +169,24 @@ taskomatic.ssh_push_workers = number
 === Using sudo with Push via SSH
 
 
-For security reasons you may desire to use sudo and SSH into a system as a user other than {rootuser}
-.
+For security reasons you may desire to use sudo and SSH into a system as a user other than {rootuser}.
 The following procedure will guide you through configuring sudo for use with Push via SSH.
 
 .sudo Requirements
 [NOTE]
 ====
-The packages [path]``spacewalk-taskomatic >= 2.1.165.19``
- and [path]``spacewalk-certs-tools => 2.1.6.7``
- are required for using sudo with Push via SSH.
+The packages [path]``spacewalk-taskomatic >= 2.1.165.19`` and [path]``spacewalk-certs-tools => 2.1.6.7`` are required for using sudo with Push via SSH.
 ====
 
 [[pro.bp.contact.methods.ssh.push.sudo]]
 .Procedure: Configuring sudo
 
 [[pro.bp.contact.methods.ssh.push.sudo.user]]
-. Set the following parameter on the server located in [path]``/etc/rhn/rhn.conf`` .
+. Set the following parameter on the server located in [path]``/etc/rhn/rhn.conf``.
 +
 
 ----
-ssh_push_sudo_user =`user`
+ssh_push_sudo_user = <user>
 ----
 +
 The server will use sudo to ssh as the configured [replaceable]``user``.
@@ -217,23 +231,19 @@ Clients already registered before changing the port numbers must be registered a
 .[command]``mgr-ssh-push-init`` Disables rhnsd
 [NOTE]
 ====
-The [command]``mgr-ssh-push-init`` command disables the [systemitem]``rhnsd``
- daemon which normally checks for updates every 4 hours.
-Because your clients cannot reach the server without using the Push via SSH contact method, the [systemitem]``rhnsd``
- daemon is disabled.
+The [command]``mgr-ssh-push-init`` command disables the [systemitem]``rhnsd`` daemon which normally checks for updates every 4 hours.
+Because your clients cannot reach the server without using the Push via SSH contact method, the [systemitem]``rhnsd`` daemon is disabled.
 ====
 
 
 For registration of systems which should be managed via the Push via SSH tunnel contact method, it is required to use an activation key that is configured to use this method.
-Normal [systemitem]``Push via SSH``
- is unable to reach the server.
+Normal [systemitem]``Push via SSH`` is unable to reach the server.
 For managing activation keys, see <<bp.key.managment>>.
 
-Run the following command as {rootuser}
-on the server to register a client:
+Run the following command as {rootuser} on the server to register a client:
 
 ----
-# mgr-ssh-push-init --client client --register \
+# mgr-ssh-push-init --client <client> --register \
 /srv/www/htdocs/pub/bootstrap/bootstrap_script --tunnel
 ----
 
@@ -242,16 +252,17 @@ To enable a client to be managed using Push via SSH (without tunneling), the sam
 Registration is optional since it can also be done from within the client in this case. [command]``mgr-ssh-push-init`` will also automatically generate the necessary SSH key pair if it does not yet exist on the server:
 
 ----
-# mgr-ssh-push-init --client`client`--register bootstrap_script
+# mgr-ssh-push-init --client <client> --register bootstrap_script
 ----
 
 
 When using the Push via SSH tunnel contact method, the client is configured to connect to  {productname} using the high ports mentioned above.
-Tools like [command]``rhn_check`` and [command]``zypper`` will need an active SSH session with the proper port forwarding options in order to access the {productname} API.
+Tools like [command]``mgr_check`` and [command]``zypper`` will need an active SSH session with the proper port forwarding options in order to access the {productname} API.
 To verify the Push via SSH tunnel connection manually, run the following command on the {productname} server:
 
 ----
-# ssh -i /root/.ssh/id_susemanager -R high port: susemanager :443`client`zypper ref
+# ssh -i /root/.ssh/id_susemanager -R <high_port>:<susemanager>:443 \
+<client> zypper ref
 ----
 
 [[bp.contact.methods.ssh.push.api.support]]
@@ -276,10 +287,9 @@ client.system.setDetails(key, 1000012345, {'contact_method' : 'ssh-push'})
 .Migration and Management via Push via SSH
 [NOTE]
 ====
-When a system should be migrated and managed using Push via SSH, it requires setup using the [systemitem]``mgr-ssh-push-init``
- script before the server can connect via SSH.
-This separate command requires human interaction to install the server's SSH key onto the managed client ({rootuser}
- password). The following procedure illustrates how to migrate an already registered system:
+When a system should be migrated and managed using Push via SSH, it requires setup using the [systemitem]``mgr-ssh-push-init`` script before the server can connect via SSH.
+This separate command requires human interaction to install the server's SSH key onto the managed client ({rootuser} password).
+The following procedure illustrates how to migrate an already registered system:
 ====
 
 .Procedure: Migrating Registered Systems
@@ -298,14 +308,13 @@ client.activationkey.setDetails(key, '1-mykey', {'contact_method' : 'ssh-push'})
 
 
 It is possible to use Push via SSH to manage systems that are connected to the {productname} server via a proxy.
-To register a system, run [systemitem]``mgr-ssh-push-init``
- on the proxy system for each client you wish to register.
+To register a system, run [systemitem]``mgr-ssh-push-init`` on the proxy system for each client you wish to register.
 Update your proxy with the latest packages to ensure the registration tool is available.
 It is necessary to copy the ssh key to your proxy.
 This can be achieved by executing the following command from the server:
 
 ----
-{prompt.root}mgr-ssh-push-init --client`proxy`
+mgr-ssh-push-init --client <proxy>
 ----
 
 [[bp.contact.methods.saltssh.push]]
@@ -328,10 +337,9 @@ For Push via SSH, see <<bp.contact.methods.ssh.push>>.
 image::salt-ssh-contact-taigon.png[scaledwidth=80%]
 
 
-Salt provides "`Salt SSH`"
- ([command]``salt-ssh``), a feature to manage clients from a server.
+Salt provides "`Salt SSH`" ([command]``salt-ssh``), a feature to manage clients from a server.
 It works without installing Salt related software on clients.
-Using Salt SSH there is no need to have minions connected to the Salt master.
+Using Salt SSH there is no need to have clients connected to the Salt master.
 Using this as a {productname} connect method, this feature provides similar functionality for Salt clients as the traditional Push via SSH feature for traditional clients.
 
 This feature allows:
@@ -343,14 +351,14 @@ This feature allows:
 === Requirements
 
 * SSH daemon must be running on the remote system and reachable by the [systemitem]``salt-api`` daemon (typically running on the {productname} server).
-* Python must be available on the remote system (Python must be supported by the installed Salt). Currently: python 2.6.
+* Python must be available on the remote system (Python must be supported by the installed Salt).
+Currently: python 2.6.
 
 
 .Unsupported Systems
 [NOTE]
 ====
-{rhel}
-and CentOS versions <= 5 are not supported because they do not have Python 2.6 by default.
+{rhel} and CentOS versions <= 5 are not supported because they do not have Python 2.6 by default.
 ====
 
 === Bootstrapping
@@ -359,7 +367,7 @@ and CentOS versions <= 5 are not supported because they do not have Python 2.6 b
 To bootstrap a Salt SSH system, proceed as follows:
 
 
-. Open the menu:Bootstrap Minions[] dialog in the Web UI (menu:Systems[Bootstrapping] ).
+. Open the menu:Bootstrap Minions[] dialog in the Web UI (menu:Systems[Bootstrapping]).
 . Fill out the required fields. Select an menu:Activation Key[] with the menu:Push via SSH[] contact method configured. For more information about activation keys, see <<ref.webui.systems.activ-keys>>.
 . Check the menu:Manage system completely via SSH[] option.
 . Confirm with clicking the menu:Bootstrap[] button.
@@ -390,7 +398,7 @@ While on traditional clients with SSH push configured only [command]``rhn_check`
 
 === Known Limitation
 
-* OpenSCAP auditing is not available on Salt SSH minions.
+* OpenSCAP auditing is not available on Salt SSH clients.
 
 
 * Beacons do not work with Salt SSH.
@@ -401,7 +409,7 @@ While on traditional clients with SSH push configured only [command]``rhn_check`
 === For More Information
 
 
-For more information, see
+For more information, see:
 
 * https://wiki.microfocus.com/index.php/SUSE_Manager/SaltSSHServerPush
 * https://docs.saltstack.com/en/latest/topics/ssh/
@@ -414,6 +422,13 @@ For more information, see
 OSAD is an alternative contact method between {productname} and its clients.
 By default, {productname} uses [systemitem]``rhnsd``, which contacts the server every four hours to execute scheduled actions.
 OSAD allows registered client systems to execute scheduled actions immediately.
+
+.Keep [systemitem]``rhnsd`` Running
+[NOTE]
+====
+Use OSAD only in addition to [systemitem]``rhnsd``.
+If you disable [systemitem]``rhnsd`` your client will be shown as not checking in after 24 hours.
+====
 
 OSAD has several distinct components:
 
@@ -467,9 +482,9 @@ For more information, see <<tab.install.ports.server>>.
 systemctl start osa-dispatcher
 ----
 
-. On each client machine, install the [systemitem]``osad`` package from the [systemitem]``Tools`` child channel.
-The [systemitem]``osad`` package should be installed on clients only.
-If you install the [systemitem]``osad`` package on your {productname} Server, it will conflict with the [systemitem]``osa-dispatcher`` package.
+. On each client machine, install the [systemitem]``mgr-osad`` package from the [systemitem]``Tools`` child channel.
+The [systemitem]``mgr-osad`` package should be installed on clients only.
+If you install the [systemitem]``mgr-osad`` package on your {productname} Server, it will conflict with the [systemitem]``osa-dispatcher`` package.
 
 . On the client systems, as the root user, start the [systemitem]``osad`` service:
 +
@@ -492,7 +507,7 @@ We recommend you keep the default configuration parameters for all OSAD componen
 | Component                        | Location | Path to Configuration File
 | [systemitem]``osa-dispatcher``   | Server   | [path]``/etc/rhn/rhn.conf`` Section: [systemitem]``OSA configuration``
 | [systemitem]``osad``             | Client   | [path]``/etc/sysconfig/rhn/osad.conf``
-| [systemitem]``osad``  log file   | Client   | [path]``/var/log/osad``
+| [systemitem]``osad`` log file   | Client   | [path]``/var/log/osad``
 | [systemitem]``jabberd`` log file | Both     | [path]``/var/log/messages``
 |===
 
