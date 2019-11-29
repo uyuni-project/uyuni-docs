@@ -1,184 +1,159 @@
 [[client-migration]]
 = Client Migration
 
-
-
-
-Upgrading from SLE{nbsp}12 with the latest service pack (SP) to SLE{nbsp}15 can be automated, but requires some preparation steps.
-
-To upgrade the SP version on SLE{nbsp}12 (for example, upgrading from SLE{nbsp}12 or any SLE{nbsp}12{nbsp}SPx to SLE{nbsp}12{nbsp}SP4) can be fully automated and requires no additional preparation.
-
-
-
-[[bp.client.migration.sle]]
-== Upgrading SLE{nbsp}12{nbsp}SPx to Version 15
-
-SLE{nbsp}12{nbsp}SPx clients can be auto-upgraded to SLE{nbsp}15 with {yast} auto-installation.
+////
+Upgrading traditional clients from earlier SLE{nbsp}12 Service Packs to later SLE{nbsp}12 Service Packs is fully automated.
+For example, upgrading from SLE{nbsp}12{nbsp}SP1 to SLE{nbsp}12{nbsp}SP4.
 This also applies for other supported products based on SLE{nbsp}12.
-For generally supported {sle} upgrade paths, see  https://www.suse.com/documentation/sles-15/book_sle_upgrade/data/sec_upgrade-paths_supported.html ({slea} {upgrade}, Chapter "`Supported Upgrade Paths to SLE 15`").
 
-It is important that you migrate the client to the latest available SP first.
-Upgrade to SLE 12 SP4 after December 2018.
+////
 
-.Auto-Upgrading Salt Clients Currently Not Supported
-[IMPORTANT]
+Upgrading traditional clients from SLE{nbsp}12 with the latest Service Pack to SLE{nbsp}15 is automated, but you will need to do some preparation steps before you can upgrade.
+
+Upgrading traditional clients from earlier SLE{nbsp}15 Service Packs to later SLE{nbsp}15 Service Packs is fully automated.
+
+For supported {sle}{nbsp}15 upgrade paths, see https://documentation.suse.com/sles/15-SP1/html/SLES-all/cha-upgrade-paths.html
+
+[NOTE]
 ====
-This procedure will work for traditionally  managed systems (system type [systemitem]``management``).
-It is not currently available for systems using Salt (system type [systemitem]``salt``).
-====
-
-During the procedure, the machine reboots and performs the system upgrade.
-The process is controlled by {yast} and {ay}, not by [command]``zypper`` commands.
-
-[IMPORTANT]
-====
-Only perform this migration procedure on client systems managed by {productname} servers.
-For upgrading the {productname} server itself, see <<bp.sp.migration>>.
-This is a viable method for major version upgrades such as an upgrade from {sle} 12 to 15.
+This process cannot be used to upgrade Salt clients.
 ====
 
+// Do we have Salt instructions somewhere? LKB 2019-08-22
 
 
-[[bp.proc.client.migration.sle.prep]]
-=== System Upgrade Preparation
 
-Make sure your {productname} and all the clients you want to upgrade have installed all available updates, including the {productname} tools.
-This is absolutely necessary, otherwise the system upgrade will fail.
+== Upgrade Clients from SLE{nbsp}12 to SLE{nbsp}15
 
-The preparation process contains several steps:
+Your clients must have the latest available SLE{nbsp}12 Service Pack, with all the latest updates applied.
+Before you start, ensure that the system is up to date and all updates have been installed successfully.
 
-. Download and save installation media
+The upgrade is controlled by {yast} and {ay}, it does not use Zypper.
+
+
+=== Prepare to Migrate
+
+Before you can migrate your client from SLE{nbsp}12 to SLE{nbsp}15, you need to make these preparations:
+
+. Prepare installation media
 . Create an auto-installation distribution
 . Create an activation key
 . Upload an {ay} profile
 
 
-.Procedure: Download and Save Installation Media
-. On the {productname} server, create a local directory for the SLE{nbsp}15 installation media.
+.Procedure: Preparing Installation Media
+. On the {productname} Server, create a local directory for the SLE{nbsp}15 installation media.
 . Download an ISO image with the installation sources, and mount the ISO image on your server:
 +
-
 ----
 mkdir /mnt/sle15
 mount -o loop DVD1.iso /mnt/sle15
 ----
 
-.Procedure: Create an Auto-Installation Distribution
-For all distributions you want to upgrade, create a SLE{nbsp}15 distribution in {productname}.
+.Procedure: Creating an Autoinstallation Distribution
 
-. In the {productname} {webui}, click menu:Main Menu[Systems > Autoinstallation > Distributions].
-. Enter a [guimenu]``Distribution Label`` for your distribution (for example, ``autumn2018``)
-. Specify the [guimenu]``Tree Path``, which is the root directory of the SLE{nbsp}15 installation sources (for example, [path]``/mnt/sle15``).
-. For [guimenu]``Base Channel``, use the update target distribution [systemitem]``SLE-Product-SLES15-Pool for x86_64``.
-. Confirm with [guimenu]``Create Autoinstallable Distribution``.
+. In the {productname} {webui}, navigate to menu:Systems[Autoinstallation > Distributions] and click btn:[Create Distribution].
+. In the [guimenu]``Create Autoinstallable Distribution`` section, use these parameters:
+* In the [guimenu]``Distribution Label`` section, type a unique name for the distribution.
+Use only letters, numbers, hyphens (``-``), periods  (``.``), and underscores (``_``), and ensure the name is longer than four characters.
+* In the [guimenu]``Tree Path`` field, type an absolute path to the installation source.
+For example, [path]``/mnt/sle15``.
+* In the [guimenu]``Base Channel`` field, select [systemitem]``SLE-Product-SLES15-Pool for x86_64``.
+* In the [guimenu]``Installer Generation`` field, select [systemitem]``SUSE Linux Enterprise 15``.
+* In the [guimenu]``Kernel Options`` field, type any options to be passed to the kernel when booting for the installation.
+The [option]``install=`` parameter and the [option]``self_update=0 pt.options=self_update`` parameter are added by default.
+* In the [guimenu]``Post Kernel Options`` section, type any options to  be passed to the kernel when booting the installed system for the first time.
+. Click btn:[Create Autoinstallable Distribution] to save.
 
-For more information about Autoinstallation, see <<ref.webui.systems.autoinst>>.
 
-
-.Procedure: Create an Activation Key
+.Procedure: Creating an Activation Key
 
 In order to switch from the old SLE{nbsp}12{nbsp}SP4 base channel to the new SLE{nbsp}15 channel, you need an activation key.
 
-. Go to menu:Main Menu[Systems > Activation Keys] and click [guimenu]``Create Key``.
+. In the {productname} Server {webui}, navigate to menu:Systems[Activation Keys] and click [guimenu]``Create Key``.
 . Enter a description for your key.
 . Enter a key or leave it blank to generate an automatic key.
-. If you want to limit the usage, enter your value in the [guimenu]``Usage`` text field.
+. OPTIONAL: If you want to limit the usage, enter your value in the [guimenu]``Usage`` text field.
 . Select the [systemitem]``SLE-Product-SLES15-Pool for x86_64`` base channel.
-. Decide about [guimenu]``Add-On System Types``.
-If in doubt, see https://www.suse.com/documentation/sles-15/book_quickstarts/data/art_modules.html ({slea} Modules & Extensions Quick Start).
+. OPTIONAL: Select any [guimenu]``Add-On System Types``.
+For more information, see https://documentation.suse.com/sles/15-SP1/html/SLES-all/art-modules.html.
 . Click btn:[Create Activation Key].
-. Click the [guimenu]``Child Channels`` tab and select the required channels. Finish with btn:[Update Key].
+. Click the [guimenu]``Child Channels`` tab and select the required channels.
+. Click btn:[Update Key].
 
-.Procedure: Upload an {ay} Profile
 
-Create an {ay} XML file according to <<ap-sample-autoinst-system-upgrade>>.
-For more information about {ay}, see <<ref.webui.systems.autoinst.ay_intro>>.
+.Procedure: Uploading an {ay} Profile
 
-. Go to menu:Main Menu[Systems > Autoinstallation] and click [guimenu]``Upload Kickstart/Autoyast File``.
+Create an {ay} profile.
+For more information about {ay}, see xref:client-configuration:client-automating-installation.adoc[].
+
+. In the {productname} Server {webui}, navigate to menu:Systems[Autoinstallation] and click [guimenu]``Upload Kickstart/Autoyast File``.
 . Paste the XML content in the text area or select the file to upload and click btn:[Create].
-. Add `autoupgrade=1` in the [guimenu]``Kernel Options`` of the [guimenu]``Details`` tab and click btn:[Update].
-. Switch to the [guimenu]``Variable`` tab.
-. In the text field `registration_key=` enter the key from the preparation above.
-. Click btn:[Update Variables].
+. Navigate to the [guimenu]``Details`` tab.
+. In the [guimenu]``Kernel Options`` field, select [systemitem]``autoupgrade=1`` and click btn:[Update].
+. Navigate to the [guimenu]``Variable`` tab.
+. In the [guimenu]``registration_key=`` field, enter the activation key, and click btn:[Update Variables].
 
 
-After you have successfully finished this process, you are ready to perform the upgrade.
-For upgrade instruction, see <<bp.proc.client.migration.sle.upgrade>>.
 
-[[bp.proc.client.migration.sle.upgrade]]
-.Procedure: Upgrading SLE{nbsp}12{nbsp}SPx to version 15
+=== Migration
 
-.Synchronizing Target Channels
-WARNING: Before successfully initializing the product migration, make sure that the migration target channels are completely mirrored.
+Before you begin the migration, make sure that the migration target channels are completely mirrored.
 For the upgrade to {sle} 15, at least the [systemitem]``SLE-Product-SLES15-Pool`` base channel with the [systemitem]``SLE-Manager-Tools15-Pool`` child channel for your architecture is required.
 The matching update channels such as [systemitem]``SLE-Manager-Tools15-Updates`` and [systemitem]``SLE-Product-SLES15-Updates`` are recommended.
-// Checkit:
-Watch the mirroring progress in [path]``/var/log/rhn/reposync/sles15-pool-x86_64.log``.
+
+// TODO: Check this:
+You can monitor the mirroring progress in [path]``/var/log/rhn/reposync/sles15-pool-x86_64.log``.
 
 
-. Go to the system via menu:Main Menu[Systems] and click the name of the system. Then click menu:System Details[Provisioning > Autoinstallation > Schedule], and choose the {ay} XML profile you have uploaded above.
+
+.Procedure: Migrating
+. In the {productname} Server {webui}, navigate to [guimenu]``Systems`` and select the client to be upgraded.
+. Navigate to menu:System Details[Provisioning > Autoinstallation > Schedule], and select the {ay} profile you uploaded.
 . Click btn:[Schedule Autoinstallation and Finish].
-+
-Next time the machine asks the {productname} server for jobs, it will receive a reinstallation job which fetches kernel and initrd and writes a new [path]``/boot/grub/menu.lst`` (containing pointers to the new kernel and initrd).
-+
-When the machine boots, it will use the {grub} configuration and boots the new kernel with its initrd.
-No PXE boot is required for this process.
-A shutdown of the machine is initiated as well, effectively 3 minutes after the job was fetched.
+
+Next time the client synchronizes with the {productname} Server, it will receive a re-installation job.
+The re-installation job fetches the new kernel and initrd packages.
+It will also write a new [path]``/boot/grub/menu.lst``, containing pointers to the new kernel and initrd packages.
+
+When the client next boots, it will use grub to boot the new kernel with its initrd.
+PXE booting is not used during this process.
+
+Approximately three minutes after the job was fetched, the client will go down for reboot.
 
 
-pass:c[include::bp_ex_autoinst_system-upgrade.adoc[leveloffset=3]]
+////
+
+== Upgrade Clients within SLE{nbsp}12
 
 
+Traditional clients on earlier SLE{nbsp}12 Service Packs can be upgraded to later SLE{nbsp}12 Service Packs in the {productname} {webui}.
 
-[[bp.client.migration.sle12]]
-== Migrating SLE{nbsp}12 or later to version 12{nbsp}SP4
+For example, upgrading from SLE{nbsp}12{nbsp}SP1 to SLE{nbsp}12{nbsp}SP4.
 
-
-Existing SLE{nbsp}12 clients (SLE) may be upgraded to SP4 with the menu:SP Migration[] procedure provided by the {webui}.
-The same applies for other supported products based on {sle} 12.
-
-.Synchronizing Target Channels
-[WARNING]
-====
-Before successfully initializing the product migration, you first must make sure that the migration target channels are completely mirrored.
-For the upgrade to SLE{nbsp}12{nbsp}SP4, at least the [systemitem]``SLES12-SP4-Pool`` base channel with the [systemitem]``SLE-Manager-Tools12-Pool`` child channel for your architecture is required.
+Before you begin the migration, make sure that the migration target channels are completely mirrored.
+For the upgrade to {sle}{nbsp}12 SP4, at least the [systemitem]``SLES12-SP4-Pool`` base channel with the [systemitem]``SLE-Manager-Tools12-Pool`` child channel for your architecture is required.
 The matching update channels such as [systemitem]``SLE-Manager-Tools12-Updates`` and [systemitem]``SLES12-SP4-Updates`` are recommended.
-====
 
-.Procedure: Migrating SLE{nbsp}12 Client to SP4
-. Direct your browser to the {productname} {webui} where your client is registered, and login.
-. On the menu:Systems[All] page select your client system from the table.
-+
+TODO: Check this:
+You can monitor the mirroring progress in [path]``/var/log/rhn/reposync/sles15-pool-x86_64.log``.
 
-image::sles_old_details_page.png[scaledwidth=80%]
 
-+
-If there are menu:Software Updates Available[] in the menu:System Status[] notification install these updates first to avoid trouble during the migration process.
-
-. On the system's detail page select the menu:Software[] tab, then the menu:SP Migration[] tab.
-+
-
-image::sles_old_details_spmigration.png[scaledwidth=80%]
-
-. From this tab you will see the installed products listed on your client. Select the wanted menu:Target Products[] (if there is more than one), which is [systemitem]``SUSE Linux Enterprise Server 12{nbsp}SP4``.
-+
-
-image::sles_migration_target.png[scaledwidth=80%]
-
-+
-Then confirm with menu:Select Channels[].
-+
-
-image::sles_migration_channels.png[scaledwidth=80%]
-. Select menu:Schedule Migration[], and then menu:Confirm[].
-+
+.Procedure: Migration
+. In the {productname} Server {webui}, navigate to [guimenu]``Systems`` and select the client to be upgraded.
+. If the [guimenu]``System Details`` page has outstanding software updates, install the updates.
+. Navigate to the menu:Software[SP Migration] tab, select [systemitem]``SUSE Linux Enterprise Server 12{nbsp}SP4``, and click btn:[Select Channels].
+. Select the mandatory child channels, and any optional child channels.
+Click btn:[Schedule Migration].
+. Choose a time for the migration, and click btn:[Confirm].
+You can also perform a dry run of the migration to check that it will be successful.
 
 image::sles_migration_schedule.png[scaledwidth=80%]
 
-Check the menu:System Status[] on the system's details when the migration is done.
+You can check the progress of the migration by navigating to menu:System Details[System Status].
 
-image::sles_migrated.png[scaledwidth=80%]
+If the system status reports that the migration has failed, but also shows that software updates are available, install the update and check the status again.
 
-If the menu:System Status[] notification does not report a successful migration but lists menu:Software Updates Available[], install the update now and then check again.
+After the migration is complete, schedule a reboot of the client from the {productname} Server.
 
-Finally, consider to schedule a reboot.
+////

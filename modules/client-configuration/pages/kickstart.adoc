@@ -1,16 +1,18 @@
 [[client-cfg-reg-with-bootstrap-kickstart]]
 = Kickstart
 
+When you install a {rhel} client, there are a number of questions you need to answer.
+To automate installation, you can create a {kickstart} file with all the answers to those questions, so that no user intervention is required.
 
+{kickstart} files can be kept on a server and read by individual clients during installation.
+The same {kickstart} file is used to install multiple clients.
 
-Using Kickstart, a system administrator can create a single file containing the answers to all the questions that would normally be asked during a typical installation of {rhel}.
+{kickstart} can be used to schedule a registered system to be installed with a new operating system and package profile, or you can use it to install a new system that was not previously registered, or does not yet have an operating system installed.
 
-Kickstart files can be kept on a single server and read by individual computers during the installation.
-This method allows you to use one Kickstart file to install {rhel} on multiple machines.
+For more information about {kickstart}, see the Red Hat documentation.
 
-The [ref]_Red Hat Enterprise Linux System Administration Guide_ contains an in-depth description of Kickstart (https://access.redhat.com/documentation/en/red-hat-enterprise-linux/).
-
-
+////
+This is general kickstart info, not specific to SUMA. LKB 2019-07-29
 
 [[s4-system-ks-intro-explain]]
 == Kickstart Explained
@@ -37,90 +39,85 @@ label My_Label
 . This {kickstart} configuration file in turn directs the machine to the location of the installation files.
 . The new machine is built based on the parameters established within the Kickstart configuration file.
 
+////
 
 
-[[s4-system-ks-intro-prereq]]
-== Kickstart Prerequisites
+== Before you Begin
 
-Some preparation is required for your infrastructure to handle {kickstart}s.
-For instance, before creating Kickstart profiles, you may consider:
+Some preparation is required for your infrastructure to handle {kickstart} installations.
+Before you create a {kickstart} profile, consider:
 
-* A DHCP server is not required for kickstarting, but it can make things easier. If you are using static IP addresses, select static IP while developing your Kickstart profile.
-* An FTP server can be used instead of hosting the Kickstart distribution trees via HTTP.
-* If conducting a bare metal {kickstart}, you should configure DHCP to assign required networking parameters and the bootloader program location. Also, specify within the bootloader configuration file the kernel to be used and appropriate kernel options.
+* A DHCP server is not required for kickstarting, but it can make things easier.
+If you are using static IP addresses, select static IP while developing your {kickstart} profile.
+* An FTP server can be used instead of hosting the {kickstart} distribution tree using HTTP.
+* If you are performing a bare metal {kickstart} installation, use these settings:
+** Configure DHCP to assign the required networking parameters and the bootloader program location.
+** In the bootloader configuration file, specify the kernel and appropriate kernel options to be used.
 
 
 
-[[s4-system-ks-iso]]
-== Building Bootable Kickstart ISOs
+== Build a Bootable ISO
 
-While you can schedule a registered system to be kickstarted to a new operating system and package profile, you can also {kickstart} a system that is not registered with {productname} or does not yet have an operating system installed.
-One common method of doing this is to create a bootable CD-ROM that is inserted into the target system.
-When the system is rebooted, it boots from the CD-ROM, loads the {kickstart} configuration from your {productname}, and proceeds to install {rhel} according to the Kickstart profile you have created.
+You will need to create a bootable ISO image to be used by the target system for installation.
+When the system is rebooted or switched on, it boots from the image, loads the {kickstart} configuration from your {productname}, and installs {rhel} according to the {kickstart} profile.
 
-To do this, copy the contents of [path]``/isolinux`` from the first CD-ROM of the target distribution.
-Then edit the [path]``isolinux.cfg`` file to default to 'ks'. Change the 'ks' section to the following template:
 
+.Building a Bootable ISO
+
+. Copy the contents of [path]``/isolinux`` from the first CD-ROM of the target distribution.
+. Edit the [path]``isolinux.cfg`` file to default to 'ks'.
+Change the 'ks' section to read:
++
 ----
 label ks
 kernel vmlinuz
   append text ks=`url`initrd=initrd.img lang= devfs=nomount \
     ramdisk_size=16438`ksdevice`
 ----
-
-
++
 IP address-based {kickstart} URLs will look like this:
-
++
 ----
 http://`my.manager.server`/kickstart/ks/mode/ip_range
 ----
-
-
-The {kickstart} distribution defined via the IP range should match the distribution from which you are building, or errors will occur. [replaceable]``ksdevice`` is optional, but looks like:
-
++
+The {kickstart} distribution defined via the IP range should match the distribution from which you are building, or errors will occur.
+. OPTIONAL: If you want to use the [replaceable]``ksdevice``, it looks like:
++
 ----
 ksdevice=eth0
 ----
-
-
-It is possible to change the distribution for a Kickstart profile within a family, such as Red Hat Enterprise Linux AS 4 to Red Hat Enterprise Linux ES 4, by specifying the new distribution label.
++
+It is possible to change the distribution for a Kickstart profile within a family, such as {rhel} AS 4 to {rhel} ES 4, by specifying the new distribution label.
 Note that you cannot move between versions (4 to 5) or between updates (U1 to U2).
-
-Next, customize [path]``isolinux.cfg`` further for your needs by adding multiple Kickstart options, different boot messages, shorter timeout periods, etc.
-
-Next, create the ISO as described in the _Making an Installation Boot CD-ROM_ section of the [ref]_Red Hat Enterprise Linux Installation Guide_.
-Alternatively, issue the command:
-
+. Customize [path]``isolinux.cfg`` further as required.
+For example, you can add multiple options, different boot messages, or shorter timeout periods.
+. Create the ISO with this command:
++
 ----
 mkisofs -o file.iso -b isolinux.bin -c boot.cat -no-emul-boot \
   -boot-load-size 4 -boot-info-table -R -J -v -T isolinux/
 ----
-
-
++
 Note that [path]``isolinux/`` is the relative path to the directory containing the modified isolinux files copied from the distribution CD, while [path]``file.iso`` is the output ISO file, which is placed into the current directory.
-
-Burn the ISO to CD-ROM and insert the disc.
-Boot the system and type "ks" at the prompt (assuming you left the label for the Kickstart boot as 'ks'). When you press kbd:[Enter], Kickstart starts running.
-
-
-
-[[s4-system-ks-pxe]]
-== Integrating Kickstart with PXE
-
-In addition to CD-ROM-based installs, Kickstart supports a Pre-Boot Execution Environment (PXE). This is less error-prone than CDs, enables kickstarting from bare metal, and integrates with existing PXE/DHCP environments.
-
-To use this method, make sure your systems have network interface cards (NIC) that support PXE.
-Install and configure a PXE server and ensure DHCP is running.
-Then place the appropriate files on an HTTP server for deployment.
-Once the {kickstart} profile has been created, use the URL from the menu:Kickstart Details[] page, as for CD-ROM-based installs.
-
-To obtain specific instructions for conducting PXE {kickstart}s, refer to the _PXE Network Installations_ chapter of the [ref]_Red Hat Enterprise Linux 4 System Administration    Guide_.
-
-[NOTE]
-====
-Running the Network Booting Tool, as described in the Red Hat Enterprise Linux 4: System Administration Guide, select "HTTP" as the protocol and include the domain name of the {productname} in the Server field if you intend to use it to distribute the installation files.
-====
+. Burn the ISO to CD-ROM and insert the disk.
+. Boot the system and type [command]``ks`` at the prompt (if you left the label for the Kickstart boot as 'ks').
+. Press kbd:[Enter] to start {kickstart}.
 
 
-The following sections describe the autoinstallation options available from the menu:Systems[Autoinstallation] page.
 
+== Integrating with PXE
+
+Instead of using a bootable ISO image, you can use a PXE image instead.
+This is less error-prone, allows {kickstart} installation from bare metal, and integrates with existing PXE/DHCP environments.
+
+To use this method, make sure your systems have network interface cards (NICs) that support PXE.
+You will need to install and configure a PXE server, ensure DHCP is running, and place the installation repository on an HTTP server that is reachable by the {productname} Server.
+
+Upload the {kickstart} profile to the {productname} Server using the {productname} {webui}.
+
+When the {ay} profile has been created, use the URL from the menu:Autoinstallation Overview[] page as the image location.
+
+For more information about PXE boot, see https://documentation.suse.com/sles/15-SP1/html/SLES-all/cha-deployment-prep-pxe.html.
+
+For more information about autoinstallation profiles, see xref:reference:systems/autoinst-profiles.adoc[].

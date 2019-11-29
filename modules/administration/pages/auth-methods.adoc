@@ -1,111 +1,65 @@
 [[auth-methods]]
 = Authentication Methods
 
-
-== Authentication Via PAM
-
-
-As security measures become increasingly complex, SUSE Manager supports network-based authentication systems via Pluggable Authentication Modules (PAM). PAM is a suite of libraries that allows to integrate SUSE Manager with a centralized authentication mechanism, thus eliminating the need to remember multiple passwords.
-SUSE Manager supports LDAP, Kerberos, and other network-based authentication systems via PAM.
-To enable SUSE Manager to use PAM in your organization's authentication infrastructure, follow the steps below.
+{productname} supports several different authentication methods.
+This section discusses pluggable authentication modules (PAM) and single sign-on (SSO).
 
 
-. Set up a PAM service file (default location: [path]``/etc/pam.d/susemanager`` ) then enforce its use by adding the following line to [path]``/etc/rhn/rhn.conf`` :
+== Authenticate with PAM
+
+{productname} supports network-based authentication systems using pluggable authentication modules (PAM).
+PAM is a suite of libraries that allows you to integrate {productname} with a centralized authentication mechanism, eliminating the need to remember multiple passwords.
+{productname} supports LDAP, Kerberos, and other network-based authentication systems using PAM.
+
+
+
+.Procedure: Enabling PAM
+
+. Create a PAM service file at [path]``/etc/pam.d/susemanager``.
+A standard [path]``/etc/pam.d/susemanager`` file should look like this.
+It configures {productname} to use the system wide PAM configuration:
 +
-
+----
+#%PAM-1.0
+auth     include        common-auth
+account  include        common-account
+password include        common-password
+session  include        common-session
+----
+. Enforce the use of the service file by adding this line to [path]``/etc/rhn/rhn.conf``:
++
 ----
 pam_auth_service = susemanager
 ----
 +
-NOTE: This assumes the PAM service file is named susemanager.
-+
+In this example, the PAM service file is called [systemitem]``susemanager``.
+. Restart the {productname} services after a configuration change.
+. In the {productname} {webui}, navigate to [menuitem]``Create User`` and enable a new or existing user to authenticate with PAM.
+. Check the [guimenu]``Pluggable Authentication Modules (PAM)`` checkbox.
+It is below the password and password confirmation fields.
 
-. To enable a new or existing user to authenticate with PAM, proceed to the menu:Create User[] page and select the checkbox labeled Pluggable Authentication Modules (PAM) positioned below the password and password confirmation fields.
-. To authenticate a {slsa} system against Kerberos add the following lines to [path]``/etc/pam.d/susemanager`` :
-+
 
-----
-#%PAM-1.0
- auth     include        common-auth
- account  include        common-account
- password include        common-password
- session  include        common-session
-----
-+
-NOTE: To register a Red Hat Enterprise Linux System against Kerberos add the following lines to [path]``/etc/pam.d/susemanager``
 
-----
-#%PAM-1.0
- auth        required      pam_env.so
- auth        sufficient    pam_krb5.so no_user_check
- auth        required      pam_deny.so
- account     required      pam_krb5.so no_user_check
-----
-+
-
-. YaST can now be used to configure PAM, when packages such as yast2-ldap-client and yast2-kerberos-client are installed; for detailed information on configuring PAM, see the SUSE Linux Enterprise Server Security Guide https://www.suse.com/documentation/sles-12/book_security/data/part_auth.html. This example is not limited to Kerberos; it is generic and uses the current server configuration. Note that only network based authentication services are supported.
-+
-.Changing Passwords
-IMPORTANT: Changing the password on the SUSE Manager Web interface changes only the local password on the SUSE Manager server.
-But this password may not be used at all if PAM is enabled for that user.
+[IMPORTANT]
+====
+Changing the password in the {productname} {webui} changes only the local password on the {productname} Server.
+If PAM is enabled for that user, the local password might not be used at all.
 In the above example, for instance, the Kerberos password will not be changed.
-+
+Use the password change mechanism of your network service to change the password for these users.
+====
+
+
+To configure system-wide authentication you can use YaST.
+You will need to install the [package]``yast2-ldap-client`` and [package]``yast2-kerberos-client`` packages.
+
+
+For more information about configuring PAM, the SUSE Linux Enterprise Server Security Guide contains a generic example that will also work for other network-based authentication methods.
+It also describes how to configure an Active Directory Service.
+For more information, see https://documentation.suse.com/sles/15-SP1/html/SLES-all/part-auth.html.
 
 
 
-== Authentication Via eDirectory and PAM
-
-
-. First check to ensure eDirectory authentication is working with your current OS for example:
-+
-
-----
-#getent passwd
-----
-. If users are returned from eDirectory then create the following file:
-+
-
-----
-# cat /etc/pam.d/susemanager
-----
-. And add the following content:
-+
-
-----
-#%PAM-1.0
- auth     include        common-auth
- account  include        common-account
- password include        common-password
- session  include        common-session
- #
-----
-. Finally add the following lines to the {productname} conf file:
-+
-
-----
-# grep -i pam /etc/rhn/rhn.conf
- pam_auth_service = susemanager
-----
-. You may now create users with the same id that appears on eDirectory and mark the Use PAM check-box from the SUSE Manager WebUI.
-
-
-
-== Example Quest VAS Active Directory Authentication Template
-
-
-If you are using Quest VAS for active directory authentication, you can use the following [path]``/etc/pam.d/susemanager``
- file.
-
-----
-#%PAM-1.0
-auth       required       pam_env.so
-auth       sufficient     pam_vas3.so no_user_check
-auth       requisite      pam_vas3.so echo_return
-auth       required       pam_deny.so
-account    required       pam_vas3.so no_user_check
-----
-
-== Authentication Via Single Sign-On (SSO)
+== Authenticate with Single Sign-On (SSO)
 
 [IMPORTANT]
 ====
@@ -126,7 +80,7 @@ SSO in {productname} supports:
 * Log out with service provider-initiated single logout (SLO), and Identity service provider single logout service (SLS).
 * Assertion and nameId encryption.
 * Assertion signatures.
-* Message signatures with AuthNRequest, LogoutRequest, LogoutResponses.
+* Message signatures with AuthNRequest, LogoutRequest, and LogoutResponses.
 * Enable an Assertion consumer service endpoint.
 * Enable a single logout service endpoint.
 * Publish the SP metadata (which can be signed).
@@ -134,8 +88,11 @@ SSO in {productname} supports:
 SSO in {productname} does not support:
 
 * Product choosing and implementation for the Identity Service Provider (IdP).
-* SAML support for other products (please check with the respective product documentation).
+* SAML support for other products (check with the respective product documentation).
 
+
+
+=== Prerequisites
 
 Before you begin, you will need to have configured an external Identity Service Provider with these parameters.
 Check your IdP documentation for instructions.
@@ -157,6 +114,10 @@ The `uid` attribute passed in the SAML:Attribute must be created in the {product
 
 After the authentication with the IdP using the user `orgadmin` is successful, you will be logged in into {productname} as the `orgadmin` user, provided that the `orgadmin` user exists in {productname}.
 
+
+
+=== Enable SSO
+
 [NOTE]
 ====
 Using SSO is mutually exclusive with other types of authentication: it is either enabled or disabled.
@@ -171,9 +132,10 @@ SSO is disabled by default.
 ----
 java.sso = true
 ----
-. Copy parameters you want to customize from `/usr/share/rhn/config-defaults/rhn_java_sso.conf` into `/etc/rhn/rhn.conf` and proceed by inserting the parameters you want to customize by prefixing them with `java.sso.`.
+. Find the parameters you want to customize in `/usr/share/rhn/config-defaults/rhn_java_sso.conf`.
+Insert the parameters you want to customize into `/etc/rhn/rhn.conf` and prefix them with `java.sso.`.
 +
-For example, in `/usr/share/rhn/config-defaults/rhn_java_sso.conf`:
+For example, in `/usr/share/rhn/config-defaults/rhn_java_sso.conf` find:
 +
 ----
 onelogin.saml2.sp.assertion_consumer_service.url = https://YOUR-PRODUCT-HOSTNAME-OR-IP/rhn/manager/sso/acs
@@ -187,7 +149,7 @@ java.sso.onelogin.saml2.sp.assertion_consumer_service.url = https://YOUR-PRODUCT
 +
 To find all the occurrences you need to change, search in the file for the placeholders [literal]``YOUR-PRODUCT`` and [literal]```YOUR-IDP-ENTITY``.
 Every parameter comes with a brief explanation of what it is meant for.
-. Restart spacewalk-service to pick up the changes:
+. Restart the spacewalk service to pick up the changes:
 +
 ----
 spacewalk-service restart

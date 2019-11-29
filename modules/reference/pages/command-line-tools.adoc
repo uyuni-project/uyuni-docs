@@ -381,17 +381,12 @@ Show help message and exit.
 
 
 [TIP]
-.Max File size
+.Maximum File Size
 ====
-By default, the maximum file size for configuration files is 128KB.
-If you need to change that value, find or create the following line in the [path]``/etc/rhn/rhn.conf`` file:
-
-----
-web.maximum_config_file_size=128
-----
-
-Change the value from 128 to whatever limit you need in kilobytes.
+By default, the maximum file size for configuration files is 128 KB.
+For information on changing the maximum file size value, see xref:reference:configuration/config-files-menu.adoc[].
 ====
+
 
 
 [[diff.between.latest.config.files]]
@@ -700,24 +695,101 @@ Show help message and exit.
 
 
 
+[[spacewalk-repo-sync]]
+== Synchronize Repositories with spacewalk-repo-sync
+
+The [command]``spacewalk-repo-sync`` tool synchronizes software repositories into {productname} channels.
+This usually happens automatically, but you can run it manually if required.
+This can be useful for debugging or for solving some synchronization problems.
+
+
+
+=== Normal Channel Synchronization
+
+Basic operation:
+
+[command]``spacewalk-repo-sync --list``::
+List all custom channels and the repositories assigned to them.
+[command]``spacewalk-repo-sync  --channel <custom-channel>``::
+Synchronize a single channel ``<custom-channel>`` to all repositories assigned to it with the {webui} or the API.
+
+
+
+=== Solve Checksum Problems
+
+Use the [option]``--deep-verify`` option to ignore cached package checksums.
+This can help with solving checksum problems.
+
+
+
+=== Force Re-import Patches
+
+Use the [option]``--force-all-errata`` option to force re-importing all the patches.
+To make this command run faster, you can use the [option]``--no-packages`` option.
+This option excludes packages from the operation.
+
+To find the root cause of synchronization problems you can look at the HTTP log as [command]``spacewalk-repo-sync`` is running.
+
+. Set and export [systemitem]``ZYPP_MEDIA_CURL_DEBUG``.
+This setting will allow downloading the metadata output by Zypper.
+Thus the following command will log the HTTP conversation into [path]``/var/log/zypper.log``:
++
+
+----
+ZYPP_MEDIA_CURL_DEBUG=2 spacewalk-repo-sync --channel <channel-label>
+----
+
+. Set and export [systemitem]``URLGRABBER_DEBUG`` for the RPM downloading part:
++
+----
+export URLGRABBER_DEBUG=DEBUG
+----
+. Start the synchronization:
++
+
+----
+/usr/bin/spacewalk-repo-sync --channel <channel-label> --type yum
+----
+
+To increase the debug level, add the [option]``-vvv`` option.
+
+When debugging is finished, disable debug mode:
+
+----
+unset URLGRABBER_DEBUG
+----
+
+
+
+=== For More Information
+
+For a complete list of command line options, see the [command]``spacewalk-repo-sync`` manpage:
+
+----
+man spacewalk-repo-sync
+----
+
+
+
 [[syncing.suse.mgr.repositories.scc]]
-== Syncing SUSE Manager Repositories from SCC (mgr-sync)
+== Synchronize SUSE Manager Repositories from SCC (mgr-sync)
 
 [command]``mgr-sync`` should be used if SUSE Manager is connected to SUSE Customer Center (SCC).
 With [command]``mgr-sync`` you may add or synchronize products and channels.
 The [command]``mgr-sync`` command also enables and refreshes SCC data.
 
-
-By default, log rotation of [path]``spacewalk-repo-sync`` is disabled.
-This logfile is run by a cron job, and managed by a configuration file.
-You can enable log rotation by editing the configuration file at [path]``etc/sysconfig/rhn/reposync`` and setting the [command]``MAX_DAYS`` parameter.
-This will permit the deletion of files that are older than the specified period of time.
-
+By default, [command]``mgr-sync`` writes basic debug information to [path]``/var/log/rhn/mgr-sync.log``.
+Get more debugging information with [option]``--debug`` or by adding [literal]``mgrsync.debug = <DEBUGLEVEL>`` to [path]``/etc/rhn/rhn.conf``.
+Settings in [path]``~/.mgr-sync`` will supersede values from [path]``rhn.conf``. For example, if you set
+----
+mgrsync.debug = ""
+----
+in [path]``~/.mgr-sync``, the value in [path]``rhn.conf`` will have no effect. 
 
 [IMPORTANT]
 .Admin credentials
 ====
-[command]``mgr-sync`` now requires the username/password of a *SUSE Manager administrator*.
+[command]``mgr-sync`` requires username and password of a *SUSE Manager administrator*.
 Most functions are available as part of the public API.
 ====
 

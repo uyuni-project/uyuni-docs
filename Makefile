@@ -82,16 +82,27 @@ clean: ## Remove build artifacts from output directory (Antora and PDF)
 
 # SUMA DOCUMENTATION BUILD COMMANDS
 
+.PHONY: validate-suma
+validate-suma: ## Validates page references and prints a report (Does not build the site)
+	NODE_PATH="$(npm -g root)" antora --generator @antora/xref-validator suma-site.yml
+
+
+
+.PHONY: pdf-tar-suma
+pdf-tar-suma: ## Create tar of PDF files
+	tar -czvf $(PDF_OUTPUT_SUMA).tar.gz $(PDF_BUILD_DIR)
+	mv $(PDF_OUTPUT_SUMA).tar.gz build/
+
+
+
 # To build for suma-webui or uyuni you need to comment out the correct name/title in the antora.yml file. (TODO remove this manual method.)
 .PHONY: antora-suma
-antora-suma: clean pdf-all-suma ## Build the SUMA Antora static site (See README for more information)
+antora-suma: clean pdf-all-suma pdf-tar-suma ## Build the SUMA Antora static site (See README for more information)
 		sed -i "s/^ # *\(name: *suse-manager\)/\1/;\
 	s/^ # *\(title: *SUSE Manager\)/\1/;\
-	s/^ # *\(start_page: *ROOT:index-suma\)/\1/;\
 	s/^ *\(title: *Uyuni\)/#\1/;\
-	s/^ *\(name: *uyuni\)/#\1/;\
-	s/^ *\(start_page: *ROOT:index-uyuni\)/#\1/;" antora.yml
-		docker run -u 1000 -v `pwd`:/antora --rm -t antora/antora:latest suma-site.yml
+	s/^ *\(name: *uyuni\)/#\1/;" antora.yml
+	DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr antora suma-site.yml --generator antora-site-generator-lunr
 
 
 
@@ -105,8 +116,10 @@ obs-packages-suma: clean pdf-all-suma antora-suma ## Generate SUMA OBS tar files
 
 
 
+
 .PHONY: pdf-all-suma
-pdf-all-suma: pdf-install-suma pdf-client-config-suma pdf-upgrade-suma pdf-reference-suma pdf-administration-suma pdf-salt-suma pdf-retail-suma ##pdf-architecture-suma-webui ## Generate PDF versions of all SUMA books
+pdf-all-suma: pdf-install-suma pdf-client-config-suma pdf-upgrade-suma pdf-reference-suma pdf-administration-suma pdf-salt-suma pdf-retail-suma  ##pdf-architecture-suma-webui ## Generate PDF versions of all SUMA books
+
 
 
 
@@ -256,15 +269,25 @@ pdf-architecture-suma: ## Generate PDF version of the SUMA Architecture Guide
 
 # UYUNI DOCUMENTATION BUILD COMMANDS
 
+.PHONY: validate-uyuni
+validate-uyuni: ## Validates page references and prints a report (Does not build the site)
+	NODE_PATH="$(npm -g root)" antora --generator @antora/xref-validator uyuni-site.yml
+
+
+
+.PHONY: pdf-tar-uyuni
+pdf-tar-uyuni: ## Create tar of PDF files
+	tar -czvf $(PDF_OUTPUT_UYUNI).tar.gz $(PDF_BUILD_DIR)
+	mv $(PDF_OUTPUT_UYUNI).tar.gz build/
+
+
 .PHONY: antora-uyuni
-antora-uyuni: clean pdf-all-uyuni ## Build the UYUNI Antora static site (See README for more information)
+antora-uyuni: clean #pdf-all-uyuni pdf-tar-uyuni ## Build the UYUNI Antora static site (See README for more information)
 		sed -i "s/^ *\(name: *suse-manager\)/#\1/;\
-s/^ *\(title: *SUSE Manager\)/#\1/;\
-s/^ *\(start_page: *ROOT:index-suma\)/#\1/;\
-s/^ *# *\(title: *Uyuni\)/\1/;\
-s/^ *# *\(name: *uyuni\)/\1/;\
-s/^ *# *\(start_page: *ROOT:index-uyuni\)/\1/;" antora.yml
-		docker run -u 1000 -v `pwd`:/antora --rm -t antora/antora:latest uyuni-site.yml
+	s/^ *\(title: *SUSE Manager\)/#\1/;\
+	s/^ *# *\(title: *Uyuni\)/\1/;\
+	s/^ *# *\(name: *uyuni\)/\1/;" antora.yml
+		DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr antora uyuni-site.yml --generator antora-site-generator-lunr
 
 
 

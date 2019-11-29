@@ -1,52 +1,65 @@
 [[proxy-migration]]
 = Proxy Migration
 
-// also see client-migration.adoc
-Upgrading from {productname} Proxy 3.2 with the latest service pack (SP) to version 4 can be automated, but requires some preparation steps.
 
-////
-To upgrade the SP version on SLE{nbsp}12 (for example, upgrading from SLE{nbsp}12 or any SLE{nbsp}12{nbsp}SPx to SLE{nbsp}12{nbsp}SP4) can be fully automated and requires no additional preparation.
-////
+{productname} Proxy can be upgraded from version 3.2 to 4.0 if it was registered as a traditional client.
+The upgrade process is automated, but you will need to do some preparation steps before you can upgrade.
 
-== Preliminary Considerations
+You will need to complete the {productname} Server migration before you start.
 
-The recommended order for migrations is to first migrate the {productname} server and then the proxies.
+The system must be running {productname}{nbsp}3.2 with all the latest updates applied.
+Before you start, ensure that the system is up to date and all updates have been installed successfully.
 
-.Using {productname} Proxy 3.2 with {productname} 4
 [NOTE]
 ====
-{productname} Proxy 3.2 is compatible with {productname} Server 4.
-After the server has been migrated to version 4, proxies can be automatically upgraded from the {productname} server using YaST autoinstallation.
+This process cannot be used to upgrade a {productname} Proxy that was registered as a Salt client.
 ====
 
-Migrating {productname} Proxy 3.2 only works for proxies that have been registered as traditional clients.
-Proxies that are Salt clients cannot be migrated to the new version this way.
+// Do we have Salt instructions somewhere? LKB 2019-08-22
 
 
 
-[[proxy-migration-inplace]]
-== Upgrading {productname} Proxy In-place
+== Prepare to Migrate
 
-.Procedure: Preparing to Upgrade
-. Create an autoinstallation distribution based on SLE 15 SP1.
-Use the SLE Installer media.
-This is required because {productname} Proxy 4 is a product of the {sle} 15.1 product family.
-As the [guimenu]``Base Channel`` select [literal]``SLE-Product-SUSE-Manager-Proxy-4.0-Pool for x86_64`` and as the [guimenu]``Installer Generation`` select [literal]``SUSE Linux Enterprise 15``.
+Before you can update your proxy, you will need an autoinstallation distribution, and an autoinstallation profile.
+The distribution must be based on {sle}{nbsp}15 SP1, because {productname}{nbsp}4 is part of the {sle}{nbsp}15 SP1 product family.
+
+
+.Procedure: Preparing Installation Media
+. On the {productname} Server, create a local directory for the SLE{nbsp}15 installation media.
+. Download an ISO image with the installation sources, and mount the ISO image on your server:
 +
+----
+mkdir /mnt/sle15sp1
+mount -o loop DVD1.iso /mnt/sle15sp1
+----
+
+
+.Procedure: Creating an Autoinstallation Distribution
+
+. In the {productname} {webui}, navigate to menu:Systems[Autoinstallation > Distributions] and click btn:[Create Distribution].
+. In the [guimenu]``Create Autoinstallable Distribution`` section, use these parameters:
+* In the [guimenu]``Distribution Label`` section, type a unique name for the distribution.
+Use only letters, numbers, hyphens (``-``), periods  (``.``), and underscores (``_``), and ensure the name is longer than four characters.
+* In the [guimenu]``Tree Path`` field, type an absolute path to the installation source.
+In this example, this would be [path]``/mnt/sle15sp1``.
+* In the [guimenu]``Base Channel`` field, select [systemitem]``SLE-Product-SUSE-Manager-Proxy-4.0-Pool for x86_64``.
+* In the [guimenu]``Installer Generation`` field, select [systemitem]``SUSE Linux Enterprise 15``.
+* In the [guimenu]``Kernel Options`` field, type any options to be passed to the kernel when booting for the installation.
+The [option]``install=`` parameter and the [option]``self_update=0 pt.options=self_update`` parameter are added by default.
+* In the [guimenu]``Post Kernel Options`` section, type any options to  be passed to the kernel when booting the installed system for the first time.
+. Click btn:[Create Autoinstallable Distribution] to save.
+
 image::autoinst_dist_proxy4.png[scaledwidth=80%]
-+
-For information on creating an autoinstallation distribution, see xref:#ref.webui.systems.autoinst.distribution (menu:Main Menu[Systems > Autoinstallation > Distributions]).
-. Create an autoinstallation profile.
-xref:#proxy-migration-inplace-profile includes a template autoinstallation profile for your use.
-In this example, the label [literal]``proxy4`` is used for both the autoinstallation distribution and for the autoinstallation profile.
-Replace the label [literal]``proxy4`` with the one you use for your autoinstallation profile.
 
+When you have created an autoinstallable distribution, you can edit it by navigating to  menu:Systems[Autoinstallation > Distributions] and selecting the distribution you want to edit.
 
+Autoinstallation profiles contain all the installation and configuration data needed to install a system.
+They can also contain scripts to be executed after the installation is complete.
 
-[[proxy-migration-inplace-profile]]
-=== Autoinstallation Profile
+Use this example profile as a starting point for your own autoinstallation profile:
 
-Use this autoinstallation profile as an example.
+.Example: Autoinstallation Profile
 
 ----
 <?xml version="1.0"?>
@@ -155,42 +168,38 @@ Use this autoinstallation profile as an example.
 </profile>
 ----
 
-Before proceeding make sure all the channels referenced in the
-autoinstallation profile are available and fully synchronized.
 
 
+=== Migration
 
-=== Running the In-place Upgrade
+Before you begin, check that all the channels referenced in the autoinstallation profile are available and fully synchronized.
 
-.Procedure: Running the In-place Upgrade
-. In the {productname} {webui}, upload the edited autoinstallation profile to your {productname} server (menu:Main Menu[Systems > Autoinstallation > Profiles]).
-. In the [guimenu]``Kernel Options`` field, enter this value:
-+
-----
-autoupgrade=1 Y2DEBUG=1
-----
-+
-The debug setting is not required but can help with investigating future problems you might encounter.
-The [literal]``autoupgrade`` parameter, however, is mandatory.
-. Select the proxy from the system list in {productname}, click the [guimenu]``Provisioning`` tab, and select the profile you created earlier.
+.Procedure: Migrating
+
+. On the {productname} Server {webui}, navigate to menu:Systems[Autoinstallation > Profiles] and upload your autoinstallation profile.
+. In the [guimenu]``Kernel Options`` field, enter [systemitem]``autoupgrade=1 Y2DEBUG=1``
+. OPTIONAL: The debug setting is not required but can help with investigating any future problems.
+. Check the [guimenu]``autoupgrade`` option.
+. In the [guimenu]``System List``, select the proxy, navigate to the [guimenu]``Provisioning`` tab, and select the autoinstallation profile you uploaded.
 . Click btn:[Schedule Autoinstallation and Finish].
-The system will download the needed files, change the bootloader entries, reboot, and start the upgrade.
+The system will download the required files, change the bootloader entries, reboot, and start the upgrade.
 
 
 
-=== Cleaning Up After the In-place Upgrade
+=== Clean Up
 
-After the proxy has completed the automatic upgrade process, it still will have the old channels from {productname} assigned.
+When the {productname} Proxy has finished upgrading process, it will still show the originally assigned channels.
 
 [WARNING]
 ====
-If the server reports that there are updates available for the proxy, do not apply them.
+If the server reports that there are updates available for the proxy, do not apply them before completing the clean up.
 ====
 
-Select the proxy from the system list and click menu:System Details Page[Software > Software Channels].
-Clear the old channels and assign the new ones, which have been used for the upgrade:
-As the [guimenu]``Base Channel``, select `SLE-Product-SUSE-Manager-Proxy-4.0-Pool for x86_64` and as [guimenu]``Child Channels`` all the recommended channels:
+.Procedure: Cleaning Up
+
+. On the {productname} Server {webui}, navigate to the [guimenu]``System List``, select the proxy, and navigate to the menu:Software[Software Channels] subtab.
+. Clear the old channels.
+. In the [guimenu]``Base Channel`` field, select `SLE-Product-SUSE-Manager-Proxy-4.0-Pool for x86_64`.
+. In the [guimenu]``Child Channels`` field, select all the recommended channels.
 
 image::proxy_channels.png[scaledwidth=80%]
-
-All the clients connected with the previous {productname} Proxy can access the {productname} Server again and the proxy itself can be managed by the server as before.

@@ -12,25 +12,32 @@ The parameter defaults to [systemitem]``0``, which means unlimited.
 java.max_changelog_entries = 0
 ----
 
-When you set this parameter, it will come into effect only for new packages as they are synchronized.
-You might like to delete the cached data to remove older data.
-You can delete cached data from the command line, using the SQL interface:
+If you set this parameter, it will come into effect only for new packages when they are synchronized.
+
+After changing this parameter, restart services with ``spacewalk-service restart``.
+
+You might like to delete and regenerate the cached data to remove older data.
 
 [IMPORTANT]
 ====
-This process can take a long time.
+Deleting and regenerating cached data can take a long time.
 Depending on the number of channels you have and the amount of data to be deleted, it can potentially take several hours.
 The task is run in the background by Taskomatic, so you can continue to use {productname} while the operation completes, however you should expect some performance loss.
 ====
 
+You can delete and request a regeneration of cached data from the command line:
+
 ----
 spacewalk-sql -i
-SQL> delete from rhnPackageRepodata;
-SQL> insert into rhnRepoRegenQueue (id, CHANNEL_LABEL, REASON, FORCE)
-(select sequence_nextval('rhn_repo_regen_queue_id_seq'),
+----
+Then on the SQL database prompt, enter:
+----
+DELETE FROM rhnPackageRepodata;
+INSERT INTO rhnRepoRegenQueue (id, CHANNEL_LABEL, REASON, FORCE)
+(SELECT sequence_nextval('rhn_repo_regen_queue_id_seq'),
         C.label,
-        'package summary modification',
+        'cached data regeneration',
         'Y'
-   from rhnChannel C);
-SQL> \q
+        FROM rhnChannel C);
+\q
 ----

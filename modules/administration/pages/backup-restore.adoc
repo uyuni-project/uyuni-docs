@@ -1,14 +1,10 @@
 [[backup-restore]]
 = Backup and Restore
 
-
-
-
 Back up your {productname} installation regularly, in order to prevent data loss.
 Because {productname} relies on a database as well as the installed program and configurations, it is important to back up all components of your installation.
 This chapter contains information on the files you need to back up, and introduces the [command]``smdba`` tool to manage database backups.
 It also contains information about restoring from your backups in the case of a system failure.
-
 
 .Backup Space Requirements
 [IMPORTANT]
@@ -17,13 +13,14 @@ Regardless of the backup method you use, you must have available at least three 
 Running out of space can result in backups failing, so check this often.
 ====
 
-== Backing up {productname}
 
+
+[[backup-restore-product]]
+== Backing up {productname}
 
 The most comprehensive method for backing up your {productname} installation is to back up the relevant files and directories.
 This can save you time in administering your backup, and can be faster to reinstall and re-synchronize in the case of failure.
 However, this method requires significant disk space and could take a long time to perform the backup.
-
 
 [NOTE]
 ====
@@ -62,16 +59,17 @@ You will also need to have saved a copy of the ``id-susemanager`` key.
 * [path]``/var/lib/Kiwi``
 * [path]``/var/lib/rhn/``
 * [path]``/var/spacewalk/``
-* Plus any directories containing custom data such as scripts, Kickstart profiles, AutoYaST, and custom RPMs.
-
+* Plus any directories containing custom data such as scripts, Kickstart or AutoYaST profiles, and custom RPMs.
 
 [IMPORTANT]
 ====
-You will also need to back up your database, which you can do by using the [command]``smdba`` tool, which is explained in <<bp.sect.backup.smdba.admin>>.
+You will also need to back up your database, which you can do with the [command]``smdba`` tool.  
+For more information about the [command]``smdba`` tool, see xref:administration:backup-restore.adoc[].
 ====
 
 .Procedure: Restore from a Manual Backup
-. Re-install {productname}.  For more information, see <<config-smdb.recover-root>>.
+. Re-install {productname}.
+For more information about recovering from a backup, see xref:administration:backup-restore.adoc[].
 . Re-synchronize your {productname} repositories with the [command]``mgr-sync`` tool.
 For more information about the [command]``mgr-sync`` tool, see <<syncing.suse.mgr.repositories.scc>>.
 . You can choose to re-register your product, or skip the registration and SSL certificate generation sections.
@@ -84,13 +82,15 @@ rhn-search cleanindex
 +
 This command produces only debug messages.
 It does not produce error messages.
-. If you did not have [path]``/var/spacewalk/packages/`` in your backup, but the source repository still exists, you can restore it by performing a complete channel synchronization with:
+. Check whether you need to restore [path]``/var/spacewalk/packages/``.
+If [path]``/var/spacewalk/packages/`` was not in your backup, you will need to restore it.
+If the source repository is available, you can restore [path]``/var/spacewalk/packages/`` with a complete channel synchronization:
 +
 ----
 mgr-sync refresh --refresh-channels
 ----
 +
-You can check the progress by running [command]``tail -f /var/log/rhn/reposync/``<CHANNEL_NAME>``.log`` as _root_.
+Check the progress by running [command]``tail -f /var/log/rhn/reposync/``<CHANNEL_NAME>``.log`` as _root_.
 
 
 
@@ -101,10 +101,7 @@ The [command]``smdba`` tool is used for managing a local PostgreSQL database.
 It allows you to back up and restore your database, and manage backups.
 It can also be used to check the status of your database, and perform administration tasks, such as restarting.
 
-[NOTE]
-====
 The [command]``smdba`` tool works with local PostgreSQL databases only, it will not work with remotely accessed databases, or Oracle databases.
-====
 
 [IMPORTANT]
 ====
@@ -117,33 +114,34 @@ admin   ALL=(postgres) /usr/bin/smdba
 
 ====
 
-
-Check the runtime status of your database with the [command]``smdba db-status`` command.
-This command will return either ``online`` or ``offline``:
+Check the runtime status of your database with:
 
 ----
 smdba db-status
+----
+
+This command will return either ``online`` or ``offline``, for example:
+
+----
 Checking database core...       online
 ----
 
-Starting and stopping the database can be performed with [command]``smdba db-start`` and [command]``smdba db-stop``.
+Starting and stopping the database can be performed with:
 
 ----
 smdba db-start
-Starting core...       done
 ----
+
+And:
 
 ----
 smdba db-stop
-Stopping the SUSE Manager database...
-Stopping core:         done
 ----
 
 
 
 [[bp.sect.backup.smdba.performbackup]]
 == Database Backup with smdba
-
 
 The [command]``smdba`` tool performs a continuous archiving backup.
 This backup method combines a log of every change made to the database during the current session, with a series of more traditional backup files.
@@ -160,6 +158,7 @@ Every time you create a new backup, previous backups will be purged to release d
 We recommend you use [command]``cron`` to schedule your [command]``smdba`` backups to ensure that your storage is managed effectively, and you always have a backup ready in case of failure.
 
 
+
 === Performing a Manual Database Backup
 
 The [command]``smdba`` tool can be run directly from the command line.
@@ -171,7 +170,6 @@ When [command]``smdba`` is run for the first time, or if you have changed the lo
 This will result in a small amount of downtime.
 Regular database backups will not require any downtime.
 ====
-
 
 .Procedure: Performing a Manual Database Backup
 . Allocate permanent storage space for your backup.
@@ -200,7 +198,7 @@ chown postgres:postgres /var/spacewalk/db-backup
 ----
 +
 
-. To run a backup for the first time, run the [command]``smdba backup-hot`` command with the [command]``enable`` option set.
+. To create a backup for the first time, run the [command]``smdba backup-hot`` command with the [option]``enable`` option set.
 This will create the backup in the specified directory, and, if necessary, restart the database:
 +
 
@@ -229,7 +227,6 @@ You do not need to shut down your system in order to perform a database backup w
 However, because it is a large operation, database performance can slow down while the backup is running.
 We recommend you schedule regular database backups for a low-traffic period, to minimize disruption.
 
-
 [IMPORTANT]
 ====
 Ensure you have at least three times the current database size of space available for backups.
@@ -237,11 +234,11 @@ You can check your current database size by navigating to [path]``/var/lib/pgsql
 ====
 
 .Procedure: Scheduling Automatic Backups
-. Create a directory for the backup, and set the appropriate permissions:
+. Create a directory for the backup, and set the appropriate permissions (as root):
 +
 
 ----
-# install -m 700 -o postgres -g postgres /var/spacewalk/db-backup
+install -m 700 -o postgres -g postgres /var/spacewalk/db-backup
 ----
 
 . Open [path]``/etc/cron.d/db-backup-mgr``, or create it if it does not exist, and add the following line to create the cron job:
@@ -257,7 +254,6 @@ You can check your current database size by navigating to [path]``/var/lib/pgsql
 
 [[bp.sect.backup.smdba.restore]]
 == Restoring from Backup
-
 
 The [command]``smdba`` tool can be used to restore from backup in the case of failure.
 
@@ -283,6 +279,7 @@ smdba db-start
 ----
 
 . Check if there are differences between the RPMs and the database.
++
 
 ----
 spacewalk-data-fsck
@@ -293,16 +290,14 @@ spacewalk-data-fsck
 [[config-smdb.archivelog]]
 == Archive Log Settings
 
+Archive logging allows the database management tool [command]``smdba`` to perform hot backups.
+In {productname} with an embedded database, archive logging is enabled by default.
 
-In {susemgr} with an embedded database, archive logging is enabled by default.
-This feature allows the database management tool [command]``smdba`` to perform hot backups.
 
-With archive log enabled, even more data is stored on the hard disk:
-
-* PostgreSQL maintains a limited number of archive logs.
+PostgreSQL maintains a limited number of archive logs.
 Using the default configuration, approximately 64 files with a size of 16 MiB are stored.
 
-
+// FIXME: Use sle 15 channels as an example
 Creating a user and syncing the channels:
 
 * SLES12-SP2-Pool-x86_64
@@ -317,6 +312,7 @@ So it is important to think about a backup strategy and create a backups in a re
 Archive logs are stored at [path]``/var/lib/pgsql/data/pg_xlog/`` (postgresql).
 
 
+
 [[config-smdb.spaces]]
 == Retrieving an Overview of Occupied Database Space
 
@@ -325,6 +321,11 @@ Database administrators may use the subcommand [command]``space-overview`` to ge
 
 ----
 smdba space-overview
+----
+
+outputs:
+
+----
 SUSE Manager Database Control. Version 1.5.2
 Copyright (c) 2012 by SUSE Linux Products GmbH
 
@@ -342,6 +343,11 @@ It lists the table and its size, for example:
 
 ----
 smdba space-tables
+----
+
+outputs:
+
+----
 SUSE Manager Database Control. Version 1.5.2
 Copyright (c) 2012 by SUSE Linux Products GmbH
 
@@ -358,56 +364,65 @@ public.log                            | 32 kB
 ...
 ----
 
+
+
 == Moving the Database
 
 
 It is possible to move the database to another location.
-For example if your database storage space is running low.
-The following procedure will guide you through moving the database to a new location for use by SUSE Manager.
+For example, move the database if the database storage space is running low.
+The following procedure will guide you through moving the database to a new location for use by {productname}.
 
 .Procedure: Moving the Database
-. The default storage location for {susemgr} is [path]``/var/lib/pgsql/``. If you would like to move it, for example to [path]``/storage/postgres/``, proceed as follows.
+. The default storage location for {productname} is [path]``/var/lib/pgsql/``. If you would like to move it, for example to [path]``/storage/postgres/``, proceed as follows.
 
-. Stop the running database with:
+. Stop the running database with (as root):
 +
 
 ----
-# rcpostgresql stop
+rcpostgresql stop
 ----
 +
-Shut down the running spacewalk services with:
+Shut down the running Spacewalk services with:
 +
 
 ----
-# spacewalk-service stop
+spacewalk-service stop
 ----
 . Copy the current working directory structure with [command]``cp`` using the [option]``-a, --archive`` option.
 For example:
 +
 
 ----
-# cp --archive /var/lib/pgsql/ /storage/postgres/
+cp --archive /var/lib/pgsql/ /storage/postgres/
 ----
 +
 This command will copy the contents of [path]``/var/lib/pgsql/``
 to [path]``/storage/postgres/pgsql/``.
 +
-IMPORTANT: The contents of the [path]``/var/lib/pgsql`` directory needs to remain the same, otherwise the SUSE Manager database may malfunction.
-You also should ensure there is enough available disk space.
+IMPORTANT: The contents of the [path]``/var/lib/pgsql`` directory needs to remain the same, otherwise the {productname} database may malfunction.
+You also should ensure that there is enough available disk space.
 +
 
 . Mount the new database directory with:
 +
 
 ----
-# mount /storage/postgres/pgsql
+mount /storage/postgres/pgsql
 ----
 . Make sure ownership is `postgres:postgres` and not `root:root` by changing to the new directory and running the following commands:
 +
 
 ----
-# cd /storage/postgres/pgsql/
-# ls -l
+cd /storage/postgres/pgsql/
+ls -l
+----
++
+
+Outputs:
++
+
+----
 total 8
 drwxr-x---  4 postgres postgres   47 Jun  2 14:35 ./
 ----
@@ -416,14 +431,14 @@ drwxr-x---  4 postgres postgres   47 Jun  2 14:35 ./
 +
 
 ----
-# rcpostgresql start
+rcpostgresql start
 ----
-+
-Start the spacewalk services with:
+
+. Start the Spacewalk services with:
 +
 
 ----
-# spacewalk-service start
+spacewalk-service start
 ----
 
 
@@ -432,24 +447,28 @@ Start the spacewalk services with:
 
 
 This section provides guidance on restoring your server after its root partition has crashed.
-This section assumes you have setup your server similar to the procedure explained in Getting Started guide with separate partitions for the database and for channels mounted at [path]``/var/lib/pgsql``
- and [path]``/var/spacewalk/``
-.
+This section assumes you have setup your server similar to the procedure explained in Installation guide with separate partitions for the database and for channels mounted at [path]``/var/lib/pgsql`` and [path]``/var/spacewalk/``.
 
 .Procedure: Recovering from a Crashed Root Partition
-. Start by installing SLES12 SP2 and the SUSE Manager Extension. Do not mount the [path]``/var/spacewalk`` and [path]``/var/lib/pgsql`` partitions.
-. Once installation of SUSE Manager has completed shutdown services with [command]``spacewalk-service shutdown`` and the database with [command]``rcpostgresql stop``.
-. Mount your [path]``/var/spacewalk`` and [path]``/var/lib/pgsql`` partitions and restore the directories listed in section one.
-. Start SUSE Manager services and the database with [command]``spacewalk-services start`` and [command]``rcpostgresql start``
-. SUSE Manager should now operate normally without loss of your database or synced channels.
+. Install {productname}.
+Do not mount the [path]``/var/spacewalk`` and [path]``/var/lib/pgsql`` partitions.
+Wait for the installation to complete before going on to the next step.
+. Shut down the services with [command]``spacewalk-service shutdown``.
+. Shut down the database with [command]``rcpostgresql stop``.
+. Mount [path]``/var/spacewalk`` and [path]``/var/lib/pgsql`` partitions.
+. Restore the directories listed in <<backup-restore-product>>.
+. Start the Spacewalk services with [command]``spacewalk-services start``.
+. Start the database with [command]``rcpostgresql start``.
+
+{productname} should now operate normally without loss of your database or synced channels.
+
 
 
 == Database Connection Information
 
+The information for connecting to the {productname} database is located in [path]``/etc/rhn/rhn.conf``:
 
-The information for connecting to the SUSE Manager database is located in [path]``/etc/rhn/rhn.conf``
-:
-
+// There are no such default, they are user-spcified, though
 ----
 db_backend = postgresql
 db_user = susemanager

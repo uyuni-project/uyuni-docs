@@ -1,213 +1,153 @@
 [[ports]]
-= Ports
+= Required Network Ports
 
+This section contains a comprehensive list of ports that are used for various communications within {productname}.
 
+You will not need to open all of these ports.
+Some ports only need to be opened if you are using the service that requires them.
 
-
-
-
-[[advanced.topics.app.ports.server]]
-== {productname} Server
-
-Some ports are only relevant if you actually run the related service on the {productname} server.
-
-.Ports to Open on {productname}Server
-67::
-Inbound / TCP/UDP / DHCP
-+
-
-Required when {productname} is configured as a DHCP server for systems requesting IP addresses.
-
-69::
-Inbound / TCP/UDP / TFTP
-+
-Used when {productname} is configured as a PXE server and allows installation and re-installation of PXE-boot enabled systems.
-
-80::
-Inbound / TCP / HTTP
-+
-
-Client and proxy server requests travel via HTTP or HTTPS.
-
-80::
-Outbound / TCP / HTTP
-+
-
-Used to contact {scc}/{ncc}.
-
-443::
-Inbound / TCP / HTTPS
-+
-
-All {webui}, client, and proxy server requests travel via HTTP or HTTPS.
-
-443::
-Outbound / TCP / HTTPS
-+
-
-{productname} uses this port to reach {scc} (unless running in a disconnected mode with RMT or SMT{mdash}as described in <<disconnect-setup>>).
-
-5222::
-Inbound / TCP / osad
-+
-
-When you wish to push actions to clients this port is required by the [systemitem]``osad`` daemon running on your client systems.
-
-5269::
-Inbound/Outbound / TCP / jabberd
-+
-
-Needed if you push actions to or via a {susemgrproxy}.
-
-4505::
-Inbound / TCP / salt
-+
-
-Required by the Salt-master to accept communication requests via TCP from clients.
-The connection is initiated by the client and remains open to allow the master to send commands.
-This port uses a publish/subscribe topology; the client subscribes to notifications from the master.
-
-4506::
-Inbound / TCP / salt
-+
-
-Required by the Salt-master to accept communication requests via TCP from clients.
-The connection is initiated by the client and is open only when needed.
-Usually, clients will open this port when they have to report results to the master, such as when a command received on port 4505 has finished.
-This port uses a request/response topology; the client sends requests to the master.
-
-25151::
-TCP
-+
-
-For cobbler.
-
-8050::
-Inbound / TCP / websockify
-
-Needed to access graphical console of virtual machines from {productname} web interface.
-
-.Internally Used Ports on {productname} Server
-2828::
-Internal /
-+
-
-Satellite-search API, used by the RHN application in Tomcat and Taskomatic.
-
-2829::
-Internal /
-+
-
-Taskomatic API, used by the RHN application in Tomcat.
-
-6868::
-Internal
-+
-
-Auditlog-keeper to database.
-
-6888::
-Internal
-+
-
-Auditlog-keeper API, used by the RHN application in Tomcat.
-
-8005::
-Internal
-+
-
-Tomcat shutdown port.
-
-8009::
-Internal
-+
-
-Tomcat to Apache HTTPD (AJP).
-
-8080::
-Internal
-+
-
-Tomcat to Apache HTTPD (HTTP).
-
-9080::
-Internal
-+
-
-Salt-API, used by the RHN application in Tomcat and Taskomatic.
-
-32000::
-Internal / TCP
-+
-
-Port for a TCP connection to the Java Virtual Machine (JVM) that runs Taskomatic and the search (satellite-search).
-
-[NOTE]
-.Ephemeral Ports
-====
-Anything from port 32768 on (more exactly, what you can see with [command]``cat /proc/sys/net/ipv4/ip_local_port_range``) is an ephemeral port, typically used as the receiving end of a TCP connection.
-So if process A opens a TCP connection to process B (for example, port 22), then A chooses an arbitrary source TCP port to match with destination port 22.
-====
-
-
-This image is a graphical representation of the ports used in {productname}:
+This image shows the main ports used in {productname}:
 
 image::ports_diagram.png[]
 
-Port 80 (http) is not used to serve the {webui}, and is closed in most installations.
-Port 80 is used temporarily for some bootstrap repositories and automated installations.
+
+
+== External Inbound Server Ports
+
+External inbound ports must be opened to configure a firewall on the {productname} Server to protect the server from unauthorized access.
+
+Opening these ports allows external network traffic to access the {productname} Server.
+
+
+[cols="1,1,1,1", options="header"]
+.External Port Requirements for {productname} Server
+|===
+| Port number | Protocol | Used By | Notes
+| 67          | TCP/UDP  | DHCP    | Required only if clients are requesting IP addresses from the server.
+| 69          | TCP/UDP  | TFTP    | Required if server is used as a PXE server for automated client installation.
+| 80          | TCP      | HTTP    | Required temporarily for some bootstrap repositories and automated installations.
+Port 80 is not used to serve the {webui}.
+| 443         | TCP      | HTTPS   | {webui}, client, and proxy requests.
+| 4505        |  TCP     | salt    | Required to accept communication requests from clients.
+The client initiates the connection, and it stays open to receive commands from the Salt master.
+| 4506        | TCP      | salt    | Required to accept communication requests from clients.
+The client initiates the connection, and it stays open to report results back to the Salt master.
+| 5222        | TCP      | osad    | Required to push OSAD actions to clients.
+| 5269        | TCP      | jabberd | Required to push actions to and from a proxy.
+| 8050        | TCP      | websockify | Required to access the graphical console of virtual machines with the {webui}.
+| 25151       | TCP      | Cobbler |
+|===
 
 
 
-[[advanced.topics.app.ports.proxy]]
-== {productname} Proxy Server
+== External Outbound Server Ports
 
-.Ports to Open on {productname}Proxy Server
-22::
-Inbound /
-+
+External outbound ports must be opened to configure a firewall on the {productname} Server to restrict what the server can access.
 
-Required when using ssh-push or ssh-push-tunnel contact methods.
-Check-in on clients connected to a {productname} Proxy will be initiated on the {productname} Server and "`hop through`" through to clients.
+Opening these ports allows network traffic from the {productname} Server to communicate with external services.
 
-80::
-Outbound /
-+
+[cols="1,1,1,1", options="header"]
+.External Port Requirements for {productname} Server
+|===
+| Port number | Protocol | Used By | Notes
 
-Used to reach {productname}.
-
-5222::
-Inbound / TCP
-+
-
-For push actions and connections issued by [systemitem]``osad`` running on the client systems.
-
-5269::
-Inbound/Outbound / TCP
-+
-
-For push actions with the server.
+Port 80 is not used to serve the {webui}.
+| 80          | TCP | HTTP       | Required for {scc}.
+| 443         | TCP | HTTPS      | Required for {scc}.
+| 5269        | TCP | jabberd    | Required to push actions to and from a proxy.
+| 8050        | TCP | websockify | Required to access the graphical console of virtual machines with the {webui}.
+| 25151       | TCP | Cobbler    |
+|===
 
 
 
-[[advanced.topics.app.ports.client]]
-== {productname} Client
+== Internal Server Ports
 
-.Ports to Open on {productname} Client
-22::
-Inbound / SSH
-+
+Internal port are used internally by the {productname} Server.
+Internal ports are only accessible from ``localhost``.
 
-Required when using ssh-push or ssh-push-tunnel contact methods.
+In most cases, you will not need to adjust these ports.
 
-80::
-Outbound
-+
+[cols="1,1", options="header"]
+.Internal Port Requirements for {productname} Server
+|===
+| Port number | Notes
+| 2828        | Satellite-search API, used by the RHN application in Tomcat and Taskomatic.
+| 2829        | Taskomatic API, used by the RHN application in Tomcat.
+| 6868        | Auditlog-keeper to database.
+| 6888        | Auditlog-keeper API, used by the RHN application in Tomcat.
+| 8005        | Tomcat shutdown port.
+| 8009        | Tomcat to Apache HTTPD (AJP).
+| 8080        | Tomcat to Apache HTTPD (HTTP).
+| 9080        | Salt-API, used by the RHN application in Tomcat and Taskomatic.
+| 32000       | Port for a TCP connection to the Java Virtual Machine (JVM) that runs Taskomatic and satellite-search.
+|===
 
-To reach the {productname} server or {susemgrproxy} server.
 
-5222::
-Outbound / TCP
-+
+Port 32768 and higher are used as ephemeral ports.
+These are most often used to receive TCP connections.
+When a TCP connection request is received, the sender will choose one of these ephemeral port numbers to match the destination port.
+You can use this command to find out which ports are ephemeral ports:
 
-For push actions with the server or proxy server.
+----
+cat /proc/sys/net/ipv4/ip_local_port_range
+----
+
+
+
+== External Inbound Proxy Ports
+
+External inbound ports must be opened to configure a firewall on the {productname} Proxy to protect the proxy from unauthorized access.
+
+Opening these ports allows external network traffic to access the {productname} proxy.
+
+[cols="1,1,1,1", options="header"]
+.External Port Requirements for {productname} Proxy
+|===
+| Port number | Protocol | Used By | Notes
+| 22          |          |         | Required for ssh-push and ssh-push-tunnel contact methods.
+Clients connected to the proxy initiate check in on the server and hop through to clients.
+| 67          | TCP/UDP  | DHCP    | Required only if clients are requesting IP addresses from the server.
+| 69          | TCP/UDP  | TFTP    | Required if the server is used as a PXE server for automated client installation.
+| 443         | TCP      | HTTPS   | {webui}, client, and proxy requests.
+| 4505        | TCP      | salt    | Required to accept communication requests from clients.
+The client initiates the connection, and it stays open to receive commands from the Salt master.
+| 4506        | TCP      | salt    | Required to accept communication requests from clients.
+The client initiates the connection, and it stays open to report results back to the Salt master.
+| 5222        | TCP      |         | Required to push OSAD actions to clients.
+| 5269        | TCP      |         | Required to push actions to and from the server.
+|===
+
+
+
+== External Outbound Proxy Ports
+
+External outbound ports must be opened to configure a firewall on the {productname} Proxy to restrict what the proxy can access.
+
+Opening these ports allows network traffic from the {productname} Proxy to communicate with external services.
+
+[cols="1,1,1,1", options="header"]
+.External Port Requirements for {productname} Proxy
+|===
+| Port number | Protocol | Used By | Notes
+| 80          |          |         | Used to reach the server.
+| 443         | TCP      | HTTPS   | Required for {scc}.
+| 5269        | TCP      |         | Required to push actions to and from the server.
+|===
+
+
+
+== External Client Ports
+
+External client ports must be opened to configure a firewall between the {productname} Server and its clients.
+
+In most cases, you will not need to adjust these ports.
+
+[cols="1,1,1,1", options="header"]
+.External Port Requirements for {productname} Clients
+|===
+| Port number | Direction | Protocol | Notes
+| 22          | Inbound   | SSH      | Required for ssh-push and ssh-push-tunnel contact methods.
+| 80          | Outbound  |          | Used to reach the server or proxy.
+| 5222        | Outbound  | TCP      | Required to push OSAD actions to the server or proxy.
+|===
