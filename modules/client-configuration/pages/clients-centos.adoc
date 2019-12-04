@@ -123,3 +123,69 @@ endif::[]
 
 {centos} clients are registered in the same way as all other clients.
 For more information, see xref:client-configuration:registration-overview.adoc[].
+
+
+
+== Manage Errata
+
+When you update {centos} clients, the packages do not include metadata about the updates.
+You can use a third-party errata service to obtain this information.
+
+ifeval::[{suma-content} == true]
+
+[IMPORTANT]
+====
+The third-party errata service described here is provided and maintained by the community.
+It is not supported by {suse}.
+====
+
+endif::[]
+
+.Procedure: Installing an Errata Service
+
+. From the command prompt, as root, add the third-party repository:
++
+----
+zypper ar -f http://download.opensuse.org/repositories/devel:/languages:/perl/SLE_12/ perl
+----
+. Refresh the repository list:
++
+----
+zypper ref
+----
+. Install the errata service:
++
+----
+zypper in  perl-Text-Unidecode
+----
+. Create a file for your errata script:
++
+----
+touch /usr/local/bin/cent-errata.sh
+----
+. Edit the new file to include this script, editing the repository details as required:
++
+----
+#!/bin/bash
+mkdir -p /usr/local/centos
+cd /usr/local/centos
+rm *.xml
+wget -c http://cefs.steve-meier.de/errata.latest.xml
+#wget -c https://www.redhat.com/security/data/oval/com.redhat.rhsa-all.xml
+wget -c https://www.redhat.com/security/data/oval/com.redhat.rhsa-RHEL7.xml
+wget -c http://cefs.steve-meier.de/errata-import.tar
+tar xvf errata-import.tar
+chmod +x /usr/local/centos/errata-import.pl
+export SPACEWALK_USER='admin';export SPACEWALK_PASS='<password>'
+/usr/local/centos/errata-import.pl --server <servername> \
+--errata /usr/local/centos/errata.latest.xml  \
+--include-channels=centos7-x86_64-updates,centos7-x86_64,centos7-x86_64-extras \
+--publish --rhsa-oval /usr/local/centos/com.redhat.rhsa-RHEL7.xml
+----
+. Set up a cron job to run the script daily:
++
+----
+ln -s /usr/local/bin/cent-errata.sh /etc/cron.daily
+----
+
+For more information on this tool, see https://cefs.steve-meier.de/
