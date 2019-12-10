@@ -2,21 +2,12 @@
 = Cobbler
 
 Cobbler is an installation server that allows you to perform unattended system installations.
-It can be used on server, client, or guest systems, and in virtual environments.
-
-This section explains the Cobbler features most commonly used with {productname}:
-
-* Installation environment analysis using the [command]``cobbler check`` command
-* Multi-site installation server configuration using the [command]``cobbler replicate`` command
-* Virtual machine guest installation automation with the [command]``koan`` client-side tool
-* Building installation ISOs with PXE-like menus using the [command]``cobbler buildiso`` command (for {productname} systems with x86_64 architecture)
-
-For more detailed Cobbler documentation, see http://cobbler.github.io/manuals/.
+Cobbler is installed on the {productname} Server.
 
 [IMPORTANT]
 ====
 {suse} only supports Cobbler functions that are available in the {productname} {webui}, or through the {productname} API.
-All features documented here are supported.
+Only supported features are documented here.
 ====
 
 [NOTE]
@@ -26,26 +17,14 @@ In {smr} installations, the TFTPD formula manages these settings.
 For more information about the TFTPD formula, see xref:salt:formula-tftpd.adoc[].
 ====
 
-////
-=== Background Information about the Synchronization Process
+This section explains the Cobbler features most commonly used with {productname}:
 
-// Taken from https://bugzilla.suse.com/show_bug.cgi?id=1141603
-// To be edited!!!
+* The [command]``cobbler sync`` command is triggered from {productname} Server and generate the TFTP boot environment
+* Installation environment analysis using the [command]``cobbler check`` command
+* Virtual machine guest installation automation with the [command]``koan`` client-side tool
+* Building installation ISOs with PXE-like menus using the [command]``cobbler buildiso`` command (for {productname} systems with x86_64 architecture)
 
-A sync is basically a rebuild of every file cobbler touched. I will try give you an impression with an numbered list.
-
-1. Run Pre-Sync-Triggers (this can be any number of shell scripts to my knowledge)
-2. Delete all files and directories which are not allowed in /var/www/cobbler
-3. Create all needed folders
-4. Delete all elements inside the folders.
-5. Generate the tftpd directory
-6. Write the DHCP files (if management is enabled)
-7. Do the same with DNS
-8. Clean the Cache
-9. If rsync management is enabled do that
-10. Run Post-Sync-Triggers (this can also be any number of shell scripts to my knowledge)
-
-////
+For more information about Cobbler, see https://cobbler.readthedocs.io.
 
 
 
@@ -54,11 +33,6 @@ A sync is basically a rebuild of every file cobbler touched. I will try give you
 To use Cobbler for system installation with PXE, you will require a TFTP server.
 {productname} installs a TFTP server by default.
 To PXE boot systems, you will require a DHCP server, or have access to a network DHCP server.
-Edit the [path]``/etc/dhcp.conf`` configuration file to change [option]``next-server`` to the hostname or IP address of your Cobbler server.
-
-Cobbler requires an open HTTP port to synchronize data between the Server and the Proxy.
-By default, Cobbler uses port 80, but you can configure it to use port 443 instead if that suits your environment.
-
 
 [IMPORTANT]
 ====
@@ -69,21 +43,24 @@ Non-unique host names will cause all systems with the same host name to have the
 
 
 
+[[cobbler-configure]]
 == Configure Cobbler
 
 Cobbler configuration is primarily managed using the [path]``/etc/cobbler/settings`` file.
 Cobbler will run with the default settings unchanged.
-All configurable settings are explained in detail in the [path]``/etc/cobbler/settings`` file, including information on each setting, and recommendations.
+All configurable settings are explained in detail in the [path]``/etc/cobbler/settings`` file.
 
 // Removed tshooting language not found error, only applies to sles 12 & SUMA 2.1/3: https://www.suse.com/support/kb/doc/?id=7018334 LKB 2018-08-02
 
 
-Cobbler uses DHCP to automate bare metal installations from a PXE boot server.
-You must have administrative access to the network's DHCP server, or be able to configure DHCP directly on the the Cobbler server.
+The PXE boot process uses DHCP to find the TFTP boot server.
+The {productname} Server can act as such a  TFTP boot server and Cobbler can generate the content for it.
+You must have administrative access to the network's DHCP server.
+Edit the DHCP configuration file so that it points to the {productname} Server as the TFTP boot server:
 
-If you have an existing DHCP server, you will need to edit the DHCP configuration file so that it points to the Cobbler server and PXE boot image.
 
-.Procedure: Configuring DHCP for Cobbler
+
+.Procedure: Example for Configuring the ISC DHCP Server
 . On the DHCP server, as root, open the [path]``/etc/dhcpd.conf`` file.
 . Append a new class with options for performing PXE boot installation.
 For example:
@@ -168,6 +145,9 @@ The TFTP service must be running so it can serve the [path]``pxelinux.0`` boot i
 Start {yast} and use menu:System[Services Manager] to configure the [daemon]``tftp`` daemon.
 
 You can also synchronize Cobbler-generated TFTP contents to a {productname} Proxy.
+For synchronization, HTTPS port 443 must be open.
+
+
 
 .Procedure: Installing TFTP
 
@@ -181,6 +161,8 @@ zypper install susemanager-tftpsync
 ----
 zypper install susemanager-tftpsync-recv
 ----
+
+
 
 .Procedure: Configuring TFTP on a Proxy
 
@@ -201,17 +183,46 @@ configure-tftpsync.sh proxy1.example.com proxy2.example.com
 This will fail if you have not configured the proxies correctly.
 . If you want to change the list of proxies later on, you can use the [command]``configure-tftpsync.sh`` script to edit them.
 
-
 [NOTE]
 ====
 If you reinstall an already configured proxy and want to push all the files again, you must remove the cache file at [path]``/var/lib/cobbler/pxe_cache.json`` before you call [command]``cobbler sync``.
 ====
 
 
+
+=== Background Information about the Synchronization Process
+
+// Taken from https://bugzilla.suse.com/show_bug.cgi?id=1141603
+// To be edited!!!
+
+A [command]``cobbler sync`` is a rebuild of every file Cobbler touched.
+On {productname}, [command]``cobbler sync`` does the following actions:
+
+1. Run pre-sync triggers.
+This can be any number of shell scripts.
+2. Delete all files and directories that are not allowed in [path]``/srv/www/cobbler/``.
+3. Create all needed directories.
+4. Delete all elements inside the directories.
+5. Create the TFTPD directory.
+6. Write the DHCP files if management is enabled (unsupported).
+For more information, see <<cobbler-configure>>.
+7. Do the same with DNS (unsupported).
+8. Clean up the cache.
+9. Run [command]``rsync`` if rsync management is enabled.
+10. Run post-sync triggers.
+This can be any number of shell scripts (unsupported).
+
+{productname} also adds or removes, or edits systems that are in Cobbler.
+Those actions trigger a so-called lite sync process.
+This sync only touches files and directories that are related to the change which triggered it.
+
+
+
 == Synchronize and Start the Cobbler Service
 
-The {productname} Server must be able to access the {productname} Proxy systems directly.
-You cannot push using a proxy.
+When tftpsync is configured, the {productname} Server must be able to access the {productname} Proxy systems directly.
+
+
 
 [WARNING]
 ====
@@ -231,132 +242,17 @@ When you had to change the configuration, restart the {productname} service:
 ----
 
 
-////
-Commented out as per https://bugzilla.suse.com/show_bug.cgi?id=1136611 LKB 2019-05-29
 
-[[advanced.topics.cobbler.adddistro]]
-== Adding a Distribution to Cobbler
+== Autoinstallation Templates
 
-
-If all Cobbler prerequisites have been met and Cobbler is running, you can use the Cobbler server as an installation source for a distribution:
-
-Make installation files such as the kernel image and the initrd image available on the Cobbler server.
-Then add a distribution to Cobbler, using either the Web interface or the command line tools.
-
-For information about creating and configuring {ay} or Kickstart distributions from the {productname} interface, refer to pass:c[xref:FILENAME.adoc#ref.webui.systems.autoinst.distribution[]].
-
-To create a distribution from the command line, use the [command]``cobbler`` command as root:
-
-----
-cobbler distro add --name=`string`--kernel=`path`--initrd=`path`
-----
-
-
-[option]``--name=``[replaceable]``string`` option::
-A label used to differentiate one distribution choice from another (for example, ``sles12server``).
-
-[option]``--kernel=``[replaceable]``path`` option::
-Specifies the path to the kernel image file.
-
-[option]``--initrd=``[replaceable]``path`` option::
-specifies the path to the initial ram disk (initrd) image file.
-
-////
-
-////
-Commented out as per https://bugzilla.suse.com/show_bug.cgi?id=1136611 LKB 2019-05-29
-
-[[advanced.topics.cobbler.addprofile]]
-== Adding a Profile to Cobbler
-
-Once you have added a distribution to Cobbler, you can add profiles.
-
-Cobbler profiles associate a distribution with additional options like {ay} or Kickstart files.
-Profiles are the core unit of provisioning and there must be at least one Cobbler profile for every distribution added.
-For example, two profiles might be created for a Web server and a desktop configuration.
-While both profiles use the same distribution, the profiles are for different installation types.
-
-For information about creating and configuring Kickstart and {ay} profiles in the {productname} interface, refer to pass:c[xref:FILENAME.adoc#ref.webui.systems.autoinst.profiles[]].
-
-Use the [command]``cobbler`` command as root to create profiles from the command line:
-
-----
-cobbler profile add --name=string --distro=string [--autoinstall=url] \
-  [--virt-file-size=gigabytes] [--virt-ram=megabytes]
-----
-
-[option]``--name=``[replaceable]``string``::
-A unique label for the profile, such as `sles12webserver` or ``sles12workstation``.
-
-[option]``--distro=``[replaceable]``string``::
-The distribution that will be used for this profile.
-For adding distributions, see pass:c[xref:FILENAME.adoc#advanced.topics.cobbler.adddistro[]].
-
-[option]``--autoinstall=``[replaceable]``url``::
-The location of the Kickstart file (if available).
-
-[option]``--virt-file-size=``[replaceable]``gigabytes``::
-The size of the virtual guest file image (in gigabytes).
-The default is 5{nbsp}GB.
-
-[option]``--virt-ram=``[replaceable]``megabytes``::
-The maximum amount of physical RAM a virtual guest can consume (in megabytes).
-The default is 512{nbsp}MB.
-
-////
-
-////
-Commented out as per https://bugzilla.suse.com/show_bug.cgi?id=1136611 LKB 2019-05-29
-
-[[advanced.topics.cobbler.addsystem]]
-== Adding a System to Cobbler
-
-Once the distributions and profiles for Cobbler have been created, add systems to Cobbler.
-System records map a piece of hardware on a client with the Cobbler profile assigned to run on it.
-
-[NOTE]
-====
-If you are provisioning using [command]``koan`` and PXE menus alone, it is not required to create system records.
-They are useful when system-specific Kickstart templating is required or to establish that a specific system should always get specific content installed.
-If a client is intended for a certain role, system records should be created for it.
-====
-
-For information about creating and configuring automated installation from the {productname} interface, refer to pass:c[xref:FILENAME.adoc#s4-sm-system-details-kick[]].
-
-Run this command as the root user to add a system to the Cobbler configuration:
-
-----
-cobbler system add --name=string --profile=string \
-  --mac-address=AA:BB:CC:DD:EE:FF
-----
-
-
-[option]``--name=``[replaceable]``string``::
- A unique label for the system, such as `engineering_server` or ``frontoffice_workstation``.
-
-[option]``--profile=``[replaceable]``string``::
-Specifies the name of one of the profiles added in pass:c[xref:FILENAME.adoc#advanced.topics.cobbler.addprofile[]].
-
-[option]``--mac-address=``[replaceable]``AA:BB:CC:DD:EE:FF``::
-Allows systems with the specified MAC address to automatically be provisioned to the profile associated with the system record when they are being installed.
-
-For more options, such as setting hostname or IP addresses, refer to the Cobbler manpage ([command]``man cobbler``).
-
-////
-
-== Kickstart Templates
-
-Kickstart files are used to automate {rhel} client installations.
-Kickstart templates are used to describe how to create Kickstart files.
-To help with creating Kickstart templates, you can create Kickstart variables within the {productname} {webui}.
-This allows you to create and manage large numbers of profiles and systems, without having to manually create Kickstart files for each.
-
-Kickstart templates are shared by various profiles and systems that can each have their own variables and values.
-These variables modify the templates, and a template engine parses the template and variables into a usable Kickstart file.
+AutoYaST or Kickstart profiles are used to automate {sle} or {rhel} client installations.
+Templates are used to describe how to create autoinstallation profiles.
+You can create autoinstallation variables within the {productname} {webui}.
+This allows you to create and manage large numbers of profiles and systems, without having to manually create profiles for each.
 
 Cobbler uses a template engine called Cheetah that provides support for templates, variables, and snippets.
 
-For more information on creating Kickstart profile variables, see xref:reference:systems/autoinst-distributions.adoc[].
+For more information on creating profiles, see xref:reference:systems/autoinst-distributions.adoc[].
 
 
 === Kickstart Template Syntax
@@ -411,10 +307,6 @@ echo "Hello, world"
 #end some section (this is a comment)
 ----
 
-For more information about Kickstart templates and Cobbler, see
-https://cobbler.github.io/manuals/2.8.0/3/5_-_Kickstart_Templating.html.
-
-
 
 
 === Kickstart Snippets
@@ -448,62 +340,6 @@ $SNIPPET('my_partition')
 Cobbler will parse the function with the snippet of code contained in the [path]``my_partition`` file.
 
 
-////
-Commented out as per https://bugzilla.suse.com/show_bug.cgi?id=1136611 LKB 2019-05-29
-
-[[advanced.topics.cobbler.koan]]
-== Using Koan
-
-Whether you are provisioning guests on a virtual machine or reinstalling a new distribution on a running system, Koan works in conjunction with Cobbler to provision systems.
-
-
-
-[[advanced.topics.cobbler.koan.virt]]
-=== Using Koan to Provision Virtual Systems
-
-If you have created a virtual machine profile as documented in pass:c[xref:FILENAME.adoc#advanced.topics.cobbler.addprofile[]], you can use [command]``koan`` to initiate the installation of a virtual guest on a system.
-For example, create a Cobbler profile with the following command:
-
-----
-cobbler add profile --name=virtualfileserver \
-  --distro=sles12-x86_64-server --virt-file-size=20 --virt-ram=1000
-----
-
-This profile is for a fileserver running {sles}{nbsp}12 with a 20{nbsp}GB guest image size and allocated 1{nbsp}GB of system RAM.
-To find the name of the virtual guest system profile, use the [command]``koan`` command:
-
-----
-koan --server=hostname --list-profiles
-----
-
-This command lists all the available profiles created with [command]``cobbler profile add``.
-
-Create the image file, and begin installation of the virtual guest system:
-
-----
-koan --virt --server=cobbler-server.example.com \
-  --profile=virtualfileserver --virtname=marketingfileserver
-----
-
-This command specifies that a virtual guest system be created from the Cobbler server (hostname [server]``cobbler-server.example.com``) using the `virtualfileserver` profile.
-The [option]``virtname`` option specifies a label for the virtual guest, which by default is the system's MAC address.
-
-Once the installation of the virtual guest is complete, it can be used as any other virtual guest system.
-
-
-
-[[advanced.topics.cobbler.koan.reinstall]]
-=== Using Koan to Reinstall Running Systems
-
-[command]``koan`` can replace a still running system with a new installation from the available Cobbler profiles by executing the following command __on the system to be reinstalled__:
-
-----
-koan --replace-self --server=hostname --profile=name
-----
-
-This command, running on the system to be replaced, will start the provisioning process and replace the system with the profile in [option]``--profile=name`` on the Cobbler server specified in [option]``--server=hostname``.
-
-////
 
 
 == Build ISOs with Cobbler
@@ -564,10 +400,12 @@ To change the organization, log in as an Administrator of the required organizat
 ====
 
 When the feature has been enabled, any bare metal system connected to the server network will be automatically added to the organization when it is powered on.
-The process can take a few minutes, and the system will automatically shut down once it is complete.
-After the reboot, the system will appear in the [guilabel]``Systems`` list.
-Click on the name of the system to see basic information, or go to the [guilabel]``Properties``, [guilabel]``Notes``, and [guilabel]``Hardware`` tabs for more details.
+The process can take a few minutes, and the system will automatically shut down when it is complete.
+The system will now be visible in the menu:Systems[System list].
+Click on the name of the system to see basic information.
+For more details, go to the [guilabel]``Properties``, [guilabel]``Notes``, and [guilabel]``Hardware`` tabs.
 You can migrate bare metal systems to other organizations if required, using the [guilabel]``Migrate`` tab.
+
 
 
 === Provision Bare Metal Systems
