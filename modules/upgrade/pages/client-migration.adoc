@@ -157,3 +157,42 @@ If the system status reports that the migration has failed, but also shows that 
 After the migration is complete, schedule a reboot of the client from the {productname} Server.
 
 ////
+
+
+
+== SP Mass Migration
+
+If you want to migrate a large number of clients to the next SP version, you can use {productname} API calls.
+
+
+
+.Procedure: SP Mass Migration
+. You need to know to which migration target you want to migrate.
+List available migration targets:
++
+----
+spacecmd api -- system.listMigrationTargets -A 1000010001
+----
++
+Create a list of system IDs you want to migrate.
+. For each system ID, call [systemitem]``listMigrationTarget`` and check that it is an available target.
++
+* If the system ID is an available target, call [systemitem]``system.scheduleSPMigration``.
+* If it is not an available target, skip the system.
+
+Adapt this template for your environment:
+
+----
+target = '[....]'
+basechannel = 'channel-label'
+system_ids = [1, 2, 3]
+
+session = auth.login(user, pass)
+for system in system_ids
+  if system.listMigrationTargets(session, system).ident == target
+    system.scheduleSPMigration(session, system, target, basechannel, [], False, <now>)
+  else
+    print "Cannot migrate to requested target -- skipping system"
+  endif
+endfor
+----
