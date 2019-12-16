@@ -49,29 +49,34 @@ For more information and instructions, see xref:administration:tshoot-registercl
 
 == Disabling the FQDNS grain
 
-￼FQDNS grain returns the list of all the FQDN of the system.
-Ideally it should be pretty fast to collect this list but if the DNS settings on the system has some problem or misconfigured for some reason then this grain's ￼calculation could get pretty expensive and as during name resolution Python's GIL is acquired so the salt-minion process could completely get stuck.
+The FQDNS grain returns the list of all the fully-qualified DNS services in the system.
+Collecting this information is usually a fast process, but if the DNS settings have been misconfigured, it could take a much longer time.
+In some cases, the client could become unresponsive, or crash.
 
-￼To guard from this problem, a new flag in salt has been introduced which will disable this grain.
-Additionally salt network module has been extended to have fqdns function instead which returns the same result as FQDNS grain  ￼but without the problem described above.
-￼
-Newly registered Salt clients will have the FQDNS grain disabled by default.
+To prevent this problem, you can disable the FQDNS grain with a Salt flag.
+If you disable the grain, you can use a network module to provide FQDNS services, without the risk of the client becoming unresponsive.
 
-Disable the FQDNS grain on the existing registered salt clients by running this command on the server:
+[NOTE]
+====
+This only applies to older Salt clients.
+If you registered your Salt client recently, the FQDNS grain is disabled by default.
+====
+
+
+On the {productname} Server, at the command prompt, use this command to disable the FQDNS grain:
 
 ----
 salt '*' state.sls util.mgr_disable_fqdns_grain
 ----
 
-This will restart the clients and generate some Salt events to be processed by the server.
-If you have a large number of clients, handling these events could create excessive load.
-To avoid this, you can execute the command in batch mode with this command:
+This command restarts each client and generate Salt events that the Server needs to process.
+If you have a large number of clients, you can execute the command in batch mode instead:
 
 ----
 salt --batch-size 50 '*' state.sls util.mgr_disable_fqdns_grain
 ----
 
-You will need to wait for this command to finish executing.
+Wait for the batch command to finish executing.
 Do not end the process with kbd:[Ctrl+C].
 
 
