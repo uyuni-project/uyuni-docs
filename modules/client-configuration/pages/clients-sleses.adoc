@@ -29,6 +29,13 @@ ifeval::[{uyuni-content} == true]
 endif::[]
 
 
+[IMPORTANT]
+====
+Traditional clients are not available on {es}{nbsp}8.
+{es}{nbsp}8 clients are only supported as Salt clients.
+====
+
+
 
 == Server Requirements
 
@@ -65,6 +72,13 @@ You will need an activation key associated with the correct {es} channels.
 For more information about activation keys, see xref:client-configuration:clients-and-activation-keys.adoc[].
 
 
+[IMPORTANT]
+====
+For {es} 8 clients, add both the ``BaseOS`` and ``Appstream`` channels.
+You will require packages from both channels.
+If you do not add both channels, you will not be able to create the bootstrap repository, due to missing packages.
+====
+
 
 .Procedure: Adding Client Tools Channels
 
@@ -81,6 +95,11 @@ From the command prompt, add [systemitem]``rhel-x86_64-server-6`` and [systemite
 From the {webui}, add [systemitem]``RHEL7 Base x86_64`` and [systemitem]``SUSE Linux Enterprise Client Tools RES7 x86_64``.
 +
 From the command prompt, add [systemitem]``rhel-x86_64-server-7`` and [systemitem]``res7-suse-manager-tools-x86_64``.
+* For {es} 8:
++
+From the {webui}, add [systemitem]``RHEL8 Base x86_64`` and [systemitem]``SUSE Linux Enterprise Client Tools RES8 x86_64``.
++
+From the command prompt, add [systemitem]``rhel-x86_64-server-8`` and [systemitem]``res8-suse-manager-tools-x86_64``.
 . Synchronize the {productname} Server with the {SCC}.
 You can do this using the {webui}, or by running [command]``mgr-sync`` at the command prompt.
 . Add the new channel to your activation key.
@@ -123,6 +142,13 @@ All packages on the base media are mirrored into a child channel.
 
 .Procedure: Creating a {rhel} or {centos} Custom Channel
 
+[IMPORTANT]
+====
+* SLES ES 6 and 7, require only one child channel for the os repository
+* SLES ES 8 requires two child channels for both the BaseOS and AppStream repositories
+If you do not add both channels, you will not be able to create the bootstrap repository, due to missing packages.
+====
+
 . In the {productname} {webui}, navigate to menu:Software[Manage > Channels].
 . Click btn:[Create Channel] and set these parameters:
 * In the [guimenu]``Channel Name`` field, type a name for your channel, specifying the OS name and architecture.
@@ -137,42 +163,69 @@ The parent channel will not contain any packages.
 . Add the new channel to your activation key.
 
 
-When you have created the custom child channel, you can add the base media image to the channel.
 
+.**Procedure: Adding Base Media to Custom Channels**
 
-
-.Procedure: Adding Base Media to Custom Channels
+Mount the {rhel} or {centos} 6, 7 or 8 Media:
 
 . On the {productname} Server command prompt, as root, copy the base media image to the [path]``/tmp`` directory.
+
 . Create a directory to contain the media content.
 Replace [command]``<os_name>`` with either ``rhel``  or ``centos``:
 +
 ----
-mkdir -p /srv/www/htdocs/pub/<os_name>
+mkdir -p /srv/www/htdocs/pub/rhel
 ----
+
 . Mount the image:
 +
 ----
-mount -o loop /tmp/<iso_filename> /srv/www/htdocs/pub/<os_name>
+mount -o loop /tmp/<iso_filename> /srv/www/htdocs/pub/rhel
 ----
-. Synchronize the packages
+
+. Proceed to Syncing Base media for {rhel} or {centos} 6,7, or 8.
+
+
+
+.**Procedure: Syncing Base Media**
+
+The following steps require you to have mounted the base media for the selected distribution.
+
+* For {rhel} or {centos} 8:
 +
-For {rhel} or {centos} 7:
-+
-----
-spacewalk-repo-sync -c channel_name -u https://127.0.0.1/pub/<os_name>/
-Repo URL: https://127.0.0.1/pub/rhel/
-Packages in repo:              [...]
-Packages already synced:       [...]
-Packages to sync:              [...]
-[...]
-----
-+
-For {rhel} or {centos} 6:
+. At the command prompt as root enter the following to sync the **BaseOS** channel:
 +
 ----
-spacewalk-repo-sync -c channel_name -u https://127.0.0.1/pub/<os_name>/Server/
+spacewalk-repo-sync -c channel_name -u https://EXAMPLE.COM/pub/rhel/BaseOS/
 ----
+
+. Wait for the sync to complete.
+
+. At the command prompt as root enter the following to sync the **AppStream** channel:
++
+----
+spacewalk-repo-sync -c channel_name -u https://EXAMPLE.COM/pub/rhel/AppStream/
+----
+
+. Wait for the sync to complete.
+
+* For {rhel} or {centos} 7:
++
+At the command prompt as root enter the following:
++
+----
+spacewalk-repo-sync -c channel_name -u https://EXAMPLE.COM/pub/<os_name>/
+----
+
+* For {rhel} or {centos} 6:
++
+At the command prompt as root enter the following:
++
+----
+spacewalk-repo-sync -c channel_name -u https://<SERVER-FQDN>/pub/<os_name>/Server/
+----
+
+
 
 
 
