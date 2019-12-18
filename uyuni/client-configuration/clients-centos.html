@@ -1527,6 +1527,78 @@ For more information, see <a href="registration-overview.html" class="page">clie
 </div>
 </div>
 </div>
+<div class="sect1">
+<h2 id="_manage_errata"><a class="anchor" href="#_manage_errata"></a><a class="link" href="#_manage_errata">Manage Errata</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When you update CentOS clients, the packages do not include metadata about the updates.
+You can use a third-party errata service to obtain this information.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure: Installing an Errata Service</div>
+<ol class="arabic">
+<li>
+<p>From the command prompt, as root, add the <code>sle-module-development-tools</code> module:</p>
+<div class="listingblock">
+<div class="content">
+<pre>SUSEConnect --product sle-module-development-tools/15.1/x86_64</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install the errata service:</p>
+<div class="listingblock">
+<div class="content">
+<pre>zypper in  perl-Text-Unidecode</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a file for your errata script:</p>
+<div class="listingblock">
+<div class="content">
+<pre>touch /usr/local/bin/cent-errata.sh</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Edit the new file to include this script, editing the repository details as required.
+This script fetches the errata details from an external errata service, unpacks it, and publishes the details:</p>
+<div class="listingblock">
+<div class="content">
+<pre>#!/bin/bash
+mkdir -p /usr/local/centos
+cd /usr/local/centos
+rm *.xml
+wget -c http://cefs.steve-meier.de/errata.latest.xml
+#wget -c https://www.redhat.com/security/data/oval/com.redhat.rhsa-all.xml
+wget -c https://www.redhat.com/security/data/oval/com.redhat.rhsa-RHEL7.xml
+wget -c http://cefs.steve-meier.de/errata-import.tar
+tar xvf errata-import.tar
+chmod +x /usr/local/centos/errata-import.pl
+export SPACEWALK_USER='&lt;adminname&gt;';export SPACEWALK_PASS='&lt;password&gt;'
+/usr/local/centos/errata-import.pl --server '&lt;servername&gt;' \
+--errata /usr/local/centos/errata.latest.xml  \
+--include-channels=centos7-x86_64-updates,centos7-x86_64,centos7-x86_64-extras \
+--publish --rhsa-oval /usr/local/centos/com.redhat.rhsa-RHEL7.xml</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set up a cron job to run the script daily:</p>
+<div class="listingblock">
+<div class="content">
+<pre>ln -s /usr/local/bin/cent-errata.sh /etc/cron.daily</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>For more information on this tool, see <a href="https://cefs.steve-meier.de/" class="bare">https://cefs.steve-meier.de/</a>.</p>
+</div>
+</div>
+</div>
 
 <div class="cedents grid" role="navigation">
 
