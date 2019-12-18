@@ -1,0 +1,109 @@
+[[registering-clients-cli]]
+== Register on the Command Line (Salt)
+
+// Might need an 'unsupported' note? LKB 2019-05-01
+// I'd say "no", according to the outcome of
+// https://github.com/SUSE/spacewalk/issues/9333 KE 2019-12-17
+
+Instead of the {webui}, you can use the command line to register a Salt client.
+This procedure requires that you have installed the Salt package on the Salt client before registration.
+For SLE 12 based clients, you also must have activated the [systemitem]``Advanced Systems Management`` module.
+
+[NOTE]
+====
+Registring on the command line is also possible with traditional clients, but it requires more steps.
+It is not covered here.
+Use the the bootstrap procedure to register traditional clients.
+For more information, see xref:registration-bootstrap.adoc[].
+====
+
+
+
+.Procedure: Registering Clients Using the Command Line
+
+. Choose a client configuration file located at:
++
+----
+/etc/salt/minion
+----
++
+or:
++
+----
+/etc/salt/minion.d/NAME.conf
+----
++
+This is sometimes also called minion file.
+. Add the client FQDN as the `master` to the client configuration file:
++
+----
+master: CLIENT.EXAMPLE.COM
+----
+
+. Save and restart the [systemitem]``salt-minion`` service:
++
+----
+systemctl restart salt-minion
+----
+. On the Server, accept the new client key; replace [systemitem]``<client>`` with the name of your client:
++
+----
+salt-key -a '<client>'
+----
+
+////
+REMARK: This is what we previously offered:
+
+.Procedure: Registering Salt Clients
+. On your client as {rootuser} enter the following command:
++
+
+----
+zypper ar http://FQDN.server.example.com/pub/repositories/sle/12/4/bootstrap/ \
+   sles12-sp4
+----
++
+
+[NOTE]
+====
+Do not use ``HTTPS``.
+Use `HTTP` instead to avoid errors.
+====
++
+
+. After adding the repository containing the necessary Salt packages execute:
++
+
+----
+zypper in salt-minion
+----
+. Modify the client configuration file to point to the fully qualified domain name ([replaceable]``FQDN``) of the {productname} server (master):
++
+
+----
+vi /etc/salt/minion
+----
++
+Find and change the line:
++
+
+----
+master: salt
+----
++
+to:
++
+
+----
+master: FQDN.server.example.com
+----
+. Restart the Salt client with:
++
+
+----
+systemctl restart salt-minion
+----
+
+Your newly registered client should now show up within the {webui} under menu:Salt[Keys].
+Accept the [guimenu]``pending`` key to begin management.
+////
