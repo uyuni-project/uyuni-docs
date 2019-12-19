@@ -3,30 +3,29 @@
 
 This section contains information about registering Salt clients running {ubuntu} operating systems.
 
-{susemgr} supports {ubuntu} 16.04 LTS and 18.04 LTS Clients using Salt.
+{productname} supports {ubuntu} 16.04 LTS and 18.04 LTS Clients using Salt.
 Traditional clients are not supported.
 
 [IMPORTANT]
 ====
-Canonical does not endorse or support {susemgr}.
+Canonical does not endorse or support {productname}.
 ====
 
 Bootstrapping is supported for starting {ubuntu} clients and performing initial state runs such as setting repositories and performing profile updates.
 However, the root user on {ubuntu} is disabled by default, so to use bootstrapping, you will require an existing user with [command]``sudo`` privileges for Python.
 
 
-
 == Prepare to Register
 
 Some preparation is required before you can register {ubuntu} clients to the {productname} Server.
-
-
 
 ifeval::[{suma-content} == true]
 
 .Procedure: Adding client tools channels
 
 Before you begin, ensure you have the {ubuntu} product enabled, and have synchronized the {ubuntu} channels for {scc}:
+
+You can do this from {webui} or using command prompt, at your choice.
 
 For {ubuntu} 16.04:
 
@@ -47,14 +46,20 @@ The repositories and channels for synchronizing upstream content must be configu
 In the {productname} {webui}, navigate to menu:Software[Channel List > All].
 Verify that you have a base channel and a child channel for your architecture.
 
-For example:
+For example, for {ubuntu} 18.04:
 
 * Base channel: [systemitem]``ubuntu-18.04-pool for amd64``
 * Child channel: [systemitem]``Ubuntu-18.04-SUSE-Manager-Tools for amd64``
 
+.Procedure: Creating Custom Channels and Repositories
 
+You need to manually create three repositories:
 
-.Procedure: Creating Custom Repositories
+* For main
+* For main updates
+* For main security
+
+The following examples are for {ubuntu} 18.04 (bionic). Make sure you change the values to match the {ubuntu} version you want to use, and make sure you replace ```ubuntumirror.example.com``` with a valid mirror.
 
 . On the {productname} Server {webui}, navigate to menu:Software[Manage > Repositories].
 . Click btn:[Create Repository] and set these parameters for the ``main`` repository:
@@ -63,6 +68,8 @@ For example:
 * In the [guimenu]``Repository Type`` field, select [systemitem]``deb``.
 * Leave all other fields as the default values.
 . Click btn:[Create Repository]
+
+. Navigate to menu:Software[Manage > Repositories].
 . Click btn:[Create Repository] and set these parameters for the ``main-updates`` repository:
 * In the [guimenu]``Repository Label`` field, type [systemitem]``ubuntu-bionic-main-updates``.
 * In the [guimenu]``Repository URL`` field, type [systemitem]``http://ubuntumirror.example.com/ubuntu/dists/bionic-updates/main/binary-amd64/``.
@@ -70,18 +77,64 @@ For example:
 * Leave all other fields as the default values.
 . Click btn:[Create Repository].
 
-When you have created the repositories, you can create the custom channels.
+. Navigate to menu:Software[Manage > Repositories].
+. Click btn:[Create Repository] and set these parameters for the ``main-security`` repository:
+* In the [guimenu]``Repository Label`` field, type [systemitem]``ubuntu-bionic-main-security``.
+* In the [guimenu]``Repository URL`` field, type [systemitem]``http://ubuntumirror.example.com/ubuntu/dists/bionic-security/main/binary-amd64/``.
+* In the [guimenu]``Repository Type`` field, select [systemitem]``deb``.
+* Leave all other fields as the default values.
+. Click btn:[Create Repository].
 
-Ensure the custom channels you create have `AMD64 Debian` architecture.
+When you have created the repositories, you can create the custom channels, one for each repository:
 
-Your custom channels should use this structure:
+. On the {productname} Server {webui}, navigate to menu:Software[Manage > Channels].
+. Click btn:[Create Channel] and set these parameters for the entitlement certificate.
+* In the [guimenu]``Channel Name`` field, type [systemitem]``Ubuntu 18.04 LTS AMD64 Main``.
+* In the [guimenu]``Channel Label`` field, type [systemitem]``ubuntu-1804-amd64-main``.
+* In the [guimenu]``Parent Channel`` field, select [systemitem]``ubuntu-18.04-pool for amd64``.
+* In the [guimenu]``Architecture`` field, select [systemitem]``AMD64 Debian``.
+* In the [guimenu]``Repository Checksum Type`` field, select [systemitem]``sha1``.
+* In the [guimenu]``Channel Summary`` field, type [systemitem]``Ubuntu 18.04 LTS AMD64 Main``.
+* In the [guimenu]``Organization Sharing`` field, select [systemitem]``Public``.
+. Click btn:[Create Channel].
 
-* Parent channel: [systemitem]``ubuntu-18.04-pool for amd64``
+. Navigate to menu:Software[Manage > Channels].
+. Click btn:[Create Channel] and set these parameters for the entitlement certificate.
+* In the [guimenu]``Channel Name`` field, type [systemitem]``Ubuntu 18.04 LTS AMD64 Main Updates``.
+* In the [guimenu]``Channel Label`` field, type [systemitem]``ubuntu-1804-amd64-main-updates``.
+* In the [guimenu]``Parent Channel`` field, select [systemitem]``ubuntu-18.04-pool for amd64``.
+* In the [guimenu]``Architecture`` field, select [systemitem]``AMD64 Debian``.
+* In the [guimenu]``Repository Checksum Type`` field, select [systemitem]``sha1``.
+* In the [guimenu]``Channel Summary`` field, type [systemitem]``Ubuntu 18.04 LTS AMD64 Main Updates``.
+* In the [guimenu]``Organization Sharing`` field, select [systemitem]``Public``.
+. Click btn:[Create Channel].
+
+. Navigate to menu:Software[Manage > Channels].
+. Click btn:[Create Channel] and set these parameters for the entitlement certificate.
+* In the [guimenu]``Channel Name`` field, type [systemitem]``Ubuntu 18.04 LTS AMD64 Main Security``.
+* In the [guimenu]``Channel Label`` field, type [systemitem]``ubuntu-1804-amd64-main-security``.
+* In the [guimenu]``Parent Channel`` field, select [systemitem]``ubuntu-18.04-pool for amd64``.
+* In the [guimenu]``Architecture`` field, select [systemitem]``AMD64 Debian``.
+* In the [guimenu]``Repository Checksum Type`` field, select [systemitem]``sha1``.
+* In the [guimenu]``Channel Summary`` field, type [systemitem]``Ubuntu 18.04 LTS AMD64 Main Security``.
+* In the [guimenu]``Organization Sharing`` field, select [systemitem]``Public``.
+. Click btn:[Create Channel].
+
+Your custom channels should use this structure, at menu:Software[Channel List > All] (example for {ubuntu} 18.04:
+
+* Base channel (vendor): [systemitem]``ubuntu-18.04-pool for amd64``
+* Child custom channel: [systemitem]``Ubuntu 18.04 LTS AMD64 Main``
+* Child custom channel: [systemitem]``Ubuntu 18.04 LTS AMD64 Main Updates``
+* Child custom channel: [systemitem]``Ubuntu 18.04 LTS AMD64 Main Security``
 * Child vendor channel: [systemitem]``Ubuntu-18.04-SUSE-Manager-Tools for amd64``
-* Child custom channel: [systemitem]``ubuntu-18.04-amd64-main``
-* Child custom channel: [systemitem]``ubuntu-18.04-amd64-main-updates``
 
-When you have the channels set up, associate each channel with the appropriate repository, and synchronize then channels.
+When you have the channels set up, associate each channel with the appropriate repository, and synchronize then channels (optionally configure scheduled syncronization).
+
+To do this, proceed to menu:Software[Manage > Channels], and for each channel you created, click on it and:
+
+. Navigate to the [guimenu]``Repositories``
+. Navigate to the [guimenu]``Sync``and click btn:[Sync Now] to begin synchronization immediately.
+. You can also setup a scheduled syncronization from this screen.
 
 [IMPORTANT]
 ====
@@ -91,16 +144,13 @@ endif::[]
 
 
 ifeval::[{suma-content} == true]
-
+.Procedure: Alternative Method for Adding {ubuntu} Channels and Repositories (Unsupported)
+.  
 [WARNING]
 ====
 The ``spacewalk-utils`` package is not supported by {suse}, including the ``spacewalk-common-channels`` tool.
 You will not be supported if your system becomes inoperable by using these tools.
 ====
-
-
-
-.Procedure: Alternative Method for Adding {ubuntu} Channels (Unsupported)
 
 . At the command prompt on the {productname} Server, as root, install the [systemitem]``spacewalk-utils`` package:
 +
@@ -108,23 +158,37 @@ You will not be supported if your system becomes inoperable by using these tools
 zypper in spacewalk-utils
 ----
 . Add the {ubuntu} channels.
-Adjust the version of the channel names to match your {ubuntu} version:
-+
+
+For {ubuntu} 16.04:
+
 ----
-spacewalk-common-channels ubuntu-1804-amd64-main \
+spacewalk-common-channels \
+ubuntu-1604-amd64-main \
+ubuntu-1604-amd64-main-updates \
+ubuntu-1604-amd64-main-security
+----
+
+For {ubuntu} 18.04:
+
+----
+spacewalk-common-channels \
+ubuntu-1804-amd64-main \
 ubuntu-1804-amd64-main-updates \
 ubuntu-1804-amd64-main-security
 ----
-. Synchronize the new custom channels.
+
+When you have the channels set up, associate each channel with the appropriate repository, and synchronize then channels (optionally configure scheduled syncronization).
+
+To do this, proceed to menu:Software[Manage > Channels], and for each channel you created, click on it and:
+
+. Navigate to the [guimenu]``Repositories``
+. Navigate to the [guimenu]``Sync``and click btn:[Sync Now] to begin synchronization immediately.
+. You can also setup a scheduled syncronization from this screen.
 
 endif::[]
 
 
-
 ifeval::[{uyuni-content} == true]
-
-// Uyuni specific instructions, in fact this works at SUSE Manager as well, but spacewalk-common-channels script is NOT supported
-
 .Procedure: Adding the {ubuntu} Channels
 
 . At the command prompt on the {productname} Server, as root, install the [systemitem]``spacewalk-utils`` package:
@@ -133,10 +197,24 @@ ifeval::[{uyuni-content} == true]
 zypper in spacewalk-utils
 ----
 . Add the {ubuntu} channels.
-Adjust the version of the channel names to match your {ubuntu} version:
+For {ubuntu} 16.04:
 +
 ----
-spacewalk-common-channels ubuntu-1804-pool-amd64-uyuni \
+spacewalk-common-channels \
+ubuntu-1604-pool-amd64-uyuni \
+ubuntu-1604-amd64-main-uyuni \
+ubuntu-1604-amd64-main-updates-uyuni \
+ubuntu-1604-amd64-main-security-uyuni \
+ubuntu-1604-amd64-universe-uyuni \
+ubuntu-1604-amd64-universe-updates-uyuni \
+ubuntu-1604-amd64-uyuni-client
+----
+
+For {ubuntu} 18.04:
++
+----
+spacewalk-common-channels \
+ubuntu-1804-pool-amd64-uyuni \
 ubuntu-1804-amd64-main-uyuni \
 ubuntu-1804-amd64-main-updates-uyuni \
 ubuntu-1804-amd64-main-security-uyuni \
@@ -158,20 +236,33 @@ endif::[]
 Synchronization can sometimes take several hours.
 ====
 
+When you have the channels set up, associate each channel with the appropriate repository, and synchronize then channels (optionally configure scheduled syncronization).
+
+To do this, proceed to menu:Software[Manage > Channels], and for each channel you created, click on it and:
+
+. Navigate to the [guimenu]``Repositories``
+. Navigate to the [guimenu]``Sync``and click btn:[Sync Now] to begin synchronization immediately.
+. You can also setup a scheduled syncronization from this screen.
+
+== Monitor syncronization progress
+
 There are two ways to check if a channel has finished synchronizing:
 
+ifeval::[{suma-content} == true]
 * In the {productname} {webui}, navigate to menu:Admin[Setup Wizard] and select the [guimenu]``SUSE Products`` tab.
 +
 This dialog displays a completion bar for each product when they are being synchronized.
+endif::[]
+ifeval::[{uyuni-content} == true]
+* In the {productname} {webui}, navigate to menu:Software[Manage > Channels], then click on the channel associated to the repository. Navigate to the [guimenu]``Repositories``, then [guimenu]``Sync`` and check [systemitem]``Sync Status``
+endif::[]
 * Check the synchronization log file at the command prompt with [command]``tail -f /var/log/rhn/reposync/channel-label.log``.
 +
 Each child channel will generate its own log during the synchronization progress.
+
 You will need to check all the base and child channel log files to be sure that the synchronization is complete.
 
-
-
 ifeval::[{uyuni-content} == true]
-
 == Trust GPG Keys on Clients
 
 By default, {ubuntu} does not trust the GPG key for {productname} {ubuntu} client tools.
@@ -190,17 +281,12 @@ You do not need to delete any previously stored keys.
 If you are boostrapping clients from the {productname} {webui}, you will need to use a salt state to trust the key.
 Create the salt state and assign it to the organization.
 You can then use an activation key and configuration channels to deploy the key to the clients.
-
 endif::[]
-
-
 
 == Root Access
 
 The root user on {ubuntu} is disabled by default.
 You can enable it by editing the [filename]``sudoers`` file.
-
-
 
 .Procedure: Granting Root User Access
 
@@ -216,15 +302,12 @@ Grant [command]``sudo`` access to the user by adding this line to the [filename]
 <user>  ALL=NOPASSWD: /usr/bin/python, /usr/bin/python2, /usr/bin/python3
 ----
 
-
 [NOTE]
 ====
 This procedure grants root access without requiring a password, which is required for registering the client.
 When the client is successfully installed it will run with root privileges, so the access is no longer required.
 We recommend that you remove the line from the `sudoers` file after the client has been successfully installed.
 ====
-
-
 
 == Register Clients
 
