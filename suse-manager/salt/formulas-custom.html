@@ -1866,8 +1866,24 @@ This option should be used in combination with the <code>$default</code> attribu
 </dd>
 <dt class="hdlist1">$visibleIf</dt>
 <dd>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Deprecated in favor of <code>$visible</code>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
 <p>Allows you to show a field or group if a simple condition is met.
 An example condition is:</p>
+</div>
 <div class="listingblock">
 <div class="content">
 <pre>some_group#another_group#my_checkbox == true</pre>
@@ -1976,7 +1992,157 @@ For example:</p>
 </div>
 </div>
 </dd>
+<dt class="hdlist1">$visible</dt>
+<dd>
+<p>Allows you to show a field or group if a condition is met.
+You must use the <a href="https://github.com/TomFrost/jexl">jexl</a> expression language to write the condition.</p>
+<div class="paragraph">
+<p>Example structure:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>some_group:
+  $type: group
+
+  another_group:
+    $type: group
+
+      my_checkbox:
+        $type: boolean</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>An example condition is:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>formValues.some_group.another_group.my_checkbox == true</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The field with this attribute will only show if the condition is met.
+In this example, the field will show only if <code>my_checkbox</code> is checked.
+You can also choose other elements for the conditional statement, such as select fields or text fields.</p>
+</div>
+<div class="paragraph">
+<p>If you use multiple groups with the attribute, users can select an option that will show a completely different form, depending on the selected value.</p>
+</div>
+<div class="paragraph">
+<p>Values from hidden fields can be merged into the pillar data and sent to the client.
+A formula must check the condition again and use the appropriate data.
+For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>show_option:
+  $type: checkbox
+some_text:
+  $visible: this.parent.value.show_option == true</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>{% if pillar.show_option %}
+do_something:
+  with: {{ pillar.some_text }}
+{% endif %}</pre>
+</div>
+</div>
+</dd>
+<dt class="hdlist1">$disabled</dt>
+<dd>
+<p>Allows you to disable a field or group if a condition is met. You must use the <a href="https://github.com/TomFrost/jexl">jexl</a> expression language to write the condition.</p>
+<div class="paragraph">
+<p>If specified at group level it will disable all fields in that group.</p>
+</div>
+</dd>
+<dt class="hdlist1">$required</dt>
+<dd>
+<p>Fields with this attribute are mandatory. Supports using the <a href="https://github.com/TomFrost/jexl">jexl</a> expresion language.</p>
+</dd>
+<dt class="hdlist1">$match</dt>
+<dd>
+<p>Allows using a regular expression to validate the content of a text field.</p>
+<div class="paragraph">
+<p>It supports the regular expression features existing in JavaScript.</p>
+</div>
+<div class="paragraph">
+<p>Example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>      hardware:
+        $type: text
+        $name: Hardware Type and Address
+        $placeholder: Enter hardware-type hardware-address (e.g. "ethernet AA:BB:CC:DD:EE:FF")
+        $help: Hardware Identifier - prefix is mandatory
+        $match: "\\w+ [A-Z]{2}:[A-Z]{2}:[A-Z]{2}:[A-Z]{2}:[A-Z]{2}:[A-Z]{2}"</pre>
+</div>
+</div>
+</dd>
 </dl>
+</div>
+<div class="sect2">
+<h3 id="_expression_language"><a class="anchor" href="#_expression_language"></a><a class="link" href="#_expression_language">Expression language</a></h3>
+<div class="paragraph">
+<p>You must use the <a href="https://github.com/TomFrost/jexl">jexl</a> expression language to write conditions.</p>
+</div>
+<div class="paragraph">
+<p>Given a structure like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>some_group:
+  $type: group
+
+  another_group:
+    $type: group
+
+      my_checkbox:
+        $type: boolean</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>An example condition is:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>formValues.some_group.another_group.my_checkbox == true</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Absolute paths must begin with <code>formValues</code>.</p>
+</div>
+<div class="paragraph">
+<p>Specify relative paths using <code>this.parent.value</code> to define the value of the parent.</p>
+</div>
+<div class="paragraph">
+<p>You can also refer to the parent of the parent, with <code>this.parent.parent.value</code>.
+This is mostly useful for <code>edit-group</code> elements.</p>
+</div>
+<div class="paragraph">
+<p>Example for relative paths:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>some_group:
+  $type: group
+
+  another_group:
+    $type: group
+
+    my_checkbox:
+      $type: boolean
+
+    my_text:
+      $visible: this.parent.value.my_checkbox
+
+  yet_another_group:
+    $type: group
+
+    my_text2:
+      $visible: this.parent.parent.value.another_group.my_checkbox</pre>
+</div>
 </div>
 <div class="listingblock">
 <div class="title">Example: Basic edit-group</div>
@@ -2047,6 +2213,7 @@ For example:</p>
     - name: "admin"
       groups:
         - group_name: "users"</pre>
+</div>
 </div>
 </div>
 </div>
