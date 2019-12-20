@@ -344,6 +344,12 @@ It can be used to show data to the user, but will not allow them to edit it.
 This option should be used in combination with the ``$default`` attribute.
 
 $visibleIf::
++
+[NOTE]
+====
+Deprecated in favor of `$visible`.
+====
++
 Allows you to show a field or group if a simple condition is met.
 An example condition is:
 +
@@ -440,6 +446,130 @@ select_something:
     - option2
 ----
 
+$visible::
+Allows you to show a field or group if a condition is met. 
+You must use the https://github.com/TomFrost/jexl[jexl] expression language to write the condition.
++
+Example structure:
++
+----
+some_group:
+  $type: group
+
+  another_group:
+    $type: group
+
+      my_checkbox:
+        $type: boolean
+----
++
+An example condition is:
++
+----
+formValues.some_group.another_group.my_checkbox == true
+----
++
+The field with this attribute will only show if the condition is met.
+In this example, the field will show only if ``my_checkbox`` is checked.
+You can also choose other elements for the conditional statement, such as select fields or text fields.
++
+
++
+If you use multiple groups with the attribute, users can select an option that will show a completely different form, depending on the selected value.
++
+Values from hidden fields can be merged into the pillar data and sent to the client.
+A formula must check the condition again and use the appropriate data.
+For example:
++
+----
+show_option:
+  $type: checkbox
+some_text:
+  $visible: this.parent.value.show_option == true
+----
++
+----
+{% if pillar.show_option %}
+do_something:
+  with: {{ pillar.some_text }}
+{% endif %}
+----
+
+$disabled::
+Allows you to disable a field or group if a condition is met. You must use the https://github.com/TomFrost/jexl[jexl] expression language to write the condition.
++
+If specified at group level it will disable all fields in that group.
+
+$required::
+Fields with this attribute are mandatory. Supports using the https://github.com/TomFrost/jexl[jexl] expresion language.
+
+$match::
+Allows using a regular expression to validate the content of a text field.
++
+It supports the regular expression features existing in JavaScript.
++
+Example:
++
+----
+      hardware:
+        $type: text
+        $name: Hardware Type and Address
+        $placeholder: Enter hardware-type hardware-address (e.g. "ethernet AA:BB:CC:DD:EE:FF")
+        $help: Hardware Identifier - prefix is mandatory
+        $match: "\\w+ [A-Z]{2}:[A-Z]{2}:[A-Z]{2}:[A-Z]{2}:[A-Z]{2}:[A-Z]{2}"
+----
+
+
+=== Expression language
+You must use the https://github.com/TomFrost/jexl[jexl] expression language to write conditions.
+
+Given a structure like this:
+
+----
+some_group:
+  $type: group
+
+  another_group:
+    $type: group
+
+      my_checkbox:
+        $type: boolean
+----
+
+An example condition is:
+
+----
+formValues.some_group.another_group.my_checkbox == true
+----
+
+Absolute paths must begin with ``formValues``.
+
+Specify relative paths using ``this.parent.value`` to define the value of the parent.
+
+You can also refer to the parent of the parent, with ``this.parent.parent.value``.
+This is mostly useful for ``edit-group`` elements.
+
+Example for relative paths:
+----
+some_group:
+  $type: group
+
+  another_group:
+    $type: group
+
+    my_checkbox:
+      $type: boolean
+
+    my_text:
+      $visible: this.parent.value.my_checkbox
+
+  yet_another_group:
+    $type: group
+
+    my_text2:
+      $visible: this.parent.parent.value.another_group.my_checkbox
+
+----
 
 .Example: Basic edit-group
 ----
