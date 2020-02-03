@@ -5,7 +5,17 @@
 Staging is used by clients to download packages in advance, before they are installed.
 This allows package installation to begin as soon as it is scheduled, which can reduce the amount of time required for a maintenance window.
 
-Check the [guimenu]``Enable Staging Contents`` box to allow clients in this organization to stage package data.
+
+== Enable Content Staging
+
+You can manage content staging across your entire organization.
+In the {productname} {webui}, navigate to menu:Admin[Organizations] to see a list of available organizations.
+Click on the name of an organization, and check the [guimenu]``Enable Staging Contents`` box to allow clients in this organization to stage package data.
+
+[NOTE]
+====
+You must be logged in as a {productname} administrator to create and manage organizations.
+====
 
 You can also enable staging at the command prompt by editing [path]``/etc/sysconfig/rhn/up2date``, and adding or editing these lines:
 
@@ -15,8 +25,7 @@ stagingContentWindow=24
 ----
 
 ////
-2018-12-10, ke: /etc/sysconfig/rhn/up2date still exists. @renner confirmed some tools use it
-                (at least, trad. client).  To be renamed in the future.
+2018-12-10, ke: /etc/sysconfig/rhn/up2date still exists. @renner confirmed some tools use it (at least, trad. client).  To be renamed in the future.
 ////
 
 The ``stagingContentWindow`` parameter is a time value expressed in hours and determines when downloading will start.
@@ -28,23 +37,31 @@ The assigned contact method sets the time for when the next [command]``mgr_check
 Next time an action is scheduled, packages are automatically downloaded, but not installed.
 At the scheduled time, the staged packages are installed.
 
-Every Organization administrator can enable Content Staging from the Organization configuration page menu:Admin[Organization > OrgName > Configuration > Enable Staging Contents].
 
-Staging content for clients is affected by two parameters.
 
-* [path]``salt_content_staging_advance:`` expresses the advance time, in hours, for the content staging window to open with regard to the scheduled installation/upgrade time.
-* [path]``salt_content_staging_window:`` expresses the duration, in hours, of the time window for Salt clients to stage packages in advance of scheduled installations or upgrades.
+== Configure Content Staging
 
-A value of *salt_content_staging_advance* equal to *salt_content_staging_window* results in the content staging window closing exactly when the installation/upgrade is scheduled to be executed.
-A larger value allows separating download time from the installation time.
+There are two parameters used to configure content staging:
 
-These options are configured in [path]``/usr/share/rhn/config-defaults/rhn_java.conf``
- and by default assume the following values:
+* [parameter]``salt_content_staging_advance`` is the advance time for the content staging window to open, in hours.
+This is the number of hours before installation that package download can begin.
+* [parameter]``salt_content_staging_window`` is the duration of the content staging window, in hours.
+This is the amount of time clients have to stage packages before installation begins.
+
+For example, if [parameter]``salt_content_staging_advance`` is set to six hours, and [parameter]``salt_content_staging_window`` is set to two hours, the staging window will open six hours before the installation time, and remain open for two hours.
+No packages will be downloaded in the four remaining hours until installation starts.
+
+If you set the same value for both [parameter]``salt_content_staging_advance`` and [parameter]``salt_content_staging_window`` packages will be able to be downloaded until installation begins.
+
+Configure the content staging parameters in [path]``/usr/share/rhn/config-defaults/rhn_java.conf``.
+
+Default values:
 
 * [path]``salt_content_staging_advance: 8 hours``
 * [path]``salt_content_staging_window: 8 hours``
 
+
 [NOTE]
 ====
-These parameters will only have an effect when Content Staging is enabled for the targeted Organization.
+Content staging must be enabled in order for these parameters to work correctly.
 ====
