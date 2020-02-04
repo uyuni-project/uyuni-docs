@@ -97,7 +97,7 @@ pdf-tar-suma: ## Create tar of PDF files
 
 # To build for suma-webui or uyuni you need to comment out the correct name/title in the antora.yml file. (TODO remove this manual method.)
 .PHONY: antora-suma
-antora-suma: clean pdf-all-suma pdf-tar-suma ## Build the SUMA Antora static site (See README for more information)
+antora-suma: clean #pdf-all-suma pdf-tar-suma ## Build the SUMA Antora static site (See README for more information)
 		sed -i "s/^ # *\(name: *suse-manager\)/\1/;\
 	s/^ # *\(title: *SUSE Manager\)/\1/;\
 	s/^ *\(title: *Uyuni\)/#\1/;\
