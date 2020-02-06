@@ -1,108 +1,87 @@
-[[ref.webui.audit.cve]]
-= CVE Audit
+[[auditing]]
+= Auditing
 
-The menu:Main Menu[Audit > CVE Audit] page will display a list of client systems with their patch status regarding a given CVE (Common Vulnerabilities and Exposures) number.
+In {productname}, you can keep track of your clients through a series of auditing tasks.
+You can check that your clients are up to date with all public security patches (CVEs), perform subscription matching, and use OpenSCAP to check for specification compliance.
 
-image::audit_cve_audit.png[scaledwidth=80%]
+In the {productname} {webui}, navigate to [guimenu]``Audit`` to perform auditing tasks.
 
 
-[[cve-usage]]
-== Normal Usage
 
-Proceed as follows if you want to verify that a client system has received a given CVE patch:
+// This will probably need to be broken into sub-sections. --LKB 20200205
 
-. Make sure that the CVE data is up-to-date. For more information, see <<cve-maintenance>>.
-. Click menu:Main Menu[Audit > CVE Audit] to open the [guimenu]``CVE Audit`` page.
-. Input a 13-char CVE identifier in the [guimenu]``CVE Number`` field. The year setting will be automatically adjusted. Alternatively, set the year manually and add the last four digits.
-. Optionally, uncheck the patch statuses you are not interested in.
-. Click [guimenu]``Audit systems``.
 
-Performing this procedure will result in a list of client systems, where each system comes with a [guimenu]``Patch Status`` belonging to the given CVE identifier.
-Possible statuses are:
+== CVE Audits
 
-image:patch-status-affected-patch-inapplicable.png[scaledwidth=1em] Red - Affected, patches are available in channels that are not assigned:::
-The system is affected by the vulnerability and {productname} has one or more patches for it, but at this moment, the channels offering the patches are not assigned to the system.
+A CVE (common vulnerabilities and exposures) is a fix for a publicly known security vulnerability.
 
-image:patch-status-affected-patch-applicable.png[scaledwidth=1em] Orange - Affected, at least one patch available in an assigned channel:::
-The system is affected by the vulnerability, {productname} has at least one patch for it in a channel that is directly assigned to the system.
-
-image:patch-status-not-affected.png[scaledwidth=1em] Grey - Not affected:::
-The system does not have any packages installed that are patchable.
-
-image:patch-status-patched.png[scaledwidth=1em] Green - Patched:::
-A patch has already been installed.
-
-In other words, it can mean the following:
-
-* More than one patch might be needed to fix a certain vulnerability.
-* The image:patch-status-affected-patch-applicable.png[scaledwidth=1em] Orange - state is displayed when {productname} has at least one patch in an assigned channel.
-This might mean that, after installing such a patch, others might be needed—users should double check the CVE Audit page after applying a patch to be sure that their systems are not affected anymore.
-
-For a more precise definitions of these states, see <<cve-tips>>.
-
-[NOTE]
-.Unknown CVE Number
+[IMPORTANT]
 ====
-If the CVE number is not known to {productname}, an error message is displayed because {productname} cannot collect and display any audit data.
+You must apply CVEs to your clients as soon as they become available.
 ====
 
-For each system, the [guimenu]``Next Action`` column contains suggestions on the steps to take to address the vulnerabilities.
-Under these circumstances it is either sensible to install a certain patch or assign a new channel.
-If applicable, a list of "`candidate`" channels or patches is displayed for your convenience.
+Each CVE contains an identification number, a description of the vulnerability, and links to further information.
+CVE identification numbers use the form ``CVE-YEAR-XXXX``.
 
+In the {productname} {webui}, navigate to menu:Audit[CVE Audit] to see a list of all clients and their current patch status.
+
+By default, the CVE data is updated at 2300 every day.
+We recommend that before you begin a CVE audit you refresh the data to ensure you have the latest patches.
+
+
+
+.Procedure: Updating CVE Data
+. In the {productname} {webui}, navigate to menu:Admin[Task Schedules] and select the ``cve-server-channels-default`` schedule.
+. Click btn:[cve-server-channels-bunch].
+. Click btn:[Single Run Schedule] to schedule the task.
+Allow the task to complete before continuing with the CVE audit.
+
+
+
+.Procedure: Verifying Patch Status
+. In the {productname} {webui}, navigate to menu:Audit[CVE Audit].
+. OPTIONAL: To check the patch status for a particular CVE, type the CVE identifier in the [guimenu]``CVE Number`` field.
+. Select the patch statuses you want to look for, or leave all statuses checked to look for all.
+. Click btn:[Audit Servers] to check all systems, or click btn:[Audit Images] to check all images.
+
+For more information about the patch status icons used on this page, see xref:reference:audit/audit-cve-audit.adoc[].
+
+
+For each system, the [guimenu]``Next Action`` column provides information about what you need to do to address vulnerabilities.
+If applicable, a list of candidate channels or patches is also given.
 You can also assign systems to a [guimenu]``System Set`` for further batch processing.
 
 
-
-[[ref-api-usage]]
-== API Usage
-
-An API method called `audit.listSystemsByPatchStatus` is available to run CVE audits from custom scripts.
-Details on how to use it are available in the API guide.
+You can use the {productname} API to verify the patch status of your clients.
+Use the ``audit.listSystemsByPatchStatus`` API method.
+For more information about this method, see the {productname} API Guide.
 
 
 
-[[cve-maintenance]]
-== Maintaining CVE Data
+== CVE Status
 
-To produce correct results, CVE Audit must periodically refresh the data needed for the search in the background.
-By default, the refresh is scheduled at 11:00 PM every night.
-It is recommended to run such a refresh right after the {productname} installation to get proper results immediately instead of waiting until the next day.
+The CVE status of clients is usually either ``affected``, ``not affected``, or ``patched``.
+These statuses are based only on the information that is available to {productname}.
 
-. In the Web interface, click menu:Main Menu[Admin > Task Schedules].
-. Click the `cve-server-channels-default` schedule link.
-. Click the `cve-server-channels-bunch` link.
-. Click the btn:[Single Run Schedule] button.
-. After some minutes, refresh the page and check that the scheduled run status is ``FINISHED``.
+Within {productname}, these definitions apply:
 
-A direct link is also available on the menu:Main Main[Audit > CVE Audit] page ([guimenu]``extra CVE data update``).
-
-
-
-[[cve-tips]]
-== CVE Tips
-
-Audit results are only correct if the assignment of channels to systems did not change since the last scheduled refresh (normally at 11:00 PM every night).
-If a CVE audit is needed and channels were assigned or unassigned to any system during the day, a manual run is recommended.
-For more information, see <<cve-maintenance>>.
-
-Systems are called "`affected`", "`not affected`" or "`patched`" not in an absolute sense, but based on information available to {productname}.
-This implies that concepts such as "`being affected by a vulnerability`" have particular meanings in this context.
-The following definitions apply:
-
-System affected by a certain vulnerability:::
+System affected by a certain vulnerability::
 A system which has an installed package with version lower than the version of the same package in a relevant patch marked for the vulnerability.
 
-System not affected by a certain vulnerability:::
+System not affected by a certain vulnerability::
 A system which has no installed package that is also in a relevant patch marked for the vulnerability.
 
-System patched for a certain vulnerability:::
+System patched for a certain vulnerability::
 A system which has an installed package with version equal to or greater than the version of the same package in a relevant patch marked for the vulnerability.
 
-Relevant patch:::
+Relevant patch::
 A patch known by {productname} in a relevant channel.
 
-Relevant channel:::
+Relevant channel::
 A channel managed by {productname}, which is either assigned to the system, the original of a cloned channel which is assigned to the system, a channel linked to a product which is installed on the system or a past or future service pack channel for the system.
 
-A notable consequence of the above definitions is that results can be incorrect in cases of unmanaged channels, unmanaged packages, or non-compliant systems.
+[NOTE]
+====
+Because of the definitions used within {productname}, CVE audit results might be incorrect in some circumstances.
+For example, unmanaged channels, unmanaged packages, or non-compliant systems might report incorrectly.
+====
