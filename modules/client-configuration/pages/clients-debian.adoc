@@ -11,23 +11,63 @@ Bootstrapping is supported for starting {debian} clients and performing initial 
 
 Some preparation is required before you can register {debian} clients to the {productname} Server.
 
-ifeval::[{suma-content} == true]
+[IMPORTANT]
+====
+Debian 9 requires `apt-transport-https` before the registration. Make sure it is installed on the client otherwise registration will fail:
 
-.Procedure: Adding client tools channels
+----
+apt install apt-transport-https
+----
 
-Before you begin, ensure you have the {debian} product enabled, and have synchronized the {debian} channels for {scc}:
+Ensure DNS is correctly configured and provides an entry for the client, otherwise configure the `/etc/hosts` files on both the uyuni server and the client with the appropriate entries.
 
-You can do this from {webui} or using command prompt, at your choice.
+The client has to have NTP synchronised correctly with the Uyuni server before the registration
+====
+
+[NOTE]
+====
+{debian} channels can be very large. Synchronization can sometimes take several hours.
+====
+
+At the command prompt on the {productname} Server, as root, install the [systemitem]``spacewalk-utils`` package:
++
+----
+zypper in spacewalk-utils
+----
+
+=== Create and sync the debian channels on Uyuni
 
 For {debian} 9:
 
-* From the {webui}, add [systemitem]``Debian 9`` and [systemitem]``SUSE Linux Enterprise Client Tools Ubuntu 1604 amd64``.
-* From the command prompt, add [systemitem]``debian-9-pool-amd64`` and [systemitem]``ubuntu-9-suse-manager-tools-amd64``.
+----
+spacewalk-common-channels -u admin -a amd64-deb debian-9-pool-amd64
+spacewalk-common-channels -u admin -a amd64-deb debian-9-amd64-main-security
+spacewalk-common-channels -u admin -a amd64-deb debian-9-amd64-main-updates
+----
+----
+spacewalk-repo-sync --channel debian-9-pool-amd64 &
+spacewalk-repo-sync --channel debian-9-amd64-main-security &
+spacewalk-repo-sync --channel debian-9-amd64-main-updates &
+----
 
 For {debian} 10:
 
-* From the {webui}, add [systemitem]``Debian 10`` and [systemitem]``SUSE Linux Enterprise Client Tools Ubuntu 1804 amd64``.
-* From the command prompt, add [systemitem]``debian-10-pool-amd64`` and [systemitem]``ubuntu-10-suse-manager-tools-amd64``.
+----
+spacewalk-common-channels -u admin -a amd64-deb debian-10-pool-amd64
+spacewalk-common-channels -u admin -a amd64-deb debian-10-amd64-main-security
+spacewalk-common-channels -u admin -a amd64-deb debian-10-amd64-main-updates
+----
+----
+spacewalk-repo-sync --channel debian-10-pool-amd64 &
+spacewalk-repo-sync --channel debian-10-amd64-main-security &
+spacewalk-repo-sync --channel debian-10-amd64-main-updates &
+----
+
+ifeval::[{suma-content} == true]
+
+\.Procedure: Adding client tools channels
+
+
 
 [NOTE]
 ====
@@ -122,13 +162,7 @@ Your custom channels should use this structure, at menu:Software[Channel List > 
 * Child custom channel: [systemitem]``Ubuntu 10 LTS AMD64 Main Security``
 * Child vendor channel: [systemitem]``Ubuntu-10-SUSE-Manager-Tools for amd64``
 
-When you have the channels set up, associate each channel with the appropriate repository, and synchronize then channels (optionally configure scheduled syncronization).
 
-To do this, proceed to menu:Software[Manage > Channels], and for each channel you created, click on it and:
-
-. Navigate to the [guimenu]``Repositories``
-. Navigate to the [guimenu]``Sync``and click btn:[Sync Now] to begin synchronization immediately.
-. You can also setup a scheduled syncronization from this screen.
 
 [IMPORTANT]
 ====
@@ -280,24 +314,6 @@ Create the salt state and assign it to the organization.
 You can then use an activation key and configuration channels to deploy the key to the clients.
 endif::[]
 
-== Root Access
-
-The root user on {debian} is disabled by default.
-You can enable it by editing the [filename]``sudoers`` file.
-
-.Procedure: Granting Root User Access
-
-. On the client, edit the [filename]``sudoers`` file:
-+
-----
-sudo visudo
-----
-+
-Grant [command]``sudo`` access to the user by adding this line to the [filename]``sudoers`` file. Replace [systemitem]``<user>`` with the name of the user that will be used to bootstrap the client in the {webui}:
-+
-----
-<user>  ALL=NOPASSWD: /usr/bin/python, /usr/bin/python2, /usr/bin/python3
-----
 
 [NOTE]
 ====
