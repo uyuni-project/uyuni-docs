@@ -1,87 +1,72 @@
 [[yomi.installer]]
 = Install with Yomi
 
-# Yomi - Yet one more installer
+Yomi (yet one more installer) is an installer for openSUSE operating systems.
+It is a SaltStack state, and can be used for installing Salt clients.
 
-# What is Yomi
+Yomi consists of two components:
 
-Yomi (yet one more installer) is a new proposal for an installer for
-the [open]SUSE family. It is designed as a
-[SaltStack](https://www.saltstack.com/) state, and expected to be used
-in situations were unattended installations for heterogeneous nodes is
-required, and where some bits of intelligence in the configuration
-file can help to customize the installation.
+* The Yomi formula, which contains the Salt states and modules required to drive the installation.
+For the formula, see https://build.opensuse.org/package/show/systemsmanagement:yomi/yomi-formula
+* The LiveCD operating system image, which includes the `pre-configured ``salt-minion`` service.
+For the image, see https://build.opensuse.org/package/show/systemsmanagement:yomi/openSUSE-Tumbleweed-Yomi
 
-Being also a Salt state makes the installation process one more step
-during the provisioning stage, making on Yomi a good candidate for
-integration in any workflow were SaltStack is used.
+For the Yomi source code, see https://github.com/openSUSE/yomi.
 
+To use Yomi as your client operating system, you need to follow this process:
 
-# Overview
-
-To execute Yomi we need a modern version of Salt, as we need special
-features are only on the
-[develop](https://github.com/saltstack/salt/tree/develop) branch of
-Salt. Technically we can use the last released version of Salt for
-salt-master, but for the minions we need the most up-to-date
-version. The good news is that most of the patches are currently
-merged in the openSUSE package of Salt.
-
-Yomi is developed in
-[OBS](https://build.opensuse.org/project/show/systemsmanagement:yomi),
-and actually consists on two components:
-
-* [yomi-formula](https://build.opensuse.org/package/show/systemsmanagement:yomi/yomi-formula):
-  contains the Salt states and modules requires to drive an
-  installation. The [source code](https://github.com/openSUSE/yomi) of
-  the project in available under the openSUSE group in GitHub.
-* [openSUSE-Tubleweed-Yomi](https://build.opensuse.org/package/show/systemsmanagement:yomi/openSUSE-Tumbleweed-Yomi):
-  is the image that can be used too boot the new nodes, that includes
-  the `salt-minion` service already configured. There are two versions
-  of this image, one that is used as a LiveCD image and other designed
-  to be used from a PXE Boot server.
-
-The installation process of Yomi will require:
-
-* Install and configure the
-  [`salt-master`](#installing-and-configuring-salt-master) service.
-* Install the [`yomi-formula`](#the-yomi-formula) package.
-* Prepare the [pillar](#pillar-in-yomi) for the new installations.
-* Boot the new systems with the [ISO image](#the-iso-image) or via
-  [PXE boot](#pxe-boot)
+* Install and configure the ``salt-master``service.
+* Install the Yomi formula package.
+* Prepare the Salt pillar for the new installation.
+* Boot the new systems with the operating system image, or use PXE boot.
 
 
-# Installing and configuring salt-master
 
-SaltStack can be deployed with different architectures. The
-recommended one will require the `salt-master` service.
+== Install and Configure salt-master
 
-```bash
+You will require the ``salt-master`` service to be able to use Yomi for your client operating system.
+If you have not yet installed it on the {productname} Server, you will need to do this step first.
+
+
+
+.Procedure: Installing salt-master
+
+. On the {productname} Server, at the command prompt, as root, install the ``salt-master`` service:
++
+----
 zypper in salt-master
-
+----
+. Use ``systemctl`` to enable the service:
++
+----
 systemctl enable --now salt-master.service
-```
+----
 
-## Other ways to install salt-master
+Yomi uses a Salt pillar to provide configuration information for the installation.
+This can include the layout of the hard disks, the software
+patterns to install, or the users to create.
 
-For different ways of installation, read the [official
-documentation](https://docs.saltstack.com/en/latest/topics/installation/index.html). For
-example, for development purposes installing it inside a virtual
-environment can be a good idea:
+By default, Salt searches for states in the [path]``/srv/salt/`` directory.
+By default, Salt searches for pillars in [path]``/srv/pillar``.
 
-```bash
-python3 -mvenv venv
+You do not need to perform this step, if you are using the Yomi formula.
 
-source venv/bin/activate
 
-pip install --upgrade pip
-pip install salt
+.Procedure: Configuring salt-master
 
-# Create the basic layout and config files
-mkdir -p venv/etc/salt/pki/{master,minion} \
-      venv/etc/salt/autosign_grains \
-      venv/var/cache/salt/master/file_lists/roots
-
+. On the {productname} Server, at the command prompt, as root, create two new directories for the configuration file:
++
+----
+mkdir -p venv/etc/salt/pki/{master,minion}
+----
+.  Create two new virtual environments:
++
+----
+venv/etc/salt/autosign_grains
+venv/var/cache/salt/master/file_lists/roots
+. Add the configuration information to the new location:
++
+----
 cat <<EOF > venv/etc/salt/master
 root_dir: $(pwd)/venv
 
@@ -93,143 +78,37 @@ pillar_roots:
   base:
     - $(pwd)/srv/pillar
 EOF
-```
-
-## Looking for the pillar
-
-Salt pillar are the data that the Salt states use to decide the
-actions that needs to be done. For example, in the case of Yomi the
-typical data will be the layout of the hard disks, the software
-patterns that will be installed, or the users that will be
-created. For a complete explanation of the pillar required by Yomi,
-check the section [Pillar in Yomi](#pillar-in-yomi)
-
-By default Salt will search the states in `/srv/salt`, and the pillar
-in `/srv/pillar`, as established by `file_roots` and `pillar_roots`
-parameters in the default configuration file (`/etc/salt/master`).
-
-To indicate a different place where to find the pillar, we can add a
-new snippet in the `/etc/salt/master.d` directory:
-
-```bash
-cat <<EOF > /etc/salt/master.d/pillar.conf
-pillar_roots:
-  base:
-    - /srv/pillar
-	- /usr/share/yomi/pillar
-EOF
-```
-
-The `yomi-formula` package already contains an example of such
-configuration. Check section [Looking for the pillar in
-Yomi](#looking-for-the-pillar-in-yomi)
-
-## Enabling auto-sign
-
-To simplify the discovery and key management of the minions, we can
-use the auto-sign feature of Salt. To do that we need to add a new
-file in `/etc/salt/master.d`.
-
-```bash
-echo "autosign_grains_dir: /etc/salt/autosign_grains" > \
-     /etc/salt/master.d/autosign.conf
-```
-
-The Yomi ISO image available in Factory already export some UUIDs
-generated for each minion, so we need to list into the master all the
-possible valid UUIDs.
-
-```bash
-mkdir -p /etc/salt/autosign_grains
-
-for i in $(seq 0 9); do
-  echo $(uuidgen --md5 --namespace @dns --name http://opensuse.org/$i)
-done > /etc/salt/autosign_grains/uuid
-```
-
-The `yomi-formula` package already contains an example of such
-configuration. Check section [Enabling auto-sing in
-Yomi](#enabling-auto-sing-in-yomi)
-
-## Salt API
-
-The `salt-master` service can be accessed via a REST API, provided by
-an external tool that needs to be enabled.
-
-```bash
-zypper in salt-api
-
-systemctl enable --now salt-api.service
-```
-
-There are different options to configure the `salt-api` service, but
-is safe to choose `CherryPy` as a back-end to serve the requests of
-Salt API.
-
-We need to configure this service to listen to one port, for example
-8000, and to associate an authorization mechanism. Read the Salt
-documentation about this topic for different options.
-
-```bash
-cat <<EOF > /etc/salt/master.d/salt-api.conf
-rest_cherrypy:
-  port: 8000
-  debug: no
-  disable_ssl: yes
-EOF
-
-cat <<EOF > /etc/salt/master.d/eauth.conf
-external_auth:
-  file:
-    ^filename: /etc/salt/user-list.txt
-    salt:
-      - .*
-      - '@wheel'
-      - '@runner'
-      - '@jobs'
-EOF
-
-echo "salt:linux" > /etc/salt/user-list.txt
-```
-
-The `yomi-formula` package already contains an example of such
-configuration. Check section [Salt API in Yomi](#salt-api-in-yomi)
+----
 
 
-# The Yomi formula
 
-The states and modules required by Salt to drive an installation can
-be installed where the `salt-master` resides:
+== Install the Yomi Formula Package
 
-```bash
+
+You can use the Yomi formula to install the states and modules you need.
+
+The formula installs the states in [path]``/usr/share/salt-formulas/states``, and configuration files in [path]``/usr/share/yomi``.
+It also stores some pillar examples in [path]``/usr/share/yomi/pillar``.
+
+.Procedure: Installing the Yomi Formula
+
+. On the {productname} Server, at the command prompt, as root, install the formula:
++
+----
 zypper in yomi-formula
-```
-
-This package will install the states in
-`/usr/share/salt-formulas/states`, some pillar examples in
-`/usr/share/yomi/pillar` and configuration files in `/usr/share/yomi`.
-
-
-## Looking for the pillar in Yomi
-
-Yomi expect from the pillar to be a normal YAML document, optionally
-generated by a Jinja template, as is usual in Salt.
-
-The schema of the pillar is described in the section [Pillar reference
-for Yomi](#pillar-reference-for-yomi), but the `yomi-formula` package
-provides a set of examples that can be used to deploy MicroOS
-installations, Kubic, LVM, RAID or simple openSUSE Tumbleweed ones.
-
-In order to `salt-master` can find the pillar, we need to change the
-`pillar_roots` entry in the configuration file, or use the one
-provided by the package:
-
-```bash
+----
+. So that ``salt-master`` can find the pillar, change the
+``pillar_roots`` entry in the configuration file, or use the one provided by the package:
++
+----
 cp -a /usr/share/yomi/pillar.conf /etc/salt/master.d/
 systemctl restart salt-master.service
-```
+----
 
-## Enabling auto-sing in Yomi
+
+// Lana, you're up to here! LKB 2020-02-27
+
+# Enabling auto-sing in Yomi
 
 The images generated by the Open Build Service that are ready to be
 used together with Yomi contains a list a random UUID, that can be
