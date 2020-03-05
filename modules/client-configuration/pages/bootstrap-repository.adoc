@@ -2,27 +2,70 @@
 = Bootstrap Repository
 
 A bootstrap repository contains packages for installing Salt on clients, as well as the required packages for registering Salt or traditional clients during bootstrapping.
-You can create a bootstrap repository on the {productname} Server.
-
-When you have created the bootstrap repository, the packages in the repository will be installed during client registration.
-
+Bootstrap repositories are automatically created and regenerated on the {productname} Server for every synchronized product.
 
 == Prepare to Create a Bootstrap Repository
 
-Before you create the bootstrap repository, ensure client is fully synchronized with your vendor channel.
+When you select a product for synchronization, the bootstrap repo is automatically generated as soon as all mandatory channels are fully mirrored.
 
 There are two ways to check if a channel has finished synchronizing:
 
 * In the {productname} {webui}, navigate to menu:Admin[Setup Wizard] and select the [guimenu]``SUSE Products`` tab.
-This dialog displays a completion bar for each product when they are being synchronized.
+This dialog displays a completion bar for each product when they are being synchronized. Some products require also extensions to be synchronized.
 * You can also check the synchronization log file at the command prompt.
 Use the [command]``cat`` or [command]``tail -f`` command to view the [path]``/var/log/rhn/reposync/channel-label.log`` file.
 If you use this method, remember that base channels can contain multiple child channels.
 Each of the child channels will generate its own log during the synchronization progress.
 You will need to check all the base and child channel log files to be sure that the synchronization is complete.
 
+== Options for Automatic Mode
 
-== Generate a Bootstrap Repository
+=== Disable Flush Mode
+
+By default every regeneration start with an empty repository and copy only the latest packages into it.
+This can be turned off by adding the following value in [path]``/etc/rhn/rhn.conf``
+
+----
+server.susemanager.bootstrap_repo_flush = 0
+----
+
+=== Disable Automatic Mode
+
+If automatic regenration of the bootstrap repositories are not wanted, it can be disabled.
+Add the following value in [path]``/etc/rhn/rhn.conf`
+
+----
+server.susemanager.auto_generate_bootstrap_repo = 0
+----
+
+=== Configure own Bootstrap Data File
+
+The tool uses a data file with information about which packages are required for which distribution.
+This data file can be found at [path]``/usr/share/susemanager/mgr_bootstrap_data.py``.
+SUSE update this file regular.
+
+In case you want to modify it, please create a copy in the same directory
+
+----
+$> cd /usr/share/susemanager/
+$> cp mgr_bootstrap_data.py my_data.py
+----
+
+and edit your copy.
+You can configure SUSE Manager to use your version by setting the following option in [path]``/etc/rhn/rhn.conf``
+
+----
+server.susemanager.bootstrap_repo_datamodule = my_data
+----
+
+[NOTE]
+====
+The original file will be overwritten with the next update.
+You are responsible to keep your copy up to date with changes provided by SUSE to the original file.
+====
+
+
+== Generate a Bootstrap Repository Manually
 
 By default, bootstrap repositories are regenerated daily.
 You can manually create the bootstrap repository from the command prompt:
