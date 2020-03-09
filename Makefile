@@ -154,6 +154,11 @@ define pdf-architecture-product
 endef
 
 
+define pdf-quickstart-public-cloud-product
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),quickstart-public-cloud)
+endef
+
+
 # Help Menu
 PHONY: help
 help: ## Prints a basic help menu about available targets
@@ -223,7 +228,7 @@ obs-packages-suma: clean pdf-all-suma antora-suma ## Generate SUMA OBS tar files
 
 
 .PHONY: pdf-all-suma
-pdf-all-suma: pdf-install-suma pdf-client-configuration-suma pdf-upgrade-suma pdf-reference-suma pdf-administration-suma pdf-salt-suma pdf-retail-suma  ##pdf-architecture-suma-webui ## Generate PDF versions of all SUMA books
+pdf-all-suma: pdf-install-suma pdf-client-configuration-suma pdf-upgrade-suma pdf-reference-suma pdf-administration-suma pdf-salt-suma pdf-retail-suma  pdf-quickstart-public-cloud-suma ##pdf-architecture-suma-webui ## Generate PDF versions of all SUMA books
 
 
 
@@ -315,6 +320,17 @@ pdf-architecture-suma: modules/architecture/nav-architecture-guide.pdf.adoc
 
 
 
+.PHONY: modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc
+modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc:
+	$(call pdf-book-create-index,quickstart-public-cloud)
+
+.PHONY: pdf-quickstart-public-cloud-suma
+## Generate PDF version of the SUMA Quickstart Guide for Public Cloud
+pdf-quickstart-public-cloud-suma: modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc
+	$(call pdf-quickstart-public-cloud-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
+
+
+
 # UYUNI DOCUMENTATION BUILD COMMANDS
 
 .PHONY: validate-uyuni
@@ -391,3 +407,8 @@ pdf-retail-uyuni: modules/retail/nav-retail-guide.pdf.adoc
 .PHONY: pdf-architecture-uyuni
 pdf-architecture-uyuni: modules/architecture/nav-architecture-guide.pdf.adoc
 	$(call pdf-architecture-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
+
+.PHONY: pdf-quickstart-public-cloud-uyuni
+## Generate PDF version of the SUMA Quickstart Guide for Public Cloud
+pdf-quickstart-public-cloud-uyuni: modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc
+	$(call pdf-quickstart-public-cloud-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
