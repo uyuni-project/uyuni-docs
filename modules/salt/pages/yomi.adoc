@@ -2,99 +2,30 @@
 = Install with Yomi
 
 Yomi (yet one more installer) is an installer for {suse} and openSUSE operating systems.
-It is a SaltStack state, and can be used for installing {suse} operating systems on clients.
+Yomi is designed as a SaltStack state, and can be used for installing {suse} operating systems on new systems.
+
+In the context of {productname} we can use Yomi as one step for the provisioning of a new system, and as an alternative to AutoYaST.
 
 Yomi consists of two components:
 
 * The Yomi formula, which contains the Salt states and modules required to perform the installation.
 * The LiveCD operating system image, which includes the `pre-configured ``salt-minion`` service.
-For the image, see https://build.opensuse.org/package/show/systemsmanagement:yomi/openSUSE-Tumbleweed-Yomi
 
+Both components can be used independently of {productname}, or integrated with it.  In this section we will discuss the last option, but for an independent installation, configuration and usage reference to the upstream documentation in https://github.com/openSUSE/yomi and the assets in the build repository: https://build.opensuse.org/project/show/systemsmanagement:yomi
 
 To use Yomi for installing your client operating system, you need to follow this process:
 
 * Install the Yomi formula package.
 * Prepare the Salt pillar for the new installation.
-* Boot the new client using the Yomi image, or use PXE boot.
+* Boot the new client using the PXE boot image for Yomi.
 
-For more information about using Yomi, see https://github.com/openSUSE/yomi/blob/master/README.md
+== Install the ``yomi-formula``
 
+The first required component is the ``yomi-formula``, already available as a package in {productname}.
 
-////
-Not required for Uyuni  --LKB 2020-03-03
+.Procedure: Installing yomi-formula
 
-== Install and Configure salt-master
-
-You will require the ``salt-master`` service to be able to use Yomi for your client operating system.
-If you have not yet installed it on the {productname} Server, you will need to do this step first.
-
-
-
-.Procedure: Installing salt-master
-
-. On the {productname} Server, at the command prompt, as root, install the ``salt-master`` service:
-+
-----
-zypper in salt-master
-----
-. Use ``systemctl`` to enable the service:
-+
-----
-systemctl enable --now salt-master.service
-----
-
-Yomi uses a Salt pillar to provide configuration information for the installation.
-This can include the layout of the hard disks, the software
-patterns to install, or the users to create.
-
-By default, Salt searches for states in the [path]``/srv/salt/`` directory.
-By default, Salt searches for pillars in [path]``/srv/pillar``.
-
-You do not need to perform this step, if you are using the Yomi formula.
-
-
-.Procedure: Configuring salt-master
-
-. On the {productname} Server, at the command prompt, as root, create two new directories for the configuration file:
-+
-----
-mkdir -p venv/etc/salt/pki/{master,minion}
-----
-.  Create two new virtual environments:
-+
-----
-venv/etc/salt/autosign_grains
-venv/var/cache/salt/master/file_lists/roots
-----
-. Add the configuration information to the new location:
-+
-----
-cat <<EOF > venv/etc/salt/master
-root_dir: $(pwd)/venv
-
-file_roots:
-  base:
-    - $(pwd)/srv/salt
-
-pillar_roots:
-  base:
-    - $(pwd)/srv/pillar
-EOF
-----
-////
-
-
-== Install the Yomi Formula Package
-
-
-You can use the Yomi formula to install the states and modules you need.
-
-The formula installs the states in [path]``/usr/share/salt-formulas/states``, and configuration files in [path]``/usr/share/yomi``.
-It also stores some pillar examples in [path]``/usr/share/yomi/pillar``.
-
-.Procedure: Installing the Yomi Formula
-
-. On the {productname} Server, at the command prompt, as root, install the formula:
+. On the {productname} Server, at the command prompt, as root, install the ``yomi-formula`` package:
 +
 ----
 zypper in yomi-formula
@@ -105,67 +36,195 @@ zypper in yomi-formula
 systemctl restart salt-master.service
 ----
 
+This package contains the Salt states and modules that describe the Yomi state, the {productname} formulas that will allow the creation of the pillar via the web interface, the documentation about the different sections of the pillar, and some examples about how to parameterize installations based on openSUSE, MicroOS or SLE.
+
+To find the new modules, this package is already adding a new configuration file in  [path]``/etc/salt/master.d``, named yomi-formula.conf.
+
+The formula installs the SLS states that compose Yomi in [path]``/usr/share/salt-formulas/states``, and some example of configuration files in [path]``/usr/share/yomi``. This package also install the different forms (and sub-forms) in [path]``/usr/share/salt-formulas/metadata``.
+
+It also stores some pillar examples in [path]``/usr/share/yomi/pillar``.
+
 // For more information about the Yomi formula, see xref:salt:formula-yomi.adoc[] TBC --LKB 2020-03-03
 
+== Install the ``pxe-yomi-image`` PXE image
 
+To be able to provision a new system we will need an image where we boot from. We can use any image that contains a ``salt-minion`` service enabled, together with a minimal set of tools that are required during the installation, like ``parted``, `btrfstools`` among others.
+
+We are providing an already prepared image, based on openSUSE Tumbleweed, openSUSE Leap (for Uyuni), or SLE (for SUSE Manager). For Uyuni and for SUSE Manager we have this image already packaged as an RPM, in a similar way that ``pxe-default-image`` is distributed.
+
+You can find the image under the name ``pxe-yomi-image-opensuse15`` in Uyuni, and ``pxe-yomi-image-sle15`` in SUSE Manager.
+
+.Procedure: Installing pxe-yomi-image
+
+. On the {productname} Server, at the command prompt, as root, install the ``pxe-yomi-image`` service:
++
+----
+zypper in pxe-yomi-image-opensuse15
+----
+
+Remember to adjust the name of the package depending on the product used.
+
+This package is installing a standard PXE OEM image generated by Kiwi, and installing the initial kernel and initrd in /srv/pxe-yomi-image, and the second stage kernel, initrd and image in /srv/pxe-yomi-image/image.
+
+== Registering the ``pxe-yomi-image`` in Cobbler
+
+Because {productname} is using Cobbler to manager the PXE boot service, we will document how to register the image.
+
+.Procedure: Registering the ``pxe-yomi-image`` distro in Cobbler
+
+. On the {productname} Server, at the command prompt, as root, define a distribution in Cobbler and a place where to store the second stage kernel and initrd, and the full image.
++
+----
+mkdir /srv/tftpboot/pxe-yomi-image
+
+cobbler distro add \
+  --name=pxe-yomi-image \
+  --kernel=/srv/pxe-yomi-image/linux \
+  --initrd=/srv/pxe-yomi-image/initrd \
+  --boot-files='/srv/tftpboot/pxe-yomi-image/image.initrd=/srv/pxe-yomi-image/image/pxe-yomi-image-opensuse15.x86_64-1.0.0.initrd /srv/tftpboot/pxe-yomi-image/image.kernel=/srv/pxe-yomi-image/image/pxe-yomi-image-opensuse15.x86_64-1.0.0.kernel /srv/tftpboot/pxe-yomi-image/image.md5=/srv/pxe-yomi-image/image/pxe-yomi-image-opensuse15.x86_64-1.0.0.md5 /srv/tftpboot/pxe-yomi-image/image.xz=/srv/pxe-yomi-image/image/pxe-yomi-image-opensuse15.x86_64-1.0.0.xz' \
+  --kernel-options='rd.kiwi.install.pxe rd.kiwi.install.image=tftp://server-address/pxe-yomi-image/image.xz rd.kiwi.ramdisk ramdisk_size=1572864 net.ifnames=1'
+----
+
+Remember to adapt the filenames based on the version a name of the product that we are already using, and to provide the proper address for the ``tftp`` server address.
+
+.Procedure: Registering the ``pxe-yomi-image`` profile in Cobbler
+
+. On the {productname} Server, at the command prompt, as root, define a profile in Cobbler based on the image.
++
+----
+cobbler profile add \
+  --name pxe-yomi-profile \
+  --distro=pxe-yomi-image
+----
+
+The last step is, optionally, creating a system in Cobbler. For example, if we know the MAC address for the new system that we want to provision, we can direct to it a boot from this Yomi image directly.
+
+.Procedure: Creating a system for ``pxe-yomi-image`` based on a MAC address
+
+. On the {productname} Server, at the command prompt, as root, create a temporary system in Cobbler.
++
+----
+cobbler system add \
+   --name=yomi \
+   --mac=00:11:22:33:44:55 \
+   --profile=pxe-yomi-profile
+----
+
+For completion, once the new node (or nodes) are provisioned, remember to remove the system.
+
+.Procedure: Removing the temporary system for ``pxe-yomi-image``
+
+. On the {productname} Server, at the command prompt, as root, remove the temporary Cobbler system.
++
+----
+cobbler system remove --name=yomi
+----
 
 == Prepare the Salt Pillar
 
-The ``salt-api`` service is required so that Yomi can monitor the installation.
+We will define the installation of a new operating system via a pillar. In there we will describe the different parameters that the Yomi state require during the installation, like the partitions, file systems, repositories, packages installed, or services enabled.
 
-.Procedure: Preparing the Salt Pillar
+For this we are going to define the pillar data using the formulas with forms, and using a very minimal openSUSE Tumbleweed as an example. Please, find examples for MicroOS or SLES in the example directory [path]``/usr/share/yomi/pillar``
 
-. Enable the service:
-+
-----
-systemctl restart salt-master.service
-----
-. OPTIONAL: Open the [path]``/etc/salt/master.d/salt-api.conf`` configuration file, and add the required certificates to enable SSL.
-. Open the pillar configuration file (location?) and add or edit these lines:
-+
-----
-config:
-  events: yes
-----
+The first step is booting the node that we want to provision using the Yomi PXE boot image. Use the previous section for an example about how to use Cobbler for this task.
+
+Once the ``salt-minion`` service is running in the new system, we can accept the key in the Salt / Keys section. After waiting a bit, we can access to the system in Systems / Overview.
+
+From there we can go to the Formulas tab, and assign to this system all the Installer formulas, that is composed with several forms (Yomi, Yomi Storage, Yomi Bootloader, Yomi Software, Yomi Services and Yomi Users).
+
+Now we can fill the different sub-forms, in the expected order. For a detailed explanation of every option, please check the upstream Yomi documentation.
+
+=== Yomi
+
+This first form contains some general configuration options. We can set here, for example, the keyboard language and layout, the locale information or if we want a full reset of the system after the provisioning.
+
+For this example, set the 'Reboot' parameter as 'yes'.
+
+=== Yomi Storage
+
+In this sub-form we will provide all the information about the devices, partitioning, file system (including the BtrFS subvolumes, for example), and LVM / RAID configuration.
+
+For this example we will consider that the new system have only one single device, named '/dev/sda', and that belongs to a non UEFI system. We decide in this case to have only three partitions: one for the boot loader, one for the Swap and the last one for the system. We also expect to have a file system based on 'ext4' for the root.
+
+Set for 'Device 1':
+* Device: /dev/sda
+* Label: GPT
+* Initial Gap: 1MB
+
+Create three partitions (click on '+' close to the 'Partitions' section)
+
+Set for 'Partition 1':
+* Partition Number: 1
+* Partition Size: 1MB
+* Partition Type: boot
+
+Set for 'Partition 2':
+* Partition Number: 2
+* Partition Size: 1024MB
+* Partition Type: swap
+
+Set for 'Partition 3':
+* Partition Number: 3
+* Partition Size: rest
+* Partition Type: linux
+
+Create two file systems (click on '+' close to the 'Filesystems' section)
+
+Set for 'Filesystem 1':
+* Partition: /dev/sda2
+* Filesystem: swap
+
+Set for 'Filesystem 2':
+* Partition: /dev/sda3
+* Filesystem: ext4
+* Mountpoint: /
+
+=== Yomi Bootloader
+
+In this sub-form we will parameterize some details required for GRUB, for now change only this:
+
+* Device: /dev/sda
+* Theme: selected
+
+The 'Kernel' parameter is the one than can be used for the GRUB 'append' section.
+
+=== Yomi Software
+
+Here we will list the different repositories and packages that we want to install. We also have a chance to register the product using 'SUSEConnect', and install the different modules after the registering.
+
+For this example we are going to install a very minimal openSUSE Tumbleweed distribution, using the public repositories from Internet. For real deployments you must provide a local repository.
+
+Add a new repository (click on '+' close to the 'Repositories' section)
+* Repository Name: repo-oss
+* Repository URL: http://download.opensuse.org/tumbleweed/repo/oss/
+
+Add three packages (click on '+' close to the 'Packages' section)
+* pattern:enhanced_base
+* glibc-locale
+* kernel-default
+
+Note that we can add patterns and products, together with packages, using the correct prefix.
+
+=== Yomi Services
+
+By default Yomi is install the ``salt-minion`` service, but you must to validate the enable of it.
+
+Add a new enabled service (click on '+' close to the 'Enabled' section)
+
+Set for 'Service 1':
+* Service: salt-minion
+
+=== Yomi Users
+
+For this example system we are going to create the 'root' user, under the 'linux' password. To provide a password we need to use the hashed version of it (but this will change in future versions of Yomi)
+
+Set for User 1:
+* Username: root
+* Password Hash: $1$wYJUgpM5$RXMMeASDc035eX.NbYWFl0
 
 
-When the pillar is configured, you can launch the ``monitor`` tool from the command prompt.
-The `monitor` tool stores authentication tokens generated by Salt API in a local cache.
-This makes future connections to the service simpler, but can sometimes cause authentication errors.
-If you start the ``monitor`` tool with the ``-r`` option, then the local cache is removed before the connection is made, which can avoid authentication problems.
-Launch the ``monitor`` tool:
-+
-----
-export SALTAPI_URL=http://localhost:8000
-export SALTAPI_EAUTH=file
-export SALTAPI_USER=salt
-export SALTAPI_PASS=linux
+== Monitoring the installation
 
-monitor -r -y
-----
+Optionally we can monitor the installation (that will be commanded once we apply the highstate to the new system). For this the ``salt-api`` service is required.
 
-[[WARNING]]
-====
-In this example, the password is in plain text.
-Do not use this in a production environment.
-====
-
-
-
-== Boot Clients
-
-Yomi is a set of Salt states that are used to drive the installation of a new operating system.
-To take full control of the system where the installation will be done, you will need to boot from an external system that provides an already configured `salt-minion`, and a set of command line tools required during the installation.
-
-You can install Yomi on clients using different mechanisms.
-There is a multi-build image available for download, which provides a LiveCD ISO image and a PXE boot image.
-You can download the image from https://build.opensuse.org/package/show/systemsmanagement:yomi/openSUSE-Tumbleweed-Yomi.
-
-This image is built from openSUSE Tumbleweed repositories.
-It includes a very minimal set of tools, including the openSUSE version of `salt-minion`.
-
-Alternatively, you can download the latest LiveCD image at the command prompt, using ``wget``:
-
-----
-wget https://download.opensuse.org/repositories/systemsmanagement:/yomi/images/iso/openSUSE-Tumbleweed-Yomi.x86_64-livecd.iso
-----
+For instructions about how to install and configure this service, and how to use the provided ``monitor`` tool, please refer to the Yomi documentation. In order to instruct Yomi to send events every time that an installation step is produced, please, remember to select 'Events' in the first Yomi sub-form.
