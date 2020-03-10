@@ -1,0 +1,208 @@
+[[clients-debian]]
+= Registering {debian} Clients
+
+This section contains information about registering Salt clients running {debian} operating systems.
+
+[IMPORTANT]
+====
+{suse} does not provide support for {debian} operating systems.
+{productname} allows you to manage {debian} clients, but support is not provided.
+Using {productname} to manage {debian} clients is experimental.
+These instructions have been tested on {debian}{nbsp}9 Stretch and {debian}{nbsp}10 Buster.
+Do not rely on {debian} clients in a production environment.
+====
+
+Bootstrapping can be used with {debian} clients for performing initial state runs, and for profile updates.
+
+
+
+== Prepare to Register
+
+Some preparation is required before you can register {debian} clients to the {productname} Server.
+
+If you are using Debian{nbsp}9, install the ``apt-transport-https`` package on the client before you attempt to register.
+On the client, at the command prompt, as root, run:
+
+----
+apt install apt-transport-https
+----
+
+Ensure DNS is correctly configured and provides an entry for the client.
+Alternatively, you can configure the ``/etc/hosts`` files on both the {productname} Server and the client with the appropriate entries.
+
+The client must have the date and time synchronized correctly with the {productname} server before registration.
+
+The {productname} Server requires the ``spacewalk-utils`` package.
+On the {productname} Server, at the command prompt, as root, run:
+
+----
+zypper in spacewalk-utils
+----
+
+
+
+.Procedure: Adding the {debian} Channels
+. At the command prompt on the {productname} Server, as root, install the [systemitem]``spacewalk-utils`` package:
++
+----
+zypper in spacewalk-utils
+----
+. Add the {debian} channels.
+For {debian}{nbsp}9:
++
+----
+spacewalk-common-channels -u admin -a amd64-deb debian-9-pool-amd64
+spacewalk-common-channels -u admin -a amd64-deb debian-9-amd64-main-security
+spacewalk-common-channels -u admin -a amd64-deb debian-9-amd64-main-updates
+spacewalk-common-channels -u admin -a amd64-deb debian-9-amd64-uyuni-client-master
+----
+For {debian}{nbsp}10:
++
+----
+spacewalk-common-channels -u admin -a amd64-deb debian-10-pool-amd64
+spacewalk-common-channels -u admin -a amd64-deb debian-10-amd64-main-security
+spacewalk-common-channels -u admin -a amd64-deb debian-10-amd64-main-updates
+spacewalk-common-channels -u admin -a amd64-deb debian-10-amd64-uyuni-client-master
+----
+
+
+
+.Procedure: Synchronizing {centos} repositories
+
+. In the {productname} {webui}, navigate to menu:Software[Manage], and check every {debian} channel.
+. In the [guimenu]``Repositories`` tab, navigate to the [guimenu]``Sync`` subtab, and click btn:[Sync Now].
+You can also create a regular synchronization schedule on this page.
+
+
+[NOTE]
+====
+{debian} channels can be very large.
+Synchronization can sometimes take several hours.
+====
+
+
+There are two ways to check if a channel has finished synchronizing:
+
+* In the {productname} {webui}, navigate to menu:Software[Manage > Channels], and click the channel associated to the repository.
+Navigate to the menu:Repositories[Sync] tab, and check [guimenu]``Sync Status``.
+* Check the synchronization log file at the command prompt with [command]``tail -f /var/log/rhn/reposync/channel-label.log``.
+Each child channel will generate its own log during the synchronization progress.
+You will need to check all the base and child channel log files to be sure that the synchronization is complete.
+
+
+
+== Trust GPG Keys on Clients
+
+By default, {debian} does not trust the GPG key for {productname} {debian} client tools.
+
+The clients can be successfully bootstrapped without the GPG key being trusted.
+However, they will not be able to install new client tool packages or update them.
+
+To fix this, add the key to the [systemitem]``ORG_GPG_KEY=`` parameter in all {debian} bootstrap scripts:
+----
+uyuni-gpg-pubkey-0d20833e.key
+----
+
+You do not need to delete any previously stored keys.
+
+If you are bootstrapping clients using the {productname} {webui}, you will need to use a Salt state to trust the key.
+Create the Salt state and assign it to the organization.
+You can then use an activation key and configuration channels to deploy the key to the clients.
+
+
+////
+I feel like this is probably not required, as it doesn't really have any instructions in it? --LKB 2020-03-05
+
+== Create Content Lifecycle Channels
+
+Clone the channels as per your servers lifecycle policy (e.g. dev, test, prod) or alternatively use the new amazing "Content Lifecycle" functionality to simplify the channels management tasks'
+
+From the command line, as an alternative, you can use respectively `spacecmd softwarechannel_clone` or `spacewalk-manage-channel-lifecycle`.
+
+In the below example we have created 2 environemnts using the Content Lifecycle section: `DEV, TEST-QA`.
+
+image::4-uyuni-content_lifecycle-debian.png[scaledwidth=80%]
+
+For more details about how to create Content Lifecycle channels and how to apply filters have a look at the related section of the documentation:
+
+https://www.uyuni-project.org/uyuni-docs/uyuni/administration/content-lifecycle.html
+
+
+
+== Create an activation key for the debian servers
+
+Under Systems --> Activation keys create an activation key for the lifecycle environment your debian servers need to be assigned to.
+
+As shown in the picture, we have created an activation key called qa-test-debian10 and assigned all of the debian qa-test lifecycle channels to it.
+
+image::5-uyuni-activation-key-debian.png[scaledwidth=80%]
+////
+
+
+
+== Register Clients
+
+To register your {debian} clients, you need a bootstrap repository.
+By default, bootstrap repositories are regenerated daily.
+You can manually create the bootstrap repository from the command prompt, using this command:
+
+----
+mgr-create-bootstrap-repo --with-custom-channels
+----
+
+For {debian}{nbsp}10, select ``debian10-amd64-uyuni`` when prompted.
+
+
+////
+I'm not sure we need this either, it's pretty generic bootstrapping info, which we cover elsewhere. --LKB 2020-03-05
+
+==== Bootstrapping from the Uyuni UI
+
+Browse through Systems --> Boostrapping --> Bootstrap Minions and insert the appropriate values.
+
+*Host:* debian client hostname/FQDN
+
+*SSH Port:* ssh port the client listens on
+
+*Username:* root
+
+*password:* root password
+
+*activation key:* activation key created before related to lifecycle the debian client will be registered against
+
+Make also sure "Disable SSH strict host key checking..." is thicked to disable fingerprint confirmation so it will not complain during the first run.
+
+image::6-uyuni-ui-bootstrap-debian.png[scaledwidth=80%]
+
+==== Bootstrapping the client using the bootstrip script
+
+
+Generate a new bootstrap script from the UI browsing Admin --> Manager Configuration --> Bootstrap script
+Fill up the fields inserting the correct values and click on the update button.
+
+image::7-uyuni-bootstrap-script.png[scaledwidth=80%]
+
+A `bootstrap.sh` script will be generated in `/srv/www/htdocs/pub/bootstrap`, edit the script so that the activation key and the uyuni Hostname/FQDN match.
+
+----
+ACTIVATION_KEYS=1-qa-test-debian10
+
+HOSTNAME=uyuni4-osuse.home-lab.net
+----
+
+The script can either be run from the uyuni server itself:
+----
+cd /srv/www/htdocs/pub/bootstrap
+cat bootstrap.sh | ssh root@192.168.122.185
+----
+or copied over to the client with scp command and executed later on.
+
+In case the script has been run from the debian client the salt key must be accepted manually this can be done from the command line running the followng command:
+----
+salt-key -a <client name>
+----
+or from the UI under Salt--> Salt keys
+
+////
+
+For more information on registering your clients, see xref:client-configuration:registration-overview.adoc[].
