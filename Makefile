@@ -159,10 +159,6 @@ define pdf-quickstart-public-cloud-product
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),quickstart-public-cloud)
 endef
 
-<<<<<<< HEAD
-=======
-
->>>>>>> b67c0d3f235368691786af7db86dbf2d9ce07fcd
 # Help Menu
 PHONY: help
 help: ## Prints a basic help menu about available targets
