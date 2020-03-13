@@ -10,7 +10,7 @@ FILENAME_SUMA ?= suse_manager
 SUMA_CONTENT ?= true
 
 # UYUNI Productname and file replacement
-PRODUCTNAME_UYUNI ?= Uyuni
+PRODUCTNAME_UYUNI ?= 'Uyuni'
 FILENAME_UYUNI ?= uyuni
 UYUNI_CONTENT ?= true
 
