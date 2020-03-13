@@ -10,7 +10,7 @@ FILENAME_SUMA ?= suse_manager
 SUMA_CONTENT ?= true
 
 # UYUNI Productname and file replacement
-PRODUCTNAME_UYUNI ?= Uyuni
+PRODUCTNAME_UYUNI ?= 'Uyuni'
 FILENAME_UYUNI ?= uyuni
 UYUNI_CONTENT ?= true
 
@@ -227,12 +227,9 @@ obs-packages-suma: clean pdf-all-suma antora-suma ## Generate SUMA OBS tar files
 	$(call obs-packages-product,$(HTML_OUTPUT_SUMA),$(PDF_OUTPUT_SUMA))
 
 
-
 # Generate PDF versions of all SUMA books
 .PHONY: pdf-all-suma
-pdf-all-suma:
-	pdf-install-suma pdf-client-configuration-suma pdf-upgrade-suma pdf-reference-suma pdf-administration-suma pdf-salt-suma pdf-retail-suma pdf-quickstart-public-cloud-suma ##pdf-architecture-suma-webui
-
+pdf-all-suma: pdf-install-suma pdf-client-configuration-suma pdf-upgrade-suma pdf-reference-suma pdf-administration-suma pdf-salt-suma pdf-retail-suma pdf-quickstart-public-cloud-suma ##pdf-architecture-suma-webui
 
 
 .PHONY: modules/installation/nav-installation-guide.pdf.adoc
