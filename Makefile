@@ -228,10 +228,10 @@ obs-packages-suma: clean pdf-all-suma antora-suma ## Generate SUMA OBS tar files
 
 
 
-## Generate PDF versions of all SUMA books
+# Generate PDF versions of all SUMA books
 .PHONY: pdf-all-suma
-pdf-all-suma: pdf-install-suma pdf-client-configuration-suma pdf-upgrade-suma pdf-reference-suma pdf-administration-suma pdf-salt-suma pdf-retail-suma pdf-quickstart-public-cloud-suma
-##pdf-architecture-suma-webui
+pdf-all-suma:
+	pdf-install-suma pdf-client-configuration-suma pdf-upgrade-suma pdf-reference-suma pdf-administration-suma pdf-salt-suma pdf-retail-suma pdf-quickstart-public-cloud-suma ##pdf-architecture-suma-webui
 
 
 
