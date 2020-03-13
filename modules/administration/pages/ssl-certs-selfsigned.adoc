@@ -1,9 +1,15 @@
-[[custom-ssl]]
-= Custom SSL Certificates
+[[ssl-certs-selfsigned]]
+= Self-Signed SSL Certificates
 
-You can use custom certificates with {productname} and {productname} Proxy.
+By default, {productname} uses a self-signed certificate.
+In this case, the certificate is created and signed by {productname}.
+This method does not use an independent certificate authority to guarantee that the details of the certificate are correct.
+Third party CAs perform checks to ensure that the information contained in the certificate is correct.
 
-This section covers how to use a third party SSL certificate authority with a new {productname} installation, and replacing existing certificate with new custom certificates.
+This section covers how to re-create your self-signed certificates on an existing installation.
+It also covers how to create new self-signed certificates and authenticate your existing clients to the new certificate, using an intermediate certificate.
+Intermediate certificates merge the intermediate and root CA certificates into one file.
+Ensure that the intermediate certificate comes first in the combined file.
 
 Before you begin, ensure you have:
 
@@ -14,66 +20,12 @@ Before you begin, ensure you have:
 Your key and certificate files must be in PEM format.
 
 The host name of the SSL keys and certificates must match the fully qualified host name of the machine you deploy them on.
-You can set the host names in the ``X509v3 Subject Alternative Name`` section of the certificate.
-You can also list multiple host names if your environment requires it.
-
-If you want to use intermediate certificates, you need to merge the intermediate and root CA certificates into one file.
-Ensure that the intermediate certificate comes first in the combined file.
-
-
-== Custom Certificates for New Installations
-
-By default, {productname} uses a self-signed certificate.
-After you have completed the initial setup, you can replace the default certificate with a custom certificate.
-
-.Procedure: Installing Custom Certificates on a New {productname} Server
-
-. Install the {productname} Server according to the instructions in xref:installation:install-intro.adoc[].
-. Complete the initial setup according to xref:installation:server-setup.adoc[].
-. At the command prompt, point the SSL environment variables to the custom certificate file locations:
-+
-----
-export CA_CERT=<path_to_CA_certificate_file>
-export SERVER_KEY=<path_to_web_server_key>
-export SERVER_CERT=<path_to_web_server_certificate>
-----
-. Complete {productname} setup:
-+
-----
-yast2 susemanagersetup
-----
-+
-When you are prompted for certificate details during setup, fill in random values.
-The values will be overridden by the values you specified at the command prompt.
-
-[NOTE]
-====
-Execute the [command]``yast2 susemanagersetup`` command from the same shell you exported the environment variables from.
-====
-
-
-== Custom Certificates for New Proxy Installations
-
-By default, {productname} Proxy uses a self-signed certificate.
-After you have completed the initial setup, you can replace the default certificate with a custom certificate.
-
-.Procedure: Installing Custom Certificates on a New {productname} Proxy
-
-. Install the {productname} Proxy according to the instructions in xref:installation:install-intro.adoc[].
-. Complete the initial setup according to xref:installation:proxy-setup.adoc[].
-. At the command prompt, run:
-+
-----
-configure-proxy.sh
-----
-. At the ``Do you want to import existing certificates?`` prompt, type kbd:[y].
-. Follow the prompts to complete setup.
 
 
 
 == Re-Create Existing Server Certificates
 
-If your existing custom certificates have expired or stopped working for any reason, you can generate a new server certificate from the existing CA.
+If your existing certificates have expired or stopped working for any reason, you can generate a new server certificate from the existing CA.
 
 .Procedure: Re-Creating an Existing Server Certificate
 
@@ -83,7 +35,7 @@ If your existing custom certificates have expired or stopped working for any rea
 rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
 --set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
 --set-org-unit="ORGANIZATION UNIT" --set-email="name@example.com" \
---set-hostname="susemanager.example.top" --set-cname="example.com"
+--set-hostname="susemanager.example.com" --set-cname="example.com"
 ----
 Ensure that the [systemitem]``set-cname`` parameter is the fully-qualified domain name of your {productname} Server.
 You can use the the [systemitem]``set-cname`` parameter multiple times if you require multiple aliases.
@@ -149,8 +101,9 @@ You will need to generate a server certificate RPM for each proxy, using their h
 
 When you have new certificates, you can create the combined RPMs to authenticate the clients.
 
-.Procedure: Create Combined Certificate RPMs
 
+
+.Procedure: Create Combined Certificate RPMs
 . Create a new CA file that combines the old and new certificate details, and generate a new RPM:
 +
 ----
@@ -171,13 +124,14 @@ rhn-ssl-tool --gen-ca --rpm-only --dir="/root/combined-ssl-build"
 When you have the combined RPMs, you can deploy the combined CA certificates to your clients.
 
 
+
 .Procedure: Deploying Combined Certificates on Traditional Clients
 
 . On the client, create a new custom channel using these details:
 +
 * Name: SSL-CA-Channel
 * Label: ssl-ca-channel
-* Parent Channel: <choose the parent channel of a clients>
+* Parent Channel: <choose the parent channel of a client>
 * Summary: SSL-CA-Channel
 
 +
