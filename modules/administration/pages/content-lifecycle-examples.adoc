@@ -220,18 +220,57 @@ All packages installed during the year will match the current live patching kern
 
 
 
-== Filter by Appstream
+== Appstream Filters
 
-If you are using {rhel}{nbsp}8 clients, you cannot access the modular repositories using the {productname} {webui}.
-An alternative is to use non-modular repositories, which are provided by Appstream.
-Appstream packages are designed to be compatible between all major Linux distributions.
+If you are using {rhel}{nbsp}8 clients, you cannot perform package operations such as installing or upgrading directly from modular repositories like the {rhel} Appstream repository.
+You can use the Appstream filter to transform modular repositories into a regular repository.
+It does this by keeping the the packages in the repository and stripping away the module metadata.
+The resulting repository can be used in {productname} in the same way as a regular repository.
 
-When you search for available packages, results from Appstream repositories are included as non-modular packages, and can be used for regular package operations.
+The AppStream filter selects a single module stream to be included in the target repository.
+You can add multiple filters to select multiple module streams.
 
-The stream filter works slightly differently to the other filters in CLM.
+If you do not use an AppStream filter in your CLM project, the module metadata in the modular sources remains intact, and the target repositories contain the same module metadata.
+As long as at least one AppStream filter is enabled in the CLM project, all target repositories are transformed into regular repositories.
 
-.Procedure: Searching for Appstream Packages
+To use the Appstream filter, you need a CLM project with a modular repository such as ``{rhel} Appstream``.
+Ensure that you included the module you need as a source before you begin.
+
+
+
+.Procedure: Using Appstream Filters
 . In the {productname} {webui}, navigate to your {rhel}{nbsp}8 CLM project.
 Ensure that you have included the Appstream channels for your project.
-. Create a new filter, type the module name you require, and in the [guimenu]``Filter Type`` field, select [parameter]``Module (Stream)``.
-. Leave the [guimenu]``Stream`` field blank to return both modular and non-modular Appstream packages that match your filter.
+. Click btn:``Create Filter`` and use these parameters:
++
+* In the [guimenu]``Filter Name`` field, type a name for the new filter.
+* In the [guimenu]``Filter Type`` field, select [parameter]``Module (Stream)``
+* In the [guimenu]``Module Name`` field, type a module name.
+For example, [parameter]``postgresql``.
+* In the [guimenu]``Stream`` field, type the name of the desired stream.
+For example; [parameter]``10``.
+If you leave this field blank, the default stream for the module is selected.
+. Click btn:[Save] to create the new filter.
+. Navigate to menu:Content Lifecycle[Projects] and select your project.
+. Click btn:``Attach/Detach Filters``, select your new Appstream filter, and click btn:``Save``.
+
+
+You can create additional AppStream filters for any other module stream to be included in the target repository.
+Any module streams that the selected stream depends on will be automatically included.
+
+[[NOTE]]
+====
+Be careful not to specify conflicting, incompatible, or missing
+module streams.
+For example, selecting two streams from the same module is
+invalid.
+====
+
+When you build your CLM project using the btn:``Build`` button in teh {webui}, the target repository is a regular repository without any modules, that contains packages from the selected module streams.
+
+// This feature is mandatory to make RHEL/CentOS 8 modular repositories work
+// in the SUMA UI. Otherwise, even though modular repositories can be synced
+// and assigned to clients, they cannot be used for package operations
+// (install, update, etc.) from SUMA UI (An info message is shown in the UI if
+// that's the case). In that case, the package operations can only be done
+// from the client's CLI manually.
