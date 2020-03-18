@@ -165,97 +165,46 @@ The parent channel will not contain any packages.
 
 
 
-.**Procedure: Adding Base Media to Custom Channels**
+.Procedure: Adding Base Media to Custom Channels
 
-Mount the {rhel} or {centos} 6, 7 or 8 Media:
-
-. On the {productname} Server command prompt, as root, copy the base media image to the [path]``/tmp`` directory.
-
+. On the {productname} Server, at the command prompt, as root, copy the base media image to the [path]``/tmp/`` directory.
 . Create a directory to contain the media content.
 Replace [command]``<os_name>`` with either ``rhel``  or ``centos``:
 +
 ----
 mkdir -p /srv/www/htdocs/pub/rhel
 ----
-
 . Mount the image:
 +
 ----
 mount -o loop /tmp/<iso_filename> /srv/www/htdocs/pub/rhel
 ----
 
-. Proceed to Syncing Base media for {rhel} or {centos} 6,7, or 8.
+When the image is mounted, you can synchronize the base media.
+To manually synchronize the channels, navigate to menu:Software[Manage > Channels].
+Click each channel in the list, and navigate to menu:[Repositories > Sync].
+Click btn:[Sync Now] to begin synchronization immediately.
+You can also create a synchronization schedule from this screen.
 
 
 
-.**Procedure: Syncing Base Media**
+== Monitor Synchronization Progress
 
-The following steps require you to have mounted the base media for the selected distribution.
+You can check if a channel has finished synchronizing:
 
-* For {rhel} or {centos} 8:
+ifeval::[{suma-content} == true]
+* In the {productname} {webui}, navigate to menu:Admin[Setup Wizard] and select the [guimenu]``SUSE Products`` tab.
 +
-. At the command prompt as root enter the following to sync the **BaseOS** channel:
+This dialog displays a completion bar for each product when they are being synchronized.
+endif::[]
+ifeval::[{uyuni-content} == true]
+* In the {productname} {webui}, navigate to menu:Software[Manage > Channels], then click on the channel associated to the repository. Navigate to the [guimenu]``Repositories``, then [guimenu]``Sync`` and check [systemitem]``Sync Status``
+endif::[]
+* Check the synchronization log file at the command prompt with [command]``tail -f /var/log/rhn/reposync/channel-label.log``.
 +
-----
-spacewalk-repo-sync -c channel_name -u https://EXAMPLE.COM/pub/rhel/BaseOS/
-----
+Each child channel will generate its own log during the synchronization progress.
 
-. Wait for the sync to complete.
-
-. At the command prompt as root enter the following to sync the **AppStream** channel:
-+
-----
-spacewalk-repo-sync -c channel_name -u https://EXAMPLE.COM/pub/rhel/AppStream/
-----
-
-. Wait for the sync to complete.
-
-* For {rhel} or {centos} 7:
-+
-At the command prompt as root enter the following:
-+
-----
-spacewalk-repo-sync -c channel_name -u https://EXAMPLE.COM/pub/<os_name>/
-----
-
-* For {rhel} or {centos} 6:
-+
-At the command prompt as root enter the following:
-+
-----
-spacewalk-repo-sync -c channel_name -u https://<SERVER-FQDN>/pub/<os_name>/Server/
-----
-
-
-
-
-
-=== Troubleshooting Synchronization
-
-// This isn't included in the RH section, should it be (at ~L260) ? LKB 2019-09-30
-
-Sometimes, the [command]``spacewalk-repo-sync`` command will stop running during a synchronization, and give this error:
-
-----
-[Errno 256] No more mirrors to try.
-----
-
-If this occurs, run [command]``spacewalk-repo-sync`` in debugging mode to determine the error.
-
-Start debugging mode:
-----
-export URLGRABBER_DEBUG=DEBUG
-----
-
-Check the output:
-----
-/usr/bin/spacewalk-repo-sync --channel <channel-label> --type yum
-----
-
-Disable debug mode:
-----
-unset URLGRABBER_DEBUG
-----
+You will need to check all the base and child channel log files to be sure that the synchronization is complete.
 
 
 
