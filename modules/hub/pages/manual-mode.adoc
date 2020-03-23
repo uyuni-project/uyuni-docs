@@ -1,0 +1,56 @@
+[[manual-mode-example]]
+= Manual mode
+
+
+In this example, manual mode is used, where user needs to provide credentials for each {productname} server user wants to connect to.
+
+Here in this example, following is happening
+
+[square]
+* User provide credentials for the hub to the login method, a `sessionkey` for the hub is returned
+* Using the sessionkey from the previous step, `serverIds` for the servers attached to the hub are requested
+* User provide the credentials for each {productname} server, she needs data from and calls the hub method `attachToServers`. Authentication part is done here.
+* `multicast` call is being performed on the specific servers where `serverId` is used to identify the specific sever. Behind the scenes, `system.list_system method` of each {productname} server's xmlrpc api method will be called to get the list of the clients registed with each {productname} server
+* Hub will take care of collecting these results and return in form of a `map`. This map has two entries, entry with `Successfull`  key, has list of responses where call was successful while with `Failed` key  has the failed ones.
+
+[NOTE]
+====
+If user wish to get information from only one {productname} server, then Hub also provided a convenient `unicast` namespace. In this case, result would not be returned as map rather exactly as the result are expectd as if user directly call that {productname} server's api.
+====
+
+* User logs out
+
+
+[source,python]
+----
+#!/usr/bin/python
+import xmlrpclib
+import itertools
+
+HUB_URL = "http://localhost:8888/hub/rpc/api"
+HUB_LOGIN = "admin"
+HUB_PASSWORD = "admin"
+
+client = xmlrpclib.Server(HUB_URL, verbose=0)
+
+hubKey = client.hub.login(HUB_LOGIN, HUB_PASSWORD)
+
+#Get the server Ids
+serverIds = client.hub.listServerIds(hubKey)
+
+# authenticate those servers(each server with it's own credentials)
+usernames = ["admin" for s in serverIds]
+passwords = ["admin" for s in serverIds]
+client.hub.attachToServers(hubKey, serverIds, usernames, passwords)
+
+# perform the needed operation
+systemsPerServer = client.multicast.system.list_systems(hubKey, serverIds)
+successfulResponses = systemsPerServer["Successfull"]["Responses"]
+failedResponses = systemsPerServer["Failed"]["Responses"]
+
+for system in itertools.chain.from_iterable(successfulResponses):
+  print (system)
+
+#logout
+client.auth.logout(hubKey)
+----
