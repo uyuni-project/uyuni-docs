@@ -11,6 +11,8 @@ When you have the {susemgr} Server and Branch Server set up, you are ready to de
 
 Each procedure is detailed in this section.
 
+If you do not want to boot terminals from the network, you can create a live USB image and deploy terminals using a removable USB storage device.
+
 If you have many terminals, and would prefer this to be handled with a script, see xref:retail:retail-mass-config.adoc[].
 
 Before terminals can be deployed, ensure you have prepared a Saltboot-based operating system image.
@@ -20,6 +22,7 @@ For how to build OS images, see xref:administration:image-management.adoc[].
 ====
 After you have registered new terminals, always check the {susemgr} {webui} to ensure your terminals have connected successfully to the branch server, and not directly to the {susemgr} Server by mistake.
 ====
+
 
 
 == Create A Hardware Type Group
@@ -37,6 +40,8 @@ If an empty profile is not assigned to a hardware type group before registration
 
 For this procedure, you will require the system manufacturer name and product name for your terminal.
 
+
+
 .Procedure: Creating a Hardware Type Group
 
 . Determine the hardware type group name.
@@ -46,14 +51,16 @@ For example:
 ----
 HWTYPE:POSVendor-Terminal1
 ----
-+
-[IMPORTANT]
-====
-Only use colons (``:``), hyphens (``-``) or underscores (``_``) in hardware type group names.
-Spaces and other non-alphanumeric characters will be removed when the name is processed.
-====
 . In the {susemgr} {webui}, navigate to menu:Systems[System Groups], and click the btn:[Create Group] button.
 . In the [guimenu]``Create System Group`` dialog, create a new system group, using the hardware type group name you created earlier.
+
+
+[IMPORTANT]
+====
+Only use colons, hyphens, or underscores in hardware type group names.
+Spaces and other non-alphanumeric characters will be removed when the name is processed.
+====
+
 
 
 == Assign and Configure the Saltboot Formula for Each Hardware Type Group
@@ -78,6 +85,7 @@ Each hardware type group must have the Saltboot formula applied.
 ----
 salt <branch_server_salt_id> state.apply image-sync
 ----
+
 
 
 === Using a {sles}11 SP3 32-bit based images
@@ -120,7 +128,64 @@ image::retail_imagesync_formula.png[scaledwidth=80%]
 
 == Deploy Images to the Terminals
 
+When you have your bootstrap image ready, you can deploy the image to the terminals.
+
+
+
 .Procedure: Deploying Images to the Terminals
 
 . Power on your POS terminals.
 . The branch server will bootstrap the terminals according to the data you have provided.
+
+
+
+== Deploy Terminals with a Removable USB Device
+
+If you do not want to boot terminals from the network, you can create a live USB image and deploy terminals using a removable USB storage device.
+This is useful if you are unable or unwilling to connect some or all of your terminals to the network, or if you do not have a local {smr} branch server providing network services.
+
+You can prepare a bootable USB device with the image and tools required to deploy a POS terminal using a remote {smr} branch server.
+POS devices booted using the USB device are assigned to the {smr} branch server that created the USB device.
+
+You can create the bootable USB device on the branch server directly, or on the {smr} Server.
+
+
+
+.Procedure: Creating a Bootable USB Device on the Branch Server
+. On the {smr} branch server, at the command prompt, as root, create the POS image:
++
+----
+salt-call image_sync_usb.create <usb image name> <size in MiB>
+----
+. Insert the USB device into the {smr} branch server machine, and copy the image to the new location:
++
+----
+dd if=<usb image name> of=<path to usb device>
+----
+
+
+
+.Procedure: Creating a Bootable USB Device on the {smr} Server
+. On the {smr} Server, at the command prompt, as root, create the POS image:
++
+----
+salt <branch_server> image_sync_usb.create <usb image name> <size in MiB>
+----
+. Insert the USB device into the {smr} Server machine, and copy the image to the new location:
++
+----
+salt <branch_server> cmd.run "dd if=<usb image name> of=<path to usb device on branch>"
+----
+
+
+When you have the image on the USB drive, check that the terminals you want to deploy allow local booting.
+You can check this by editing the Saltboot formula in the {smr} {webui}.
+For more information about the Saltboot formula, see xref:salt:formula-saltboot.adoc[].
+
+
+
+.Procedure: Deploying Images to the Terminals using USB
+
+. Power on the POS terminal.
+. Insert the USB device into the terminal.
+. If not automatically done, mount the USB drive to begin bootstrapping.
