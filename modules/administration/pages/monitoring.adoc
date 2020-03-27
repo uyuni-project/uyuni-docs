@@ -22,7 +22,10 @@ Prometheus fetches metrics using a pull mechanism, so the server must be able to
 Clients must have corresponding open ports and be reachable over the network.
 ====
 
+
+
 == Prometheus and Grafana
+
 
 .Prometheus
 
@@ -42,6 +45,7 @@ http_requests_total{status="200", method="GET"}  @1557331801.111  42236
 
 Each application or system being monitored must expose metrics in the format above, either through code instrumentation or Prometheus exporters.
 
+
 .Prometheus Exporters
 
 Exporters are libraries that help with exporting metrics from third-party systems as Prometheus metrics.
@@ -51,6 +55,7 @@ Multiple exporters can run on a monitored host to export local metrics.
 The Prometheus community provides a list of official exporters, and more can be found as community contributions.
 For more information and an extensive list of exporters, see https://prometheus.io/docs/instrumenting/exporters/.
 
+
 .Grafana
 
 Grafana is a tool for data visualization, monitoring, and analysis.
@@ -58,15 +63,22 @@ It is used to create dashboards with panels representing specific metrics over a
 Grafana is commonly used together with Prometheus, but also supports other data sources such as ElasticSearch, MySQL, PostgreSQL, and Influx DB.
 For more information about Grafana, see https://grafana.com/docs/.
 
+
+
 == Set up the Monitoring Server
+
+To set up your monitoring server, you need to install Prometheus and Grafana, and configure them.
+
+
 
 === Install Prometheus
 
 If your monitoring server is a {productname} Salt client, you can install the Prometheus package using the {productname} {webui}.
 Otherwise you can download and install the package on your monitoring server manually.
 
-.Procedure: Installing Prometheus using the {webui}
 
+
+.Procedure: Installing Prometheus Using the {webui}
 . In the {productname} {webui}, open the details page of the system where Prometheus is to be installed, and navigate to the [guimenu]``Formulas`` tab.
 . Check the [guimenu]``Prometheus`` checkbox to enable  monitoring formulas, and click btn:[Save].
 . Navigate to the ``Prometheus`` tab in the top menu.
@@ -77,7 +89,9 @@ Make sure that the credentials you have entered allow access to the set of syste
 . Apply the highstate and confirm that it completes successfully.
 . Check that the Prometheus interface loads correctly. In your browser, navigate to the URL of the server where Prometheus is installed, on port 9090 (for example, [literal]``http://example.com:9090``).
 
-.Procedure: Manually installing and configuring Prometheus
+
+
+.Procedure: Manually Installing and Configuring Prometheus
 . On the monitoring server, install the [package]``golang-github-prometheus-prometheus`` package:
 +
 ----
@@ -90,7 +104,6 @@ systemctl enable --now prometheus
 ----
 . Check that the Prometheus interface loads correctly.
 In your browser, navigate to the URL of the server where Prometheus is installed, on port 9090 (for example, [literal]``http://example.com:9090``).
-
 . Open the configuration file at [path]``/etc/prometheus/prometheus.yml`` and add this configuration information.
 Replace `server.url` with your {productname} server URL and adjust `username` and `password` fields to match your {productname} credentials.
 +
@@ -117,7 +130,6 @@ scrape_configs:
      username: "admin"
      password: "admin"
 ----
-
 . Save the configuration file.
 . Restart the Prometheus service:
 +
@@ -125,18 +137,18 @@ scrape_configs:
 systemctl restart prometheus
 ----
 
-[NOTE]
-====
 For more information about the Prometheus configuration options, see the official Prometheus documentation at https://prometheus.io/docs/prometheus/latest/configuration/configuration/
-====
+
+
 
 === Install Grafana
 
 If your monitoring server is a {productname} Salt client, you can install the Grafana package using the {productname} {webui}.
 Otherwise you can download and install the package on your monitoring server manually.
 
-.Procedure: Installing Grafana via {productname} {webui}
 
+
+.Procedure: Installing Grafana Using the {webui}
 . In the {productname} {webui}, open the details page of the system where Grafana is to be installed, and navigate to the [guimenu]``Formulas`` tab.
 . Check the [guimenu]``Grafana`` checkbox to enable  monitoring formulas, and click btn:[Save].
 . Navigate to the ``Grafana`` tab in the top menu.
@@ -153,7 +165,9 @@ Otherwise you can download and install the package on your monitoring server man
 You can choose which dashboards to provision in the formula configuration page.
 ====
 
-.Procedure: Manually installing Grafana
+
+
+.Procedure: Manually Installing Grafana
 
 . Install the [package]``grafana`` package:
 +
@@ -172,9 +186,13 @@ image::monitoring_grafana_example.png[scaledwidth=80%]
 
 For more information on how to manually install and configure Grafana, see https://grafana.com/docs.
 
+
+
 == Configure {productname} Monitoring
 
 With {productname}{nbsp}4, you can enable the server to expose Prometheus self-health metrics, and also install and configure exporters on client systems.
+
+
 
 === Server Self Monitoring
 
@@ -201,6 +219,8 @@ See https://github.com/boynux/squid-exporter.
 
 The exporter packages are pre-installed in {productname} Server and Proxy, but their respective systemd daemons are disabled by default.
 
+
+
 .Procedure: Enabling Self Monitoring
 
 . In the {productname} {webui}, navigate to menu:Admin[Manager Configuration > Monitoring].
@@ -219,6 +239,8 @@ Metrics for a proxy are not automatically collected by Prometheus.
 To enable self-health monitoring on a proxy, you will need to manually install exporters and enable them.
 ====
 
+
+
 === Monitoring Managed Systems
 
 Prometheus metrics exporters can be installed and configured on Salt clients using formulas.
@@ -235,6 +257,8 @@ See https://github.com/Lusitaniae/apache_exporter.
 
 When you have the exporters installed and configured, you can start using Prometheus to collect metrics from monitored systems.
 If you have configured your monitoring server with the {webui}, metrics collection will happen automatically.
+
+
 
 .Procedure: Configuring Prometheus Exporters on a Client
 
@@ -257,17 +281,18 @@ Monitoring formulas can also be configured for System Groups, by applying the sa
 
 === Network Boundaries
 
-Scrape targets must be accessible from the Prometheus server.
-For clients installed on cloud instances, the simplest approach is to add the required ports into a security group that has access to the monitoring server.
-Shipped exporters use these ports:
+Prometheus fetches metrics using a pull mechanism, so the server must be able to establish TCP connections to monitored clients.
+By default, Prometheus uses these ports:
 
 * Node exporter: 9100
 * PostgreSQL exporter: 9187
 * Apache exporter: 9117
 
-Alternatively, you can deploy a Prometheus instance in the exporters' local network, and configure federation. 
-This allows the main monitoring server to scrape the time series from the local Prometheus instance. 
-If you use this method, you only need to open the Prometheus API port (9090).
+For clients installed on cloud instances, you can add the required ports to a security group that has access to the monitoring server.
+
+Alternatively, you can deploy a Prometheus instance in the exporters' local network, and configure federation.
+This allows the main monitoring server to scrape the time series from the local Prometheus instance.
+If you use this method, you only need to open the Prometheus API port, which is 9090.
 
 For more information on Prometheus federation, see https://prometheus.io/docs/prometheus/latest/federation/.
 
