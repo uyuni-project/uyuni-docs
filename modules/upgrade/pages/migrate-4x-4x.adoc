@@ -5,12 +5,13 @@ You can upgrade {productname} from version 4 to 4.x (when available) using eith
 This procedure is also known as SP migration (service pack migration).
 This procedure does not replace the server with an updated copy.
 It is an in-place upgrade.
+
 Example: [literal]``4.0.x`` → [literal]``4.1.0``.
 
 // So on my desktop, YaST calls it "online upgrades". We should check this terminology. LKB 2019-08-21
 // On SLE, it's migration. ke 2020-03-05
 
-The upgrade from version 4 to 4.x will also upgrade the base OS from SLES 15 SP1 to SLES 15 SP2​.
+The upgrade from version 4 to 4.1 will also upgrade the base OS from SLES 15 SP1 to SLES 15 SP2​, and the PostgreSQL database from version{nbsp}10 to 12 with an additional step.
 
 [IMPORTANT]
 ====
@@ -45,22 +46,28 @@ If there are older updates available, {yast} will notify you and ask to install 
 You must install all package updates before performing the migration.
 For more information, see xref:server-update.adoc[].
 +
-////
-TODO:
-2019-10-01, ke:
-With the advent of SLE 15 SP2 or SUMA 4.1 we probably must enhance this;
-For more info, see the maintenance/3.2 branch!
-Enhance the zypper section below accordingly
-////
 {yast} will show the possible migration targets with detailed summaries.
 // I've removed the graphical option, because we tell people to use a text console. LKB 2019-08-21
 . Select the appropriate target, and follow the prompts to complete the migration.
 . Reboot the server.
+. When rebooted the spacewalk services are not running until you have migrated
+the PostgreSQL database to version{nbsp}12.
+. Log in on the text console as root, and run the database migration script:
++
+----
+/usr/lib/susemanager/bin/pg-migrate-10-to-12.sh
+----
 . Ensure the spacewalk services are running:
 +
 ----
 spacewalk-service start
 ----
++
+[NOTE]
+====
+[command]``spacewalk-schema-upgrade`` is not needed anymore.
+It will be run during [command]``spacewalk-service start`` automatically.
+====
 
 
 // Does this also apply if you use zypper?  If yes, we must repeat this
@@ -92,12 +99,24 @@ zypper migration
 Zypper will show the possible migration targets with detailed summaries.
 . Select the appropriate target, and follow the prompts to complete the migration.
 . Reboot the server.
+. When rebooted the spacewalk services are not running until you have migrated
+the PostgreSQL database to version{nbsp}12.
+. Log in on the text console as root, and run the database migration script:
++
+----
+/usr/lib/susemanager/bin/pg-migrate-10-to-12.sh
+----
 . Ensure the spacewalk services are running:
 +
 ----
 spacewalk-service start
 ----
-
++
+[NOTE]
+====
+[command]``spacewalk-schema-upgrade`` is not needed anymore.
+It will be run during [command]``spacewalk-service start`` automatically.
+====
 
 If the process fails, check these issues first:
 
@@ -107,7 +126,23 @@ You must install all updates before performing the upgrade.
 
 
 
-== Database Schema Upgrade
+== Troubleshooting
 
-Most likely, you also must upgrade the database schema.
-For more information, see xref:server-update.adoc[], Procedure "Upgrading the Database Schema".
+If the schema upgrade fails, the database version check and all the other spacewalk services do not start.
+Run [command]``spacewalk-service start`` for more information and hints how to proceed.
+You can run the version check directly:
+
+----
+systemctl status uyuni-check-database.service
+----
+
+or
+
+----
+journalctl -u uyuni-check-database.service
+----
+
+These print debug information if you do not use the [command]``spacewalk-service`` command.
+
+Effective with SUMA 4.1 Beta 3
+@mcalmer mcalmer added documentation docs-squad labels 10 days ago
