@@ -67,98 +67,92 @@ If this breaches your security requirements, you will need to use a separate pro
 ====
 
 
+.Procedure: Preparing Wireless-Enabled Boot Image
+. Build the image, and ensure that the ``dracut-wireless`` package is included during the build process.
+. At the kernel command prompt, provide the wireless credentials using the [command]``WIRELESS_ESSID`` and [command]``WIRELESS_WPA_PSK`` kernel options.
+. OPTIONAL: If you use the same wireless credentials for the entire organization, you can set them permanently by creating or editing the ``etc/sysconfig/network/ifcfg-wlan0`` file to the image template, with these details:
++
+----
+# ALLOW_UPDATE_FROM_INITRD
+WIRELESS_ESSID=<wireless network name>
+WIRELESS_WPA_PSK=<wireless network password>
+----
+If you want to use different credentials for bootstrapping to what is used during normal operation, you can remove the ``ALLOW_UPDATE_FROM_INITRD`` line.
+. Prepare a USB device, and boot the terminal.
+For more information about using USB devices to boot, see xref:retail:retail-deploy-terminals-other.adoc[].
+. Alternatively, you can create the file and add it to the ``initrd``:
++
+----
+echo ./etc/sysconfig/network/ifcfg-wlan0 | cpio -H newc -o | gzip >> /srv/saltboot/boot/initrd.gz
+----
 
-Note: For best results, enable local boot in partitioning. See https://opensource.suse.com/doc-susemanager/suse-manager/salt/formula-saltboot.html#saltboot-formula-partition-types
+Check that the terminals you want to deploy allow local booting.
+You can check this by editing the Saltboot formula in the {smr} {webui}.
+For more information about the Saltboot formula, see xref:salt:formula-saltboot.adoc[].
 
-## Prepare Wireless bootstrap
+=== Change Wireless Credentials
 
-### Procedure Prepare WiFi enabled boot image
-1) Enable `dracut-wireless` package during OS Image build.
+After you have set the wireless credentials, you can change them as needed.
+The way to do this is different if you use one company-wide network, if you have each branch server on its own seperate network, or if you are using different wireless networks for booting and for regular system use.
 
-2) Provide wireless credential (optional).
-    This is useful if same wireless credentials are used across organization.
-    Note: This will use same wireless credentials for bootstrap, boot phase and also during production (regular system run).
-    1) Add file `etc/sysconfig/network/ifcfg-wlan0` to the OS Image template containing:
-        ```bash
-        # ALLOW_UPDATE_FROM_INITRD
-        WIRELESS_ESSID=<wireless network name>
-        WIRELESS_WPA_PSK=<wireless network password>
-        ```
-        Note: If you wish to use different credentials for bootstrapping and regular system run, remove the comment `# ALLOW_UPDATE_FROM_INITRD` above. Otherwise system image wireless credentials will be updated from those used in boot image.
-    2) Build the image as usual way
 
-3) Provide WiFi enabled boot image to the terminal.
-  * Use USB booting feature and boot terminal from this USB stick
-    Note: When creating USB boot image on branch server, Wifi enabled boot image must be already synchronized to the branch server and selected as default boot image.
-  * Preload boot image to the terminal before shipping to the location and bootstrapping.
 
-### Providing wireless credentials outside of image build
-  * Add credentials to already existing boot image build with `dracut-wireless`
-     This is useful for updating images per branch server if there are different credentials per branch server
-    1) On the branch server create `./etc/sysconfig/network/ifcfg-wlan0`
-        ```bash
-        WIRELESS_ESSID=<wireless network name>
-        WIRELESS_WPA_PSK=<wireless network password>
-        ```
-    2) Add created file to existing initrd
-        ```bash
-        echo ./etc/sysconfig/network/ifcfg-wlan0 | cpio -H newc -o | gzip >> /srv/saltboot/boot/initrd.gz
-        ```
+.Procedure: Changing Wireless Credentials for Single Network
+. Rebuild the boot image.
+. At the kernel command prompot, update the the [command]``WIRELESS_ESSID`` and [command]``WIRELESS_WPA_PSK`` kernel options.
+. Recreate the bootable USB device based on the new boot image.
+. Boot terminal from new USB device.
 
-  * Specify WIRELESS_ESSID and WIRELESS_WPA_PSK on kernel command line when the terminal is booting
-      This is useful for testing new credentials or when deploying small number of terminals.
-      Note: Terminal will remember new credentials after successful boot.
 
-## Changing Wireless Credentials
 
-Changing of wireless credentials is possible in multiple ways.
-Depends on if one company wide network is used, or if each branch have its own network.
-If on top different network is used for boot phase and different for production, following examples may need to be adapted to fit particular scenarios.
+.Procedure: Changing Wireless Credentials for Multiple Networks
+. In the [path]``/srv/salt/`` directory, create a salt state called ``update-terminal-credentials.sls``, and copy the details from [path]``/etc/sysconfig/network/ifcfg-wlan0``.
+At a command prompt on the terminal:
++
+----
+/etc/sysconfig/network/ifcfg-wlan0
+  file.managed:
+   - contents: |
+        WIRELESS_ESSID=<wireless_network_name>
+        WIRELESS_WPA_PSK=<wireless_network_password>
+# regenerate initrd
+  cmd.run:
+  - name: 'mkinitrd'
+----
+. Apply the Salt state to the terminal:
++
+----
+salt <terminal_salt_name> state.apply update-terminal-credentials
+----
 
-* Rebuild boot image with updated password.
-  This is suitable if only one company wide network is used.
-  * Update WIRELESS_ESSID and WIRELESS_WPA_PSK in image template and rebuild the image
-  * Recreate new bootable USB stick based on new boot image
-  * Boot terminal from new USB stick
+[[NOTE]]
+====
+If you are using a separate network for the boot phase, the managed file might need to be renamed, or extended to [path]``/etc/sysconfig/network/initrd-ifcfg-wlan0``.
+====
 
-* Update WiFi credentials on running system without redeploying terminal using salt
-  This is suitable if there are different credentials across the infrastructure.
-  Note: If you are using separate network for boot phase, managed file may need to be renamed or extended to cover `/etc/sysconfig/network/initrd-ifcfg-wlan0` as well.
-  *  Create a salt state `/srv/salt/update-terminal-credentials.sls` to maintain `/etc/sysconfig/network/ifcfg-wlan0` on running terminal
-    ```salt
-    /etc/sysconfig/network/ifcfg-wlan0
-      file.managed:
-        - contents: |
-              WIRELESS_ESSID=<wireless network name>
-              WIRELESS_WPA_PSK=<wireless network password>
-      # regenerate initrd
-      cmd.run:
-         - name: 'mkinitrd'
-    ```
-  * Apply your state to the terminal
-    ```bash
-    salt <terminal_salt_name> state.apply update-terminal-credentials
-    ```
 
-## Advanced usage
 
-### Use different wireless networks for bootstrap and for system
-* Manage production wireless credentials in salt.
-  Write custom salt state named `saltboot_hook` to provide custom `/etc/sysconfig/network/ifcfg-wlan0` to the system image during boot.
-   ```salt
-   {% set root = salt['environ.get']('NEWROOT') %}
-   {{ root }}/etc/sysconfig/network/ifcfg-wlan0:
-     file.managed:
-       - source:
-         - <salt://any/file>
-       - require:
-         - saltboot: saltboot_fstab
-       - require_in:
-         - saltboot: boot_system
-   ```
-  This hook is applied (if present) after system image is deployed.
+.Procedure: Changing Wireless Credentials for Seperate Boot Network
+. Write a custom Salt state named ``saltboot_hook`` to provide custom ``/etc/sysconfig/network/ifcfg-wlan0`` to the system image during boot:
++
+----
+{% set root = salt['environ.get']('NEWROOT') %}
+{{ root }}/etc/sysconfig/network/ifcfg-wlan0:
+  file.managed:
+    - source:
+      - <salt://any/file>
+    - require:
+      - saltboot: saltboot_fstab
+    - require_in:
+      - saltboot: boot_system
+----
+The hook is applied after the system image is deployed.
+. Create a different version for use during booting, called ``/etc/sysconfig/network/initrd-ifcfg-wlan0``.
+This file can be maintained by Salt on running terminals, to provide wireless credentials for use only during bootstrap and booting.
 
-* Use boot image specific version of ifcfg name `/etc/sysconfig/network/initrd-ifcfg-wlan0`.
-   File `/etc/sysconfig/network/initrd-ifcfg-wlan0` can be provided for image build or maintained by salt on running system to provide wireless credentials used only for bootstrap and boot phase.
 
-Note: Boot phase supports only WPA2 PSK wireless configuration, salt-managed production configuration can support all features supported by used operating system.
+[[NOTE]]
+====
+The boot phase supports only WPA2 PSK wireless configuration.
+Salt-managed production configuration supports all features supported by all major operating systems.
+====
