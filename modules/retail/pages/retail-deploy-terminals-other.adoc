@@ -56,7 +56,10 @@ For more information about the Saltboot formula, see xref:salt:formula-saltboot.
 == Bootstrap Terminals over a Wireless Network
 
 For terminals that cannot be connected directly to the physical network, you can bootstrap them over a wireless network.
-Bootstrapping over a wireless network does not support PXE booting, so you must perform the initial booting and initialization of the wireless connection on the terminal using a USB device.
+Wireless networks do not support PXE booting, so you must perform the initial booting and initialization of the wireless connection on the terminal using a USB device.
+
+For more information about using USB devices to boot, see xref:retail:retail-deploy-terminals-other.adoc[].
+
 
 [[WARNING]]
 ====
@@ -68,8 +71,8 @@ If this breaches your security requirements, you will need to use a separate pro
 
 
 .Procedure: Preparing Wireless-Enabled Boot Image
-. Build the image, and ensure that the ``dracut-wireless`` package is included during the build process.
-. At the kernel command prompt, provide the wireless credentials using the [command]``WIRELESS_ESSID`` and [command]``WIRELESS_WPA_PSK`` kernel options.
+. Ensure that the ``dracut-wireless`` package is included  in the image template.
+. Provide the wireless credentials using the [command]``WIRELESS_ESSID`` and [command]``WIRELESS_WPA_PSK`` kernel options.
 . OPTIONAL: If you use the same wireless credentials for the entire organization, you can set them permanently by creating or editing the ``etc/sysconfig/network/ifcfg-wlan0`` file to the image template, with these details:
 +
 ----
@@ -81,7 +84,8 @@ If you want to use different credentials for bootstrapping to what is used durin
 . Build the image.
 . Prepare a USB device using this image, and boot the terminal.
 For more information about using USB devices to boot, see xref:retail:retail-deploy-terminals-other.adoc[].
-. Alternatively, you can create the file and add it to the ``initrd``:
+
+Alternatively, you can create the file and add it to the ``initrd``:
 +
 ----
 echo ./etc/sysconfig/network/ifcfg-wlan0 | cpio -H newc -o | gzip >> /srv/saltboot/boot/initrd.gz
@@ -90,6 +94,8 @@ echo ./etc/sysconfig/network/ifcfg-wlan0 | cpio -H newc -o | gzip >> /srv/saltbo
 Check that the terminals you want to deploy allow local booting.
 You can check this by editing the Saltboot formula in the {smr} {webui}.
 For more information about the Saltboot formula, see xref:salt:formula-saltboot.adoc[].
+
+
 
 === Change Wireless Credentials
 
@@ -132,8 +138,13 @@ If you are using a separate network for the boot phase, the managed file might n
 
 
 
-.Procedure: Changing Wireless Credentials for Seperate Boot Network
-. Write a custom Salt state named ``saltboot_hook`` to provide custom ``/etc/sysconfig/network/ifcfg-wlan0`` to the system image during boot:
+You can also instruct terminals to use a different set of wireless credentials during the boot process, to what they use during normal operation.
+This is done by using custom Salt states.
+
+
+
+.Procedure: Using Different Wireless Credentials for Booting
+. Write a custom Salt state named ``saltboot_hook`` to provide a custom Salt state called ``/etc/sysconfig/network/ifcfg-wlan0`` to the system image during boot:
 +
 ----
 {% set root = salt['environ.get']('NEWROOT') %}
