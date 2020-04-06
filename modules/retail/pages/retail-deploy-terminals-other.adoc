@@ -70,9 +70,21 @@ If this breaches your security requirements, you will need to use a separate pro
 ====
 
 
-.Procedure: Preparing Wireless-Enabled Boot Image
+Before you begin, you need to have created a bootable USB device.
+Ensure that the OS image you use to create the USB device has the ``dracut-wireless`` package included.
+For more information about using USB devices to boot, see xref:retail:retail-deploy-terminals-other.adoc[].
+
+When you have created the USB device, you need to provide the wireless credentials to the terminal.
+You can do this in a number of ways:
+
+* Directly during image build.
+* Add it to the ``initrd`` file on the branch server.
+* During terminal booting, using the kernel command line.
+
+
+.Procedure: Providing Wireless Credentials During Image Build
 . Ensure that the ``dracut-wireless`` package is included  in the image template.
-. OPTIONAL: If you use the same wireless credentials for the entire organization, you can set them permanently by creating or editing the ``etc/sysconfig/network/ifcfg-wlan0`` file to the image template, with these details:
+. Set the wireless credentials by creating or editing the ``etc/sysconfig/network/ifcfg-wlan0`` file to the image template, with these details:
 +
 ----
 # ALLOW_UPDATE_FROM_INITRD
@@ -84,22 +96,41 @@ If you want to use different credentials for bootstrapping to what is used durin
 . Prepare a USB device using this image, and boot the terminal.
 For more information about using USB devices to boot, see xref:retail:retail-deploy-terminals-other.adoc[].
 
-Alternatively, you can create the file and add it to the ``initrd``:
+
+
+.Procedure: Providing Wireless Credentials with initrd
+. Set the wireless credentials by creating or editing the ``etc/sysconfig/network/ifcfg-wlan0`` file, with these details:
++
+----
+# ALLOW_UPDATE_FROM_INITRD
+WIRELESS_ESSID=<wireless network name>
+WIRELESS_WPA_PSK=<wireless network password>
+----
+. . Copy the file to ``initrd`` on the branch server:
 +
 ----
 echo ./etc/sysconfig/network/ifcfg-wlan0 | cpio -H newc -o | gzip >> /srv/saltboot/boot/initrd.gz
 ----
-
-Check that the terminals you want to deploy allow local booting.
+. Check that the terminals you want to deploy allow local booting.
 You can check this by editing the Saltboot formula in the {smr} {webui}.
 For more information about the Saltboot formula, see xref:salt:formula-saltboot.adoc[].
+
+
+.Procedure: Providing Wireless Credentials During Terminal Boot
+. Mount the USB device on the terminal, and boot from it.
+. Append these commands to the kernel boot parameters:
++
+----
+WIRELESS_ESSID=<wireless_network_name>
+WIRELESS_WPA_PSK=<wireless_network_password>
+----
 
 
 
 === Change Wireless Credentials
 
 After you have set the wireless credentials, you can change them as needed.
-The way to do this is different if you use one company-wide network, if you have each branch server on its own seperate network, or if you are using different wireless networks for booting and for regular system use.
+The way to do this is different if you use one company-wide network, or if you have each branch server on its own separate network.
 
 
 
@@ -137,8 +168,13 @@ If you are using a separate network for the boot phase, the managed file might n
 
 
 
-You can also instruct terminals to use a different set of wireless credentials during the boot process, to what they use during normal operation.
-This is done by using custom Salt states.
+=== Use Multiple Wireless Networks
+
+You can instruct terminals to use a different set of wireless credentials during the boot process, to what they use during normal operation.
+
+If you provide wireless credentials using ``initrd`` files, you can create two different files, one for use during boot called ``initrd-ifcfg-wlan0``, and the other for use during normal operation, called ``ifcfg-wlan0``.
+
+Alternatively, you can use custom Salt states to manage wireless credentials with ``saltboot-hook``.
 
 First of all, you need to set the wireless details for normal operation.
 This will become the default settings.
