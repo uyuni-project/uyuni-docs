@@ -1,26 +1,38 @@
 [[hub-api-namespaces]]
 = Hub XMRPC API namespaces
 
+Hub XMLRPC API can be used similarly to how the regular API works (see https://documentation.suse.com/external-tree/en-us/suma/4.0/pdf/susemanager_api_doc_color_en.pdf[XMLRPC API Documentation]). User can chose any programming language of her choice that support xmlrpc.
 
-Hub supports 3 different namespaces.
+Hub XMLRPC API exposes the same methods that are available from the Server's XMLRPC APIs, with a few differences in parameter and return types as described below. In addition to that, Hub XMLRPC API also supports some hub specific end points which are not available in {productname} Server XMLRPC API.
+
+Hub XMLRPC API supports 3 different namespaces.
+
+1. `hub` namespace is used to target Hub itself. It supports all the methods that are available on a {productname} Server XMLRPC API + Hub-specific XMLRPC endpoints. For now, Hub-specific methods are mainly related to authentication
+2. `unicast` namespace is used to target a single Server registered in the Hub. It redirects any call transparently to one specific Server and returns back any return value as if the Server's XMLRPC API endpoint was used directly
+2. `multicast` name space is used to target a multiple Servers registered in the Hub. It redirects any call transparently to all the specified Servers and returns back the result in a form of map
 
 
-[[name-spaces]]
-[cols="0,1,1", options="header"]
-.Namespaces
-|===
-| Name                  | Description  | Example
-| hub                   | to target the Hub itself. | `client.hub.login(login, password)`
-| unicast          |to target a single Server registered in the Hub | `client.unicast.system.list_systems(hubKey, serverId)`
-| multicast        | to target multiple Servers | `client.multicast.system.list_systems(hubKey, [serverId1, serverId2], [], [])`
-|===
 
 [NOTE]
 ====
-- all XMLRPC API methods available in a single Server are exposed by the namespaces above. Generally speaking, they accept the same parameters and return the same values with the exceptions described below
-- the `hubKey` can be obtained via 3 different login methods. For more detail, see authentication modes.
-- individual Server IDs can be obtained via `client.hub.listServerIds(hubKey)` (see examples section)
-- the `unicast` namespace assumes all methods receive hubKey and serverId as their first two parameters, then any other parameter as specified by the regular Server API
-- the `multicast` namespace assumes all methods receive hubKey, a list of Server IDs, then lists of per-Server parameters as specified by the regular Server API. Return value will be an array, indexed per Server, of the results of individual Server calls
-
+- the session key for the Hub (`hubKey`) can be obtained via 3 different login methods available in the `hub` namespace. For more detail, see authentication modes.
+[source,python]
+----
+  hubKey = client.hub.login(login, password)
+----
+- Individual Server IDs can be obtained via `hub.listServerIds(hubKey)` endpoint available in the `hub` namespace
+[source,python]
+----
+  serverIDs = client.hub.listServerIds(hubKey)
+----
+- `unicast` namespace assumes all methods receive `hubKey` and serverID as their first two parameters, then any other parameter as specified by the regular Server API
+[source,python]
+----
+  client.unicast.[namespace].[methodname](hubKey, serverId, param1, param2)
+----
+- `multicast` namespace assumes all methods receive `hubKey`, a list of ServerIDs, then lists of per-Server parameters as specified by the regular Server API. Return value will be a map, with `Successful` and `Failed` entries.
+[source,python]
+----
+  resultMap = client.multicast.[namespace].[methodname](hubKey, [serverId1, serverId2], [param1_s1, param1_s2], [param2_s1, param2_s2])
+----
 ====

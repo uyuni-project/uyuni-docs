@@ -2,22 +2,21 @@
 = Manual mode
 
 
-In the Manual mode the user needs to provide credentials for each {productname} server the user wants to connect to.
+In manual mode, credentials have to be explicitly provided for each {productname} server the user wants to connect to.
 
-Here in this example, following is happening
+In the following example:
 
-[square]
-* User provides credentials for the hub to the login method, a `sessionkey` for the hub is returned
-* Using the sessionkey from the previous step, `serverIds` for the servers attached to the hub are requested by calling `listServerIds` method
-* User provides the credentials for each {productname} server, she needs data from and calls the hub method `attachToServers`. Authentication part is done here.
-* A `multicast` call is performed on the specific servers where `serverId` is used to identify the specific sever. Behind the scenes, `system.list_system method` of each {productname} server's XMLRPC API method will be called to get the list of the clients registered with each {productname} server
+* Credentials for the hub are passed to the `login` method, a session key for the HUB API is returned (`hubKey`)
+* Using the session key from the previous step, {productname} Server IDs are obtained for all the peripheral servers attached to the Hub via the `hub.listServerIds` method
+* Credentials for each {productname} Server are now provided to the `attachToServers` method. This performs authentications against each of the Servers' XMLRPC API endpoints.
+* A `multicast` call is performed on a set of Servers(`serverIds` contains all IDs of the servers to target). Behind the scenes, `system.list_system` is called on each {productname} server's XMLRPC API
 * Hub will aggregate the results and return the response in form of a `map`. This map has two entries:
 - `Successful`: contains a list of responses for those clients where the call was successful.
 - `Failed`: contains a list of responses for those clients where the call failed.
 
 [NOTE]
 ====
-If user wish to get information from only one {productname} server, then Hub API also provided a convenient `unicast` namespace. In this case, the response would not be a map, instead the response format would be exactly the same as if the user would directly call that {productname} server's API.
+If you want to call a method on just one {productname} Server, then Hub API also provides a more convenient `unicast` namespace. In this case, the response will be a single value and not a map, just as if the user called that {productname} server's API directly.
 ====
 
 * User logs out
@@ -27,7 +26,6 @@ If user wish to get information from only one {productname} server, then Hub API
 ----
 #!/usr/bin/python
 import xmlrpclib
-import itertools
 
 HUB_URL = "http://localhost:8888/hub/rpc/api"
 HUB_LOGIN = "admin"
@@ -47,10 +45,10 @@ client.hub.attachToServers(hubKey, serverIds, usernames, passwords)
 
 # perform the needed operation
 systemsPerServer = client.multicast.system.list_systems(hubKey, serverIds)
-successfulResponses = systemsPerServer["Successfull"]["Responses"]
+successfulResponses = systemsPerServer["Successful"]["Responses"]
 failedResponses = systemsPerServer["Failed"]["Responses"]
 
-for system in itertools.chain.from_iterable(successfulResponses):
+for system in successfulResponses:
   print (system)
 
 #logout

@@ -1,23 +1,21 @@
-[[manual-mode-example]]
-= Manual mode
+[[auto-connect-mode-example]]
+= Autoconnect mode
 
 
-The autoconnect mode is a convenient method where the same credentials used to login into the Hub API are used to login into the APIs of the servers the user wants to work with.
-It is assumed the credentials are valid in each server and correspond to an admin user. Difference from relay mode is that there is no need to call `attachToServers` method which also means that there is no need to call `listServerIds` method to get the `serverIds`.
-This process will happen automatically when user will login into hub using `loginWithAutoconnectMode` method. Selected servers will be the servers where Hub user will have access though.
+The autoconnect mode is a convenience mechanism that, similarly to the relay mode, uses the same credentials to perform a login into the Hub and peripheral Server APIs.
+Differently from relay mode, there is no need to use the `attachToServers` method, as it is assumed the user wants to connect to all peripheral Servers under his control, and the Hub XMLRPC API will in fact log in to them all at Hub login time.
 
-Here in this example, following is happening
+In the following example:
 
-[square]
-* User provides credentials for the hub to the `loginWithAutoconnectMode` method, a `sessionkey` for the hub is returned.
-* `multicast` call is being perfomed on the specific servers where `serverId` is used to indentify the specific sever. Behind the scenes, `system.list_system method` of each {productname} server's XMLRPC API method will be called to get the list of the clients registed with each {productname} server
+* Credentials for the hub are passed to the `loginWithAutoconnectMode` method, a session key for the HUB API is returned (`hubKey`)
+* A `multicast` call is performed on a set of Servers(`serverIds` contains all IDs of the servers to target). Behind the scenes, `system.list_system` is called on each {productname} server's XMLRPC API
 * Hub will aggregate the results and return the response in form of a `map`. This map has two entries:
 - `Successful`: contains a list of responses for those clients where the call was successful.
 - `Failed`: contains a list of responses for those clients where the call failed.
 
 [NOTE]
 ====
-If user wish to get information from only one {productname} server, then Hub API also provided a convenient `unicast` namespace. In this case, the response would not be a map, instead the response format would be exactly the same as if the user would directly call that {productname} server's API.
+If you want to call a method on just one {productname} Server, then Hub API also provides a more convenient `unicast` namespace. In this case, the response will be a single value and not a map, just as if the user called that {productname} server's API directly.
 ====
 
 * User logs out
@@ -27,7 +25,7 @@ If user wish to get information from only one {productname} server, then Hub API
 ----
 #!/usr/bin/python
 import xmlrpclib
-import itertools
+
 
 HUB_URL = "http://localhost:8888/hub/rpc/api"
 HUB_LOGIN = "admin"
@@ -42,10 +40,10 @@ serverIds = client.hub.listServerIds(hubKey)
 
 # perform the needed operation
 systemsPerServer = client.multicast.system.list_systems(hubKey, serverIds)
-successfulResponses = systemsPerServer["Successfull"]["Responses"]
+successfulResponses = systemsPerServer["Successful"]["Responses"]
 failedResponses = systemsPerServer["Failed"]["Responses"]
 
-for system in itertools.chain.from_iterable(successfulResponses):
+for system in successfulResponses:
   print (system)
 
 #logout
