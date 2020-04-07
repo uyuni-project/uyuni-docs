@@ -26,7 +26,7 @@ A typical workflow for manual authentication is:
 . Credentials for the Hub are passed to the ``login`` method, and a session key for the Hub is returned (``hubKey``).
 . The server IDs are obtained using the session key, and all the peripheral servers are attached to the Hub using the ``hub.listServerIds`` method.
 . Credentials for each peripheral server are provided to the ``attachToServers`` method.
-This performs authentications against each server's XMLRPC API endpoint.
+This performs authentication against each server's XMLRPC API endpoint.
 . A ``multicast`` call is performed on a set of servers.
 This is defined by ``serverIds``, which contains the IDs of the servers to target.
 In the background, ``system.list_system`` is called on each server's XMLRPC API
@@ -35,6 +35,7 @@ The map has two entries:
 +
 * ``Successful``: list of responses for those clients where the call succeeded.
 * ``Failed``: list of responses for those clients where the call failed.
+
 
 [NOTE]
 ====
@@ -82,29 +83,41 @@ client.auth.logout(hubKey)
 .Example: Relay Authentication
 
 
-The Relay authentication mode is a convenient method where the same credentials used to login into the Hub API are used to login into the APIs of the peripheral Servers the user wants to work with. It is thus assumed that the credentials are valid in each Server and correspond to a user with appropriate permissions.
-After login, it is still necessary to to call `attachToServers` method to define the subset of Servers that will be targeted in subsequent calls.
+In relay authentication mode, the credentials used sign in to the Hub API are also used to sign in into the APIs of the peripheral servers the user wants to work with.
+In this authentication mode, it is assumed that the same credentials are valid for every server, and that they correspond to a user with appropriate permissions.
 
-In the following example:
+After signing in, you must call the ``attachToServers`` method.
+This method defines the servers to target in all subsequent calls.
 
-* Credentials for the hub are passed to the `loginWithAuthRelayMode` method, a session key for the HUB API is returned (`hubKey`)
-* Using the session key from the previous step, {productname} Server IDs are obtained for all the peripheral servers attached to the Hub via the `hub.listServerIds` method
-* Call to `attachToServers` is made, same credentials as used for logging into hub will be further passed against each of the Servers' XMLRPC API endpoints for authentication
-* A `multicast` call is performed on a set of Servers(`serverIds` contains all IDs of the servers to target). Behind the scenes, `system.list_system` is called on each {productname} server's XMLRPC API
-* Hub will aggregate the results and return the response in form of a `map`. This map has two entries:
-- `Successful`: contains a list of responses for those clients where the call was successful.
-- `Failed`: contains a list of responses for those clients where the call failed.
+A typical workflow for relay authentication is:
+
+. Credentials for the Hub are passed to the ``login`` method, and a session key for the Hub is returned (``hubKey``).
+. The server IDs are obtained using the session key, and all the peripheral servers are attached to the Hub using the ``hub.listServerIds`` method.
+. Credentials for each peripheral server are provided to the ``attachToServers`` method.
+This performs authentications against each server's XMLRPC API endpoint.
+. Credentials for the Hub are passed to the ``loginWithAuthRelayMode`` method, and a session key for the Hub is returned (``hubKey``).
+. The server IDs are obtained using the session key, and all the peripheral servers are attached to the Hub using the ``hub.listServerIds`` method.
+. Credentials for each peripheral server are provided to the ``attachToServers`` method.
+This performs authentication against each server's XMLRPC API endpoint.
+. A ``multicast`` call is performed on a set of servers.
+This is defined by ``serverIds``, which contains the IDs of the servers to target.
+In the background, ``system.list_system`` is called on each server's XMLRPC API.
+. Hub aggregates the results and returns the response in the form of a ``map``.
+The map has two entries:
++
+* ``Successful``: list of responses for those clients where the call succeeded.
+* ``Failed``: list of responses for those clients where the call failed.
+
 
 [NOTE]
 ====
-If you want to call a method on just one {productname} Server, then Hub API also provides a more convenient `unicast` namespace. In this case, the response will be a single value and not a map, just as if the user called that {productname} server's API directly.
+If you want to call a method on just one {productname} Server, then Hub API also provides a ``unicast`` namespace.
+In this case, the response will be a single value and not a map, in the same way as if you called that {productname} server's API directly.
 ====
 
-* User logs out
 
+.Example Python Script for Relay Authentication:
 
-
-[source,python]
 ----
 #!/usr/bin/python
 import xmlrpclib
