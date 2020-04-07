@@ -1,25 +1,32 @@
 [[lsd-hub-namespaces]]
 = Hub Namespaces
 
-Hub supports several different namespaces:
+Hub XMLRPC API can be used similarly to how the regular API works (see https://documentation.suse.com/external-tree/en-us/suma/4.0/pdf/susemanager_api_doc_color_en.pdf[XMLRPC API Documentation]).
 
-[[name-spaces]]
-[cols="1,1,1", options="header"]
-.Namespaces
-|===
-| Name      | Description  | Example
-| hub       | Targets the Hub Server | ``client.hub.login(login, password)``
-| unicast   | Targets a peripheral server | ``client.unicast.system.list_systems(hubKey, serverId)``
-| multicast | Targets multiple servers | ``client.multicast.system.list_systems(hubKey, [<serverId1>, <serverId2>], [], [])``
-|===
+Hub XMLRPC API exposes the same methods that are available from the Server's XMLRPC APIs, with a few differences in parameter and return types as described below.
+In addition to that, Hub XMLRPC API also supports some hub specific end points which are not available in {productname} Server XMLRPC API.
 
-All XMLRPC API methods available in a single server are exposed by these namespaces.
-In most cases, the namespaces accept the same parameters and return the same values, with some exceptions:
+Hub supports three different namespaces:
+
+1. `hub` namespace is used to target Hub itself. It supports all the methods that are available on a {productname} Server XMLRPC API + Hub-specific XMLRPC endpoints. For now, Hub-specific methods are mainly related to authentication
+2. `unicast` namespace is used to target a single Server registered in the Hub. It redirects any call transparently to one specific Server and returns back any return value as if the Server's XMLRPC API endpoint was used directly
+3. `multicast` name space is used to target a multiple Servers registered in the Hub. It redirects any call transparently to all the specified Servers and returns back the result in a form of map
+
+
+[NOTE]
+====
 
 * You can obtain ``hubKey`` using different authentication methods.
 For more information, see xref:large-deployments:hub-auth.adoc[].
+
 * Individual server IDs can be obtained using ``client.hub.listServerIds(hubKey)``.
-* The ``unicast`` namespace assumes all methods receive ``hubKey`` and ``serverId`` as their first two parameters.
-All other parameters are received as specified by the server API.
-* The ``multicast`` namespace assumes all methods receive ``hubKey``, a list of server IDs, then lists of per-server parameters, as specified by the server API.
-The return value of the ``multicast`` namespace is an array, indexed by server, of the results of individual server calls.
+
+* ``unicast`` namespace assumes all methods receive ``hubKey`` and serverID as their first two parameters, then any other parameter as specified by the regular Server API
+
+----
+  client.unicast.[namespace].[methodname](hubKey, serverId, param1, param2)
+----
+*  ``multicast`` namespace assumes all methods receive ``hubKey``, a list of ServerIDs, then lists of per-Server parameters as specified by the regular Server API. Return value will be a map, with `Successful` and `Failed` entries.
+----
+  client.multicast.[namespace].[methodname](hubKey, [serverId1, serverId2], [param1_s1, param1_s2], [param2_s1, param2_s2])
+----
