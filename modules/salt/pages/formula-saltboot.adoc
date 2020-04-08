@@ -109,12 +109,64 @@ Leave the other fields empty.
 
 
 
+== Customize the Client Boot Process
+
+You can change the client boot process using Salt pillars.
+There are two Salt pillars for this purpose, that allow you to change the protocol and server used to the download the image.
+
+* The ``saltboot_download_protocol`` pillar specifies which protocol should be used to download the image to the client.
+This overrides the default protocol specified in the image pillar.
+Allowed values are ``http``, ``https``, ``ftp`` or ``tftp``.
+* The ``saltboot_download_server`` pillar specifies which server to use to download the image.
+This overrides the default hostname specified in the image pillar.
+
+
+
+.Example: Changing the Saltboot Image Download Protocol
+This example changes the protocol used for all clients by editing the ``/srv/pillar/top.sls`` file:
+
+----
+base:
+  '*':
+    - saltboot_proto
+```
+`/srv/pillar/saltboot_proto.sls`:
+```
+saltboot_download_protocol: http  # can be http, https, ftp, tftp
+----
+
+.Example: Changing the Saltboot Image Download Location
+This example changes the download location for all clients on a specified branch or Proxy Server.
+
+Edit the ``/srv/pillar/top.sls`` file:
+
+----
+base:
+  'minion_id_prefix:$branch_prefix':
+     - match: grain
+     - $branch_prefix
+----
+
+Edit the ``/srv/pillar/$branch_prefix.sls`` file:
+
+----
+saltboot_download_server: $download_server_fqdn
+----
+
+
+[NOTE]
+====
+In this example, the download server must be prepared by the ``image_sync`` state before you begin.
+====
+
+
+
 == Troubleshooting the Saltboot Formula
 
-=== `msdos` Disklabel Limitations
+``msdos`` Disklabel Limitations::
 
-On `msdos` disk label it is possible to create maximally 4 primary partitions, extended partitions are not supported.
-This limitation is not present on `GPT` disk label.
-
+On the ``msdos`` disk label, you can create a maximum of four primary partitions.
+Extended partitions are not supported.
+If you more than four primary partitions, or need extended partitions, use the ``GPT`` disk label instead.
 
 For more information on troubleshooting problems with the Saltboot formula, see xref:administration:tshoot-saltboot.adoc[].
