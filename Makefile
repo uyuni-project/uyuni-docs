@@ -159,6 +159,10 @@ define pdf-quickstart-public-cloud-product
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),quickstart-public-cloud)
 endef
 
+define pdf-large-deployment-product
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),large-deployments)
+endef
+
 # Help Menu
 PHONY: help
 help: ## Prints a basic help menu about available targets
@@ -193,7 +197,8 @@ clean: ## Remove build artifacts from output directory (Antora and PDF)
 		modules/salt/nav-salt-guide.pdf.adoc \
 		modules/retail/nav-retail-guide.pdf.adoc \
 		modules/architecture/nav-architecture-guide.pdf.adoc \
-		modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc
+		modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc \
+		modules/large-deployments/nav-large-deployments.pdf.adoc
 
 
 # SUMA DOCUMENTATION BUILD COMMANDS
@@ -229,7 +234,7 @@ obs-packages-suma: clean pdf-all-suma antora-suma ## Generate SUMA OBS tar files
 
 # Generate PDF versions of all SUMA books
 .PHONY: pdf-all-suma
-pdf-all-suma: pdf-install-suma pdf-client-configuration-suma pdf-upgrade-suma pdf-reference-suma pdf-administration-suma pdf-salt-suma pdf-retail-suma pdf-quickstart-public-cloud-suma ##pdf-architecture-suma-webui
+pdf-all-suma: pdf-install-suma pdf-client-configuration-suma pdf-upgrade-suma pdf-reference-suma pdf-administration-suma pdf-salt-suma pdf-retail-suma pdf-quickstart-public-cloud-suma pdf-large-deployment-suma ##pdf-architecture-suma-webui
 
 
 .PHONY: modules/installation/nav-installation-guide.pdf.adoc
@@ -309,6 +314,15 @@ modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc:
 ## Generate PDF version of the SUMA Quickstart for public cloud
 pdf-qs-public-cloud-suma: modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc
 	$(call pdf-quickstart-public-cloud-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
+
+.PHONY: modules/large-deployments/nav-large-deployments.pdf.adoc
+modules/large-deployments/nav-large-deployments.pdf.adoc:
+	$(call pdf-book-create-index,large-deployments)
+
+.PHONY: pdf-large-deployment-suma
+## Generate PDF version of the SUMA Large Deployment Guide
+pdf-large-deployment-suma: modules/large-deployments/nav-large-deployments.pdf.adoc
+	$(call pdf-large-deployment-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
 
 
 .PHONY: modules/architecture/nav-architecture-guide.pdf.adoc
