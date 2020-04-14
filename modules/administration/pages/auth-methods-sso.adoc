@@ -21,24 +21,25 @@ SSO in {productname} supports:
 
 SSO in {productname} does not support:
 
-* Product choosing and implementation for the Identity Service Provider (IdP).
+* Product choosing and implementation for the identity service provider (IdP).
 * SAML support for other products (check with the respective product documentation).
 
 
 
-=== Prerequisites
+== Prerequisites
 
-Before you begin, you will need to have configured an external Identity Service Provider with these parameters.
+Before you begin, you need to have configured an external identity service provider with these parameters.
 Check your IdP documentation for instructions.
 
 You will need these endpoints:
 
-* Assertion Consumer Service (or ACS): an endpoint to accept SAML messages to establish a session into the Service Provider.
+* Assertion consumer service (or ACS): an endpoint to accept SAML messages to establish a session into the Service Provider.
 The endpoint for ACS in {productname} is: https://example.com/rhn/manager/sso/acs
-* Single Logout Service (or SLS): an endpoint to initiate a logout request from the IdP.
+* Single logout service (or SLS): an endpoint to initiate a logout request from the IdP.
 The endpoint for SLS in {productname} is: https://example.com/rhn/manager/sso/sls
 * Metadata: an endpoint to retrieve {productname} metadata for SAML.
-The endpoint for Metadata in {productname} is: https://example.com/rhn/manager/sso/metadata
+The endpoint for metadata in {productname} is: https://example.com/rhn/manager/sso/metadata
+
 
 [IMPORTANT]
 ====
@@ -50,7 +51,7 @@ After the authentication with the IdP using the user `orgadmin` is successful, y
 
 
 
-=== Enable SSO
+== Enable SSO
 
 [NOTE]
 ====
@@ -68,20 +69,19 @@ java.sso = true
 ----
 . Find the parameters you want to customize in `/usr/share/rhn/config-defaults/rhn_java_sso.conf`.
 Insert the parameters you want to customize into `/etc/rhn/rhn.conf` and prefix them with `java.sso.`.
-+
 For example, in `/usr/share/rhn/config-defaults/rhn_java_sso.conf` find:
 +
 ----
 onelogin.saml2.sp.assertion_consumer_service.url = https://YOUR-PRODUCT-HOSTNAME-OR-IP/rhn/manager/sso/acs
 ----
 +
-In order to customize it, create the corresponding option in `/etc/rhn/rhn.conf` by prefixing the option name with `java.sso.`:
+To customize it, create the corresponding option in ``/etc/rhn/rhn.conf`` by prefixing the option name with ``java.sso.``:
 +
 ----
 java.sso.onelogin.saml2.sp.assertion_consumer_service.url = https://YOUR-PRODUCT-HOSTNAME-OR-IP/rhn/manager/sso/acs
 ----
 +
-To find all the occurrences you need to change, search in the file for the placeholders [literal]``YOUR-PRODUCT`` and [literal]```YOUR-IDP-ENTITY``.
+To find all the occurrences you need to change, search in the file for the placeholders [literal]``YOUR-PRODUCT`` and [literal]``YOUR-IDP-ENTITY``.
 Every parameter comes with a brief explanation of what it is meant for.
 . Restart the spacewalk service to pick up the changes:
 +
@@ -92,3 +92,122 @@ spacewalk-service restart
 When you visit the {productname} URL, you will be redirected to the IdP for SSO where you will be requested to authenticate.
 Upon successful authentication, you will be redirected to the {productname} {webui}, logged in as the authenticated user.
 If you encounter problems with logging in using SSO, check the {productname} logs for more information.
+
+
+
+== Example SSO Implementation
+
+In this example, SSO is implemented by exposing three endpoints with {productname}, and using Keycloak as the identity service provider (IdP).
+
+
+[WARNING]
+====
+This example is provided for illustrative purposes only.
+{suse} does not recommend or support third-party identity service providers, and is not affiliated with Keycloak.
+For Keycloak support, see https://www.keycloak.org/.
+====
+
+
+=== Set Up the {productname} Server
+
+
+Set Up SUSE Manager Server as Service Provider
+Following the steps of the official documentation, we can easily configure SUSE Manager /etc/rhn/rhn.conf configuration file, by replacing the placeholders.
+
+Basically we need to know:
+
+The FQDN of our SUSE Manager Server, to replace the placeholder on those variables:
+java.sso.onelogin.saml2.sp.entityid ⟼ <FQDN>/rhn/manager/sso/metadata
+java.sso.onelogin.saml2.sp.assertion_consumer_service.url ⟼ <FQDN>/rhn/manager/sso/acs
+java.sso.onelogin.saml2.sp.single_logout_service.url ⟼ <FQDN>/rhn/manager/sso/sls
+The three endpoints exposed by the IdP, to fill in here:
+java.sso.onelogin.saml2.idp.entityid
+java.sso.onelogin.saml2.idp.single_sign_on_service.url
+java.sso.onelogin.saml2.idp.single_logout_service.url
+The public x509certificate of the IdP, you will find it looking up for the IdP metadata.
+
+java.sso.onelogin.saml2.idp.x509cert
+All that information can be extracted from the metadata/descriptor endpoint of the IdP. On KeyCloak, it follows that format: <IdP_Address>/auth/realms/<Your_Realm>/protocol/saml/descriptor
+
+
+=== Set Up the Identity Service Provider
+
+Set Up KeyCloak as Identity Service Provider for our SUSE Manager Server
+That product can be deployed on bare metal or as a container. For that purpose, we decide to deploy it as a Docker container.
+
+Deployment
+Just follow the steps to deploy it from the official documentation https://www.keycloak.org/getting-started/getting-started-docker
+
+Tip: To keep the process running run the container adding the '-td' argument. Example:
+
+docker run -td --name=idp -p 8080:8080 -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin quay.io/keycloak/keycloak:9.0.2
+
+Also, if you prefer and only as an example container, you can deploy this personal docker container which already has a configured realm, client and user for our SUMA 4.0 Long-running server
+
+docker run -td --name=idp -p 8080:8080 -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin srbarrios/idp:latest
+
+Realm
+Once the IdP is running, we log in as admin:admin and we start creating a Realm.
+
+For this test environment, it will be enough fill in the fields as shown:
+
+￼
+
+Notice, the hyperlink SAML 2.0 Identity Provider Metadata which maps the endpoint <IdP_Address>/auth/realms/<Your_Realm>/protocol/saml/descriptor describing the endpoints and certificate to be pasted in our SUSE Manager configuration file.
+
+Clients
+A client is a Service Provider, in that case our SUMA Server. So we will need to know the endpoints exposed by our server, to create the client in KeyCloak.
+
+As Client ID we must add our SUMA metadata endpoint (java.sso.onelogin.saml2.sp.entityid)
+The protocol used is "saml"
+We enable the "Include AuthnStatement" switch
+We enable the "Sign Assertions" switch and configure bellow options as our SUMA config file has specified.
+
+￼
+
+
+
+
+Finally, we add the two SUMA endpoints:
+Assertion Consumer Service (java.sso.onelogin.saml2.sp.assertion_consumer_service.url)
+Logout Service (java.sso.onelogin.saml2.sp.single_logout_service.url)
+￼
+
+
+
+Configure the Client's scopes and Mappers
+Be sure you have assigned the "role_list" as client scope, as we it is the one used when we will create our users mapping the ones from SUSE Manager.
+
+￼
+
+
+
+As mapper, we need to add a user attribute mapper, this "uid" SAML Attribute is expected by our SUSE Manager SSO contract.
+
+￼
+
+Users
+On that section, we will map the users store in our SUSE Manager Server. Let's create the example users "admin":
+
+In "Details" tab, you can fill in with details that doesn't need to match with SUSE Manager "admin" user:
+￼￼
+
+
+In "Attributes" tab, we must add a "uid" attribute which must match with the username of SUSE Manager:
+￼
+Finally, In "Credentials" tab, you can set the same password that you are using in SUSE Manager for your user.
+
+
+Test it!
+Your setup must be ready now. Be sure you restarted your SUMA Server after add the configuration values and navigate to your SUSE Manager Server FQDN.
+
+You will be redirected to the Login Page of the IdP:
+￼
+
+After log in, the IdP will redirect you to SUSE Manager's Home Page, authenticated with "admin" user:
+￼
+
+You can now try to log out:
+￼
+
+And re-check going to your SUMA Server FQDN, that you are redirected to the Login Page of the IdP.
