@@ -57,12 +57,11 @@ The URL will change depending on where the {redhat} client is registered.
 * {redhat} Satellite Server
 * {redhat} update infrastructure (RHUI) in the cloud
 
-This guide covers clients registered to {redhat} CDN.
-You must have at least one system registered to the CDN, with an authorized subscription for repository content.
+This guide covers clients registered to {redhat} CDN or RHUI.
+You must have at least one system registered to the CDN or RHUI, with an authorized subscription for repository content.
 
 [IMPORTANT]
 ====
-Entitlement certificates for RHUI (cloud-based systems) only allow you to download content, not repository data.
 Satellite certificates for client systems require a Satellite server and subscription.
 Clients using Satellite certificates are not supported with {productname} Server.
 ====
@@ -109,6 +108,14 @@ cp /etc/rhsm/ca/redhat-uep.pem /example/entitlement
 To manage repositories on your {redhat} client, you need to import the CA and entitlement certificates to the {productname} Server.
 This requires three entries: one each for the entitlement certificate, the entitlement key, and the {redhat} certificate.
 
+[NOTE]
+====
+If your {redhat} client is using RHUI (public cloud) repositories, you would need to use a different set CA and entitlement certificates. As an example:
+
+* cert: /etc/pki/rhui/product/PRODUCT.crt
+* key: /etc/pki/rhui/PRODUCT.key
+* CA cert: /etc/pki/rhui/cdn.redhat.com-chain.crt
+====
 
 
 .Procedure: Importing Certificates to the Server
@@ -202,6 +209,24 @@ Ensure you use the correct {rhela} version:
 . Click btn:[Sync Now] to begin synchronization immediately.
 
 
+[IMPORTANT]
+====
+In order to allow [command]``spacewalk-repo-sync`` to sync content from RHUI repositories, we need to manually add the required [systemitem]``X-RHUI-ID`` and [systemitem]``X-RHUI-SIGNATURE`` required HTTP headers to [path]``/etc/rhn/spacewalk-repo-sync/extra_headers.conf`` file:
+
+----
+[channel_label]
+X-RHUI-ID=value
+X-RHUI-SIGNATURE=value
+----
+
+An example about how to calculate those values for the required HTTP headers from a {rhela} instance running on the Public Cloud:
+
+----
+echo "X-RHUI-ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document|base64|tr -d '\n')"
+echo "X-RHUI-SIGNATURE=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/signature|base64|tr -d '\n')"
+----
+====
+
 [NOTE]
 ====
 {rhel} channels can be very large.
@@ -228,6 +253,23 @@ Ensure you use the correct {rhela} version:
 . OPTIONAL: Navigate to the [guimenu]``Sync`` tab to set a recurring schedule for synchronization of this repository.
 . Click btn:[Sync Now] to begin synchronization immediately.
 
+[IMPORTANT]
+====
+In order to allow [command]``spacewalk-repo-sync`` to sync content from RHUI repositories, we need to manually add the required [systemitem]``X-RHUI-ID`` and [systemitem]``X-RHUI-SIGNATURE`` required HTTP headers to [path]``/etc/rhn/spacewalk-repo-sync/extra_headers.conf`` file:
+
+----
+[channel_label]
+X-RHUI-ID=value
+X-RHUI-SIGNATURE=value
+----
+
+An example about how to calculate those values for the required HTTP headers from a {rhela} instance running on the Public Cloud:
+
+----
+echo "X-RHUI-ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document|base64|tr -d '\n')"
+echo "X-RHUI-SIGNATURE=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/signature|base64|tr -d '\n')"
+----
+====
 
 [NOTE]
 ====
