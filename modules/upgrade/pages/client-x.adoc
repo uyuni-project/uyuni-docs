@@ -9,22 +9,40 @@ The upgrade is controlled by {yast} and {ay}, it does not use Zypper.
 
 == Prepare to Migrate
 
-Before you can migrate your client from SLE{nbsp}12 to SLE{nbsp}15, you need to make these preparations:
+Before you can migrate your client from SLE{nbsp}12 to SLE{nbsp}15{nbsp}SP1, you need to make these preparations:
 
 . Prepare installation media
 . Create an auto-installation distribution
 . Create an activation key
 . Upload an {ay} profile
 
-
 .Procedure: Preparing Installation Media
-. On the {productname} Server, create a local directory for the SLE{nbsp}15 installation media.
+. On the {productname} Server, create a local directory for the SLE{nbsp}15{nbsp}SP1 installation media:
++
+----
+mkdir -p /srv/images/sle15sp1
+----
 . Download an ISO image with the installation sources, and mount the ISO image on your server:
 +
 ----
-mkdir /mnt/sle15
-mount -o loop DVD1.iso /mnt/sle15
+mount -o loop DVD1.iso /mnt/
 ----
+. Copy everything from the mounted ISO to your local filesystem:
++
+----
+cp -r /mnt/* /srv/images/sle15sp1
+----
+. When the copy is complete, unmount the ISO image:
++
+----
+umount /mnt
+----
+
+[NOTE]
+====
+This image is the unified installer and can be used for multiple autoinstallation distributions.
+====
+
 
 .Procedure: Creating an Autoinstallation Distribution
 
@@ -32,9 +50,10 @@ mount -o loop DVD1.iso /mnt/sle15
 . In the [guimenu]``Create Autoinstallable Distribution`` section, use these parameters:
 * In the [guimenu]``Distribution Label`` section, type a unique name for the distribution.
 Use only letters, numbers, hyphens, periods, and underscores, and ensure the name is longer than four characters.
+For example, ``sles15sp1-x86_64``.
 * In the [guimenu]``Tree Path`` field, type an absolute path to the installation source.
-For example, [path]``/mnt/sle15``.
-* In the [guimenu]``Base Channel`` field, select [systemitem]``SLE-Product-SLES15-Pool for x86_64``.
+For example, [path]``/srv/images/sle15sp1``.
+* In the [guimenu]``Base Channel`` field, select [systemitem]``SLE-Product-SLES15-SP1-Pool for x86_64``.
 * In the [guimenu]``Installer Generation`` field, select [systemitem]``SUSE Linux Enterprise 15``.
 * In the [guimenu]``Kernel Options`` field, type any options to be passed to the kernel when booting for the installation.
 The [option]``install=`` parameter and the [option]``self_update=0 pt.options=self_update`` parameter are added by default.
@@ -45,50 +64,62 @@ The [option]``install=`` parameter and the [option]``self_update=0 pt.options=se
 
 .Procedure: Creating an Activation Key
 
-In order to switch from the old SLE{nbsp}12{nbsp}SP4 base channel to the new SLE{nbsp}15 channel, you need an activation key.
+In order to switch from the old SLE{nbsp}12{nbsp}SP4 base channel to the new SLE{nbsp}15{nbsp}SP1 channel, you need an activation key.
 
 . In the {productname} Server {webui}, navigate to menu:Systems[Activation Keys] and click [guimenu]``Create Key``.
 . Enter a description for your key.
 . Enter a key or leave it blank to generate an automatic key.
 . OPTIONAL: If you want to limit the usage, enter your value in the [guimenu]``Usage`` text field.
-. Select the [systemitem]``SLE-Product-SLES15-Pool for x86_64`` base channel.
+. Select the [systemitem]``SLE-Product-SLES15-SP1-Pool for x86_64`` base channel.
 . OPTIONAL: Select any [guimenu]``Add-On System Types``.
 For more information, see https://documentation.suse.com/sles/15-SP1/html/SLES-all/art-modules.html.
 . Click btn:[Create Activation Key].
 . Click the [guimenu]``Child Channels`` tab and select the required channels.
 . Click btn:[Update Key].
 
+== Create an Autoinstallation Profile
+
+Autoinstallation profiles contain all the installation and configuration data needed to install a system.
+They can also contain scripts to be executed after the installation is complete.
+For example scripts that you can use as a starting point, see xref:upgrade:upgrade-script-example.adoc[].
 
 
-.Procedure: Uploading an {ay} Profile
 
-Create an {ay} profile.
-For more information about {ay}, see xref:client-configuration:client-automating-installation.adoc[].
+.Procedure: Creating an Autoinstallation Profile
+. In the {productname} {webui}, navigate to menu:Systems[Autoinstallation > Profiles] and upload your autoinstallation profile script.
+For example scripts that you can use as a starting point, see xref:upgrade:upgrade-script-example.adoc[].
+. In the ``Kernel Options`` field, type ``autoupgrade=1``.
+Optionally, you can also include the ``Y2DEBUG=1`` option.
+The debug setting is not required but can help with investigating any future problems you might encounter.
+. Paste the autoinstallation profile or use the file upload field.
+. Click btn:[Create] to save.
+. When the uploaded profile requires variables to be set, navigate to menu:Systems[Autoinstallation > Profiles], select the profile to edit, and navigate to the [guimenu]``Variables`` tab.
+Specify the required variables, using this format:
++
+----
+<key>=<value>
+----
 
-. In the {productname} Server {webui}, navigate to menu:Systems[Autoinstallation] and click [guimenu]``Upload Kickstart/Autoyast File``.
-. Paste the XML content in the text area or select the file to upload and click btn:[Create].
-. Navigate to the [guimenu]``Details`` tab.
-. In the [guimenu]``Kernel Options`` field, select [systemitem]``autoupgrade=1`` and click btn:[Update].
-. Navigate to the [guimenu]``Variable`` tab.
-. In the [guimenu]``registration_key=`` field, enter the activation key, and click btn:[Update Variables].
+[NOTE]
+====
+For clients that were registered using Salt, use the ``spacewalk/minion_script`` snippet to register the client again after migration has completed.
+====
 
 
 
 == Migration
+Before you begin, check that all the channels referenced in the autoinstallation profile are available and fully synchronized.
 
-Before you begin the migration, make sure that the migration target channels are completely mirrored.
-For the upgrade to {sle} 15, at least the [systemitem]``SLE-Product-SLES15-Pool`` base channel with the [systemitem]``SLE-Manager-Tools15-Pool`` child channel for your architecture is required.
-The matching update channels such as [systemitem]``SLE-Manager-Tools15-Updates`` and [systemitem]``SLE-Product-SLES15-Updates`` are recommended.
-
-// TODO: Check this:
-You can monitor the mirroring progress in [path]``/var/log/rhn/reposync/sles15-pool-x86_64.log``.
+You can monitor the mirroring progress in [path]``/var/log/rhn/reposync/<channel-label>.log``.
 
 
 
 .Procedure: Migrating
 . In the {productname} Server {webui}, navigate to [guimenu]``Systems`` and select the client to be upgraded.
-. Navigate to menu:System Details[Provisioning > Autoinstallation > Schedule], and select the {ay} profile you uploaded.
+. Navigate to the [guimenu]``Provisioning`` tab, and select the autoinstallation profile you uploaded.
 . Click btn:[Schedule Autoinstallation and Finish].
+The system will download the required files, change the bootloader entries, reboot, and start the upgrade.
+
 
 Next time the client synchronizes with the {productname} Server, it will receive a re-installation job.
 The re-installation job fetches the new kernel and initrd packages.
