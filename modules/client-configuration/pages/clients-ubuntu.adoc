@@ -3,7 +3,7 @@
 
 This section contains information about registering Salt clients running {ubuntu} operating systems.
 
-{productname} supports {ubuntu} 16.04 LTS and 18.04 LTS Clients using Salt.
+{productname} supports {ubuntu} 16.04 LTS, 18.04 LTS, and 20.04 LTS clients using Salt.
 Traditional clients are not supported.
 
 [IMPORTANT]
@@ -15,12 +15,14 @@ Bootstrapping is supported for starting {ubuntu} clients and performing initial 
 However, the root user on {ubuntu} is disabled by default, so to use bootstrapping, you will require an existing user with [command]``sudo`` privileges for Python.
 
 
+
 == Prepare to Register
 
 Some preparation is required before you can register {ubuntu} clients to the {productname} Server.
 
-ifeval::[{suma-content} == true]
 
+
+ifeval::[{suma-content} == true]
 .Procedure: Adding client tools channels
 
 Before you begin, ensure you have the {ubuntu} product enabled, and have synchronized the {ubuntu} channels for {scc}:
@@ -37,6 +39,11 @@ For {ubuntu} 18.04:
 * From the {webui}, add [systemitem]``Ubuntu 18.04`` and [systemitem]``SUSE Linux Enterprise Client Tools Ubuntu 1804 amd64``.
 * From the command prompt, add [systemitem]``ubuntu-18.04-pool-amd64`` and [systemitem]``ubuntu-18.04-suse-manager-tools-amd64``.
 
+For {ubuntu} 20.04:
+
+* From the {webui}, add [systemitem]``Ubuntu 20.04`` and [systemitem]``SUSE Linux Enterprise Client Tools Ubuntu 2004 amd64``.
+* From the command prompt, add [systemitem]``ubuntu-20.04-pool-amd64`` and [systemitem]``ubuntu-20.04-suse-manager-tools-amd64``.
+
 [NOTE]
 ====
 The mandatory channels do not contain {ubuntu} upstream packages.
@@ -46,12 +53,14 @@ The repositories and channels for synchronizing upstream content must be configu
 In the {productname} {webui}, navigate to menu:Software[Channel List > All].
 Verify that you have a base channel and a child channel for your architecture.
 
-For example, for {ubuntu} 18.04:
+For example, for {ubuntu} 20.04:
 
-* Base channel: [systemitem]``ubuntu-18.04-pool for amd64``
-* Child channel: [systemitem]``Ubuntu-18.04-SUSE-Manager-Tools for amd64``
+* Base channel: [systemitem]``ubuntu-20.04-pool for amd64``
+* Child channel: [systemitem]``Ubuntu-20.04-SUSE-Manager-Tools for amd64``
 
-.Procedure: Creating Custom Channels and Repositories
+
+
+
 
 You need to manually create three repositories:
 
@@ -60,11 +69,15 @@ You need to manually create three repositories:
 * For main security
 
 These examples are for {ubuntu} 18.04 (bionic).
+// I have left the examples as bionic for now. We will need to update them to focal at some point, though. --LKB 2020-04-29
 Make sure you change the values to match the {ubuntu} version you want to use.
 
 In these procedures, we use ``http://archive.ubuntu.com/`` for {ubuntu} repositories.
 You can replace this URL with a more appropriate mirror.
 
+
+
+.Procedure: Creating Custom Channels and Repositories
 . On the {productname} Server {webui}, navigate to menu:Software[Manage > Repositories].
 . Click btn:[Create Repository] and set these parameters for the ``main`` repository:
 * In the [guimenu]``Repository Label`` field, type [systemitem]``ubuntu-bionic-main``.
@@ -132,13 +145,15 @@ Your custom channels should use this structure, at menu:Software[Channel List > 
 * Child custom channel: [systemitem]``Ubuntu 18.04 LTS AMD64 Main Security``
 * Child vendor channel: [systemitem]``Ubuntu-18.04-SUSE-Manager-Tools for amd64``
 
-When you have the channels set up, associate each channel with the appropriate repository, and synchronize then channels (optionally configure scheduled syncronization).
+When you have the channels set up, associate each channel with the appropriate repository, and synchronize the channels.
+You can also configure a synchronization schedule at this point.
 
-To do this, proceed to menu:Software[Manage > Channels], and for each channel you created, click on it and:
+To synchronize the channels, navigate to menu:Software[Manage > Channels], and for each channel you created, click on it and:
 
-. Navigate to the [guimenu]``Repositories``
-. Navigate to the [guimenu]``Sync``and click btn:[Sync Now] to begin synchronization immediately.
-. You can also setup a scheduled syncronization from this screen.
+. Navigate to the [guimenu]``Repositories`` tab.
+. Navigate to the [guimenu]``Sync`` tab.
+. Click btn:[Sync Now] to begin synchronization immediately.
+. You can also setup a scheduled synchronization from this screen.
 
 [IMPORTANT]
 ====
@@ -181,9 +196,9 @@ To manually synchronize the channels, navigate to menu:Software[Manage > Channel
 Click each channel in the list, and:
 
 . Navigate to the [guimenu]``Repositories`` tab.
-. Navigate to the [guimenu]``Sync`` subtab.
+. Navigate to the [guimenu]``Sync`` tab.
 . Click btn:[Sync Now] to begin synchronization immediately.
-. You can also create a synchronization schedule from this screen.
+. You can also setup a scheduled synchronization from this screen.
 
 endif::[]
 
@@ -236,12 +251,15 @@ endif::[]
 Synchronization can sometimes take several hours.
 ====
 
-When you have the channels set up, associate each channel with the appropriate repository, and synchronize the channels (optionally configure scheduled syncronization).
+When you have the channels set up, associate each channel with the appropriate repository, and synchronize the channels.
+You can also configure a synchronization schedule at this point.
 
-To manually synchronize the channels, navigate to menu:Software[Manage > Channels].
-Click each channel in the list, and navigate to menu:[Repositories > Sync].
-Click btn:[Sync Now] to begin synchronization immediately.
-You can also create a synchronization schedule from this screen.
+To synchronize the channels, navigate to menu:Software[Manage > Channels], and for each channel you created, click on it and:
+
+. Navigate to the [guimenu]``Repositories`` tab.
+. Navigate to the [guimenu]``Sync`` tab.
+. Click btn:[Sync Now] to begin synchronization immediately.
+. You can also setup a scheduled synchronization from this screen.
 
 
 
@@ -281,10 +299,12 @@ uyuni-gpg-pubkey-0d20833e.key
 
 You do not need to delete any previously stored keys.
 
-If you are boostrapping clients from the {productname} {webui}, you will need to use a salt state to trust the key.
+If you are bootstrapping clients from the {productname} {webui}, you will need to use a salt state to trust the key.
 Create the salt state and assign it to the organization.
 You can then use an activation key and configuration channels to deploy the key to the clients.
 endif::[]
+
+
 
 == Root Access
 
@@ -311,6 +331,8 @@ This procedure grants root access without requiring a password, which is require
 When the client is successfully installed it will run with root privileges, so the access is no longer required.
 We recommend that you remove the line from the `sudoers` file after the client has been successfully installed.
 ====
+
+
 
 == Register Clients
 
