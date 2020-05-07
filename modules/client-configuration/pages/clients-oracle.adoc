@@ -53,15 +53,11 @@ If you do not add both channels, you will not be able to create the bootstrap re
 .Procedure: Adding Channels and Repositories
 . At the command prompt on the {productname} Server, as root, install the [package]``spacewalk-utils`` package:
 +
-
 ----
 zypper in spacewalk-utils
 ----
 . Add the {oracle} base, updates, and client channels, specifying the {oracle} version and architecture:
 +
-* For {oracle} 8:
-+
-
 ----
 spacewalk-common-channels -a x86_64 oracle8 \
 oracle8-uyuni-client oracle8-appstream
@@ -90,95 +86,7 @@ For more information on activation keys, see xref:client-configuration:clients-a
 
 
 
-ifeval::[{uyuni-content} == true]
-
-== Trust GPG Keys on Clients
-
-By default, {oracle} does not trust the GPG key for {productname} {oracle} client tools.
-
-The clients can be successfully bootstrapped without the GPG key being trusted.
-
-However, they will not be able to install new client tool packages or update them.
-
-To fix this, add this key to the [systemitem]``ORG_GPG_KEY=`` parameter in all {oracle} bootstrap scripts:
-----
-uyuni-gpg-pubkey-0d20833e.key
-----
-
- You do not need to delete any previously stored keys.
-
-If you are bootstrapping clients from the {productname} {webui}, you will need to use a Salt state to trust the key.
-Create the Salt state and assign it to the organization.
-You can then use an activation key and configuration channels to deploy the key to the clients.
-
-endif::[]
-
-
-
 == Register Clients
 
 {oracle} clients are registered in the same way as all other clients.
 For more information, see xref:client-configuration:registration-overview.adoc[].
-
-
-
-== Manage Errata
-
-When you update {oracle} clients, the packages do not include metadata about the updates.
-You can use a third-party errata service to obtain this information.
-
-ifeval::[{suma-content} == true]
-
-[IMPORTANT]
-====
-The third-party errata service described here is provided and maintained by the community.
-It is not supported by {suse}.
-====
-endif::[]
-
-
-
-.Procedure: Installing an Errata Service
-
-. From the command prompt, as root, add the ``sle-module-development-tools`` module:
-+
-----
-SUSEConnect --product sle-module-development-tools/15.1/x86_64
-----
-. Install the errata service:
-+
-----
-zypper in  perl-Text-Unidecode
-----
-. Create a file for your errata script:
-+
-----
-touch /usr/local/bin/cent-errata.sh
-----
-. Edit the new file to include this script, editing the repository details as required.
-This script fetches the errata details from an external errata service, unpacks it, and publishes the details:
-+
-----
-#!/bin/bash
-mkdir -p /usr/local/centos
-cd /usr/local/centos
-rm *.xml
-wget -c http://cefs.steve-meier.de/errata.latest.xml
-#wget -c https://www.redhat.com/security/data/oval/com.redhat.rhsa-all.xml
-wget -c https://www.redhat.com/security/data/oval/com.redhat.rhsa-RHEL7.xml
-wget -c http://cefs.steve-meier.de/errata-import.tar
-tar xvf errata-import.tar
-chmod +x /usr/local/centos/errata-import.pl
-export SPACEWALK_USER='<adminname>';export SPACEWALK_PASS='<password>'
-/usr/local/centos/errata-import.pl --server '<servername>' \
---errata /usr/local/centos/errata.latest.xml  \
---include-channels=centos7-x86_64-updates,centos7-x86_64,centos7-x86_64-extras \
---publish --rhsa-oval /usr/local/centos/com.redhat.rhsa-RHEL7.xml
-----
-. Set up a cron job to run the script daily:
-+
-----
-ln -s /usr/local/bin/cent-errata.sh /etc/cron.daily
-----
-
-For more information on this tool, see https://cefs.steve-meier.de/.
