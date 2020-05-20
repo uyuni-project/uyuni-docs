@@ -335,11 +335,6 @@ pdf-architecture-suma: modules/architecture/nav-architecture-guide.pdf.adoc
 	$(call pdf-architecture-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
 
 
-
-.PHONY: modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc
-modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc:
-	$(call pdf-book-create-index,quickstart-public-cloud)
-
 .PHONY: pdf-quickstart-public-cloud-suma
 ## Generate PDF version of the SUMA Quickstart Guide for Public Cloud
 pdf-quickstart-public-cloud-suma: modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc
@@ -378,7 +373,7 @@ obs-packages-uyuni: clean pdf-all-uyuni antora-uyuni ## Generate UYUNI OBS tar f
 
 
 .PHONY: pdf-all-uyuni
-pdf-all-uyuni: pdf-install-uyuni pdf-client-configuration-uyuni pdf-upgrade-uyuni pdf-reference-uyuni pdf-administration-uyuni pdf-salt-uyuni pdf-retail-uyuni ##pdf-architecture-uyuni ## Generate PDF versions of all UYUNI books
+pdf-all-uyuni: pdf-install-uyuni pdf-client-configuration-uyuni pdf-upgrade-uyuni pdf-reference-uyuni pdf-administration-uyuni pdf-salt-uyuni pdf-retail-uyuni pdf-quickstart-public-cloud-uyuni pdf-large-deployment-uyuni ##pdf-architecture-uyuni ## Generate PDF versions of all UYUNI books
 
 
 
@@ -424,11 +419,12 @@ pdf-retail-uyuni: modules/retail/nav-retail-guide.pdf.adoc
 pdf-architecture-uyuni: modules/architecture/nav-architecture-guide.pdf.adoc
 	$(call pdf-architecture-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
 
-.PHONY: modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc
-modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc:
-	$(call pdf-book-create-index,quickstart-public-cloud)
 
-.PHONY: pdf-quickstart-public-cloud-uyuni
-## Generate PDF version of the SUMA Quickstart Guide for Public Cloud
+## Generate PDF version of the UYUNI Quickstart Guide for Public Cloud
 pdf-quickstart-public-cloud-uyuni: modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc
 	$(call pdf-quickstart-public-cloud-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
+
+.PHONY: pdf-large-deployment-uyuni
+## Generate PDF version of the UYUNI Large Deployment Guide
+pdf-large-deployment-uyuni: modules/large-deployments/nav-large-deployments.pdf.adoc
+	$(call pdf-large-deployment-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
