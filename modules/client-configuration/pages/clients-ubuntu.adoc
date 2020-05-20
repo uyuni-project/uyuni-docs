@@ -59,14 +59,16 @@ You need to manually create three repositories:
 * For main updates
 * For main security
 
-These examples are for {ubuntu} 18.04 (bionic). 
+These examples are for {ubuntu} 18.04 (bionic).
 Make sure you change the values to match the {ubuntu} version you want to use.
-You will also need to replace ```ubuntumirror.example.com``` with a valid mirror.
+
+In these procedures, we use ``http://archive.ubuntu.com/`` for {ubuntu} repositories.
+You can replace this URL with a more appropriate mirror.
 
 . On the {productname} Server {webui}, navigate to menu:Software[Manage > Repositories].
 . Click btn:[Create Repository] and set these parameters for the ``main`` repository:
 * In the [guimenu]``Repository Label`` field, type [systemitem]``ubuntu-bionic-main``.
-* In the [guimenu]``Repository URL`` field, type [systemitem]``http://ubuntumirror.example.com/ubuntu/dists/bionic/main/binary-amd64/``.
+* In the [guimenu]``Repository URL`` field, type [systemitem]``http://archive.ubuntu.com/ubuntu/dists/bionic/main/binary-amd64/``.
 * In the [guimenu]``Repository Type`` field, select [systemitem]``deb``.
 * Leave all other fields as the default values.
 . Click btn:[Create Repository]
@@ -74,7 +76,7 @@ You will also need to replace ```ubuntumirror.example.com``` with a valid mirror
 . Navigate to menu:Software[Manage > Repositories].
 . Click btn:[Create Repository] and set these parameters for the ``main-updates`` repository:
 * In the [guimenu]``Repository Label`` field, type [systemitem]``ubuntu-bionic-main-updates``.
-* In the [guimenu]``Repository URL`` field, type [systemitem]``http://ubuntumirror.example.com/ubuntu/dists/bionic-updates/main/binary-amd64/``.
+* In the [guimenu]``Repository URL`` field, type [systemitem]``http://archive.ubuntu.com/ubuntu/dists/bionic-updates/main/binary-amd64/``.
 * In the [guimenu]``Repository Type`` field, select [systemitem]``deb``.
 * Leave all other fields as the default values.
 . Click btn:[Create Repository].
@@ -82,7 +84,7 @@ You will also need to replace ```ubuntumirror.example.com``` with a valid mirror
 . Navigate to menu:Software[Manage > Repositories].
 . Click btn:[Create Repository] and set these parameters for the ``main-security`` repository:
 * In the [guimenu]``Repository Label`` field, type [systemitem]``ubuntu-bionic-main-security``.
-* In the [guimenu]``Repository URL`` field, type [systemitem]``http://ubuntumirror.example.com/ubuntu/dists/bionic-security/main/binary-amd64/``.
+* In the [guimenu]``Repository URL`` field, type [systemitem]``http://archive.ubuntu.com/ubuntu/dists/bionic-security/main/binary-amd64/``.
 * In the [guimenu]``Repository Type`` field, select [systemitem]``deb``.
 * Leave all other fields as the default values.
 . Click btn:[Create Repository].
@@ -146,14 +148,7 @@ endif::[]
 
 
 ifeval::[{suma-content} == true]
-.Procedure: Alternative Method for Adding {ubuntu} Channels and Repositories (Unsupported)
-.  
-[WARNING]
-====
-The ``spacewalk-utils`` package is not supported by {suse}, including the ``spacewalk-common-channels`` tool.
-You will not be supported if your system becomes inoperable by using these tools.
-====
-
+.Procedure: Alternative Method for Adding {ubuntu} Channels and Repositories
 . At the command prompt on the {productname} Server, as root, install the [systemitem]``spacewalk-utils`` package:
 +
 ----
@@ -241,31 +236,41 @@ endif::[]
 Synchronization can sometimes take several hours.
 ====
 
-When you have the channels set up, associate each channel with the appropriate repository, and synchronize then channels (optionally configure scheduled syncronization).
+When you have the channels set up, associate each channel with the appropriate repository, and synchronize the channels (optionally configure scheduled syncronization).
 
-To do this, proceed to menu:Software[Manage > Channels], and for each channel you created, click on it and:
+To manually synchronize the channels, navigate to menu:Software[Manage > Channels].
+Click each channel in the list, and navigate to menu:[Repositories > Sync].
+Click btn:[Sync Now] to begin synchronization immediately.
+You can also create a synchronization schedule from this screen.
 
-. Navigate to the [guimenu]``Repositories``
-. Navigate to the [guimenu]``Sync``and click btn:[Sync Now] to begin synchronization immediately.
-. You can also setup a scheduled syncronization from this screen.
+
 
 == Monitor Synchronization Progress
 
 There are two ways to check if a channel has finished synchronizing:
 
 ifeval::[{suma-content} == true]
-* In the {productname} {webui}, navigate to menu:Admin[Setup Wizard] and select the [guimenu]``SUSE Products`` tab.
+* In the {productname} {webui}, navigate to menu:Admin[Setup Wizard] and select the [guimenu]``Products`` tab.
 +
 This dialog displays a completion bar for each product when they are being synchronized.
 endif::[]
 ifeval::[{uyuni-content} == true]
-* In the {productname} {webui}, navigate to menu:Software[Manage > Channels], then click on the channel associated to the repository. Navigate to the [guimenu]``Repositories``, then [guimenu]``Sync`` and check [systemitem]``Sync Status``
+* In the {productname} {webui}, navigate to menu:Software[Manage > Channels], then click the channel associated to the repository.
+Navigate to the [guimenu]``Repositories`` tab, then click [guimenu]``Sync`` and check [systemitem]``Sync Status``.
 endif::[]
-* Check the synchronization log file at the command prompt with [command]``tail -f /var/log/rhn/reposync/channel-label.log``.
+* Check the synchronization log file at the command prompt:
++
+----
+tail -f /var/log/rhn/reposync/<channel-label>.log
+----
 +
 Each child channel will generate its own log during the synchronization progress.
+You will need to check all the base and child channel log files to be sure that the synchronization is complete.
+
 
 You will need to check all the base and child channel log files to be sure that the synchronization is complete.
+
+
 
 ifeval::[{uyuni-content} == true]
 == Trust GPG Keys on Clients
@@ -287,6 +292,8 @@ If you are boostrapping clients from the {productname} {webui}, you will need to
 Create the salt state and assign it to the organization.
 You can then use an activation key and configuration channels to deploy the key to the clients.
 endif::[]
+
+
 
 == Root Access
 
@@ -316,9 +323,10 @@ We recommend that you remove the line from the `sudoers` file after the client h
 
 == Register Clients
 
-. To register your {ubuntu} clients, you will need a bootstrap repository.
-Create the bootstrap repository at the command prompt, with this command:
-+
+To register your {ubuntu} clients, you need a bootstrap repository.
+By default, bootstrap repositories are automatically created, and regenerated daily for all synchronized products.
+You can manually create the bootstrap repository from the command prompt, using this command:
+
 ----
 mgr-create-bootstrap-repo --with-custom-channels
 ----

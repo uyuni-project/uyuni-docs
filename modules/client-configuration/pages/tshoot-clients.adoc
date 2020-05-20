@@ -88,28 +88,50 @@ Therefore you must not mount [filename]``/tmp`` with the [option]``noexec`` opti
 
 
 
-== SSL errors
+== Passing Grains to a Start Event
 
-On SLES{nbsp}11 systems, clients can sometimes have SSL errors which make some operations unusable, including package management and bootstrapping.
-In this case, you will see an error like this:
+Every time a Salt client starts, it passes the ``machine_id`` grain to {productname}. {productname} uses this grain to determine if the client is registered.
+This process requires a synchronous Salt call. Synchronous Salt calls block other processes, so if you have a lot of clients start at the same time, the process could create significant delays.
+
+To overcome this problem, a new feature has been introduced in Salt to avoid making a separate synchronous Salt call.
+
+To use this feature, you can add a configuration parameter to the client configuration, on clients that support it.
+
+To make this process easier, you can use the ``mgr_start_event_grains.sls`` helper Salt state.
+
+[NOTE]
+====
+This only applies to already registered clients.
+If you registered your Salt client recently, this config parameter is added by default.
+====
+
+
+On the {productname} Server, at the command prompt, use this command to enable the ``start_event_grains`` configuration helper:
 
 ----
-Repository 'SLES11-SP4-SUSE-Manager-Tools x86_64' is invalid.
-[|] Valid metadata not found at specified URL(s)
-Please check if the URIs defined for this repository are pointing to a valid repository.
-Skipping repository 'SLES11-SP4-SUSE-Manager-Tools x86_64' because of the above error.
-Download (curl) error for 'www.example.com':
-Error code: Unrecognized error
-Error message: error:1409442E:SSL routines:SSL3_READ_BYTES:tlsv1 alert protocol version
+salt '*' state.sls util.mgr_start_event_grains
 ----
 
-This occurs because Apache requires TLS{nbsp}v1.2, but older versions of SLES do not support this version of the TLS protocol.
-To fix this error, you need to force Apache to accept a greater range of protocol versions.
-Open the [path]``/etc/apache2/ssl-global.conf`` configuration file, locate the [systemitem]``SSLProtocol`` line, and update it to read:
+This command adds the required configuration into the client's configuration file, and applies it when the client is restarted.
+If you have a large number of clients, you can execute the command in batch mode instead:
 
 ----
-SSLProtocol all -SSLv2 -SSLv3
+salt --batch-size 50 '*' state.sls mgr_start_event_grains
 ----
 
-This will need to be done manually on the server, and with a Salt state on the Proxy.
-Restart the [systemitem]``apache`` service on each system after making the changes.
+
+
+== Proxy Connections and FQDN
+
+Sometimes clients connected through a {productname} Proxy appear in the {webui}, but do not show that they are connected through a proxy.
+This can occur if you are not using the fully-qualified domain name (FQDN) to connect, and the proxy is not known to {productname}.
+
+To correct this behavior, specify additional FQDNs as grains in the client configuration file on the proxy:
+
+----
+grains:
+  susemanager:
+    custom_fqdns:
+      - name.one
+      - name.two
+----

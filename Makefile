@@ -10,7 +10,7 @@ FILENAME_SUMA ?= suse_manager
 SUMA_CONTENT ?= true
 
 # UYUNI Productname and file replacement
-PRODUCTNAME_UYUNI ?= Uyuni
+PRODUCTNAME_UYUNI ?= 'Uyuni'
 FILENAME_UYUNI ?= uyuni
 UYUNI_CONTENT ?= true
 
@@ -149,10 +149,19 @@ define pdf-retail-product
 
 endef
 
+
 define pdf-architecture-product
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),architecture)
 endef
 
+
+define pdf-quickstart-public-cloud-product
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),quickstart-public-cloud)
+endef
+
+define pdf-large-deployment-product
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),large-deployments)
+endef
 
 # Help Menu
 PHONY: help
@@ -187,7 +196,9 @@ clean: ## Remove build artifacts from output directory (Antora and PDF)
 		modules/administration/nav-administration-guide.pdf.adoc \
 		modules/salt/nav-salt-guide.pdf.adoc \
 		modules/retail/nav-retail-guide.pdf.adoc \
-		modules/architecture/nav-architecture-guide.pdf.adoc
+		modules/architecture/nav-architecture-guide.pdf.adoc \
+		modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc \
+		modules/large-deployments/nav-large-deployments.pdf.adoc
 
 
 # SUMA DOCUMENTATION BUILD COMMANDS
@@ -221,10 +232,9 @@ obs-packages-suma: clean pdf-all-suma antora-suma ## Generate SUMA OBS tar files
 	$(call obs-packages-product,$(HTML_OUTPUT_SUMA),$(PDF_OUTPUT_SUMA))
 
 
-
+# Generate PDF versions of all SUMA books
 .PHONY: pdf-all-suma
-pdf-all-suma: pdf-install-suma pdf-client-configuration-suma pdf-upgrade-suma pdf-reference-suma pdf-administration-suma pdf-salt-suma pdf-retail-suma  ##pdf-architecture-suma-webui ## Generate PDF versions of all SUMA books
-
+pdf-all-suma: pdf-install-suma pdf-client-configuration-suma pdf-upgrade-suma pdf-reference-suma pdf-administration-suma pdf-salt-suma pdf-retail-suma pdf-quickstart-public-cloud-suma pdf-large-deployment-suma ##pdf-architecture-suma-webui
 
 
 .PHONY: modules/installation/nav-installation-guide.pdf.adoc
@@ -235,7 +245,6 @@ modules/installation/nav-installation-guide.pdf.adoc:
 .PHONY: pdf-install-suma
 pdf-install-suma: modules/installation/nav-installation-guide.pdf.adoc
 	$(call pdf-install-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
-
 
 
 .PHONY: modules/client-configuration/nav-client-configuration-guide.pdf.adoc
@@ -269,8 +278,6 @@ modules/reference/nav-reference-guide.pdf.adoc:
 pdf-reference-suma: modules/reference/nav-reference-guide.pdf.adoc
 	$(call pdf-reference-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
 
-
-
 .PHONY: modules/administration/nav-administration-guide.pdf.adoc
 modules/administration/nav-administration-guide.pdf.adoc:
 	$(call pdf-book-create-index,administration)
@@ -280,8 +287,6 @@ modules/administration/nav-administration-guide.pdf.adoc:
 pdf-administration-suma: modules/administration/nav-administration-guide.pdf.adoc
 	$(call pdf-administration-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
 
-
-
 .PHONY: modules/salt/nav-salt-guide.pdf.adoc
 modules/salt/nav-salt-guide.pdf.adoc:
 	$(call pdf-book-create-index,salt)
@@ -290,8 +295,6 @@ modules/salt/nav-salt-guide.pdf.adoc:
 ## Generate PDF version of the SUMA Salt Guide
 pdf-salt-suma: modules/salt/nav-salt-guide.pdf.adoc
 	$(call pdf-salt-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
-
-
 
 .PHONY: modules/retail/nav-retail-guide.pdf.adoc
 modules/retail/nav-retail-guide.pdf.adoc:
@@ -303,6 +306,24 @@ pdf-retail-suma: modules/retail/nav-retail-guide.pdf.adoc
 	$(call pdf-retail-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
 
 
+.PHONY: modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc
+modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc:
+	$(call pdf-book-create-index,quickstart-public-cloud)
+
+.PHONY: pdf-qs-public-cloud-suma
+## Generate PDF version of the SUMA Quickstart for public cloud
+pdf-qs-public-cloud-suma: modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc
+	$(call pdf-quickstart-public-cloud-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
+
+.PHONY: modules/large-deployments/nav-large-deployments.pdf.adoc
+modules/large-deployments/nav-large-deployments.pdf.adoc:
+	$(call pdf-book-create-index,large-deployments)
+
+.PHONY: pdf-large-deployment-suma
+## Generate PDF version of the SUMA Large Deployment Guide
+pdf-large-deployment-suma: modules/large-deployments/nav-large-deployments.pdf.adoc
+	$(call pdf-large-deployment-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
+
 
 .PHONY: modules/architecture/nav-architecture-guide.pdf.adoc
 modules/architecture/nav-architecture-guide.pdf.adoc:
@@ -312,6 +333,12 @@ modules/architecture/nav-architecture-guide.pdf.adoc:
 ## Generate PDF version of the SUMA Architecture Guide
 pdf-architecture-suma: modules/architecture/nav-architecture-guide.pdf.adoc
 	$(call pdf-architecture-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
+
+
+.PHONY: pdf-quickstart-public-cloud-suma
+## Generate PDF version of the SUMA Quickstart Guide for Public Cloud
+pdf-quickstart-public-cloud-suma: modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc
+	$(call pdf-quickstart-public-cloud-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
 
 
 
@@ -346,7 +373,7 @@ obs-packages-uyuni: clean pdf-all-uyuni antora-uyuni ## Generate UYUNI OBS tar f
 
 
 .PHONY: pdf-all-uyuni
-pdf-all-uyuni: pdf-install-uyuni pdf-client-configuration-uyuni pdf-upgrade-uyuni pdf-reference-uyuni pdf-administration-uyuni pdf-salt-uyuni pdf-retail-uyuni ##pdf-architecture-uyuni ## Generate PDF versions of all UYUNI books
+pdf-all-uyuni: pdf-install-uyuni pdf-client-configuration-uyuni pdf-upgrade-uyuni pdf-reference-uyuni pdf-administration-uyuni pdf-salt-uyuni pdf-retail-uyuni pdf-quickstart-public-cloud-uyuni pdf-large-deployment-uyuni ##pdf-architecture-uyuni ## Generate PDF versions of all UYUNI books
 
 
 
@@ -391,3 +418,13 @@ pdf-retail-uyuni: modules/retail/nav-retail-guide.pdf.adoc
 .PHONY: pdf-architecture-uyuni
 pdf-architecture-uyuni: modules/architecture/nav-architecture-guide.pdf.adoc
 	$(call pdf-architecture-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
+
+
+## Generate PDF version of the UYUNI Quickstart Guide for Public Cloud
+pdf-quickstart-public-cloud-uyuni: modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc
+	$(call pdf-quickstart-public-cloud-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
+
+.PHONY: pdf-large-deployment-uyuni
+## Generate PDF version of the UYUNI Large Deployment Guide
+pdf-large-deployment-uyuni: modules/large-deployments/nav-large-deployments.pdf.adoc
+	$(call pdf-large-deployment-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))

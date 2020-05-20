@@ -1,0 +1,122 @@
+[[clients-opensuse]]
+= Registering openSUSE Clients
+
+This section contains information about registering Salt clients running openSUSE operating systems.
+{productname} supports openSUSE Leap 15.1 Clients using Salt.
+Traditional clients are not supported.
+
+Bootstrapping is supported for starting openSUSE clients and performing initial state runs such as setting repositories and performing profile updates.
+
+
+
+== Prepare to Register
+
+Some preparation is required before you can register openSUSE clients to the {productname} Server.
+
+////
+ifeval::[{suma-content} == true]
+
+// If we need this for openSUSE, cf. clients-ubuntu.adoc
+.Procedure: Adding client tools channels
+
+etc. pp.
+
+////
+
+ifeval::[{uyuni-content} == true]
+.Procedure: Adding the openSUSE Channels
+
+. At the command prompt on the {productname} Server, as root, install the [systemitem]``spacewalk-utils`` package:
++
+----
+zypper in spacewalk-utils
+----
+. Add the openSUSE channels.
++
+----
+spacewalk-common-channels \
+opensuse_leap15_1 \
+opensuse_leap15_1-non-oss \
+opensuse_leap15_1-non-oss-updates \
+opensuse_leap15_1-updates \
+opensuse_leap15_1-uyuni-client
+----
+
+. Synchronize the new custom channels.
+
+[IMPORTANT]
+====
+You need all the new channels fully synchronized before bootstrapping any openSUSE client.
+openSUSE channels can be very large.
+Synchronization can sometimes take several hours.
+====
+
+To synchronize, navigate to menu:Software[Manage > Channels], and for each channel you created, click it and:
+
+. Navigate to the [guimenu]``Repositories`` tab.
+. Navigate to the [guimenu]``Sync`` sub-tab, and click btn:[Sync Now] to begin synchronization immediately.
+
+You can also schedule synchronization from this screen.
+
+endif::[]
+
+
+
+== Monitor Synchronization Progress
+
+There are two ways to check if a channel has finished synchronizing:
+
+ifeval::[{suma-content} == true]
+* In the {productname} {webui}, navigate to menu:Admin[Setup Wizard] and select the [guimenu]``Products`` tab.
++
+This dialog displays a completion bar for each product when they are being synchronized.
+endif::[]
+ifeval::[{uyuni-content} == true]
+* In the {productname} {webui}, navigate to menu:Software[Manage > Channels], then click the channel associated to the repository.
+Navigate to the [guimenu]``Repositories`` tab, then click [guimenu]``Sync`` and check [systemitem]``Sync Status``.
+endif::[]
+* Check the synchronization log file at the command prompt:
++
+----
+[command]``tail -f /var/log/rhn/reposync/<channel-label>.log``.
+----
++
+Each child channel will generate its own log during the synchronization progress.
+You will need to check all the base and child channel log files to be sure that the synchronization is complete.
+
+
+
+
+ifeval::[{uyuni-content} == true]
+== Trust GPG Keys on Clients
+
+By default, openSUSE does not trust the GPG key for {productname} openSUSE client tools.
+The clients can be successfully bootstrapped without the GPG key being trusted.
+However, they will not be able to install new client tool packages or update them.
+
+To fix this, add this key to the [systemitem]``ORG_GPG_KEY=`` parameter in all openSUSE bootstrap scripts:
+
+----
+uyuni-gpg-pubkey-0d20833e.key
+----
+
+You do not need to delete any previously stored keys.
+
+If you are boostrapping clients from the {productname} {webui}, you will need to use a Salt state to trust the key.
+Create the salt state and assign it to the organization.
+You can then use an activation key and configuration channels to deploy the key to the clients.
+endif::[]
+
+
+
+== Register Clients
+
+To register your openSUSE clients, you need a bootstrap repository.
+By default, bootstrap repositories are automatically created, and regenerated daily for all synchronized products.
+You can manually create the bootstrap repository from the command prompt, using this command:
+
+----
+mgr-create-bootstrap-repo --with-custom-channels
+----
+
+For more information on registering your clients, see xref:client-configuration:registration-overview.adoc[].

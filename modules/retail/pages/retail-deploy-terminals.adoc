@@ -11,6 +11,8 @@ When you have the {susemgr} Server and Branch Server set up, you are ready to de
 
 Each procedure is detailed in this section.
 
+For other methods of booting terminals, including using a USB device, or booting over a wireless network, see xref:retail:retail-deploy-terminals-other.adoc[].
+
 If you have many terminals, and would prefer this to be handled with a script, see xref:retail:retail-mass-config.adoc[].
 
 Before terminals can be deployed, ensure you have prepared a Saltboot-based operating system image.
@@ -20,6 +22,7 @@ For how to build OS images, see xref:administration:image-management.adoc[].
 ====
 After you have registered new terminals, always check the {susemgr} {webui} to ensure your terminals have connected successfully to the branch server, and not directly to the {susemgr} Server by mistake.
 ====
+
 
 
 == Create A Hardware Type Group
@@ -37,6 +40,8 @@ If an empty profile is not assigned to a hardware type group before registration
 
 For this procedure, you will require the system manufacturer name and product name for your terminal.
 
+
+
 .Procedure: Creating a Hardware Type Group
 
 . Determine the hardware type group name.
@@ -46,14 +51,15 @@ For example:
 ----
 HWTYPE:POSVendor-Terminal1
 ----
-+
+. In the {susemgr} {webui}, navigate to menu:Systems[System Groups], and click the btn:[Create Group] button.
+. In the [guimenu]``Create System Group`` dialog, create a new system group, using the hardware type group name you determined in step one of this procedure.
+
 [IMPORTANT]
 ====
-Only use colons (``:``), hyphens (``-``) or underscores (``_``) in hardware type group names.
+Only use colons, hyphens, or underscores in hardware type group names.
 Spaces and other non-alphanumeric characters will be removed when the name is processed.
 ====
-. In the {susemgr} {webui}, navigate to menu:Systems[System Groups], and click the btn:[Create Group] button.
-. In the [guimenu]``Create System Group`` dialog, create a new system group, using the hardware type group name you created earlier.
+
 
 
 == Assign and Configure the Saltboot Formula for Each Hardware Type Group
@@ -78,6 +84,7 @@ Each hardware type group must have the Saltboot formula applied.
 ----
 salt <branch_server_salt_id> state.apply image-sync
 ----
+
 
 
 === Using a {sles}11 SP3 32-bit based images
@@ -120,7 +127,47 @@ image::retail_imagesync_formula.png[scaledwidth=80%]
 
 == Deploy Images to the Terminals
 
+When you have your bootstrap image ready, you can deploy the image to the terminals.
+
+
+
 .Procedure: Deploying Images to the Terminals
 
 . Power on your POS terminals.
 . The branch server will bootstrap the terminals according to the data you have provided.
+
+
+
+== Re-Deploy Images to the Terminals
+
+You can instruct terminals to download and deploy images when they are restarted.
+This is achieved using a Salt state.
+
+
+
+.Procedure: Forcing a Terminal to Re-Deploy Images
+. On the {productname} Server, at the command prompt, as root, apply this Salt state:
++
+----
+salt $terminal_minion_id state.apply saltboot.force_redeploy
+----
+. Restart the terminal to pick up the changes.
+
+
+If your terminal encounters a problem with the file system or the partition table, you might need to remove the partition table and reformat the terminal.
+
+
+[WARNING]
+====
+Re-partitioning a terminal removes all data stored on the terminal hard disk, including any persistent partitions.
+====
+
+
+
+.Procedure: Forcing a Terminal to Repartition the Hard Disk
+. On the {productname} Server, at the command prompt, as root, apply this Salt state:
++
+----
+salt $terminal_minion_id state.apply saltboot.force_repartition
+----
+. Restart the terminal to pick up the changes.

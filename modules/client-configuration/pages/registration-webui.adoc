@@ -4,6 +4,14 @@
 Registering clients with the {productname} {webui} works for Salt clients only.
 
 
+[IMPORTANT]
+====
+Do not register a {productname} Server to itself.
+The {productname} Server must be managed individually.
+====
+
+
+
 .Procedure: Registering Clients with the {webui}
 
 . In the {productname} {webui}, navigate to menu:Systems[Bootstrapping].
@@ -30,3 +38,31 @@ When the bootstrap process has completed, your client will be listed at menu:Sys
 When new packages or updates are installed on the client using {productname}, any end user license agreements (EULAs) are automatically accepted.
 To review a package EULA, open the package details page in the {webui}.
 ====
+
+
+
+== SLES{nbsp}11 SSL errors
+
+SLES{nbsp}11 clients can sometimes have SSL errors which make some operations unusable, including package management and bootstrapping.
+In this case, you will see an error like this:
+
+----
+Repository 'SLES11-SP4-SUSE-Manager-Tools x86_64' is invalid.
+[|] Valid metadata not found at specified URL(s)
+Please check if the URIs defined for this repository are pointing to a valid repository.
+Skipping repository 'SLES11-SP4-SUSE-Manager-Tools x86_64' because of the above error.
+Download (curl) error for 'www.example.com':
+Error code: Unrecognized error
+Error message: error:1409442E:SSL routines:SSL3_READ_BYTES:tlsv1 alert protocol version
+----
+
+This occurs because Apache requires TLS{nbsp}v1.2, but older versions of SLES do not support this version of the TLS protocol.
+To fix this error, you need to force Apache to accept a greater range of protocol versions.
+Open the [path]``/etc/apache2/ssl-global.conf`` configuration file, locate the [systemitem]``SSLProtocol`` line, and update it to read:
+
+----
+SSLProtocol all -SSLv2 -SSLv3
+----
+
+This will need to be done manually on the server, and with a Salt state on the Proxy.
+Restart the [systemitem]``apache`` service on each system after making the changes.
