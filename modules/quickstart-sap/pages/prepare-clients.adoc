@@ -1,5 +1,5 @@
 [[quickstart-sap-setup]]
-= Setting Up
+= Preparing Clients
 
 Your SAP cluster requires several client systems.
 Prepare your clients on physical or virtual hardware, and ensure you have {sles}{nbsp}15 for SAP installation media ready on your {productname} Server.
@@ -12,60 +12,77 @@ For more information about hardware requirements, see https://documentation.suse
 
 
 
-.Procedure: Registering Clients to the {SCC}
-The minions must be connected to SCC (or must have the repositories with all the involved packages. We don't really support this 2nd statement, but it can be done).
+== Register Clients to the {SCC}
+
+Register each client with {scc}, using this command as root, specifying the registration number and the email address associated with it:
+
+----
+SUSEConnect -r <Registration_Number> -e <registered_email_address>
+----
+
+You can get your registration number by logging in to {scc} from your browser.
+
+For more information about registering {productname} with {scc}, see xref:installation:general-requirements.adoc[].
 
 
 
-.Procedure: Creating the Cluster
-All the clustered machines must have the other cluster nodes name in /etc/hosts file (this must match with the node hostnames)
+== Create the Cluster
+
+Every client system must have all the other client systems listed in their [path]``/etc/hosts`` file.
+Open the [path]``/etc/hosts`` file on each client, and add the hostname for each of the other clients.
 
 
 
-.Procedure: Creating a Shared Storage Device
-The nodes must have a shared disk attached to use sbd fencing mechanism (this can be done with a real shared device, or via an iscsi service, that usually requires other extra machine hosting this service)
+== Create a Shared Storage Device
+
+Each of the clients needs to be able to access a shared disk.
+The shared disk can be physical hardware connected by ethernet, or you can set up a virtual disk and access it with iSCSI.
+
+If you use a virtual disk, consider hosting it on a separate system.
+Do not use a client machine to host the shared storage disk.
+
+When you have the shared disk set up and attached to the clients, you will need to configure it to use SBD fencing.
+SBD fencing monitors the shared storage.
+This requires the ``sbd`` service installed on all clients.
 
 
-.Procedure: Downloading the SAP Installation Software
-The SAP installation software must be available in all the nodes. So the software is not downloaded by the formulas. The location of the software must be the same in all nodes
+
+== Download the SAP Installation Software
+
+Download the {sles}{nbsp}15 with SAP installation media from {scc}, and save a copy on each clients.
+Ensure you have saved it in the same file path on each client.
 
 
-.Procedure: Configuring Clients to Latest ``module.run``
+
+== Configure Clients to Use Latest ``module.run``
+
 // Not sure what this is. --LKB 2020-05-20
-Minions must be configure to use the latest module.run version:
+
+Each client needs to be configured to use the latest version of ``module.run``.
+Open the ``configuration file??`` on each client and add or amend this line:
+
+----
 - 'use_superseded:'
       - '- module.run'
+----
+
+
+== Install Additional Disks for HANA
+
+
+For the clients that are going to run the HANA database, you will require an additional storage device.
+This device is used to store files required by HANA, which are located in the [path]``/hana/`` directory.
+
+We recommend that this storage device be at least 20{nbsp}GB.
+For some installations, you might require more, and it is possible to use multiple disks to provide this storage.
 
 
 
-.Procedure: Install Additional Disks for Hana
-The hana nodes must have an additional disk attached to store the files used by hana in /hana folder. More disks setups are possible, but 1 disk is required at least.
+== Register Clients to the Server
 
+In the {productname} {webui}, navigate to menu:Systems[Bootstrapping].
+Fill in the appropriate details, and make sure you check the [guimenu]``Manage System Completely via SSH`` checkbox.
+In the [guimenu]``Activation Key`` field, select the activation key that is associated with the software channel you want to use to bootstrap the client.
 
-
-.Procedure: Registering Clients to the Server
-
-. In the {productname} {webui}, navigate to menu:Systems[Bootstrapping].
-. In the [guimenu]``Host`` field, type the fully-qualified domain name (FQDN) of the client to be bootstrapped.
-. In the [guimenu]``SSH Port`` field, type the SSH port number to use to connect and bootstrap the client.
-By default, the SSH  port is [systemitem]``22``.
-. In the [guimenu]``User`` field, type the username to log in to the client.
-By default, the username is [systemitem]``root``.
-. In the [guimenu]``Password`` field, type password to log in to the client.
-. In the [guimenu]``Activation Key`` field, select the activation key that is associated with the software channel you want to use to bootstrap the client.
-For more information, see xref:client-configuration:clients-and-activation-keys.adoc[].
-. OPTIONAL: In the [guimenu]``Proxy`` field, select the proxy to register the client to.
-. By default, the [guimenu]``Disable SSH Strict Key Host Checking`` checkbox is selected.
-This allows the bootstrap process to automatically accept SSH host keys without requiring you to manually authenticate.
-. OPTIONAL: Check the [guimenu]``Manage System Completely via SSH`` checkbox.
-If you check this option, the client will be configured to use SSH for its connection to the server, and no other connection method will be configured.
-. Click btn:[Bootstrap] to begin registration.
-
-When the bootstrap process has completed, your client will be listed at menu:Systems[System List].
-
-
-[WARNING]
-====
-When new packages or updates are installed on the client using {productname}, any end user license agreements (EULAs) are automatically accepted.
-To review a package EULA, open the package details page in the {webui}.
-====
+For more information about activation keys, see xref:client-configuration:clients-and-activation-keys.adoc[].
+For more information about registering, see xref:client-configuration:registration-webui.adoc[].
