@@ -10,7 +10,7 @@ FILENAME_SUMA ?= suse_manager
 SUMA_CONTENT ?= true
 
 # UYUNI Productname and file replacement
-PRODUCTNAME_UYUNI ?= Uyuni
+PRODUCTNAME_UYUNI ?= 'Uyuni'
 FILENAME_UYUNI ?= uyuni
 UYUNI_CONTENT ?= true
 
@@ -54,6 +54,114 @@ PDF_OUTPUT_SUMA ?= susemanager-docs_en-pdf
 HTML_OUTPUT_UYUNI ?= uyuni-docs_en
 PDF_OUTPUT_UYUNI ?= uyuni-docs_en-pdf
 
+# Function definition
+define validate-product
+	NODE_PATH="$(npm -g root)" antora --generator @antora/xref-validator $(1)
+endef
+
+
+## Create tar of PDF files
+define pdf-tar-product
+	tar -czvf $(1).tar.gz $(PDF_BUILD_DIR)
+	mv $(1).tar.gz build/
+endef
+
+
+## Generate OBS tar files
+define obs-packages-product
+	tar --exclude='$(PDF_BUILD_DIR)' -czvf $(1).tar.gz $(HTML_BUILD_DIR)
+	tar -czvf $(2).tar.gz $(PDF_BUILD_DIR)
+	mkdir build/packages
+	mv $(1).tar.gz $(2).tar.gz build/packages
+endef
+
+
+define pdf-book-create
+	asciidoctor-pdf \
+		-r ./extensions/xref-converter.rb \
+		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
+		-a pdf-style=$(1) \
+		-a pdf-fontsdir=$(PDF_FONTS_DIR) \
+		-a productname=$(2) \
+		-a suma-content=$(3) \
+		-a examplesdir=modules/$(5)/examples \
+		-a imagesdir=modules/$(5)/assets/images \
+		-a revdate=$(REVDATE) \
+		--base-dir . \
+		--out-file $(PDF_BUILD_DIR)/$(4)_$(5)_guide.pdf \
+		modules/$(5)/nav-$(5)-guide.pdf.adoc
+endef
+
+
+define pdf-book-create-index
+	sed -E  -e 's/\*\*\*\*\*\ xref\:(.*)\.adoc\[(.*)\]/include\:\:modules\/$(1)\/pages\/\1\.adoc\[leveloffset\=\+4\]/' \
+		-e 's/\*\*\*\*\ xref\:(.*)\.adoc\[(.*)\]/include\:\:modules\/$(1)\/pages\/\1\.adoc\[leveloffset\=\+3\]/' \
+		-e 's/\*\*\*\ xref\:(.*)\.adoc\[(.*)\]/include\:\:modules\/$(1)\/pages\/\1\.adoc\[leveloffset\=\+2\]/' \
+		-e 's/\*\*\ xref\:(.*)\.adoc\[(.*)\]/include\:\:modules\/$(1)\/pages\/\1\.adoc\[leveloffset\=\+1\]/' \
+		-e 's/\*\ xref\:(.*)\.adoc\[(.*)\]/include\:\:modules\/$(1)\/pages\/\1\.adoc\[leveloffset\=\+0\]/' \
+		-e 's/\*\*\*\*\ (.*)/==== \1/' \
+		-e 's/\*\*\*\ (.*)/=== \1/' \
+		-e 's/\*\*\ (.*)/== \1/' \
+		-e 's/\*\ (.*)/= \1/' \
+		modules/$(1)/nav-$(1)-guide.adoc > modules/$(1)/nav-$(1)-guide.pdf.adoc
+endef
+
+
+## Generate PDF version of the Installation Guide
+define pdf-install-product
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),installation)
+endef
+
+
+## Generate PDF version of the Client Configuration Guide
+define pdf-client-configuration-product
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),client-configuration)
+
+endef
+
+
+define pdf-upgrade-product
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),upgrade)
+
+endef
+
+
+define pdf-reference-product
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),reference)
+
+endef
+
+
+define pdf-administration-product
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),administration)
+
+endef
+
+
+define pdf-salt-product
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),salt)
+
+endef
+
+
+define pdf-retail-product
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),retail)
+
+endef
+
+
+define pdf-architecture-product
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),architecture)
+endef
+
+
+define pdf-quickstart-public-cloud-product
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),quickstart-public-cloud)
+endef
+
+define pdf-large-deployment-product
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),large-deployments)
+endef
 
 # Help Menu
 PHONY: help
@@ -74,24 +182,36 @@ help: ## Prints a basic help menu about available targets
 	done
 
 
+
 # Clean up build artifacts
 .PHONY: clean
 clean: ## Remove build artifacts from output directory (Antora and PDF)
-	-rm -rf build/ .cache/ public/
+	-rm -rf build/ \
+		.cache/ \
+		public/ \
+		modules/installation/nav-installation-guide.pdf.adoc \
+		modules/client-configuration/nav-client-configuration-guide.pdf.adoc \
+		modules/upgrade/nav-upgrade-guide.pdf.adoc \
+		modules/reference/nav-reference-guide.pdf.adoc \
+		modules/administration/nav-administration-guide.pdf.adoc \
+		modules/salt/nav-salt-guide.pdf.adoc \
+		modules/retail/nav-retail-guide.pdf.adoc \
+		modules/architecture/nav-architecture-guide.pdf.adoc \
+		modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc \
+		modules/large-deployments/nav-large-deployments.pdf.adoc
 
 
 # SUMA DOCUMENTATION BUILD COMMANDS
 
 .PHONY: validate-suma
 validate-suma: ## Validates page references and prints a report (Does not build the site)
-	NODE_PATH="$(npm -g root)" antora --generator @antora/xref-validator suma-site.yml
+	$(call validate-product,suma-site.yml)
 
 
 
 .PHONY: pdf-tar-suma
 pdf-tar-suma: ## Create tar of PDF files
-	tar -czvf $(PDF_OUTPUT_SUMA).tar.gz $(PDF_BUILD_DIR)
-	mv $(PDF_OUTPUT_SUMA).tar.gz build/
+	$(call pdf-tar-product,$(PDF_OUTPUT_SUMA))
 
 
 
@@ -109,161 +229,116 @@ antora-suma: clean pdf-all-suma pdf-tar-suma ## Build the SUMA Antora static sit
 # SUMA
 .PHONY: obs-packages-suma
 obs-packages-suma: clean pdf-all-suma antora-suma ## Generate SUMA OBS tar files
-	tar --exclude='$(PDF_BUILD_DIR)' -czvf $(HTML_OUTPUT_SUMA).tar.gz $(HTML_BUILD_DIR)
-	tar -czvf $(PDF_OUTPUT_SUMA).tar.gz $(PDF_BUILD_DIR)
-	mkdir build/packages
-	mv $(HTML_OUTPUT_SUMA).tar.gz $(PDF_OUTPUT_SUMA).tar.gz build/packages
+	$(call obs-packages-product,$(HTML_OUTPUT_SUMA),$(PDF_OUTPUT_SUMA))
 
 
-
-
+# Generate PDF versions of all SUMA books
 .PHONY: pdf-all-suma
-pdf-all-suma: pdf-install-suma pdf-client-config-suma pdf-upgrade-suma pdf-reference-suma pdf-administration-suma pdf-salt-suma pdf-retail-suma  ##pdf-architecture-suma-webui ## Generate PDF versions of all SUMA books
+pdf-all-suma: pdf-install-suma pdf-client-configuration-suma pdf-upgrade-suma pdf-reference-suma pdf-administration-suma pdf-salt-suma pdf-retail-suma pdf-quickstart-public-cloud-suma pdf-large-deployment-suma ##pdf-architecture-suma-webui
 
 
+.PHONY: modules/installation/nav-installation-guide.pdf.adoc
+modules/installation/nav-installation-guide.pdf.adoc:
+	$(call pdf-book-create-index,installation)
 
-
+## Generate PDF version of the SUMA Installation Guide
 .PHONY: pdf-install-suma
-pdf-install-suma: ## Generate PDF version of the SUMA Installation Guide
-	asciidoctor-pdf \
-		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
-		-a pdf-style=$(PDF_THEME_SUMA) \
-		-a pdf-fontsdir=$(PDF_FONTS_DIR) \
-		-a productname=$(PRODUCTNAME_SUMA) \
-		-a suma-content=$(SUMA_CONTENT) \
-		-a examplesdir=modules/installation/examples \
-		-a imagesdir=modules/installation/assets/images \
-		-a revdate=$(REVDATE) \
-		--base-dir . \
-		--out-file $(PDF_BUILD_DIR)/$(FILENAME_SUMA)_installation_guide.pdf \
-		modules/installation/nav-installation-guide.adoc
+pdf-install-suma: modules/installation/nav-installation-guide.pdf.adoc
+	$(call pdf-install-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
+
+
+.PHONY: modules/client-configuration/nav-client-configuration-guide.pdf.adoc
+modules/client-configuration/nav-client-configuration-guide.pdf.adoc:
+	$(call pdf-book-create-index,client-configuration)
+
+## Generate PDF version of the SUMA Client Configuration Guide
+.PHONY: pdf-client-configuration-suma
+pdf-client-configuration-suma: modules/client-configuration/nav-client-configuration-guide.pdf.adoc
+	$(call pdf-client-configuration-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
 
 
 
-.PHONY: pdf-client-config-suma
-pdf-client-config-suma: ## Generate PDF version of the SUMA Client Configuraiton Guide
-	asciidoctor-pdf \
-		-r ./extensions/xref-converter.rb \
-		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
-		-a pdf-style=$(PDF_THEME_SUMA) \
-		-a pdf-fontsdir=$(PDF_FONTS_DIR) \
-		-a productname=$(PRODUCTNAME_SUMA) \
-		-a suma-content=$(SUMA_CONTENT) \
-		-a examplesdir=modules/client-configuration/examples \
-		-a imagesdir=modules/client-configuration/assets/images \
-		-a revdate=$(REVDATE) \
-		--base-dir . \
-		--out-file $(PDF_BUILD_DIR)/$(FILENAME_SUMA)_client_configuration_guide.pdf \
-		modules/client-configuration/nav-client-config-guide.adoc
+.PHONY: modules/upgrade/nav-upgrade-guide.pdf.adoc
+modules/upgrade/nav-upgrade-guide.pdf.adoc:
+	$(call pdf-book-create-index,upgrade)
 
-
-
+## Generate PDF version of the SUMA Upgrade Guide
 .PHONY: pdf-upgrade-suma
-pdf-upgrade-suma: ## Generate PDF version of the SUMA Upgrade Guide
-	asciidoctor-pdf \
-		-r ./extensions/xref-converter.rb \
-		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
-		-a pdf-style=$(PDF_THEME_SUMA) \
-		-a pdf-fontsdir=$(PDF_FONTS_DIR) \
-		-a productname=$(PRODUCTNAME_SUMA) \
-		-a suma-content=$(SUMA_CONTENT) \
-		-a examplesdir=modules/upgrade/examples \
-		-a imagesdir=modules/upgrade/assets/images \
-		-a revdate=$(REVDATE) \
-		--base-dir . \
-		--out-file $(PDF_BUILD_DIR)/$(FILENAME_SUMA)_upgrade_guide.pdf \
-		modules/upgrade/nav-upgrade-guide.adoc
+pdf-upgrade-suma: modules/upgrade/nav-upgrade-guide.pdf.adoc
+	$(call pdf-upgrade-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
 
 
 
+.PHONY: modules/reference/nav-reference-guide.pdf.adoc
+modules/reference/nav-reference-guide.pdf.adoc:
+	$(call pdf-book-create-index,reference)
+
+## Generate PDF version of the SUMA Reference Manual
 .PHONY: pdf-reference-suma
-pdf-reference-suma: ## Generate PDF version of the SUMA Reference Manual
-	asciidoctor-pdf \
-	    -r ./extensions/xref-converter.rb \
-		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
-		-a pdf-style=$(PDF_THEME_SUMA) \
-		-a pdf-fontsdir=$(PDF_FONTS_DIR) \
-		-a productname=$(PRODUCTNAME_SUMA) \
-		-a suma-content=$(SUMA_CONTENT) \
-		-a examplesdir=modules/reference/examples \
-		-a imagesdir=modules/reference/assets/images \
-		-a revdate=$(REVDATE) \
-		--base-dir . \
-		--out-file $(PDF_BUILD_DIR)/$(FILENAME_SUMA)_reference_manual.pdf \
-		modules/reference/nav-reference-manual.adoc
+pdf-reference-suma: modules/reference/nav-reference-guide.pdf.adoc
+	$(call pdf-reference-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
 
-
+.PHONY: modules/administration/nav-administration-guide.pdf.adoc
+modules/administration/nav-administration-guide.pdf.adoc:
+	$(call pdf-book-create-index,administration)
 
 .PHONY: pdf-administration-suma
-pdf-administration-suma: ## Generate PDF version of the SUMA Administration Guide
-	asciidoctor-pdf \
-		-r ./extensions/xref-converter.rb \
-		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
-		-a pdf-style=$(PDF_THEME_SUMA) \
-		-a pdf-fontsdir=$(PDF_FONTS_DIR) \
-		-a productname=$(PRODUCTNAME_SUMA) \
-		-a suma-content=$(SUMA_CONTENT) \
-		-a examplesdir=modules/administration/examples \
-		-a imagesdir=modules/administration/assets/images \
-		-a revdate=$(REVDATE) \
-		--base-dir . \
-		--out-file $(PDF_BUILD_DIR)/$(FILENAME_SUMA)_administration_guide.pdf \
-		modules/administration/nav-administration-guide.adoc
+## Generate PDF version of the SUMA Administration Guide
+pdf-administration-suma: modules/administration/nav-administration-guide.pdf.adoc
+	$(call pdf-administration-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
 
-
+.PHONY: modules/salt/nav-salt-guide.pdf.adoc
+modules/salt/nav-salt-guide.pdf.adoc:
+	$(call pdf-book-create-index,salt)
 
 .PHONY: pdf-salt-suma
-pdf-salt-suma: ## Generate PDF version of the SUMA Salt Guide
-	asciidoctor-pdf \
-		-r ./extensions/xref-converter.rb \
-		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
-		-a pdf-style=$(PDF_THEME_SUMA) \
-		-a pdf-fontsdir=$(PDF_FONTS_DIR) \
-		-a productname=$(PRODUCTNAME_SUMA) \
-		-a suma-content=$(SUMA_CONTENT) \
-		-a examplesdir=modules/salt/examples \
-		-a imagesdir=modules/salt/assets/images \
-		-a revdate=$(REVDATE) \
-		--base-dir . \
-		--out-file $(PDF_BUILD_DIR)/$(FILENAME_SUMA)_salt_guide.pdf \
-		modules/salt/nav-salt-guide.adoc
+## Generate PDF version of the SUMA Salt Guide
+pdf-salt-suma: modules/salt/nav-salt-guide.pdf.adoc
+	$(call pdf-salt-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
 
-
+.PHONY: modules/retail/nav-retail-guide.pdf.adoc
+modules/retail/nav-retail-guide.pdf.adoc:
+	$(call pdf-book-create-index,retail)
 
 .PHONY: pdf-retail-suma
-pdf-retail-suma: ## Generate PDF version of the SUMA Retail Guide
-	asciidoctor-pdf \
-		-r ./extensions/xref-converter.rb \
-		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
-		-a pdf-style=$(PDF_THEME_SUMA) \
-		-a pdf-fontsdir=$(PDF_FONTS_DIR) \
-		-a productname=$(PRODUCTNAME_SUMA) \
-		-a suma-content=$(SUMA_CONTENT) \
-		-a examplesdir=modules/retail/examples \
-		-a imagesdir=modules/retail/assets/images \
-		-a revdate=$(REVDATE) \
-		--base-dir . \
-		--out-file $(PDF_BUILD_DIR)/$(FILENAME_SUMA)_retail_guide.pdf \
-		modules/retail/nav-retail.adoc
+## Generate PDF version of the SUMA Retail Guide
+pdf-retail-suma: modules/retail/nav-retail-guide.pdf.adoc
+	$(call pdf-retail-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
 
 
+.PHONY: modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc
+modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc:
+	$(call pdf-book-create-index,quickstart-public-cloud)
+
+.PHONY: pdf-qs-public-cloud-suma
+## Generate PDF version of the SUMA Quickstart for public cloud
+pdf-qs-public-cloud-suma: modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc
+	$(call pdf-quickstart-public-cloud-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
+
+.PHONY: modules/large-deployments/nav-large-deployments.pdf.adoc
+modules/large-deployments/nav-large-deployments.pdf.adoc:
+	$(call pdf-book-create-index,large-deployments)
+
+.PHONY: pdf-large-deployment-suma
+## Generate PDF version of the SUMA Large Deployment Guide
+pdf-large-deployment-suma: modules/large-deployments/nav-large-deployments.pdf.adoc
+	$(call pdf-large-deployment-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
+
+
+.PHONY: modules/architecture/nav-architecture-guide.pdf.adoc
+modules/architecture/nav-architecture-guide.pdf.adoc:
+	$(call pdf-book-create-index,architecture)
 
 .PHONY: pdf-architecture-suma
-pdf-architecture-suma: ## Generate PDF version of the SUMA Architecture Guide
-	asciidoctor-pdf \
-		-r ./extensions/xref-converter.rb \
-		-a productname=$(PRODUCTNAME) \
-		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
-		-a pdf-style=$(PDF_THEME_SUMA) \
-		-a pdf-fontsdir=$(PDF_FONTS_DIR) \
-		-a productname=$(PRODUCTNAME_SUMA) \
-		-a suma-content=$(SUMA_CONTENT) \
-		-a examplesdir=modules/architecture/examples \
-		-a imagesdir=modules/architecture/assets/images \
-		-a revdate=$(REVDATE) \
-		--base-dir $(CURDIR) \
-	 	--out-file $(PDF_BUILD_DIR)/$(FILENAME_SUMA)_architecture.pdf \
-		modules/architecture/nav-architecture-components-guide.adoc
+## Generate PDF version of the SUMA Architecture Guide
+pdf-architecture-suma: modules/architecture/nav-architecture-guide.pdf.adoc
+	$(call pdf-architecture-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
+
+
+.PHONY: pdf-quickstart-public-cloud-suma
+## Generate PDF version of the SUMA Quickstart Guide for Public Cloud
+pdf-quickstart-public-cloud-suma: modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc
+	$(call pdf-quickstart-public-cloud-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
 
 
 
@@ -271,18 +346,17 @@ pdf-architecture-suma: ## Generate PDF version of the SUMA Architecture Guide
 
 .PHONY: validate-uyuni
 validate-uyuni: ## Validates page references and prints a report (Does not build the site)
-	NODE_PATH="$(npm -g root)" antora --generator @antora/xref-validator uyuni-site.yml
+	$(call validate,uyuni-site.yml)
 
 
 
 .PHONY: pdf-tar-uyuni
 pdf-tar-uyuni: ## Create tar of PDF files
-	tar -czvf $(PDF_OUTPUT_UYUNI).tar.gz $(PDF_BUILD_DIR)
-	mv $(PDF_OUTPUT_UYUNI).tar.gz build/
+	$(call pdf-tar-product,$(PDF_OUTPUT_UYUNI))
 
 
 .PHONY: antora-uyuni
-antora-uyuni: clean #pdf-all-uyuni pdf-tar-uyuni ## Build the UYUNI Antora static site (See README for more information)
+antora-uyuni: clean pdf-all-uyuni pdf-tar-uyuni ## Build the UYUNI Antora static site (See README for more information)
 		sed -i "s/^ *\(name: *suse-manager\)/#\1/;\
 	s/^ *\(title: *SUSE Manager\)/#\1/;\
 	s/^ *# *\(title: *Uyuni\)/\1/;\
@@ -294,157 +368,63 @@ antora-uyuni: clean #pdf-all-uyuni pdf-tar-uyuni ## Build the UYUNI Antora stati
 # UYUNI
 .PHONY: obs-packages-uyuni
 obs-packages-uyuni: clean pdf-all-uyuni antora-uyuni ## Generate UYUNI OBS tar files
-	tar --exclude='$(PDF_BUILD_DIR)' -czvf $(HTML_OUTPUT_UYUNI).tar.gz $(HTML_BUILD_DIR)
-	tar -czvf $(PDF_OUTPUT_UYUNI).tar.gz $(PDF_BUILD_DIR)
-	mkdir build/packages
-	mv $(HTML_OUTPUT_UYUNI).tar.gz $(PDF_OUTPUT_UYUNI).tar.gz build/packages
+	$(call obs-packages-product,$(HTML_OUTPUT_UYUNI),$(PDF_OUTPUT_UYUNI))
 
 
 
 .PHONY: pdf-all-uyuni
-pdf-all-uyuni: pdf-install-uyuni pdf-client-config-uyuni pdf-upgrade-uyuni pdf-reference-uyuni pdf-administration-uyuni pdf-salt-uyuni pdf-retail-uyuni ##pdf-architecture-uyuni ## Generate PDF versions of all UYUNI books
+pdf-all-uyuni: pdf-install-uyuni pdf-client-configuration-uyuni pdf-upgrade-uyuni pdf-reference-uyuni pdf-administration-uyuni pdf-salt-uyuni pdf-retail-uyuni pdf-quickstart-public-cloud-uyuni pdf-large-deployment-uyuni ##pdf-architecture-uyuni ## Generate PDF versions of all UYUNI books
 
 
 
+## Generate PDF version of the UYUNI Installation Guide
 .PHONY: pdf-install-uyuni
-pdf-install-uyuni: ## Generate PDF version of the UYUNI Installation Guide
-	asciidoctor-pdf \
-		-r ./extensions/xref-converter.rb \
-		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
-		-a pdf-style=$(PDF_THEME_UYUNI) \
-		-a pdf-fontsdir=$(PDF_FONTS_DIR) \
-		-a productname=$(PRODUCTNAME_UYUNI) \
-		-a uyuni-content=$(UYUNI_CONTENT) \
-		-a examplesdir=modules/installation/examples \
-		-a imagesdir=modules/installation/assets/images \
-		-a revdate=$(REVDATE) \
-		--base-dir . \
-		--out-file $(PDF_BUILD_DIR)/$(FILENAME_UYUNI)_installation_guide.pdf \
-		modules/installation/nav-installation-guide.adoc
+pdf-install-uyuni: modules/installation/nav-installation-guide.pdf.adoc
+	$(call pdf-install-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
 
 
 
-.PHONY: pdf-client-config-uyuni
-pdf-client-config-uyuni: ## Generate PDF version of the UYUNI Client Configuration Guide
-	asciidoctor-pdf \
-		-r ./extensions/xref-converter.rb \
-		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
-		-a pdf-style=$(PDF_THEME_UYUNI) \
-		-a pdf-fontsdir=$(PDF_FONTS_DIR) \
-		-a productname=$(PRODUCTNAME_UYUNI) \
-		-a uyuni-content=$(UYUNI_CONTENT) \
-		-a examplesdir=modules/client-configuration/examples \
-		-a imagesdir=modules/client-configuration/assets/images \
-		-a revdate=$(REVDATE) \
-		--base-dir . \
-		--out-file $(PDF_BUILD_DIR)/$(FILENAME_UYUNI)_client_configuration_guide.pdf \
-		modules/client-configuration/nav-client-config-guide.adoc
+## Generate PDF version of the UYUNI Client Configuration Guide
+.PHONY: pdf-client-configuration-uyuni
+pdf-client-configuration-uyuni: modules/client-configuration/nav-client-configuration-guide.pdf.adoc
+	$(call pdf-client-configuration-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
 
-
-
+## Generate PDF version of the UYUNI Upgrade Guide
 .PHONY: pdf-upgrade-uyuni
-pdf-upgrade-uyuni: ## Generate PDF version of the UYUNI Upgrade Guide
-	asciidoctor-pdf \
-		-r ./extensions/xref-converter.rb \
-		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
-		-a pdf-style=$(PDF_THEME_UYUNI) \
-		-a pdf-fontsdir=$(PDF_FONTS_DIR) \
-		-a productname=$(PRODUCTNAME_UYUNI) \
-		-a uyuni-content=$(UYUNI_CONTENT) \
-		-a examplesdir=modules/upgrade/examples \
-		-a imagesdir=modules/upgrade/assets/images \
-		-a revdate=$(REVDATE) \
-		--base-dir . \
-		--out-file $(PDF_BUILD_DIR)/$(FILENAME_UYUNI)_upgrade_guide.pdf \
-		modules/upgrade/nav-upgrade-guide.adoc
+pdf-upgrade-uyuni: modules/upgrade/nav-upgrade-guide.pdf.adoc
+	$(call pdf-upgrade-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
 
-
-
+## Generate PDF version of the UYUNI Reference Guide
 .PHONY: pdf-reference-uyuni
-pdf-reference-uyuni: ## Generate PDF version of the UYUNI Reference Manual
-	asciidoctor-pdf \
-		-r ./extensions/xref-converter.rb \
-		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
-		-a pdf-style=$(PDF_THEME_UYUNI) \
-		-a pdf-fontsdir=$(PDF_FONTS_DIR) \
-		-a productname=$(PRODUCTNAME_UYUNI) \
-		-a uyuni-content=$(UYUNI_CONTENT) \
-		-a examplesdir=modules/reference/examples \
-		-a imagesdir=modules/reference/assets/images \
-		-a revdate=$(REVDATE) \
-		--base-dir . \
-		--out-file $(PDF_BUILD_DIR)/$(FILENAME_UYUNI)_reference_manual.pdf \
-		modules/reference/nav-reference-manual.adoc
+pdf-reference-uyuni: modules/reference/nav-reference-guide.pdf.adoc
+	$(call pdf-reference-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
 
-
-
+## Generate PDF version of the UYUNI Administration Guide
 .PHONY: pdf-administration-uyuni
-pdf-administration-uyuni: ## Generate PDF version of the UYUNI Administration Guide
-	asciidoctor-pdf \
-		-r ./extensions/xref-converter.rb \
-		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
-		-a pdf-style=$(PDF_THEME_UYUNI) \
-		-a pdf-fontsdir=$(PDF_FONTS_DIR) \
-		-a productname=$(PRODUCTNAME_UYUNI) \
-		-a uyuni-content=$(UYUNI_CONTENT) \
-		-a examplesdir=modules/administration/examples \
-		-a imagesdir=modules/administration/assets/images \
-		-a revdate=$(REVDATE) \
-		--base-dir . \
-		--out-file $(PDF_BUILD_DIR)/$(FILENAME_UYUNI)_administration_guide.pdf \
-		modules/administration/nav-administration-guide.adoc
+pdf-administration-uyuni: modules/administration/nav-administration-guide.pdf.adoc
+	$(call pdf-administration-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
 
-
-
+## Generate PDF version of the UYUNI Salt Guide
 .PHONY: pdf-salt-uyuni
-pdf-salt-uyuni: ## Generate PDF version of the UYUNI Salt Guide
-	asciidoctor-pdf \
-		-r ./extensions/xref-converter.rb \
-		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
-		-a pdf-style=$(PDF_THEME_UYUNI) \
-		-a pdf-fontsdir=$(PDF_FONTS_DIR) \
-		-a productname=$(PRODUCTNAME_UYUNI) \
-		-a uyuni-content=$(UYUNI_CONTENT) \
-		-a examplesdir=modules/salt/examples \
-		-a imagesdir=modules/salt/assets/images \
-		-a revdate=$(REVDATE) \
-		--base-dir . \
-		--out-file $(PDF_BUILD_DIR)/$(FILENAME_UYUNI)_salt_guide.pdf \
-		modules/salt/nav-salt-guide.adoc
+pdf-salt-uyuni: modules/salt/nav-salt-guide.pdf.adoc
+	$(call pdf-salt-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
 
-
-
+## Generate PDF version of the UYUNI Retail Guide
 .PHONY: pdf-retail-uyuni
-pdf-retail-uyuni: ## Generate PDF version of the UYUNI Retail Guide
-	asciidoctor-pdf \
-		-r ./extensions/xref-converter.rb \
-		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
-		-a pdf-style=$(PDF_THEME_UYUNI) \
-		-a pdf-fontsdir=$(PDF_FONTS_DIR) \
-		-a productname=$(PRODUCTNAME_UYUNI) \
-		-a uyuni-content=$(UYUNI_CONTENT) \
-		-a examplesdir=modules/retail/examples \
-		-a imagesdir=modules/retail/assets/images \
-		-a revdate=$(REVDATE) \
-		--base-dir . \
-		--out-file $(PDF_BUILD_DIR)/$(FILENAME_UYUNI)_retail_guide.pdf \
-		modules/retail/nav-retail.adoc
+pdf-retail-uyuni: modules/retail/nav-retail-guide.pdf.adoc
+	$(call pdf-retail-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
 
-
-
+## Generate PDF version of the UYUNI Architecture Guide
 .PHONY: pdf-architecture-uyuni
-pdf-architecture-uyuni: ## Generate PDF version of the UYUNI Architecture Guide
-	asciidoctor-pdf \
-		-r ./extensions/xref-converter.rb \
-		-a productname=$(PRODUCTNAME_UYUNI) \
-		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
-		-a pdf-style=$(PDF_THEME_UYUNI) \
-		-a pdf-fontsdir=$(PDF_FONTS_DIR) \
-		-a productname=$(PRODUCTNAME) \
-		-a uyuni-content=$(UYUNI_CONTENT) \
-		-a examplesdir=modules/architecture/examples \
-		-a imagesdir=modules/architecture/assets/images \
-		-a revdate=$(REVDATE) \
-		--base-dir $(CURDIR) \
-	 	--out-file $(PDF_BUILD_DIR)/$(FILENAME_UYUNI)_architecture.pdf \
-		modules/architecture/nav-architecture-components-guide.adoc
+pdf-architecture-uyuni: modules/architecture/nav-architecture-guide.pdf.adoc
+	$(call pdf-architecture-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
+
+
+## Generate PDF version of the UYUNI Quickstart Guide for Public Cloud
+pdf-quickstart-public-cloud-uyuni: modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc
+	$(call pdf-quickstart-public-cloud-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
+
+.PHONY: pdf-large-deployment-uyuni
+## Generate PDF version of the UYUNI Large Deployment Guide
+pdf-large-deployment-uyuni: modules/large-deployments/nav-large-deployments.pdf.adoc
+	$(call pdf-large-deployment-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))

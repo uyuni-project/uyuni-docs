@@ -3,6 +3,7 @@
 
 This tab allows you to create new virtual guests, apply images on a
 traditionally managed host system, or change the status of virtual guests.
+You can also list and manage the storage pools that are used for the virtual machines.
 
 
 // TODO Update the screenshot for a salt minion
@@ -10,6 +11,7 @@ image::system_details_traditional_virtualization_details.png[scaledwidth=80%]
 
 The [guimenu]``Virtualization`` tab has one subtab, [guimenu]``Guests``.
 For traditional systems that have Virtualization entitlements, you will also see two additional subtabs for [guimenu]``Provisioning``, and [guimenu]``Deployment``.
+For Salt clients, you will also see a [guimenu]``Storage`` subtab.
 These tabs appear only for systems having the Virtualization entitlement.
 It is not possible to create a guest system that runs on another guest system.
 
@@ -119,3 +121,169 @@ In the menu:System Details[Virtualization] tab of a traditionally registered bar
 image::system_details_traditional_virtualization_deployment.png[scaledwidth=80%]
 
 When the deploment scheduled it is listed as an action on the menu:Main Menu[Schedule > Pending Actions].
+
+== Storage for Salt Clients
+
+The [guimenu]``Storage`` tab shows a tree list of the virtual storage pools and volumes that are defined on the virtual host.
+The first level of the tree is the list of storage pools and all items contained in them are volumes.
+Expand the pools to show the volumes.
+
+
+Each pool shows:
+
+[guimenu]``Status``::
+The pool is either running or stopped.
+
+[guimenu]``Autostart``::
+The pool starts automatically when the virtual host boots.
+
+[guimenu]``Persistent``::
+The pool will be kept after being stopped.
+
+[guimenu]``Location``::
+The target path of the storage pool.
+Note that some pool types don't have an associated path.
+
+[guimenu]``Usage``::
+The disk usage of the pool.
+Shows ``Unknown`` if the pool is not running.
+
+Each volume shows:
+
+* The name of the virtual machines using the volume.
+Some pool types will not provide this list.
+
+* The disk usage of the volume.
+
+
+
+=== Refreshing a pool
+
+The [systemitem]``libvirt`` service does not automatically update the pool usage and contents statistics.
+Refresh the pool to see updated usage statistics, or to see a volume that has been created outside of {productname}.
+Click the [guimenu]``Refresh`` button to schedule a refresh of the pool.
+
+.Procedure: Creating a Pool
+
+. Click btn:[Create Pool]
+. This opens a new page with a form to define the pool.
+. In the [guimenu]``name`` field, type a name for the new pool.
+. In the [guimenu]``type`` field, select the type of the pool.
+The list of available types depends on the virtual host setup.
+// TODO Add a note on the supported types pointing to SUSE Documentation
+. Check the [guimenu]``Start during virtual host boot`` field, to start the pool automatically when the virtual host boots.
+. OPTIONAL: In the [guimenu]``Earliest`` field, you can set the earliest time the pool creation action should be scheduled.
+. OPTIONAL: In the [guimenu]``Add to`` field, you can select a new or existing action chain to add the pool creation action to.
+. The [guimenu]``Source`` section contains data about the device holding the pool.
+. The [guimenu]``Target`` section contains data about where to find the pool on the virtual host.
+
+==== Source Fields
+
+[guimenu]``Device path``::
+Path to a device containing the pool data
+
+[guimenu]``Partition separator``::
+Use ``'p'`` as a partition separator in the path name.
+
+[guimenu]``Format``::
+Select the format of the pool source.
+The available values depend on the pool type.
+
+[guimenu]``Host name``::
+IP or FQDN of the remote machine providing access to the pool.
+
+[guimenu]``Port``::
+Port of the remote machine providing access to the pool.
+
+[guimenu]``iSCSI Qualified Name``::
+Qualified name of the iSCSI target.
+
+[guimenu]``IQN Initiator``::
+iSCSI qualified name of the initiator to connect to.
+
+[guimenu]``Username``::
+Username to use to connect to remote storage.
+
+[guimenu]``Passphrase``::
+Password to use to connect to remote storage.
+For RBD pools, this is the base64 encoded key.
+
+[guimenu]``Source name``::
+Name of the storage pool source.
+
+[guimenu]``Directory``::
+Path to the directory of the pool.
+
+[guimenu]``Subdirectory``::
+Absolute path relative to the Gluster volume to use.
+
+[guimenu]``Adapter type``::
+The controller type, either``fc_host`` or ``scsi_host``.
+
+[guimenu]``Adapter name``::
+SCSI adapter name for ``scsi_host`` controller.
+
+[guimenu]``Adapter parent PCI address``::
+PCI address of the SCSI host in ``0000:00:00.0`` format.
+List options with [command]``lsscsi -v``.
+
+[guimenu]``Adapter parent address unique ID``::
+Unique ID of the SCSI host as found in ``/sys/class/scsi_host/host*/unique_id`` file.
+
+[guimenu]``Adapter parent name``::
+Name of the vport capable parent SCSI host of the virtual Host Bus Adapter (vHBA).
+
+[guimenu]``Adapter parent wwnn``::
+World Wide Node Name used by the ``fc_host`` to identify the vHBA parent device.
+
+[guimenu]``Adapter parent wwpn``::
+World Wide Port Name used by the ``fc_host`` to identify the vHBA parent device.
+
+[guimenu]``Adapter parent fabric wwn``::
+Fabric WWN of the vHBA parent device.
+
+[guimenu]``Adapter wwnn``::
+World Wide Node Name used by the ``fc_host`` to identify the vHBA device.
+
+[guimenu]``Adapter wwpn``::
+World Wide Port Name used by the ``fc_host`` to identify the vHBA device.
+
+[guimenu]``Manage vHBA deletion``::
+If checked the vHBA will be destroyed with the pool is destroyed.
+This property will be automatically activated if there is no existing vHBA.
+
+==== Target fields
+
+[guimenu]``Path``::
+Path to the storage pool mount or device on the virtual host.
+
+[guimenu]``Owner ID``::
+ID of the user owning the path folder or file.
+
+[guimenu]``Group ID``::
+ID of the group owning the path folder or file.
+
+[guimenu]``Permission mode``::
+Octal representation of the permissions to set on the path folder or file.
+
+[guimenu]``SELinux label``::
+SELinux label to set on the path folder or file.
+
+=== Editing a pool
+
+To edit the properties of a storage pool, locate the pool in the list and click [guimenu]``Edit pool``.
+
+=== Deleting a Pool
+
+To delete a storage pool, locate the pool in the list and click [guimenu]``Delete``.
+By default, deleting a pool only removes the storage pool definition.
+The pool data is kept on disk.
+To delete the pool data as well as the storage pool definition, check the [guimenu]``Delete the pool, including the contained volumes`` box before you click [guimenu]``Delete``.
+
+Some pool types will not allow you to delete the volumes or the pool.
+
+=== Deleting a Volume
+
+To delete a storage volume, locate the volume in the tree and click [guimenu]``Delete`` on its row.
+
+Some pool types will not allow you to delete volumes.

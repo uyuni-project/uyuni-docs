@@ -1,0 +1,143 @@
+[[registering-clients-cli]]
+== Register on the Command Line (Salt)
+
+// Might need an 'unsupported' note? LKB 2019-05-01
+// I'd say "no", according to the outcome of
+// https://github.com/SUSE/spacewalk/issues/9333 KE 2019-12-17
+
+Instead of the {webui}, you can use the command line to register a Salt client.
+This procedure requires that you have installed the Salt package on the Salt client before registration.
+For SLE 12 based clients, you also must have activated the [systemitem]``Advanced Systems Management`` module.
+
+[NOTE]
+====
+Registring on the command line is also possible with traditional clients, but it requires more steps.
+It is not covered here.
+Use the bootstrap script procedure to register traditional clients.
+For more information, see xref:registration-bootstrap.adoc[].
+====
+
+
+
+.Procedure: Registering Clients Using the Command Line
+
+. Choose a client configuration file located at:
++
+----
+/etc/salt/minion
+----
++
+or:
++
+----
+/etc/salt/minion.d/NAME.conf
+----
++
+This is sometimes also called a minion file.
+. Add the {productname} Server or Proxy FQDN as the `master`, and the activation key, to the client configuration file:
++
+----
+master: SERVER.EXAMPLE.COM
+server_id_use_src: adler32
+enable_legacy_startup_events: False
+enable_fqdns_grains: False
+grains:
+  susemanager:
+    activation-key: "<Activation_Key_Name>"
+----
+
+. Restart the [systemitem]``salt-minion`` service:
++
+----
+systemctl restart salt-minion
+----
+. On the {productname} Server, accept the new client key; replace [systemitem]``<client>`` with the name of your client:
++
+----
+salt-key -a '<client>'
+----
+
+////
+REMARK: This is what we previously offered:
+
+.Procedure: Registering Salt Clients
+. On your client as {rootuser} enter the following command:
++
+
+----
+zypper ar http://FQDN.server.example.com/pub/repositories/sle/12/4/bootstrap/ \
+   sles12-sp4
+----
++
+
+[NOTE]
+====
+Do not use ``HTTPS``.
+Use `HTTP` instead to avoid errors.
+====
++
+
+. After adding the repository containing the necessary Salt packages execute:
++
+
+----
+zypper in salt-minion
+----
+. Modify the client configuration file to point to the fully qualified domain name ([replaceable]``FQDN``) of the {productname} server (master):
++
+
+----
+vi /etc/salt/minion
+----
++
+Find and change the line:
++
+
+----
+master: salt
+----
++
+to:
++
+
+----
+master: FQDN.server.example.com
+----
+. Restart the Salt client with:
++
+
+----
+systemctl restart salt-minion
+----
+
+Your newly registered client should now show up within the {webui} under menu:Salt[Keys].
+Accept the [guimenu]``pending`` key to begin management.
+////
+
+
+
+== SLES{nbsp}11 SSL errors
+
+SLES{nbsp}11 clients can sometimes have SSL errors which make some operations unusable, including package management and bootstrapping.
+In this case, you will see an error like this:
+
+----
+Repository 'SLES11-SP4-SUSE-Manager-Tools x86_64' is invalid.
+[|] Valid metadata not found at specified URL(s)
+Please check if the URIs defined for this repository are pointing to a valid repository.
+Skipping repository 'SLES11-SP4-SUSE-Manager-Tools x86_64' because of the above error.
+Download (curl) error for 'www.example.com':
+Error code: Unrecognized error
+Error message: error:1409442E:SSL routines:SSL3_READ_BYTES:tlsv1 alert protocol version
+----
+
+This occurs because Apache requires TLS{nbsp}v1.2, but older versions of SLES do not support this version of the TLS protocol.
+To fix this error, you need to force Apache to accept a greater range of protocol versions.
+Open the [path]``/etc/apache2/ssl-global.conf`` configuration file, locate the [systemitem]``SSLProtocol`` line, and update it to read:
+
+----
+SSLProtocol all -SSLv2 -SSLv3
+----
+
+This will need to be done manually on the server, and with a Salt state on the Proxy.
+Restart the [systemitem]``apache`` service on each system after making the changes.

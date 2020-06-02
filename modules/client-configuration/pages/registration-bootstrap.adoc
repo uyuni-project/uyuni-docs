@@ -1,16 +1,23 @@
 [[registering.clients.bootstrap]]
-= Registering Clients with a Bootstrap Script
+= Register Clients with a Bootstrap Script
 
 
-Registering clients with a bootstrap script gives you good control over parameters, and can help if you have to register a large number of clients at once.
+Registering clients with a bootstrap script gives you control over parameters, and can help if you have to register a large number of clients at once.
 This method works for both Salt and traditional clients.
 
 To register clients using a bootstrap script, we recommend you create a template bootstrap script to begin, which can then be copied and modified.
 The bootstrap script you create is executed on the client when it is registered, and ensures all the necessary packages are deployed to the client.
-There are some parameters contained in the bootstrap script which ensure the client system can be assigned to its base channel, including activation keys, and GPG keys.
+There are some parameters contained in the bootstrap script, which ensure the client system can be assigned to its base channel, including activation keys and GPG keys.
 
 It is important that you check the repository information carefully, to ensure it matches the base channel repository.
 If the repository information does not match exactly, the bootstrap script will not be able to download the correct packages.
+
+[NOTE]
+====
+A bootstrap repository is needed for non-SLE clients in general and for SLE clients before version 15.
+A bootstrap offers packages for installing Salt on clients and for registering Salt or traditional clients.
+For information about creating a bootstrap repository, see xref:client-configuration:bootstrap-repository.adoc[].
+====
 
 If you are bootstrapping Salt clients using the {webui}, you will need to ensure that the client system has Python installed before you begin.
 For Salt clients running {sles}{nbsp}12 or older, you will also require the [package]``python-xml`` package.
@@ -36,60 +43,50 @@ Attempting to register openSUSE Leap 15 or SLE 15 systems using Python 2 boot
 
 == Create a Bootstrap Script
 
-This procedure describes how to generate a bootstrap script.
+You can use the {productname} {webui} to create an editable bootstrap script.
 
 .Procedure: Creating a Bootstrap Script
 . In the {productname} {webui}, navigate to menu:Admin[Manager Configuration > Bootstrap Script].
 . In the [guimenu]``SUSE Manager Configuration - Bootstrap`` dialog, uncheck the [guimenu]``Bootstrap using Salt`` checkbox if you are installing a traditional client.
 For Salt clients, leave it checked.
-Use default settings and click the btn:[Update] button.
-+
+. The required fields are pre-populated with values derived from previous installation steps.
+For details on each setting, see xref:reference:admin/bootstrap-script.adoc[].
+. Click btn:[Update] create the script.
+. The bootstrap script is generated and stored on the server in the [path]``/srv/www/htdocs/pub/bootstrap`` directory.
+Alternatively, you can access the bootstrap script over HTTPS.
+Replace ``example.com`` with the host name of your {productname} Server:
+----
+https://<example.com>/pub/bootstrap/bootstrap.sh
+----
 
-image::mgr_configuration_bootstrap_trad.png[scaledwidth=80%]
-+
 
-[WARNING]
-.Using SSL
+[IMPORTANT]
 ====
-Unchecking menu:Enable SSL[] in the {webui} or setting `USING_SSL=0` in the bootstrap script is not recommended.
-If you disable SSL nevertheless you will need to manage custom CA certificates to be able to run the registration process successfully.
+Do not disable SSL in your bootstrap script.
+Ensure that [guimenu]``Enable SSL`` is checked in the {webui}, or that the setting `USING_SSL=1` exists in the bootstrap script.
+If you disable SSL, the registration process requires custom SSL certificates.
+For more about custom certificates, see xref:administration:ssl-certs.adoc[].
 ====
-+
-
-. A template bootstrap script is generated and stored on the server's file system in the [path]``/srv/www/htdocs/pub/bootstrap`` directory.
-+
-
-----
-cd /srv/www/htdocs/pub/bootstrap
-----
-+
-The bootstrap script is also available at your server over HTTPS; replace [systemitem]`` example.com`` with the host name of your server:
-----
-https://example.com/pub/bootstrap/bootstrap.sh
-----
 
 
 
 [[modify.bootstrap.script]]
-== Edit a Bootstrap Script
-
+== Editing a Bootstrap Script
 
 You can copy and modify the template bootstrap script you created to customize it.
-
 A minimal requirement when modifying a bootstrap script for use with {productname} is the inclusion of an activation key.
-
 Most packages are signed with GPG, so you will also need to have trusted GPG keys on your system to install them.
 
 In this procedure, you will need to know the exact name of your activation keys.
-Navigate to menu:Home[Overview] and click on [guimenu]``Manage Activation keys``.
+Navigate to menu:Home[Overview] and, in the [guimenu]``Tasks`` box, click [guimenu]``Manage Activation Keys``.
 All keys created for channels are listed on this page.
 You must enter the full name of the key you wish to use in the bootstrap script exactly as presented in the key field.
 For more information about activation keys, see xref:client-configuration:clients-and-activation-keys.adoc[].
 
 
+
 .Procedure: Modifying a Bootstrap Script
-. Login as root from the command line on your {productname} server.
-. Navigate to the bootstrap directory with:
+. On your {productname} server, as root at the command line change to the bootstrap directory with:
 +
 ----
 cd /srv/www/htdocs/pub/bootstrap/
@@ -97,12 +94,14 @@ cd /srv/www/htdocs/pub/bootstrap/
 . Create and rename two copies of the template bootstrap script for use with each of your clients.
 +
 ----
-cp bootstrap.sh bootstrap-sles11.sh
 cp bootstrap.sh bootstrap-sles12.sh
+cp bootstrap.sh bootstrap-sles15.sh
 ----
 . Open [path]``bootstrap-sles12.sh`` for modification.
-Scroll down and modify both lines marked in green.
-You must comment out `exit 1` with a hash mark (``#``) to activate the script and then enter the name of the key for this script in the `ACTIVATION_KEYS=` field as follows:
+Scroll down until you can see the text shown below.
+If ``exit 1`` exists in the file, comment it out by typing a hash or pound sign (``#``) at the beginning of the line.
+This activates the script.
+Enter the name of the key for this script in the ``ACTIVATION_KEYS=`` field:
 +
 ----
 echo "Enable this script: comment (with #'s) this block (or, at least just"
@@ -126,15 +125,16 @@ When you have finished creating your script, you can use it to register clients.
 
 
 .Procedure: Running the Bootstrap Script
-. On the {productname} Server, log in as root at the command prompt, and navigate to this directory:
+. On the {productname} Server, log in as root.
+At the command prompt, and change to the bootstrap directory:
 +
 ----
 cd /srv/www/htdocs/pub/bootstrap/
 ----
-. Run this command to execute the bootstrap script on the client; replace [systemitem]`` example.com`` with the host name of your server:
+. Run this command to execute the bootstrap script on the client; replace [systemitem]`` EXAMPLE.COM`` with the host name of your client:
 +
 ----
-cat MODIFIED-SCRIPT.SH | ssh root@example.com /bin/bash
+cat bootstrap-sles12.sh | ssh root@EXAMPLE.COM /bin/bash
 ----
 The script will execute and proceed to download the required dependencies located in the repositories directory you created earlier.
 . When the script has finished running, you can check that your client is registered correctly by opening the {productname} {webui} and navigating to menu:Systems[Overview] to ensure the new client is listed.
@@ -145,6 +145,10 @@ When new packages or updates are installed on the client using {productname}, an
 To review a package EULA, open the package detail page in the {webui}.
 ====
 
+
+
+// Why do we talk about Package Locks here? ke, 2019-12-18
+// see https://github.com/uyuni-project/uyuni-docs/issues/41
 == Package Locks
 
 [NOTE]

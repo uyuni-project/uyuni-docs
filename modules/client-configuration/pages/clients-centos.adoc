@@ -9,16 +9,11 @@ This section contains information about registering traditional and Salt clients
 You are responsible for arranging access to {centos} base media repositories and {centos} installation media, as well as connecting {productname} Server to the {centos} content delivery network.
 ====
 
-ifeval::[{suma-content} == true]
-
 [IMPORTANT]
 ====
-{suse} does not provide support for {centos} operating systems.
-{productname} allows you to manage {centos} clients, but support is not provided.
+Traditional clients are not available on {centos}{nbsp}8.
+{centos}{nbsp}8 clients are only supported as Salt clients.
 ====
-
-endif::[]
-
 
 
 == Server Requirements
@@ -41,48 +36,101 @@ systemctl restart taskomatic
 
 == Channel and Repository Management
 
-The [package]``spacewalk-utils`` package contains a number of command line tools required for client administration, including the [command]``spacewalk-common-channels`` tool.
+Before you register {centos} clients to your {productname} Server, check that you have the {centos} product enabled, and the required channels are fully synchronized.
+
 
 
 ifeval::[{suma-content} == true]
-
-[IMPORTANT]
-====
-{suse} only provides support for [command]``spacewalk-clone-by-date`` and [command]``spacewalk-manage-channel-lifecycle`` tools.
-====
-
+.Procedure: Adding Client Tools Channels
+. On the {productname} Server, add the appropriate {centos} channels:
++
+* For {centos} 6:
++
+From the {webui}, add [systemitem]``CentOS 6 x86_64``.
++
+From the command prompt, add [systemitem]``centos6-x86_64``.
++
+* For {centos} 7:
++
+From the {webui}, add [systemitem]``CentOS 7 x86_64``.
++
+From the command prompt, add [systemitem]``centos7-x86_64``.
++
+* For {centos} 8:
++
+From the {webui}, add [systemitem]``CentOS 8 x86_64``.
++
+From the command prompt, add [systemitem]``centos8-x86_64``.
+. Synchronize the {productname} Server with the {SCC}.
+You can do this using the {webui}, or by running [command]``mgr-sync`` at the command prompt.
+. Add the new channel to your activation key.
 endif::[]
 
 
 
-.Procedure: Adding Channels and Repositories
-. At the command prompt on the {productname} Server, as root, install the [package]``spacewalk-utils`` package:
-+
-----
-zypper in spacewalk-utils
-----
+ifeval::[{uyuni-content} == true]
 
+[IMPORTANT]
+====
+For {centos} 8 clients, add both the ``BaseOS`` and ``Appstream`` channels.
+You will require packages from both channels.
+If you do not add both channels, you will not be able to create the bootstrap repository, due to missing packages.
+====
+
+
+
+.Procedure: Adding Client Tools Channels
 // Because of the way mgr-create-bootstrap-repo works and because we don't have CentOS products at SCC, SUSE Manager users MUST use the same procedure as at Uyuni
 // They CANNOT use RES Client Tools.
-. Add the {centos} base, updates, and client channels, specifying the {centos} version and architecture:
+. At the command prompt on the {productname} Server, as root, add the {centos} base, updates, and client channels, specifying the {centos} version and architecture:
++
+* For {centos} 6:
++
+----
+spacewalk-common-channels -a x86_64 centos6 \
+centos6-uyuni-client centos6-updates
+----
++
+* For {centos} 7:
 +
 ----
 spacewalk-common-channels -a x86_64 centos7 \
-centos7-uyuni-client centos7-uyuni-client
+centos7-uyuni-client centos7-updates
+----
++
+* For {centos} 8:
++
+----
+spacewalk-common-channels -a x86_64 centos8 \
+centos8-uyuni-client centos8-appstream
 ----
 
 [NOTE]
 ====
 The client tools channel provided by [command]``spacewalk-common-channels`` is sourced from {uyuni} and not from {suse}.
 ====
+endif::[]
 
 
+There are two ways to check if a channel has finished synchronizing:
 
-.Procedure: Synchronizing {centos} repositories
-
-. In the {productname} {webui}, navigate to menu:Software[Manage], and check every {centos} channel.
-. In the [guimenu]``Repositories`` tab, navigate to the [guimenu]``Sync`` subtab, and click btn:[Sync Now].
-You can also create a regular synchronization schedule on this page.
+ifeval::[{suma-content} == true]
+* In the {productname} {webui}, navigate to menu:Admin[Setup Wizard] and select the [guimenu]``Products`` tab.
++
+This dialog displays a completion bar for each product when they are being synchronized.
+endif::[]
+ifeval::[{uyuni-content} == true]
+* In the {productname} {webui}, navigate to menu:Software[Manage > Channels], then click the channel associated to the repository.
+Navigate to the [guimenu]``Repositories`` tab, then click [guimenu]``Sync`` and check [systemitem]``Sync Status``.
+endif::[]
+* Check the synchronization log file at the command prompt:
++
+----
+tail -f /var/log/rhn/reposync/<channel-label>.log
+----
++
+Each child channel will generate its own log during the synchronization progress.
+You will need to check all the base and child channel log files to be sure that the synchronization is complete.
 
 
 
@@ -95,7 +143,6 @@ For more information on activation keys, see xref:client-configuration:clients-a
 
 
 ifeval::[{uyuni-content} == true]
-
 == Trust GPG Keys on Clients
 
 By default, {centos} does not trust the GPG key for {productname} {centos} client tools.
@@ -109,12 +156,11 @@ To fix this, add this key to the [systemitem]``ORG_GPG_KEY=`` parameter in all {
 uyuni-gpg-pubkey-0d20833e.key
 ----
 
- You do not need to delete any previously stored keys.
+You do not need to delete any previously stored keys.
 
-If you are boostrapping clients from the {productname} {webui}, you will need to use a salt state to trust the key.
-Create the salt state and assign it to the organization.
+If you are bootstrapping clients from the {productname} {webui}, you will need to use a Salt state to trust the key.
+Create the Salt state and assign it to the organization.
 You can then use an activation key and configuration channels to deploy the key to the clients.
-
 endif::[]
 
 
@@ -123,3 +169,66 @@ endif::[]
 
 {centos} clients are registered in the same way as all other clients.
 For more information, see xref:client-configuration:registration-overview.adoc[].
+
+
+
+== Manage Errata
+
+When you update {centos} clients, the packages do not include metadata about the updates.
+You can use a third-party errata service to obtain this information.
+
+ifeval::[{suma-content} == true]
+
+[IMPORTANT]
+====
+The third-party errata service described here is provided and maintained by the community.
+It is not supported by {suse}.
+====
+endif::[]
+
+
+
+.Procedure: Installing an Errata Service
+
+. From the command prompt, as root, add the ``sle-module-development-tools`` module:
++
+----
+SUSEConnect --product sle-module-development-tools/15.1/x86_64
+----
+. Install the errata service:
++
+----
+zypper in  perl-Text-Unidecode
+----
+. Create a file for your errata script:
++
+----
+touch /usr/local/bin/cent-errata.sh
+----
+. Edit the new file to include this script, editing the repository details as required.
+This script fetches the errata details from an external errata service, unpacks it, and publishes the details:
++
+----
+#!/bin/bash
+mkdir -p /usr/local/centos
+cd /usr/local/centos
+rm *.xml
+wget -c http://cefs.steve-meier.de/errata.latest.xml
+#wget -c https://www.redhat.com/security/data/oval/com.redhat.rhsa-all.xml
+wget -c https://www.redhat.com/security/data/oval/com.redhat.rhsa-RHEL7.xml
+wget -c http://cefs.steve-meier.de/errata-import.tar
+tar xvf errata-import.tar
+chmod +x /usr/local/centos/errata-import.pl
+export SPACEWALK_USER='<adminname>';export SPACEWALK_PASS='<password>'
+/usr/local/centos/errata-import.pl --server '<servername>' \
+--errata /usr/local/centos/errata.latest.xml  \
+--include-channels=centos7-x86_64-updates,centos7-x86_64,centos7-x86_64-extras \
+--publish --rhsa-oval /usr/local/centos/com.redhat.rhsa-RHEL7.xml
+----
+. Set up a cron job to run the script daily:
++
+----
+ln -s /usr/local/bin/cent-errata.sh /etc/cron.daily
+----
+
+For more information on this tool, see https://cefs.steve-meier.de/.
