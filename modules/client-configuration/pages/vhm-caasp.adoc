@@ -57,3 +57,129 @@ When using Salt or {productname} (either via UI or API) on any {caasp} nodes:
 Issuing those operations could render your {caasp} cluster unusable.
 {productname} will not stop you from issuing these operations if the system is not locked.
 ====
+
+== Managing a CaaS Platform cluster with {productname}
+
+With {productname}, you can manage one or more CaaS Platform clusters.
+
+[NOTE]
+====
+* Only CaaS Platform version 4.* is supported
+* You will need an existing SUSE CaaS Platform
+====
+
+=== Elect a system as management node for the cluster
+
+==== Preparations
+
+You will need to manually copy into the management node:
+- The `skuba` configuration directory: this is the directory that `skuba` has created after cluster bootstrap.
+- The passwordless private ssh key used to access the cluster nodes (current ones and all the systems that you want to join in the future). Alternatively, you can use a ssh-agent socket, provided that you open know the path to the ssh-agent socket forwarded.
+
+==== Configuration
+
+To manage a CaaS Platform cluster, you will need to elect a system as the management node for the cluster.
+
+[NOTE]
+====
+* The system must have CaaS Platform channels associated before beginning the process
+* The management node cannot be part of the cluster
+* A management node can manage multiple clusters - all clusters must be of the same kind
+====
+
+To elect the system as the maanagement node, select the system and under Formulas > Configuration, select the CaaSP Management Node Formula. Finally, apply the highstate.
+
+=== Cluster management
+
+===== Listing the known clusters
+
+Under Clusters > Overview, the list of all known clusters will be presented, along with the type and the management node associated to it.
+
+===== Adding an existing cluster
+
+Navigate to `Clusters > Overview` and you will be guided into the workflow for adding the existing cluster:
+
+1. Select a cluster type (at the current time of writing, only CaaS Platform cluster is supported)
+2. Select a management node that will be associated with the cluster.
+
+[NOTE]
+====
+Only management nodes that successfully have completed the highstate will be shown in this section
+====
+
+3. Proceed to fill out the details regarding the directory of the `skuba` configuration and the path to the passwordless ssh key or the path to the ssh-agent socket (see "Preparations").
+
+4. In the last step, fill out the details of the cluster (name, label, and description).
+
+===== Removing a cluster
+
+To remove a cluster, head to Clusters > Overview > cluster_name > Delete Cluster
+
+[NOTE]
+====
+Deleting a cluster will only remove the cluster from {productname}. The cluster nodes will NOT be deleted and any workload running on the cluster will not be stopped.
+====
+
+=== Managing a cluster
+
+In Clusters > Overview > cluster_name an overview of the cluster will be presented, containing:
+
+* The cluster properties: label, name, description, cluster provider (type) and the management node.
+* The nodes that comprise the cluster. If {productname} already knows any node that is part of the cluster (i.e. if the system is already registered to {productname}), the system name will be shown and a link to the system detail will be shown as well.
+* For every node that is part of the CaaS Platform, additional details coming from `skuba` and the {k8s} API will be presented: Role, Status, Has Updates, ans Has Disruptive Updates. For more information about these fields, see https://documentation.suse.com/suse-caasp/4/html/caasp-admin/_cluster_updates.html.
+
+[NOTE]
+====
+For every cluster, a corresponding system group with the name "Cluster <cluster_name>" will be created.
+To reflect the nodes that are part of the cluster into the group, select Refresh system group and the group will be automatically updated with the corresponding nodes known to {productname}.
+====
+
+==== Adding a node to the cluster
+
+[NOTE]
+====
+Before adding a node to the cluster, check that:
+
+* the management node can access the target node (the node you want to join) using the ssh key provided without any password (or, alternatively, with the ssh-agent socket you are forwarding)
+* the target node is registered to {productname} and has a CaaS Platform channel assigned (any child channel also works)
+====
+
+
+To add a node to the cluster, select Join node to initiate the workflow:
+
+1. The first step is to select the target node(s) from a list of availabe systems.
+The list of systems available to join the cluster is comprised only of system that:
+
+* are registered to {productname}
+* are not management nodes
+* are not part of other cluster
+
+2. In the join configuration, the CaaS Platform parameters for the target node(s) to join can be customized. For more information about these fields, see https://documentation.suse.com/suse-caasp/4.2/single-html/caasp-admin/#adding_nodes.
+It is also possible to override the cluster configuration parameters by specify a custom ssh-agent socket that will be valid *only* for the nodes that are going to join in the process.
+
+3. Finally, you can schedule the action for node(s) joining
+
+==== Removing a node from the cluster
+
+The workflow for removing a node from the cluster is:
+
+1. Select the node(s) you want to remove from the cluster in `Clusters > Overview` and press Remove node.
+2. In the node configuration, the CaaS Platform parameters for the target node(s) to be removed can be customized. For more information, see https://documentation.suse.com/suse-caasp/4.2/single-html/caasp-admin/#_permanent_removal
+It is also possible to override the cluster configuration parameters by specify a custom ssh-agent socket that will be valid *only* for the nodes that are going to be removed in the process.
+
+3. Finally, you can schedule the action for node(s) removal
+
+==== Upgrading the cluster
+
+If the cluster has available updates, you can schedule a cluster upgrade: {productname} will take care of following the upgrade process by upgrading first all control planes and then all the workers. For more information, see https://documentation.suse.com/suse-caasp/4.2/single-html/caasp-admin/#_cluster_updates
+
+[NOTE]
+====
+{productname} will only interact with `skuba` to upgrade the cluster. Any other required action (i.e. configuration parameters to change before or after the update will *not* be issued by {productname}.
+See https://www.suse.com/releasenotes/x86_64/SUSE-CAASP/4/ before updating.
+====
+
+To upgrade the cluster, choose Upgrade cluster in Cluster > Overview > cluster_name:
+
+1. The are no CaaS Platform specific parameters to customize for upgrade. It is only possible to override the cluster configuration parameters by specify a custom ssh-agent socket that will be valid *only* for the nodes that are going to be upgraded in the process
+2. Finally, you can schedule the action for cluster upgrade.
