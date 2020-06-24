@@ -20,56 +20,92 @@ However, the root user on {ubuntu} is disabled by default, so to use bootstrappi
 
 
 
-== Prepare to Register
+== Add Software Channels
 
-Some preparation is required before you can register {ubuntu} clients to the {productname} Server.
+Before you register {ubuntu} clients to your {productname} Server, check that you have the {ubuntu} product enabled, and the required channels are fully synchronized.
 
 
 ifeval::[{suma-content} == true]
-.Procedure: Adding Client Tools Channels
 
-Before you begin, ensure you have the {ubuntu} product enabled, and have synchronized the {ubuntu} channels for {scc}:
+The products you need for this procedure are:
 
-You can do this from {webui} or using command prompt, at your choice.
+[[ubuntu-channels-wizard]]
+[cols="1,1,1,1,1", options="header"]
+.Ubuntu Products - WebUI
+|===
+| OS Version
+| Product Name
+| Security Channel
+| Updates Channel
+| Universe Channel
 
-For {ubuntu} 20.04:
+| {ubuntu} 20.04
+| Ubuntu 20.04
+| ubuntu-2004-amd64-main-security for amd64
+| ubuntu-2004-amd64-main-updates for amd64
+| ubuntu-2004-amd64-universe for amd64
 
-* From the {webui}, add [systemitem]``Ubuntu 20.04`` and [systemitem]``SUSE Linux Enterprise Client Tools Ubuntu 2004 amd64``.
-* From the command prompt, add [systemitem]``ubuntu-20.04-pool-amd64`` and [systemitem]``ubuntu-20.04-suse-manager-tools-amd64``.
+|===
 
-In the {productname} {webui}, navigate to menu:Software[Channel List > All].
-Verify that you have a base channel and a child channel for your architecture.
+include::snippets/add_channels_wizard.adoc[]
 
-For example, for {ubuntu} 20.04:
-
-* Base channel: [systemitem]``ubuntu-2004-amd64-main for amd64``
-* Child channel: [systemitem]``Ubuntu-20.04-SUSE-Manager-Tools for amd64``
+endif::[]
 
 
 ifeval::[{uyuni-content} == true]
-.Procedure: Adding the {ubuntu} Channels
+The channels you need for this procedure are:
+// Why are there so many of these?! Maybe better as a bulleted list? Although then it's different to all the others. Sigh. --LKB 2020-06-11
+[[ubuntu-channels-cli-uyuni]]
+[cols="1,1,1,1,1,1,1,1", options="header"]
+.Ubuntu Channels - CLI
+|===
 
-. At the command prompt on the {productname} Server, as root, add the {ubuntu} channels.
+| OS Version
+| Base Channel
+| Base {uyuni} Channel
+| Updates Channel
+| Security Channel
+| Universe {uyuni} Channel
+| Universe Updates Channel
+| Client Channel
 
-For {ubuntu} 20.04:
-----
-spacewalk-common-channels \
-ubuntu-2004-pool-amd64-uyuni \
-ubuntu-2004-amd64-main-uyuni \
-ubuntu-2004-amd64-main-updates-uyuni \
-ubuntu-2004-amd64-main-security-uyuni \
-ubuntu-2004-amd64-universe-uyuni \
-ubuntu-2004-amd64-universe-updates-uyuni \
-ubuntu-2004-amd64-uyuni-client
-----
+| {ubuntu} 20.04
+| ubuntu-2004-amd64-main for amd64
+| ubuntu-2004-amd64-main-uyuni
+| ubuntu-2004-amd64-main-updates-uyuni
+| ubuntu-2004-amd64-main-security-uyuni
+| ubuntu-2004-amd64-universe-uyuni
+| ubuntu-2004-amd64-universe-updates-uyuni
+| ubuntu-2004-amd64-uyuni-client
 
+|===
+
+include::snippets/add_channels_cli.adoc[]
 
 [IMPORTANT]
 ====
 You need all the new channels fully synchronized, including Universe (Universe contains important dependencies for Salt), before bootstrapping any Ubuntu client.
 ====
+
 endif::[]
 
+
+
+== Check Synchronization Status
+
+ifeval::[{suma-content} == true]
+
+include::snippets/check_sync_webui_suma.adoc[]
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+include::snippets/check_sync_webui_uyuni.adoc[]
+
+endif::[]
+
+include::snippets/check_sync_cli.adoc[]
 
 [NOTE]
 ====
@@ -79,52 +115,12 @@ Synchronization can sometimes take several hours.
 
 
 
-== Monitor Synchronization Progress
-
-There are two ways to check if a channel has finished synchronizing:
-
-ifeval::[{suma-content} == true]
-* In the {productname} {webui}, navigate to menu:Admin[Setup Wizard] and select the [guimenu]``Products`` tab.
-+
-This dialog displays a completion bar for each product when they are being synchronized.
-endif::[]
 ifeval::[{uyuni-content} == true]
-* In the {productname} {webui}, navigate to menu:Software[Manage > Channels], then click the channel associated to the repository.
-Navigate to the [guimenu]``Repositories`` tab, then click [guimenu]``Sync`` and check [systemitem]``Sync Status``.
-endif::[]
-* Check the synchronization log file at the command prompt:
-+
-----
-tail -f /var/log/rhn/reposync/<channel-label>.log
-----
-+
-Each child channel will generate its own log during the synchronization progress.
-You will need to check all the base and child channel log files to be sure that the synchronization is complete.
 
-
-You will need to check all the base and child channel log files to be sure that the synchronization is complete.
-
-
-
-ifeval::[{uyuni-content} == true]
 == Trust GPG Keys on Clients
 
-By default, {ubuntu} does not trust the GPG key for {productname} {ubuntu} client tools.
+include::snippets/trust_gpg.adoc[]
 
-The clients can be successfully bootstrapped without the GPG key being trusted.
-
-However, they will not be able to install new client tool packages or update them.
-
-To fix this, add this key to the [systemitem]``ORG_GPG_KEY=`` parameter in all {ubuntu} bootstrap scripts:
-----
-uyuni-gpg-pubkey-0d20833e.key
-----
-
-You do not need to delete any previously stored keys.
-
-If you are bootstrapping clients from the {productname} {webui}, you will need to use a Salt state to trust the key.
-Create the Salt state and assign it to the organization.
-You can then use an activation key and configuration channels to deploy the key to the clients.
 endif::[]
 
 
