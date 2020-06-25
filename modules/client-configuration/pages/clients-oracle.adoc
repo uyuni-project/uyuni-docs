@@ -19,94 +19,92 @@ Traditional clients are not available on {oracle}{nbsp}8.
 ====
 
 
+== Add Software Channels
 
-== Channel and Repository Management
+Before you register {oracle} clients to your {productname} Server, check that you have the {oracle} product enabled, and the required channels are fully synchronized.
 
 ifeval::[{suma-content} == true]
-.Procedure: Adding Client Tools Channels
-. On the {productname} Server, add the appropriate {oracle} channels:
-+
-* For {oracle} 6:
-+
-From the {webui}, add [systemitem]``Oracle Linux 6 x86_64``.
-+
-From the command prompt, add [systemitem]``oraclelinux6-x86_64``.
-+
-* For {oracle} 7:
-+
-From the {webui}, add [systemitem]``Oracle Linux 7 x86_64``.
-+
-From the command prompt, add [systemitem]``oraclelinux7-x86_64``.
-+
-* For {oracle} 8:
-+
-From the {webui}, add [systemitem]``Oracle Linux 8 x86_64``.
-+
-From the command prompt, add [systemitem]``oraclelinux8-x86_64``.
-. Synchronize the {productname} Server with the {SCC}.
-You can do this using the {webui}, or by running [command]``mgr-sync`` at the command prompt.
-. Add the new channel to your activation key.
+
+The products you need for this procedure are:
+
+[[oracle-channels-wizard]]
+[cols="1,1,1", options="header"]
+.Oracle Products - WebUI
+|===
+| OS Version | Product Name          | Updates Channel
+| {oracle} 6 | Oracle Linux 6 x86_64 | -
+| {oracle} 7 | Oracle Linux 7 x86_64 | -
+| {oracle} 8 | Oracle Linux 8 x86_64 | oraclelinux8-appstream for x86_64
+|===
+
+include::snippets/add_channels_wizard.adoc[]
+
 endif::[]
 
 
 ifeval::[{uyuni-content} == true]
-[IMPORTANT]
-====
-For {oracle} 8 clients, add both the ``BaseOS`` and ``Appstream`` channels.
-You will require packages from both channels.
-If you do not add both channels, you will not be able to create the bootstrap repository, due to missing packages.
-====
+The channels you need for this procedure are:
 
+[[oracle-channels-cli]]
+[cols="1,1,1,1", options="header"]
+.Oracle Channels - CLI
+|===
 
-.Procedure: Adding Client Tools Channels
-. At the command prompt on the {productname} Server, as root, add the {oracle} base, updates, and client channels, specifying the {oracle} version and architecture:
-+
-* For {oracle} 6:
-+
-----
-spacewalk-common-channels -a x86_64 oraclelinux6 \
-oraclelinux6-uyuni-client
-----
-+
-* For {oracle} 7:
-+
-----
-spacewalk-common-channels -a x86_64 oraclelinux7 \
-oraclelinux7-uyuni-client
-----
-+
-* For {oracle} 8:
-+
-----
-spacewalk-common-channels -a x86_64 oraclelinux8 \
-oraclelinux8-appstream oraclelinux8-uyuni-client
-----
+| OS Version
+| Base Channel
+| Client Channel
+| Updates Channel
 
+| {oracle} 6
+| oraclelinux6
+| oraclelinux6-uyuni-client
+| -
+
+| {oracle} 7
+| oraclelinux7
+| oraclelinux7-uyuni-client
+| -
+
+| {oracle} 8
+| oraclelinux8
+| oraclelinux8-uyuni-client
+| oraclelinux8-appstream
+
+|===
+
+include::snippets/add_channels_cli.adoc[]
 
 [NOTE]
 ====
 The client tools channel provided by [command]``spacewalk-common-channels`` is sourced from {uyuni} and not from {suse}.
 ====
 
-.Procedure: Synchronizing Oracle Repositories
- . In the Uyuni Web UI, navigate to Software Manage, and check every Oracle channel.
- . In the Repositories tab, navigate to the Sync subtab, and click Sync Now. You can also create a regular synchronization schedule on this page.
-
 endif::[]
 
+[IMPORTANT]
+====
+For {oracle} 8 clients, add both the Base and Appstream channels.
+You will require packages from both channels.
+If you do not add both channels, you will not be able to create the bootstrap repository, due to missing packages.
+====
 
-To check if a channel has finished synchronizing:
+
+
+== Check Synchronization Status
 
 ifeval::[{suma-content} == true]
-* In the {productname} {webui}, navigate to menu:Admin[Setup Wizard] and select the [guimenu]``Products`` tab.
-+
-This dialog displays a completion bar for each product when they are being synchronized.
+
+include::snippets/check_sync_webui_suma.adoc[]
+
 endif::[]
 
-* Check the synchronization log file at the command prompt with [command]``tail -f /var/log/rhn/reposync/channel-label.log`` file.
-+
-Each child channel will generate its own log during the synchronization progress.
-You will need to check all the base and child channel log files to be sure that the synchronization is complete.
+ifeval::[{uyuni-content} == true]
+
+include::snippets/check_sync_webui_uyuni.adoc[]
+
+endif::[]
+
+include::snippets/check_sync_cli.adoc[]
 
 
 
@@ -119,24 +117,10 @@ For more information on activation keys, see xref:client-configuration:clients-a
 
 
 ifeval::[{uyuni-content} == true]
+
 == Trust GPG Keys on Clients
 
-By default, {oracle} does not trust the GPG key for {productname} {oracle} client tools.
-
-The clients can be successfully bootstrapped without the GPG key being trusted.
-
-However, they will not be able to install new client tool packages or update them.
-
-To fix this, add this key to the [systemitem]``ORG_GPG_KEY=`` parameter in all {oracle} bootstrap scripts:
-----
-uyuni-gpg-pubkey-0d20833e.key
-----
-
- You do not need to delete any previously stored keys.
-
-If you are bootstrapping clients from the {productname} {webui}, you will need to use a Salt state to trust the key.
-Create the Salt state and assign it to the organization.
-You can then use an activation key and configuration channels to deploy the key to the clients.
+include::snippets/trust_gpg.adoc[]
 
 endif::[]
 
