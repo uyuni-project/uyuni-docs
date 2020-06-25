@@ -37,25 +37,7 @@ Traditional clients are not available on {es}{nbsp}8.
 
 
 
-== Server Requirements
-
-Before you begin, check that your {productname} Server meets the requirements at xref:installation:hardware-requirements.adoc[].
-
-Taskomatic uses one CPU core, and requires at least 3072{nbsp}MB of RAM.
-To ensure that taskomatic has access to enough memory, open the [path]``/etc/rhn/rhn.conf`` configuration file, and add this line:
-
-----
-taskomatic.java.maxmemory=3072
-----
-
-Restart Taskomatic:
-----
-systemctl restart taskomatic
-----
-
-
-
-== Add Client Tools
+== Add Software Channels
 
 
 For {es} clients, some required packages are contained on the {rhel} or {centos} installation media.
@@ -71,75 +53,62 @@ You need to select two different sets of channels, one for {es} and the other fo
 You will need an activation key associated with the correct {es} channels.
 For more information about activation keys, see xref:client-configuration:clients-and-activation-keys.adoc[].
 
-
-[IMPORTANT]
-====
-For {es} 8 clients, add both the ``BaseOS`` and ``Appstream`` channels.
-You will require packages from both channels.
-If you do not add both channels, you will not be able to create the bootstrap repository, due to missing packages.
-====
-
-
-.Procedure: Adding Client Tools Channels
-
-. On the {productname} Server, add the appropriate {es} channels:
-+
-* For {es} 6:
-+
-From the {webui}, add [systemitem]``RHEL Expanded Support 6 x86_64``.
-+
-From the command prompt, add [systemitem]``rhel-x86_64-server-6`` and [systemitem]``res6-suse-manager-tools-x86_64``.
-+
-* For {es} 7:
-+
-From the {webui}, add [systemitem]``RHEL Expanded Support 7 x86_64`` and [systemitem]``SUSE Linux Enterprise Client Tools RES7 x86_64``.
-+
-From the command prompt, add [systemitem]``rhel-x86_64-server-7`` and [systemitem]``res7-suse-manager-tools-x86_64``.
-+
-* For {es} 8:
-+
-From the {webui}, add [systemitem]``RHEL8 Base x86_64`` and [systemitem]``SUSE Manager Tools for RHEL and ES 8 x86_64``.
-+
-From the command prompt, add [systemitem]``rhel-x86_64-server-8`` and [systemitem]``res8-suse-manager-tools-x86_64``.
-. Synchronize the {productname} Server with the {SCC}.
-You can do this using the {webui}, or by running [command]``mgr-sync`` at the command prompt.
-. Add the new channel to your activation key.
-
-There are two ways to check if a channel has finished synchronizing:
-
 ifeval::[{suma-content} == true]
-* In the {productname} {webui}, navigate to menu:Admin[Setup Wizard] and select the [guimenu]``Products`` tab.
-+
-This dialog displays a completion bar for each product when they are being synchronized.
+
+The products you need for this procedure are:
+
+[[es-channels-wizard]]
+[cols="1,1,1", options="header"]
+.ES Products - WebUI
+|===
+| OS Version | Base Channel                     | Tools Channel
+| {es} 6     | RHEL Expanded Support 6          | RES6 SUSE-Manager-Tools x86_64
+| {es} 7     | RHEL Expanded Support 7          | RES7 SUSE-Manager-Tools x86_64
+| {es} 8     | RHEL or SLES ES or CentOS 8 Base | RHEL8-Pool for x86_64
+|===
+
+include::snippets/add_channels_wizard.adoc[]
+
 endif::[]
+
+
 ifeval::[{uyuni-content} == true]
-* In the {productname} {webui}, navigate to menu:Software[Manage > Channels], then click the channel associated to the repository.
-Navigate to the [guimenu]``Repositories`` tab, then click [guimenu]``Sync`` and check [systemitem]``Sync Status``.
+The channels you need for this procedure are:
+
+[[es-channels-cli]]
+[cols="1,1,1,1", options="header"]
+.ES Channels - CLI
+|===
+
+| OS Version
+| Base Channel
+| Client Channel
+| Tools Channel
+
+| {es} 6
+| rhel-x86_64-server-6
+| -
+| res6-suse-manager-tools-x86_64
+
+| {es} 7
+| rhel-x86_64-server-7
+| -
+| res7-suse-manager-tools-x86_64
+
+| {es} 8
+| rhel-x86_64-server-8
+| -
+| res8-suse-manager-tools-x86_64
+
+|===
+
+include::snippets/add_channels_cli.adoc[]
+
 endif::[]
-* Check the synchronization log file at the command prompt:
-+
-----
-tail -f /var/log/rhn/reposync/<channel-label>.log
-----
-+
-Each child channel will generate its own log during the synchronization progress.
-You will need to check all the base and child channel log files to be sure that the synchronization is complete.
-
-
-
-[NOTE]
-====
-The {es} channels can be very large.
-The initial channel synchronization can sometimes take up to 24 hours.
-
-When the initial synchronization is complete, we recommended you clone the channel before you work with it.
-This gives you a backup of the original synchronization data.
-====
 
 
 
 === Add Base Media
-
 
 The base {es} channel does not contain any packages, because {suse} does not provide {rhel} or {centos} base media.
 You will need to obtain base media from {redhat} or {centos}, which you can add as a child channel to the {es} parent channel.
@@ -149,28 +118,47 @@ You can use {productname} custom channels to set up the {rhel} or {centos} media
 All packages on the base media are mirrored into a child channel.
 
 
+The details you need for this procedure are:
 
-.Procedure: Creating a {rhel} or {centos} Custom Channel
+[[es-repos-manual]]
+[cols="1,1", options="header"]
+.ES Custom Repository Settings
+|===
+| Option                 | Parameter
+| Repository URL         | The content URL provided by {redhat} CDN or {centos}
+| Has Signed Metadata?   | Uncheck all {redhat} Enterprise repositories
+| SSL CA Certificate     | [systemitem]``redhat-uep``
+| SSL Client Certificate | [systemitem]``Entitlement-Cert-date``
+| SSL Client Key         | ``Entitlement-Key-date``
+|===
+
+include::snippets/manual_repos.adoc[]
+
+
+
+The channels you need for this procedure are:
+
+[[es-channels-custom]]
+[cols="1,1,1", options="header"]
+.ES Custom Channels
+|===
+| OS Version | Base Channel                     | Tools Channel
+| {es} 6     | RHEL Expanded Support 6          | RES6 SUSE-Manager-Tools x86_64
+| {es} 7     | RHEL Expanded Support 7          | RES7 SUSE-Manager-Tools x86_64
+| {es} 8     | RHEL or SLES ES or CentOS 8 Base | RHEL8-Pool for x86_64
+|===
+
+include::snippets/manual_channels.adoc[]
+
 
 [IMPORTANT]
 ====
-* SLES ES 6 and 7, require only one child channel for the os repository
-* SLES ES 8 requires two child channels for both the BaseOS and AppStream repositories
+For {redhat} 8 clients, add both the Base and Appstream channels.
+You will require packages from both channels.
 If you do not add both channels, you will not be able to create the bootstrap repository, due to missing packages.
 ====
 
-. In the {productname} {webui}, navigate to menu:Software[Manage > Channels].
-. Click btn:[Create Channel] and set these parameters:
-* In the [guimenu]``Channel Name`` field, type a name for your channel, specifying the OS name and architecture.
-* In the [guimenu]``Channel Label`` field, type a label for your channel, specifying the OS name and architecture.
-* In the [guimenu]``Parent Channel`` field, select the corresponding {rhel} or {centos} distribution channel for your architecture.
-The parent channel will not contain any packages.
-* In the [guimenu]``Architecture`` field, select the appropriate architecture.
-* In the [guimenu]``Repository Checksum Type`` field, select [systemitem]``sha1``.
-* In the [guimenu]``Channel Summary`` field, type a summary for your channel, specifying the OS name and architecture.
-* In the [guimenu]``Organization Sharing`` field, select [systemitem]``Public``.
-. Click btn:[Create Channel].
-. Add the new channel to your activation key.
+include::snippets/manual_associate.adoc[]
 
 
 
@@ -197,28 +185,42 @@ You can also create a synchronization schedule from this screen.
 
 
 
-== Monitor Synchronization Progress
-
-You can check if a channel has finished synchronizing:
+== Check Synchronization Status
 
 ifeval::[{suma-content} == true]
-* In the {productname} {webui}, navigate to menu:Admin[Setup Wizard] and select the [guimenu]``SUSE Products`` tab.
-+
-This dialog displays a completion bar for each product when they are being synchronized.
-endif::[]
-ifeval::[{uyuni-content} == true]
-* In the {productname} {webui}, navigate to menu:Software[Manage > Channels], then click on the channel associated to the repository. Navigate to the [guimenu]``Repositories``, then [guimenu]``Sync`` and check [systemitem]``Sync Status``
-endif::[]
-* Check the synchronization log file at the command prompt with [command]``tail -f /var/log/rhn/reposync/channel-label.log``.
-+
-Each child channel will generate its own log during the synchronization progress.
 
-You will need to check all the base and child channel log files to be sure that the synchronization is complete.
+include::snippets/check_sync_webui_suma.adoc[]
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+include::snippets/check_sync_webui_uyuni.adoc[]
+
+endif::[]
+
+include::snippets/check_sync_cli.adoc[]
+
+[NOTE]
+====
+The {es} channels can be very large.
+The initial channel synchronization can sometimes take up to several hours.
+
+When the initial synchronization is complete, we recommended you clone the channel before you work with it.
+This gives you a backup of the original synchronization data.
+====
 
 
 
 == Register {es} Clients
 
-You {es} clients are now ready to be registered.
+Your {es} clients are now ready to be registered.
 
 For more information on registering your clients, see xref:client-configuration:registration-overview.adoc[].
+
+
+[WARNING]
+====
+To register and use {sleses}{nbsp}6 clients, you need to configure the {productname} Server to support older types of SSL encryption.
+For more information about how to resolve this error, see ``Registering Older Clients`` at xref:client-configuration:tshoot-clients.adoc[].
+====

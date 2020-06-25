@@ -39,18 +39,43 @@ For more information about activation keys, see xref:client-configuration:client
 . Confirm that the system has been registered correctly by navigating to menu:Systems[Overview].
 
 
+
+== Available Parameters
+
 When you are configuring Push via Salt SSH, you can modify parameters that are used when a system is registered, including the host, activation key, and password.
 The password is used only for bootstrapping, it is not saved anywhere.
 All future SSH sessions are authorized via a key/certificate pair.
 These parameters are configured in menu:Systems[Bootstrapping].
 
 You can also configure persistent parameters that are are used system-wide, including the sudo user.
-For more information on configuring the sudo user, see the Push via SSH section in this chapter.
+For more information on configuring the sudo user, see xref:client-configuration:contact-methods-pushssh.adoc[].
 
+
+
+== Action Execution
 
 The Push via Salt SSH feature uses taskomatic to execute scheduled actions using [command]``salt-ssh``.
 The taskomatic job periodically checks for scheduled actions and executes them.
 Unlike Push via SSH on traditional clients, the Push via Salt SSH feature executes a complete [command]``salt-ssh`` call based on the scheduled action.
+
+By default, actions are executed sequentially on each client, and only one action will run at a time.
+You can increase the number of actions that can be executed in parallel, by adding this line to your configuration file, and adjusting the ``number`` upwards.
+We recommend you keep the number of parallel actions low, to avoid problems:
+
+----
+taskomatic.com.redhat.rhn.taskomatic.task.MinionActionExecutor.parallel_threads=N
+org.quartz.threadPool.threadCount=<number>
+----
+
+This will adjust the number of actions that can run in parallel on any one client.
+If actions needs to be run on multiple clients, actions will always be executed sequentially on each client.
+
+If the clients are connected through a {productname} Proxy, you will need to adjust the ``MaxSessions`` settings on the proxy.
+In this case, set the number of parallel connections to be three times the total number of clients.
+
+
+
+== Future Features
 
 There are some features that are not yet supported on Push via Salt SSH.
 These features will not work on Salt SSH clients:
