@@ -16,121 +16,88 @@ Traditional clients are not available on {centos}{nbsp}8.
 ====
 
 
-== Server Requirements
 
-Before you begin, check that your {productname} Server meets the requirements at xref:installation:hardware-requirements.adoc[].
-
-Taskomatic uses one CPU core, and requires at least 3072{nbsp}MB of RAM.
-To ensure that taskomatic has access to enough memory, open the [path]``/etc/rhn/rhn.conf`` configuration file, and add this line:
-
-----
-taskomatic.java.maxmemory=3072
-----
-
-Restart Taskomatic:
-----
-systemctl restart taskomatic
-----
-
-
-
-== Channel and Repository Management
+== Add Software Channels
 
 Before you register {centos} clients to your {productname} Server, check that you have the {centos} product enabled, and the required channels are fully synchronized.
 
-
-
 ifeval::[{suma-content} == true]
-.Procedure: Adding Client Tools Channels
-. On the {productname} Server, add the appropriate {centos} channels:
-+
-* For {centos} 6:
-+
-From the {webui}, add [systemitem]``CentOS 6 x86_64``.
-+
-From the command prompt, add [systemitem]``centos6-x86_64``.
-+
-* For {centos} 7:
-+
-From the {webui}, add [systemitem]``CentOS 7 x86_64``.
-+
-From the command prompt, add [systemitem]``centos7-x86_64``.
-+
-* For {centos} 8:
-+
-From the {webui}, add [systemitem]``CentOS 8 x86_64``.
-+
-From the command prompt, add [systemitem]``centos8-x86_64``.
-. Synchronize the {productname} Server with the {SCC}.
-You can do this using the {webui}, or by running [command]``mgr-sync`` at the command prompt.
-. Add the new channel to your activation key.
+
+The products you need for this procedure are:
+
+[[centos-channels-wizard]]
+[cols="1,1,1", options="header"]
+.CentOS Products - WebUI
+|===
+| OS Version | Product Names  | Updates Channel
+| {centos} 6 | centos6-x86_64 | centos6-updates for x86_64
+| {centos} 7 | centos7-x86_64 | centos7-updates for x86_64
+| {centos} 8 | centos8-x86_64 | centos8-appstream for x86_64
+|===
+
+
+include::snippets/add_channels_wizard.adoc[]
+
+
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+The channels you need for this procedure are:
+
+[[centos-channels-cli]]
+[cols="1,1,1,1", options="header"]
+.CentOS Channels - CLI
+|===
+| OS Version | Base Channel | Client Channel       | Updates Channel
+| {centos} 6 | centos6      | centos6-uyuni-client | centos6-updates
+| {centos} 7 | centos7      | centos7-uyuni-client | centos7-updates
+| {centos} 8 | centos8      | centos8-uyuni-client | centos8-appstream
+|===
+
+
+include::snippets/add_channels_cli.adoc[]
+
+
+[NOTE]
+====
+The client tools channel provided by [command]``spacewalk-common-channels`` is sourced from {uyuni} and not from {suse}.
+====
+
 endif::[]
 
 
 
-ifeval::[{uyuni-content} == true]
-
 [IMPORTANT]
 ====
-For {centos} 8 clients, add both the ``BaseOS`` and ``Appstream`` channels.
+For {centos} 8 clients, add both the Base and Appstream channels.
 You will require packages from both channels.
 If you do not add both channels, you will not be able to create the bootstrap repository, due to missing packages.
 ====
 
 
 
-.Procedure: Adding Client Tools Channels
-// Because of the way mgr-create-bootstrap-repo works and because we don't have CentOS products at SCC, SUSE Manager users MUST use the same procedure as at Uyuni
-// They CANNOT use RES Client Tools.
-. At the command prompt on the {productname} Server, as root, add the {centos} base, updates, and client channels, specifying the {centos} version and architecture:
-+
-* For {centos} 6:
-+
-----
-spacewalk-common-channels -a x86_64 centos6 \
-centos6-uyuni-client centos6-updates
-----
-+
-* For {centos} 7:
-+
-----
-spacewalk-common-channels -a x86_64 centos7 \
-centos7-uyuni-client centos7-updates
-----
-+
-* For {centos} 8:
-+
-----
-spacewalk-common-channels -a x86_64 centos8 \
-centos8-uyuni-client centos8-appstream
-----
-
-[NOTE]
-====
-The client tools channel provided by [command]``spacewalk-common-channels`` is sourced from {uyuni} and not from {suse}.
-====
-endif::[]
-
-
-There are two ways to check if a channel has finished synchronizing:
+== Check Synchronization Status
 
 ifeval::[{suma-content} == true]
-* In the {productname} {webui}, navigate to menu:Admin[Setup Wizard] and select the [guimenu]``Products`` tab.
-+
-This dialog displays a completion bar for each product when they are being synchronized.
+
+
+include::snippets/check_sync_webui_suma.adoc[]
+
+
 endif::[]
+
 ifeval::[{uyuni-content} == true]
-* In the {productname} {webui}, navigate to menu:Software[Manage > Channels], then click the channel associated to the repository.
-Navigate to the [guimenu]``Repositories`` tab, then click [guimenu]``Sync`` and check [systemitem]``Sync Status``.
+
+
+include::snippets/check_sync_webui_uyuni.adoc[]
+
+
 endif::[]
-* Check the synchronization log file at the command prompt:
-+
-----
-tail -f /var/log/rhn/reposync/<channel-label>.log
-----
-+
-Each child channel will generate its own log during the synchronization progress.
-You will need to check all the base and child channel log files to be sure that the synchronization is complete.
+
+
+
+include::snippets/check_sync_cli.adoc[]
 
 
 
@@ -145,22 +112,10 @@ For more information on activation keys, see xref:client-configuration:clients-a
 ifeval::[{uyuni-content} == true]
 == Trust GPG Keys on Clients
 
-By default, {centos} does not trust the GPG key for {productname} {centos} client tools.
 
-The clients can be successfully bootstrapped without the GPG key being trusted.
+include::snippets/trust_gpg.adoc[]
 
-However, they will not be able to install new client tool packages or update them.
 
-To fix this, add this key to the [systemitem]``ORG_GPG_KEY=`` parameter in all {centos} bootstrap scripts:
-----
-uyuni-gpg-pubkey-0d20833e.key
-----
-
-You do not need to delete any previously stored keys.
-
-If you are bootstrapping clients from the {productname} {webui}, you will need to use a Salt state to trust the key.
-Create the Salt state and assign it to the organization.
-You can then use an activation key and configuration channels to deploy the key to the clients.
 endif::[]
 
 
@@ -191,6 +146,7 @@ ifeval::[{suma-content} == true]
 The third-party errata service described here is provided and maintained by the community.
 It is not supported by {suse}.
 ====
+
 endif::[]
 
 
