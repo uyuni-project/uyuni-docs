@@ -1,9 +1,10 @@
-[[clients-rh]]
-= Registering {rhel} Clients
+[[clients-rh-rhui]]
+= Registering {rhel} Clients with RHUI
 
-This section contains information about registering traditional and Salt clients running {rhel} operating systems.
-If you are running {rhel} clients directly, rather than using {sleses}, you need to use the Red Hat content delivery network (CDN) to retrieve and update packages.
-This is useful if you need to continue a Red Hat agreement, or if you have clients using a variety of operating systems.
+If you are running {rhel} clients directly, rather than using {sleses}, you need to use Red Hat sources to retrieve and update packages.
+This section contains information about using the {redhat} update infrastructure (RHUI) to register traditional and Salt clients running {rhel} operating systems.
+
+For information about using {redhat} content delivery network (CDN) instead, see xref:client-configuration:clients-rh-cdn.adoc[].
 
 
 [IMPORTANT]
@@ -43,8 +44,11 @@ The URL will change depending on where the {redhat} client is registered.
 * {redhat} Satellite Server
 * {redhat} update infrastructure (RHUI) in the cloud
 
-This guide covers clients registered to {redhat} CDN.
-You must have at least one system registered to the CDN, with an authorized subscription for repository content.
+This guide covers clients registered to {redhat} update infrastructure (RHUI).
+You must have at least one system registered to RHUI, with an authorized subscription for repository content.
+
+For information about using {redhat} content delivery network (CDN) instead, see xref:client-configuration:clients-rh-cdn.adoc[].
+
 
 [IMPORTANT]
 ====
@@ -81,8 +85,10 @@ cp /etc/pki/entitlement/ /<example>/entitlement/
 +
 [NOTE]
 ====
-Your entitlement certificate and key will both have a file extension of [path]``.pem``.
-The key will also have [path]``key`` in the filename.
+Your entitlement certificate has a file extension of [path]``.crt``.
+For example, [path]``/etc/pki/rhui/product/content-rhel8.crt``.
+The key has a file extension of [path]``.key``.
+For example, [path]``/etc/pki/rhui/content-rhel8.key``.
 ====
 +
 . Copy the {redhat} CA Certificate file from the client system, to the same web location as the entitlement certificate and key:
@@ -93,26 +99,22 @@ cp /etc/rhsm/ca/redhat-uep.pem /example/entitlement
 
 
 To manage repositories on your {redhat} client, you need to import the CA and entitlement certificates to the {productname} Server.
-This requires three entries: one each for the entitlement certificate, the entitlement key, and the {redhat} certificate.
+This requires that you perform the import procedure three times, to create three entries: one each for the entitlement certificate, the entitlement key, and the {redhat} certificate.
 
 
 
 .Procedure: Importing Certificates to the Server
 
 . On the {productname} Server {webui}, navigate to menu:Systems[Autoinstallation > GPG and SSL Keys].
-+
-// Maybe we  should add a screenshot, as we have at the current guide: https://documentation.suse.com/sbp/all/html/SBP-sumaforrhel/index.html#sec-import
-// Not necessary, it's pretty simple to navigate to a page. LKB
-
 . Click btn:[Create Stored Key/Cert] and set these parameters for the entitlement certificate:
 * In the [guimenu]``Description`` field, type [systemitem]``Entitlement-Cert-date``.
 * In the [guimenu]``Type`` field, select [systemitem]``SSL``.
-* In the [guimenu]``Select file to upload`` field, browse to the location where you saved the entitlement certificate, and select the [path]``.pem`` certificate file.
+* In the [guimenu]``Select file to upload`` field, browse to the location where you saved the entitlement certificate, and select the [path]``.crt`` certificate file.
 . Click btn:[Create Key].
 . Click btn:[Create Stored Key/Cert] and set these parameters for the entitlement key:
 * In the [guimenu]``Description`` field, type [systemitem]``Entitlement-key-date``.
 * In the [guimenu]``Type`` field, select [systemitem]``SSL``.
-* In the [guimenu]``Select file to upload`` field, browse to the location where you saved the entitlement key, and select the [path]``.pem`` key file.
+* In the [guimenu]``Select file to upload`` field, browse to the location where you saved the entitlement key, and select the [path]``.key`` key file.
 . Click btn:[Create Key].
 . Click btn:[Create Stored Key/Cert] and set these parameters for the {redhat} certificate:
 * In the [guimenu]``Description`` field, type [systemitem]``redhat-uep``.
@@ -124,12 +126,12 @@ This requires three entries: one each for the entitlement certificate, the entit
 
 == Prepare Custom Repositories and Channels
 
-To mirror the software from the Red Hat CDN, you need to create custom channels and repositories in {productname} that are linked to the CDN by a URL.
+To mirror the software from RHUI, you need to create custom channels and repositories in {productname} that are linked to RHUI by a URL.
 You must have entitlements to these products in your Red Hat Portal for this to work correctly.
-You can use the subscription manager tool to get the URLs of the repositories you want to mirror:
+You can use the yum utility to get the URLs of the repositories you want to mirror:
 
 ----
-subscription-manager repos
+yum repolist -v | grep baseurl
 ----
 
 You can use these repository URLs to create custom repositories.
@@ -260,43 +262,28 @@ The client tools channel provided by [command]``spacewalk-common-channels`` is s
 
 endif::[]
 
-////
-I can't tell what this applies to?  --LKB 2020-06-10
+
+To use RHUI, you need to manually add the required HTTP headers to the configuration file.
+Without them, you cannot successfully perform a client synchronization.
 
 
-ifeval::[{uyuni-content} == true]
 
-spacewalk-common-channels can't be used because centosX-uyuni-client requires centos7 channel as well, which a RHEL user would not need.
+.Procedure: Adding HTTP Headers to the Configuration File
+. Locate the [systemitem]``X-RHUI-ID`` and [systemitem]``X-RHUI-SIGNATURE`` HTTP headers from your RHUI instance.
+. Open the [path]``/etc/rhn/spacewalk-repo-sync/extra_headers.conf`` configuration file, and add or edit these lines with the correct information:
++
+----
+[channel_label]
+￼X-RHUI-ID=value
+￼X-RHUI-SIGNATURE=value
+----
+. Alternatively, use these commands to locate the information and add it to the configuration file:
++
+----
+echo "X-RHUI-ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document|base64|tr -d '\n')"
+echo "X-RHUI-SIGNATURE=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/signature|base64|tr -d '\n')"
+----
 
-.Procedure: Adding Client Tools Channels
-
-. On the {productname} Server {webui}, navigate to menu:Software[Manage > Repositories].
-. Click btn:[Create Repository] and set these parameters for the entitlement certificate:
-* In the [guimenu]``Repository Label`` field, type [systemitem]``centos7-uyuni-client``.
-* In the [guimenu]``Repository URL`` field, type the URL of the repository to mirror.
-For example, [systemitem]``https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable:/CentOS7-Uyuni-Client-Tools/CentOS_7/``.
-* In the [guimenu]``Has Signed Metadata?`` field, uncheck all Red Hat Enterprise Repositories.
-* Leave all other fields as the default values.
-. Click btn:[Create Repository].
-. Navigate to menu:Software[Manage > Channels].
-. Click btn:[Create Channel] and set these parameters.
-Ensure you use the correct {rhela} version:
-* In the [guimenu]``Channel Name`` field, type [systemitem]``Uyuni Client Tools for CentOS 7 (x86_64)``.
-* In the [guimenu]``Channel Label`` field, type [systemitem]``centos7-uyuni-client-x86_64``.
-* In the [guimenu]``Parent Channel`` field, select [systemitem]``rhel7-x86_64-server``.
-* In the [guimenu]``Architecture`` field, select [systemitem]``x86_64``.
-* In the [guimenu]``Repository Checksum Type`` field, select [systemitem]``sha1``.
-* In the [guimenu]``Channel Summary`` field, type [systemitem]``Uyuni Client Tools for CentOS 7 (x86_64)``.
-* In the [guimenu]``Organization Sharing`` field, select [systemitem]``Public``.
-. Click btn:[Create Channel].
-. Navigate to the [guimenu]``Repositories`` tab, check the [systemitem]``centos7-uyuni-client`` repository, and click btn:[Update repositories].
-. OPTIONAL: Navigate to the [guimenu]``Sync`` tab to set a recurring schedule for synchronization of this repository.
-. Click btn:[Sync Now] to begin synchronization immediately.
-. Add the new channel to your activation key.
-
-endif::[]
-
-////
 
 
 == Check Synchronization Status
