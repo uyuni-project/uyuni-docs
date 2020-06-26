@@ -2,7 +2,8 @@
 = Registering {rhel} Clients with RHUI
 
 If you are running {rhel} clients directly, rather than using {sleses}, you need to use Red Hat sources to retrieve and update packages.
-This section contains information about using the {redhat} update infrastructure (RHUI) to register traditional and Salt clients running {rhel} operating systems.
+This section contains information about using redhat} update infrastructure (RHUI) to register traditional and Salt clients running {rhel} operating systems.
+If you are running your clients in a public cloud, such as Amazon EC2, use this method.
 
 For information about using {redhat} content delivery network (CDN) instead, see xref:client-configuration:clients-rh-cdn.adoc[].
 
@@ -10,7 +11,7 @@ For information about using {redhat} content delivery network (CDN) instead, see
 [IMPORTANT]
 ====
 {rhel} clients are based on {redhat} and are unrelated to {sleses}, RES, {redhat}, or {sles}.
-You are responsible for arranging access to {redhat} base media repositories and {rhela} installation media, as well as connecting {productname} Server to the {redhat} content delivery network.
+You are responsible for connecting {productname} Server to the {redhat} update infrastructure.
 You must obtain support from {redhat} for all your {rhela} systems.
 If you do not do this, you might be violating your terms with {redhat}.
 ====
@@ -62,39 +63,27 @@ Entitlement certificates are embedded with expiration dates, which match the len
 To avoid disruption, you will need to repeat this process at the end of every support subscription period.
 ====
 
-{redhat} supplies the subscription-manager tool to manage subscription assignments.
-It runs locally on the client system to track installed products and subscriptions.
-Register to redhat.com with subscription-manager, then follow this procedure to obtain certificates.
+
+
+The entitlement certificates and keys need to be copied from the client system to a location that the {productname} Server can access.
+
+Your entitlement certificate and the {redhat} CA Certificate file have file extensions of [path]``.crt``.
+The key has a file extension of [path]``.key``..
 
 
 
-.Procedure: Registering Clients to Subscription Manager
-
-. On the client system, at the command prompt, register with the subscription manager tool:
-+
-----
-subscription-manager register
-----
-+
-Enter your {redhat} Portal username and password when prompted.
+.Procedure: Copying Certificates to the Server
 . Copy your entitlement certificate and key from the client system, to a location that the {productname} Server can access:
 +
 ----
-cp /etc/pki/entitlement/ /<example>/entitlement/
+cp /etc/pki/rhui/product/content-<version>.crt /<example>/entitlement/
+cp /etc/pki/rhui/content-<version>.key /<example>/entitlement/
 ----
 +
-[NOTE]
-====
-Your entitlement certificate has a file extension of [path]``.crt``.
-For example, [path]``/etc/pki/rhui/product/content-rhel8.crt``.
-The key has a file extension of [path]``.key``.
-For example, [path]``/etc/pki/rhui/content-rhel8.key``.
-====
-+
-. Copy the {redhat} CA Certificate file from the client system, to the same web location as the entitlement certificate and key:
+. Copy the {redhat} CA Certificate file from the client system, to the same location as the entitlement certificate and key:
 +
 ----
-cp /etc/rhsm/ca/redhat-uep.pem /example/entitlement
+cp /etc/pki/rhui/cdn.redhat.com-chain.crt /<example>/entitlement
 ----
 
 
@@ -107,17 +96,17 @@ This requires that you perform the import procedure three times, to create three
 
 . On the {productname} Server {webui}, navigate to menu:Systems[Autoinstallation > GPG and SSL Keys].
 . Click btn:[Create Stored Key/Cert] and set these parameters for the entitlement certificate:
-* In the [guimenu]``Description`` field, type [systemitem]``Entitlement-Cert-date``.
+* In the [guimenu]``Description`` field, type [systemitem]``Entitlement-Cert-Date``.
 * In the [guimenu]``Type`` field, select [systemitem]``SSL``.
 * In the [guimenu]``Select file to upload`` field, browse to the location where you saved the entitlement certificate, and select the [path]``.crt`` certificate file.
 . Click btn:[Create Key].
 . Click btn:[Create Stored Key/Cert] and set these parameters for the entitlement key:
-* In the [guimenu]``Description`` field, type [systemitem]``Entitlement-Key-date``.
+* In the [guimenu]``Description`` field, type [systemitem]``Entitlement-Key-Date``.
 * In the [guimenu]``Type`` field, select [systemitem]``SSL``.
 * In the [guimenu]``Select file to upload`` field, browse to the location where you saved the entitlement key, and select the [path]``.key`` key file.
 . Click btn:[Create Key].
 . Click btn:[Create Stored Key/Cert] and set these parameters for the {redhat} certificate:
-* In the [guimenu]``Description`` field, type [systemitem]``redhat-uep``.
+* In the [guimenu]``Description`` field, type [systemitem]``redhat-cert``.
 * In the [guimenu]``Type`` field, select [systemitem]``SSL``.
 * In the [guimenu]``Select file to upload`` field, browse to the location where you saved the {redhat} certificate, and select the certificate file.
 . Click btn:[Create Key].
@@ -149,12 +138,12 @@ The details you need for this procedure are:
 [cols="1,1", options="header"]
 .Red Hat Custom Repository Settings
 |===
-| Option                 | Parameter
-| Repository URL         | The content URL provided by {redhat} CDN
+| Option                 | Setting
+| Repository URL         | The content URL provided by RHUI
 | Has Signed Metadata?   | Uncheck all {redhat} Enterprise repositories
-| SSL CA Certificate     | [systemitem]``redhat-uep``
-| SSL Client Certificate | [systemitem]``Entitlement-Cert-date``
-| SSL Client Key         | [systemitem]``Entitlement-Key-date``
+| SSL CA Certificate     | [systemitem]``redhat-cert``
+| SSL Client Certificate | [systemitem]``Entitlement-Cert-Date``
+| SSL Client Key         | [systemitem]``Entitlement-Key-Date``
 |===
 
 
@@ -270,6 +259,12 @@ Without them, you cannot successfully perform a client synchronization.
 
 .Procedure: Adding HTTP Headers to the Configuration File
 . Locate the [systemitem]``X-RHUI-ID`` and [systemitem]``X-RHUI-SIGNATURE`` HTTP headers from your RHUI instance.
+You can use these commands on the {redhat} client to get the values:
++
+----
+echo "X-RHUI-ID=$(curl -s <http://example.com>/latest/dynamic/instance-identity/document|base64|tr -d '\n')"
+echo "X-RHUI-SIGNATURE=$(curl -s <http://example.com>/latest/dynamic/instance-identity/signature|base64|tr -d '\n')"
+----
 . Open the [path]``/etc/rhn/spacewalk-repo-sync/extra_headers.conf`` configuration file, and add or edit these lines with the correct information:
 +
 ----
@@ -277,12 +272,7 @@ Without them, you cannot successfully perform a client synchronization.
 X-RHUI-ID=value
 X-RHUI-SIGNATURE=value
 ----
-. Alternatively, use these commands to locate the information and add it to the configuration file:
-+
-----
-echo "X-RHUI-ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document|base64|tr -d '\n')"
-echo "X-RHUI-SIGNATURE=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/signature|base64|tr -d '\n')"
-----
+
 
 
 
