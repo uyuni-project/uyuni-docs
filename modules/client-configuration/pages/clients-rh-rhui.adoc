@@ -17,7 +17,6 @@ You are responsible for connecting {productname} Server to the {redhat} update i
 All clients that get updates using this RHUI certificate need to be correctly licensed, please check with your cloud provider and the {redhat} terms of service for more information.
 ====
 
-
 [NOTE]
 ====
 When {rhel} clients registered with RHUI are switched off, {redhat} might declare the certificate invalid.
@@ -36,13 +35,6 @@ Traditional clients are available on {rhel}{nbsp}6 and 7 only.
 == Import Entitlements and Certificates
 
 {redhat} clients require a {redhat} certificate authority (CA) and entitlement certificate, and an entitlement key.
-
-Entitlement certificates are embedded with expiration dates, which match the length of the support subscription.
-To avoid disruption, you will need to repeat this process at the end of every support subscription period.
-
-{redhat} supply a subscription manager tool to manage subscription assignments.
-It runs locally to track installed products and subscriptions.
-Clients must be registered with the subscription manager to obtain certificates.
 
 {redhat} clients use a URL to replicate repositories.
 The URL will change depending on where the {redhat} client is registered.
@@ -64,13 +56,6 @@ For information about using {redhat} content delivery network (CDN) instead, see
 Satellite certificates for client systems require a Satellite server and subscription.
 Clients using Satellite certificates are not supported with {productname} Server.
 ====
-
-[WARNING]
-====
-Entitlement certificates are embedded with expiration dates, which match the length of the support subscription.
-To avoid disruption, you will need to repeat this process at the end of every support subscription period.
-====
-
 
 
 The entitlement certificates and keys need to be copied from the client system to a location that the {productname} Server can access.
@@ -311,76 +296,6 @@ include::snippets/check_sync_cli.adoc[]
 {rhel} channels can be very large.
 Synchronization can sometimes take several hours.
 ====
-
-
-.Procedure: OPTIONAL: Creating a Salt State to Deploy Configuration Files
-
-. On the {productname} Server {webui}, navigate to menu:Configuration[Channels].
-. Click btn:[Create State Channel].
-* In the [guimenu]``Name`` field, type [systemitem]``subscription-manager: disable yum plugins``.
-* In the [guimenu]``Label`` field, type [systemitem]``subscription-manager-disable-yum-plugins``.
-* In the [guimenu]``Description`` field, type [systemitem]``subscription-manager: disable yum plugins``.
-* In the [guimenu]``SLS Contents`` field, leave it empty.
-. Click btn:[Create Config Channel].
-. Click btn:[Create Configuration File].
-* In the [guimenu]``Filename/Path`` field, type [systemitem]``/etc/yum/pluginconf.d/subscription-manager.conf``.
-* In the [guimenu]``File Contents`` field, type:
-----
-[main]
-enabled=0
-----
-. Click btn:[Create Configuration File].
-. Take note of the value of the field [guimenu]``Salt Filesystem Path``.
-. Click the name of the configuration channel.
-. Click [guimenu]``View/Edit 'init.sls' File``.
-* In the [guimenu]``File Contents`` field, type:
-----
-configure_subscription-manager-disable-yum-plugins:
-  cmd.run:
-    - name: subscription-manager config --rhsm.auto_enable_yum_plugins=0
-    - watch:
-      - file: /etc/yum/pluginconf.d/subscription-manager.conf
-  file.managed:
-    - name: /etc/yum/pluginconf.d/subscription-manager.conf
-    - source: salt:///etc/yum/pluginconf.d/subscription-manager.conf
-----
-. Click btn:[Update Configuration File].
-
-
-[NOTE]
-====
-The ``Creating a Salt State to Deploy Configuration Files`` procedure is optional.
-====
-
-
-.Procedure: Creating a System Group for {rhel} Clients
-
-. On the {productname} Server {webui}, navigate to menu:Systems[System Groups].
-. Click btn:[Create Group].
-* In the [guimenu]``Name`` field, type [systemitem]``rhel-systems``.
-* In the [guimenu]``Description`` field, type [systemitem]``All RHEL systems``.
-. Click btn:[Create Group].
-. Click [guimenu]``States`` tab.
-. Click [guimenu]``Configuration Channels`` tab.
-. Type [systemitem]``subscription-manager: disable yum plugins`` at the search box.
-. Click btn:[Search] and the state will appear.
-. Click the checkbox for the state at the [systemitem]``Assign`` column.
-. Click btn:[Save changes].
-. Click btn:[Confirm].
-
-If you already have RHEL systems added to {productname}, assign them to the new system group, and then apply the highstate.
-
-
-
-.Procedure: Adding the System Group to Activation Keys
-
-You need to modify the activation keys you used for RHEL systems to include the system group created above.
-
-. On the {productname} Server {webui}, navigate to menu:Systems[Activation Keys].
-. For each the Activation Keys you used for RHEL systems, click it and:
-* Navigate to the [guimenu]``Groups`` tab, and the [guimenu]``Join`` subtab.
-* Check [systemitem]``Select rhel-systems``.
-* Click btn:[Join Selected Groups].
 
 
 
