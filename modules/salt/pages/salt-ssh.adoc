@@ -82,6 +82,8 @@ The package manager can contact the server only if the tunnel is open, which occ
 
 Manual package manager operations that require server connectivity are not possible in this case.
 
+
+
 == Call Sequence
 
 Salt SSH calls run in this sequence:
@@ -110,22 +112,22 @@ The roster content contains:
 
 == Bootstrap Sequence
 
-Salt SSH is used to bootstrap Salt clients.
+This section describes the sequence of events when clients are registered to a Salt master.
+While bootstrapping is a type of Salt SSH call, the sequence differs slightly from regular SSH calls.
+
+Bootstrapping uses Salt SSH for communication between the master and the client.
 This happens for both regular and SSH clients.
 
-The bootstrap sequence differs slightly from other Salt SSH calls.
 
-. For a regular Salt client, generate and pre-authorize the Salt key of the client
-. For an SSH client, if a proxy was selected, retrieve the SSH public key of the proxy using the `mgrutil.chain_ssh_cmd` runner.
+
+. For a regular Salt client, generate and pre-authorize the Salt key of the client.
+. For an SSH client, if a proxy was selected, retrieve the SSH public key of the proxy using the ``mgrutil.chain_ssh_cmd`` runner.
 The runner copies the public key of the proxy to the server using SSH.
-If needed it can chain multiple SSH commands to reach the proxy across multiple hops.
+If needed, it can chain multiple SSH commands to reach the proxy across multiple hops.
 . Generate pillar data for bootstrap.
-. If contact method is `ssh-push-tunnel`, fill the remote port forwarding option.
-. If the client connects through a proxy, compute the `ProxyCommand` option.
-This depends on the path used to connect to the proxy.
-For example, server to proxy1 to proxy2 to client.
-. Generate the roster for bootstrapping into a temporary file.
-. Execute this command using the Salt API:
+The pillar data is compiled and stored on the Salt master, and retrieved by the client.
+. Generate the roster for bootstrapping into a temporary file on the client.
+You can generate the roster using the Salt API, with this command:
 +
 ----
 salt-ssh --roster-file=<temporary_bootstrap_roster> minion state.apply certs,<bootstrap_state>`
@@ -133,9 +135,17 @@ salt-ssh --roster-file=<temporary_bootstrap_roster> minion state.apply certs,<bo
 +
 For `bootstrap_state`, use `bootstrap` for regular clients or `ssh_bootstrap` for SSH clients.
 
+
+The way the client retrieves the pillar data depends on the contact method you have chosen for your client:
+
+* If you are using the `ssh-push-tunnel` contact method, ensure you have completed the remote port forwarding option.
+* If the client connects through a proxy, ensure you have completed the `ProxyCommand` option.
+This depends on your proxy configuration, including how many proxies you need to connect through.
+
+
 Pillar data contains:
 
-* mgr_server: The hostname of the {productname} Server
+* mgr_server: The hostname of the Salt master
 * minion_id: The hostname of the client to bootstrap
 * contact_method: The connection type
 * mgr_sudo_user: The user for `salt-ssh`
