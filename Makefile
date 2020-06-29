@@ -59,13 +59,11 @@ define validate-product
 	NODE_PATH="$(npm -g root)" antora --generator @antora/xref-validator $(1)
 endef
 
-
 ## Create tar of PDF files
 define pdf-tar-product
 	tar -czvf $(1).tar.gz $(PDF_BUILD_DIR)
 	mv $(1).tar.gz build/
 endef
-
 
 ## Generate OBS tar files
 define obs-packages-product
@@ -76,6 +74,8 @@ define obs-packages-product
 endef
 
 
+
+## SUMA Book Builder
 define pdf-book-create
 	asciidoctor-pdf \
 		-r ./extensions/xref-converter.rb \
@@ -92,7 +92,25 @@ define pdf-book-create
 		modules/$(5)/nav-$(5)-guide.pdf.adoc
 endef
 
+define pdf-book-create-uyuni
+	asciidoctor-pdf \
+		-r ./extensions/xref-converter.rb \
+		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
+		-a pdf-style=$(1) \
+		-a pdf-fontsdir=$(PDF_FONTS_DIR) \
+		-a productname=$(2) \
+		-a uyuni-content=$(3) \
+		-a examplesdir=modules/$(5)/examples \
+		-a imagesdir=modules/$(5)/assets/images \
+		-a revdate=$(REVDATE) \
+		--base-dir . \
+		--out-file $(PDF_BUILD_DIR)/$(4)_$(5)_guide.pdf \
+		modules/$(5)/nav-$(5)-guide.pdf.adoc
 
+endef
+
+
+## Create an Index
 define pdf-book-create-index
 	sed -E  -e 's/\*\*\*\*\*\ xref\:(.*)\.adoc\[(.*)\]/include\:\:modules\/$(1)\/pages\/\1\.adoc\[leveloffset\=\+4\]/' \
 		-e 's/\*\*\*\*\ xref\:(.*)\.adoc\[(.*)\]/include\:\:modules\/$(1)\/pages\/\1\.adoc\[leveloffset\=\+3\]/' \
@@ -107,11 +125,11 @@ define pdf-book-create-index
 endef
 
 
+## SUMA PDF Books ##
 ## Generate PDF version of the Installation Guide
 define pdf-install-product
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),installation)
 endef
-
 
 ## Generate PDF version of the Client Configuration Guide
 define pdf-client-configuration-product
@@ -119,48 +137,108 @@ define pdf-client-configuration-product
 
 endef
 
-
+## Generate PDF version of the Upgrade Guide
 define pdf-upgrade-product
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),upgrade)
 
 endef
 
-
+## Generate PDF version of the Reference Guide
 define pdf-reference-product
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),reference)
 
 endef
 
-
+## Generate PDF version of the Administration Guide
 define pdf-administration-product
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),administration)
 
 endef
 
-
+## Generate PDF version of the Salt Guide
 define pdf-salt-product
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),salt)
 
 endef
 
-
+## Generate PDF version of the Retail Guide
 define pdf-retail-product
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),retail)
 
 endef
 
-
+## Generate PDF version of the Architecture Guide
 define pdf-architecture-product
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),architecture)
 endef
 
-
+## Generate PDF version of the Public Cloud Guide
 define pdf-quickstart-public-cloud-product
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),quickstart-public-cloud)
 endef
 
+## Generate PDF version of the Large Deployment Guide
 define pdf-large-deployment-product
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),large-deployments)
+endef
+
+
+
+## UYUNI PDF Books ##
+## Generate PDF version of the Installation Guide
+define pdf-install-product
+	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),installation)
+endef
+
+## Generate PDF version of the Client Configuration Guide
+define pdf-client-configuration-product-uyuni
+	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),client-configuration)
+
+endef
+
+## Generate PDF version of the Upgrade Guide
+define pdf-upgrade-product-uyuni
+	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),upgrade)
+
+endef
+
+## Generate PDF version of the Reference Guide
+define pdf-reference-product-uyuni
+	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),reference)
+
+endef
+
+## Generate PDF version of the Administration Guide
+define pdf-administration-product-uyuni
+	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),administration)
+
+endef
+
+## Generate PDF version of the Salt Guide
+define pdf-salt-product-uyuni
+	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),salt)
+
+endef
+
+## Generate PDF version of the Retail Guide
+define pdf-retail-product-uyuni
+	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),retail)
+
+endef
+
+## Generate PDF version of the Architecture Guide
+define pdf-architecture-product-uyuni
+	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),architecture)
+endef
+
+## Generate PDF version of the Public Cloud Guide
+define pdf-quickstart-public-cloud-product-uyuni
+	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),quickstart-public-cloud)
+endef
+
+## Generate PDF version of the Large Deployment Guide
+define pdf-large-deployment-product-uyuni
+	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),large-deployments)
 endef
 
 # Help Menu
@@ -257,7 +335,6 @@ pdf-client-configuration-suma: modules/client-configuration/nav-client-configura
 	$(call pdf-client-configuration-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
 
 
-
 .PHONY: modules/upgrade/nav-upgrade-guide.pdf.adoc
 modules/upgrade/nav-upgrade-guide.pdf.adoc:
 	$(call pdf-book-create-index,upgrade)
@@ -266,7 +343,6 @@ modules/upgrade/nav-upgrade-guide.pdf.adoc:
 .PHONY: pdf-upgrade-suma
 pdf-upgrade-suma: modules/upgrade/nav-upgrade-guide.pdf.adoc
 	$(call pdf-upgrade-product,$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA))
-
 
 
 .PHONY: modules/reference/nav-reference-guide.pdf.adoc
@@ -380,51 +456,50 @@ pdf-all-uyuni: pdf-install-uyuni pdf-client-configuration-uyuni pdf-upgrade-uyun
 ## Generate PDF version of the UYUNI Installation Guide
 .PHONY: pdf-install-uyuni
 pdf-install-uyuni: modules/installation/nav-installation-guide.pdf.adoc
-	$(call pdf-install-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
-
+	$(call pdf-install-product-uyuni,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
 
 
 ## Generate PDF version of the UYUNI Client Configuration Guide
 .PHONY: pdf-client-configuration-uyuni
 pdf-client-configuration-uyuni: modules/client-configuration/nav-client-configuration-guide.pdf.adoc
-	$(call pdf-client-configuration-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
+	$(call pdf-client-configuration-product-uyuni,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
 
 ## Generate PDF version of the UYUNI Upgrade Guide
 .PHONY: pdf-upgrade-uyuni
 pdf-upgrade-uyuni: modules/upgrade/nav-upgrade-guide.pdf.adoc
-	$(call pdf-upgrade-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
+	$(call pdf-upgrade-product-uyuni,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
 
 ## Generate PDF version of the UYUNI Reference Guide
 .PHONY: pdf-reference-uyuni
 pdf-reference-uyuni: modules/reference/nav-reference-guide.pdf.adoc
-	$(call pdf-reference-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
+	$(call pdf-reference-product-uyuni,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
 
 ## Generate PDF version of the UYUNI Administration Guide
 .PHONY: pdf-administration-uyuni
 pdf-administration-uyuni: modules/administration/nav-administration-guide.pdf.adoc
-	$(call pdf-administration-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
+	$(call pdf-administration-product-uyuni,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
 
 ## Generate PDF version of the UYUNI Salt Guide
 .PHONY: pdf-salt-uyuni
 pdf-salt-uyuni: modules/salt/nav-salt-guide.pdf.adoc
-	$(call pdf-salt-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
+	$(call pdf-salt-product-uyuni,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
 
 ## Generate PDF version of the UYUNI Retail Guide
 .PHONY: pdf-retail-uyuni
 pdf-retail-uyuni: modules/retail/nav-retail-guide.pdf.adoc
-	$(call pdf-retail-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
+	$(call pdf-retail-product-uyuni,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
 
 ## Generate PDF version of the UYUNI Architecture Guide
 .PHONY: pdf-architecture-uyuni
 pdf-architecture-uyuni: modules/architecture/nav-architecture-guide.pdf.adoc
-	$(call pdf-architecture-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
+	$(call pdf-architecture-product-uyuni,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
 
 
 ## Generate PDF version of the UYUNI Quickstart Guide for Public Cloud
 pdf-quickstart-public-cloud-uyuni: modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.adoc
-	$(call pdf-quickstart-public-cloud-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
+	$(call pdf-quickstart-public-cloud-product-uyuni,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
 
 .PHONY: pdf-large-deployment-uyuni
 ## Generate PDF version of the UYUNI Large Deployment Guide
 pdf-large-deployment-uyuni: modules/large-deployments/nav-large-deployments.pdf.adoc
-	$(call pdf-large-deployment-product,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
+	$(call pdf-large-deployment-product-uyuni,$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI))
