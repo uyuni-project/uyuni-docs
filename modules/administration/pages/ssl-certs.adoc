@@ -20,5 +20,52 @@ Using a third party CA makes certificates harder to spoof, and will provide addi
 By default, {productname} uses a self-signed certificate.
 If you have certificates signed by a third party CA, you can import them to your {productname} installation.
 
+
+
+== SSL Certificates in {productname}
+// I'm adding this as a separate section for now, to make this easier, but I think we can probably merge these two sections together. --LKB 2020-06-29
+
+Every {productname} Server that uses SSL requires an SSL server certificate.
+Your server certificate is stored using the ``SERVER_CERT`` environment variable.
+
+Every client that uses SSL to register to the {productname} Server checks that it is connecting to the right server by validating against the server certificate.
+This process is called an SSL handshake.
+
+During the SSL handshake, the client will check that the hostname in the server certificate matches.
+The client also needs to check if the server certificate is trusted.
+To do this, it looks for the issuer of the server certificate.
+
+Certificate authorities (CAs) are certificates that are used to sign other certificates.
+The root CA is a special kind of CA that is signed with itself.
+When you look at the details of a root CA, you will see that the subject has the same value as the issuer.
+Your root CA certificate is stored using the ``CA_CERT`` environment variable.
+
+In order for SSL authentication to work correctly, the client must trust the root CA.
+This means that the root CA must be installed on every client.
+
+The default method of SSL authentication is for {productname} to use self-signed certificates.
+In this case, {productname} has generated all the certificates, and the root CA has signed the server certificate directly.
+
+An alternative method is to use an intermediate CA.
+In this case, the intermediate CA signs the root CA.
+The intermediate CA can then sign any number of other intermediate CAs, one of which can sign the server certificate.
+This is referred to as a chained certificate.
+
+If you are using intermediate CAs in a chained certificate, the root CA is installed on the client, and during the SSL handshake, the server presents the server certificate.
+Your clients must be able to verify the entire chain of intermediate certificates between the root CA and the server certificate.
+To do this, the client requires all the chained certificates.
+
+There are two main ways of achieving this.
+In {productname}, by default, all the intermediate CAs are installed on the client.
+However, you could also install them on the server.
+In this case, during the SSL handshake, the server presents the server certificate as well as all the intermediate CAs.
+
+Whichever method you choose, you must ensure that the ``CA_CERT`` environment variable points to the root CA, and all intermediate CAs.
+It should not contain the server certificate.
+The server certificate must be defined at the ``SERVER_CERT`` environment variable.
+
+
+
+
 * For more on self-signed certificates, see xref:administration:ssl-certs-selfsigned.adoc[].
 * For more on imported certificates, see xref:administration:ssl-certs-imported.adoc[].
