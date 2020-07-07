@@ -186,7 +186,7 @@ endef
 
 ## UYUNI PDF Books ##
 ## Generate PDF version of the Installation Guide
-define pdf-install-product
+define pdf-install-product-uyuni
 	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),installation)
 endef
 
