@@ -17,7 +17,7 @@ window.antoraLunr = (function (lunr) {
 
     var end = start + length
     var textEnd = text.length - 1
-    var contextOffset = 15
+    var contextOffset = 45
     var contextAfter = end + contextOffset > textEnd ? textEnd : end + contextOffset
     var contextBefore = start - contextOffset < 0 ? 0 : start - contextOffset
     if (start === 0 && end === textEnd) {
@@ -29,9 +29,9 @@ window.antoraLunr = (function (lunr) {
       hits.push(document.createTextNode(text.substr(0, start)))
       hits.push(highlightSpan)
     } else {
-      hits.push(document.createTextNode('...' + text.substr(contextBefore, start - contextBefore)))
+      hits.push(document.createTextNode(text.substr(0, start - contextBefore) + '...'))
       hits.push(highlightSpan)
-      hits.push(document.createTextNode(text.substr(end, contextAfter - end) + '...'))
+      hits.push(document.createTextNode(text.substr(end, contextAfter - end) + '...' ))
     }
     return hits
   }
@@ -99,16 +99,22 @@ window.antoraLunr = (function (lunr) {
         url = url.replace('#' + hash, '')
       }
       var doc = store[url]
+      var guideName = doc.url.split('/')
       var metadata = item.matchData.metadata
       var hits = highlightHit(metadata, hash, doc)
-      searchResultDataset.appendChild(createSearchResultItem(doc, item, hits))
+      searchResultDataset.appendChild(createSearchResultItem(doc, item, hits, guideName))
     })
   }
 
-  function createSearchResultItem (doc, item, hits) {
+  function createSearchResultItem (doc, item, hits, guideName) {
+    var documentGuide = document.createElement('div')
+    documentGuide.classList.add('search-result-document-guide')
+    documentGuide.innerText = guideName[2].charAt(0).toUpperCase() + guideName[2].slice(1) + ' Guide'
+    
     var documentTitle = document.createElement('div')
     documentTitle.classList.add('search-result-document-title')
     documentTitle.innerText = doc.title
+    
     var documentHit = document.createElement('div')
     documentHit.classList.add('search-result-document-hit')
     var documentHitLink = document.createElement('a')
@@ -119,6 +125,7 @@ window.antoraLunr = (function (lunr) {
     })
     var searchResultItem = document.createElement('div')
     searchResultItem.classList.add('search-result-item')
+    searchResultItem.appendChild(documentGuide)
     searchResultItem.appendChild(documentTitle)
     searchResultItem.appendChild(documentHit)
     return searchResultItem
