@@ -294,13 +294,13 @@ pdf-tar-suma: ## Create tar of PDF files
 
 
 .PHONY: antora-suma
-antora-suma: clean pdf-all-suma pdf-tar-suma ## Build the SUMA Antora static site (See README for more information)
+antora-suma: clean #pdf-all-suma pdf-tar-suma ## Build the SUMA Antora static site (See README for more information)
 		sed -i "s/^ # *\(name: *suse-manager\)/\1/;\
 	s/^ # *\(title: *SUSE Manager\)/\1/;\
 	s/^ *\(title: *Uyuni\)/#\1/;\
 	s/^ *\(name: *uyuni\)/#\1/;" antora.yml
 	DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr antora suma-site.yml --generator antora-site-generator-lunr
-
+#DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr NODE_PATH="$(npm -g root)" antora --generator antora-site-generator-lunr suma-site.yml
 
 
 # SUMA
@@ -431,12 +431,12 @@ pdf-tar-uyuni: ## Create tar of PDF files
 
 
 .PHONY: antora-uyuni
-antora-uyuni: clean pdf-all-uyuni pdf-tar-uyuni ## Build the UYUNI Antora static site (See README for more information)
+antora-uyuni: clean #pdf-all-uyuni pdf-tar-uyuni ## Build the UYUNI Antora static site (See README for more information)
 		sed -i "s/^ *\(name: *suse-manager\)/#\1/;\
 	s/^ *\(title: *SUSE Manager\)/#\1/;\
 	s/^ *# *\(title: *Uyuni\)/\1/;\
 	s/^ *# *\(name: *uyuni\)/\1/;" antora.yml
-		DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr antora uyuni-site.yml --generator antora-site-generator-lunr
+		DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr antora --generator antora-site-generator-lunr uyuni-site.yml
 
 
 
