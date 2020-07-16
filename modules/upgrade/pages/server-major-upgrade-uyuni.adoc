@@ -3,6 +3,7 @@
 
 From time to time, {productname} Server upgrades are labeled as major.
 This is especially the case, if a version upgrade of openSUSE Leap is needed. openSUSE Leap is the underlying base operating system (OS).
+For background information about upgrading openSUSE Leap, see https://doc.opensuse.org/documentation/leap/startup/single-html/book-opensuse-startup/index.html#sec-update-zypper.
 
 Run the [command]``/usr/lib/susemanager/bin/server-migrator.sh`` script to upgrade the base OS and {productname} Server.
 
@@ -23,33 +24,30 @@ This implies upgrading the underlying operating system to version 15.2.
 
 [IMPORTANT]
 ====
-Because you cannot fix any issues during migration, make sure you have an uptodate backup before starting the migration.
+Because you cannot fix any issues during migration, make sure you have a backup before starting the migration.
 If you are running {productname} Server on a virtual machine, it is recommended to create a snapshot before performing the migration.
 ====
 
-The script performs the following actions:
+.Procedure:
+
+The script runs as [systemitem]``root`` and performs the following actions.
 
 
-
-== Shut Down {productname} Services
-
+. Stop the spacewalk services:
++
 ----
 spacewalk-service stop
 ----
 
-
-
-==  Adjust Software Repositories for openSUSE Leap 15.2 and {productname}
-
-Move away the old repository configuration:
-
+. Move away the old repository configuration:
++
 ----
 mv /etc/zypp/repos.d /etc/zypp/repos.d.old
 mkdir /etc/zypp/repos.d
 ----
 
-Enable and refresh new repositories:
-
+. Enable and refresh new repositories:
++
 ----
 zypper ar -n "Main Repository" http://download.opensuse.org/distribution/leap/15.2/repo/oss repo-oss
 zypper ar -n "Main Update Repository" http://download.opensuse.org/update/leap/15.2/oss repo-update
@@ -60,33 +58,31 @@ zypper ar -n "Uyuni Server Stable" https://download.opensuse.org/repositories/sy
 zypper ref
 ----
 
-
-
-== Upgrade Disribution
-
-Perform the distribution upgrade:
-
+. Perform the distribution upgrade:
++
 ----
 zypper -n dup --allow-vendor-change
 ----
 
-
-
-== Migrate PostgreSQL Database
-
-To migrate the database to PostgreSQL 12 run the migrate script:
-
+. To migrate the database to PostgreSQL 12 run the migrate script:
++
 ----
 /usr/lib/susemanager/bin/pg-migrate-10-to-12.sh
 ----
++
+For more information about PostgreSQL database migration, see xref:db-migration-12.adoc[].
 
 
-
-== Reboot the System
-
+Finally reboot the system.
 This is not part of the script.
 Initiate the reboot manually:
 
 ----
 shutdown -r now
 ----
+
+[NOTE]
+====
+[command]``spacewalk-schema-upgrade`` is not needed anymore.
+It will be run during [command]``spacewalk-service start`` automatically.
+====
