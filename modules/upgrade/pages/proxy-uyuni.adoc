@@ -1,0 +1,51 @@
+[[proxy-uyuni-upgrade]]
+= Proxy - Upgrade Procedure
+
+Before you perform any proxy update, schedule a maintenance window.
+The clients registered to {productname} through the proxy will not be able to connect to {productname} while the update is in progress.
+For more information about maintenance windows, see xref:administration:maintenance-window.adoc[].
+
+
+
+== Upgrade the Proxy
+
+To upgrade a proxy you first stop the proxy service, then you replace the software repositories and update the software, and finally you restart the proxy service.
+
+
+
+.Procedure: Updating the {productname} Proxy
+. On the {productname} Proxy, stop the proxy service:
++
+----
+spacewalk-proxy stop
+----
+
+// there is no chance to fix any issues during migration,
+// make sure you have a backup before continuing. If you are
+// running Uyuni server on a virtual machine, it is advisable
+// to create a snapshot before performing the migration!
+
+. Replace and refresh software repositories:
++
+----
+mv /etc/zypp/repos.d /etc/zypp/repos.d.old
+mkdir /etc/zypp/repos.d
+zypper ar -n "Main Repository" http://download.opensuse.org/distribution/leap/15.2/repo/oss repo-oss
+zypper ar -n "Main Update Repository" http://download.opensuse.org/update/leap/15.2/oss repo-update
+zypper ar -n "Non-OSS Repository" http://download.opensuse.org/distribution/leap/15.2/repo/non-oss repo-non-oss
+zypper ar -n "Update Repository (Non-Oss)" http://download.opensuse.org/update/leap/15.2/non-oss/ repo-update-non-oss
+zypper ar -n "Uyuni Server Stable" https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable/images/repo/Uyuni-Server-POOL-x86_64-Media1/ uyuni-server-stable
+zypper ref
+----
+
+. Update software packages:
++
+----
+zypper -n dup --allow-vendor-change
+----
+
+. Reboot the {productname} Proxy:
++
+----
+shutdown -r now
+----
