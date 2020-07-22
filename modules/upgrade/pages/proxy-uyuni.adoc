@@ -7,6 +7,25 @@ For more information about maintenance windows, see xref:administration:maintena
 
 
 
+== Preparation
+
+As a preparation step, add the openSUSE Leap {opensuse-version} channels to the server.
+
+.Procedure: Adding Software Channels at the Command Prompt
+. At the command prompt on the {productname} Server, as root, use the [command]``spacewalk-common-channels`` command to add the appropriate channels:
++
+----
+spacewalk-common-channels opensuse_leap15_2 \
+opensuse_leap15_2-non-oss \
+opensuse_leap15_2-non-oss-updates \
+opensuse_leap15_2-updates \
+opensuse_leap15_2-uyuni-client \
+uyuni-proxy-stable-leap-152
+----
+. Fully synchronize all channels with [command]``spacewalk-repo-sync``.
+
+
+
 == Upgrade the Proxy
 
 To upgrade a proxy you first stop the proxy service, then you replace the software repositories and update the software, and finally you restart the proxy service.
@@ -20,32 +39,14 @@ To upgrade a proxy you first stop the proxy service, then you replace the softwa
 spacewalk-proxy stop
 ----
 
-// there is no chance to fix any issues during migration,
-// make sure you have a backup before continuing. If you are
-// running Uyuni server on a virtual machine, it is advisable
-// to create a snapshot before performing the migration!
-
-. Replace and refresh software repositories:
+. In the {productname} Server {webui}, navigate to menu:Systems[Proxy] and click the name of the proxy.
+. Click menu:Software[Software Channels], and select the openSUSE Leap {opensuse-version} channel.
+. Click menu:Software[Packages], and select all the packages to be updated on the proxy, and then apply the selection.
+. On the {productname} Proxy, start the proxy service:
 +
 ----
-mv /etc/zypp/repos.d /etc/zypp/repos.d.old
-mkdir /etc/zypp/repos.d
-zypper ar -n "Main Repository" http://download.opensuse.org/distribution/leap/15.2/repo/oss repo-oss
-zypper ar -n "Main Update Repository" http://download.opensuse.org/update/leap/15.2/oss repo-update
-zypper ar -n "Non-OSS Repository" http://download.opensuse.org/distribution/leap/15.2/repo/non-oss repo-non-oss
-zypper ar -n "Update Repository (Non-Oss)" http://download.opensuse.org/update/leap/15.2/non-oss/ repo-update-non-oss
-zypper ar -n "Uyuni Proxy Stable" https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable/images/repo/Uyuni-Proxy-POOL-x86_64-Media1/ uyuni-proxy-stable
-zypper ref
+spacewalk-proxy start
 ----
 
-. Update software packages:
-+
-----
-zypper -n dup --allow-vendor-change
-----
-
-. Reboot the {productname} Proxy:
-+
-----
-shutdown -r now
-----
+If you need to update many proxies, you can create an action chain of this command sequence on the {productname} Server.
+You can use the action chain to perform updates on multiple proxies at the same time.
