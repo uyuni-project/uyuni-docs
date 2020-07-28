@@ -4,7 +4,7 @@ Short summary of why you created this PR
 
 # Target branches
 
-Which product version does this document apply to?
+Which product version does this PR apply to?
 
 - [ ] Manager-4.0
 - [ ] Manager-4.1
