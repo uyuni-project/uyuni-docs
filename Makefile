@@ -280,5 +280,8 @@ pot:
 translations:
 	$(shell $(current_dir)/use_po.sh)
 
+.PHONY: antora-suma
+antora-suma: antora-suma-en antora-suma-es
+
 include Makefile.en
 include Makefile.es
