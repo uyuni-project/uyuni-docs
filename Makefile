@@ -283,5 +283,8 @@ translations:
 .PHONY: antora-suma
 antora-suma: antora-suma-en antora-suma-es
 
+.PHONY: antora-uyuni
+antora-uyuni: antora-uyuni-en antora-uyuni-es
+
 include Makefile.en
 include Makefile.es
