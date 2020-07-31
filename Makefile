@@ -280,11 +280,98 @@ pot:
 translations:
 	$(shell $(current_dir)/use_po.sh)
 
+.PHONY: clean
+clean: clean-en clean-es
+
+.PHONY: validate-suma
+validate-suma: validate-suma-es validate-suma-en
+
+.PHONY: pdf-tar-suma
+pdf-tar-suma: pdf-tar-suma-en pdf-tar-suma-es
+
 .PHONY: antora-suma
 antora-suma: antora-suma-en antora-suma-es
 
+.PHONY: obs-packages-suma
+obs-packages-suma: obs-packages-suma-en obs-packages-suma-es
+
+.PHONY: pdf-all-suma
+pdf-all-suma: pdf-all-suma-en pdf-all-suma-es
+
+.PHONY: pdf-install-suma
+pdf-install-suma: pdf-install-suma-en pdf-install-suma-es
+
+.PHONY: pdf-client-configuration-suma
+pdf-client-configuration-suma: pdf-client-configuration-suma-en pdf-client-configuration-suma-es
+
+.PHONY: pdf-upgrade-suma
+pdf-upgrade-suma: pdf-upgrade-suma-en pdf-upgrade-suma-es
+
+.PHONY: pdf-reference-suma
+pdf-reference-suma: pdf-reference-suma-en pdf-reference-suma-es
+
+.PHONY: pdf-administration-suma
+pdf-administration-suma: pdf-administration-suma-en pdf-administration-suma-es
+
+.PHONY: pdf-salt-suma
+pdf-salt-suma: pdf-salt-suma-en pdf-salt-suma-es
+
+.PHONY: pdf-retail-suma
+pdf-retail-suma: pdf-retail-suma-en pdf-retail-suma-es
+
+.PHONY: pdf-large-deployment-suma
+pdf-large-deployment-suma: pdf-large-deployment-suma-en pdf-large-deployment-suma-es
+
+.PHONY: pdf-architecture-suma
+pdf-architecture-suma: pdf-architecture-suma-en pdf-architecture-suma-es
+
+.PHONY: pdf-quickstart-public-cloud-suma
+pdf-quickstart-public-cloud-suma: pdf-quickstart-public-cloud-suma-en pdf-quickstart-public-cloud-suma-es
+
+.PHONY: validate-uyuni
+validate-uyuni: validate-uyuni-en validate-uyuni-es
+
+.PHONY: pdf-tar-uyuni
+pdf-tar-uyuni: pdf-tar-uyuni-en pdf-tar-uyuni-es
+
 .PHONY: antora-uyuni
 antora-uyuni: antora-uyuni-en antora-uyuni-es
+
+.PHONY: obs-packages-uyuni
+obs-packages-uyuni: obs-packages-uyuni-en obs-packages-uyuni-es
+
+.PHONY: pdf-all-uyuni
+pdf-all-uyuni: pdf-all-uyuni-en pdf-all-uyuni-es
+
+.PHONY: pdf-install-uyuni
+pdf-install-uyuni: pdf-install-uyuni-en pdf-install-uyuni-es
+
+.PHONY: pdf-client-configuration-uyuni
+pdf-client-configuration-uyuni: pdf-client-configuration-uyuni-en pdf-client-configuration-uyuni-es
+
+.PHONY: pdf-upgrade-uyuni
+pdf-upgrade-uyuni: pdf-upgrade-uyuni-en pdf-upgrade-uyuni-es
+
+.PHONY: pdf-reference-uyuni
+pdf-reference-uyuni: pdf-reference-uyuni-en pdf-reference-uyuni-es
+
+.PHONY: pdf-administration-uyuni
+pdf-administration-uyuni: pdf-administration-uyuni-en pdf-administration-uyuni-es
+
+.PHONY: pdf-salt-uyuni
+pdf-salt-uyuni: pdf-salt-uyuni-en pdf-salt-uyuni-es
+
+.PHONY: pdf-retail-uyuni
+pdf-retail-uyuni: pdf-retail-uyuni-en pdf-retail-uyuni-es
+
+.PHONY: pdf-large-deployment-uyuni
+pdf-large-deployment-uyuni: pdf-large-deployment-uyuni-en pdf-large-deployment-uyuni-es
+
+.PHONY: pdf-architecture-uyuni
+pdf-architecture-uyuni: pdf-architecture-uyuni-en pdf-architecture-uyuni-es
+
+.PHONY: pdf-quickstart-public-cloud-uyuni
+pdf-quickstart-public-cloud-uyuni: pdf-quickstart-public-cloud-uyuni-en pdf-quickstart-public-cloud-uyuni-es
 
 include Makefile.en
 include Makefile.es
