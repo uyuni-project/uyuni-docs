@@ -1,0 +1,317 @@
+# SOME DESCRIPTIVE TITLE
+# Copyright (C) YEAR Free Software Foundation, Inc.
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2020-06-14 00:54+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. type: Title =
+#: ./modules/administration/pages/public-cloud-azure.adoc:2
+#, no-wrap
+msgid "{productname} with Azure"
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:6
+msgid ""
+"You can use {productname} Server and Proxy with the Microsoft Azure public "
+"cloud.  This section discusses what you will need for running {productname} "
+"in Azure, and how to set up your installation."
+msgstr ""
+
+#. type: Title ==
+#: ./modules/administration/pages/public-cloud-azure.adoc:8
+#, no-wrap
+msgid "Configure the Azure Cloud Instance"
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:14
+msgid ""
+"Use the ``SUSE Manager Server 4 BYOS`` image.  The image is a pre-built "
+"image created by {suse}.  It is based on JeoS, and SUSE Manager is "
+"pre-installed but not configured.  Configuring SUSE Manager has to be done "
+"manually with {yast}."
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:16
+msgid ""
+"When you create your Azure virtual machine, choose something `like d8s_v3` "
+"with 8{nbsp}vCPUs and 32{nbsp}GB RAM."
+msgstr ""
+
+#. * Up to 4 data disks
+#. * Max IOPS 2400
+#. * Temporary storage disk of 16{nbsp}GB.
+#. Data on this disk will be destroyed after the guest has been switched off.
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:24
+msgid "When you are setting up disk partitioning, we recommend:"
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:26
+msgid "30{nbsp}GB for the disk running the operating system"
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:27
+msgid "Select `Standard HDD` for the storage account type"
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:29
+msgid "You will also require three additional data disks:"
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:31
+msgid "Disk 0: 64{nbsp}GB on Premium SSD, mounted at [path]``/var/lib/pgsql``"
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:32
+msgid "Disk 1: 512{nbsp}GB on Standard SSD, mounted at [path]``/var/spacewalk``"
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:33
+msgid "Disk 2: 128{nbsp}GB on Standard SSD, mounted at [path]``/var/cache``"
+msgstr ""
+
+#. type: delimited block =
+#: ./modules/administration/pages/public-cloud-azure.adoc:38
+msgid ""
+"Do not use LVM with Azure.  If you need more disk space, extend a disk in "
+"the Azure portal, then extend the file system with [command]``xfs_growfs``."
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:41
+msgid "Partition the disks like this:"
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:43
+msgid "[path]``/dev/sda``: 4 partitions containing the OS"
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:44
+msgid "[path]``/dev/sdb``: temporary storage disk, do not use"
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:45
+msgid "[path]``/dev/sdc``: contains [path]``/var/lib/pgsql``"
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:46
+msgid "[path]``/dev/sdd``: contains [path]``/var/spacewalk``"
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:47
+msgid "[path]``/dev/sde``: contains [path]``/var/cache``"
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:49
+msgid "You can use these commands to create the disks:"
+msgstr ""
+
+#. type: delimited block -
+#: ./modules/administration/pages/public-cloud-azure.adoc:71
+#, no-wrap
+msgid ""
+"for d in sdc sdd sde; do\n"
+"  parted --script /dev/$d mklabel gpt mkpart primary xfs 0% 100%\n"
+"  mkfs.xfs /dev/${d}1\n"
+"done\n"
+"mkdir /cachetmp\n"
+"mount /dev/sde1 /cachetmp\n"
+"cp -a /var/cache/* /cachetmp/\n"
+"umount /cachetmp\n"
+"echo \"$(blkid /dev/sdc1|awk -F \" \" '{ print $2 }') /var/lib/pgsql xfs "
+"defaults,noatime 0 0\" >> /etc/fstab\n"
+"echo \"$(blkid /dev/sdd1|awk -F \" \" '{ print $2 }') /var/spacewalk xfs "
+"defaults,noatime 0 0\" >> /etc/fstab\n"
+"echo \"$(blkid /dev/sde1|awk -F \" \" '{ print $2 }') /var/cache     xfs "
+"defaults,noatime 0 0\" >> /etc/fstab\n"
+"mkdir -p /var/spacewalk\n"
+"mount /var/spacewalk\n"
+"chown -R wwwrun:root /var/spacewalk\n"
+"mount /var/lib/pgsql\n"
+"chown -R postgres:postgres /var/lib/pgsql\n"
+"mv /var/cache /var/cache.old\n"
+"mkdir /var/cache\n"
+"mount /var/cache\n"
+"rm -r /var/cache.old\n"
+msgstr ""
+
+#.  REMARK: I guess you do this in your Azure instance
+#.  REMARK: Where do you configure this?
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:77
+msgid ""
+"When you are setting up networking, we recommend that you create a separate "
+"private network, with the IP range `10.0.0.0/24`."
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:80
+msgid ""
+"Configure the {productname} Server to use the internal IP address "
+"`10.0.0.4`.  Ensure it is also accessible from outside the network with a "
+"fixed IP address."
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:83
+msgid ""
+"Configure the firewall to only allow inbound traffic on ports `22`, `80`, "
+"and `443` to IP address `10.0.0.4`.  In this environment, if other servers "
+"are added to the network they cannot be reached from outside the network."
+msgstr ""
+
+#.  REMARK: Was does this mean?
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:87
+msgid ""
+"Outbound is open from the private network.  This should be restricted for "
+"other servers in this private network."
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:90
+msgid ""
+"You will need to set the DNS zones in Azure before you can configure the "
+"{productname} Server.  For more information on setting DNS zones, see the "
+"Azure documentation."
+msgstr ""
+
+#. type: Title ==
+#: ./modules/administration/pages/public-cloud-azure.adoc:93
+#, no-wrap
+msgid "Configure {productname} Server"
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:96
+msgid "Ensure that your {productname} Server is registered with {scc}."
+msgstr ""
+
+#.  I wonder why we do even need spacecmd
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:99
+msgid "When your server is registered, install these extra packages:"
+msgstr ""
+
+#. type: delimited block -
+#: ./modules/administration/pages/public-cloud-azure.adoc:101
+#, no-wrap
+msgid "zypper -n in spacecmd mlocate sysstat\n"
+msgstr ""
+
+#.  spacecmd will be installed by default next time
+#.  ^ How is so?
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:106
+msgid "Apply the latest updates and reboot the server:"
+msgstr ""
+
+#. type: delimited block -
+#: ./modules/administration/pages/public-cloud-azure.adoc:109
+#, no-wrap
+msgid ""
+"zypper -n up -l\n"
+"reboot\n"
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:112
+msgid "Check that all file systems are mounted and that PostgreSQL is running:"
+msgstr ""
+
+#. type: delimited block -
+#: ./modules/administration/pages/public-cloud-azure.adoc:115
+#, no-wrap
+msgid ""
+"mount\n"
+"service postgresql status\n"
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:119
+msgid ""
+"Complete {productname} Server installation and configuration.  For more "
+"information, see xref:installation:server-setup.adoc[]."
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:122
+msgid ""
+"We recommend you configure the {productname} Server so that DHCP does not "
+"set the host name.  Check [path]``/etc/sysconfig/network/dhcp`` and ensure "
+"that `DHCLIENT_SET_HOSTNAME` is set to [literal]``no``:"
+msgstr ""
+
+#. type: delimited block -
+#: ./modules/administration/pages/public-cloud-azure.adoc:124
+#, no-wrap
+msgid "DHCLIENT_SET_HOSTNAME=\"no\"\n"
+msgstr ""
+
+#.  REMARK: hostname -i?
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:129
+msgid ""
+"Add the Azure client to the [path]``/etc/hosts`` file.  At the command "
+"prompt, replace [literal]``<ip_address>`` with the IP address of the server:"
+msgstr ""
+
+#. type: delimited block -
+#: ./modules/administration/pages/public-cloud-azure.adoc:131
+#, no-wrap
+msgid "echo \"<ip_address> $(hostname -f) $(hostname)\" >> /etc/hosts\n"
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:138
+msgid ""
+"{productname} Server has a default administration user.  In Azure, the "
+"system administrator user is called [literal]``admin``.  The `admin` user's "
+"password is built with two parts.  The first part can be found by using this "
+"command:"
+msgstr ""
+
+#. type: delimited block -
+#: ./modules/administration/pages/public-cloud-azure.adoc:140
+#, no-wrap
+msgid "azuremetadata --instance-name\n"
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:143
+msgid "The second part of the password is [literal]``-suma``"
+msgstr ""
+
+#. type: Plain text
+#: ./modules/administration/pages/public-cloud-azure.adoc:145
+msgid ""
+"Alternatively, you can check the "
+"[path]``/var/log/susemanager_firstuser.log`` file."
+msgstr ""

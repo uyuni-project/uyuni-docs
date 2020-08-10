@@ -6,6 +6,7 @@ Use this issue template for documentation releases.
 
 - [ ] Check all outstanding pull requests, and ensure everything relevant is merged (and backported where required).
 Check with the docs squad coordinator for confirmation.
+- [ ] Review the content sensitive help in the UI, and ensure all links are up to date.
 - [ ] Cut a new branch from master using syntax `manager-x.y-betaz`
 - [ ] Locally build both SUMA and Uyuni docs from the release branch and visually check output.
 - [ ] Package documentation and push SR to OBS: https://github.com/uyuni-project/uyuni-docs/wiki/publishing-to-obs
