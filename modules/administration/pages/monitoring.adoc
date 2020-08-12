@@ -16,11 +16,9 @@ endif::[]
 You need to install Prometheus and Grafana on a machine separate from the {productname} Server.
 We recommend you use a managed Salt client as your monitoring server.
 
-[NOTE]
-====
 Prometheus fetches metrics using a pull mechanism, so the server must be able to establish TCP connections to monitored clients.
 Clients must have corresponding open ports and be reachable over the network.
-====
+Alternatively, you can use reverse proxies to establish a connection.
 
 
 ifeval::[{suma-content} == true]
@@ -98,6 +96,8 @@ Make sure that the credentials you have entered allow access to the set of syste
 . Apply the highstate and confirm that it completes successfully.
 . Check that the Prometheus interface loads correctly. In your browser, navigate to the URL of the server where Prometheus is installed, on port 9090 (for example, [literal]``http://example.com:9090``).
 
+For more information about the monitoring formulas, see xref:salt:formula-monitoring.adoc[].
+
 
 
 .Procedure: Manually Installing and Configuring Prometheus
@@ -174,6 +174,7 @@ Otherwise you can download and install the package on your monitoring server man
 You can choose which dashboards to provision in the formula configuration page.
 ====
 
+For more information about the monitoring formulas, see xref:salt:formula-monitoring.adoc[].
 
 
 .Procedure: Manually Installing Grafana
@@ -278,6 +279,7 @@ If you have configured your monitoring server with the {webui}, metrics collecti
 . Click btn:[Save].
 . Navigate to the menu:Formulas[Prometheus Exporters] tab.
 . Select the exporters you want to enable and customize arguments according to your needs.
+The [guimenu]``Address`` field accepts either a port number preceded by a colon (``:9100``), or a fully resolvable address (``example:9100``).
 . Click btn:[Save Formula].
 . Apply the highstate.
 
@@ -288,9 +290,13 @@ image::monitoring_configure_formula.png[scaledwidth=80%]
 Monitoring formulas can also be configured for System Groups, by applying the same configuration used for individual systems inside the corresponding group.
 ====
 
+// The WebUI says that we describe the available arguments in the exporters formula, but I don't see it. Might be best to put it in the Salt Guide, then xref from here. --LKB 2020-08-11
+
+For more information about the monitoring formulas, see xref:salt:formula-monitoring.adoc[].
 
 
-=== Network Boundaries
+
+== Network Boundaries
 
 Prometheus fetches metrics using a pull mechanism, so the server must be able to establish TCP connections to monitored clients.
 By default, Prometheus uses these ports:
@@ -313,3 +319,26 @@ You can also proxy requests through the network boundary.
 Tools like PushProx deploy a proxy and a client on both sides of the network barrier and allow Prometheus to work across network topologies such as NAT.
 
 For more information on PushProx, see https://github.com/RobustPerception/PushProx.
+
+
+
+=== Reverse Proxy Setup
+
+Prometheus fetches metrics using a pull mechanism, so the server must be able to establish TCP connections to monitored clients.
+If you cannot open these ports directly in your firewall, you can use reverse proxies to establish a connection.
+
+// Probably a diagram here. --LKB 2020-08-11
+
+
+
+.Procedure: Installing Prometheus with Reverse Proxies
+. In the {productname} {webui}, open the details page of the system to be monitored, and navigate to the [guimenu]``Formulas`` tab.
+. Check the [guimenu]``Prometheus Exporters`` checkbox to enable the exporters formula, and click btn:[Save].
+. Navigate to the ``Prometheus Exporters`` tab in the top menu.
+. Check the [guimenu]``Enable reverse proxy`` option, and enter a valid reverse proxy port number.
+For example, ``9999``.
+. Customize the other exporters according to your needs.
+. Click btn:[Save Formula].
+. Apply the highstate and confirm that it completes successfully.
+
+For more information about the monitoring formulas, see xref:salt:formula-monitoring.adoc[].
