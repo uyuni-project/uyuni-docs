@@ -1,4 +1,4 @@
-function selectLanguage(langId){          
+function selectLanguage(langId) {
 
     var str = window.location.pathname;
     var regexPattern =/\/..\// ;
