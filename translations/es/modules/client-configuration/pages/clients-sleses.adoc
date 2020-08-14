@@ -1,0 +1,241 @@
+[[clients-sleses]]
+= Registering {sleses} Clients
+
+This section contains information about registering traditional and Salt
+clients running {sleses} ({es}) operating systems.
+
+{es} clients are based on {rhel} or {centos}.
+
+They are sometimes also called SLESES, RES or {redhat} {es}.
+
+
+[IMPORTANT]
+====
+You are responsible for arranging access to {redhat} or {centos} base media
+repositories and installation media.
+====
+
+ifeval::[{suma-content} == true]
+[IMPORTANT]
+====
+You must obtain support from {suse} for all your {es} systems.
+====
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+[IMPORTANT]
+====
+{suse} does not provide support for {es} systems on {uyuni}.
+====
+endif::[]
+
+
+[IMPORTANT]
+====
+Traditional clients are not available on {es}{nbsp}8.  {es}{nbsp}8 clients
+are only supported as Salt clients.
+====
+
+
+
+== Add Software Channels
+
+
+For {es} clients, some required packages are contained on the {rhel} or
+{centos} installation media.  You must have these packages installed before
+you can register a {es} client.
+
+The {es} product is provided by {scc}.  This also includes the client tools
+package.
+
+Before you register {es} clients to your {productname} Server, check that
+you have the corresponding {es} product enabled, and the required channels
+are fully synchronized.
+
+You need to select two different sets of channels, one for {es} and the
+other for the Client Tools.
+
+You will need an activation key associated with the correct {es} channels.
+For more information about activation keys, see
+xref:client-configuration:activation-keys.adoc[].
+
+ifeval::[{suma-content} == true]
+
+The products you need for this procedure are:
+
+[[es-channels-wizard]]
+[cols="1,1,1", options="header"]
+.ES Products - WebUI
+|===
+| OS Version | Base Channel                     | Tools Channel
+| {es} 6     | RHEL Expanded Support 6          | RES6 SUSE-Manager-Tools x86_64
+| {es} 7     | RHEL Expanded Support 7          | RES7 SUSE-Manager-Tools x86_64
+| {es} 8     | RHEL or SLES ES or CentOS 8 Base | RHEL8-Pool for x86_64
+|===
+
+include::snippets/add_channels_wizard.adoc[]
+
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+The channels you need for this procedure are:
+
+[[es-channels-cli]]
+[cols="1,1,1,1", options="header"]
+.ES Channels - CLI
+|===
+
+| OS Version
+| Base Channel
+| Client Channel
+| Tools Channel
+
+| {es} 6
+| rhel-x86_64-server-6
+| -
+| res6-suse-manager-tools-x86_64
+
+| {es} 7
+| rhel-x86_64-server-7
+| -
+| res7-suse-manager-tools-x86_64
+
+| {es} 8
+| rhel-x86_64-server-8
+| -
+| res8-suse-manager-tools-x86_64
+
+|===
+
+include::snippets/add_channels_cli.adoc[]
+
+endif::[]
+
+
+
+=== Add Base Media
+
+The base {es} channel does not contain any packages, because {suse} does not
+provide {rhel} or {centos} base media.  You will need to obtain base media
+from {redhat} or {centos}, which you can add as a child channel to the {es}
+parent channel.  To ensure you have all the packages you need, use a full
+DVD image, not a minimal or {jeos} image.
+
+You can use {productname} custom channels to set up the {rhel} or {centos}
+media.  All packages on the base media are mirrored into a child channel.
+
+
+The details you need for this procedure are:
+
+[[es-repos-manual]]
+[cols="1,1", options="header"]
+.ES Custom Repository Settings
+|===
+| Option                 | Parameter
+| Repository URL         | The content URL provided by {redhat} CDN or {centos}
+| Has Signed Metadata?   | Uncheck all {redhat} Enterprise repositories
+| SSL CA Certificate     | [systemitem]``redhat-uep``
+| SSL Client Certificate | [systemitem]``Entitlement-Cert-date``
+| SSL Client Key         | ``Entitlement-Key-date``
+|===
+
+include::snippets/manual_repos.adoc[]
+
+
+
+The channels you need for this procedure are:
+
+[[es-channels-custom]]
+[cols="1,1,1", options="header"]
+.ES Custom Channels
+|===
+| OS Version | Base Channel                     | Tools Channel
+| {es} 6     | RHEL Expanded Support 6          | RES6 SUSE-Manager-Tools x86_64
+| {es} 7     | RHEL Expanded Support 7          | RES7 SUSE-Manager-Tools x86_64
+| {es} 8     | RHEL or SLES ES or CentOS 8 Base | RHEL8-Pool for x86_64
+|===
+
+include::snippets/manual_channels.adoc[]
+
+
+[IMPORTANT]
+====
+For {redhat} 8 clients, add both the Base and Appstream channels.  You will
+require packages from both channels.  If you do not add both channels, you
+will not be able to create the bootstrap repository, due to missing
+packages.
+====
+
+include::snippets/manual_associate.adoc[]
+
+
+
+.Procedure: Adding Base Media to Custom Channels
+
+. On the {productname} Server, at the command prompt, as root, copy the base
+  media image to the [path]``/tmp/`` directory.
+. Create a directory to contain the media content.  Replace
+  [command]``<os_name>`` with either ``sleses6``, ``sleses7`` or ``sleses8``:
++
+----
+mkdir -p /srv/www/htdocs/pub/<os_name>
+----
+. Mount the image:
++
+----
+mount -o loop /tmp/<iso_filename> /srv/www/htdocs/pub/<os_name>
+----
+
+When the image is mounted, you can synchronize the base media.  To manually
+synchronize the channels, navigate to menu:Software[Manage > Channels].
+Click each channel in the list, and navigate to menu:[Repositories > Sync].
+Click btn:[Sync Now] to begin synchronization immediately.  You can also
+create a synchronization schedule from this screen.
+
+
+
+== Check Synchronization Status
+
+ifeval::[{suma-content} == true]
+
+include::snippets/check_sync_webui_suma.adoc[]
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+include::snippets/check_sync_webui_uyuni.adoc[]
+
+endif::[]
+
+include::snippets/check_sync_cli.adoc[]
+
+[NOTE]
+====
+The {es} channels can be very large.  The initial channel synchronization
+can sometimes take up to several hours.
+
+When the initial synchronization is complete, we recommended you clone the
+channel before you work with it.  This gives you a backup of the original
+synchronization data.
+====
+
+
+
+== Register {es} Clients
+
+Your {es} clients are now ready to be registered.
+
+For more information on registering your clients, see
+xref:client-configuration:registration-overview.adoc[].
+
+
+[WARNING]
+====
+To register and use {sleses}{nbsp}6 clients, you need to configure the
+{productname} Server to support older types of SSL encryption.  For more
+information about how to resolve this error, see ``Registering Older
+Clients`` at xref:client-configuration:tshoot-clients.adoc[].
+====
