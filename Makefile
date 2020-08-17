@@ -1,6 +1,6 @@
 # Makefile for SUSE Manager/Uyuni Documentation
 # Author: Joseph Cayouette, Pau Garcia Quiles
-# Inspired/modified from Owncloud's documentation Makefile written by Matthew Setter
+# Inspired/modified from Owncloud's documentation Makefile
 SHELL = bash
 
 # SUMA Productname and file replacement
