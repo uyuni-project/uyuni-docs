@@ -5,16 +5,23 @@ Before you begin, you need to install the ``hub-xmlrpc-api`` package, and config
 
 
 
-.Procedure: Installing and Configuring the XMLRPC API
+.Procedure: Installing and Configuring the Hub XMLRPC API
 . On the Hub Server, or on a host that has access to all peripheral servers' XMLRPC APIs, install the ``hub-xmlrpc-api`` package.
 The package is available in the {productname} {productnumber} repositories.
-. If the ``hub-xmlrpc-api`` package is installed on the Hub then no further configuration is necessary and you can start the service using systemd.
-The ``hub-xmlrpc-api.service`` file is provided by the package.
-Alternatively, if the ``hub-xmlrpc-api`` package is installed on a separate host, you need to verify that the configuration file is pointing to the correct Hub instance.
-Open the [path]``/etc/hub/hub.conf`` configuration file and check that the ``HUB_API_URL`` field is correct.
-. OPTIONAL: In the configuration file, check the settings for the timeout parameters ``HUB_CONNECT_TIMEOUT`` and ``HUB_REQUEST_TIMEOUT``.
-* ``HUB_CONNECT_TIMEOUT`` refers to the maximum number of seconds to wait for a response when connecting to a server.
-* ``HUB_REQUEST_TIMEOUT`` refers to the maximum number of seconds to wait for a response when calling a server method.
+. OPTIONAL: the Hub XMLRPC API service does not start on installation. You can set it up to start automatically with systemd, by executing the following commands
+---
+sudo systemctl enable hub-xmlrpc-api.service
+sudo systemctl start hub-xmlrpc-api.service
+---
+. OPTIONAL: verify contents of the configuration file at  ``/etc/hub/hub.conf``
+  - ``HUB_API_URL``: URL to the Hub Server XMLRPC API endpoint. The default is correct if you are installing `hub-xmlrpc-api` on the Hub Server
+  - ``HUB_CONNECT_TIMEOUT``: maximum number of seconds to wait for a response when connecting to a Server. In most cases, these parameter can be left at its default value.
+  - ``HUB_REQUEST_TIMEOUT``: maximum numbr of seconds to wait for a response when calling a Server method. In most cases, these parameter can be left at its default value.
+  - ``HUB_CONNECT_USING_SSL``: use https instead of plain http for communicating with peripheral Servers. Recommended for a secure environment.
 
-In most cases, these parameters can be left at their default values.
-. Restart services to pick up the configuration changes.
+[NOTE]
+====
+In order to use https to connect to peripheral Servers, in addition to setting ``HUB_CONNECT_USING_SSL`` flag to true, SSL certificates for all the peripheral Servers need to be installed on the machine where the hub-xmlrpc-api service runs. This can be achieved by copying the ``RHN-ORG-TRUSTED-SSL-CERT`` certificate file from each peripheral Server's pub directory (http://<server-url>/pub/) to /etc/pki/trust/anchors/ and then running the ``update-ca-certificates`` command.
+====
+
+Restart services to pick up any configuration changes.
