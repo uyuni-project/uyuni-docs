@@ -127,3 +127,72 @@ spacewalk-repo-sync -c opensuse_leap15_2-x86_64-updates
 spacewalk-repo-sync -c opensuse_leap15_2-uyuni-client-x86_64
 spacewalk-repo-sync -c uyuni-proxy-stable-leap-152-x86_64
 ----
+
+
+
+// FIXME Starting from here, everything is preliminary
+// Feedback provided by Lukas
+== Create Activation Key for a Proxy (Branch Server) and the Retail Terminals
+
+For more information about creating activation keys, see xref:client-configuration:activation-keys.adoc[].
+
+Activation key for proxy must contain these child channels:
+
+* openSUSE Leap 15.2 Updates (x86_64)
+* Uyuni Client Tools for openSUSE Leap 15.2 (x86_64)
+* Uyuni Proxy Stable for openSUSE Leap 15.2 (x86_64)
+
+Activation key for retail terminal based on Leap 15.2 must contain these child channels:
+
+* openSUSE Leap 15.2 Updates (x86_64)
+* Uyuni Client Tools for openSUSE Leap 15.2 (x86_64)
+
+Then run:
+
+mgr-create-boostrap-repo (but it shouldn't be necessary as it should be created automatically)
+
+Bootstrap proxy via web UI or script using activation key created for proxy.
+
+Uyuni Proxy specific steps
+
+NOTE: This proxy is going to be used as a branch server. (There is no place where Uyuni uses term Branch
+Server.)
+
+Check "Uyuni Proxy Stable for openSUSE Leap 15.2 (x86_64)" channel is assigned to the proxy at its system
+profile page.
+Then run:
+
+zypper in -t pattern uyuni_proxy
+configure-proxy.sh 
+# nothing specific for uyuni here, just fill the answers as for usual case of proxy
+
+If you want to use same system also as a build host, go to system profile and check "OS Image Build Host" as
+a "Add-On System Types".
+
+Configure proxy to behave as branch server for example by:
+
+retail_branch_init vm155237.qa.prv.suse.net --dedicated-nic eth1 --branch-ip 192.168.7.5 --netmask 255.255.255.0 --dyn-range 192.168.7.100 192.168.7.200 --server-name uyunibranch --server-domain branch.org --branch-prefix uyuni
+
+Next we need to adapt kiwi profile for Leap 15.2, it is possible to simply modify JeOS7 for SLE15SP2 by
+dropping few SLE specific packages and directives:
+
+         <bootsplash-theme>SLE</bootsplash-theme>
+         <bootloader-theme>SLE</bootloader-theme>
+         <package name="grub2-branding-SLE" bootinclude="true"/>
+         <package name="SUSEConnect"/>
+         <package name="suse-build-key"/>
+         <package name="plymouth-branding-SLE"/>
+         <package name="sles-release"/>
+         <package name="rhn-org-trusted-ssl-cert-osimage"/>
+
+Side note: I plan to publish modified profile somewhere, but I haven't decided where yet as it is uyuni and
+feature without support.
+
+Then it is possible to build the image using modified kiwi profile and deploy it to terminal as usual (there is
+nothing specific for Uuyni).
+
+The rest of things (saltboot formula and formula for image syncing works just the same way as SUMA.)
+
+Only thing that behaves differently is naming of terminals, for some reason dashes are used instead of
+HWTYPE (for example). But fortunately it has no impact on (at least basic) functionality of terminal.
+
