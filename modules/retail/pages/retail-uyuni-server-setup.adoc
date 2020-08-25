@@ -6,7 +6,7 @@ This section covers {productname} Server setup, using these procedures:
 * Start {productname} setup with {yast}
 * Create the main administration account with the {productname} {webui}
 * Name your base organization and add login credentials
-* Synchronize the {sle} product channel from {scc}
+* Synchronize the OpenSUSE Leap channel
 +
 // ^^^ CHECKIT
 
@@ -53,3 +53,77 @@ You will see the address of the {productname} {webui}.
 
 . Click btn:[Finish] to complete {productname} setup.
 
+
+
+== Create the Main Administration Account
+
+This section covers how to create your organization's main administration account for {productname}.
+
+[WARNING]
+====
+The main administration account has the highest authority within {productname}.
+Ensure you keep access information for this account secure.
+
+We recommend that you create lower level administration accounts for organizations and groups.
+Do not share the main administration access details.
+====
+
+
+.Procedure: Setting Up the Main Administration Account
+
+. In your web browser, enter the address for the {productname} {webui}.
+This address was provided after you completed setup.
+For more information, see xref:uyuni-server-setup.adoc#retail-server-setup-yast[].
+
+. Sign in to the {webui}, navigate to the menu:Create Organization[Organization Name] field, and enter your organization name.
+
+. In the menu:Create Organization[Desired Login] and menu:Create Organization[Desired Password] fields, enter your username and password.
+
+. Fill in the Account Information fields including an email for system notifications.
+
+. Click btn:[Create Organization] to finish creating your administration account.
+
+When you have completed the {productname} {webui} setup, you are taken to the menu:Home[Overview] page.
+
+
+
+== Synchronize the OpenSUSE Leap Channel
+
+Use [command]``spacewalk-common-channels`` to obtain all needed channels:
+
+.Procedure:
+. First the OpenSUSE Leap that is the parrent channel for all the following channels needed:
++
+----
+spacewalk-common-channels opensuse_leap15_2
+----
++
+If you do not enable opensuse_leap15_2 first, you will see the following error:
++
+----
+# ERROR: opensuse_leap15_2-x86_64 could not be found at the server
+# ERROR: opensuse_leap15_2-uyuni-client-x86_64: redstone.xmlrpc.XmlRpcFault: unhandled internal exception: User 1 does not have access to channel opensuse_leap15_2-x86_64 or the channel does not exist
+----
+
+. Enable the child channels:
++
+----
+spacewalk-common-channels opensuse_leap15_2-updates
+spacewalk-common-channels uyuni-proxy-stable-leap-152
+spacewalk-common-channels opensuse_leap15_2-uyuni-client
+----
++
+If everything is successfully finished, you will see this message:
++
+----
+# Base channel 'openSUSE Leap 15.2 (x86_64)' - exists
+----
+
+. Synchronize all repositories, which will take a lot of time to finish:
++
+----
+spacewalk-repo-sync -c opensuse_leap15_2-x86_64
+spacewalk-repo-sync -c opensuse_leap15_2-x86_64-updates
+spacewalk-repo-sync -c opensuse_leap15_2-uyuni-client-x86_64
+spacewalk-repo-sync -c uyuni-proxy-stable-leap-152-x86_64
+----
