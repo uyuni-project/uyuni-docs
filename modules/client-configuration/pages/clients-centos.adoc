@@ -35,9 +35,7 @@ The products you need for this procedure are:
 | {centos} 8 | centos8-x86_64 | centos8-appstream for x86_64
 |===
 
-
 include::snippets/add_channels_wizard.adoc[]
-
 
 endif::[]
 
@@ -55,7 +53,6 @@ The channels you need for this procedure are:
 | {centos} 8 | centos8      | centos8-uyuni-client | centos8-appstream
 |===
 
-
 include::snippets/add_channels_cli.adoc[]
 
 
@@ -67,12 +64,20 @@ The client tools channel provided by [command]``spacewalk-common-channels`` is s
 endif::[]
 
 
-
 [IMPORTANT]
 ====
-For {centos} 8 clients, add both the Base and Appstream channels.
+For {centos} 8 clients, add both the Base and AppStream channels.
 You will require packages from both channels.
 If you do not add both channels, you will not be able to create the bootstrap repository, due to missing packages.
+====
+
+
+[NOTE]
+====
+You might notice some disparity in the number of packages available in the AppStream channel between upstream and the {productname} channel.
+You might also see different numbers if you compare the same channel added at a different point in time.
+This is due to the way that {centos} manages their repositories.
+{centos} removes older version of packages when a new version is released, while {productname} keeps all of them, regardless of age.
 ====
 
 
@@ -81,20 +86,16 @@ If you do not add both channels, you will not be able to create the bootstrap re
 
 ifeval::[{suma-content} == true]
 
-
 include::snippets/check_sync_webui_suma.adoc[]
 
-
 endif::[]
+
 
 ifeval::[{uyuni-content} == true]
 
-
 include::snippets/check_sync_webui_uyuni.adoc[]
 
-
 endif::[]
-
 
 
 include::snippets/check_sync_cli.adoc[]
@@ -110,11 +111,10 @@ For more information on activation keys, see xref:client-configuration:activatio
 
 
 ifeval::[{uyuni-content} == true]
+
 == Trust GPG Keys on Clients
 
-
 include::snippets/trust_gpg.adoc[]
-
 
 endif::[]
 
@@ -139,15 +139,25 @@ For more information about how to resolve this error, see ``Registering Older Cl
 When you update {centos} clients, the packages do not include metadata about the updates.
 You can use a third-party errata service to obtain this information.
 
+[WARNING]
+====
+
 ifeval::[{suma-content} == true]
 
-[IMPORTANT]
-====
-The third-party errata service described here is provided and maintained by the community.
+The third-party errata service described here, CEFS, is provided and maintained by the community.
 It is not supported by {suse}.
-====
 
 endif::[]
+
+The authors of CEFS provide patches or errata on a best-effort basis, in the hope they will be useful but with no guarantees of correctness or currency.
+This could mean that the patch dates could be incorrect, and in at least one case, the published data was shown to be more than a month old.
+For more information on these cases, see https://github.com/stevemeier/cefs/issues/28#issuecomment-656579382 and https://github.com/stevemeier/cefs/issues/28#issuecomment-656573607.
+
+Any problems or delays with the patch data might result in unreliable patch information being imported to your {productname} Server.
+This would cause reports, audits, CVE updates, or other patch-related information to also be incorrect.
+Please consider alternatives to using this service, such as independently verifying patch data, or choosing a different operating system, depending on your security-related requirements and certifications criteria.
+====
+
 
 
 
@@ -158,10 +168,19 @@ endif::[]
 ----
 SUSEConnect --product sle-module-development-tools/15.2/x86_64
 ----
-. Install the errata service:
+. Install errata service dependencies:
 +
 ----
 zypper in  perl-Text-Unidecode
+----
+. Add or edit this line in [path]``/etc/rhn/rhn.conf``:
++
+----
+java.allow_adding_patches_via_api = centos7-x86_64-updates,centos7-x86_64,centos7-x86_64-extras
+----
+. Restart Tomcat:
+----
+systemctl restart tomcat
 ----
 . Create a file for your errata script:
 +
