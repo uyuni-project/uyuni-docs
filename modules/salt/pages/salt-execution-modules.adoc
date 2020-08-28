@@ -15,7 +15,7 @@ To install these states a user should install the following package on the {prod
 
 For more information check the state implementation on `/usr/share/susemanager/salt/_modules/uyuni_config.py`
 
-== Pillar data structure global Admin User
+== Pillar data for default administrator user
 
 Default administrator user can be defined in pillar data and in this way avoid duplication.
 To do so, one should specify the following data:
@@ -31,24 +31,22 @@ uyuni:
 == Available Modules
 
 === channel_list_manageable_channels
-**(uid, password)**
-
-List with all of manageable channels for the authenticated user
+**(login, password)**
+List all of manageable channels for the authenticated user
 
 ....
-uid: user login id
+login: user login id
 password: user password
 ....
 
     return: list of manageable channels for the user
 
 === channel_list_my_channels
-**(uid, password)**
-
-List with all of subscribed channels for the authenticated user
+**(login, password)**
+List all of subscribed channels for the authenticated user
 
 ....
-uid: user login id
+login: user login id
 password: user password
 ....
 
@@ -56,39 +54,38 @@ password: user password
 
 === channel_software_is_globally_subscribable
 **(channel_label, org_admin_user=None, org_admin_password=None)**
-
-Verify if whether the channel is globally subscribed on the organization
+Returns whether the channel is globally subscribable on the organization
 
 ....
-channel_label: channel's label
+channel_label: label of the channel
 org_admin_user: organization admin username
 org_admin_password: organization admin password
 ....
 
-    return: boolean which indicates if channel is globally subscribe
+    return: boolean which indicates if channel is globally subscribable
 
 === channel_software_is_user_manageable
-**(channel_label, uid, admin_user=None, admin_password=None)**
+**(channel_label, login, org_admin_user=None, org_admin_password=None)**
 
-Verify whether the channel may be managed by the given user.
+Returns whether the channel may be managed by the given user.
 
 ....
-channel_label: channel's label
-uid: user login id
-admin_user: organization admin username
-admin_password: organization admin password
+channel_label: label of the channel
+login: user login id
+org_admin_user: organization admin username
+org_admin_password: organization admin password
 ....
 
     return: boolean which indicates if user can manage channel or not
 
 === channel_software_is_user_subscribable
-**(channel_label, uid, org_admin_user=None, org_admin_password=None)**
+**(channel_label, login, org_admin_user=None, org_admin_password=None)**
 
-Verify whether the channel may be managed by the given user.
+Returns whether the channel may be subscribed by the given user.
 
 ....
-channel_label: channel's label
-uid: user login id
+channel_label: label of the channel
+login: user login id
 org_admin_user: organization admin username
 org_admin_password: organization admin password
 ....
@@ -96,68 +93,57 @@ org_admin_password: organization admin password
     return: boolean which indicates if user subscribe the channel or not
 
 === channel_software_set_user_manageable
-**(channel_label, uid, access, admin_user=None, admin_password=None)**
+**(channel_label, login, access, org_admin_user=None, org_admin_password=None)**
 
 Set the manageable flag for a given channel and user.
 If access is set to 'true', this method will give the user manage permissions to the channel.
 Otherwise, that privilege is revoked.
 
 ....
-channel_label: channel's label
-uid: user login id
-access: Flag which if user should have access to channel or not
-admin_user: organization admin username
-admin_password: organization admin password
+channel_label: label of the channel
+login: user login id
+access: True if the user should have management access to channel
+org_admin_user: organization admin username
+org_admin_password: organization admin password
 ....
 
-    return: boolean indication success in operation
-
+    return: boolean, True indicates success
 
 === channel_software_set_user_subscribable
-(channel_label, uid, access, admin_user=None, admin_password=None)
+**(channel_label, login, access, org_admin_user=None, org_admin_password=None)**
 
 Set the subscribable flag for a given channel and user.
 If value is set to 'true', this method will give the user subscribe permissions to the channel.
 Otherwise, that privilege is revoked.
 
 ....
-channel_label: channel's label
-uid: user login id
-access: Flag which if user should subscribe a channel or not
-admin_user: organization admin username
-admin_password: organization admin password
+channel_label: label of the channel
+login: user login id
+access: True if the user should have subscribe access to channel
+org_admin_user: organization admin username
+org_admin_password: organization admin password
 ....
 
-    return: boolean indication success in operation
-
-=== master_list_minions
-**(active=False)**
-
-Obtain a list of all available minions from the configured Salt Master on the same host.
-
-....
-active: Return only active minions.
-....
-
-    return: list of minion IDs
+    return: boolean, True indicates success
 
 === master_select_minions
 **(target=None, target_type='glob')**
 
-Return list minions from the configured Salt Master on the same host which match the target expression on the defined target
+Return list minions from the configured Salt Master on the same host which match the expression on the defined target
 
 ....
 target: target expression to filter minions
 target_type: target type, one of the following: glob, grain, grain_pcre, pillar, pillar_pcre,
-     pillar_exact, compound, compound_pillar_exact. Default: glob.
+                pillar_exact, compound, compound_pillar_exact. Default: glob.
 ....
 
     return: list of minion IDs
 
 === org_create
-** (name, org_admin_user, org_admin_password, first_name, last_name, email, admin_prefix='Mr.', pam=False, admin_user=None, admin_password=None)**
+**(name, org_admin_user, org_admin_password, first_name, last_name, email, admin_prefix='Mr.', pam=False, admin_user=None, admin_password=None)**
 
-Create organization. Admin user must have Administrator role to perform this action.
+Create an Uyuni organization
+Note: the configured admin user must have the SUSE Manager/Uyuni Administrator role to perform this action
 
 ....
 name: organization name
@@ -168,153 +154,159 @@ last_name: organization admin last name
 email: organization admin email
 admin_prefix: organization admin prefix
 pam:organization admin pam authentication
-admin_user: admin user
-admin_password: admin password
+admin_user: uyuni admin user
+admin_password: uyuni admin password
 ....
 
-    return: dictionary with organization information
+    return: dictionary with org information
 
 === org_delete
 **(name, admin_user=None, admin_password=None)**
 
-Delete organization. Admin user must have Administrator role to perform this action.
+Delete an organization
+Note: the configured admin user must have the SUSE Manager/Uyuni Administrator role to perform this action
 
 ....
 name: organization name
-admin_user: admin user
-admin_password: admin password
+admin_user: uyuni admin user
+admin_password: uyuni admin password
 ....
 
-    return: None
+    return: boolean, True indicates success
 
 === org_get_details
 **(name, admin_user=None, admin_password=None)**
 
-Get organization details. Admin user must have Administrator role to perform this action.
+Get details of an organization.
+Note: the configured admin user must have the SUSE Manager/Uyuni Administrator role to perform this action
 
 ....
-name: organization name
-admin_user: admin user
-admin_password: admin password
+name: organisation name
+admin_user: uyuni admin user
+admin_password: uyuni admin password
 ....
 
-    return: None
+    return: organization details
 
-== org_list_orgs
+=== org_list_orgs
 **(admin_user=None, admin_password=None)**
 
-List all existing organizations. Admin user must have Administrator role to perform this action.
+List all organizations.
+Note: the configured admin user must have the SUSE Manager/Uyuni Administrator role to perform this action
 
 ....
-admin_user: admin user
-admin_password: admin password
+name: organisation name
+admin_user: uyuni admin user
+admin_password: uyuni admin password
 ....
 
-    return: list of all available orgs.
+    return: list of all available organizations.
 
 === org_trust_add_trust
 **(org_id, org_trust_id, admin_user=None, admin_password=None)**
 
 Add an organization to the list of trusted organizations.
-admin_user needs to have Administrator role to perform this action.
+Note: the configured admin user must have the SUSE Manager/Uyuni Administrator role to perform this action
 
 ....
 org_id: Organization id
 org_trust_id: Trust organization id
-admin_user: admin user
-admin_password: admin password
+admin_user: uyuni admin user
+admin_password: uyuni admin password
 ....
-    return: None
+
+    return: boolean, True indicates success
 
 === org_trust_add_trust_by_name
 **(org_name, org_trust, admin_user=None, admin_password=None)**
 
 Add an organization to the list of trusted organizations.
-admin_user needs to have Administrator role to perform this action.
+Note: the configured admin user must have the SUSE Manager/Uyuni Administrator role to perform this action
 
 ....
 org_name: organization name
 org_trust: Trust organization name
-admin_user: admin user
-admin_password: admin password
+admin_user: uyuni admin user
+admin_password: uyuni admin password
 ....
 
-    return: None
+    return: boolean, True indicates success
 
 === org_trust_list_orgs
-**(admin_user=None, admin_password=None)**
+**(org_admin_user=None, org_admin_password=None)**
 
-List all organanizations trusted by the authenticated user organization.
+List all organizations trusted by the authenticated user organization
 
 ....
-admin_user: admin user
-admin_password: admin password
+org_admin_user: organization admin user
+org_admin_password: organization admin password
 ....
 
-    return: None
+    return: List of organization details
 
 === org_trust_list_trusts
 **(org_name, admin_user=None, admin_password=None)**
 
-List all trusts for one organization.
-admin_user needs to have  Administrator role to perform this action.
+List all trusts for one organization
+Note: the configured admin user must have the SUSE Manager/Uyuni Administrator role to perform this action
 
 ....
 org_name: Name of the organization to get the trusts
-admin_user: admin user
-admin_password: admin password
+admin_user: authentication user
+admin_password: authentication user password
 ....
 
-    return: list of all organizations with the trust flag value
+    return: list with all organizations and their trust status
 
 === org_trust_remove_trust
 **(org_id, org_untrust_id, admin_user=None, admin_password=None)**
 
-Remove an organization to the list of trusted organizations.
-admin_user needs to have Administrator role to perform this action.
+Remove an organization from the list of trusted organizations.
+Note: the configured admin user must have the SUSE Manager/Uyuni Administrator role to perform this action
 
 ....
 org_id: orgnization id
 org_untrust_id: organizaton id to untrust
-admin_user: admin user
-admin_password: admin password
+admin_user: uyuni admin user
+admin_password: uyuni admin password
 ....
 
-    return: None
+    return: boolean, True indicates success
 
 === org_trust_remove_trust_by_name
 **(org_name, org_untrust, admin_user=None, admin_password=None)**
 
-Remove an organization to the list of trusted organizations.
-admin_user needs to have Administrator role to perform this action.
+Remove an organization from the list of trusted organizations.
+Note: the configured admin user must have the SUSE Manager/Uyuni Administrator role to perform this action
 
 ....
 org_name: organization name
 org_untrust: organization name to untrust
-admin_user: admin user
-admin_password: admin password
+admin_user: uyuni admin user
+admin_password: uyuni admin password
 ....
 
-    return: None
+    return: boolean, True indicates success
 
 === org_update_name
 **(org_id, name, admin_user=None, admin_password=None)**
 
-Update organization name.
+update an Uyuni organization name
+Note: the configured admin user must have the SUSE Manager/Uyuni Administrator role to perform this action
 
 ....
-org_id: Organization id
+org_id: organization internal id
 name: new organization name
-admin_user: admin user
-admin_password: admin password
+admin_user: uyuni admin user
+admin_password: uyuni admin password
 ....
 
-    return: None
+    return: organization details
 
 === systemgroup_add_remove_systems
 **(name, add_remove, system_ids=[], org_admin_user=None, org_admin_password=None)**
 
-Update system group.
+Update systems on a system group.
 
 ....
 name: Name of the system group.
@@ -324,12 +316,12 @@ org_admin_user: organization administrator username
 org_admin_password: organization administrator password
 ....
 
-    return: 1 on success, exception thrown otherwise.
+    return: boolean, True indicates success
 
 === systemgroup_create
 **(name, descr, org_admin_user=None, org_admin_password=None)**
 
-Create system group.
+Create a system group.
 
 ....
 name: Name of the system group.
@@ -338,42 +330,42 @@ org_admin_user: organization administrator username
 org_admin_password: organization administrator password
 ....
 
-    return: system group
+    return: details of the system group
 
 === systemgroup_delete
 **(name, org_admin_user=None, org_admin_password=None)**
 
-Delete system group.
+Delete a system group.
 
 ....
-name: Name of the system group
+name: Name of the system group.
 org_admin_user: organization administrator username
 org_admin_password: organization administrator password
 ....
 
-    return: 1 on success, exception thrown otherwise.
+    return: boolean, True indicates success
 
 === systemgroup_get_details
 **(name, org_admin_user=None, org_admin_password=None)**
 
-Get system group details
+Return system group details.
 
 ....
-name: Name of the system group
+name: Name of the system group.
 org_admin_user: organization administrator username
 org_admin_password: organization administrator password
 ....
 
-    return: system group
+    return: details of the system group
 
 === systemgroup_list_systems
 **(name, minimal=True, org_admin_user=None, org_admin_password=None)**
 
-List system on system group
+List systems in a system group
 
 ....
 name: Name of the system group.
-minimal: default True. Minimal information or more detailed one about systems
+minimal: default True. Only return minimal information about systems, use False to get more details
 org_admin_user: organization administrator username
 org_admin_password: organization administrator password
 ....
@@ -383,7 +375,7 @@ org_admin_password: organization administrator password
 === systemgroup_update
 **(name, descr, org_admin_user=None, org_admin_password=None)**
 
-Update system group description
+Update a system group.
 
 ....
 name: Name of the system group.
@@ -392,12 +384,12 @@ org_admin_user: organization administrator username
 org_admin_password: organization administrator password
 ....
 
-    return: server group structure.
+    return: details of the system group
 
 === systems_get_minion_id_map
 **(username=None, password=None, refresh=False)**
 
-Map between minion ID and system internal ID of all system user have access to
+Returns a map from minion ID to Uyuni system ID for all systems a user has access to
 
 ....
 username: username to authenticate
@@ -408,43 +400,40 @@ refresh: Get new data from server, ignoring values in local context cache
     return: Map between minion ID and system ID of all system accessible by authenticated user
 
 === user_add_assigned_system_groups
-**(uid, server_group_names, set_default=False, org_admin_user=None, org_admin_password=None)**
+**(login, server_group_names, set_default=False, org_admin_user=None, org_admin_password=None)**
 
 Add system groups to user's list of assigned system groups.
-If no organization admin credentials are provided, credentials from pillar are used
 
 ....
-uid: user id to look for
+login: user id to look for
 server_group_names: systems groups to add to list of assigned system groups
 set_default: Should system groups also be added to user's list of default system groups.
 org_admin_user: organization admin username
 org_admin_password: organization admin password
 ....
 
-    return: boolean indication success in operation
+    return: boolean, True indicates success
 
 === user_add_role
-**(uid, role, org_admin_user=None, org_admin_password=None)**
-
-Add role to user in Uyuni.
-If no organization admin credentials are provided, credentials from pillar are used.
+**(login, role, org_admin_user=None, org_admin_password=None)**
+Adds a role to an Uyuni user.
 
 ....
-uid: user id to look for
+login: user id to look for
 role: role to be added to the user
 org_admin_user: organization admin username
 org_admin_password: organization admin password
 ....
-    return: boolean indication success in operation
+
+    return: boolean, True indicates success
 
 === user_create
-**(uid, password, email, first_name, last_name, use_pam_auth=False, org_admin_user=None, org_admin_password=None)**
+**(login, password, email, first_name, last_name, use_pam_auth=False, org_admin_user=None, org_admin_password=None)**
 
-Create user if it doesn't exist already.
-If no organization admin credentials are provided, credentials from pillar are used.
+Create an Uyuni user.
 
 ....
-uid: user id to look for
+login: user id to look for
 password: password for the user
 email: user email address
 first_name: user first name
@@ -454,59 +443,61 @@ org_admin_user: organization admin username
 org_admin_password: organization admin password
 ....
 
-    return: boolean indication success in operation
+    return: boolean, True indicates success
 
 === user_delete
-**(uid, org_admin_user=None, org_admin_password=None)**
+**(login, org_admin_user=None, org_admin_password=None)**
 
-Delete user if exists.
-If no organization admin credentials are provided, credentials from pillar are used.
+Deletes an Uyuni user
 
 ....
-uid: user id to look for
+login: user id to look for
 org_admin_user: organization admin username
 org_admin_password: organization admin password
 ....
-    return: boolean indication success in operation
+
+    return: boolean, True indicates success
 
 === user_get_details
-**(uid, password=None, org_admin_user=None, org_admin_password=None)**
+**(login, password=None, org_admin_user=None, org_admin_password=None)**
 
-Get user information..
-If user password is provided name and password fields are use to authenticate
+Get details of an Uyuni user
+If password is provided as a parameter, then it will be used to authenticate
 If no user credentials are provided, organization administrator credentials will be used
 If no user credentials neither organization admin credentials are provided, credentials from pillar will be used
+
 ....
-uid: user id to look for
+login: user id to look for
 password: password for the user
 org_admin_user: organization admin username
 org_admin_password: organization admin password
 ....
+
     return: The user information
 
 === user_list_assigned_system_groups
-**(uid, org_admin_user=None, org_admin_password=None)**
+**(login, org_admin_user=None, org_admin_password=None)**
 
 Returns the system groups that a user can administer.
-If no organization admin credentials are provided, credentials from pillar are used.
 
 ....
-uid: user id to look for
+login: user id to look for
 org_admin_user: organization admin username
 org_admin_password: organization admin password
 ....
+
     return: List of system groups that a user can administer
 
 === user_list_roles
-**(uid, password=None, org_admin_user=None, org_admin_password=None)**
+**(login, password=None, org_admin_user=None, org_admin_password=None)**
 
-Get user roles.
-If user password is provided name and password fields are use to authenticate
+Returns an Uyuni user roles.
+If password is provided as a parameter, then it will be used to authenticate
 If no user credentials are provided, organization administrator credentials will be used
 If no user credentials neither organization admin credentials are provided, credentials from pillar are used
 
 ....
-uid: user id to look for
+login: user id to look for
 password: password for the user
 org_admin_user: organization admin username
 org_admin_password: organization admin password
@@ -517,55 +508,51 @@ org_admin_password: organization admin password
 === user_list_users
 **(org_admin_user=None, org_admin_password=None)**
 
-Return all Uyuni users.
-Uyuni XML-RPC listUsers return all users that are visible for the authenticated user.
-This could be a sub-set of all existing users.
+Return all Uyuni users visible to the authenticated user.
 
 ....
 org_admin_user: organization admin username
 org_admin_password: organization admin password
 ....
 
-    return: List with all users visible to the authenticated user
+    return: all users visible to the authenticated user
 
 === user_remove_assigned_system_groups
-**(uid, server_group_names, set_default=False, org_admin_user=None, org_admin_password=None)**
+**(login, server_group_names, set_default=False, org_admin_user=None, org_admin_password=None)**
 
 Remove system groups from a user's list of assigned system groups.
-If no organization admin credentials are provided, credentials from pillar are used
 
 ....
-uid: user id to look for
+login: user id to look for
 server_group_names: systems groups to remove from list of assigned system groups
 set_default: Should system groups also be added to user's list of default system groups.
 org_admin_user: organization admin username
 org_admin_password: organization admin password
 ....
-    return: boolean indication success in operation
+
+    return: boolean, True indicates success
 
 === user_remove_role
-**(uid, role, org_admin_user=None, org_admin_password=None)**
+**(login, role, org_admin_user=None, org_admin_password=None)**
 
-Remove role from user.
-If no organization admin credentials are provided, credentials from pillar are used
+Remove a role from an Uyuni user.
 
 ....
-uid: user id to look for
+login: user id to look for
 role: role to be removed from the user
 org_admin_user: organization admin username
 org_admin_password: organization admin password
 ....
 
-    return: boolean indication success in operation
+    return: boolean, True indicates success
 
 === user_set_details
-**(uid, password, email, first_name=None, last_name=None, org_admin_user=None, org_admin_password=None)**
+**(login, password, email, first_name=None, last_name=None, org_admin_user=None, org_admin_password=None)**
 
-Update user details.
-If no organization admin credentials are provided, credentials from pillar are used
+Update an Uyuni user.
 
 ....
-uid: user id to look for
+login: user id to look for
 password: password for the user
 email: user email address
 first_name: user first name
@@ -574,4 +561,4 @@ org_admin_user: organization admin username
 org_admin_password: organization admin password
 ....
 
-    return: boolean indication success in operation
+    return: boolean, True indicates success
