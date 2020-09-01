@@ -25,5 +25,5 @@ Check with the docs squad coordinator for confirmation.
 - [ ] Build both SUMA and Uyuni docs from release branch and visually check output.
 - [ ] Publish to documentation.suse.com: https://github.com/uyuni-project/uyuni-docs/wiki/publishing-to-enterprise-endpoints
 - [ ] For Uyuni only - Build latest Uyuni docs with `make antora-uyuni`.
-- [ ] Create a new uyuni-YYYY-MM-pages branch based on the gh-pages branch(https://github.com/uyuni-project/uyuni-docs/tree/gh-pages). Add Julio as the Assignee if available so he can publish when ready.
+- [ ] Create a new uyuni-YYYY-MM-pages branch based on the gh-pages branch(https://github.com/uyuni-project/uyuni-docs/tree/gh-pages). Add Julio as the Assignee if available so he can publish when ready.(Use a label with current Uyuni version (uyuni-2020.09)
 - [ ] When endpoints are live, visually check output.
