@@ -13,7 +13,8 @@ Check with the docs squad coordinator for confirmation.
 ## Packaging Day:
 
 - [ ] Update entities to the current versions.
-- [ ] Cut a new branch from master using syntax `manager-x.y-betaz`.
+- [ ] For SUMA, cut a new branch from master using syntax `manager-x.y-betaz`.
+- [ ] For Uyuni, cut a new branch from master using syntax `uyuni-YYYY-MM-pages` based on the gh-pages branch.
 - [ ] Locally build both SUMA and Uyuni docs from the release branch and visually check output.
 - [ ] Package documentation and push SR to OBS: https://github.com/uyuni-project/uyuni-docs/wiki/publishing-to-obs
 - [ ] Notify Release Manager of SR.
@@ -24,6 +25,5 @@ Check with the docs squad coordinator for confirmation.
 
 - [ ] Build both SUMA and Uyuni docs from release branch and visually check output.
 - [ ] Publish to documentation.suse.com: https://github.com/uyuni-project/uyuni-docs/wiki/publishing-to-enterprise-endpoints
-- [ ] For Uyuni only - Build latest Uyuni docs with `make antora-uyuni`.
-- [ ] Create a new uyuni-YYYY-MM-pages branch based on the gh-pages branch(https://github.com/uyuni-project/uyuni-docs/tree/gh-pages). Add Julio as the Assignee if available so he can publish when ready.(Use a label with current Uyuni version (uyuni-2020.09)
+- [ ] Publish Uyuni to gh-pages: https://github.com/uyuni-project/uyuni-docs/tree/gh-pages. Add release Manager as the assignee, and use a label with current Uyuni version.
 - [ ] When endpoints are live, visually check output.
