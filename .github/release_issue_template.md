@@ -25,5 +25,5 @@ Check with the docs squad coordinator for confirmation.
 
 - [ ] Build both SUMA and Uyuni docs from release branch and visually check output.
 - [ ] Publish to documentation.suse.com: https://github.com/uyuni-project/uyuni-docs/wiki/publishing-to-enterprise-endpoints
-- [ ] Publish Uyuni to gh-pages: https://github.com/uyuni-project/uyuni-docs/tree/gh-pages. Add release Manager as the assignee, and use a label with current Uyuni version.
+- [ ] Publish Uyuni to gh-pages: https://github.com/uyuni-project/uyuni-docs/tree/gh-pages. Add Release Manager as the assignee, and use a label with current Uyuni version.
 - [ ] When endpoints are live, visually check output.
