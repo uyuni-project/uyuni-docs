@@ -95,7 +95,7 @@ endef
 # Create tar of PDF files
 define pdf-tar-product
 #	cd ./$(1) && tar -czvf $(2).tar.gz $(3) && mv $(2).tar.gz build/
-	tar -czvf $(2).tar.gz $(3) && mv $(2).tar.gz build/
+	tar -czvf $(2).tar.gz $(3) && mv $(2).tar.gz build/$(1)/
 endef
 
 # Generate OBS tar files
