@@ -293,7 +293,7 @@ pdf-tar-suma: pdf-tar-suma-en pdf-tar-suma-es
 antora-suma: antora-suma-en antora-suma-es
 
 .PHONY: obs-packages-suma
-obs-packages-suma: obs-packages-suma-en #obs-packages-suma-es
+obs-packages-suma: obs-packages-suma-en obs-packages-suma-es
 
 .PHONY: pdf-all-suma
 pdf-all-suma: pdf-all-suma-en pdf-all-suma-es
@@ -335,10 +335,10 @@ validate-uyuni: validate-uyuni-en validate-uyuni-es
 pdf-tar-uyuni: pdf-tar-uyuni-en pdf-tar-uyuni-es
 
 .PHONY: antora-uyuni
-antora-uyuni: antora-uyuni-en antora-uyuni-es
+antora-uyuni: antora-uyuni-en #antora-uyuni-es
 
 .PHONY: obs-packages-uyuni
-obs-packages-uyuni: obs-packages-uyuni-en obs-packages-uyuni-es
+obs-packages-uyuni: obs-packages-uyuni-en #obs-packages-uyuni-es
 
 .PHONY: pdf-all-uyuni
 pdf-all-uyuni: pdf-all-uyuni-en pdf-all-uyuni-es
