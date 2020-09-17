@@ -293,7 +293,7 @@ pdf-tar-suma: pdf-tar-suma-en pdf-tar-suma-es
 antora-suma: antora-suma-en antora-suma-es
 
 .PHONY: obs-packages-suma
-obs-packages-suma: obs-packages-suma-en obs-packages-suma-es
+obs-packages-suma: obs-packages-suma-en #obs-packages-suma-es
 
 .PHONY: pdf-all-suma
 pdf-all-suma: pdf-all-suma-en pdf-all-suma-es
