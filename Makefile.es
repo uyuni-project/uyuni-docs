@@ -123,14 +123,14 @@ pdf-large-deployment-suma-$(LANGCODE_ES): modules/large-deployments/nav-large-de
 	$(call pdf-large-deployment-product,$(LANGDIR_ES),$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA),$(PDF_BUILD_DIR_ES),$(LANGCODE_ES))
 
 
-.PHONY: modules/architecture/nav-architecture-guide.pdf.$(LANGCODE_ES).adoc
-modules/architecture/nav-architecture-guide.pdf.$(LANGCODE_ES).adoc:
-	$(call pdf-book-create-index,$(LANGDIR_ES),architecture,$(LANGCODE_ES))
+#.PHONY: modules/architecture/nav-architecture-guide.pdf.$(LANGCODE_ES).adoc
+#modules/architecture/nav-architecture-guide.pdf.$(LANGCODE_ES).adoc:
+#	$(call pdf-book-create-index,$(LANGDIR_ES),architecture,$(LANGCODE_ES))
 
-.PHONY: pdf-architecture-suma-$(LANGCODE_ES)
-## Generate PDF version of the SUMA Architecture Guide
-pdf-architecture-suma-$(LANGCODE_ES): modules/architecture/nav-architecture-guide.pdf.$(LANGCODE_ES).adoc
-	$(call pdf-architecture-product,$(LANGDIR_ES),$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA),$(PDF_BUILD_DIR_ES),$(LANGCODE_ES))
+#.PHONY: pdf-architecture-suma-$(LANGCODE_ES)
+### Generate PDF version of the SUMA Architecture Guide
+#pdf-architecture-suma-$(LANGCODE_ES): modules/architecture/nav-architecture-guide.pdf.$(LANGCODE_ES).adoc
+#	$(call pdf-architecture-product,$(LANGDIR_ES),$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA),$(PDF_BUILD_DIR_ES),$(LANGCODE_ES))
 
 .PHONY: modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.$(LANGCODE_ES).adoc
 modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.$(LANGCODE_ES).adoc:
@@ -215,10 +215,10 @@ pdf-retail-uyuni-$(LANGCODE_ES): modules/retail/nav-retail-guide.pdf.$(LANGCODE_
 pdf-large-deployment-uyuni-$(LANGCODE_ES): modules/large-deployments/nav-large-deployments.pdf.$(LANGCODE_ES).adoc
 	$(call pdf-large-deployment-product-uyuni,$(LANGDIR_ES),$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI),$(PDF_BUILD_DIR_ES),$(LANGCODE_ES))
 
-.PHONY: pdf-architecture-uyuni-$(LANGCODE_ES)
-## Generate PDF version of the UYUNI Architecture Guide
-pdf-architecture-uyuni-$(LANGCODE_ES): modules/architecture/nav-architecture-guide.pdf.$(LANGCODE_ES).adoc
-	$(call pdf-architecture-product-uyuni,$(LANGDIR_ES),$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI),$(PDF_BUILD_DIR_ES),$(LANGCODE_ES))
+#.PHONY: pdf-architecture-uyuni-$(LANGCODE_ES)
+### Generate PDF version of the UYUNI Architecture Guide
+#pdf-architecture-uyuni-$(LANGCODE_ES): modules/architecture/nav-architecture-guide.pdf.$(LANGCODE_ES).adoc
+#	$(call pdf-architecture-product-uyuni,$(LANGDIR_ES),$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI),$(PDF_BUILD_DIR_ES),$(LANGCODE_ES))
 
 .PHONY: pdf-quickstart-public-cloud-uyuni-$(LANGCODE_ES)
 ## Generate PDF version of the UYUNI Quickstart Guide for Public Cloud
