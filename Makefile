@@ -95,13 +95,13 @@ endef
 # Create tar of PDF files
 define pdf-tar-product
 #	cd ./$(1) && tar -czvf $(2).tar.gz $(3) && mv $(2).tar.gz build/
-	tar -czvf $(2).tar.gz $(3) && mv $(2).tar.gz build/$(1)/
+	tar -czvf $(2).tar.gz -C $(HTML_BUILD_DIR) $(3) && mv $(2).tar.gz build/$(1)/
 endef
 
 # Generate OBS tar files
 define obs-packages-product
-	cd ./$(1) && tar --exclude='$(2)' -czvf $(3).tar.gz $(HTML_BUILD_DIR) && tar -czvf $(4).tar.gz $(2)
-	mkdir build/packages
+	tar --exclude='$(2)' -czvf $(3).tar.gz -C $(CURDIR) $(HTML_BUILD_DIR)/$(1) && tar -czvf $(4).tar.gz -C $(CURDIR) $(HTML_BUILD_DIR)/$(2)
+	mkdir -p build/packages
 	mv $(3).tar.gz $(4).tar.gz build/packages
 endef
 
