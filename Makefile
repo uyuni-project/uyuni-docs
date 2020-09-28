@@ -1,6 +1,6 @@
 # Makefile for SUSE Manager/Uyuni Documentation
 # Author: Joseph Cayouette, Pau Garcia Quiles
-# Inspired/modified from Owncloud's documentation Makefile written by Matthew Setter
+# Inspired/modified from Owncloud's documentation Makefile
 SHELL = bash
 
 # SUMA Productname and file replacement
@@ -95,13 +95,13 @@ endef
 # Create tar of PDF files
 define pdf-tar-product
 #	cd ./$(1) && tar -czvf $(2).tar.gz $(3) && mv $(2).tar.gz build/
-	tar -czvf $(2).tar.gz $(3) && mv $(2).tar.gz build/
+	tar -czvf $(2).tar.gz -C $(HTML_BUILD_DIR) $(3) && mv $(2).tar.gz build/$(1)/
 endef
 
 # Generate OBS tar files
 define obs-packages-product
-	cd ./$(1) && tar --exclude='$(2)' -czvf $(3).tar.gz $(HTML_BUILD_DIR) && tar -czvf $(4).tar.gz $(2)
-	mkdir build/packages
+	tar --exclude='$(2)' -czvf $(3).tar.gz -C $(CURDIR) $(HTML_BUILD_DIR)/$(1) && tar -czvf $(4).tar.gz -C $(CURDIR) $(HTML_BUILD_DIR)/$(2)
+	mkdir -p build/packages
 	mv $(3).tar.gz $(4).tar.gz build/packages
 endef
 
@@ -198,6 +198,11 @@ define pdf-quickstart-public-cloud-product
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),quickstart-public-cloud,$(6),$(7))
 endef
 
+# Generate PDF version of the SAP Guide
+define pdf-quickstart-sap-product
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),quickstart-sap,$(6),$(7))
+endef
+
 # Generate PDF version of the Large Deployment Guide
 define pdf-large-deployment-product
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),large-deployments,$(6),$(7))
@@ -247,6 +252,11 @@ endef
 # Generate PDF version of the Public Cloud Guide
 define pdf-quickstart-public-cloud-product-uyuni
 	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),quickstart-public-cloud,$(6),$(7))
+endef
+
+# Generate PDF version of the SAP Guide
+define pdf-quickstart-sap-product-uyuni
+	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),quickstart-sap,$(6),$(7))
 endef
 
 # Generate PDF version of the Large Deployment Guide

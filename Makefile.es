@@ -1,4 +1,8 @@
-PDF_BUILD_DIR_ES := $(CURDIR)/build/pdf/es
+LANGCODE_ES=es
+LANGDIR_ES=translations/$(LANGCODE_ES)
+
+HTML_BUILD_DIR_ES := $(CURDIR)/build/$(LANGCODE_ES)
+PDF_BUILD_DIR_ES := $(CURDIR)/build/$(LANGCODE_ES)/pdf
 
 # SUMA OBS Tarball Filenames
 HTML_OUTPUT_SUMA_ES ?= susemanager-docs_es
@@ -7,8 +11,6 @@ PDF_OUTPUT_SUMA_ES ?= susemanager-docs_es-pdf
 # UYUNI OBS Tarball Filenames
 HTML_OUTPUT_UYUNI_ES ?= uyuni-docs_es
 PDF_OUTPUT_UYUNI_ES ?= uyuni-docs_es-pdf
-LANGCODE_ES=es
-LANGDIR_ES=translations/$(LANGCODE_ES)
 
 # Clean up build artifacts
 .PHONY: clean-$(LANGCODE_ES)
@@ -21,7 +23,7 @@ validate-suma-$(LANGCODE_ES):
 
 .PHONY: pdf-tar-suma-$(LANGCODE_ES)
 pdf-tar-suma-$(LANGCODE_ES):
-	$(call pdf-tar-product,$(LANGDIR_ES),$(PDF_OUTPUT_SUMA_ES),$(PDF_BUILD_DIR_ES))
+	$(call pdf-tar-product,$(LANGCODE_ES),$(PDF_OUTPUT_SUMA_ES),$(PDF_BUILD_DIR_ES))
 
 .PHONY: prepare-antora-suma-$(LANGCODE_ES)
 prepare-antora-suma-$(LANGCODE_ES):
@@ -41,7 +43,7 @@ antora-suma-$(LANGCODE_ES): clean-$(LANGCODE_ES) pdf-all-suma-$(LANGCODE_ES) pdf
 
 .PHONY: obs-packages-suma-$(LANGCODE_ES)
 obs-packages-suma-$(LANGCODE_ES): clean-$(LANGCODE_ES) pdf-all-suma-$(LANGCODE_ES) antora-suma-$(LANGCODE_ES) ## Generate SUMA OBS tar files
-	$(call obs-packages-product,$(LANGDIR_ES),$(PDF_BUILD_DIR_ES),$(HTML_OUTPUT_SUMA_ES),$(PDF_OUTPUT_SUMA_ES))
+	$(call obs-packages-product,$(LANGCODE_ES),$(LANGCODE_ES)/pdf,$(HTML_OUTPUT_SUMA_ES),$(PDF_OUTPUT_SUMA_ES))
 
 # Generate PDF versions of all SUMA books
 .PHONY: pdf-all-suma-$(LANGCODE_ES)
@@ -148,7 +150,7 @@ validate-uyuni-$(LANGCODE_ES):
 
 .PHONY: pdf-tar-uyuni-$(LANGCODE_ES)
 pdf-tar-uyuni-$(LANGCODE_ES):
-	$(call pdf-tar-product,$(LANGDIR_ES),$(PDF_OUTPUT_UYUNI_ES),$(PDF_BUILD_DIR_ES))
+	$(call pdf-tar-product,$(LANGCODE_ES),$(PDF_OUTPUT_UYUNI_ES),$(PDF_BUILD_DIR_ES))
 
 .PHONY: prepare-antora-uyuni-$(LANGCODE_ES)
 prepare-antora-uyuni-$(LANGCODE_ES):
@@ -167,7 +169,7 @@ antora-uyuni-$(LANGCODE_ES): clean-$(LANGCODE_ES) pdf-all-uyuni-$(LANGCODE_ES) p
 
 .PHONY: obs-packages-uyuni-$(LANGCODE_ES)
 obs-packages-uyuni-$(LANGCODE_ES): clean-$(LANGCODE_ES) pdf-all-uyuni-$(LANGCODE_ES) antora-uyuni-$(LANGCODE_ES) ## Generate UYUNI OBS tar files
-	$(call obs-packages-product,$(PDF_BUILD_DIR_ES),$(LANGDIR_ES),$(HTML_OUTPUT_UYUNI_ES),$(PDF_OUTPUT_UYUNI_ES))
+	$(call obs-packages-product,$(LANGCODE_ES),$(LANGCODE_ES)/pdf,$(HTML_OUTPUT_UYUNI_ES),$(PDF_OUTPUT_UYUNI_ES))
 
 # Generate PDF versions of all UYUNI books
 .PHONY: pdf-all-uyuni-$(LANGCODE_ES)
