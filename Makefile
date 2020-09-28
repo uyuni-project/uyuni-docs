@@ -198,6 +198,11 @@ define pdf-quickstart-public-cloud-product
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),quickstart-public-cloud,$(6),$(7))
 endef
 
+# Generate PDF version of the SAP Guide
+define pdf-quickstart-sap-product
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),quickstart-sap,$(6),$(7))
+endef
+
 # Generate PDF version of the Large Deployment Guide
 define pdf-large-deployment-product
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),large-deployments,$(6),$(7))
@@ -247,6 +252,11 @@ endef
 # Generate PDF version of the Public Cloud Guide
 define pdf-quickstart-public-cloud-product-uyuni
 	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),quickstart-public-cloud,$(6),$(7))
+endef
+
+# Generate PDF version of the SAP Guide
+define pdf-quickstart-sap-product-uyuni
+	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),quickstart-sap,$(6),$(7))
 endef
 
 # Generate PDF version of the Large Deployment Guide
