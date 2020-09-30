@@ -51,11 +51,11 @@ done
 ############################################################
 
 for module in $(find $CURRENT_DIR/$PO_DIR -mindepth 1 -maxdepth 1 -type d -printf "%f\n"); do
-    for langpo in $(cd "$CURRENT_DIR/$PO_DIR/$module" && ls *.po); do
+    for langpo in $(find $CURRENT_DIR/$PO_DIR/$module -mindepth 1 -maxdepth 1 -type f -name "*.po" -printf "%f\n"); do
         lang=`basename $langpo .po`
-        if [ -e $module/assets-$lang ]; then
-            mkdir -p $PUB_DIR/$lang/modules/$module/assets/images
-            cp -a $PO_DIR/$module/assets-$lang/* $PUB_DIR/$lang/modules/$module/assets/
+        if [ -e $CURRENT_DIR/$PO_DIR/$module/assets-$lang ]; then
+            mkdir -p $CURRENT_DIR/$PUB_DIR/$lang/modules/$module/assets/images && \
+            cp -a $CURRENT_DIR/$PO_DIR/$module/assets-$lang/* $CURRENT_DIR/$PUB_DIR/$lang/modules/$module/assets/
         fi
     done
 done
