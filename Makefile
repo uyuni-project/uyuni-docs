@@ -77,6 +77,7 @@ endef
 define clean-function
 	if [ -d ./$(1) ]; then \
 		cd ./$(1) && rm -rf build/ \
+		translations/ \
 		.cache/ \
 		public/ \
 		modules/installation/nav-installation-guide.pdf.$(2).adoc \
@@ -284,15 +285,15 @@ help: ## Prints a basic help menu about available targets
 
 .PHONY: pot
 pot:
-	for f in `ls $(current_dir)/*.cfg`; do \
-		po4a --no-translations -k 0 -M utf-8 -L utf-8 $$f; \
+	for f in `ls $(current_dir)/l10n-weblate/*.cfg`; do \
+		po4a --srcdir $(current_dir) --destdir $(current_dir) -k 0 -M utf-8 -L utf-8 --no-translations $$f; \
 	done
 	$(shell $(current_dir)/make_pot.sh)
 
 .PHONY: translations
 translations:
-	for f in `ls $(current_dir)/*.cfg`; do \
-		po4a --no-update -k 0 -M utf-8 -L utf-8 $$f; \
+	for f in `ls $(current_dir)/l10n-weblate/*.cfg`; do \
+		po4a --srcdir $(current_dir) --destdir $(current_dir) -k 0 -M utf-8 -L utf-8 --no-update $$f; \
 	done
 	$(shell $(current_dir)/use_po.sh)
 
