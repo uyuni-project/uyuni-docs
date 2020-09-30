@@ -15,7 +15,7 @@ SRCDIR_MODULE="./modules"
 
 # place where the po files are
 if [ -z "$PO_DIR" ] ; then
-	PO_DIR="./l10n-po4a"
+	PO_DIR="./l10n-weblate/"
 fi
 
 # place where the localized files will be
