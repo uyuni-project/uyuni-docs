@@ -38,15 +38,13 @@ for f in `ls $CURRENT_DIR/$PO_DIR/*.cfg`; do
 done
 
 
-####################################
+###########################################
 # COPY ENGLISH SCREENSHOTS TO EACH LANGUAGE
-####################################
+###########################################
 
 for module in $(find $CURRENT_DIR/$PO_DIR -mindepth 1 -maxdepth 1 -type d -printf "%f\n"); do
-    #echo module = $module
-    for langpo in $(cd "$CURRENT_DIR/$PO_DIR/$module" && ls *.po); do
-        #echo langpo = $langpo
-        if [ -e modules/$module/assets/images ]; then
+    for langpo in $(find $CURRENT_DIR/$PO_DIR/$module -mindepth 1 -maxdepth 1 -type f -name "*.po" -printf "%f\n"); do
+        if [ -e $CURRENT_DIR/$module/assets/images ]; then
             lang=`basename $langpo .po`
             rsync -u --inplace -a --delete $CURRENT_DIR/modules/$module/assets/* $CURRENT_DIR/$PO_DIR/$module/assets-$lang/
         fi
