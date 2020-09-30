@@ -38,15 +38,10 @@ fi
 ####################################
 
 for module in $(ls "$PO_DIR" ); do
-    echo module = $module
     for langpo in $(cd "$PO_DIR/$module" && ls *.po); do
         if [ -e modules/$module/assets/images ]; then
-            #echo langpo = $langpo
             lang=`basename $langpo .po`
-            #echo lang = $lang
-            #mkdir -p $PO_DIR/$module/assets-$lang/images
             rsync -u --inplace -a --delete modules/$module/assets/* $PO_DIR/$module/assets-$lang/
         fi
     done
-
 done
