@@ -77,6 +77,7 @@ endef
 define clean-function
 	if [ -d ./$(1) ]; then \
 		cd ./$(1) && rm -rf build/ \
+		translations/ \
 		.cache/ \
 		public/ \
 		modules/installation/nav-installation-guide.pdf.$(2).adoc \
@@ -88,7 +89,8 @@ define clean-function
 		modules/retail/nav-retail-guide.pdf.$(2).adoc \
 		modules/architecture/nav-architecture-guide.pdf.$(2).adoc \
 		modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.$(2).adoc \
-		modules/large-deployments/nav-large-deployments.pdf.$(2).adoc; \
+		modules/large-deployments/nav-large-deployments-guide.pdf.$(2).adoc \
+		modules/quickstart-sap/nav-quickstart-sap-guide.pdf.$(2).adoc; \
 	fi
 endef
 
@@ -284,11 +286,11 @@ help: ## Prints a basic help menu about available targets
 
 .PHONY: pot
 pot:
-	$(shell $(current_dir)/make_pot.sh)
+	$(current_dir)/make_pot.sh
 
 .PHONY: translations
 translations:
-	$(shell $(current_dir)/use_po.sh)
+	$(current_dir)/use_po.sh
 
 .PHONY: clean
 clean: clean-en clean-es
