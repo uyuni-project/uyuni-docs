@@ -89,7 +89,8 @@ define clean-function
 		modules/retail/nav-retail-guide.pdf.$(2).adoc \
 		modules/architecture/nav-architecture-guide.pdf.$(2).adoc \
 		modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.$(2).adoc \
-		modules/large-deployments/nav-large-deployments.pdf.$(2).adoc; \
+		modules/large-deployments/nav-large-deployments-guide.pdf.$(2).adoc \
+		modules/quickstart-sap/nav-quickstart-sap-guide.pdf.$(2).adoc
 	fi
 endef
 
