@@ -39,11 +39,8 @@ fi
 ############################################################
 
 for module in $(ls "$PO_DIR" ); do
-    echo module = $module
     for langpo in $(cd "$PO_DIR/$module" && ls *.po); do
-        echo langpo = $langpo
         lang=`basename $langpo .po`
-        echo lang = $lang
         if [ -e $PO_DIR/$module/assets-$lang ]; then
             mkdir -p $PUB_DIR/$lang/modules/$module/assets/images
             cp -a $PO_DIR/$module/assets-$lang/* $PUB_DIR/$lang/modules/$module/assets/
