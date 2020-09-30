@@ -4,23 +4,19 @@
 # Usage: PERLLIB=/path/to/po4a/lib make_pot.sh
 # you may set following variables
 # SRCDIR root of the documentation repository
-# POTDIR place where to create the pot
 
 ####################################
 # INITILIZE VARIABLES
 ####################################
 
+CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
 # root of the documentation repository
 SRCDIR_MODULE="./modules"
 
-# place where to create the pot files
-if [ -z "$POTDIR" ] ; then
-    POTDIR="./l10n/pot/"
-fi
-
 # place where the po files are
 if [ -z "$PO_DIR" ] ; then
-	PO_DIR="./l10n-weblate/"
+	PO_DIR="./l10n-weblate"
 fi
 
 ####################################
@@ -33,15 +29,26 @@ if [ ! -d "$SRCDIR_MODULE" ] ; then
     exit 1
 fi
 
+#######################################################################
+# UPDATE/GENERATE .POT/.PO FILES WITHOUT GENERATING TRANSLATED ASCIIDOC
+#######################################################################
+
+for f in `ls $CURRENT_DIR/$PO_DIR/*.cfg`; do
+    po4a --srcdir $CURRENT_DIR --destdir $CURRENT_DIR -k 0 -M utf-8 -L utf-8 --no-translations $f
+done
+
+
 ####################################
 # COPY ENGLISH SCREENSHOTS TO EACH LANGUAGE
 ####################################
 
-for module in $(ls "$PO_DIR" ); do
-    for langpo in $(cd "$PO_DIR/$module" && ls *.po); do
+for module in $(find $CURRENT_DIR/$PO_DIR -mindepth 1 -maxdepth 1 -type d -printf "%f\n"); do
+    #echo module = $module
+    for langpo in $(cd "$CURRENT_DIR/$PO_DIR/$module" && ls *.po); do
+        #echo langpo = $langpo
         if [ -e modules/$module/assets/images ]; then
             lang=`basename $langpo .po`
-            rsync -u --inplace -a --delete modules/$module/assets/* $PO_DIR/$module/assets-$lang/
+            rsync -u --inplace -a --delete $CURRENT_DIR/modules/$module/assets/* $CURRENT_DIR/$PO_DIR/$module/assets-$lang/
         fi
     done
 done

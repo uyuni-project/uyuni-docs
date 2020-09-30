@@ -11,6 +11,8 @@
 # INITILIZE VARIABLES
 ####################################
 
+CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
 SRCDIR_MODULE="./modules"
 
 # place where the po files are
@@ -34,14 +36,24 @@ if [ ! -d "$SRCDIR_MODULE" ] ; then
 fi
 
 
+#######################################################################
+# GENERATE TRANSLATED ASCIIDOC FROM .PO FILES, WITHOUT UPDATING .POT/PO
+#######################################################################
+
+for f in $(ls $CURRENT_DIR/$PO_DIR/*.cfg); do
+    po4a --srcdir $CURRENT_DIR --destdir $CURRENT_DIR -k 0 -M utf-8 -L utf-8 --no-update $f
+done
+
+
+
 ############################################################
 # COPY LOCALIZED SCREENSHOTS TO LOCALIZED ASCIIDOC DIRECTORY
 ############################################################
 
-for module in $(ls "$PO_DIR" ); do
-    for langpo in $(cd "$PO_DIR/$module" && ls *.po); do
+for module in $(find $CURRENT_DIR/$PO_DIR -mindepth 1 -maxdepth 1 -type d -printf "%f\n"); do
+    for langpo in $(cd "$CURRENT_DIR/$PO_DIR/$module" && ls *.po); do
         lang=`basename $langpo .po`
-        if [ -e $PO_DIR/$module/assets-$lang ]; then
+        if [ -e $module/assets-$lang ]; then
             mkdir -p $PUB_DIR/$lang/modules/$module/assets/images
             cp -a $PO_DIR/$module/assets-$lang/* $PUB_DIR/$lang/modules/$module/assets/
         fi
