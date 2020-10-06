@@ -2,16 +2,19 @@
 = Registering {sleses} Clients
 
 This section contains information about registering traditional and Salt clients running {sleses} ({es}) operating systems.
-
 {es} clients are based on {rhel} or {centos}.
-
 They are sometimes also called SLESES, RES or {redhat} {es}.
+
+The {es} software channels provided by {suse} only provide updates to packages, they do not provide the packages themselves.
+To register {es} clients, you need to create custom empty base and child channels on your {productname} Server, then import the {redhat} or {centos} packages into the custom channels.
+You must obtain the initial packages directly from {redhat} or {centos} before you can apply the updates provided by the {es} software channels.
 
 
 [IMPORTANT]
 ====
 You are responsible for arranging access to {redhat} or {centos} base media repositories and installation media.
 ====
+
 
 ifeval::[{suma-content} == true]
 [IMPORTANT]
@@ -61,13 +64,36 @@ The products you need for this procedure are:
 [cols="1,1", options="header"]
 .ES Products - WebUI
 |===
-| OS Version | Product Name
-| {es} 6     | SUSE Linux Enterprise Server with Expanded Support 6 x86_64
-| {es} 7     | SUSE Linux Enterprise Server with Expanded Support 7 x86_64
-| {es} 8     | RHEL or SLES ES or CentOS 8 Base
+
+| OS Version
+| Product Name
+
+| {es} 6
+| SUSE Linux Enterprise Server with Expanded Support 6 x86_64
+
+| {es} 7
+| SUSE Linux Enterprise Server with Expanded Support 7 x86_64
+
+| {es} 8
+| RHEL or SLES ES or CentOS 8 Base and SUSE Linux Enterprise Server with Expanded Support 8 x86_64
+
+|===
+
+{productname} requires tools channels that contain additional software.
+This procedure creates these tools channels:
+
+[[es-channels-tools]]
+[cols="1,1,1", options="header"]
+.ES Tools Channels
+|===
+| OS Version | Base Channel                     | Tools Channel
+| {es} 6     | RHEL Expanded Support 6          | RES6 SUSE-Manager-Tools x86_64
+| {es} 7     | RHEL Expanded Support 7          | RES7 SUSE-Manager-Tools x86_64
+| {es} 8     | RHEL or SLES ES or CentOS 8 Base | RHEL8-Pool for x86_64
 |===
 
 include::snippets/add_channels_wizard.adoc[]
+
 
 endif::[]
 
@@ -115,38 +141,9 @@ You will need to obtain base media from {redhat} or {centos}, which you can add 
 To ensure you have all the packages you need, use a full DVD image, not a minimal or {jeos} image.
 
 You can use {productname} custom channels to set up the {rhel} or {centos} media.
-All packages on the base media are mirrored into a child channel.
+All packages on the base media must be mirrored into a child channel.
 
-
-The details you need for this procedure are:
-
-[[es-repos-manual]]
-[cols="1,1", options="header"]
-.ES Custom Repository Settings
-|===
-| Option                 | Parameter
-| Repository URL         | The content URL provided by {redhat} CDN or {centos}
-| Has Signed Metadata?   | Uncheck all {redhat} Enterprise repositories
-| SSL CA Certificate     | [systemitem]``redhat-uep``
-| SSL Client Certificate | [systemitem]``Entitlement-Cert-date``
-| SSL Client Key         | ``Entitlement-Key-date``
-|===
-
-include::snippets/manual_repos.adoc[]
-
-
-
-The channels you need for this procedure are:
-
-[[es-channels-custom]]
-[cols="1,1,1", options="header"]
-.ES Custom Channels
-|===
-| OS Version | Base Channel                     | Tools Channel
-| {es} 6     | RHEL Expanded Support 6          | RES6 SUSE-Manager-Tools x86_64
-| {es} 7     | RHEL Expanded Support 7          | RES7 SUSE-Manager-Tools x86_64
-| {es} 8     | RHEL or SLES ES or CentOS 8 Base | RHEL8-Pool for x86_64
-|===
+You can freely choose the names for the channels.
 
 include::snippets/manual_channels.adoc[]
 
@@ -158,15 +155,11 @@ You will require packages from both channels.
 If you do not add both channels, you will not be able to create the bootstrap repository, due to missing packages.
 ====
 
-include::snippets/manual_associate.adoc[]
-
-
 
 .Procedure: Adding Base Media to Custom Channels
-
 . On the {productname} Server, at the command prompt, as root, copy the base media image to the [path]``/tmp/`` directory.
 . Create a directory to contain the media content.
-    Replace [command]``<os_name>`` with either ``sleses6``,  ``sleses7`` or ``sleses8``:
+    Replace [command]``<os_name>`` with either ``sleses6``,  ``sleses7``, or ``sleses8``:
 +
 ----
 mkdir -p /srv/www/htdocs/pub/<os_name>
@@ -176,14 +169,34 @@ mkdir -p /srv/www/htdocs/pub/<os_name>
 ----
 mount -o loop /tmp/<iso_filename> /srv/www/htdocs/pub/<os_name>
 ----
+. Import the packages into the child channel you created earlier:
++
+----
+spacewalk-repo-sync -c <channel-label> -u /srv/www/htdocs/pub/<os_name>
+----
 
-When the image is mounted, you can synchronize the base media.
-To manually synchronize the channels, navigate to menu:Software[Manage > Channels].
-Click each channel in the list, and navigate to menu:[Repositories > Sync].
-Click btn:[Sync Now] to begin synchronization immediately.
-You can also create a synchronization schedule from this screen.
 
+==== OPTIONAL: Add Base Media from a Content URL
 
+Alternatively, if you have access to a content URL provided by {redhat} CDN or {centos}, you can create a custom repository to mirror the packages.
+
+The details you need for this procedure are:
+
+[[es-repos-manual]]
+[cols="1,1", options="header"]
+.ES Custom Repository Settings
+|===
+| Option                 | Parameter
+| Repository URL         | The content URL provided by {redhat} CDN or {centos}
+| Has Signed Metadata?   | Uncheck all {redhat} Enterprise repositories
+| SSL CA Certificate     | [systemitem]``redhat-uep`` ({redhat} only)
+| SSL Client Certificate | [systemitem]``Entitlement-Cert-date`` ({redhat} only)
+| SSL Client Key         | ``Entitlement-Key-date`` ({redhat} only)
+|===
+
+include::snippets/manual_repos.adoc[]
+
+include::snippets/manual_associate.adoc[]
 
 == Check Synchronization Status
 
