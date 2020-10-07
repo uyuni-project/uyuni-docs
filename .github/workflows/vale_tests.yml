@@ -1,0 +1,45 @@
+name: feature_tests_uyuni
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: '[CHECKOUT] Checkout branch that triggered this workflow'
+      uses: actions/checkout@v1
+
+    - name: '[TOOLCHAIN] Set up Ruby 2.6'
+      uses: actions/setup-ruby@v1
+      with:
+        ruby-version: 2.6.x
+
+
+    - name: '[TOOLCHAIN] Install Asciidoctor and Asciidoctor PDF'
+      run: |
+        gem install asciidoctor
+        gem install asciidoctor-pdf --pre
+        gem install rouge
+        gem install pygments.rb
+        gem install coderay
+        sudo apt-get install libgraphicsmagick1-dev
+        gem install prawn-gmagick
+        asciidoctor --version
+        asciidoctor-pdf --version
+
+    - name: Vale
+      uses: errata-ai/vale-action@v1.3.0
+      with:
+      # Optional
+        styles: |
+          https://github.com/errata-ai/Microsoft/releases/latest/download/Microsoft.zip
+          https://github.com/errata-ai/write-good/releases/latest/download/write-good.zip
+
+      # Optional
+        config: https://raw.githubusercontent.com/errata-ai/vale/master/.vale.ini
+
+      # Optional
+        files: all
+      env:
+      # Required
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
