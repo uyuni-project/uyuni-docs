@@ -1,93 +1,134 @@
 [[ref-cli-mgrcfg]]
 = Configuration CLI Tools
 
-There are two components of the `mgrcfg` CLI tool, for the client and for the server.
-
-* The Configuration Client (*mgrcfg-client*, part of the [package]``mgr-cfg-client` package)
-* The Configuration Manager (*mgrcfg-manager*, part of the [package]``mgr-cfg-management`` package)
-
-You can use the *mgr-actions-control* tool (part of the [package]``mgr-cfg-actions`` package) to _enable_ and _disable_ configuration management on client systems.
+The `mgrcfg` CLI tool has three components:
 
 
-
-[[mgr.actions.control]]
-== Actions Control  (mgr-actions-control)
-
-The Actions Control (*mgr-actions-control*) application is used to enable and disable configuration management on a system.
-Client systems cannot be managed in this fashion by default.
-This tool allows {productname} administrators to enable or disable specific modes of allowable actions such as:
-
-* Deploying a configuration file on the system
-* Uploading a file from the system
-* Using the diff command to find out what is currently managed on a system with what is available
-* Running remote commands
-
-These various modes are enabled or disabled by placing or removing files and directories in the [path]``/etc/sysconfig/rhn/allowed-actions/`` directory.
-Because of to the default permissions of the [path]``/etc/sysconfig/rhn/`` directory, Actions Control has to be run by someone with root access.
+[[mgrcfg-components]]
+.Configuration CLI Tool Components
+[cols="1,1,1", options="header"]
+|===
+| Tool name | Installed on | Use for
+| ``mgrcfg-client`` | Client | Managing client configuration
+| ``mgr-cfg-manager`` | Server | Managing server configuration
+| ``mgr-actions-control`` | Server | Administer configuration settings
+|===
 
 
-=== General command line options
-
-There is a manpage available, as for most command line tools.
-First, decide which scheduled actions should be enabled for use by system administrators.
-The following options enable the various scheduled action modes:
-
---enable-deploy::
-Allow mgrcfg-client to deploy files.
-
---enable-diff::
-Allow mgrcfg-client to diff files.
-
---enable-upload::
-Allow mgrcfg-client to upload files.
-
---enable-mtime-upload::
-Allow mgrcfg-client to upload mtime (file modification time).
-
---enable-all::
-Allow mgrcfg-client to do everything.
-
---enable-run::
-Enable running scripts.
-
---disable-deploy::
-Disable deployment.
-
---disable-diff::
-Prohibit diff use.
-
---disable-upload::
-No file uploads allowed.
-
---disable-mtime-upload::
-Disable mtime upload.
-
---disable-all::
-Disable all options.
-
---disable-run::
-No scripts allowed to run.
-
---report::
-Report whether modes are enabled or disabled.
-
--f, --force::
-Force the operation without asking first.
-
--h, --help::
-Show help message and exit.
-
-Once a mode is set, your system is ready for configuration management through {productname}.
-A common option is [command]``mgr-actions-control --enable-all``.
+Clients do not have configuration management enabled by default.
+To get started, install the ``mgr-actions-control`` tool on the {productname} Server, and use it to enable configuration management for your organization.
 
 
 
+== Actions Control (mgr-actions-control)
 
-== Configuration on the Client  (mgrcfg-client)
+Use the ``mgr-actions-control`` tool to enable and disable configuration management on a client.
+Actions that can be performed with ``mgr-actions-control`` include:
 
-The Configuration Client (mgrcfg-client) is installed on and run from an individual client system to gain knowledge about how {productname} deploys configuration files to the client.
+* Deploy a configuration file on a client
+* Upload a file from the client
+* Compare the configuration tools available on a client, with what is being used
+* Run remote commands
 
-The Configuration Client offers these primary modes:
+
+[IMPORTANT]
+====
+You must be logged in to a {productname} administrator account to use ``mgr-actions-control``.
+====
+
+This tool works by adding or removing files and directories on the client in the [path]``/etc/sysconfig/rhn/allowed-actions/`` directory.
+By default, this directory requires root permissions.
+
+The available options for ``mgr-actions-control`` are listed in this table.
+Use this syntax for ``mgr-actions-control`` commands:
+
+----
+mgr-actions-control [-h] [--version] [-v] [--option]
+----
+
+
+[[mgractionscontrol-options]]
+.Action Control Options
+[cols="1,1m1", options="header"]
+|===
+| Option
+| Abbreviated Option
+| Description
+
+| enable-all
+|
+| Enable all options
+
+| disable-all
+|
+| Disable all options.
+
+| enable-deploy
+|
+| Allow mgrcfg-client to deploy files.
+
+| enable-diff
+|
+| Allow mgrcfg-client to diff files.
+
+| enable-upload
+|
+| Allow mgrcfg-client to upload files.
+
+| enable-mtime-upload
+|
+| Allow mgrcfg-client to upload file modification time.
+
+| enable-run
+|
+| Enable running scripts.
+
+| disable-deploy
+|
+| Disable deployment.
+
+| disable-diff
+|
+| Disable diff use.
+
+| disable-upload
+|
+| Disable file uploads.
+
+|disable-mtime-upload
+|
+| Disable modification time upload.
+
+| disable-run
+|
+| Disable running scripts.
+
+| report
+|
+| Report whether modes are enabled or disabled.
+
+| force
+| f
+| Force the operation without asking first.
+
+| help
+| h
+| Show help message and exit.
+
+|===
+
+
+For more information about the available options for the ``mgr-actions-control`` tool, see the man page:
+----
+man mgr-actions-control
+----
+
+
+
+== Client Configuration (mgrcfg-client)
+
+Use the ``mgrcfg-client`` tool to manage configuration on a client.
+The ``mgrcfg-client`` has these primary modes:
 
 * list
 * get
@@ -95,15 +136,25 @@ The Configuration Client offers these primary modes:
 * diff
 * verify
 
-=== Listing Configuration Files
+The available commands and arguments for `mgrcfg-client`` are listed in this section.
+Use this syntax for ``mgr-actions-control`` commands:
 
-To list the configuration files for the machine and the labels of the config channels containing them, issue the command:
+----
+mgrcfg-client [-h] [--version] [-v] [--option] {list,get,channels,diff,verify}
+----
+
+
+
+=== List Configuration Files
+
+The ``list`` mode lists the configuration files for the client, including the labels of the configuration channels containing them.
+To see a complete list of all the configuration files that are currently applied to the client, use this command:
 
 ----
 mgrcfg-client list
 ----
 
-The output resembles the following list ("DoFoS" is a shortcut for "D or F or S", which means "Directory", "File", or "Something else"(?)):
+The output looks like this:
 
 ----
 DoFoS   Config Channel      File
@@ -112,60 +163,82 @@ F      config-channel-17   /var/spool/aalib.rpm
 F      config-channel-14   /etc/rhn/rhn.conf
 ----
 
-These configuration files apply to your system.
-However, there may be duplicate files present in other channels.
-For example, issue the following command:
+In this output, ``DoFoS`` means ``Directory, File, or Something else``.
+Each entry in the output will be marked with ``D``, ``F``, or ``S``.
+These configuration files apply to the client.
+
+Get more detail about a channel by specifying the channel name:
 
 ----
 mgrcfg-manager list config-channel-14
 ----
 
-and observe the following output:
+The output looks like this:
 
 ----
 Files in config channel 'config-channel-14'
 /etc/example-config.txt /etc/rhn/rhn.conf
 ----
 
-You may wonder why the second version of [path]``/etc/example-config.txt`` in *config-channel-14* does not apply to the client system.
-The rank of the [path]``/etc/example-config.txt`` file in *config-channel-17* was higher than that of the same file in *config-channel-14*.
-As a result, the version of the configuration file in config-channel-14 is not deployed for this system, therefore mgrcfg-client command does not list the file.
+It is possible that there are duplicate configuration files in different channels.
+In this case, the file listing for the channel shows files that are not present when listing channels applied to the client.
+This is a result of file ranking, which means that channels can contain files that are not applied to the client, because they are outranked by a different file from a different channel.
 
 
 
-[[getting.a.config.file]]
-=== Downloading a Config File
+=== Get Configuration Files
 
-To download the most relevant configuration file for the machine, issue the command:
-
-----
-mgrcfg-client get /etc/example-config.txt
-----
-
-You should see output resembling:
+The ``get`` mode displays the contents of the primary configuration file for the client.
+To see the configuration file with the highest rank within the channel, use this command:
 
 ----
-Deploying /etc/example-config.txt
+mgrcfg-client get
 ----
 
-View the contents of the file with less or another pager.
-Note that the file is selected as the most relevant based on the rank of the config channel containing it.
-This is accomplished within the Configuration tab of the System Details page.
+To see a specific configuration file, use this command:
 
-Refer to Section "System Details" (Chapter 4, Systems, User Guide) for instructions.
+----
+mgrcfg-client get <FILENAME>
+----
+
+
+The available options for ``mgrcfg-client get`` are listed in this table.
+
+[[mgrcfg-client-get-options]]
+.Client Get Mode Options
+[cols="1,1m1", options="header"]
+|===
+| Option
+| Abbreviated Option
+| Description
+
+| topdir=TOPDIR
+|
+| Make all file operations relative to this string.
+
+| exclude=EXCLUDE
+|
+| Exclude a file from being deployed with get.
+  Can be used multiple times.
+
+| help
+| h
+| Show help message and exit.
+
+|===
 
 
 
-[[viewing.config.channels]]
-=== Viewing Config Channels
+=== Channels
 
-To view the labels and names of the config channels that apply to the system, issue the command:
+The ``channels`` mode lists the configuration channels for the client.
+To see a complete list of all the configuration channels that are currently applied to the client, use this command:
 
 ----
 mgrcfg-client channels
 ----
 
-You should see output resembling:
+The output looks like this:
 
 ----
 Config channels:
@@ -175,30 +248,18 @@ config-channel-17       config chan 2
 config-channel-14       config chan 1
 ----
 
-The list of options available for [command]``mgrcfg-client get``:
 
---topdir=TOPDIR::
-Make all file operations relative to this string.
-+
 
---exclude=EXCLUDE::
-Exclude a file from being deployed with get.
-May be used multiple times.
-+
+=== Differentiating Configuration Files
 
--h, --help::
-Show help message and exit.
-
-[[diff.between.config.files]]
-=== Differentiating between Config Files
-
-To view the differences between the config files deployed on the system and those stored by {productname}, issue the command:
+The ``diff`` mode shows the differences between the configuration files deployed on the client and those stored by {productname}.
+Use this command:
 
 ----
 mgrcfg-client diff
 ----
 
-The output resembles the following:
+The output looks like this:
 
 ----
 rhncfg-client diff
@@ -209,25 +270,24 @@ This is the first line
 +This is the second line added
 ----
 
-In addition, you can include the [option]``--topdir`` option to compare config files with those located in an arbitrary (and unused) location on the client system, like this:
+You can use the [option]``--topdir`` option to compare configuration files with those located in an arbitrary unused location on the client, like this:
 
 ----
-# mgrcfg-client diff --topdir /home/test/blah/
-/usr/bin/diff: /home/test/blah/etc/example-config.txt: No such file or directory
-/usr/bin/diff: /home/test/blah/var/spool/aalib.rpm: No such file or directory
+# mgrcfg-client diff --topdir /home/test/example/
 ----
 
 
-[[verify.config.files]]
-=== Verifying Config Files
 
-To quickly determine if client configuration files are different from those associated with it via {productname}, issue the command:
+=== Verify Configuration Files
+
+The ``verify`` mode checks if the configuration file on the client is different to the configuration associated with it.
+Use this command:
 
 ----
 mgrcfg-client verify
 ----
 
-The output resembles the following:
+The output looks like this:
 
 ----
 modified /etc/example-config.txt /var/spool/aalib.rpm
@@ -235,20 +295,33 @@ modified /etc/example-config.txt /var/spool/aalib.rpm
 
 The file [filename]``example-config.txt`` is locally modified, while [package]``aalib.rpm`` is not.
 
-The list of the options available for mgrcfg-client verify:
+The available options for ``mgrcfg-client verify`` are listed in this table.
 
--v, --verbose::
-Increase the amount of output detail.
-Display differences in the mode, owner, and group permissions for the specified config file.
+[[mgrcfg-client-verify-options]]
+.Client Verify Mode Options
+[cols="1,1m1", options="header"]
+|===
+| Option
+| Abbreviated Option
+| Description
 
--o, --only::
-Only show differing files.
+| verbose
+| v
+| Increase the amount of output detail.
 
--h, --help::
-Show help message and exit.
+| only
+| o
+| Only show differing files.
+
+| help
+| h
+| Show help message and exit.
+
+|===
 
 
 
+// Lana you're up to here! 2020-10-08
 [[the.configuration.manager]]
 == Configuration Manager (mgrcfg-manager)
 
