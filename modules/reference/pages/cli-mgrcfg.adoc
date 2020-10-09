@@ -119,6 +119,7 @@ mgr-actions-control [-h] [--version] [-v] [--option]
 
 
 For more information about the available options for the ``mgr-actions-control`` tool, see the man page:
+
 ----
 man mgr-actions-control
 ----
@@ -136,11 +137,11 @@ The ``mgrcfg-client`` has these primary modes:
 * diff
 * verify
 
-The available commands and arguments for `mgrcfg-client`` are listed in this section.
-Use this syntax for ``mgr-actions-control`` commands:
+The available commands and arguments for ``mgrcfg-client`` are listed in this section.
+Use this syntax for ``mgrcfg-client`` commands:
 
 ----
-mgrcfg-client [-h] [--version] [-v] [--option] {list,get,channels,diff,verify}
+mgrcfg-client [-h] [--version] [-v] [--option] [mode]
 ----
 
 
@@ -158,7 +159,7 @@ The output looks like this:
 
 ----
 DoFoS   Config Channel      File
-F      config-channel-17   /etc/example-config.txt
+F      config-channel-17   /etc/config-file
 F      config-channel-17   /var/spool/aalib.rpm
 F      config-channel-14   /etc/rhn/rhn.conf
 ----
@@ -177,7 +178,7 @@ The output looks like this:
 
 ----
 Files in config channel 'config-channel-14'
-/etc/example-config.txt /etc/rhn/rhn.conf
+/etc/config-file /etc/rhn/rhn.conf
 ----
 
 It is possible that there are duplicate configuration files in different channels.
@@ -264,7 +265,7 @@ The output looks like this:
 ----
 rhncfg-client diff
 --- /etc/test
-+++ /etc/test 2013-08-28 00:14:49.405152824 +1000
++++ /etc/test 2020-08-28 00:14:49.405152824 +1000
 @@ -1 +1,2 @@
 This is the first line
 +This is the second line added
@@ -290,10 +291,10 @@ mgrcfg-client verify
 The output looks like this:
 
 ----
-modified /etc/example-config.txt /var/spool/aalib.rpm
+modified /etc/config-file /var/spool/aalib.rpm
 ----
 
-The file [filename]``example-config.txt`` is locally modified, while [package]``aalib.rpm`` is not.
+The file [filename]``config-file`` is locally modified, while [package]``aalib.rpm`` is not.
 
 The available options for ``mgrcfg-client verify`` are listed in this table.
 
@@ -320,31 +321,12 @@ The available options for ``mgrcfg-client verify`` are listed in this table.
 |===
 
 
+== Server Configuration (mgrcfg-manager)
 
-// Lana you're up to here! 2020-10-08
-[[the.configuration.manager]]
-== Configuration Manager (mgrcfg-manager)
+Use the ``mgrcfg-manager`` tool to manage the configuration files and channels on the {productname} Server.
+It does not manage configuration on a client.
 
-The Configuration Manager (*mgrcfg-manager*) is designed to maintain {productname}'s central repository of config files and channels, not those located on client systems.
-This tool offers a command line alternative to the configuration management features in the {productname} {webui}.
-Additionally, some or all of the related maintenance tasks can be scripted.
-
-To use the command line interface, configuration administrators require a {productname} account (username and password) with the appropriate permission set.
-The username may be specified in [path]``/etc/sysconfig/rhn/rhncfg-manager.conf`` or in the [option]``[rhncfg-manager]`` section of [path]``~/.rhncfgrc``.
-
-When the Configuration Manager is run as *root*, it attempts to pull in needed configuration values from the Red Hat Update Agent.
-When run as a user other than root, you may have to change the [path]``~/.rhncfgrc`` configuration file.
-The session file is cached in [path]``~/.rhncfg-manager-session`` to avoid having to log in for every command.
-
-The default timeout for the Configuration Manager is 30 minutes.
-To adjust this, add the [option]``server.session_lifetime`` option and a new value to the [path]``/etc/rhn/rhn.conf`` file on the server running the manager.
-For example set the time out to *120 minutes*:
-
-----
-server.session_lifetime = 120
-----
-
-The Configuration Manager offers the following primary *modes*:
+The ``mgrcfg-manager`` tool has these primary modes:
 
 * add
 * create-channel
@@ -360,254 +342,327 @@ The Configuration Manager offers the following primary *modes*:
 * update
 * upload-channel
 
-Each mode offers its own set of options, which can be displayed by issuing the following command:
+Each mode has further options.
+See the available options using this syntax:
 
 ----
-mgrcfg-manager mode --help
+mgrcfg-manager <MODE> --help
 ----
 
-Replace mode with the name of the mode whose options you want to see:
+The available commands and arguments for ``mgrcfg-manager`` are listed in this section.
+Use this syntax for ``mgrcfg-manager`` commands:
 
 ----
-mgrcfg-manager diff-revisions --help
+mgrcfg-manager [-h] [--version] [-v] [mode] [--option]
 ----
 
 
-
-[[creating.a.config.channel]]
-=== Creating a Config Channel
-
-To create a config channel for your organization, issue the command:
-
-----
-mgrcfg-manager create-channel channel-label
-----
-
-If prompted for your {productname} username and password, provide them.
-Once you have created a config channel, use the remaining modes listed above to populate and maintain that channel.
-
-
-
-[[adding.files.to.a.config.channel]]
-=== Adding Files to a Config Channel
-
-To add a file to a config channel, specify the channel label and the local file to be uploaded:
-
-----
-mgrcfg-manager add --channel=channel-label /path/to/file
-----
-
-In addition to the required channel label and the path to the file, you can use the available options for modifying the file during its addition.
-For instance, you can alter the path and file name by including the [option]``--dest-file`` option in the command:
-
-----
-mgrcfg-manager add --channel=channel-label \
-  --dest-file=/new/path/to/file.txt/path/to/file
-----
-
-The output resembles the following:
-
-----
-Pushing to channel example-channel
-Local file >/path/to/file -> remote file /new/path/to/file.txt
-----
-
-The list of options available for mgrcfg-manager add:
-
--c CHANNEL --channel=CHANNEL::
-Upload files in this config channel.
-
--d DEST_FILE --dest-file=DEST_FILE::
-Upload the file as this path.
-
---delim-start=DELIM_START::
-Start delimiter for variable interpolation.
-
---delim-end=DELIM_END::
-End delimiter for variable interpolation.
-
--i, --ignore-missing::
-Ignore missing local files.
-
--h, --help::
-Show help message and exit.
-
-
-[TIP]
-.Maximum File Size
+[IMPORTANT]
 ====
-By default, the maximum file size for configuration files is 128 KB.
-For information on changing the maximum file size value, see xref:reference:configuration/config-files-menu.adoc[].
+By default, the ``mgrcfg-manager`` tool times out after thirty minutes.
+You can change this value in the [path]``/etc/rhn/rhn.conf`` configuration file by adding or adjusting this line, with a value in minutes:
+
+----
+server.session_lifetime = <MINUTES>
+----
+
 ====
 
 
 
-[[diff.between.latest.config.files]]
-=== Differentiating between Latest Config Files
+=== Add Files to a Configuration Channel
 
-To view the differences between the config files on disk and the latest revisions in a channel, issue the command:
-
-----
-mgrcfg-manager diff --channel=channel-label --dest-file=/path/to/file.txt \
-/local/path/to/file
-----
-
-You should see output resembling:
+The ``add`` mode adds a configuration file from your local filesystem to an existing channel.
+Use this command:
 
 ----
---- /tmp/dest_path/example-config.txt config_channel: example-channel revision: 1
-+++ /home/test/blah/hello_world.txt 2003-12-14 19:08:59.000000000 -0500
+mgrcfg-manager add --channel=<channel-label> <local/path/to/file>
+----
+
+You can use options to modify the file during addition.
+For example, to change the path or file name, use this command:
+
+----
+mgrcfg-manager add --channel=<channel-label> \
+  --dest-file=</new/path/to/file> <local/path/to/file>
+----
+
+The output looks like this:
+
+----
+Pushing to channel <channel-label>
+Local file <local/path/to/file> -> remote file </new/path/to/file>
+----
+
+
+The available options for ``mgrcfg-manager add`` are listed in this table.
+
+[[mgrcfg-manager-add-options]]
+.Manager Add Mode Options
+[cols="1,1m1", options="header"]
+|===
+| Option
+| Abbreviated Option
+| Description
+
+| channel
+| c
+| Upload files to this configuration channel.
+
+| dest-file
+| d
+| Upload the file to this path.
+
+| delim-start
+|
+| Start delimiter for variable interpolation.
+
+| delim-end
+|
+| End delimiter for variable interpolation.
+
+| ignore-missing
+| i
+| Ignore missing local files.
+
+| help
+| h
+| Show help message and exit.
+
+|===
+
+
+[NOTE]
+====
+By default, the maximum file size for configuration files is 128{nbsp}KB.
+For information about changing the maximum file size value, see xref:reference:configuration/config-files-menu.adoc[].
+====
+
+
+
+=== Create a Configuration Channel
+
+The ``create-channel`` mode creates a new configuration channel.
+Use this command:
+
+----
+mgrcfg-manager create-channel <channel-label>
+----
+
+When you have created a configuration channel, you can add configuration files to it with the ``add`` mode.
+
+
+
+=== Differentiate Between Configuration Files
+
+The ``diff`` mode shows the differences between the stored configuration files and the latest revisions in the associated channel.
+Use this command:
+
+----
+mgrcfg-manager diff --channel=<channel-label>
+  --dest-file=</path/to/file> </local/path/to/file>
+----
+
+The output looks like this:
+
+----
+--- </path/to/file> config_channel: <channel-label> revision: 1
++++ /home/test/example/hello_world.txt 2020-12-14 19:08:59.000000000 -0500
 @@ -1 +1 @@
--foo
+-example
 +hello, world
 ----
 
-The list of options available for [command]``mgrcfg-manager diff``:
+The available options for ``mgrcfg-manager diff`` are listed in this table.
 
--c CHANNEL, --channel=CHANNEL::
-Get file(s) from this config channel.
+[[mgrcfg-manager-diff-options]]
+.Manager Diff Mode Options
+[cols="1,1m1", options="header"]
+|===
+| Option
+| Abbreviated Option
+| Description
 
--r REVISION, --revision=REVISION::
-Use this revision.
+| channel
+| c
+| Get files from this configuration channel.
 
--d DEST_FILE, --dest-file=DEST_FILE::
-Upload the file at this path.
+| dest-file
+| d
+| Upload the file to this path.
 
--t TOPDIR, --topdir=TOPDIR::
-Make all files relative to this string.
+| revision
+| r
+| Use this revision.
 
--h, --help::
-Show help message and exit.
+| topdir
+| t
+| Make all files relative to this string.
+
+| help
+| h
+| Show help message and exit.
+
+|===
 
 
 
-[[diff.between.various.versions]]
-=== Differentiating between Various Versions
+=== Differentiate between Revisions
 
-To compare different versions of a file across channels and revisions, use the *-r* flag to indicate which revision of the file should be compared and the *-n* flag to identify the two channels to be checked.
-Specify only one file name here since you are comparing the file against another version of itself.
-For example:
+The ``diff-revisions`` mode shows the differences between the revisions of configuration files.
+
+This command can compare revisions across different channels.
+Use the ``-r`` option to indicate which revision of the file should be compared and the ``-n`` option to indicate the two channels to be checked.
+In this case, specify only one file name, because the file is being compared to a different revision of itself.
+Use this command:
 
 ----
-mgrcfg-manager diff-revisions -n=channel-label1 -r=1 \
-  -n=channel-label2 -r=1 \
-  /path/to/file.txt
+mgrcfg-manager diff-revisions -n=<channel-label-1> -r=1 \
+  -n=<channel-label-2> -r=1 </path/to/file>
 ----
 
-The output resembles the following:
+The output looks like this:
 
 ----
---- /tmp/dest_path/example-config.txt 2004-01-13 14:36:41 \
-config channel: example-channel2 revision: 1
---- /tmp/dest_path/example-config.txt 2004-01-13 14:42:42 \
-config channel: example-channel3 revision: 1
+--- </path/to/file> 2020-01-13 14:36:41 \
+config channel: <example-channel-1> revision: 1
+--- </path/to/file> 2020-01-13 14:42:42 \
+config channel: <example-channel-2> revision: 1
 @@ -1 +1,20 @@
--foo
-+blah
-+-----BEGIN PGP SIGNATURE-----
-+Version: GnuPG v1.0.6 (GNU/Linux)
-+Comment: For info see http://www.gnupg.org
-+
-+iD8DBQA9ZY6vse4XmfJPGwgRAsHcAJ9ud9dabUcdscdcqB8AZP7e0Fua0NmKsdhQCeOWHX
-+VsDTfen2NWdwwPaTM+S+Cow=
-+=Ltp2
-+-----END PGP SIGNATURE-----
+-example
++hello, world
 ----
 
-The list of options available for [command]``mgrcfg-manager diff-revisions``:
+The available options for ``mgrcfg-manager diff-revision`` are listed in this table.
 
--c CHANNEL, --channel=CHANNEL::
-Use this config channel.
+[[mgrcfg-manager-diffrevision-options]]
+.Manager Diff Revision Mode Options
+[cols="1,1m1", options="header"]
+|===
+| Option
+| Abbreviated Option
+| Description
 
--r REVISION, --revision=REVISION::
-Use this revision.
+| channel
+| c
+| Get files from this configuration channel.
 
--h, --help::
-Show help message and exit.
+| revision
+| r
+| Use this revision.
 
+| help
+| h
+| Show help message and exit.
 
-
-[[downloading.all.files.in.a.channel]]
-=== Downloading All Files in a Channel
-
-To download all the files in a channel to disk, create a directory and issue the following command:
-
-----
-mgrcfg-manager download-channel channel-label --topdir .
-----
-
-The output resembles the following:
-
-----
-Copying /tmp/dest_path/example-config.txt -> \
-blah2/tmp/dest_path/example-config.txt
-----
-
-The list of options available for mgrcfg-manager download-channel:
-
--t TOPDIR, --topdir=TOPDIR::
-Directory to which all the file paths are relative. This option must be set.
-
--h, --help::
-Show help message and exit.
+|===
 
 
 
-[[getting.the.contents.of.a.file]]
-=== Getting the Contents of a File
+=== Download All Files in a Channel
 
-To direct the contents of a particular file to stdout, issue the command:
+The ``download-channel`` mode downloads all configuration files in a channel to local directory.
+Use this command:
 
 ----
-mgrcfg-manager get --channel=channel-label \
-/tmp/dest_path/example-config.txt
+mgrcfg-manager download-channel <channel-label> --topdir <local/directory/>
 ----
 
-You should see the contents of the file as the output.
-
-
-
-[[listing.all.files.in.a.channel]]
-=== Listing All Files in a Channel
-
-To list all the files in a channel, issue the command:
+The output looks like this:
 
 ----
-mgrcfg-manager list channel-label
+Copying </config-file> -> <local/directory/config-file>
 ----
 
-You should see output resembling:
+The available options for ``mgrcfg-manager download-channel`` are listed in this table.
+
+[[mgrcfg-manager-downloadchannel-options]]
+.Manager Download Channel Mode Options
+[cols="1,1m1", options="header"]
+|===
+| Option
+| Abbreviated Option
+| Description
+
+| topdir
+| t
+| Make all files relative to this string.
+
+| help
+| h
+| Show help message and exit.
+
+|===
+
+
+
+=== Get the Contents of a File
+
+The ``get`` mode displays the contents of a configuration file.
+Use this command:
 
 ----
-Files in config channel `example-channel3':
-/tmp/dest_path/example-config.txt
+mgrcfg-manager get --channel=<channel-label> <config-file>
 ----
 
-The list of the options available for mgrcfg-manager get:
-
--c CHANNEL, --channel=CHANNEL::
-Get file(s) from this config channel.
-
--t TOPDIR, --topdir=TOPDIR::
-Directory to which all files are relative.
-
--r REVISION, --revision=REVISION::
-Get this file revision.
-
--h, --help::
-Show help message and exit.
 
 
+=== List All Files in a Channel
 
-[[listing.all.config.channels]]
-=== Listing All Config Channels
-To list all of your organization's configuration channels, issue the command:
+The ``list`` mode lists the configuration files contained in a channel.
+Use this command:
+
+----
+mgrcfg-manager list <channel-label>
+----
+
+The output looks like this:
+
+----
+Files in config channel <channel-label>:
+/tmp/dest_path/config-file
+----
+
+The available options for ``mgrcfg-manager list`` are listed in this table.
+
+[[mgrcfg-manager-list-options]]
+.Manager List Mode Options
+[cols="1,1m1", options="header"]
+|===
+| Option
+| Abbreviated Option
+| Description
+
+| channel
+| c
+| Get files from this configuration channel.
+
+| topdir
+| t
+| Make all files relative to this string.
+
+| revision
+| r
+| Use this revision.
+
+| help
+| h
+| Show help message and exit.
+
+|===
+
+
+
+=== List All Configuration Channels
+
+The ``list`` mode lists the configuration channels available in your organization.
+Use this command:
 
 ----
 mgrcfg-manager list-channels
 ----
 
-The output resembles the following:
+The output looks like this:
 
 ----
 Available config channels:
@@ -616,43 +671,57 @@ example-channel example-channel2 example-channel3 config-channel-14 config-chann
 
 [NOTE]
 ====
-This does not list *local_override* or *server_import* channels.
+The output of this command does not include ``local_override`` or ``server_import`` channels.
 ====
 
 
-[[removing.a.file.from.a.channel]]
-=== Removing a File from a Channel
-To remove a file from a channel, issue the command:
+
+=== Remove Files From a Channel
+
+The ``remove`` mode removes configuration files from a channel.
+Use this command:
 
 ----
-mgrcfg-manager remove --channel=channel-label /tmp/dest_path/example-config.txt
+mgrcfg-manager remove --channel=<channel-label> <config-file>
 ----
 
-If prompted for your {productname} username and password, provide them.
 
-The list of the options available for mgrcfg-manager remove:
+The available options for ``mgrcfg-manager remove`` are listed in this table.
 
--c CHANNEL, --channel=CHANNEL::
-Remove files from this config channel.
+[[mgrcfg-manager-remove-options]]
+.Manager Remove Mode Options
+[cols="1,1m1", options="header"]
+|===
+| Option
+| Abbreviated Option
+| Description
 
--t TOPDIR, --topdir=TOPDIR::
-Directory to which all files are relative.
+| channel
+| c
+| Get files from this configuration channel.
 
--h, --help::
-Show help message and exit.
+| topdir
+| t
+| Make all files relative to this string.
+
+| help
+| h
+| Show help message and exit.
+
+|===
 
 
 
-[[deleting.a.config.channel]]
-=== Deleting a Config Channel
+=== Delete a Config Channel
 
-To remove a config channel in your organization, issue the command:
+The ``remove-channel`` mode removes configuration channels from your organization.
+Use this command:
 
 ----
-mgrcfg-manager remove-channel channel-label
+mgrcfg-manager remove-channel <channel-label>
 ----
 
-The output resembles the following:
+The output looks like this:
 
 ----
 Removing config channel example-channel
@@ -661,87 +730,117 @@ Config channel example-channel removed
 
 
 
-[[determine.the.number.of.file.revisions]]
-=== Determining the Number of File Revisions
+=== Determine the Number of File Revisions
 
-To find out how many revisions (from *1 to N* where N is an integer greater than 0) of a file/path are in a channel, issue the following command:
+The ``revisions`` mode shows how many revisions of a configuration file exist in a channel.
+Use this command:
 
 ----
-mgrcfg-manager revisions channel-label /tmp/dest_path/example-config.txt
+mgrcfg-manager revisions <channel-label> <config-file>
 ----
 
-The output resembles the following:
+The output looks like this:
 
 ----
 Analyzing files in config channel example-channel \
-/tmp/dest_path/example-config.txt: 1
+/tmp/dest_path/config-file: 1
 ----
 
 
 
-[[update.a.file.in.a.channel]]
-=== Updating a File in a Channel
+=== Update a File in a Channel
 
-To create a new revision of a file in a channel (or to add the first revision to that channel if none existed before for the given path), issue the following command:
+The ``update`` mode creates a new revision of a configuration file.
+The new revision is added within the existing channel.
+Use this command:
 
 ----
-mgrcfg-manager update --channel=channel-label \
---dest-file=/path/to/file.txt /local/path/to/file
+mgrcfg-manager update --channel=<channel-label> \
+--dest-file=</path/to/file.txt> </local/path/to/file>
 ----
 
-The output resembles the following:
+The output looks like this:
 
 ----
 Pushing to channel example-channel:
-Local file example-channel /tmp/local/example-config.txt -> \
-remote file /tmp/dest_path/example-config.txt
+Local file example-channel /tmp/local/config-file -> \
+remote file /tmp/dest_path/config-file
 ----
 
-The list of the options available for mgrcfg-manager update:
+The available options for ``mgrcfg-manager update`` are listed in this table.
 
--c CHANNEL, --channel=CHANNEL::
-Upload files in this config channel.
+[[mgrcfg-manager-update-options]]
+.Manager Update Mode Options
+[cols="1,1m1", options="header"]
+|===
+| Option
+| Abbreviated Option
+| Description
 
--d DEST_FILE, --dest-file=DEST_FILE::
-Upload the file to this path.
+| channel
+| c
+| Upload the file to this configuration channel.
 
--t TOPDIR, --topdir=TOPDIR::
-Directory to which all files are relative.
+| dest-file
+| d
+| Upload the file to this path.
 
---delim-start=DELIM_START::
-Start delimiter for variable interpolation.
+| topdir
+| t
+| Make all files relative to this string.
 
---delim-end=DELIM_END::
-End delimiter for variable interpolation.
+| delim-start
+|
+| Start delimiter for variable interpolation.
 
--h, --help::
-Show help message and exit.
+| delim-end
+|
+| End delimiter for variable interpolation.
+
+| help
+| h
+| Show help message and exit.
+
+|===
 
 
 
-[[uploading.multiple.files.at.once]]
-=== Uploading Multiple Files at Once
+=== Upload Multiple Files
 
-To upload multiple files to a config channel from a local disk at once, issue the command:
+The ``upload-channel`` mode allows you to upload multiple configuration files to a channel.
+Use this command:
 
 ----
-mgrcfg-manager upload-channel --topdir=topdir channel-label
+mgrcfg-manager upload-channel --topdir=<topdir> <channel-label>
 ----
 
-The output resembles the following:
+The output looks like this:
 
 ----
 Using config channel example-channel4
-Uploading /tmp/ola_world.txt from blah4/tmp/ola_world.txt
+Uploading config-file from /tmp/dest_path/
 ----
 
-The list of the options available for mgrcfg-manager upload-channel:
+The available options for ``mgrcfg-manager upload-channel`` are listed in this table.
 
--t TOPDIR, --topdir=TOPDIR::
-Directory all the file paths are relative to.
+[[mgrcfg-manager-uploadchannel-options]]
+.Manager Upload Channel Mode Options
+[cols="1,1m1", options="header"]
+|===
+| Option
+| Abbreviated Option
+| Description
 
--c CHANNEL, --channel=CHANNEL::
-List of channels the config info will be uploaded into channels delimited by ','. Example: --channel=foo,bar,baz.
+| channel
+| c
+| Upload the files to this configuration channel.
 
--h, --help::
-Show help message and exit.
+| topdir
+| t
+| Directory containing the files to be uploaded.
+
+| help
+| h
+| Show help message and exit.
+
+|===
