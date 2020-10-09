@@ -1,71 +1,142 @@
 [[ref-cli-sync]]
 = Synchronization CLI Tools
 
-There are several tools for synchronizing clients to the server.
+There are two tools for synchronizing clients to the server.
+For clients that are connected to the {scc}, use ``mgr-sync``.
+For all other clients, use ``spacewalk-repo-sync``.
 
 
 
+== Synchronize SCC Repositories With mgr-sync
 
-[[spacewalk-repo-sync]]
+//This content is the same as the content at modules/administration/pages/mgr-sync.adoc Perhaps we should snippet it? --LKB 2020-10-09
+
+The primary use of ``mgr-sync`` is to connect to the {scc}, retrieve product and package information, and prepare channels for synchronization with the {productname} Server.
+
+This tool is designed for use with a {suse} support subscription.
+It is not required for open source distributions, including {opensuse}, {centos}, and {ubuntu}.
+
+The available commands and arguments for ``mgr-sync`` are listed in this table.
+Use this syntax for ``mgr-sync`` commands:
+
+----
+mgr-sync [-h] [--version] [-v] [-s] [-d {1,2,3}] {list,add,refresh,delete}
+----
+
+
+[[mgr-sync-commands]]
+[cols="1,1,1", options="header"]
+.mgr-sync Commands
+|===
+| Command | Description | Example Use
+| list | List channels, organization credentials, or products | ``mgr-sync list channels``
+| add | Add channels, organization credentials, or products | ``mgr-sync add channel <channel_name>``
+| refresh | Refresh the local copy of products, channels, and subscriptions | ``mgr-sync refresh``
+| delete | Delete existing SCC organization credentials from the local system | ``mgr-sync delete credentials``
+| sync | Synchronize specified channel or ask for it when left blank| ``mgr-sync sync channel <channel_name>``
+|===
+
+
+To see the full list of options specific to a command, use this command:
+
+----
+mgr-sync <command> --help
+----
+
+
+
+[[mgr-sync-optional-args]]
+[cols="1,1,1,1", options="header"]
+.mgr-sync Optional Arguments
+|===
+| Option | Abbreviated option | Description | Example Use
+| help | ``h`` | Display the command usage and options | ``mgr-sync --help``
+| version | N/A | Display the currently installed version of ``mgr-sync`` | ``mgr-sync --version``
+| verbose | ``v`` | Provide verbose output | ``mgr-sync --verbose refresh``
+| store-credentials | ``s`` | Store credentials a local hidden file | ``mgr-sync --store-credentials``
+| debug | ``d`` | Log additional debugging information. Requires a level of 1, 2, 3. 3 provides the highest amnount of debugging information | ``mgr-sync -d 3 refresh``
+| no-sync | N/A | Use with the ``add`` command to add products or channels without beginning a synchronization | ``mgr-sync --no-sync add <channel_name>``
+|===
+
+
+Logs for ``mgr-sync`` are located in:
+
+* [path]``/var/log/rhn/mgr-sync.log``
+* [path]``/var/log/rhn/rhn_web_api.log``
+
+
+
 == Synchronize Repositories with spacewalk-repo-sync
 
 The [command]``spacewalk-repo-sync`` tool synchronizes software repositories into {productname} channels.
-This usually happens automatically, but you can run it manually if required.
-This can be useful for debugging or for solving some synchronization problems.
+In most cases, this happens automatically, but you can use the tool to run it manually if required.
+
+The [command]``spacewalk-repo-sync`` tool has these primary commands:
+
+[[spacewalk-repo-sync-options]]
+[cols="1,1,1", options="header"]
+.spacewalk-repo-sync Options
+|===
+
+| Option
+| Description
+| Example Use
+
+| list
+| List all custom channels and the repositories assigned to them.
+| ``spacewalk-repo-sync --list``
+
+| channel
+| Synchronize a single channel to all repositories assigned to it.
+| ``spacewalk-repo-sync  --channel <custom-channel>``
+
+| deep-verify
+| ignore cached package checksums.
+| ``spacewalk-repo-sync --deep-verify``
+
+| force-all-errata
+| force re-importing all the patches.
+| ``spacewalk-repo-sync --deep-verify``
+
+| no-packages
+| excludes packages from the operation.
+| ``spacewalk-repo-sync --deep-verify --no-packages``
+
+|===
+
+For a complete list of options, see the ``spacewalk-repo-sync`` manpage:
+
+----
+man spacewalk-repo-sync
+----
 
 
 
-=== Normal Channel Synchronization
+== Troubleshooting Synchronization
 
-Basic operation:
-
-[command]``spacewalk-repo-sync --list``::
-List all custom channels and the repositories assigned to them.
-[command]``spacewalk-repo-sync  --channel <custom-channel>``::
-Synchronize a single channel ``<custom-channel>`` to all repositories assigned to it with the {webui} or the API.
+If you are having trouble synchronizing with ``spacewalk-repo-sync`` you can find out more by watching the HTTP log as the command runs.
 
 
 
-=== Solve Checksum Problems
-
-Use the [option]``--deep-verify`` option to ignore cached package checksums.
-This can help with solving checksum problems.
-
-
-
-=== Force Re-import Patches
-
-Use the [option]``--force-all-errata`` option to force re-importing all the patches.
-To make this command run faster, you can use the [option]``--no-packages`` option.
-This option excludes packages from the operation.
-
-To find the root cause of synchronization problems you can look at the HTTP log as [command]``spacewalk-repo-sync`` is running.
-
-. Set and export [systemitem]``ZYPP_MEDIA_CURL_DEBUG``.
-    This setting will allow downloading the metadata output by Zypper.
-    Thus the following command will log the HTTP conversation into [path]``/var/log/zypper.log``:
+.Procedure: Troubleshooting Synchronization Problems
+. Log the HTTP output into [path]``/var/log/zypper.log``:
 +
-
 ----
 ZYPP_MEDIA_CURL_DEBUG=2 spacewalk-repo-sync --channel <channel-label>
 ----
-
-. Set and export [systemitem]``URLGRABBER_DEBUG`` for the RPM downloading part:
+. Export the setting:
 +
 ----
 export URLGRABBER_DEBUG=DEBUG
 ----
 . Start the synchronization:
 +
-
 ----
 /usr/bin/spacewalk-repo-sync --channel <channel-label> --type yum
 ----
-
-To increase the debug level, add the [option]``-vvv`` option.
-
-When debugging is finished, disable debug mode:
-
+  You can increase the debug level, by adding the [option]``-vvv`` option to the command.
+. When the complete completes, or fails, disable debug mode:
++
 ----
 unset URLGRABBER_DEBUG
 ----
@@ -74,11 +145,11 @@ unset URLGRABBER_DEBUG
 
 === Add Custom Extra HTTP Headers
 
-It is possible to add custom HTTP headers to the requests made by [command]``spacewalk-repo-sync`` at the time of repository and package synchronization.
-
+You can add custom HTTP headers to the requests made by [command]``spacewalk-repo-sync`` at the time of synchronization.
 The custom HTTP headers are defined in the [path]``/etc/rhn/spacewalk-repo-sync/extra_headers.conf`` configuration file.
-The headers can be defined by repository name, or channel label.
-You can also define global headers by putting them in the ``main`` section:
+The headers can be defined by repository name or channel label.
+You can also define global headers by putting them in the ``main`` section.
+For example:
 
 ----
 [testchannel]
@@ -94,126 +165,3 @@ X-MYGLOBAL-HEADER=VALUE
 ----
 
 This can be particularly useful when dealing with Red Hat Update Infrastructure (RHUI) repositories in the public cloud.
-
-=== For More Information
-
-For a complete list of command line options, see the [command]``spacewalk-repo-sync`` manpage:
-
-----
-man spacewalk-repo-sync
-----
-
-
-
-[[syncing.suse.mgr.repositories.scc]]
-== Synchronize Repositories from SCC (mgr-sync)
-
-[command]``mgr-sync`` should be used if {productname} is connected to SUSE Customer Center (SCC).
-With [command]``mgr-sync`` you may add or synchronize products and channels.
-The [command]``mgr-sync`` command also enables and refreshes SCC data.
-
-By default, [command]``mgr-sync`` writes basic debug information to [path]``/var/log/rhn/mgr-sync.log``.
-Get more debugging information with [option]``--debug`` or by adding [literal]``mgrsync.debug = <DEBUGLEVEL>`` to [path]``/etc/rhn/rhn.conf``.
-Settings in [path]``~/.mgr-sync`` will supersede values from [path]``rhn.conf``. For example, if you set
-----
-mgrsync.debug = ""
-----
-in [path]``~/.mgr-sync``, the value in [path]``rhn.conf`` will have no effect.
-
-[IMPORTANT]
-.Admin credentials
-====
-[command]``mgr-sync`` requires username and password of a *{productname} administrator*.
-Most functions are available as part of the public API.
-====
-
-mgr-sync provides a command structure with sub-commands similar to git or osc.
-For a complete list of command line option, see the mgr-sync manpage (man mgr-sync).
-Basic actions are:
-
-----
-mgr-sync list channel(s)|product(s)|credentials
-mgr-sync add  channel(s)|product(s)|credentials
-mgr-sync delete  credentials
-
-mgr-sync refresh [--refresh-channels] [--from-mirror MIRROR]
-----
-
-See the following examples.
-
-List channels::
-+
-
-----
-mgr-sync list channels
-----
-
-Add a channel::
-+
-
-----
-mgr-sync add channel LABEL
-----
-
-List products::
-+
-
-----
-mgr-sync list products
-----
-
-Add a product::
-+
-
-----
-mgr-sync add product
-----
-
-Refresh the data::
-+
-
-----
-mgr-sync refresh
-----
-
-Refresh data and schedule a reposync for all installed vendor channels::
-+
-
-----
-mgr-sync refresh --refresh-channels
-----
-
-List SCC credentials::
-+
-
-----
-mgr-sync list credentials
-----
-
-Add new SCC credentials::
-+
-
-----
-mgr-sync add credentials
-----
-
-[TIP]
-.Credentials
-====
-There can be one primary credential only.
-This is username/password used first when retrieving the list of available channels and packages.
-====
-
-Add SCC primary credentials::
-+
-
-----
-mgr-sync add credentials --primary
-----
-
-Delete SCC credentials::
-+
-
-----
-mgr-sync delete credentials
-----
