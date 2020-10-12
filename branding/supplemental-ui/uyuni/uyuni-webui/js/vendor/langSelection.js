@@ -1,7 +1,7 @@
 function selectLanguage(langId) {
 
     var str = window.location.pathname;
-    var regexPattern =/\/..\// ;
+    var regexPattern =/\/..\/|\/.._..\//;
 
     var matchCode = "/" + langId + "/" ;
 
