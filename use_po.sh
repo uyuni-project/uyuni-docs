@@ -11,11 +11,13 @@
 # INITILIZE VARIABLES
 ####################################
 
+CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
 SRCDIR_MODULE="./modules"
 
 # place where the po files are
 if [ -z "$PO_DIR" ] ; then
-	PO_DIR="./l10n/po"
+	PO_DIR="./l10n-weblate/"
 fi
 
 # place where the localized files will be
@@ -34,59 +36,26 @@ if [ ! -d "$SRCDIR_MODULE" ] ; then
 fi
 
 
-####################################
-# DEFINE ANTORA MODULES (adoc files)
-####################################
+#######################################################################
+# GENERATE TRANSLATED ASCIIDOC FROM .PO FILES, WITHOUT UPDATING .POT/PO
+#######################################################################
 
-use_po_module () {
-	lang=$1
+for f in $(ls $CURRENT_DIR/$PO_DIR/*.cfg); do
+    po4a --srcdir $CURRENT_DIR --destdir $CURRENT_DIR -k 0 -M utf-8 -L utf-8 --no-update $f
+done
 
-    for module in $(ls $PO_DIR/$lang); do
-        if [ -e $PO_DIR/$lang/$module/assets/images ]; then
-            mkdir -p $PUB_DIR/$lang/modules/$module/assets/images
-            cp -a $PO_DIR/$lang/$module/assets/* $PUB_DIR/$lang/modules/$module/assets/
+
+
+############################################################
+# COPY LOCALIZED SCREENSHOTS TO LOCALIZED ASCIIDOC DIRECTORY
+############################################################
+
+for module in $(find $CURRENT_DIR/$PO_DIR -mindepth 1 -maxdepth 1 -type d -printf "%f\n"); do
+    for langpo in $(find $CURRENT_DIR/$PO_DIR/$module -mindepth 1 -maxdepth 1 -type f -name "*.po" -printf "%f\n"); do
+        lang=`basename $langpo .po`
+        if [ -e $CURRENT_DIR/$PO_DIR/$module/assets-$lang ]; then
+            mkdir -p $CURRENT_DIR/$PUB_DIR/$lang/modules/$module/assets/images && \
+            cp -a $CURRENT_DIR/$PO_DIR/$module/assets-$lang/* $CURRENT_DIR/$PUB_DIR/$lang/modules/$module/assets/
         fi
     done
-
-
-	while IFS= read -r -d '' file
-	do
-		basename=$(basename -s .adoc "$file")
-		dirname=$(dirname "$file")
-		path="${dirname#$SRCDIR_MODULE/}"
-
-		if [ "$dirname" = "$SRCDIR_MODULE" ]; then
-			potname=$basename
-			localized_file="$PUB_DIR/$lang/modules/$basename.adoc"
-		else
-			potname=$path/$basename
-			localized_file="$PUB_DIR/$lang/modules/$path/$basename.adoc"
-		fi
-
-		if [ ! -e "$PO_DIR/$lang/$potname.po" ]; then
-			po4a-gettextize \
-				--format asciidoc \
-				--master "$file" \
-				--master-charset "UTF-8" \
-				--po "$PO_DIR/$lang/$potname.po"
-		fi
-
-		po4a-translate \
-			--format asciidoc \
-			--master "$file" \
-			--master-charset "UTF-8" \
-			--po "$PO_DIR/$lang/$potname.po" \
-			--localized "$localized_file" --localized-charset "UTF-8" \
-			--keep 0
-	done <   <(find -L "$SRCDIR_MODULE" -name "*.adoc"  -print0)
-}
-
-####################################
-# HANDLE ANTORA MODULES (adoc files)
-####################################
-
-while IFS= read -r -d '' dir
-do
-	lang=$(basename -s .adoc "$dir")
-	use_po_module "$lang"
-done <   <(find "$PO_DIR" -mindepth 1 -maxdepth 1 -type d -print0)
+done
