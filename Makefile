@@ -77,6 +77,7 @@ endef
 define clean-function
 	if [ -d ./$(1) ]; then \
 		cd ./$(1) && rm -rf build/ \
+		translations/ \
 		.cache/ \
 		public/ \
 		modules/installation/nav-installation-guide.pdf.$(2).adoc \
@@ -86,9 +87,9 @@ define clean-function
 		modules/administration/nav-administration-guide.pdf.$(2).adoc \
 		modules/salt/nav-salt-guide.pdf.$(2).adoc \
 		modules/retail/nav-retail-guide.pdf.$(2).adoc \
-		modules/architecture/nav-architecture-guide.pdf.$(2).adoc \
 		modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.$(2).adoc \
-		modules/large-deployments/nav-large-deployments.pdf.$(2).adoc; \
+		modules/large-deployments/nav-large-deployments-guide.pdf.$(2).adoc \
+		modules/quickstart-sap/nav-quickstart-sap-guide.pdf.$(2).adoc; \
 	fi
 endef
 
@@ -189,9 +190,9 @@ define pdf-retail-product
 endef
 
 # Generate PDF version of the Architecture Guide
-define pdf-architecture-product
-	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),architecture,$(6),$(7))
-endef
+#define pdf-architecture-product
+#	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),architecture,$(6),$(7))
+#endef
 
 # Generate PDF version of the Public Cloud Guide
 define pdf-quickstart-public-cloud-product
@@ -245,9 +246,9 @@ define pdf-retail-product-uyuni
 endef
 
 # Generate PDF version of the Architecture Guide
-define pdf-architecture-product-uyuni
-	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),architecture,$(6),$(7))
-endef
+#define pdf-architecture-product-uyuni
+#	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),architecture,$(6),$(7))
+#endef
 
 # Generate PDF version of the Public Cloud Guide
 define pdf-quickstart-public-cloud-product-uyuni
@@ -284,11 +285,11 @@ help: ## Prints a basic help menu about available targets
 
 .PHONY: pot
 pot:
-	$(shell $(current_dir)/make_pot.sh)
+	$(current_dir)/make_pot.sh
 
 .PHONY: translations
 translations:
-	$(shell $(current_dir)/use_po.sh)
+	$(current_dir)/use_po.sh
 
 .PHONY: clean
 clean: clean-en clean-es
@@ -332,8 +333,8 @@ pdf-retail-suma: pdf-retail-suma-en pdf-retail-suma-es
 .PHONY: pdf-large-deployment-suma
 pdf-large-deployment-suma: pdf-large-deployment-suma-en pdf-large-deployment-suma-es
 
-.PHONY: pdf-architecture-suma
-pdf-architecture-suma: pdf-architecture-suma-en pdf-architecture-suma-es
+#.PHONY: pdf-architecture-suma
+#pdf-architecture-suma: pdf-architecture-suma-en pdf-architecture-suma-es
 
 .PHONY: pdf-quickstart-public-cloud-suma
 pdf-quickstart-public-cloud-suma: pdf-quickstart-public-cloud-suma-en pdf-quickstart-public-cloud-suma-es
@@ -377,8 +378,8 @@ pdf-retail-uyuni: pdf-retail-uyuni-en pdf-retail-uyuni-es
 .PHONY: pdf-large-deployment-uyuni
 pdf-large-deployment-uyuni: pdf-large-deployment-uyuni-en pdf-large-deployment-uyuni-es
 
-.PHONY: pdf-architecture-uyuni
-pdf-architecture-uyuni: pdf-architecture-uyuni-en pdf-architecture-uyuni-es
+#.PHONY: pdf-architecture-uyuni
+#pdf-architecture-uyuni: pdf-architecture-uyuni-en pdf-architecture-uyuni-es
 
 .PHONY: pdf-quickstart-public-cloud-uyuni
 pdf-quickstart-public-cloud-uyuni: pdf-quickstart-public-cloud-uyuni-en pdf-quickstart-public-cloud-uyuni-es
