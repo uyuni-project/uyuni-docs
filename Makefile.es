@@ -28,13 +28,14 @@ pdf-tar-suma-$(LANGCODE_ES):
 .PHONY: prepare-antora-suma-$(LANGCODE_ES)
 prepare-antora-suma-$(LANGCODE_ES):
 	-mkdir -p $(LANGDIR_ES) && \
-	cp antora.yml $(LANGDIR_ES)/antora.yml && \
+	cp -a antora.yml $(LANGDIR_ES)/antora.yml && \
 	sed "s/\.\/branding/\.\.\/\.\.\/branding/;\
 	s/\-\ url\:\ \./\-\ url\:\ \.\.\/\.\.\//;\
 	s/start_path\:\ \./\start_path\:\ translations\/$(LANGCODE_ES)/;\
 	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/$(LANGCODE_ES)/;" suma-site.yml > $(LANGDIR_ES)/suma-site.yml && \
 	cd $(LANGDIR_ES) && \
-	if [ ! -e branding ]; then ln -s ../../branding; fi
+	if [ ! -e branding ]; then ln -s ../../branding; fi && \
+	cp -a $(CURDIR)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(CURDIR)/$(LANGDIR_ES)/modules/ROOT/pages/
 
 .PHONY: antora-suma-$(LANGCODE_ES)
 antora-suma-$(LANGCODE_ES): clean-$(LANGCODE_ES) pdf-all-suma-$(LANGCODE_ES) pdf-tar-suma-$(LANGCODE_ES)
@@ -47,7 +48,7 @@ obs-packages-suma-$(LANGCODE_ES): clean-$(LANGCODE_ES) pdf-all-suma-$(LANGCODE_E
 
 # Generate PDF versions of all SUMA books
 .PHONY: pdf-all-suma-$(LANGCODE_ES)
-pdf-all-suma-$(LANGCODE_ES):  prepare-antora-suma-$(LANGCODE_ES) translations pdf-install-suma-$(LANGCODE_ES) pdf-client-configuration-suma-$(LANGCODE_ES) pdf-upgrade-suma-$(LANGCODE_ES) pdf-reference-suma-$(LANGCODE_ES) pdf-administration-suma-$(LANGCODE_ES) pdf-salt-suma-$(LANGCODE_ES) pdf-retail-suma-$(LANGCODE_ES) pdf-quickstart-public-cloud-suma-$(LANGCODE_ES) pdf-large-deployment-suma-$(LANGCODE_ES) ##pdf-architecture-suma-webui-$(LANGCODE_ES)
+pdf-all-suma-$(LANGCODE_ES):  translations prepare-antora-suma-$(LANGCODE_ES) pdf-install-suma-$(LANGCODE_ES) pdf-client-configuration-suma-$(LANGCODE_ES) pdf-upgrade-suma-$(LANGCODE_ES) pdf-reference-suma-$(LANGCODE_ES) pdf-administration-suma-$(LANGCODE_ES) pdf-salt-suma-$(LANGCODE_ES) pdf-retail-suma-$(LANGCODE_ES) pdf-quickstart-public-cloud-suma-$(LANGCODE_ES) pdf-large-deployment-suma-$(LANGCODE_ES) ##pdf-architecture-suma-webui-$(LANGCODE_ES)
 
 .PHONY: modules/installation/nav-installation-guide.pdf.$(LANGCODE_ES).adoc
 modules/installation/nav-installation-guide.pdf.$(LANGCODE_ES).adoc:
@@ -123,14 +124,14 @@ pdf-large-deployment-suma-$(LANGCODE_ES): modules/large-deployments/nav-large-de
 	$(call pdf-large-deployment-product,$(LANGDIR_ES),$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA),$(PDF_BUILD_DIR_ES),$(LANGCODE_ES))
 
 
-.PHONY: modules/architecture/nav-architecture-guide.pdf.$(LANGCODE_ES).adoc
-modules/architecture/nav-architecture-guide.pdf.$(LANGCODE_ES).adoc:
-	$(call pdf-book-create-index,$(LANGDIR_ES),architecture,$(LANGCODE_ES))
+#.PHONY: modules/architecture/nav-architecture-guide.pdf.$(LANGCODE_ES).adoc
+#modules/architecture/nav-architecture-guide.pdf.$(LANGCODE_ES).adoc:
+#	$(call pdf-book-create-index,$(LANGDIR_ES),architecture,$(LANGCODE_ES))
 
-.PHONY: pdf-architecture-suma-$(LANGCODE_ES)
-## Generate PDF version of the SUMA Architecture Guide
-pdf-architecture-suma-$(LANGCODE_ES): modules/architecture/nav-architecture-guide.pdf.$(LANGCODE_ES).adoc
-	$(call pdf-architecture-product,$(LANGDIR_ES),$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA),$(PDF_BUILD_DIR_ES),$(LANGCODE_ES))
+#.PHONY: pdf-architecture-suma-$(LANGCODE_ES)
+### Generate PDF version of the SUMA Architecture Guide
+#pdf-architecture-suma-$(LANGCODE_ES): modules/architecture/nav-architecture-guide.pdf.$(LANGCODE_ES).adoc
+#	$(call pdf-architecture-product,$(LANGDIR_ES),$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA),$(PDF_BUILD_DIR_ES),$(LANGCODE_ES))
 
 .PHONY: modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.$(LANGCODE_ES).adoc
 modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.$(LANGCODE_ES).adoc:
@@ -161,7 +162,8 @@ prepare-antora-uyuni-$(LANGCODE_ES):
 	s/start_path\:\ \./\start_path\:\ translations\/es/;\
 	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/es/;" uyuni-site.yml > $(LANGDIR_ES)/uyuni-site.yml && \
 	cd $(LANGDIR_ES) && \
-	if [ ! -e branding ]; then ln -s ../../branding; fi
+	if [ ! -e branding ]; then ln -s ../../branding; fi && \
+	cp -a $(CURDIR)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(CURDIR)/$(LANGDIR_ES)/modules/ROOT/pages/
 
 .PHONY: antora-uyuni-$(LANGCODE_ES)
 antora-uyuni-$(LANGCODE_ES): clean-$(LANGCODE_ES) pdf-all-uyuni-$(LANGCODE_ES) pdf-tar-uyuni-$(LANGCODE_ES)
@@ -173,7 +175,7 @@ obs-packages-uyuni-$(LANGCODE_ES): clean-$(LANGCODE_ES) pdf-all-uyuni-$(LANGCODE
 
 # Generate PDF versions of all UYUNI books
 .PHONY: pdf-all-uyuni-$(LANGCODE_ES)
-pdf-all-uyuni-$(LANGCODE_ES): prepare-antora-uyuni-$(LANGCODE_ES) translations pdf-install-uyuni-$(LANGCODE_ES) pdf-client-configuration-uyuni-$(LANGCODE_ES) pdf-upgrade-uyuni-$(LANGCODE_ES) pdf-reference-uyuni-$(LANGCODE_ES) pdf-administration-uyuni-$(LANGCODE_ES) pdf-salt-uyuni-$(LANGCODE_ES) pdf-retail-uyuni-$(LANGCODE_ES) pdf-quickstart-public-cloud-uyuni-$(LANGCODE_ES) pdf-large-deployment-uyuni-$(LANGCODE_ES) ##pdf-architecture-uyuni-webui-$(LANGCODE_ES)
+pdf-all-uyuni-$(LANGCODE_ES): translations prepare-antora-uyuni-$(LANGCODE_ES) pdf-install-uyuni-$(LANGCODE_ES) pdf-client-configuration-uyuni-$(LANGCODE_ES) pdf-upgrade-uyuni-$(LANGCODE_ES) pdf-reference-uyuni-$(LANGCODE_ES) pdf-administration-uyuni-$(LANGCODE_ES) pdf-salt-uyuni-$(LANGCODE_ES) pdf-retail-uyuni-$(LANGCODE_ES) pdf-quickstart-public-cloud-uyuni-$(LANGCODE_ES) pdf-large-deployment-uyuni-$(LANGCODE_ES) ##pdf-architecture-uyuni-webui-$(LANGCODE_ES)
 
 ## Generate PDF version of the UYUNI Installation Guide
 .PHONY: pdf-install-uyuni-$(LANGCODE_ES)
@@ -215,10 +217,10 @@ pdf-retail-uyuni-$(LANGCODE_ES): modules/retail/nav-retail-guide.pdf.$(LANGCODE_
 pdf-large-deployment-uyuni-$(LANGCODE_ES): modules/large-deployments/nav-large-deployments.pdf.$(LANGCODE_ES).adoc
 	$(call pdf-large-deployment-product-uyuni,$(LANGDIR_ES),$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI),$(PDF_BUILD_DIR_ES),$(LANGCODE_ES))
 
-.PHONY: pdf-architecture-uyuni-$(LANGCODE_ES)
-## Generate PDF version of the UYUNI Architecture Guide
-pdf-architecture-uyuni-$(LANGCODE_ES): modules/architecture/nav-architecture-guide.pdf.$(LANGCODE_ES).adoc
-	$(call pdf-architecture-product-uyuni,$(LANGDIR_ES),$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI),$(PDF_BUILD_DIR_ES),$(LANGCODE_ES))
+#.PHONY: pdf-architecture-uyuni-$(LANGCODE_ES)
+### Generate PDF version of the UYUNI Architecture Guide
+#pdf-architecture-uyuni-$(LANGCODE_ES): modules/architecture/nav-architecture-guide.pdf.$(LANGCODE_ES).adoc
+#	$(call pdf-architecture-product-uyuni,$(LANGDIR_ES),$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI),$(PDF_BUILD_DIR_ES),$(LANGCODE_ES))
 
 .PHONY: pdf-quickstart-public-cloud-uyuni-$(LANGCODE_ES)
 ## Generate PDF version of the UYUNI Quickstart Guide for Public Cloud
