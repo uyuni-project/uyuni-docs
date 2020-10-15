@@ -1,7 +1,7 @@
 [[client-upgrades-major]]
 = Client - Major Version Upgrade
 
-Your clients must have the latest available SLE{nbsp}12 Service Pack, with all the latest updates applied.
+Your clients must have the latest available service pack (SP) for the installed operating system, with all the latest updates applied.
 Before you start, ensure that the system is up to date and all updates have been installed successfully.
 
 The upgrade is controlled by {yast} and {ay}, it does not use Zypper.
@@ -9,12 +9,14 @@ The upgrade is controlled by {yast} and {ay}, it does not use Zypper.
 
 == Prepare to Migrate
 
-Before you can migrate your client from SLE{nbsp}12 to SLE{nbsp}15{nbsp}SP2, you need to make these preparations:
+Before you can migrate your client from SLE{nbsp}12 to SLE{nbsp}15{nbsp}, you need to:
 
 . Prepare installation media
 . Create an auto-installation distribution
 . Create an activation key
 . Upload an {ay} profile
+
+
 
 .Procedure: Preparing Installation Media
 . On the {productname} Server, create a local directory for the SLE{nbsp}15{nbsp}SP2 installation media:
@@ -44,8 +46,8 @@ This image is the unified installer and can be used for multiple autoinstallatio
 ====
 
 
-.Procedure: Creating an Autoinstallation Distribution
 
+.Procedure: Creating an Autoinstallation Distribution
 . In the {productname} {webui}, navigate to menu:Systems[Autoinstallation > Distributions] and click btn:[Create Distribution].
 . In the [guimenu]``Create Autoinstallable Distribution`` section, use these parameters:
 * In the [guimenu]``Distribution Label`` section, type a unique name for the distribution.
@@ -61,11 +63,11 @@ This image is the unified installer and can be used for multiple autoinstallatio
 . Click btn:[Create Autoinstallable Distribution] to save.
 
 
+To switch from the old SLE{nbsp}12{nbsp} base channel to the new SLE{nbsp}15 channel, you need an activation key.
+
+
 
 .Procedure: Creating an Activation Key
-
-In order to switch from the old SLE{nbsp}12{nbsp} base channel to the new SLE{nbsp}15{nbsp}SP2 channel, you need an activation key.
-
 . In the {productname} Server {webui}, navigate to menu:Systems[Activation Keys] and click [guimenu]``Create Key``.
 . Enter a description for your key.
 . Enter a key or leave it blank to generate an automatic key.
@@ -76,6 +78,8 @@ In order to switch from the old SLE{nbsp}12{nbsp} base channel to the new SLE{nb
 . Click btn:[Create Activation Key].
 . Click the [guimenu]``Child Channels`` tab and select the required channels.
 . Click btn:[Update Key].
+
+
 
 == Create an Autoinstallation Profile
 
@@ -109,6 +113,7 @@ For clients that were registered using Salt, use the ``spacewalk/minion_script``
 
 
 == Migration
+
 Before you begin, check that all the channels referenced in the autoinstallation profile are available and fully synchronized.
 
 You can monitor the mirroring progress in [path]``/var/log/rhn/reposync/<channel-label>.log``.
@@ -119,7 +124,7 @@ You can monitor the mirroring progress in [path]``/var/log/rhn/reposync/<channel
 . In the {productname} Server {webui}, navigate to [guimenu]``Systems`` and select the client to be upgraded.
 . Navigate to the [guimenu]``Provisioning`` tab, and select the autoinstallation profile you uploaded.
 . Click btn:[Schedule Autoinstallation and Finish].
-    The system will download the required files, change the bootloader entries, reboot, and start the upgrade.
+  The system will download the required files, change the bootloader entries, reboot, and start the upgrade.
 
 
 Next time the client synchronizes with the {productname} Server, it will receive a re-installation job.
@@ -130,56 +135,3 @@ When the client next boots, it will use grub to boot the new kernel with its ini
 PXE booting is not used during this process.
 
 Approximately three minutes after the job was fetched, the client will go down for reboot.
-
-
-
-// 2020-05-05, ke: I think we'd better move this to client-y-z.adoc
-== SP Mass Migration
-
-If you want to migrate a large number of clients to the next SP version, you can use {productname} API calls.
-
-
-
-.Procedure: SP Mass Migration
-. You need to know to which migration target you want to migrate.
-    List available migration targets:
-+
-----
-spacecmd api -- system.listMigrationTargets -A 1000010001
-----
-+
-Create a list of system IDs you want to migrate.
-. For each system ID, call [systemitem]``listMigrationTarget`` and check that the desired target product is available.
-+
-* If the system ID has an available target, call [systemitem]``system.scheduleSPMigration``.
-* If the desired target is not available, skip the system.
-
-Adapt this template for your environment:
-
-----
-target = '[....]'
-basechannel = 'channel-label'
-system_ids = [1, 2, 3]
-
-session = auth.login(user, pass)
-for system in system_ids
-  if system.listMigrationTargets(session, system).ident == target
-    system.scheduleSPMigration(session, system, target, basechannel, [], False, <now>)
-  else
-    print "Cannot migrate to requested target -- skipping system"
-  endif
-endfor
-----
-
-////
-[WARNING]
-====
-The following examples are referenced for illustrative purposes only.
-{suse} does not support these resources.
-====
-
-If you want to integrate such API calls into your scripts, see:
-
-* https://github.com/bjin01/spmigration
-* https://github.com/bjin01/spmigration-single
-////
