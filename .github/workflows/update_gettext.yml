@@ -1,0 +1,36 @@
+name: Update translation files
+on:
+  push:
+    branches:
+      - master
+
+
+jobs:
+ run:
+   name: Update translation files
+   runs-on: ubuntu-latest
+   steps:
+   - name: Checkout repo
+     uses: actions/checkout@v2
+
+   - name: Setup po4a
+     run: |
+       sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E77D14FE3C9A28E588A34E7469977F2B42813EC6
+       sudo add-apt-repository ppa:pgquiles/uyuni
+       sudo apt-get install -y make po4a
+
+   - name: Update po4a configuration files
+     run: cd l10n-weblate && ./update-cfg-files
+
+   - name: Update gettext files
+     run: make pot
+
+   - name: Commit changes
+     uses: EndBug/add-and-commit@v5
+     with:
+       author_name: Galaxy CI
+       author_email: galaxy-ci@suse.de
+       message: "Automatic commit: update translation files"
+       add: "l10n-weblate/*/*.pot l10n-weblate/*/*.po"
+     env:
+       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
