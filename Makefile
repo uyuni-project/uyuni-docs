@@ -89,7 +89,7 @@ define clean-function
 		modules/retail/nav-retail-guide.pdf.$(2).adoc \
 		modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.$(2).adoc \
 		modules/large-deployments/nav-large-deployments-guide.pdf.$(2).adoc \
-		#modules/quickstart-sap/nav-quickstart-sap-guide.pdf.$(2).adoc; \
+		modules/quickstart-sap/nav-quickstart-sap-guide.pdf.$(2).adoc; \
 	fi
 endef
 
@@ -200,9 +200,9 @@ define pdf-quickstart-public-cloud-product
 endef
 
 # Generate PDF version of the SAP Guide
-#define pdf-quickstart-sap-product
-#	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),quickstart-sap,$(6),$(7))
-#endef
+define pdf-quickstart-sap-product
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),quickstart-sap,$(6),$(7))
+endef
 
 # Generate PDF version of the Large Deployment Guide
 define pdf-large-deployment-product
@@ -256,9 +256,9 @@ define pdf-quickstart-public-cloud-product-uyuni
 endef
 
 # Generate PDF version of the SAP Guide
-#define pdf-quickstart-sap-product-uyuni
-#	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),quickstart-sap,$(6),$(7))
-#
+define pdf-quickstart-sap-product-uyuni
+	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),quickstart-sap,$(6),$(7))
+endef
 
 # Generate PDF version of the Large Deployment Guide
 define pdf-large-deployment-product-uyuni
