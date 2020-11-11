@@ -292,97 +292,103 @@ translations:
 	$(current_dir)/use_po.sh
 
 .PHONY: clean
-clean: clean-en clean-es
+clean: clean-en clean-es clean-zh_CN
 
 .PHONY: validate-suma
-validate-suma: validate-suma-es validate-suma-en
+validate-suma: validate-suma-en validate-suma-es validate-suma-zh_CN
 
 .PHONY: pdf-tar-suma
-pdf-tar-suma: pdf-tar-suma-en pdf-tar-suma-es
+pdf-tar-suma: pdf-tar-suma-en pdf-tar-suma-es pdf-tar-suma-zh_CN
 
 .PHONY: antora-suma
-antora-suma: antora-suma-en antora-suma-es
+antora-suma: antora-suma-en antora-suma-es antora-suma-zh_CN
 
 .PHONY: obs-packages-suma
-obs-packages-suma: obs-packages-suma-en obs-packages-suma-es
+obs-packages-suma: obs-packages-suma-en obs-packages-suma-es obs-packages-suma-zh_CN
 
 .PHONY: pdf-all-suma
-pdf-all-suma: pdf-all-suma-en pdf-all-suma-es
+pdf-all-suma: pdf-all-suma-en pdf-all-suma-es pdf-all-suma-zh_CN
 
 .PHONY: pdf-install-suma
-pdf-install-suma: pdf-install-suma-en pdf-install-suma-es
+pdf-install-suma: pdf-install-suma-en pdf-install-suma-es pdf-install-suma-zh_CN
 
 .PHONY: pdf-client-configuration-suma
-pdf-client-configuration-suma: pdf-client-configuration-suma-en pdf-client-configuration-suma-es
+pdf-client-configuration-suma: pdf-client-configuration-suma-en pdf-client-configuration-suma-es pdf-client-configuration-suma-zh_CN
 
 .PHONY: pdf-upgrade-suma
-pdf-upgrade-suma: pdf-upgrade-suma-en pdf-upgrade-suma-es
+pdf-upgrade-suma: pdf-upgrade-suma-en pdf-upgrade-suma-es pdf-upgrade-suma-zh_CN
 
 .PHONY: pdf-reference-suma
-pdf-reference-suma: pdf-reference-suma-en pdf-reference-suma-es
+pdf-reference-suma: pdf-reference-suma-en pdf-reference-suma-es pdf-reference-suma-zh_CN
 
 .PHONY: pdf-administration-suma
-pdf-administration-suma: pdf-administration-suma-en pdf-administration-suma-es
+pdf-administration-suma: pdf-administration-suma-en pdf-administration-suma-es pdf-administration-zh_CN
 
 .PHONY: pdf-salt-suma
-pdf-salt-suma: pdf-salt-suma-en pdf-salt-suma-es
+pdf-salt-suma: pdf-salt-suma-en pdf-salt-suma-es pdf-salt-zh_CN
 
 .PHONY: pdf-retail-suma
-pdf-retail-suma: pdf-retail-suma-en pdf-retail-suma-es
+pdf-retail-suma: pdf-retail-suma-en pdf-retail-suma-es pdf-retail-suma-zh_CN
 
 .PHONY: pdf-large-deployment-suma
-pdf-large-deployment-suma: pdf-large-deployment-suma-en pdf-large-deployment-suma-es
+pdf-large-deployment-suma: pdf-large-deployment-suma-en pdf-large-deployment-suma-es pdf-large-deployment-suma-zh_CN
 
 #.PHONY: pdf-architecture-suma
-#pdf-architecture-suma: pdf-architecture-suma-en pdf-architecture-suma-es
+#pdf-architecture-suma: pdf-architecture-suma-en pdf-architecture-suma-es pdf-architecture-suma-zh_CN
 
 .PHONY: pdf-quickstart-public-cloud-suma
-pdf-quickstart-public-cloud-suma: pdf-quickstart-public-cloud-suma-en pdf-quickstart-public-cloud-suma-es
+pdf-quickstart-public-cloud-suma: pdf-quickstart-public-cloud-suma-en pdf-quickstart-public-cloud-suma-es pdf-quickstart-public-cloud-suma-zh_CN
+
+.PHONY: pdf-quickstart-sap-suma
+pdf-quickstart-sap-suma: pdf-quickstart-sap-suma-en pdf-quickstart-sap-suma-es pdf-quickstart-sap-suma-zh_CN
 
 .PHONY: validate-uyuni
-validate-uyuni: validate-uyuni-en validate-uyuni-es
+validate-uyuni: validate-uyuni-en validate-uyuni-es validate-uyuni-zh_CN
 
 .PHONY: pdf-tar-uyuni
-pdf-tar-uyuni: pdf-tar-uyuni-en pdf-tar-uyuni-es
+pdf-tar-uyuni: pdf-tar-uyuni-en pdf-tar-uyuni-es pdf-tar-uyuni-zh_CN
 
 .PHONY: antora-uyuni
-antora-uyuni: antora-uyuni-en antora-uyuni-es
+antora-uyuni: antora-uyuni-en antora-uyuni-es antora-uyuni-zh_CN
 
 .PHONY: obs-packages-uyuni
-obs-packages-uyuni: obs-packages-uyuni-en obs-packages-uyuni-es
+obs-packages-uyuni: obs-packages-uyuni-en obs-packages-uyuni-es obs-packages-uyuni-zh_CN
 
 .PHONY: pdf-all-uyuni
-pdf-all-uyuni: pdf-all-uyuni-en pdf-all-uyuni-es
+pdf-all-uyuni: pdf-all-uyuni-en pdf-all-uyuni-es pdf-all-uyuni-zh_CN
 
 .PHONY: pdf-install-uyuni
-pdf-install-uyuni: pdf-install-uyuni-en pdf-install-uyuni-es
+pdf-install-uyuni: pdf-install-uyuni-en pdf-install-uyuni-es pdf-install-uyuni-zh_CN
 
 .PHONY: pdf-client-configuration-uyuni
-pdf-client-configuration-uyuni: pdf-client-configuration-uyuni-en pdf-client-configuration-uyuni-es
+pdf-client-configuration-uyuni: pdf-client-configuration-uyuni-en pdf-client-configuration-uyuni-es pdf-client-configuration-uyuni-zh_CN
 
 .PHONY: pdf-upgrade-uyuni
-pdf-upgrade-uyuni: pdf-upgrade-uyuni-en pdf-upgrade-uyuni-es
+pdf-upgrade-uyuni: pdf-upgrade-uyuni-en pdf-upgrade-uyuni-es pdf-upgrade-uyuni-zh_CN
 
 .PHONY: pdf-reference-uyuni
-pdf-reference-uyuni: pdf-reference-uyuni-en pdf-reference-uyuni-es
+pdf-reference-uyuni: pdf-reference-uyuni-en pdf-reference-uyuni-es pdf-reference-uyuni-zh_CN
 
 .PHONY: pdf-administration-uyuni
-pdf-administration-uyuni: pdf-administration-uyuni-en pdf-administration-uyuni-es
+pdf-administration-uyuni: pdf-administration-uyuni-en pdf-administration-uyuni-es pdf-administration-uyuni-zh_CN
 
 .PHONY: pdf-salt-uyuni
-pdf-salt-uyuni: pdf-salt-uyuni-en pdf-salt-uyuni-es
+pdf-salt-uyuni: pdf-salt-uyuni-en pdf-salt-uyuni-es pdf-salt-uyuni-zh_CN
 
 .PHONY: pdf-retail-uyuni
-pdf-retail-uyuni: pdf-retail-uyuni-en pdf-retail-uyuni-es
+pdf-retail-uyuni: pdf-retail-uyuni-en pdf-retail-uyuni-es pdf-retail-uyuni-zh_CN
 
 .PHONY: pdf-large-deployment-uyuni
-pdf-large-deployment-uyuni: pdf-large-deployment-uyuni-en pdf-large-deployment-uyuni-es
+pdf-large-deployment-uyuni: pdf-large-deployment-uyuni-en pdf-large-deployment-uyuni-es pdf-large-deployment-uyuni-zh_CN
 
 #.PHONY: pdf-architecture-uyuni
 #pdf-architecture-uyuni: pdf-architecture-uyuni-en pdf-architecture-uyuni-es
 
 .PHONY: pdf-quickstart-public-cloud-uyuni
-pdf-quickstart-public-cloud-uyuni: pdf-quickstart-public-cloud-uyuni-en pdf-quickstart-public-cloud-uyuni-es
+pdf-quickstart-public-cloud-uyuni: pdf-quickstart-public-cloud-uyuni-en pdf-quickstart-public-cloud-uyuni-es pdf-quickstart-public-cloud-uyuni-zh_CN
+
+.PHONY: pdf-quickstart-sap-uyuni
+pdf-quickstart-sap-uyuni: pdf-quickstart-sap-uyuni-en pdf-quickstart-sap-uyuni-es pdf-quickstart-sap-uyuni-zh_CN
 
 include Makefile.en
 include Makefile.es

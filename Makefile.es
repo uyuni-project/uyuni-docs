@@ -142,6 +142,14 @@ modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.$(LANGCODE
 pdf-quickstart-public-cloud-suma-$(LANGCODE_ES): modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.$(LANGCODE_ES).adoc
 	$(call pdf-quickstart-public-cloud-product,$(LANGDIR_ES),$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA),$(PDF_BUILD_DIR_ES),$(LANGCODE_ES))
 
+.PHONY: modules/quickstart-sap/nav-quickstart-sap-guide.pdf.$(LANGCODE_ES).adoc
+modules/quickstart-sap/nav-quickstart-sap-guide.pdf.$(LANGCODE_ES).adoc:
+	$(call pdf-book-create-index,$(LANGDIR_ES),quickstart-sap,$(LANGCODE_ES))
+
+.PHONY: pdf-quickstart-sap-suma-$(LANGCODE_ES)
+## Generate PDF version of the SUMA Quickstart Guide for SAP
+pdf-quickstart-sap-suma-$(LANGCODE_ES): modules/quickstart-sap/nav-quickstart-sap-guide.pdf.$(LANGCODE_ES).adoc
+	$(call pdf-quickstart-sap-product,$(LANGDIR_ES),$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA),$(PDF_BUILD_DIR_ES),$(LANGCODE_ES))
 
 # UYUNI
 
@@ -226,3 +234,8 @@ pdf-large-deployment-uyuni-$(LANGCODE_ES): modules/large-deployments/nav-large-d
 ## Generate PDF version of the UYUNI Quickstart Guide for Public Cloud
 pdf-quickstart-public-cloud-uyuni-$(LANGCODE_ES): modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.$(LANGCODE_ES).adoc
 	$(call pdf-quickstart-public-cloud-product-uyuni,$(LANGDIR_ES),$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI),$(PDF_BUILD_DIR_ES),$(LANGCODE_ES))
+
+.PHONY: pdf-quickstart-sap-uyuni-$(LANGCODE_ES)
+## Generate PDF version of the UYUNI Quickstart Guide for SAP
+pdf-quickstart-sap-uyuni-$(LANGCODE_ES): modules/quickstart-sap/nav-quickstart-sap-guide.pdf.$(LANGCODE_ES).adoc
+	$(call pdf-quickstart-sap-product-uyuni,$(LANGDIR_ES),$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI),$(PDF_BUILD_DIR_ES),$(LANGCODE_ES))
