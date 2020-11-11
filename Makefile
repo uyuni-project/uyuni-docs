@@ -386,3 +386,4 @@ pdf-quickstart-public-cloud-uyuni: pdf-quickstart-public-cloud-uyuni-en pdf-quic
 
 include Makefile.en
 include Makefile.es
+include Makefile.zh_CN

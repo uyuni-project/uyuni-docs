@@ -159,8 +159,8 @@ prepare-antora-uyuni-$(LANGCODE_ES):
 	cp antora.yml $(LANGDIR_ES)/antora.yml && \
 	sed "s/\.\/branding/\.\.\/\.\.\/branding/;\
 	s/\-\ url\:\ \./\-\ url\:\ \.\.\/\.\.\//;\
-	s/start_path\:\ \./\start_path\:\ translations\/es/;\
-	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/es/;" uyuni-site.yml > $(LANGDIR_ES)/uyuni-site.yml && \
+	s/start_path\:\ \./\start_path\:\ translations\/$(LANGCODE_ES)/;\
+	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/$(LANGCODE_ES)/;" uyuni-site.yml > $(LANGDIR_ES)/uyuni-site.yml && \
 	cd $(LANGDIR_ES) && \
 	if [ ! -e branding ]; then ln -s ../../branding; fi && \
 	cp -a $(CURDIR)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(CURDIR)/$(LANGDIR_ES)/modules/ROOT/pages/
