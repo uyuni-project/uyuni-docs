@@ -40,7 +40,7 @@ prepare-antora-suma-$(LANGCODE_ES):
 .PHONY: antora-suma-$(LANGCODE_ES)
 antora-suma-$(LANGCODE_ES): clean-$(LANGCODE_ES) pdf-all-suma-$(LANGCODE_ES) pdf-tar-suma-$(LANGCODE_ES)
 #	$(call enable-suma-in-antorayml,.)
-	$(call antora-suma-function,$(LANGDIR_ES))
+	$(call antora-suma-function,$(LANGDIR_ES),$(LANGCODE_CS))
 
 .PHONY: obs-packages-suma-$(LANGCODE_ES)
 obs-packages-suma-$(LANGCODE_ES): clean-$(LANGCODE_ES) pdf-all-suma-$(LANGCODE_ES) antora-suma-$(LANGCODE_ES) ## Generate SUMA OBS tar files
@@ -175,7 +175,7 @@ prepare-antora-uyuni-$(LANGCODE_ES):
 
 .PHONY: antora-uyuni-$(LANGCODE_ES)
 antora-uyuni-$(LANGCODE_ES): clean-$(LANGCODE_ES) pdf-all-uyuni-$(LANGCODE_ES) pdf-tar-uyuni-$(LANGCODE_ES)
-	$(call antora-uyuni-function,$(LANGDIR_ES))
+	$(call antora-uyuni-function,$(LANGDIR_ES),$(LANGCODE_CS))
 
 .PHONY: obs-packages-uyuni-$(LANGCODE_ES)
 obs-packages-uyuni-$(LANGCODE_ES): clean-$(LANGCODE_ES) pdf-all-uyuni-$(LANGCODE_ES) antora-uyuni-$(LANGCODE_ES) ## Generate UYUNI OBS tar files
