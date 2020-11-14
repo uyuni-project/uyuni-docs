@@ -150,7 +150,7 @@ define pdf-book-create-index
 		-e 's/\*\*\*\ (.*)/=== \1/' \
 		-e 's/\*\*\ (.*)/== \1/' \
 		-e 's/\*\ (.*)/= \1/' \
-		modules/$(2)/nav-$(2)-guide.adoc > $(1)/modules/$(2)/nav-$(2)-guide.pdf.$(3).adoc
+		$(1)/modules/$(2)/nav-$(2)-guide.adoc > $(1)/modules/$(2)/nav-$(2)-guide.pdf.$(3).adoc
 endef
 
 # SUMA PDF Books
