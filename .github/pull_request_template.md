@@ -4,12 +4,11 @@ Short summary of why you created this PR
 
 # Target branches
 
-Which product version does this PR apply to?
+Which documentation version does this PR apply to?
 
-- [ ] Manager-4.0
+- [ ] Master (Default)
 - [ ] Manager-4.1
-- [ ] Manager-4.2
-- [ ] Uyuni
+- [ ] Manager-4.0
 
 # Links
 

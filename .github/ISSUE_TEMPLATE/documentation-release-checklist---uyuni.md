@@ -1,6 +1,11 @@
-# Documentation Release Checklist - Uyuni
+---
+name: Documentation Release Checklist - Uyuni
+about: Use this issue template for documentation releases.
+title: Documentation Release Checklist - Uyuni YYYY.MM
+labels: docs backlog
+assignees: Loquacity, jcayouette
 
-Use this issue template for documentation releases.
+---
 
 ## Before Packaging Day
 
@@ -12,7 +17,7 @@ Check with the docs squad coordinator for confirmation.
 ## Packaging Day:
 
 - [ ] Update entities to the current versions.
-- [ ] For Uyuni, cut a new branch from master using syntax `uyuni-YYYY-MM-pages` based on the gh-pages branch.
+- [ ] Cut a new branch from master using syntax `uyuni-YYYY-MM-pages` based on the gh-pages branch.
 - [ ] Locally build docs from the release branch and visually check output.
 - [ ] Package documentation and push SR to OBS: https://github.com/uyuni-project/uyuni-docs/wiki/publishing-to-obs
 - [ ] Notify Release Manager of SR.
