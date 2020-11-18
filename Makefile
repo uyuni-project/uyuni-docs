@@ -25,12 +25,18 @@ PDF_THEME_DIR ?= branding/pdf/themes
 
 PDF_THEME_SUMA ?= suse-draft
 
+# SUMA Chinese PDF Theme
+PDF_THEME_SUMA_CJK ?= suse-cjk
+
 # UYUNI PDF Themes
 # Available Choices set variable
 # uyuni-draft
 # uyuni
 
 PDF_THEME_UYUNI ?= uyuni
+
+# UYUNI Chinese PDF Theme
+PDF_THEME_UYUNI_CJK ?= uyuni-cjk
 
 #REVDATE ?= "$(shell date +'%B %d, %Y')"
 CURDIR ?= .
