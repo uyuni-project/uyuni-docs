@@ -62,7 +62,7 @@ pdf-install-suma-$(LANGCODE_ES): modules/installation/nav-installation-guide.pdf
 	$(call pdf-install-product,$(LANGDIR_ES),$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA),$(PDF_BUILD_DIR_ES),$(LANGCODE_ES),$(LOCALE_ES),$(GNUDATEFORMAT_ES))
 
 
-.PHONY: modules/client-configuration/nav-client-configuration-guide.pdf.$(LOCALE_ES).adoc
+.PHONY: modules/client-configuration/nav-client-configuration-guide.pdf.$(LANGCODE_ES).adoc
 modules/client-configuration/nav-client-configuration-guide.pdf.$(LANGCODE_ES).adoc:
 	$(call pdf-book-create-index,$(LANGDIR_ES),client-configuration,$(LANGCODE_ES))
 
