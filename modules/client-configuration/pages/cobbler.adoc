@@ -57,10 +57,10 @@ All configurable settings are explained in detail in the [path]``/etc/cobbler/se
 
 The PXE boot process uses DHCP to find the TFTP boot server.
 The {productname} Server can act as such a  TFTP boot server and Cobbler can generate the content for it.
-You must have administrative access to the network's DHCP server.
+DHCP server can be configured directly or using DHCPd formula.
+
+To configure DHCP directly, you must have administrative access to the network's DHCP server.
 Edit the DHCP configuration file so that it points to the {productname} Server as the TFTP boot server:
-
-
 
 .Procedure: Example for Configuring the ISC DHCP Server
 . On the DHCP server, as root, open the [path]``/etc/dhcpd.conf`` file.
@@ -70,10 +70,16 @@ Edit the DHCP configuration file so that it points to the {productname} Server a
 ----
 allow booting;
 allow bootp;
-class "PXE"
-{match if substring(option vendor-class-identifier, 0, 9) = "PXEClient";
-next-server 192.168.2.1;
-filename "pxelinux.0";}
+option arch code 93 = unsigned integer 16;
+class "PXE" {
+  match if substring(option vendor-class-identifier, 0, 9) = "PXEClient";
+  next-server 192.168.2.1;
+  if option arch = 00:07 {
+    filename "grub/grub.efi";
+  } else {
+    filename "pxelinux.0";
+  }
+}
 ----
 +
 This example:
@@ -82,10 +88,20 @@ This example:
 * Creates a class called ``PXE``.
 * Identifies systems as ``PXEClient`` if they are configured with PXE as the first boot priority.
 * Directs PXEClients to the Cobbler server at ``192.168.2.1``.
-* Retrieves the [path]``pxelinux.0``bootloader file.
+* Retrieves the [path]``grub/grub.efi`` bootloader file for EFI PXE clients.
+* Retrieves the [path]``pxelinux.0`` bootloader file for legacy BIOS PXE clients.
 +
 . Save the file.
 
+To configure DHCP using DHCPd formula, follow this example:
+
+.Procedure: Example for configuring ISC DHCP Server using DHCPd formula
+. Configure the DHCPd formula.
+  For more information, see xref:salt:formula-dhcpd.adoc[].
+. In the  [guimenu]``Filename EFI`` field, type [path]``grub/grub.efi`` to enable EFI PXE support.
+. In the  [guimenu]``Filename`` field, type [path]``pxelinux.0`` to enable legacy BIOS support.
+. Click btn:[Save Formula] to save your configuration.
+. Apply the highstate.
 
 While it is possible to use KVM with PXE booting, it can be unreliable.
 We do not recommend you use this on production systems.
