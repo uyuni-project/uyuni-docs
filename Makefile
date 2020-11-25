@@ -293,6 +293,7 @@ help: ## Prints a basic help menu about available targets
 
 .PHONY: pot
 pot:
+	(cd l10n-weblate && ./update-cfg-files)
 	$(current_dir)/make_pot.sh
 
 .PHONY: translations
