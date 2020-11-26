@@ -109,7 +109,7 @@ window.antoraLunr = (function (lunr) {
   function createSearchResultItem (doc, item, hits, guideName) {
     var documentGuide = document.createElement('div')
     documentGuide.classList.add('search-result-document-guide')
-    documentGuide.innerText = guideName[2].charAt(0).toUpperCase() + guideName[2].slice(1) + ' Guide'
+    documentGuide.innerText = guideName[5].charAt(0).toUpperCase() + guideName[5].slice(1) + ' Guide'
     
     var documentTitle = document.createElement('div')
     documentTitle.classList.add('search-result-document-title')
