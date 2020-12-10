@@ -1,0 +1,65 @@
+[[troubleshooting-iss]]
+= Troubleshooting Inter-Server Synchronization
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+////
+Cause: Caches on the ISS slave and master can contain old or out-of-date entries.
+Consequence: Synchronizing fails, with ``ERROR: Encountered IntegrityError``.
+Fix: Delete the cache on the slave and the master
+Result: Synchronization completes successfully.
+////
+
+
+Inter-server synchronization uses caches to manage the ISS Master and Slaves.
+These caches can be prone to bugs that create invalid entries.
+In this case, bugs can show up even after updating to a version that resolves the bug, because the cache is still using invalid entries.
+If you upgrade to a new version of ISS, but are still experiencing problems, clear all the caches to ensure you no longer have old entries creating a problem.
+
+Cache errors can lead to synchronization failing with a variety of errors, but the error message will usually report something like this:
+
+----
+consider removing satellite-sync cache at /var/cache/rhn/satsync/* and re-run satellite-sync with same options.
+----
+
+You can resolve this by deleting the cache on the ISS Master and the ISS Slave, so that synchronization completes successfully.
+
+
+
+.Procedure: Resolving ISS Caching Errors
+. On the ISS Master, at the command prompt, as root, delete the cache file for the Master:
++
+----
+rm -rf /var/cache/rhn/xml-*
+----
+. Restart the service:
++
+----
+rcapache2 restart
+----
+. On the ISS Master, at the command prompt, as root, delete the cache file for the Slave:
++
+----
+rm -rf /var/cache/rhn/satsync/*
+----
+. Restart the service:
++
+----
+rcapache2 restart
+----
