@@ -1,5 +1,5 @@
 [[salt-states]]
-= Salt States
+= Salt States and Pilars
 
 States are configuration templates.
 They allow you to describe what each of your systems should look like, including the applications and services that are installed and running.
@@ -31,8 +31,7 @@ Leading to these possible scenarios:
 * Client4 wants any version, gets version 1 (Organization Level)
 
 
-Custom user-created states can be made with {productname}.
-All user-created Salt state (SLS) files are saved on the {productname} Server, in the [path]``/srv/susemanager/salt/`` directory.
+All user-created states made with {productname} are saved as Salt state (SLS) files on the {productname} Server, in the [path]``/srv/susemanager/salt/`` directory.
 Within that directory, each organization has a sub-directory.
 
 .Example: SLS File Directory Structure
@@ -50,38 +49,6 @@ For example:
 │   │    ... other files needed by states ...
 │   └── motd.sls     # user created
             ... other SLS files ...
-----
-
-
-
-== Salt Pillars
-
-
-{productname} exposes a small amount of internal data as pillars which can be used with custom states.
-Pillars are created on the {productname} Server, and contain information about a client or group of clients.
-Pillars are useful for sensitive data, configuration of clients, variables, and any arbitrary data.
-
-Pillars are managed either automatically by {productname}, or manually by the user.
-
-For more information on pillars, see https://docs.saltstack.com/en/latest/topics/tutorials/pillar.html.
-
-
-To avoid hard-coding organization IDs within {sles} files, a pillar entry is added for each organization:
-
-----
-org-files-dir: relative_path_to_files
-----
-
-The specified file is available for all clients which belong to the organization.
-
-This is an example of a Pillar located at [path]``/etc/motd``:
-
-----
-file.managed:
-    - source: salt://{{ pillar['org-files-dir']}}/motd
-    - user: root
-    - group: root
-    - mode: 644
 ----
 
 
@@ -118,6 +85,38 @@ salt -I 'group_ids:2130' state.apply manager_org_1.``customstate``
 Apply the highstate to all clients in the group:
 ----
 salt -I 'group_ids:GID' state.apply
+----
+
+
+
+== Salt Pillars
+
+
+{productname} exposes a small amount of internal data as pillars which can be used with custom states.
+Pillars are created on the {productname} Server, and contain information about a client or group of clients.
+Pillars are useful for sensitive data, configuration of clients, variables, and any arbitrary data.
+
+Pillars are managed either automatically by {productname}, or manually by the user.
+
+For more information on pillars, see https://docs.saltstack.com/en/latest/topics/tutorials/pillar.html.
+
+
+To avoid hard-coding organization IDs within {sles} files, a pillar entry is added for each organization:
+
+----
+org-files-dir: relative_path_to_files
+----
+
+The specified file is available for all clients which belong to the organization.
+
+This is an example of a Pillar located at [path]``/etc/motd``:
+
+----
+file.managed:
+    - source: salt://{{ pillar['org-files-dir']}}/motd
+    - user: root
+    - group: root
+    - mode: 644
 ----
 
 
