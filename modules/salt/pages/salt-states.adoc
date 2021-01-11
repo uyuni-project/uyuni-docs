@@ -1,5 +1,5 @@
 [[salt-states]]
-= Salt States
+= Salt States and Pillars
 
 States are configuration templates.
 They allow you to describe what each of your systems should look like, including the applications and services that are installed and running.
@@ -31,25 +31,38 @@ Leading to these possible scenarios:
 * Client4 wants any version, gets version 1 (Organization Level)
 
 
-Custom user-created states can be made with {productname}.
-All user-created Salt state (SLS) files are saved on the {productname} Server, in the [path]``/srv/susemanager/salt/`` directory.
-Within that directory, each organization has a sub-directory.
+== Group States
 
-.Example: SLS File Directory Structure
+Pillar data can be used to perform bulk actions, like applying all assigned states to clients within the group.
+This section contains some examples of bulk actions that you can take using group states.
 
+To perform these actions, you will need to determine the ID of the group that you want to manipulate.
+You can determine the Group ID by using the [command]``spacecmd`` command:
 ----
-├── manager_org_DEVEL
-│   ├── files
-│   │    ... files needed by states (uploaded by users)...
-│   └── state.sls
-         ... other SLS files (created by users)...
-For example:
-├── manager_org_TESTING
-│   ├── files
-│   │   └── motd     # user created
-│   │    ... other files needed by states ...
-│   └── motd.sls     # user created
-            ... other SLS files ...
+spacecmd group_details
+----
+
+These examples use an example Group ID of [systemitem]``GID``.
+
+
+To apply all states assigned to the group:
+----
+salt -I 'group_ids:GID' state.apply custom.group_GID
+----
+
+To apply any state (whether or not it is assigned to the group):
+----
+salt -I 'group_ids:GID' state.apply ``state``
+----
+
+To apply a custom state:
+----
+salt -I 'group_ids:2130' state.apply manager_org_1.``customstate``
+----
+
+Apply the highstate to all clients in the group:
+----
+salt -I 'group_ids:GID' state.apply
 ----
 
 
@@ -82,42 +95,6 @@ file.managed:
     - user: root
     - group: root
     - mode: 644
-----
-
-
-
-== Group States
-
-Pillar data can be used to perform bulk actions, like applying all assigned states to clients within the group.
-This section contains some examples of bulk actions that you can take using group states.
-
-To perform these actions, you will need to determine the ID of the group that you want to manipulate.
-You can determine the Group ID by using the [command]``spacecmd`` command:
-----
-spacecmd group_details
-----
-
-In these examples we will use an example Group ID of [systemitem]``GID``.
-
-
-To apply all states assigned to the group:
-----
-salt -I 'group_ids:GID' state.apply custom.group_GID
-----
-
-To apply any state (whether or not it is assigned to the group):
-----
-salt -I 'group_ids:GID' state.apply ``state``
-----
-
-To apply a custom state:
-----
-salt -I 'group_ids:2130' state.apply manager_org_1.``customstate``
-----
-
-Apply the highstate to all clients in the group:
-----
-salt -I 'group_ids:GID' state.apply
 ----
 
 
