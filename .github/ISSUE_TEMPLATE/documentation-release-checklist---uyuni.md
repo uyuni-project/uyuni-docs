@@ -22,10 +22,10 @@ Check with the docs squad coordinator for confirmation.
 - [ ] Package documentation and push SR to OBS: https://github.com/uyuni-project/uyuni-docs/wiki/publishing-to-obs
 - [ ] Notify Release Manager of SR.
 - [ ] Release Manager accepts package.
+- [ ] Create the PR to publish Uyuni to gh-pages: https://github.com/uyuni-project/uyuni-docs/tree/gh-pages. Add the release engineer as the assignee, and use a label with current Uyuni version. **Do not merge, the release engineer will do it**
 
 
 ## Release Day:
 
 - [ ] Build docs from release branch and visually check output.
-- [ ] Publish Uyuni to gh-pages: https://github.com/uyuni-project/uyuni-docs/tree/gh-pages. Add Release Manager as the assignee, and use a label with current Uyuni version.
 - [ ] When endpoints are live, visually check output.
