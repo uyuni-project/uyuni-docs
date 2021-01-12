@@ -404,6 +404,9 @@ pdf-quickstart-public-cloud-uyuni: pdf-quickstart-public-cloud-uyuni-en pdf-quic
 .PHONY: pdf-quickstart-sap-uyuni
 pdf-quickstart-sap-uyuni: pdf-quickstart-sap-uyuni-en pdf-quickstart-sap-uyuni-es pdf-quickstart-sap-uyuni-zh_CN pdf-quickstart-sap-uyuni-cs
 
+.PHONY: pdf-quickstart-uyuni-uyuni
+pdf-quickstart-uyuni-uyuni: pdf-quickstart-uyuni-uyuni-en
+
 include Makefile.en
 include Makefile.es
 include Makefile.zh_CN
