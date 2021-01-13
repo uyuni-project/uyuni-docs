@@ -3,9 +3,52 @@
 
 When you have your {productname} Server set up, you are ready to start registering clients.
 
-You can use {productname} to manage clients using either the Salt stack or the traditional stack (inherited from Spacewalk).
-Most new features and enhancements are only available for Salt-managed clients, which makes this stack the preferred one.
-For more details, see xref:client-configuration:supported-features.adoc[]
+
+
+== Prepare On-Demand Images
+
+An instance started from an on-demand image provided by {suse} is automatically registered, and the update infrastructure and {sle} modules are activated.
+To use your on-demand image as a {productname} client, you need to disable this automation before you begin.
+
+
+
+.Procedure: Preparing On Demand Images
+. Log in to the on-demand instance.
+. At the command prompt, as root, remove the registration data and repositories:
++
+---
+registercloudguest --clean
+---
+. Remove the ``cloud-regionsrv-client`` package:
++
+----
+zypper rm cloud-regionsrv-client
+----
+. Remove additional packages specific to your cloud provider:
++
+* Amazon EC2:
++
+----
+zypper rm regionServiceClientConfigEC2 regionServiceCertsEC2
+----
++
+* Google Compute Engine:
++
+----
+zypper rm cloud-regionsrv-client-plugin-gce regionServiceClientConfigGCE regionServiceCertsGCE
+----
++
+* Microsoft Azure:
++
+----
+zypper rm regionServiceClientConfigAzure regionServiceCertsAzure
+----
+
+For instructions on registering {productname} to {scc}, see xref:installation:server-setup.adoc[].
+
+
+
+== Register Clients
 
 In the {productname} {webui}, navigate to menu:Systems[Bootstrapping], then fill in the ``Host``, ``SSH Port``, ``User`` and ``Password`` fields.
 Make sure you use stable FQDNs for the ``Host`` field, or {productname} cannot find your host when your Public Cloud gives you a different short-lived FQDNS.
@@ -16,7 +59,6 @@ If you are attempting to bootstrap traditional clients, check that you can resol
 You might need to add the FQDN of the server to [path]``/etc/hosts`` local resolution file on the client.
 Check using the [command]``hostname -f`` command with the local IP address of the server.
 ====
-
 
 Public cloud images usually do not allow SSH login with username and password, but only SSH with a certificate.
 If you want to use bootstrap from the {webui}, you need to enable SSH login with username and SSH key.
@@ -52,52 +94,4 @@ When the bootstrap process has completed successfully, your client is listed at 
 Activation keys are used with traditional and Salt clients to ensure that your clients have the correct software entitlements, are connecting to the appropriate channels, and are subscribed to the relevant groups.
 Each activation key is bound to an organization, which you can set when you create the key.
 
-.Procedure: Creating an Activation Key
-. In the {productname} {webui}, as an administrator, navigate to menu:Systems[Activation Keys].
-. Click the btn:[Create Key] button.
-. On the [guimenu]``Activation Key Details`` page, in the [guimenu]``Description`` field, enter a name for the activation key.
-. In the [guimenu]``Key`` field, enter the distribution and service pack associated with the key.
-    For example, ``SLES12-SP4`` for {sles}{nbsp}12{nbsp}SP4.
-+
-[IMPORTANT]
-====
-Do not use commas in the [guimenu]``Key`` field for any {suse} products.
-However, you *must* use commas for Red Hat Products.
-For more information, see xref:reference:systems/activation-keys.adoc[].
-====
-+
-. In the [guimenu]``Base Channels`` drop-down box, select the appropriate base software channel, and allow the relevant child channels to populate.
-    For more information, see xref:reference:admin/setup-wizard.adoc#vle.webui.admin.wizard.products[] and xref:administration:custom-channels.adoc[].
-. Select the child channels you need (for example, the mandatory {susemgr} tools and updates channels).
-. We recommend you leave the [guimenu]``Contact Method`` set to [guimenu]``Default``.
-. We recommend you leave the [guimenu]``Universal Default`` setting unchecked.
-. Click btn:[Create Activation Key] to create the activation key.
-. Check the [guimenu]``Configuration File Deployment`` check box to enable configuration management for this key, and click btn:[Update Activation Key] to save this change.
-
-[NOTE]
-====
-The [guimenu]``Configuration File Deployment`` check box does not appear until after you have created the activation key.
-Ensure you go back and check the box if you need to enable configuration management.
-====
-
 For more on activation keys, see xref:client-configuration:activation-keys.adoc[].
-
-
-
-== System Set Manager
-
-
-System set manager (SSM) is used to administrate groups of systems, rather than performing actions on one system at a time.
-It works for both Salt and traditional clients.
-
-For a complete list of the tasks that you can perform with the SSM, see xref:client-configuration:system-set-manager.adoc[].
-
-You need to select which systems or system group you want to work with before you can use SSM to perform operations.
-
-You can access SSM in three different ways:
-
-* Navigate to menu:Systems[System List], select systems you want to work with, and navigate to menu:Systems[System Set Manager].
-* Navigate to menu:Systems[System Groups], and click btn:[Use in SSM] for the system group you want to work with.
-* Navigate to menu:Systems[System Groups], select the group you want to work with, and click btn:[Work with Group].
-
-For more on SSM, see xref:client-configuration:system-set-manager.adoc[]..
