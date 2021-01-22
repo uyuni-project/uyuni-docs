@@ -64,7 +64,7 @@ endef
 
 define antora-suma-function
 	$(call enable-suma-in-antorayml,$(1)) && \
-	DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr LANG=$(2) LC_ALL=$(2) antora $(current_dir)/$(1)/suma-site.yml --generator antora-site-generator-lunr --attribute lang=$(2) --attribute localesdir=../../locale/pages/attributes.adoc
+	DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr LANG=$(2) LC_ALL=$(2) antora $(current_dir)/$(1)/suma-site.yml --generator antora-site-generator-lunr --attribute lang=$(2)
 endef
 
 define enable-uyuni-in-antorayml
