@@ -1,0 +1,146 @@
+[[custom-channel]]
+= 自定义频道
+
+Custom channels give you the ability to create your own software packages and repositories, which you can use to update your clients. They also allow you to use software provided by third party vendors in your environment.
+
+You must have administrator privileges to be able to create and manage custom channels.
+
+Before you create a custom channel, determine which base channel you want to associate it with, and which repositories you want to use for content.
+
+This section gives more detail on how to create, administer, and delete custom channels.
+
+
+
+== Creating Custom Channels and Repositories
+
+If you have custom software packages that you need to install on your {productname} systems, you can create a custom child channel to manage them. You need to create the channel in the {productname} {webui} and create a repository for the packages, before assigning the channel to your systems.
+
+You can select a vendor channel as the base channel if you want to use packages provided by a vendor. Alternatively, select ``none`` to make your custom channel a base channel.
+
+Custom channels sometimes require additional security settings. Many third party vendors secure packages with GPG. If you want to use GPG-protected packages in your custom channel, you need to trust the GPG key which has been used to sign the metadata. You can then check the [guimenu]``Has Signed Metadata?`` check box to match the package metadata against the trusted GPG keys. For more information on importing GPG keys, see xref:reference:systems/autoinst-gpg-and-ssl-keys.adoc[].
+
+
+
+[IMPORTANT]
+====
+Do not create child channels containing packages that are not compatible with the client system.
+====
+
+
+
+.Procedure: Creating a Custom Channel
+. In the {productname} {webui}, navigate to menu:Software[Manage > Channels], and click btn:[Create Channel].
+. On the [guimenu]``Create Software Channel`` page, give your channel a name (for example, [systemitem]``My Tools SLES 15 SP1 x86_64``) and a label (for example, [systemitem]``my-tools-sles15sp1-x86_64``).
+    Labels must not contain spaces or uppercase letters.
+. In the [guimenu]``Parent Channel`` drop down, choose the relevant base channel (for example, [systemitem]``SLE-Product-SLES15-SP1-Pool for x86_64``).
+    Ensure that you choose the compatible parent channel for your packages.
+. In the [guimenu]``Architecture`` drop down, choose the appropriate hardware architecture (for example, [systemitem]``x86_64``).
+. Provide any additional information in the contact details, channel access control, and GPG fields, as required for your environment.
+. Click btn:[Create Channel].
+
+
+[IMPORTANT]
+====
+By default, the ``Enable GPG Check`` field is checked when you create a new channel. If you would like to add custom packages and applications to your channel, make sure you uncheck this field to be able to install unsigned packages. Disabling the GPG check is a security risk if packages are from an untrusted source.
+====
+
+
+
+.Procedure: Creating a Software Repository
+. In the {productname} {webui}, navigate to menu:Software[Manage > Repositories], and click btn:[Create Repository].
+. On the [guimenu]``Create Repository`` page, give your repository a label (for example, [systemitem]``my-tools-sles15sp1-x86_64-repo``).
+. In the [guimenu]``Repository URL`` field, provide the path to the directory that contains the [path]``repodata`` file (for example, [systemitem]``file:///opt/mytools/``).
+    You can use any valid addressing protocol in this field.
+. Uncheck the [guimenu]``Has Signed Metadata?`` check box.
+. OPTIONAL: Complete the SSL fields if your repository requires client certificate authentication.
+. Click btn:[Create Repository].
+
+
+
+.Procedure: Assigning the Repository to a Channel
+. Assign your new repository to your custom channel by navigating to menu:Software[Manage > Channels], clicking the name of your newly created custom channel, and navigating to the [guimenu]``Repositories`` tab.
+. Ensure the repository you want to assign to the channel is checked, and click btn:[Update Repositories].
+. Navigate to the [guimenu]``Sync`` tab and click btn:[Sync Now] to synchronize immediately.
+    You can also set an automated synchronization schedule on this tab.
+
+
+There are several ways to check if a channel has finished synchronizing:
+
+* In the {productname} {webui}, navigate to menu:Admin[Setup Wizard] and select the [guimenu]``Products`` tab.
+    This dialog displays a completion bar for each product when they are being synchronized.
+* In the {productname} {webui}, navigate to menu:Software[Manage > Channels], then click the channel associated to the repository.
+    Navigate to the menu:[Repositories > Sync] tab. The [guimenu]``Sync Status`` is shown next to the repository name..
+* Check the synchronization log file at the command prompt:
++
+----
+tail -f /var/log/rhn/reposync/<channel-label>.log
+----
++
+Each child channel generates its own log during the synchronization progress. You need to check all the base and child channel log files to be sure that the synchronization is complete.
+
+
+
+.Procedure: Adding Custom Channels to an Activation Key
+. In the {productname} {webui}, navigate to menu:Systems[Activation Keys], and select the key you want to add the custom channel to.
+. On the [guiemnu]``Details`` tab, in the [guimenu]``Child Channels`` listing, select the channel to associate.
+    You can select multiple channels, if you need to.
+. Click btn:[Update Activation Key].
+
+
+
+== Add Packages and Patches to Custom Channels
+
+When you create a new custom channel without cloning it from an existing channel, it does not contain any packages or patches. You can add the packages and patches you require using the {productname} {webui}.
+
+Custom channels can only include packages or patches that are cloned or custom, and they must match the base architecture of the channel. Patches added to custom channels must apply to a package that exists in the channel.
+
+
+.Procedure: Adding Packages to Custom Channels
+. In the {productname} {webui}, navigate to menu:Software[Manage > Channels], and go to the [guimenu]``Packages`` tab.
+. OPTIONAL: See all packages currently in the channel by navigating to the [guimenu]``List/Remove`` tab.
+. Add new packages to the channel by navigating to the [guimenu]``Add`` tab.
+. Select the parent channel to provide packages, and click btn:[View Packages] to populate the list.
+. Check the packages to add to the custom channel, and click btn:[Add Packages].
+. When you are satisfied with the selection, click btn:[Confirm Addition] to add the packages to the channel.
+. OPTIONAL: You can compare the packages in the current channel with those in a different channel by navigating to menu:Software[Manage > Channels], and going to the menu:Packages[Compare] tab.
+    To make the two channels the same, click the btn:[Merge Differences] button, and resolve any conflicts.
+
+
+
+.Procedure: Adding Patches to a Custom Channel
+. In the {productname} {webui}, navigate to menu:Software[Manage > Channels], and go to the [guimenu]``Patches`` tab.
+. OPTIONAL: See all patches currently in the channel by navigating to the [guimenu]``List/Remove`` tab.
+. Add new patches to the channel by navigating to the [guimenu]``Add`` tab, and selecting what kind of patches you want to add.
+. Select the parent channel to provide patches, and click btn:[View Associated Patches] to populate the list.
+. Check the patches to add to the custom channel, and click btn:[Confirm].
+. When you are satisfied with the selection, click btn:[Confirm] to add the patches to the channel.
+
+
+
+== Manage Custom Channels
+
+{productname} administrators and channel administrators can alter or delete any channel.
+
+To grant other users rights to alter or delete a channel, navigate to menu:Software[Manage > Channels] and select the channel you want to edit. Navigate to the [guimenu]``Managers`` tab, and check the user to grant permissions. Click btn:[Update] to save the changes.
+
+
+[IMPORTANT]
+====
+If you delete a channel that has been assigned to a set of clients, it triggers an immediate update of the channel state for any clients associated with the deleted channel. This is to ensure that the changes are reflected accurately in the repository file.
+====
+
+
+
+You cannot delete {productname} channels with the {webui}. Only custom channels can be deleted.
+
+
+
+.Procedure: Deleting Custom Channels
+. In the {productname} {webui}, navigate to menu:Software[Manage > Channels], and select the channel you want to delete.
+. Click btn:[Delete software channel].
+. On the [guimenu]``Delete Channel`` page, check the details of the channel you are deleting, and check the [guimenu]``Unsubscribe Systems`` checkbox to remove the custom channel from any systems that might still be subscribed.
+. Click btn:[Delete Channel].
+
+When channels are deleted, the packages that are part of the deleted channel are not automatically removed. You are not able to update packages that have had their channel deleted.
+
+You can delete packages that are not associated with a channel in the {productname} {webui}. Navigate to menu:Software[Manage > Packages], check the packages to remove, and click btn:[Delete Packages].

@@ -1,0 +1,98 @@
+[[db-migration-12]]
+= Database Migration from Version 10 to 12
+
+This section covers upgrading the PostgreSQL database from version{nbsp}10 to version{nbsp}12. If you are already using PostgreSQL 12, you do not need to perform this migration. If you are using an older version, such as version 9.6, see xref:upgrade:db-migration-10.adoc[].
+
+If you want to upgrade to the latest {productname} version, you must be using PostgreSQL version 10 or 12. You migrate to PostgreSQL version 12 after you upgraded your {productname} Server to version{nbsp}4.1.
+
+
+
+
+
+
+
+[[db-migration-12-prepare]]
+== Prepare to Upgrade
+
+Before you begin the upgrade, prepare your existing {productname} Server and create a database backup.
+
+PostgreSQL stores data at [path]``/var/lib/pgsql/data/``.
+
+.Procedure: Preparing to Upgrade
+
+. Check the active PostgreSQL version:
++
+----
+psql --version
+----
++
+If you are using PostgreSQL{nbsp}10, you can upgrade to PostgreSQL{nbsp}12.
++
+If you are already using PostgreSQL version 12, you do not need to perform this migration.
+. Check the active smdba version:
++
+----
+rpm -q smdba
+----
++
++
+PostgreSQL{nbsp}10 requires ``smdba`` version 1.6.2 or later.
+
+. Perform a database backup.
+    For more information on backing up, see xref:administration:backup-restore.adoc[].
+
+
+
+[[db-migration-12-upgrade]]
+== Upgrade PostgreSQL
+
+[WARNING]
+====
+Always create a database backup before performing a migration.
+====
+
+PostgreSQL upgrades can be performed in two ways: a regular upgrade, or a fast upgrade:
+
+A regular upgrade will create a complete copy of the database, so you will need double the existing database size of space available. Regular upgrades can take a considerable amount of time, depending on the size of the database and the speed of the storage system.
+
+A fast upgrade only takes a few minutes, and uses almost no additional disk space. However, if a fast upgrade fails, you must restore the database from the backup. A fast upgrade reduces the risk of running out of disk space. A regular upgrade will copy the database files instead of creating hard links between the files.
+
+PostgreSQL stores data at [path]``/var/lib/pgsql/data/``.
+
+.Procedure: Performing a Regular Upgrade
+. Perform a database backup.
+    For more information on backing up, see xref:administration:backup-restore.adoc[].
+. Start the upgrade:
++
+----
+/usr/lib/susemanager/bin/pg-migrate-10-to-12.sh
+----
+. When the upgrade has successfully completed, you can safely delete the old database directory and reclaim lost disk space.
+    The old directory is renamed to [path]``/var/lib/pgsql/data-pg10``.
++
+
+The [path]``pg-migrate-10-to-12.sh`` script performs these operations:
+
+* Stop spacewalk services
+* Shut down the running database
+* Check if PostgreSQL{nbsp}12 is installed and install it if necessary
+* Switch from PostgreSQL{nbsp}10 to PostgreSQL{nbsp}12 as the new default
+* Initiate the database migration
+* Create a PostgreSQL configuration file tuned for use by {productname}
+* Start the database and spacewalk services
+
+[NOTE]
+====
+If the upgrade fails, the migration script will attempt to restore the database to its original state.
+====
+
+.Procedure: Performing a Fast PostgreSQL Upgrade
+. Perform a database backup.
+    Without a verified database backup, you must not initiate a fast upgrade. For more information on backing up, see xref:administration:backup-restore.adoc[].
+. Start the upgrade:
++
+----
+/usr/lib/susemanager/bin/pg-migrate-10-to-12.sh fast
+----
+. When the upgrade has successfully completed, you can safely delete the old database directory and reclaim lost disk space.
+    The old directory is renamed to [path]``/var/lib/pgsql/data-pg10``.

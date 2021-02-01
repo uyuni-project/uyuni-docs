@@ -1,0 +1,158 @@
+[[actions]]
+= Actions
+
+You can manage actions on your clients in a number of different ways.
+
+For Salt clients, you can schedule automated recurring actions to apply the highstate to clients on a specified schedule. You can apply recurring actions to individual clients, to all clients in a system group, or to an entire organization.
+
+On both Salt and traditional clients, you can set actions to be performed in a particular order by creating action chains. Action chains can be created and edited ahead of time, and scheduled to run at a time that suits you.
+
+You can also perform remote commands on one or more of your Salt clients. Remote commands allows you to issue commands to individual Salt clients, or to all clients that match a search term.
+
+
+
+== Recurring Actions
+
+You can apply recurring actions on individual Salt clients, or to all clients in an organization.
+
+
+
+.Procedure: Creating a New Recurring Action
+. To apply a recurring action to an individual client, navigate to [guimenu]``Systems``, click the client to configure schedules for, and navigate to the menu:States[Recurring States] tab.
+. To apply a recurring action to a system group, navigate to menu:Systems[System Groups], select the group to configure schedules for, and navigate to menu:States[Recurring States] tab.
+. Click btn:[Create].
+. Type a name for the new schedule.
+. Choose the frequency of the recurring action:
++
+* [guimenu]``Hourly:`` Type the minute of each hour.
+    For example, [parameter]``15`` runs the action at fifteen minutes past every hour.
+* [guimenu]``Daily:`` Select the time of each day.
+    For example, [parameter]``01:00`` runs the action at 0100 every day, in the timezone of the {productname} Server.
+* [guimenu]``Weekly:`` Select the day of the week and the time of the day, to execute the action every week at the specified time.
+* [guimenu]``Monthly:`` Select the day of the month and the time of the day, to execute the action every month at the specified time.
+* [guimenu]``Custom Quartz format:`` For more detailed options, enter a custom quartz string.
+    For example, to run a recurring action at 0215 every Saturday of every month, enter:
++
+----
+0 15 2 ? * 7
+----
+. OPTIONAL: Toggle the [guimenu]``Test mode`` switch on to run the schedule in test mode.
+. Click btn:[Create Schedule] to save, and see the complete list of existing schedules.
+
+
+Organization Administrators can set and edit recurring actions for all clients in the organization. Navigate to menu:Home[My Organization > Recurring States] to see all recurring actions that apply to the entire organization.
+
+{productname} Administrators can set and edit recurring actions for all clients in all organizations. Navigate to menu:Admin[Organizations], select the organization to manage, and navigate to the menu:States[Recurring States] tab.
+
+[NOTE]
+====
+Recurring actions can only be used with Salt clients. Traditional clients in your group or organization are ignored.
+====
+
+
+
+== Action Chains
+
+If you need to perform a number of sequential actions on your clients, you can create an action chain to ensure the order is respected.
+
+By default, most clients execute an action as soon as the command is issued. In some case, actions take a long time, which could mean that actions issued afterwards fail. For example, if you instruct a client to reboot, then issue a second command, the second action could fail because the reboot is still occurring. To ensure that actions occur in the correct order, use action chains.
+
+You can use action chains on both traditional and Salt clients. Action chains can include any number of these actions, in any order:
+
+* menu:System Details[Remote Command]
+* menu:System Details[Schedule System Reboot]
+* menu:System Details[States > Highstate]
+* menu:System Details[Software > Packages > List/Remove]
+* menu:System Details[Software > Packages > Install]
+* menu:System Details[Software > Packages > Upgrade]
+* menu:System Details[Software > Patches]
+* menu:System Details[Software > Software Channels]
+* menu:System Details[Configuration]
+* menu:Images[Build]
+
+
+
+.Procedure: Creating a New Action Chain
+. In the {productname} {webui}, navigate to the first action you want to perform in the action chain.
+    For example, navigate to [guimenu]``System Details`` for a client, and click btn:[Schedule System Reboot].
+. Check the [guimenu]``Add to`` field and select ``new action chain``.
+. Confirm the action.
+    The action is not performed immediately, it creates the new action chain, and a blue bar confirming this appears at the top of the screen.
+. Continue adding actions to your action chain by checking the [guimenu]``Add to`` field and selecting the name of the action chain to add them to.
+. When you have finished adding actions, navigate to menu:Schedule[Action Chains] and selecting the action chain from the list.
+. Re-order actions by dragging them and dropping them into the correct position.
+    Click the blue plus sign to see the clients an action is to be performed on. Click btn:[Save] to save your changes.
+. Schedule a time for your action chain to run, and click btn:[Save and Schedule].
+    If you leave the page without clicking either btn:[Save] or btn:[Save and Schedule] all unsaved changes are discarded.
+
+[NOTE]
+====
+If one action in an action chain fails, the action chain stops, and no further actions are executed.
+====
+
+You can see scheduled actions from action chains by navigating to menu:Schedule[Pending Actions].
+
+
+
+== Remote Commands
+
+You can configure clients to run commands remotely. This allows you to issue scripts or individual commands to a client, without having access to the client directly.
+
+This feature is automatically enabled on Salt clients, and you do not need to perform any further configuration. For traditional clients, the feature is enabled if you have registered the client using a bootstrap script and have enabled remote commands. You can use this procedure to enable it manually, instead.
+
+Before you begin, ensure your client is subscribed to the appropriate tools child channel for its installed operating system. For more information about subscribing to software channels, see xref:client-configuration:channels.adoc[].
+
+
+
+.Procedure: Configuring Traditional Clients to Accept Remote Commands
+. On the client, at the command prompt, use the package manager to install the [systemitem]``rhncfg``, [systemitem]``rhncfg-client``, and [systemitem]``rhncfg-actions`` packages, if not already installed.
+    For example:
++
+----
+zypper in rhncfg rhncfg-client rhncfg-actions
+----
+. On the client, at the command prompt, as root, create a path in the local configuration directory:
++
+----
+mkdir -p /etc/sysconfig/rhn/allowed-actions/script
+----
++
+. Create an empty file called [path]``run`` in the new directory.
+    This file grants the {productname} Server permission to run remote commands:
++
+----
+touch /etc/sysconfig/rhn/allowed-actions/script/run
+----
+
+For Salt clients, remote commands are run from the [path]``/tmp/`` directory on the client. To ensure that remote commands work accurately, do not mount ``/tmp`` with the [parameter]``noexec`` option.
+
+[WARNING]
+====
+All commands run from the [guimenu]``Remote Commands`` page are executed as {rootuser} on clients. Wildcards can be used to run commands across any number of systems. Always take extra care to check your commands before issuing them.
+====
+
+
+
+.Procedure: Running Remote Commands on Traditional Clients
+. In the {productname} {webui}, navigate to [guimenu]``Systems``, click the client to run a remote command on, and navigate to the menu:Details[Remote Command] tab.
+. In the [guimenu]``Run as user`` field, type the user ID (UID) of the user on the client that you want to run the command.
+    Alternatively, you can specify a group to run the command, using the group ID (GID) in the [guimenu]``Run as group`` field.
+. OPTIONAL: In the [guimenu]``Timeout`` field, type a timeout period for the command, in seconds.
+    If the command is not executed within this period, it is not run.
+. In the [guimenu]``Command label`` field, type a name for your command.
+. In the [guimenu]``Script`` field, type the command or script to execute.
+. Select a date and time to execute the command, or add the remote command to an action chain.
+. Click btn:[Schedule] to schedule the remote command.
+
+For more information about action chains, see xref:reference:schedule/action-chains.adoc[].
+
+
+
+
+.Procedure: Running Remote Commands on Salt Clients
+. Navigate to menu:Salt[Remote Commands].
+. In the first field, before the ``@`` symbol, type the command you want to issue.
+. In the second field, after the ``@`` symbol, type the client you want to issue the command on.
+    You can type the ``minion-id`` of an individual client, or you can use wildcards to target a range of clients.
+. Click btn:[Find targets] to check which clients you have targeted, and confirm that you have used the correct details.
+. Click btn:[Run command] to issue the command to the target clients.

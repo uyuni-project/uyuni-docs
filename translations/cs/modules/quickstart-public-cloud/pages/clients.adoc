@@ -1,0 +1,87 @@
+[[quickstart-publiccloud-clients]]
+= Registrovat klienty
+
+Když máte nastavený server {productname}, jste připraveni začít registrovat klienty.
+
+Službu {productname} můžete použít ke správě klientů pomocí Saltstack nebo tradičního stacku (zděděného od Spacewalk). Většina nových funkcí a vylepšení je k dispozici pouze pro klienty spravované Salt, pročež je preferován Saltstack. Další podrobnosti najdete v xref:client-configuration:supported-features.adoc[]
+
+V {productname} {webui} přejděte do menu:Systems[Bootstrapping], poté vyplňte pole ``Host``, ``SSH Port``, ``User`` (uživatel) a ``Password`` (Heslo). Ujistěte se, že v poli Host používáte stabilní plně kvalifikované doménové názvy (FQDN), jinak služba {productname} nemůže najít vašeho hostitele, poskytne-li vám váš veřejný cloud jiné krátkodobé plně kvalifikované doménové názvy.
+
+[NOTE]
+====
+Pokoušíte-li se zavést tradiční klienty, zkontrolujte, zda můžete při přihlášení ke klientovi vyřešit název hostitele serveru. Možná budete muset přidat plně kvalifikovaný název domény serveru do souboru lokálního řešení [cesta]``/etc/hosts`` v klientovi. Zkontrolujte pomocí příkazu [command]``název hostitele -f`` s místní IP adresou serveru.
+====
+
+
+Obrazy z veřejného cloudu obvykle neumožňují přihlášení SSH pomocí uživatelského jména a hesla, ale pouze SSH s certifikátem. Chcete-li použít bootstrap z {webui}, musíte povolit přihlášení SSH pomocí uživatelského jména a klíče SSH. Můžete to udělat tak, že přejdete do menu:Systems[Bootstrapping] a změníte metodu ověřování.
+
+Je-li vaším poskytovatelem cloudu Microsoft Azure, můžete se přihlásit pomocí uživatelského jména a hesla. Chcete-li to provést, musíte povolit AzureUser spouštět příkazy jako root bez hesla. Chcete-li to provést, otevřete soubor [path] ``/etc/sudoers.d/waagent`` a přidejte nebo upravte tento řádek:
++
+----
+AzureUser ALL=(ALL) NOPASSWD: ALL
+----
+
+[WARNING]
+====
+Povolení uživateli AzureUser spouštět příkazy jako superuživatel root a bez hesla přináší bezpečnostní riziko. Tuto metodu použijte pouze pro testování. Nedělejte to pro produkční systémy.
+====
+
+
+Po úspěšném dokončení procesu bootstrap je váš klient uveden v menu:Systems[System List] (Seznam systémů).
+
+* Chcete-li mít nad procesem větší kontrolu, musíte-li registrovat mnoho klientů, nebo registrujete-li tradiční klienty, vytvořte bootstrapový skript.
+    Další informace viz xref:client-configuration:registration-bootstrap.adoc[].
+* Pro klienty Salt a ještě větší kontrolu nad procesem může být užitečné provádění jednotlivých příkazů na příkazovém řádku.
+    Další informace viz xref:client-configuration:registration-cli.adoc[].
+
+
+
+== Aktivační klíče
+
+Aktivační klíče se používají u tradičních klientů a klientů Salt, aby bylo zajištěno, že vaši klienti mají správná softwarová oprávnění, připojují se k příslušným kanálům a jsou přihlášeni k odběru příslušných skupin. Každý aktivační klíč je vázán na organizaci, kterou můžete nastavit při vytváření klíče.
+
+.Postup: Vytvoření aktivačního klíče
+. V {productname} {webui} jako správce (administrátor) přejděte do menu:Systems[Activation Keys] (Aktivační klíče).
+. Klikněte na tlačítko btn:[Create Key] (Vytvořit klíč).
+. Na stránce [guimenu]``Activation Key Details`` (podrobnosti aktivačního klíče) zadejte do pole [guimenu]``Description`` (popis) název aktivačního klíče.
+. Do pole [guimenu]``Key`` (klíč) zadejte distribuci a aktualizaci Service Pack sdruženou s klíčem.
+    Například ``SLES12-SP4`` pro {sles}{nbsp}12{nbsp}SP4.
++
+[IMPORTANT]
+====
+Nepoužívejte čárky v poli [guimenu]``Key`` (klíč) pro produkty {suse}. U produktů Red Hat však *musíte* použít čárky. Další informace viz xref:reference:systems/activation-keys.adoc[].
+====
++
+. V rozbalovacím seznamu [guimenu]``Base Channels`` (základní kanály) vyberte příslušný základní kanál softwaru a povolte používání souvisejících podřízených kanálů.
+    Další informace viz xref:reference:admin/setup-wizard.adoc#vle.webui.admin.wizard.products[] a xref:administration:custom-channels.adoc[].
+. Vyberte podřízené kanály, které potřebujete (například povinné nástroje {susemgr} a aktualizační kanály).
+. Doporučujeme ponechat [guimenu]``Contact Method`` (způsob kontaktu) nastavený na [guimenu]``Default`` (výchozí).
+. Doporučujeme ponechat nastavení [guimenu]``Universal Default`` (univerzální výchozí) nezaškrtnuté.
+. Stisknutím btn:[Create Activation Key] (vytvořit aktivační klíč) vytvořte aktivační klíč.
+. Zaškrtnutím možnosti [guimenu]``Configuration File Deployment`` (nasazení konfiguračního souboru) povolíte správu konfigurace pro tento klíč a stisknutím btn:[Update Activation Key] (aktualizovat aktivační klíč) tuto změnu uložíte.
+
+[NOTE]
+====
+Zaškrtávací možnost [guimenu]``Configuration File Deployment`` (nasazení konfiguračního souboru) se zobrazí až po vytvoření aktivačního klíče. Potřebujete-li povolit správu konfigurace, nezapomeňte se vrátit a zaškrtnout tuto možnost.
+====
+
+Více o aktivačních klíčích viz xref:client-configuration:activation-keys.adoc[].
+
+
+
+== Správce sady systémů
+
+
+Správce sady systémů (SSM) se používá ke správě skupin systémů, nikoli k provádění akcí v jednom systému po druhém. Funguje pro klienty Salt i pro tradiční klienty.
+
+Úplný seznam úkolů, které můžete pomocí SSM provádět, viz xref:client-configuration:system-set-manager.adoc[].
+
+Než budete moci provádět operace pomocí SSM, musíte vybrat, se kterými systémy nebo skupinou systémů chcete pracovat.
+
+K SSM můžete přistupovat třemi různými způsoby:
+
+* Přejděte do menu:Systems[System List], vyberte systémy, se kterými chcete pracovat, a přejděte do menu:Systems[System Set Manager].
+* Přejděte do menu:Systems[System Groups] (Skupiny systémů) a stiskněte btn:[Use in SSM] (Použít v SSM) pro skupinu systémů, se kterou chcete pracovat.
+* Přejděte do nabídky: Systems[System Groups] (Skupiny systémů), vyberte skupinu, se kterou chcete pracovat, a stiskněte btn:[Work with Group] (Práce se skupinou).
+
+Další informace o SSM najdete v dokumentu xref:client-configuration:system-set-manager.adoc[]..

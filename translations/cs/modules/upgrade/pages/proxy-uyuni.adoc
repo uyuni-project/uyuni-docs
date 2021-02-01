@@ -1,0 +1,90 @@
+[[proxy-uyuni-upgrade]]
+= Proxy - Upgrade Procedure
+
+Before you perform any proxy update, schedule a maintenance window. The clients registered to {productname} through the proxy will not be able to connect to {productname} while the update is in progress. For more information about maintenance windows, see xref:administration:maintenance-windows.adoc[].
+
+
+
+== Preparation
+
+As a preparation step, add the openSUSE Leap {opensuse-version} channels to the server.
+
+.Procedure: Adding Software Channels at the Command Prompt
+. At the command prompt on the {productname} Server, as root, use the [command]``spacewalk-common-channels`` command to add the appropriate channels:
++
+----
+spacewalk-common-channels opensuse_leap15_2 \
+opensuse_leap15_2-non-oss \
+opensuse_leap15_2-non-oss-updates \
+opensuse_leap15_2-updates \
+opensuse_leap15_2-uyuni-client \
+uyuni-proxy-stable-leap-152
+----
+. Fully synchronize all channels with [command]``spacewalk-repo-sync``. In case of already defined repository URLs, continue with <<uyuni-202007-channeldupes>>.
+
+
+
+[[uyuni-202007-channeldupes]]
+== Troubleshooting Duplicate Repository URLs
+
+
+If you add two or more repositories with the same URL (client tools for openSUSE Leap 15.0, 15.1, and 15.2) in {productname} with [command]``spacewalk-common-channels``, an error like this is shown:
+
+----
+ERROR: opensuse_leap15_2-uyuni-client-x86_64:
+redstone.xmlrpc.XmlRpcFault: There's already a defined repository with given url, please reuse it
+----
+
+Work around with assigning the 15.1 repository to the 15.2 channel:
+
+.Procedure: Assigning 15.1 Repositories to the 15.2 Channel:
+
+. In the {productname} Server {webui}, navigate to menu:Software[Manage > Channels] and click the [systemitem]`` Uyuni Client Tools for openSUSE Leap 15.2 (x86_64)`` channel name.
+
+. In the upper right corner, click btn:[Manage Channel].
+
+. Navigate to the [guimenu]``Repositories`` tab, and select [systemitem]``External - Uyuni Client Tools for openSUSE Leap 15.1 (x86_64)``.
+
+. Click btn:[Update Repositories].
+
+. Navigate to menu:Repositories[Sync] subtab, and click btn:[Sync Now].
+
+. Do the same with [systemitem]``Uyuni Proxy Stable for openSUSE Leap 15.2 (x86_64)`` and [systemitem]``External - Uyuni Proxy Stable for openSUSE Leap 15.1 (x86_64)``.
+
+Expand the [systemitem]``openSUSE Leap 15.2 (x86_64)`` channel to see the child channels populated with packages.
+
+
+
+== Upgrade the Proxy
+
+To upgrade a proxy you first stop the proxy service, then you replace the software repositories and update the software, and finally you restart the proxy service.
+
+
+
+.Procedure: Updating the {productname} Proxy
+
+. In the {productname} Server {webui}, navigate to proxy system's details page, click the [guimenu]``Reactivation`` subtab.
+
+. Click btn:[Generate New Key] to generate a reactivation key.
++
+
+. On the {productname} Proxy, stop the proxy service:
++
+----
+spacewalk-proxy stop
+----
+
+. In the {productname} Server {webui}, navigate to menu:Systems[Proxy] and click the name of the proxy.
+. Click menu:Software[Software Channels], and as the base channel select the openSUSE Leap {opensuse-version} channel that is listed in the [systemitem]``Customs Channels`` list.
+. In the [guimenu]``Child Channels`` pane, select the {opensuse-version} child channels.
+. Click btn:[Next], and [guimenu]``Confirm Software Channel Change`` with btn:[Confirm].
+. Click menu:Software[Packages > Upgrade], and select all the packages to be updated on the proxy, and then apply the selection.
+. Re-register with the reactivation key using the [command]``rhnreg_ks`` command-line utility. The system is re-registered with the same ID, history, and groups.
++
+. On the {productname} Proxy, start the proxy service:
++
+----
+spacewalk-proxy start
+----
+
+If you need to update many proxies, you can create an action chain of this command sequence on the {productname} Server. You can use the action chain to perform updates on multiple proxies at the same time.
