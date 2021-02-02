@@ -10,18 +10,38 @@ Thus it is a {productname} client, but is designated as a proxy server during se
 
 
 
+
 == Mirror {productname} Proxy software
 
 The {productname} Proxy software is available from https://download.opensuse.org.
-You can mirror the proxy software it to your {productname} Server.
-// Probably better move this statement to the intro of the parent section:
+You can synchronize the proxy software it to your {productname} Server.
+This is also known as mirroring.
+// Probably better move this statement to a later section:
 On the client, use [command]``zypper` or on {productname}, the {webui} to install the proxy software on openSUSE Leap.
 
+.Procedure: Mirroring {productname} Proxy software
+. On the {productname} Server, create openSUSE Leap and the {productname} Proxy channels with the [command]``spacewalk-common-channels`` command.
+    [command]``spacewalk-common-channels`` is part of the [package]``spacewalk-utils`` package:
++
+----
+spacewalk-common-channels \
+opensuse_leap15_2 \
+opensuse_leap15_2-non-oss \
+opensuse_leap15_2-non-oss-updates \
+opensuse_leap15_2-updates \
+opensuse_leap15_2-uyuni-client \
+uyuni-proxy-stable-leap-152
+----
++
+Instead of [systemitem]``uyuni-proxy-stable-leap-152`` you can also try the latest development version, called [systemitem]``uyuni-proxy-devel-leap``.
+For more information, see xref:client-configuration:clients-opensuse.adoc[].
 
 
-== Install Uyuni Proxy on openSUSE Leap
 
-You can use a physical or virtual machine running openSUSE Leap to install the Uyuni Proxy.
+== Register the openSUSE Leap system
+
+If not already done install an openSUSE Leap system.
+You can use a physical or virtual machine running openSUSE Leap to install the {productname} Proxy.
 Configure a resolvable fully-qualified domain name on the openSUSE Leap system before you begin, to ensure that it is accessible across the network.
 
 
@@ -29,29 +49,49 @@ Configure a resolvable fully-qualified domain name on the openSUSE Leap system b
 .Procedure: Installing openSUSE Leap with Uyuni Proxy
 . Install openSUSE Leap as the base system, and ensure all package updates have been applied.
 . Configure a resolvable fully qualified domain name (FQDN) with {yast} by navigating to menu:System[Network Settings > Hostname/DNS].
-. At the command prompt, as root, add the repository for installing the {productname} Server software:
-// variable assignment to avoid overlong lines
-// https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable/images/repo/Uyuni-Proxy-POOL-x86_64-Media1/
-+
-----
-repo=repositories/systemsmanagement:/
-repo=${repo}Uyuni:/Stable/images/repo/Uyuni-Proxy-POOL-x86_64-Media1/
-zypper ar https://download.opensuse.org/$repo uyuni-proxy-stable
-----
+
+Prepare the proxy installation settings on the server and register the openSUSE Leap system as an {productname} client.
+
+
+
+.Procedure: Registering the openSUSE Leap system
+. On the server, create an activation key with openSUSE Leap as a base channel and the proxy and the other channels as child channels.
+  For more information about activation keys, see xref:client-configuration:activation-keys.adoc[].
+. Modify a bootstrap script for the proxy.
+  Add the GPG key to the [systemitem]``ORG_GPG_KEY=`` parameter.
+  For more information, see xref:client-configuration:clients-opensuse.adoc[].
+. Bootstrap the client using the script.
+  For more information, see xref:client-configuration:registration-bootstrap.adoc[].
+. Navigate to menu:Salt[Keys] and accept the key.
+  When the key is accepted, the new proxy will show in menu:Systems[Overview] in the [guimenu]``Recently Registered Systems`` section.
+. Navigate to menu:System Details[Software > Software Channels], and check that the proxy channel is selected.
+
+
+
+
+== Install Uyuni Proxy on openSUSE Leap
+
+
+
+.Procedure: Installing openSUSE Leap with Uyuni Proxy
+
+////
 . Refresh metadata from the repositories:
 +
 ----
 zypper ref
 ----
-. Install the pattern for the {productname} Proxy:
+////
 +
+. Install the pattern for the {productname} Proxy
++
+* Either on the client, use [command]``zypper``
 ----
 zypper in patterns-uyuni_proxy
 ----
+* Or on the {productname} Server, use the {webui}.
+  Activate the details tab of the client, and click menu:Software[Packages] and sschedule [package]``patterns-uyuni_proxy`` for installation.
 . Reboot the proxy.
-
-When the installation is complete, you can continue with {productname} setup.
-For more information, see xref:installation:uyuni-proxy-registration.adoc[].
 
 
 
@@ -104,45 +144,9 @@ For more information on how {productname} handles certificates, see xref:adminis
 
 
 
-== Register a Proxy
-
-When the proxy is installed, you can register it to the {productname} Server.
-
-
-
-.Procedure: Registering the Proxy
-. On the {productname} Server, create openSUSE Leap and the {productname} Proxy channels with the [command]``spacewalk-common-channels`` command.
-    [command]``spacewalk-common-channels`` is part of the [package]``spacewalk-utils`` package:
-+
-----
-spacewalk-common-channels \
-opensuse_leap15_2 \
-opensuse_leap15_2-non-oss \
-opensuse_leap15_2-non-oss-updates \
-opensuse_leap15_2-updates \
-opensuse_leap15_2-uyuni-client \
-uyuni-proxy-stable-leap-152
-----
-+
-Instead of [systemitem]``uyuni-proxy-stable-leap-152`` you can also try the latest development version, called [systemitem]``uyuni-proxy-devel-leap``.
-For more information, see xref:client-configuration:clients-opensuse.adoc[].
-+
-. Create an activation key with openSUSE Leap as a base channel and the other channels as child channels.
-  For more information about activation keys, see xref:client-configuration:activation-keys.adoc[].
-. Modify a bootstrap script for the proxy.
-  Add the GPG key to the [systemitem]``ORG_GPG_KEY=`` parameter.
-  For more information, see xref:client-configuration:clients-opensuse.adoc[].
-. Bootstrap the client using the script.
-  For more information, see xref:client-configuration:registration-bootstrap.adoc[].
-. Navigate to menu:Salt[Keys] and accept the key.
-  When the key is accepted, the new proxy will show in menu:Systems[Overview] in the [guimenu]``Recently Registered Systems`` section.
-. Navigate to menu:System Details[Software > Software Channels], and check that the proxy channel is selected.
-
-
-
 == Set Up the Proxy
 
-When you have registered the proxy, you can use a supplied interactive script to complete proxy setup.
+When you have prepared the proxy, you can use a supplied interactive script to complete proxy setup.
 The [command]``configure-proxy.sh`` script finalizes the setup of your {productname} Proxy.
 
 
@@ -281,7 +285,7 @@ filename: "pxelinux.0"
 ----
 
 
-
+////
 == Register a Proxy
 
 When the proxy is set up, you can register it to the {productname} Server.
@@ -315,7 +319,7 @@ For more information, see xref:client-configuration:clients-opensuse.adoc[].
 . Navigate to menu:Salt[Keys] and accept the key.
   When the key is accepted, the new proxy will show in menu:Systems[Overview] in the [guimenu]``Recently Registered Systems`` section.
 . Navigate to menu:System Details[Software > Software Channels], and check that the proxy channel is selected.
-
+////
 
 
 == Reinstalling a Proxy
