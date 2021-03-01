@@ -268,6 +268,11 @@ define pdf-quickstart-sap-product-uyuni
 	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),quickstart-sap,$(6),$(7),$(8),$(9))
 endef
 
+# Generate PDF version of the Uyuni Guide
+define pdf-quickstart-uyuni-product-uyuni
+	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),quickstart-uyuni,$(6),$(7),$(8),$(9))
+endef
+
 # Generate PDF version of the Large Deployment Guide
 define pdf-large-deployment-product-uyuni
 	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),large-deployments,$(6),$(7),$(8),$(9))
@@ -398,6 +403,9 @@ pdf-quickstart-public-cloud-uyuni: pdf-quickstart-public-cloud-uyuni-en pdf-quic
 
 .PHONY: pdf-quickstart-sap-uyuni
 pdf-quickstart-sap-uyuni: pdf-quickstart-sap-uyuni-en pdf-quickstart-sap-uyuni-es pdf-quickstart-sap-uyuni-zh_CN pdf-quickstart-sap-uyuni-cs
+
+.PHONY: pdf-quickstart-uyuni-uyuni
+pdf-quickstart-uyuni-uyuni: pdf-quickstart-uyuni-uyuni-en
 
 include Makefile.en
 include Makefile.es
