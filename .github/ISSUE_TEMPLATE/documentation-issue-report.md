@@ -7,6 +7,9 @@ assignees: ''
 
 ---
 
+Complete as much information as possible.
+Replace the description text with your response.
+
 ## Documentation Update Required
 
 Short description of the documentation updated required.
@@ -23,10 +26,15 @@ Include description of content, and potential location of new content in the doc
 
 ## Subject Matter Expert (SME)
 
-REQUIRED: Who is the subject matter expert for this topic?
+Who is the subject matter expert for this topic (if known)?
 
 ## Version
 
-Which version of the software is this feature/update expected to land in?
-Which version of the documentation must this feature/update land in?
-Does the content need to be backported to previous documentation versions?
+Which version of the software is this feature/update expected to land in (if known)?
+Which version of the documentation must this feature/update land in (if known)?
+Does the content need to be backported to previous documentation versions (if known)?
+
+## Internal SUSE Reporters
+
+This repository is public.
+If you are reporting an issue that needs to remain company confidential, please use the internal Bugzilla instance instead.
