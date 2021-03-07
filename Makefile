@@ -124,7 +124,7 @@ define pdf-book-create
 		-a suma-content=$(4) \
 		-a examplesdir=modules/$(6)/examples \
 		-a imagesdir=modules/$(6)/assets/images \
-		-a revdate="$(shell LANG=$(9) LC_ALL=$(9) date +'$(10)')" \
+		-a revdate="$(shell LANG=$(9) LC_ALL=$(9) LC_TYPE=$(9) date +'$(10)')" \
 		--base-dir . \
 		--out-file $(7)/$(5)_$(6)_guide.pdf \
 		modules/$(6)/nav-$(6)-guide.pdf.$(8).adoc
@@ -141,7 +141,7 @@ define pdf-book-create-uyuni
 		-a uyuni-content=$(4) \
 		-a examplesdir=modules/$(6)/examples \
 		-a imagesdir=modules/$(6)/assets/images \
-		-a revdate="$(shell LANG=$(9) LC_ALL=$(9) date +'$(10)')" \
+		-a revdate="$(shell LANG=$(9) LC_ALL=$(9) LC_TYPE=$(9) date +'$(10)')" \
 		--base-dir . \
 		--out-file $(7)/$(5)_$(6)_guide.pdf \
 		modules/$(6)/nav-$(6)-guide.pdf.$(8).adoc
