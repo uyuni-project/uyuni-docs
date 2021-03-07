@@ -64,7 +64,7 @@ endef
 
 define antora-suma-function
 	$(call enable-suma-in-antorayml,$(1)) && \
-	DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr LANG=$(2) LC_ALL=$(2) antora $(current_dir)/$(1)/suma-site.yml --generator antora-site-generator-lunr
+	DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) antora $(current_dir)/$(1)/suma-site.yml --generator antora-site-generator-lunr
 endef
 
 define enable-uyuni-in-antorayml
@@ -77,7 +77,7 @@ endef
 
 define antora-uyuni-function
 	$(call enable-uyuni-in-antorayml,$(1)) && \
-	DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr LANG=$(2) LC_ALL=$(2) antora $(current_dir)/$(1)/uyuni-site.yml --generator antora-site-generator-lunr
+	DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) antora $(current_dir)/$(1)/uyuni-site.yml --generator antora-site-generator-lunr
 endef
 
 define clean-function
@@ -114,7 +114,7 @@ endef
 
 # SUMA Book Builder
 define pdf-book-create
-	cd ./$(1) && LANG=$(8) asciidoctor-pdf \
+	cd ./$(1) && LANG=$(9) LC_ALL=$(9) LC_TYPE=$(9) asciidoctor-pdf \
 		-r $(current_dir)/extensions/xref-converter.rb \
 		-a lang=$(8) \
 		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
@@ -131,7 +131,7 @@ define pdf-book-create
 endef
 
 define pdf-book-create-uyuni
-	cd ./$(1) && LANG=$(8) asciidoctor-pdf \
+	cd ./$(1) && LANG=$(9) LC_ALL=$(9) LC_TYPE=$(9) asciidoctor-pdf \
 		-r $(current_dir)/extensions/xref-converter.rb \
 		-a lang=$(8) \
 		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
