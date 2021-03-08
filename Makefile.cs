@@ -153,6 +153,10 @@ modules/quickstart-sap/nav-quickstart-sap-guide.pdf.$(LANGCODE_CS).adoc:
 pdf-quickstart-sap-suma-$(LANGCODE_CS): modules/quickstart-sap/nav-quickstart-sap-guide.pdf.$(LANGCODE_CS).adoc
 	$(call pdf-quickstart-sap-product,$(LANGDIR_CS),$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA),$(PDF_BUILD_DIR_CS),$(LANGCODE_CS),$(LOCALE_CS),$(GNUDATEFORMAT_CS))
 
+.PHONY: modules/quickstart-uyuni/nav-quickstart-uyuni-guide.pdf.$(LANGCODE_CS).adoc
+modules/quickstart-uyuni/nav-quickstart-uyuni-guide.pdf.$(LANGCODE_CS).adoc:
+	$(call pdf-book-create-index,$(LANGDIR_CS),quickstart-uyuni,$(LANGCODE_CS))
+
 # UYUNI
 
 .PHONY: validate-uyuni-$(LANGCODE_CS)
@@ -185,7 +189,7 @@ obs-packages-uyuni-$(LANGCODE_CS): clean-$(LANGCODE_CS) pdf-all-uyuni-$(LANGCODE
 
 # Generate PDF versions of all UYUNI books
 .PHONY: pdf-all-uyuni-$(LANGCODE_CS)
-pdf-all-uyuni-$(LANGCODE_CS): translations prepare-antora-uyuni-$(LANGCODE_CS) pdf-install-uyuni-$(LANGCODE_CS) pdf-client-configuration-uyuni-$(LANGCODE_CS) pdf-upgrade-uyuni-$(LANGCODE_CS) pdf-reference-uyuni-$(LANGCODE_CS) pdf-administration-uyuni-$(LANGCODE_CS) pdf-salt-uyuni-$(LANGCODE_CS) pdf-retail-uyuni-$(LANGCODE_CS) pdf-quickstart-public-cloud-uyuni-$(LANGCODE_CS) pdf-large-deployment-uyuni-$(LANGCODE_CS) ##pdf-architecture-uyuni-webui-$(LANGCODE_CS)
+pdf-all-uyuni-$(LANGCODE_CS): translations prepare-antora-uyuni-$(LANGCODE_CS) pdf-install-uyuni-$(LANGCODE_CS) pdf-client-configuration-uyuni-$(LANGCODE_CS) pdf-upgrade-uyuni-$(LANGCODE_CS) pdf-reference-uyuni-$(LANGCODE_CS) pdf-administration-uyuni-$(LANGCODE_CS) pdf-salt-uyuni-$(LANGCODE_CS) pdf-retail-uyuni-$(LANGCODE_CS) pdf-quickstart-public-cloud-uyuni-$(LANGCODE_CS) pdf-quickstart-uyuni-uyuni-$(LANGCODE_CS) pdf-large-deployment-uyuni-$(LANGCODE_CS) ##pdf-architecture-uyuni-webui-$(LANGCODE_CS)
 
 ## Generate PDF version of the UYUNI Installation Guide
 .PHONY: pdf-install-uyuni-$(LANGCODE_CS)
@@ -241,3 +245,8 @@ pdf-quickstart-public-cloud-uyuni-$(LANGCODE_CS): modules/quickstart-public-clou
 ## Generate PDF version of the UYUNI Quickstart Guide for SAP
 pdf-quickstart-sap-uyuni-$(LANGCODE_CS): modules/quickstart-sap/nav-quickstart-sap-guide.pdf.$(LANGCODE_CS).adoc
 	$(call pdf-quickstart-sap-product-uyuni,$(LANGDIR_CS),$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI),$(PDF_BUILD_DIR_CS),$(LANGCODE_CS),$(LOCALE_CS),$(GNUDATEFORMAT_CS))
+
+.PHONY: pdf-quickstart-uyuni-uyuni-$(LANGCODE_CS)
+## Generate PDF version of the UYUNI Quickstart Guide for Uyuni
+pdf-quickstart-uyuni-uyuni-$(LANGCODE_CS): modules/quickstart-uyuni/nav-quickstart-uyuni-guide.pdf.$(LANGCODE_CS).adoc
+	$(call pdf-quickstart-uyuni-product-uyuni,$(LANGDIR_CS),$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI),$(PDF_BUILD_DIR_CS),$(LANGCODE_CS),$(LOCALE_CS),$(GNUDATEFORMAT_CS))
