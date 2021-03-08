@@ -95,7 +95,8 @@ define clean-function
 		modules/retail/nav-retail-guide.pdf.$(2).adoc \
 		modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.$(2).adoc \
 		modules/large-deployments/nav-large-deployments-guide.pdf.$(2).adoc \
-		modules/quickstart-sap/nav-quickstart-sap-guide.pdf.$(2).adoc; \
+		modules/quickstart-sap/nav-quickstart-sap-guide.pdf.$(2).adoc \
+		modules/quickstart-uyuni/nav-quickstart-uyuni-guide.pdf.$(2).adoc; \
 	fi
 endef
 
@@ -317,6 +318,13 @@ pdf-tar-suma: pdf-tar-suma-en pdf-tar-suma-zh_CN # pdf-tar-suma-es pdf-tar-suma-
 .PHONY: antora-suma
 antora-suma: antora-suma-en antora-suma-zh_CN # antora-suma-es antora-suma-cs antora-suma-ja antora-suma-ko
 
+.PHONY: for-publication
+for-publication:
+	touch $(CURDIR)/for-publication
+
+.PHONY: antora-suma-for-publication
+antora-suma-for-publication: for-publication antora-suma
+
 .PHONY: obs-packages-suma
 obs-packages-suma: obs-packages-suma-en obs-packages-suma-zh_CN # obs-packages-suma-es obs-packages-suma-cs obs-packages-suma-ja obs-packages-suma-ko
 
@@ -364,6 +372,9 @@ pdf-tar-uyuni: pdf-tar-uyuni-en pdf-tar-uyuni-zh_CN # pdf-tar-uyuni-es pdf-tar-u
 
 .PHONY: antora-uyuni
 antora-uyuni: antora-uyuni-en antora-uyuni-zh_CN # antora-uyuni-es antora-uyuni-cs antora-uyuni-ja antora-uyuni-ko
+
+.PHONY: antora-uyuni-for-publication
+antora-uyuni-for-publication: for-publication antora-uyuni
 
 .PHONY: obs-packages-uyuni
 obs-packages-uyuni: obs-packages-uyuni-en obs-packages-uyuni-zh_CN # obs-packages-uyuni-es obs-packages-uyuni-cs obs-packages-uyuni-ja obs-packages-uyuni-ko
