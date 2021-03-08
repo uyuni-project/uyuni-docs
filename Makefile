@@ -64,7 +64,7 @@ endef
 
 define antora-suma-function
 	$(call enable-suma-in-antorayml,$(1)) && \
-	DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr LANG=$(2) LC_ALL=$(2) antora $(current_dir)/$(1)/suma-site.yml --generator antora-site-generator-lunr
+	DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) antora $(current_dir)/$(1)/suma-site.yml --generator antora-site-generator-lunr
 endef
 
 define enable-uyuni-in-antorayml
@@ -77,7 +77,7 @@ endef
 
 define antora-uyuni-function
 	$(call enable-uyuni-in-antorayml,$(1)) && \
-	DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr LANG=$(2) LC_ALL=$(2) antora $(current_dir)/$(1)/uyuni-site.yml --generator antora-site-generator-lunr
+	DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) antora $(current_dir)/$(1)/uyuni-site.yml --generator antora-site-generator-lunr
 endef
 
 define clean-function
@@ -114,7 +114,7 @@ endef
 
 # SUMA Book Builder
 define pdf-book-create
-	cd ./$(1) && LANG=$(8) asciidoctor-pdf \
+	cd ./$(1) && LANG=$(9) LC_ALL=$(9) LC_TYPE=$(9) asciidoctor-pdf \
 		-r $(current_dir)/extensions/xref-converter.rb \
 		-a lang=$(8) \
 		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
@@ -124,14 +124,14 @@ define pdf-book-create
 		-a suma-content=$(4) \
 		-a examplesdir=modules/$(6)/examples \
 		-a imagesdir=modules/$(6)/assets/images \
-		-a revdate="$(shell LANG=$(9) LC_ALL=$(9) date +'$(10)')" \
+		-a revdate="$(shell LANG=$(9) LC_ALL=$(9) LC_TYPE=$(9) date +'$(10)')" \
 		--base-dir . \
 		--out-file $(7)/$(5)_$(6)_guide.pdf \
 		modules/$(6)/nav-$(6)-guide.pdf.$(8).adoc
 endef
 
 define pdf-book-create-uyuni
-	cd ./$(1) && LANG=$(8) asciidoctor-pdf \
+	cd ./$(1) && LANG=$(9) LC_ALL=$(9) LC_TYPE=$(9) asciidoctor-pdf \
 		-r $(current_dir)/extensions/xref-converter.rb \
 		-a lang=$(8) \
 		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
@@ -141,7 +141,7 @@ define pdf-book-create-uyuni
 		-a uyuni-content=$(4) \
 		-a examplesdir=modules/$(6)/examples \
 		-a imagesdir=modules/$(6)/assets/images \
-		-a revdate="$(shell LANG=$(9) LC_ALL=$(9) date +'$(10)')" \
+		-a revdate="$(shell LANG=$(9) LC_ALL=$(9) LC_TYPE=$(9) date +'$(10)')" \
 		--base-dir . \
 		--out-file $(7)/$(5)_$(6)_guide.pdf \
 		modules/$(6)/nav-$(6)-guide.pdf.$(8).adoc
