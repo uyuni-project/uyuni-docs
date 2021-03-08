@@ -63,7 +63,7 @@ done
 # TODO: Merge this with the above (generating asciidoc from po files) to save some processing
 ####################################################################
 
-if [ -f $CURRENT_DIR/topublish ]; then
+if [ -f $CURRENT_DIR/for-publication ]; then
     for module in $(find $CURRENT_DIR/$PO_DIR -mindepth 1 -maxdepth 1 -type d -printf "%f\n"); do
         for langpo in $(find $CURRENT_DIR/$PO_DIR/$module -mindepth 1 -maxdepth 1 -type f -name "*.po" -printf "%f\n"); do
             lang=`basename $langpo .po`
