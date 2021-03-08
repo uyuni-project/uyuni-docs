@@ -7,13 +7,20 @@
 # PODIR place where to create the po
 # PUB_DIR place where to publish localized files
 
-####################################
-# INITILIZE VARIABLES
-####################################
+# USER-CONFIGURABLE VARIABLES
 
+# This value is used to compare with the output of pocount
 # 0 means we do not want any non-translated string, i. e. if there is even just 1 untranslated string, output will be 100% English
 TRANSLATION_THRESHOLD_STRINGS=0
+
+# This value is used by po4a
 TRANSLATION_THRESHOLD_PERCENTAGE=0
+
+############################################### DO NOT MODIFY BELOW THIS LINE ###################################
+
+####################################
+# INITIALIZE VARIABLES
+####################################
 
 CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
