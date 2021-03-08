@@ -306,7 +306,7 @@ translations:
 	$(current_dir)/use_po.sh
 
 .PHONY: clean
-clean: clean-en clean-zh_CN clean-es clean-cs clean-ja clean-ko
+clean: clean-en clean-zh_CN # clean-es clean-cs clean-ja clean-ko
 
 .PHONY: validate-suma
 validate-suma: validate-suma-en validate-suma-zh_CN # validate-suma-es validate-suma-cs validate-suma-ja validate-suma-ko
@@ -354,7 +354,7 @@ pdf-large-deployment-suma: pdf-large-deployment-suma-en pdf-large-deployment-sum
 pdf-quickstart-public-cloud-suma: pdf-quickstart-public-cloud-suma-en pdf-quickstart-public-cloud-suma-zh_CN # pdf-quickstart-public-cloud-suma-es pdf-quickstart-public-cloud-suma-cs pdf-quickstart-public-cloud-suma-ja pdf-quickstart-public-cloud-suma-ko
 
 .PHONY: pdf-quickstart-sap-suma
-pdf-quickstart-sap-suma: pdf-quickstart-sap-suma-en pdf-quickstart-sap-suma-zh_CN pdf-quickstart-sap-suma-es pdf-quickstart-sap-suma-cs pdf-quickstart-sap-suma-ja pdf-quickstart-sap-suma-ko
+pdf-quickstart-sap-suma: pdf-quickstart-sap-suma-en pdf-quickstart-sap-suma-zh_CN # pdf-quickstart-sap-suma-es pdf-quickstart-sap-suma-cs pdf-quickstart-sap-suma-ja pdf-quickstart-sap-suma-ko
 
 .PHONY: validate-uyuni
 validate-uyuni: validate-uyuni-en validate-uyuni-zh_CN # validate-uyuni-es validate-uyuni-cs validate-uyuni-ja validate-uyuni-ko
