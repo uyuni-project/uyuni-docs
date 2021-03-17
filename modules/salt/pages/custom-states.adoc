@@ -2,7 +2,7 @@
 = Custom Salt States
 
 You can create your own custom Salt states with {productname} as centrally managed configuration channels.
-Custom states are stored as Salt state files on the {productname} Server with a ``.sls`` extension, in the [path]``/srv/susemanager/salt/`` directory.
+Custom states are stored as Salt state files on the {productname} Server with a ``.sls`` extension.
 
 
 
@@ -31,7 +31,7 @@ Alternatively, you can upload existing state files to use within your state chan
 +
 ----
 file.managed:
-  - source: salt://<org_name>/<channel_name>/etc/<filename>
+  - source: salt://<org_name>/<channel_name>/etc/<ID>/<filename>
 ----
 +
  Example custom state files are given later in this section.
@@ -78,7 +78,7 @@ Use these as a basis for writing your own custom states.
 
 ----
 file.managed:
-  - source: salt://example_org/example_channel/etc/motd
+  - source: salt://example_org/example_channel/etc/ID/filename
 [
   FIXME: reference other file here somehow
 ]
@@ -89,6 +89,7 @@ file.managed:
 .Example: Custom State File
 
 ----
+FIXME
 install required packages:
   pkg.installed:
     - pkgs:
@@ -122,9 +123,11 @@ If you are bootstrapping Salt clients from the {productname} {webui}, you can us
 
 
 .Procedure: Trusting a GPG Key With a Custom Salt State
-. On the {productname} Server, at the command prompt, check the contents of the [path]``/srv/www/htdocs/pub/`` directory.
-  This directory contains all available public keys.
-  Take a note of the key that applies to the channel assigned to the client you are registering.
+. Locate the key that you need to trust.
+  Ensure you have the correct key, and that you also have the fingerprint used to verify the key.
+  This information is available from the vendor or, in some cases, from a key server.
+. Copy the key to a file location where the client can access it.
+  We recommend saving it in the [path]``/srv/www/htdocs/pub/`` directory, where all {suse} public keys are also saved.
 . In the {productname} {webui}, navigate to menu:Configuration[Channels].
 . Click btn:[Create State Channel].
 . In the [guimenu]``Name`` field, type a name for your state.
@@ -134,14 +137,23 @@ If you are bootstrapping Salt clients from the {productname} {webui}, you can us
 . In the [guimenu]``Description`` field, type a short description of the configuration your state performs.
   For example, ``Trusts GPG Keys for CentOS``.
 . In the [guimenu]``SLS Contents`` field, create a state to retrieve the appropriate key from the {productname} Server and trust it on the client.
-  For example FIXME:
+  The exact contens of your state will vary depending on your client operating system.
+  For example:
 +
 ----
-cmd.run:
-  - salt '*' gpg.import_key filename='/srv/www/htdocs/pub/centos8-gpg-pubkey-05B555B38483C65D.key'
-  - salt '*' gpg.trust_key keyid='centos8-gpg-pubkey-05B555B38483C65D.key' trust_level='trusted'
+rpm_trust_gpg_key:
+  cmd.run:
+    - name: rpm --import https://{{ salt['pillar.get']('mgr_server') }}/pub/<third-party-gpg>.key
+    - unless: rpm -q gpg-pubkey-<key_id>
+
+deb_trust_gpg_key:
+  mgrcompat.module_run:
+    - name: pkg.add_repo_key
+    - path: https://{{ salt['pillar.get']('mgr_server') }}/pub/<third-party-gpg>.key
 ----
 +
+  Alternatively, you can add GPG keys to a configuration channel, using a managed file to deploy them directly on the client.
+  In this case, you would use a local path to the key, rather than a URL.
 . Click btn:[Update Channel] to save your state.
 . Navigate to menu:Configuration[Channels] and click the name of the state you want to assign a client to.
 . Navigate to the menu:Systems[Target Systems] tab and check the clients you want to assign.
