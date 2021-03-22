@@ -27,7 +27,7 @@ Alternatively, you can upload existing state files to use within your state chan
   Do not use spaces.
 . In the [guimenu]``Description`` field, type a short description of the configuration your state performs.
 . In the [guimenu]``SLS Contents`` field, type the contents of your ``init.sls`` state.
-  Ensure your file starts by specifying the source of the managed file, using this syntax:
+  If you want to reference file templates in this configuration channel, ensure your file starts by specifying the source of the managed file, using this syntax:
 +
 ----
 file.managed:
@@ -77,14 +77,46 @@ Use these as a basis for writing your own custom states.
 .Example: Initial State File
 
 ----
-file.managed:
-  - source: salt://example_org/example_channel/etc/ID/filename
-[
-  FIXME: reference other file here somehow
-]
+my_config_change_id:
+  file.managed:
+    -name: /etc/my.conf
+    - source: salt://example_org/example_channel/etc/my.conf
+    - user: root
+    - group: root
+    - mode: 644
+    - template: jinja
 ----
 
+.Example: Package Management
 
+----
+my_pkg_id:
+  pkg.installed:
+    - refresh: True
+    - pkgs:
+      - glibc
+      - kernel-default
+      - hello: 1.0-42
+----
+
+.Example: Remote Command
+
+----
+ip_forward-on:
+  cmd.run:
+    - name: echo "1" > /proc/sys/net/ipv4/ip_forward
+    - onlyif:
+      - test `cat /proc/sys/net/ipv4/ip_forward` -eq 0
+----
+
+.Example: Service Management
+
+----
+time_service_id:
+  service.running:
+    - name: chronyd
+    - enable: True
+----
 
 .Example: Custom State File
 
