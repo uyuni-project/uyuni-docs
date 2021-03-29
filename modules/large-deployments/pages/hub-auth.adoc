@@ -61,13 +61,17 @@ hubSessionKey = client.hub.login(HUB_USERNAME, HUB_PASSWORD)
 # Get the server IDs
 serverIds = client.hub.listServerIds(hubSessionKey)
 
-# Authenticate each server with its own credentials
-usernames = [HUB_LOGIN for s in serverIds]
+# For simplicity, this example assumes you are using the same username and password here, as on the hub server.
+# However, in most cases, every server has its own individual credentials.
+usernames = [HUB_USERNAME for s in serverIds]
 passwords = [HUB_PASSWORD for s in serverIds]
+
+# Each server uses the credentials set above, client.hub.attachToServers needs
+# them passed as lists with as many elements as there are servers.
 client.hub.attachToServers(hubSessionKey, serverIds, usernames, passwords)
 
 # Perform the operation
-systemsPerServer = client.multicast.system.list_systems(hubKey, serverIds)
+systemsPerServer = client.multicast.system.list_systems(hubSessionKey, serverIds)
 successfulResponses = systemsPerServer["Successful"]["Responses"]
 failedResponses = systemsPerServer["Failed"]["Responses"]
 
@@ -91,7 +95,7 @@ This method defines the servers to target in all subsequent calls.
 
 A typical workflow for relay authentication is:
 
-. Credentials for the Hub are passed to the ``loginWithAuthRelayMode`` method, and a session key for the Hub is returned (``hubKey``).
+. Credentials for the Hub are passed to the ``loginWithAuthRelayMode`` method, and a session key for the Hub is returned (``hubSessionKey``).
 . Using the session key from the previous step, {productname} Server IDs are obtained for all the peripheral servers attached to the Hub via the ``hub.listServerIds`` method
 . A call to `attachToServers` is made, and the same credentials used to sign in to the Hub are passed to each server.
     This performs authentication against each server's XMLRPC API endpoint.
@@ -117,9 +121,9 @@ HUB_XMLRPC_API_URL = "<HUB_XMLRPC_API_URL>"
 HUB_USERNAME = "<USERNAME>"
 HUB_PASSWORD = "<PASSWORD>"
 
-client = xmlrpclib.Server(<HUB_XMLRPC_API_URL>, verbose=0)
+client = xmlrpclib.Server(HUB_XMLRPC_API_URL, verbose=0)
 
-hubSessionKey = client.hub.loginWithAuthRelayMode(<HUB_USERNAME>, <HUB_PASSWORD>)
+hubSessionKey = client.hub.loginWithAuthRelayMode(HUB_USERNAME, HUB_PASSWORD)
 
 #Get the server IDs
 serverIds = client.hub.listServerIds(hubSessionKey)
@@ -136,7 +140,7 @@ for system in successfulResponses:
   print (system)
 
 #logout
-client.hub.logout(hubKey)
+client.hub.logout(hubSessionKey)
 ----
 
 
@@ -151,7 +155,7 @@ This occurs at the same time as you sign in to the Hub.
 
 A typical workflow for auto-connect authentication is:
 
-. Credentials for the Hub are passed to the ``loginWithAutoconnectMode`` method, and a session key for the Hub is returned (``hubKey``).
+. Credentials for the Hub are passed to the ``loginWithAutoconnectMode`` method, and a session key for the Hub is returned (``hubSessionKey``).
 . A ``multicast`` call is performed on a set of servers.
     This is defined by ``serverIds``, which contains the IDs of the servers to target.
     In the background, ``system.list_system`` is called on each server's XMLRPC API.
@@ -177,7 +181,7 @@ HUB_PASSWORD = "<PASSWORD>"
 
 client = xmlrpclib.Server(HUB_XMLRPC_API_URL, verbose=0)
 
-loginResponse = client.hub.loginWithAutoconnectMode(<HUB_USERNAME>, <HUB_PASSWORD>)
+loginResponse = client.hub.loginWithAutoconnectMode(HUB_USERNAME, HUB_PASSWORD)
 hubSessionKey = loginResponse["SessionKey"]
 
 #Get the server IDs
@@ -192,5 +196,5 @@ for system in successfulResponses:
   print (system)
 
 #logout
-client.hub.logout(hubKey)
+client.hub.logout(hubSessionKey)
 ----
