@@ -3,9 +3,16 @@
 
 This section contains information about registering clients running these {slemicro} Micro operating systems:
 
-* {slemicro}{nbsp}5.0
+* {slemicro}{nbsp}5.0 {x86_64}
+* {slemicro}{nbsp}5.0 {arm64}
+
+ifeval::[{uyuni-content} == true]
+* {opensuse}{nbsp}{microos}
+endif::[]
 
 
+////
+Probably don't need to include this now. --LKB 2021-04-15
 
 == Prepare Custom Repositories and Channels
 
@@ -157,6 +164,83 @@ include::snippets/manual_channels.adoc[]
 
 include::snippets/manual_associate.adoc[]
 
+////
+
+
+
+== Add Software Channels
+
+Before you register {slemicro} clients to your {productname} Server, you need to add the required software channels, and synchronize them.
+
+ifeval::[{suma-content} == true]
+The products you need for this procedure are:
+
+[[slemicro-channels-wizard]]
+[cols="1,1", options="header"]
+.SLE Micro Products - WebUI
+|===
+
+| OS Version
+| Product Name
+
+| {slemicro} 5.0 {x86_64}
+| SUSE Linux Enterprise Micro 5.0 aarch64
+
+| {slemicro} 5.0 {arm64}
+| SUSE Linux Enterprise Micro 5.0 x86_64
+
+|===
+
+include::snippets/addchannels_vendor_webui.adoc[]
+
+Alternatively, you can add channels at the command prompt.
+The channels you need for this procedure are:
+
+[[sle-channels-cli]]
+[cols="1,1,1", options="header"]
+.SLE Micro Products - CLI
+|===
+
+| OS Version
+| Base Channel
+| Updates Channel
+
+| {slemicro} 5.0 {x86_64}
+| suse-microos-5.0-pool-x86_64
+| suse-microos-5.0-updates-x86_64
+
+| {slemicro} 5.0 {arm64}
+| suse-microos-5.0-pool-aarch64
+| suse-microos-5.0-updates-aarch64
+
+|===
+
+include::snippets/addchannels_vendor_cli.adoc[]
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+[[microos-channels-cli]]
+[cols="1,1,1,1", options="header"]
+.MicroOS Channels - CLI
+|===
+
+| OS Version
+| Base Channel
+| Client Channel
+| Updates Channel
+
+| {opensuse}{nbsp}{microos}
+| opensuse_tumbleweed
+| opensuse_tumbleweed-non-oss
+| opensuse_tumbleweed-update
+
+|===
+
+include::snippets/addchannels_novendor_cli.adoc[]
+
+endif::[]
+
 
 
 == Check Synchronization Status
@@ -180,6 +264,70 @@ include::snippets/check_sync_cli.adoc[]
 {slemicro} channels can be very large.
 Synchronization can sometimes take several hours.
 ====
+
+
+
+ifeval::[{uyuni-content} == true]
+
+== Trust Certificates Keys on Clients
+
+{opensuse}{nbsp}{microos} is not yet fully enabled, so there are some manual steps to trust the {productname} SSL certificate on {microos} clients.
+
+
+
+.Procedure: Manually Trusting SSL Certificates
+. On the client, at the command prompt, as root, retrieve the SSL certificate file from the server:
++
+----
+curl -k https://uyuni-server.hispa-net.com/pub/RHN-ORG-TRUSTED-SSL-CERT -o /etc/pki/trust/anchors/RHN-ORG-TRUSTED-SSL-CERT
+----
+. Update the certificates on the client:
++
+----
+update-ca-certificates
+----
+. Install the required packages:
++
+----
+transactional-update pkg install salt-minion dmidecode
+----
+. Reboot the client.
+  A message is shown indicating that there is a conflict with ``busybox-hostname``.
+  Click btn:[Deinstallation of busybox-hostname].
+
+
+You also need to configure Salt on the client to connect correctly to the {productname} Server.
+
+
+
+.Procedure: Configure Salt for MicroOS Clients
+. Create a new file called [path]``/etc/salt/minion.d/susemanager-transactional.conf`` with this content:
++
+----
+module_executors:
+- transactional_update
+- direct_call
+----
+. Update Salt to the correct version for the {opensuse} {microos} repository.
+Add the repository:
++
+----
+zypper ar https://download.opensuse.org/repositories/home:/juliogonzalezgil:/branches:/openSUSE:/Factory/openSUSE_Tumbleweed/home:juliogonzalezgil:branches:openSUSE:Factory.repo
+----
+. Retrieve the packages:
++
+----
+curl -O https://download.opensuse.org/repositories/home:/juliogonzalezgil:/branches:/openSUSE:/Factory/openSUSE_Tumbleweed/repodata/repomd.xml.key
+----
+. Perform the update:
++
+----
+transactional-update run bash -c '/usr/bin/rpm --import /root/repomd.xml.key'
+transactional-update --continue pkg install --allow-vendor-change salt-minion
+----
+. Reboot the client.
+
+endif::[]
 
 
 
