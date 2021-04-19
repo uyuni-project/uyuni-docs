@@ -102,8 +102,8 @@ endef
 
 # Create tar of PDF files
 define pdf-tar-product
-#	cd ./$(1) && tar -czvf $(2).tar.gz $(3) && mv $(2).tar.gz build/
-	tar -czvf $(2).tar.gz -C $(HTML_BUILD_DIR) $(3) && mv $(2).tar.gz build/$(1)/
+#	cd ./$(HTML_BUILD_DIR) && tar -czvf $(2).tar.gz $(shell realpath --relative-to=`pwd`/$(HTML_BUILD_DIR) $(3)) && mv $(2).tar.gz $(1)/
+	cd ./$(HTML_BUILD_DIR) && zip -r9 $(2).zip $(shell realpath --relative-to=`pwd`/$(HTML_BUILD_DIR) $(3)) && mv $(2).zip $(1)/
 endef
 
 # Generate OBS tar files
