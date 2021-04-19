@@ -38,6 +38,9 @@ PDF_THEME_UYUNI ?= uyuni
 # UYUNI Chinese PDF Theme
 PDF_THEME_UYUNI_CJK ?= uyuni-cjk
 
+SUPPLEMENTAL_FILES_SUMA=$(shell grep supplemental_files suma-site.yml  | cut -d ':' -f 2 | sed "s, ,,g")/partials/header-content.hbs
+SUPPLEMENTAL_FILES_UYUNI=$(shell grep supplemental_files uyuni-site.yml  | cut -d ':' -f 2 | sed "s, ,,g")/partials/header-content.hbs
+	
 #REVDATE ?= "$(shell date +'%B %d, %Y')"
 CURDIR ?= .
 
@@ -55,6 +58,7 @@ define validate-product
 endef
 
 define enable-suma-in-antorayml
+#	$(call reset-html-language-selector-suma)
 	cd ./$(1) && \
 	sed -i "s/^ # *\(name: *suse-manager\)/\1/;\
 	s/^ # *\(title: *SUSE Manager\)/\1/;\
@@ -68,6 +72,7 @@ define antora-suma-function
 endef
 
 define enable-uyuni-in-antorayml
+#	$(call reset-html-language-selector-uyuni)
 	cd ./$(1) && \
 	sed -i "s/^ *\(name: *suse-manager\)/#\1/;\
 	s/^ *\(title: *SUSE Manager\)/#\1/;\
@@ -98,6 +103,25 @@ define clean-function
 		modules/quickstart-sap/nav-quickstart-sap-guide.pdf.$(2).adoc \
 		modules/quickstart-uyuni/nav-quickstart-uyuni-guide.pdf.$(2).adoc; \
 	fi
+endef
+
+# Enable HTML language selector
+# Parameters
+# $(1) language code, e. g. "en", "es", "zh_CN"
+# $(2) filename with the flag, e. g. "espFlag". Without extension, .svg will be appended.
+# $(3) name of the icon in the fonticon, e. g. "english", "spanish". Depends on the font.
+# $(4) language name as the user will see it in the selector
+# $(5) supplemental files directory (theme directory)
+define enable-html-language-selector
+	sed -n -i 'p; s,<\!--\ LANGUAGESELECTOR\ -->,<a role=\"button\" class=\"navbar-item\" id=\"$(1)\" onclick="selectLanguage(this.id)"><img src="{{uiRootPath}}/img/$(2).svg" class="langIcon $(3)">\&nbsp;$(4)</a>,p' $(5)
+endef
+
+define enable-suma-html-language-selector
+	$(call enable-html-language-selector,$(1),$(2),$(3),$(4),$(SUPPLEMENTAL_FILES_SUMA))
+endef
+
+define enable-uyuni-html-language-selector
+	$(call enable-html-language-selector,$(1),$(2),$(3),$(4),$(SUPPLEMENTAL_FILES_UYUNI))
 endef
 
 # Create tar of PDF files
@@ -316,11 +340,27 @@ validate-suma: validate-suma-en validate-suma-zh_CN # validate-suma-es validate-
 pdf-tar-suma: pdf-tar-suma-en pdf-tar-suma-zh_CN # pdf-tar-suma-es pdf-tar-suma-cs pdf-tar-suma-ja pdf-tar-suma-ko
 
 .PHONY: antora-suma
-antora-suma: antora-suma-en antora-suma-zh_CN # antora-suma-es antora-suma-cs antora-suma-ja antora-suma-ko
+antora-suma: set-html-language-selector-suma antora-suma-en antora-suma-zh_CN reset-html-language-selector-suma # antora-suma-es antora-suma-cs antora-suma-ja antora-suma-ko
 
 .PHONY: for-publication
 for-publication:
 	touch $(CURDIR)/for-publication
+
+.PHONY: set-html-language-selector-suma
+set-html-language-selector-suma:
+	#$(call enable-suma-html-language-selector,zh_CN,china,china,Chinese)
+
+.PHONY: reset-html-language-selector-suma
+reset-html-language-selector-suma:
+	#[ -d ".git" ] && git checkout $(SUPPLEMENTAL_FILES_SUMA)
+
+.PHONY: set-html-language-selector-uyuni
+set-html-language-selector-uyuni:
+	$(call enable-uyuni-html-language-selector,zh_CN,china,china,Chinese)
+
+.PHONY: reset-html-language-selector-uyuni
+reset-html-language-selector-uyuni:
+	[ -d ".git" ] && git checkout $(SUPPLEMENTAL_FILES_UYUNI)
 
 .PHONY: antora-suma-for-publication
 antora-suma-for-publication: for-publication antora-suma
@@ -371,7 +411,7 @@ validate-uyuni: validate-uyuni-en validate-uyuni-zh_CN # validate-uyuni-es valid
 pdf-tar-uyuni: pdf-tar-uyuni-en pdf-tar-uyuni-zh_CN # pdf-tar-uyuni-es pdf-tar-uyuni-cs pdf-tar-uyuni-ja pdf-tar-uyuni-ko
 
 .PHONY: antora-uyuni
-antora-uyuni: antora-uyuni-en antora-uyuni-zh_CN # antora-uyuni-es antora-uyuni-cs antora-uyuni-ja antora-uyuni-ko
+antora-uyuni: set-html-language-selector-uyuni antora-uyuni-en antora-uyuni-zh_CN reset-html-language-selector-uyuni # antora-uyuni-es antora-uyuni-cs antora-uyuni-ja antora-uyuni-ko
 
 .PHONY: antora-uyuni-for-publication
 antora-uyuni-for-publication: for-publication antora-uyuni
