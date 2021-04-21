@@ -1,0 +1,67 @@
+[[autoinst-unattended]]
+= Unattended Provisioning
+
+In order to install via PXE boot the operating system on the client without the need to select the distribution manually at boot time, the client must already be known to {productname}.
+
+You may associate a client's MAC address with a profile. This is possible via the {productname} {api}.
+For information about this kind of associations, see xref:client-configuration:autoinst-unattended.adoc#associate-mac-to-profile[Associate a MAC Address to a Profile].
+
+Alternatively, the "bare metal" functionality allows to register any new machine as soon as it connects to the local network, thanks to a generic PXE boot image.
+You then go to {productname} {webui} and assign a profile to this machine.
+The next time the client boots, the operating system gets installed according to that profile. For details, see the *relevant section*.
+xref:client-configuration:autoinst-unattended.adoc#bare-metal[Bare Metal Provisioning].
+
+
+[[associate-mac-to-profile]]
+== Associate a MAC Address to a Profile
+
+You can use API calls to associate the MAC address of a client to the profile to install on it.
+
+
+
+.Procedure: Select the Profile to Install on a Client
+
+. At the command prompt, use the [systemitem]``system.createSystemProfile`` API call.
++
+----
+# spacecmd api -- --args '["systemname", {"hwAddress": "<hw_addr>", "hostname":"<name>"}]' system.createSystemProfile
+----
+  In this example, replace [literal]``<hw_addr>`` with a hardware address such as [literal]``00:25:22:71:e7:c6`` and [literal]``<name>`` with the name of your client.
+. In the {productname} {webui}, navigate to [guimenu]``Systems``, locate your new clients in the list, and click the client you want to provision.
+. Select the menu:Provisioning[Autoinstallation] tab.
+. Select the {ay} profile to use.
+
+When you start the installation at a later time, the client's MAC address will allow Cobbler to know its name and then use the right profile.
+
+[NOTE]
+====
+It is recommanded to not directly use the almost equivalent command [command]``cobbler system add``.
+====
+
+
+[[bare-metal]]
+== Bare Metal Provisioning
+
+When you have the bare metal provisioning option enabled, any bare metal client connected to the {productname} network is automatically added to the organization as soon as it is powered on.
+When this operation is complete, the client is shut down, and it appears in the [guimenu]``Systems`` list, ready to be installed.
+
+
+
+.Procedure: Provisioning Bare Metal Clients
+. In the {productname} {webui}, navigate to menu:Admin[Manager Configuration > Bare-metal systems].
+. Click btn:[Enable adding to this organization].
+. Navigate to [guimenu]``Systems``, locate your bare metal clients in the list, and click the client you want to provision.
+. Select the menu:Provisioning[Autoinstallation] tab.
+. Select the {ay} profile to use, and start the autoinstallation.
+
+New bare metal clients are added to the organization that belongs to the administrator who enabled the bare metal feature.
+To change the organization new clients are added to, disable the bare metal feature, log in as the administrator of the new organization, and then re-enable the feature.
+You can migrate already registered systems to other organizations if required, using the [guilabel]``Migrate`` tab.
+
+You can use the system set manager (SSM) with bare metal clients.
+However, not all SSM features are available for bare metal clients, because they do not yet have an operating system installed.
+This also applies to mixed sets that include bare metal systems.
+All features become available to the set when all the clients in the set have been provisioned.
+For more information on SSM, see xref:client-configuration:system-set-manager.adoc[].
+
+The server uses TFTP to provision the bare metal client, so the appropriate port and networks must be configured correctly in order for provisioning to be successful.
