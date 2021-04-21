@@ -25,7 +25,7 @@ Check with the docs squad coordinator for confirmation.
 - [ ] Create the PR to publish Uyuni to gh-pages: https://github.com/uyuni-project/uyuni-docs/tree/gh-pages. Add the release engineer as the assignee, and use a label with current Uyuni version. **Do not merge, the release engineer will do it**
 
 
-## Release Day:
+## Release Day:
 
 - [ ] Build docs from release branch and visually check output.
 - [ ] When endpoints are live, visually check output.
