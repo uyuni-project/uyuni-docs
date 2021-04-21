@@ -6,9 +6,6 @@ This section contains information about registering clients running these {slemi
 * {slemicro}{nbsp}5.0 {x86_64}
 * {slemicro}{nbsp}5.0 {arm64}
 
-ifeval::[{uyuni-content} == true]
-* {opensuse}{nbsp}{microos}
-endif::[]
 
 
 [WARNING]
@@ -16,162 +13,6 @@ endif::[]
 This section is provided as a technology preview for testing purposes.
 Do not use this feature on production systems.
 ====
-
-
-////
-Probably don't need to include this now. --LKB 2021-04-15
-
-== Prepare Custom Repositories and Channels
-
-To mirror the software from the {suse} repositories, you need to create custom channels and repositories in {productname} that are linked to updates.suse.com by a URL.
-You must have entitlements to these products in your {scc} account for this to work correctly.
-
-[[IMPORTANT]]
-====
-Before you begin, ensure you have activated a {slemicro} subscription in {scc} for your {productname} organization.
-====
-
-
-
-.Procedure: Locate Custom Repository URLs
-. In the {productname} {webui}, navigate to menu:Admin[Products], and refresh the product catalog.
-  {slemicro} does not yet appear in the list.
-. On the {productname} Server, at the command prompt, as root, determine which configuration file contains the repository information:
-+
-----
-cd /var/lib/spacewalk/scc/scc-data/
-grep -nro "SUSE-MicroOS-"
-----
-+
-  The output of this command will be a list of filenames, the filename you want contains ``organizations_repositories`` in the filename.
-  For example, ``AA1_organizations_repositories_page_1.json``.
-. Open the configuration file, and locate the URLs for the MicroOS repositories.
-  There are multiple entries that contain unique URLs.
-  Take a note of the URLs for the ``SUSE-MicroOS-5.0-Updates`` and ``SUSE-MicroOS-5.0-Pool`` repositories:
-+
-----
-{
-  "id":1234,
-  "url":"https://updates.suse.com/SUSE/Updates/SUSE-MicroOS/5.0/aarch64/update/?A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0o1p2q3r4s5t6u7v8w9x0y1z2",
-  "name":"SUSE-MicroOS-5.0-Updates",
-  "distro_target":"sle-15-aarch64",
-  "description":"SUSE-MicroOS-5.0-Updates for sle-15-aarch64",
-  "enabled":true,
-  "autorefresh":true,
-  "installer_updates":false
-},
-
-{
-  "id":1234,
-  "url":"https://updates.suse.com/SUSE/Products/SUSE-MicroOS/5.0/aarch64/product/?A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0o1p2q3r4s5t6u7v8w9x0y1z2",
-  "name":"SUSE-MicroOS-5.0-Pool",
-  "distro_target":"sle-15-aarch64",
-  "description":"SUSE-MicroOS-5.0-Pool for sle-15-aarch64",
-  "enabled":true,
-  "autorefresh":false,
-  "installer_updates":false
-},
-----
-
-
-You can use these repository URLs to create custom repositories.
-Create a repository for both ``SUSE-MicroOS-5.0-Pool`` and ``SUSE-MicroOS-5.0-Updates``, using the details from the configuration file.
-You also need to create a client tools repository.
-
-
-The details you need for this procedure are:
-
-[[slemicro-repos-manual]]
-[cols="1,1,1,1", options="header"]
-.SLE Micro Custom Repository Settings
-|===
-
-| Option
-| Pool repository
-| Updates repository
-| Client Tools repository
-
-| Repository Label
-| SUSE-MicroOS-5.0-Pool
-| SUSE-MicroOS-5.0-Updates
-| SUSE-MicroOS-5.0-Client-Tools
-
-| Repository URL
-| https://updates.suse.com/SUSE/Products/SUSE-MicroOS/5.0/aarch64/product/?<unique_code>
-| https://updates.suse.com/SUSE/Updates/SUSE-MicroOS/5.0/aarch64/update/?<unique_code>
-| *FIXME* https://download.opensuse.org/repositories/home:/pagarcia:/hackweek20:/SLEMicro5.0-Uyuni-Client-Tools/MicroOS/
-
-| Repository Type
-| yum
-| yum
-| yum
-
-| Has Signed Metadata?
-| Uncheck
-| Uncheck
-| Uncheck
-
-|===
-
-Leave all other fields blank.
-
-include::snippets/manual_repos.adoc[]
-
-
-
-When you have the three repositories created, you can create custom channels.
-
-The details you need for this procedure are:
-
-[[slemicro-channels-custom]]
-[cols="1,1,1,1", options="header"]
-.SLE Micro Custom Channel Settings
-|===
-
-| Option
-| Base Channel
-| Updates repository
-| Client Tools repository
-
-| Channel Name
-| SLE Micro 5.0
-| SLE Micro 5.0 Updates
-| SLE Micro 5.0 Client Tools
-
-| Channel Label
-| suse-microos-5.0-pool
-| suse-microos-5.0-updates
-| suse-microos-5.0-client-tools
-
-| Parent Channel
-| None
-| SLE Micro 5.0
-| SLE Micro 5.0
-
-| Architecture
-| {x86_64}
-| {x86_64}
-| {x86_64}
-
-| Repository Checksum Type
-| sha256
-| sha256
-| sha256
-
-| Channel Summary
-| SUSE MicroOS 5.0 Base Channel
-| SUSE MicroOS 5.0 Updates Channel
-| SUSE MicroOS 5.0 Client Tools Channel
-
-|===
-
-Leave all other fields blank.
-
-include::snippets/manual_channels.adoc[]
-
-include::snippets/manual_associate.adoc[]
-
-////
 
 
 
@@ -228,28 +69,6 @@ include::snippets/addchannels_vendor_cli.adoc[]
 
 endif::[]
 
-ifeval::[{uyuni-content} == true]
-[[microos-channels-cli]]
-[cols="1,1,1,1", options="header"]
-.MicroOS Channels - CLI
-|===
-
-| OS Version
-| Base Channel
-| Client Channel
-| Updates Channel
-
-| {opensuse}{nbsp}{microos}
-| opensuse_tumbleweed
-| opensuse_tumbleweed-non-oss
-| opensuse_tumbleweed-update
-
-|===
-
-include::snippets/addchannels_novendor_cli.adoc[]
-
-endif::[]
-
 
 
 == Check Synchronization Status
@@ -273,71 +92,6 @@ include::snippets/check_sync_cli.adoc[]
 {slemicro} channels can be very large.
 Synchronization can sometimes take several hours.
 ====
-
-
-
-ifeval::[{uyuni-content} == true]
-
-== Trust Certificates Keys on Clients
-
-{opensuse}{nbsp}{microos} is not yet fully enabled, so there are some manual steps to trust the {productname} SSL certificate on {microos} clients.
-
-
-// Not tested. From https://etherpad.nue.suse.com/p/uyuni-microos. --LKB 2021-04-15
-
-
-.Procedure: Manually Trusting SSL Certificates
-. On the client, at the command prompt, as root, retrieve the SSL certificate file from the server:
-+
-----
-curl -k https://uyuni-server.hispa-net.com/pub/RHN-ORG-TRUSTED-SSL-CERT -o /etc/pki/trust/anchors/RHN-ORG-TRUSTED-SSL-CERT
-----
-. Update the certificates on the client:
-+
-----
-update-ca-certificates
-----
-. Install the required packages:
-+
-----
-transactional-update pkg install salt-minion dmidecode
-----
-. Reboot the client.
-  If a message is shown indicating that there is a conflict with ``busybox-hostname``, click btn:[Deinstallation of busybox-hostname].
-
-
-You also need to configure Salt on the client to connect correctly to the {productname} Server.
-
-
-
-.Procedure: Configure Salt for MicroOS Clients
-. Create a new file called [path]``/etc/salt/minion.d/susemanager-transactional.conf`` with this content:
-+
-----
-module_executors:
-- transactional_update
-- direct_call
-----
-. Update Salt to the correct version for the {opensuse} {microos} repository.
-  Add the repository:
-+
-----
-zypper ar https://download.opensuse.org/repositories/home:/juliogonzalezgil:/branches:/openSUSE:/Factory/openSUSE_Tumbleweed/home:juliogonzalezgil:branches:openSUSE:Factory.repo
-----
-. Retrieve the packages:
-+
-----
-curl -O https://download.opensuse.org/repositories/home:/juliogonzalezgil:/branches:/openSUSE:/Factory/openSUSE_Tumbleweed/repodata/repomd.xml.key
-----
-. Perform the update:
-+
-----
-transactional-update run bash -c '/usr/bin/rpm --import /root/repomd.xml.key'
-transactional-update --continue pkg install --allow-vendor-change salt-minion
-----
-. Reboot the client.
-
-endif::[]
 
 
 

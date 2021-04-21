@@ -1,0 +1,144 @@
+[[clients-microos]]
+= Registering {opensuse}{nbsp}{microos} Clients
+
+This section contains information about registering clients running these {opensuse}{nbsp}{microos} operating systems:
+
+* {opensuse}{nbsp}{microos}
+
+
+
+[WARNING]
+====
+This section is provided as a technology preview for testing purposes.
+Do not use this feature on production systems.
+====
+
+
+
+== Add Software Channels
+
+Before you register {opensuse}{nbsp}{microos} clients to your {productname} Server, you need to add the required software channels, and synchronize them.
+
+The channels you need for this procedure are:
+
+[[microos-channels-cli]]
+[cols="1,1,1,1", options="header"]
+.MicroOS Channels - CLI
+|===
+
+| OS Version
+| Base Channel
+| Client Channel
+| Updates Channel
+
+| {opensuse}{nbsp}{microos}
+| opensuse_tumbleweed
+| opensuse_tumbleweed-non-oss
+| opensuse_tumbleweed-update
+
+|===
+
+include::snippets/addchannels_novendor_cli.adoc[]
+
+
+
+== Check Synchronization Status
+
+ifeval::[{suma-content} == true]
+
+include::snippets/check_sync_webui_suma.adoc[]
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+include::snippets/check_sync_webui_uyuni.adoc[]
+
+endif::[]
+
+include::snippets/check_sync_cli.adoc[]
+
+[IMPORTANT]
+====
+{opensuse}{nbsp}{microos} channels can be very large.
+Synchronization can sometimes take several hours.
+====
+
+
+
+ifeval::[{uyuni-content} == true]
+
+== Trust Certificates Keys on Clients
+
+{opensuse}{nbsp}{microos} is not yet fully enabled, so there are some manual steps to trust the {productname} SSL certificate on {microos} clients.
+
+
+// Not tested. From https://etherpad.nue.suse.com/p/uyuni-microos. --LKB 2021-04-15
+
+
+.Procedure: Manually Trusting SSL Certificates
+. On the client, at the command prompt, as root, retrieve the SSL certificate file from the server:
++
+----
+curl -k https://uyuni-server.hispa-net.com/pub/RHN-ORG-TRUSTED-SSL-CERT -o /etc/pki/trust/anchors/RHN-ORG-TRUSTED-SSL-CERT
+----
+. Update the certificates on the client:
++
+----
+update-ca-certificates
+----
+. Install the required packages:
++
+----
+transactional-update pkg install salt-minion dmidecode
+----
+. Reboot the client.
+  If a message is shown indicating that there is a conflict with ``busybox-hostname``, click btn:[Deinstallation of busybox-hostname].
+
+
+You also need to configure Salt on the client to connect correctly to the {productname} Server.
+
+
+
+.Procedure: Configure Salt for {opensuse}{nbsp}{microos} Clients
+. Create a new file called [path]``/etc/salt/minion.d/susemanager-transactional.conf`` with this content:
++
+----
+module_executors:
+- transactional_update
+- direct_call
+----
+. Update Salt to the correct version for the {opensuse} {microos} repository.
+  Add the repository:
++
+----
+zypper ar https://download.opensuse.org/repositories/home:/juliogonzalezgil:/branches:/openSUSE:/Factory/openSUSE_Tumbleweed/home:juliogonzalezgil:branches:openSUSE:Factory.repo
+----
+. Retrieve the packages:
++
+----
+curl -O https://download.opensuse.org/repositories/home:/juliogonzalezgil:/branches:/openSUSE:/Factory/openSUSE_Tumbleweed/repodata/repomd.xml.key
+----
+. Perform the update:
++
+----
+transactional-update run bash -c '/usr/bin/rpm --import /root/repomd.xml.key'
+transactional-update --continue pkg install --allow-vendor-change salt-minion
+----
+. Reboot the client.
+
+endif::[]
+
+
+
+== Register Clients
+
+To register your {opensuse}{nbsp}{microos} clients, you need a bootstrap repository.
+By default, bootstrap repositories are automatically created, and regenerated daily for all synchronized products.
+You can manually create the bootstrap repository from the command prompt, using this command:
+
+----
+mgr-create-bootstrap-repo
+----
+
+For more information on registering your clients, see xref:client-configuration:registration-overview.adoc[].
