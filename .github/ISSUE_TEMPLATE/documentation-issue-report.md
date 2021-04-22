@@ -34,7 +34,7 @@ Which version of the software is this feature/update expected to land in (if kno
 Which version of the documentation must this feature/update land in (if known)?
 Does the content need to be backported to previous documentation versions (if known)?
 
-## Internal SUSE Reporters
+## Internal SUSE Reporters
 
 This repository is public.
 If you are reporting an issue that needs to remain company confidential, please use the internal Bugzilla instance instead.
