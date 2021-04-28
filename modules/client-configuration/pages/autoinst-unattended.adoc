@@ -1,42 +1,14 @@
 [[autoinst-unattended]]
 = Unattended Provisioning
 
-In order to install via PXE boot the operating system on the client without the need to select the distribution manually at boot time, the client must already be known to {productname}.
-
-You may associate a client's MAC address with a profile. This is possible via the {productname} {api}.
-For information about this kind of associations, see xref:client-configuration:autoinst-unattended.adoc#associate-mac-to-profile[Associate a MAC Address to a Profile].
-
-Alternatively, the "bare metal" functionality allows to register any new machine as soon as it connects to the local network, thanks to a generic PXE boot image.
+The "bare metal" functionality allows you to register any new machine as soon as it connects to the local network, using a generic PXE boot image.
 You then go to {productname} {webui} and assign a profile to this machine.
-The next time the client boots, the operating system gets installed according to that profile. For details, see the *relevant section*.
-xref:client-configuration:autoinst-unattended.adoc#bare-metal[Bare Metal Provisioning].
+The next time the client boots, the operating system is installed according to that profile.
+For information about the bare metal provisioning, see xref:client-configuration:autoinst-unattended.adoc#bare-metal[Bare Metal Provisioning].
 
-
-[[associate-mac-to-profile]]
-== Associate a MAC Address to a Profile
-
-You can use API calls to associate the MAC address of a client to the profile to install on it.
-
-
-
-.Procedure: Select the Profile to Install on a Client
-
-. At the command prompt, use the [systemitem]``system.createSystemProfile`` API call.
-+
-----
-# spacecmd api -- --args '["systemname", {"hwAddress": "<hw_addr>", "hostname":"<name>"}]' system.createSystemProfile
-----
-  In this example, replace [literal]``<hw_addr>`` with a hardware address such as [literal]``00:25:22:71:e7:c6`` and [literal]``<name>`` with the name of your client.
-. In the {productname} {webui}, navigate to [guimenu]``Systems``, locate your new clients in the list, and click the client you want to provision.
-. Select the menu:Provisioning[Autoinstallation] tab.
-. Select the {ay} profile to use.
-
-When you start the installation at a later time, the client's MAC address will allow Cobbler to know its name and then use the right profile.
-
-[NOTE]
-====
-It is recommanded to not directly use the almost equivalent command [command]``cobbler system add``.
-====
+If you don't want to use the bare metal functionality, you can still declare manually the system at {productname}.
+The {productname} API allows you to create profiles for systems as if they were collected by the bare metal functionality.
+For information about declaring systems with the API, see xref:client-configuration:autoinst-unattended.adoc#create-system-profile[Create a System Profile Manually].
 
 
 [[bare-metal]]
@@ -50,9 +22,8 @@ When this operation is complete, the client is shut down, and it appears in the 
 .Procedure: Provisioning Bare Metal Clients
 . In the {productname} {webui}, navigate to menu:Admin[Manager Configuration > Bare-metal systems].
 . Click btn:[Enable adding to this organization].
-. Navigate to [guimenu]``Systems``, locate your bare metal clients in the list, and click the client you want to provision.
-. Select the menu:Provisioning[Autoinstallation] tab.
-. Select the {ay} profile to use, and start the autoinstallation.
+. In the {productname} {webui}, navigate to [guimenu]``Systems``, select the client to provision, and go to the menu:Provisioning[Autoinstallation] tab.
+. Select the {ay} profile to use, and click btn:[Schedule Autoinstallation and Finish] to start the autoinstallation.
 
 New bare metal clients are added to the organization that belongs to the administrator who enabled the bare metal feature.
 To change the organization new clients are added to, disable the bare metal feature, log in as the administrator of the new organization, and then re-enable the feature.
@@ -65,3 +36,27 @@ All features become available to the set when all the clients in the set have be
 For more information on SSM, see xref:client-configuration:system-set-manager.adoc[].
 
 The server uses TFTP to provision the bare metal client, so the appropriate port and networks must be configured correctly in order for provisioning to be successful.
+
+
+[[create-system-profile]]
+== Create a System Profile Manually
+
+You can use an API call to declare a client's name, MAC address and fully qualified hostname.
+You can then schedule a the reinstallation from its page in {productname} {webui}.
+
+
+
+.Procedure: Reinstallation From a Manually Declared Profile
+
+. On the {productname} Server, at the command prompt, use the [systemitem]``system.createSystemProfile`` API call:
++
+----
+$ spacecmd api -- --args '["systemname", {"hwAddress": "<hw_addr>", "hostname":"<name>"}]' system.createSystemProfile
+----
+  In this example, replace [literal]``<hw_addr>`` with a hardware address such as [literal]``00:25:22:71:e7:c6`` and [literal]``<name>`` with the name of your client.
+. In the {productname} {webui}, navigate to [guimenu]``Systems``, locate your new clients in the list, and click the client you want to provision.
+. Select the menu:Provisioning[Autoinstallation] tab.
+. Select the {ay} profile to use, and click [guimenu]``Create PXE installation configuration``.
+  This option creates a system entry at Cobbler.
+
+When you power on the client, it boots from the network, and the correct profile is selected for installation.
