@@ -42,32 +42,33 @@ For more information about the {suse} Security Team, see  https://www.suse.com/s
 
 Before you begin, you need to prepare your client systems for SCAP scanning.
 
-For traditional and Salt clients, install the ``openscap-utils`` package before you begin.
+For traditional and Salt clients, install the OpenSCAP scanner and the SCAP Security Guide (content) packages before you begin. Depending on the operating system, these packages are included either on the base operating system, or in the {productname} Client Tools.
 
-Use this command to determine the location of the appropriate SCAP files.
-Take a note of the file paths for performing the scan:
+The table below lists the packages you need depending on your client operating system:
 
-----
-rpm -ql openscap-content
-----
+.OpenSCAP packages
+[%header,cols=3]
+|===
+| Operating system | Scanner | Content
+| SLES | openscap-utils | scap-security-guide
+| openSUSE | openscap-utils | scap-security-guide
+| RHEL | openscap-utils | scap-security-guide-redhat
+| CentOS | openscap-utils | scap-security-guide-redhat
+| Oracle Linux | openscap-utils | scap-security-guide-redhat
+| Ubuntu | libopenscap8 | scap-security-guide-ubuntu
+| Debian | libopenscap8 | scap-security-guide-debian
+|===
 
 
-For scanning {redhat} clients, install the ``scap-security-guide`` and ``openscap-utils`` packages before you begin.
-Use this command to determine the location of the appropriate SCAP files.
-Take a note of the file paths for performing the scan:
-
-----
-rpm -ql scap-security-guide
-----
-
-
+RHEL 7 and compatible systems provide a [package]``scap-security-guide`` package, which contains outdated contents.
+You are advised to use the [package]``scap-security-guide-redhat`` package you will find in the {productname} Client Tools.
 
 == OpenSCAP Content Files
 
 OpenSCAP uses SCAP content files to define test rules.
 These content files are created based on the XCCDF or OVAL standards.
-You can download publicly available content files and customize it to your requirements.
-You can install the ``openscap-content`` package for default content file templates.
+In addition to the SCAP Security Guide, you can download publicly available content files and customize it to your requirements.
+You can install the SCAP Security Guide package for default content file templates.
 Alternatively, if you are familiar with XCCDF or OVAL, you can create your own content files.
 
 
@@ -79,25 +80,86 @@ If your system becomes damaged through the use of custom content files, you migh
 ====
 
 When you have created your content files, you need to transfer the file to the client.
-You can do this in the same way as you move any other file, using physical storage media, or across a network with [command]``ftp`` or [command]``scp``.
+You can do this in the same way as you move any other file, using physical storage media, or across a network with Salt (for example, https://docs.saltproject.io/en/latest/ref/cli/salt-cp.html[salt-cp] or the https://docs.saltproject.io/en/latest/ref/file_server/index.html[Salt File Server]), [command]``ftp`` or [command]``scp``.
 
 We recommend that you create a package to distribute content files to clients that you are managing with {productname}.
 Packages can be signed and verified to ensure their integrity.
 For more information, see xref:administration:custom-channels.adoc[].
 
+== Find OpenSCAP profiles
+
+Different operating systems make available different OpenSCAP content files and profiles. One content file may contain more than one profile.
+
+On RPM-based operating systems, use this command to determine the location of the available SCAP files:
+
+----
+rpm -ql <scap-security-guide-package-name-from-table>
+----
+
+On DEB-based operating systems, use this command to determine the location of the available SCAP files:
+
+----
+dpkg -L <scap-security-guide-package-name-from-table>
+----
+
+When you have identified one SCAP content file that suits your needs, list profiles available on the client:
+
+----
+oscap info ./usr/share/xml/scap/ssg/content/ssg-sle15-ds-1.2.xml
+Document type: Source Data Stream
+Imported: 2021-03-24T18:14:45
+
+Stream: scap_org.open-scap_datastream_from_xccdf_ssg-sle15-xccdf-1.2.xml
+Generated: (null)
+Version: 1.2
+Checklists:
+        Ref-Id: scap_org.open-scap_cref_ssg-sle15-xccdf-1.2.xml
+                Status: draft
+                Generated: 2021-03-24
+                Resolved: true
+                Profiles:
+                        Title: CIS SUSE Linux Enterprise 15 Benchmark
+                                Id: xccdf_org.ssgproject.content_profile_cis
+                        Title: Standard System Security Profile for SUSE Linux Enterprise 15
+                                Id: xccdf_org.ssgproject.content_profile_standard
+                        Title: DISA STIG for SUSE Linux Enterprise 15
+                                Id: xccdf_org.ssgproject.content_profile_stig
+                Referenced check files:
+                        ssg-sle15-oval.xml
+                                system: http://oval.mitre.org/XMLSchema/oval-definitions-5
+                        ssg-sle15-ocil.xml
+                                system: http://scap.nist.gov/schema/ocil/2
+                        https://ftp.suse.com/pub/projects/security/oval/suse.linux.enterprise.15.xml
+                                system: http://oval.mitre.org/XMLSchema/oval-definitions-5
+Checks:
+        Ref-Id: scap_org.open-scap_cref_ssg-sle15-oval.xml
+        Ref-Id: scap_org.open-scap_cref_ssg-sle15-ocil.xml
+        Ref-Id: scap_org.open-scap_cref_ssg-sle15-cpe-oval.xml
+Dictionaries:
+        Ref-Id: scap_org.open-scap_cref_ssg-sle15-cpe-dictionary.xml
+----
+
+
+Take a note of the file paths and profiles for performing the scan.
 
 
 == Perform an Audit Scan
 
-When you have transferred your content files, you can perform audit scans.
+When you have installed or transferred your content files, you can perform audit scans.
 Audit scans can be triggered using the {productname} {webui}.
 You can also use the {productname} API to schedule regular scans.
 
 .Procedure: Running an Audit Scan from the {webui}
 . In the {productname} {webui}, navigate to menu:Systems[Systems List] and select the client you want to scan.
 . Navigate to the [guimenu]``Audit`` tab, and the [guimenu]``Schedule`` subtab.
-. In the [guimenu]``Path to XCCDF Document`` field, enter the path to the XCCDF content file on the client.
-  For example: [path]``/usr/share/openscap/scap-yast2sec-xccdf.xml``
+. In the [guimenu]``Path to XCCDF Document`` field, enter the parameters for the SCAP template and profile you want to use on the client.
+  For example:
+----
+  Command: /usr/bin/oscap xccdf eval
+  Command-line arguments: --profile xccdf_org.ssgproject.content_profile_standard
+  Path to XCCDF document: /usr/share/xml/scap/ssg/content/ssg-sle15-ds-1.2.xml
+----
+
 . The scan runs at the client's next scheduled synchronization.
 
 
@@ -108,7 +170,6 @@ If the content file includes invalid arguments, the test fails.
 ====
 
 
-
 .Procedure: Running an Audit Scan from the API
 . Before you begin, ensure that the client to be scanned has Python and XML-RPC libraries installed.
 . Choose an existing script or create a script for scheduling a system scan through ``system.scap.scheduleXccdfScan``.
@@ -116,7 +177,7 @@ If the content file includes invalid arguments, the test fails.
 +
 ----
 #!/usr/bin/python
-client = xmlrpclib.Server('https://spacewalk.example.com/rpc/api')
+client = xmlrpclib.Server('https://server.example.com/rpc/api')
 key = client.auth.login('username', 'password')
 client.system.scap.scheduleXccdfScan(key, <1000010001>,
     '<path_to_xccdf_file.xml>',
@@ -126,7 +187,7 @@ client.system.scap.scheduleXccdfScan(key, <1000010001>,
 In this example:
 * ``<1000010001>`` is the system ID (sid).
 * ``<path_to_xccdf_file.xml>`` is the path to the content file location on the client.
-  For example, [path]``/usr/local/share/scap/usgcb-sled15desktop-xccdf.xml``.
+  For example, [path]``/usr/share/xml/scap/ssg/content/ssg-sle15-ds-1.2.xml``.
 * ``<profile_name>`` is an additional argument for the [command]``oscap`` command.
   For example, use ``united_states_government_configuration_baseline`` (USGCB).
 . Run the script on the client you want to scan, from the command prompt.
@@ -163,7 +224,25 @@ spacewalk-report scap-scan-results
 You can also use the {productname} API to view results, with the ``system.scap`` handler.
 
 
+== Remediation
 
+Remediation bash scripts and Ansible playbooks are provided in the same SCAP Security Guide packages to harden the client systems. For example:
+
+.bash scripts
+----
+/usr/share/scap-security-guide/bash/sle15-script-cis.sh
+/usr/share/scap-security-guide/bash/sle15-script-standard.sh
+/usr/share/scap-security-guide/bash/sle15-script-stig.sh
+----
+
+.Ansible playbooks
+----
+/usr/share/scap-security-guide/ansible/sle15-playbook-cis.yml
+/usr/share/scap-security-guide/ansible/sle15-playbook-standard.yml
+/usr/share/scap-security-guide/ansible/sle15-playbook-stig.yml
+----
+
+You can run them using remote commands or with Ansible, after enabling Ansible in the client system.
 
 
 ////
