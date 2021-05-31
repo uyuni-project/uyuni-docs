@@ -113,6 +113,47 @@ If there is no previous environment, it is left empty until the project sources 
 
 
 
+[#filter-templates]
+== Filter Templates
+
+To help with creating filters for some common scenarios, {productname} offers filter templates.
+When applied, these templates help creating a set of filters in advance, tailored for a specific use case.
+
+This section describes available templates and their usages.
+
+
+
+=== Live patching based on a SUSE product
+
+In a project that contains live patching, regular kernel packages must be excluded so that only live patch packages are offered as updates to clients. On the other hand, already installed regular kernel packages must still be included to keep system integrity.
+
+When applied, this template creates two filters required to achieve this behavior:
+
+* Deny patches that contain ``kernel-default`` package greater than a specific kernel version
+* Deny patches that contain ``reboot_suggested`` keyword
+
+[IMPORTANT]
+====
+The second "catch-all" filter is a safeguard to make sure the assigned clients never require a restart in the future.
+You can choose not to attach it to the project if this behavior is not desired as it might block other important updates.
+====
+
+For more information on how to set up a live patching project, see xref:administration:content-lifecycle-examples.adoc#exclude-higher-kernel-version[].
+
+.Procedure: Applying the template
+. In the {productname} {webui}, navigate to menu:Content Lifecycle[Filters], and click btn:[Create Filter].
+. In the dialog, click btn:[Use a template]. The inputs will change accordingly.
+. In the [guimenu]``Prefix`` field, type a name prefix. This value will be prepended to the name of every individual filter created by the template. If the template is being applied in the context of a project, this field will be prefilled with the project label.
+. In the [guimenu]``Template`` field, select [guimenu]``Live patching based on a SUSE product``.
+. In the [guimenu]``Product`` field, select the product you wish to set up live patching for.
+. In the [guimenu]``Kernel`` field, select a kernel version from the list of versions available in the selected product. The filter to deny the later regular kernel patches will be based on this version.
+. Click btn:[Save] to create the filters.
+. Navigate to menu:Content Lifecycle[Projects] and select your project.
+. Click btn:[Attach/Detach Filters].
+. Select the two filters that have the specified prefix, and click btn:[Save].
+
+
+
 == Build a Content Lifecycle Project
 
 When you have created your project, defined environments, and attached sources and filters, you can build the project for the first time.
@@ -120,6 +161,14 @@ When you have created your project, defined environments, and attached sources a
 Building applies filters to the attached sources and clones them to the first environment in the project.
 
 
+You can use the same vendor channels as sources for multiple content projects.
+In this case, {productname} does not create new patch clones for each cloned channel. 
+Instead, a single patch clone is shared between all of your cloned channels.
+This can cause problems if a vendor modifies a patch; for example, if the patch is retracted, or the packages within the patch are changed.
+When you build one of the content projects, all the channels that share the cloned patch are synchronized with the original by default, even if the channels are in other environments of your content project, or other content project channels in your organization.
+You can change this behavior by turning off automatic patch synchronization in your organization settings. 
+To manually synchronize the patch later for all channels sharing the patch, navigate to menu:Software[Manage > Channels], click the channel you want to synchronize and navigate to the [guimenu]``Sync`` subtab.
+Even manual patch synchronization affects all organization channels sharing the patch.
 
 .Procedure: Building a Content Lifecycle Project
 
