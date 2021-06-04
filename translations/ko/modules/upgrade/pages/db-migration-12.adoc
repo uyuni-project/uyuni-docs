@@ -1,0 +1,98 @@
+[[db-migration-12]]
+= 버전 10에서 12로 데이터베이스 마이그레이션
+
+이 섹션에서는 버전{nbsp}10에서 버전{nbsp}12로의 PostgreSQL 데이터베이스 업그레이드에 대해 설명합니다. PostgreSQL 12를 이미 사용 중인 경우에는 이 마이그레이션을 수행할 필요가 없습니다. 기존 버전(예: 버전 9.6)을 사용 중인 경우에는 xref:upgrade:db-migration-10.adoc[]을 참조하십시오.
+
+최신 {productname} 버전으로 업그레이드하려면 PostgreSQL 버전 10 또는 12를 사용해야 합니다. {productname} 서버를 버전{nbsp}4.1로 업그레이드한 후 PostgreSQL 버전 12로 마이그레이션할 수 있습니다.
+
+
+
+
+
+
+
+[[db-migration-12-prepare]]
+== 업그레이드 준비
+
+업그레이드하기 전에 기존 {productname} 서버를 준비한 후 데이터베이스를 백업합니다.
+
+PostgreSQL에서는 데이터가 [path]``/var/lib/pgsql/data/``에 저장됩니다.
+
+.절차: 업그레이드 준비
+
+. 활성 PostgreSQL 버전을 확인합니다.
++
+----
+psql --version
+----
++
+PostgreSQL{nbsp}10을 사용 중인 경우, PostgreSQL{nbsp}12로 업그레이드할 수 있습니다.
++
+PostgreSQL 버전 12를 이미 사용 중인 경우에는 이 마이그레이션을 수행할 필요가 없습니다.
+. 활성 smdba 버전을 확인합니다.
++
+----
+rpm -q smdba
+----
++
++
+PostgreSQL{nbsp}10에는 ``smdba`` 버전 1.6.2 이상이 필요합니다.
+
+. 데이터베이스를 백업합니다.
+    백업에 대한 자세한 정보는 xref:administration:backup-restore.adoc[]을 참조하십시오.
+
+
+
+[[db-migration-12-upgrade]]
+== PostgreSQL 업그레이드
+
+[WARNING]
+====
+항상 데이터베이스를 백업한 후 마이그레이션을 수행해야 합니다.
+====
+
+PostgreSQL 업그레이드는 일반 업그레이드와 빠른 업그레이드의 두 가지 방법으로 수행할 수 있습니다.
+
+일반 업그레이드는 데이터베이스의 전체 복사본을 생성하여 기존 데이터베이스 크기의 두 배의 사용 가능 공간이 필요합니다. 일반 업그레이드의 경우 데이터베이스 크기 및 저장소 시스템 속도에 따라 상당한 시간이 걸릴 수 있습니다.
+
+빠른 업그레이드에는 몇 분이 걸리며 추가 디스크 공간이 거의 필요하지 않습니다. 그러나 빠른 업그레이드에 실패하면 데이터베이스를 백업에서 복원해야 합니다. 빠른 업그레이드는 디스크 공간의 부족 위험을 줄여줍니다. 일반 업그레이드는 파일 간의 하드 링크를 생성하는 대신 데이터베이스 파일을 복사합니다.
+
+PostgreSQL에서는 데이터가 [path]``/var/lib/pgsql/data/``에 저장됩니다.
+
+.절차: 일반 업그레이드 수행
+. 데이터베이스를 백업합니다.
+    백업에 대한 자세한 정보는 xref:administration:backup-restore.adoc[]을 참조하십시오.
+. 업그레이드를 시작합니다.
++
+----
+/usr/lib/susemanager/bin/pg-migrate-10-to-12.sh
+----
+. 업그레이드가 완료되면, 기존 데이터베이스 디렉토리를 삭제하고 손실된 디스크 공간을 회수할 수 있습니다.
+    기존 디렉토리의 이름이 [path]``/var/lib/pgsql/data-pg10``으로 변경됩니다.
++
+
+[path]``pg-migrate-10-to-12.sh`` 스크립트가 수행하는 작업:
+
+* Spacewalk 서비스 중지
+* 실행 중인 데이터베이스 종료
+* PostgreSQL{nbsp}12가 설치되었는지 확인한 후 필요한 경우 설치
+* PostgreSQL{nbsp}10에서 PostgreSQL{nbsp}12로 전환하여 새 기본값 설정
+* 데이터베이스 마이그레이션 시작
+* {productname}에서 사용할 수 있도록 조정된 PostgreSQL 구성 파일 생성
+* 데이터베이스 및 Spacewalk 서비스 시작
+
+[NOTE]
+====
+업그레이드에 실패하면 마이그레이션 스크립트가 데이터베이스를 원래 상태로 복원하려고 시도합니다.
+====
+
+.절차: 빠른 PostgreSQL 업그레이드 수행
+. 데이터베이스를 백업합니다.
+    확인된 데이터베이스 백업이 없으면 빠른 업그레이드를 시작할 수 없습니다. 백업에 대한 자세한 정보는 xref:administration:backup-restore.adoc[]을 참조하십시오.
+. 업그레이드를 시작합니다.
++
+----
+/usr/lib/susemanager/bin/pg-migrate-10-to-12.sh fast
+----
+. 업그레이드가 완료되면, 기존 데이터베이스 디렉토리를 삭제하고 손실된 디스크 공간을 회수할 수 있습니다.
+    기존 디렉토리의 이름이 [path]``/var/lib/pgsql/data-pg10``으로 변경됩니다.

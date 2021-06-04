@@ -1,0 +1,196 @@
+[[retail-server-setup]]
+= Retail Uyuni Server Setup
+
+This section covers {productname} {smr} Server setup, using these procedures:
+
+* {yast}를 사용한 {productname} 설정
+* Create the main administration account
+* Add Software Channels
+* Check Synchronization Status
+* Trust GPG Keys on Clients
+* Register the Branch Server and Terminals as Clients
+
+
+
+[[retail-server-setup-yast]]
+== {yast}를 사용한 {productname} 설정
+
+This section guides you through {productname} setup procedures.
+
+.절차: {productname} 설정
+. On the {productname} Server, at the command prompt, as root, start {yast}:
++
+----
+yast2
+----
+
+. Navigate to menu:Network Services[Uyuni Setup] to begin set up.
+
+. From the introduction screen, select menu:Uyuni Setup[Set up Uyuni from scratch] and click btn:[Next] to continue.
+
+. Type an email address to receive status notifications and click btn:[Next] to continue. {productname} can sometimes send a large volume of notification emails. You can disable email notifications in the {webui} after setup, if you need to.
+
+. Type your certificate information and provide a password. Passwords must be at at least seven characters in length, and must not contain spaces, single or double quotation marks (``'`` or ``"``), exclamation marks (``!``), or dollar signs (``$``). Always store your passwords in a secure location. You must have the certificate password to set up the {productname} Proxy.
++
+  Click btn:[Next] to continue.
+
+. Navigate to menu:Uyuni Setup[Database Settings] screen, type a database username and password, and click btn:[Next] to continue. Passwords must be at at least seven characters in length, and must not contain spaces, single or double quotation marks (``'`` or ``"``), exclamation marks (``!``), or dollar signs (``$``). Always store your passwords in a secure location.
++
+  Click btn:[Next] to continue.
+
+. Click btn:[Yes] to begin the setup process.
+
+. When setup is complete, click btn:[Next] to continue. Take note of the address to access the {productname} {webui}.
+
+. btn:[완료]를 클릭하여 {productname}의 설정을 완료합니다.
+
+
+
+== 기본 관리 계정 생성
+
+이 섹션에서는 {productname}에서 조직의 기본 관리 계정을 생성하는 방법을 설명합니다.
+
+[WARNING]
+====
+The main administration account has the highest authority within {productname}. Ensure you keep access information for this account secure. We recommend that you create lower level administration accounts for organizations and groups. Do not share the main administration access details.
+====
+
+
+.절차: 기본 관리 계정 설정
+
+. In your web browser, enter the address for the {productname} {webui}. This address was provided after you completed setup. For more information, see xref:retail:retail-uyuni-server-setup.adoc#retail-server-setup-yast[].
+
+. Sign in to the {webui}, navigate to the menu:Create Organization[Organization Name] field, and enter your organization name.
+
+. menu:조직 생성[원하는 로그인] 및 menu:조직 생성[원하는 비밀번호] 필드에 사용자 이름 및 비밀번호를 입력합니다.
+
+. Complete the ``Account Information`` fields, including an email for system notifications.
+
+. btn:[조직 생성]을 클릭하여 관리 계정의 생성을 완료합니다.
+
+{productname} {webui}의 설정이 완료되면 menu:홈[개요] 페이지로 이동됩니다.
+
+
+
+== Add Software Channels
+
+Before you register {productname} branch servers and terminals to your {productname} Server, check that you have the {opensuse} product enabled, and the required channels are fully synchronized.
+
+The products you need for this procedure are:
+
+[[opensuse-channels-cli]]
+[cols="1,1,1,1,1", options="header"]
+.OpenSUSE Channels - CLI
+|===
+
+| OS Version
+| Base Channel
+| Client Channel
+| Updates Channel
+| Other Channels
+
+| {opensuse} Leap {opensuse-version}
+| opensuse_leap15_2
+| opensuse_leap15_2-uyuni-client
+| opensuse_leap15_2-updates
+| uyuni-proxy-stable-leap-152
+
+|===
+
+include::../../client-configuration/pages/snippets/add_channels_cli.adoc[]
+
+
+
+== Check Synchronization Status
+
+include::snippets/check_sync_webui_uyuni.adoc[]
+
+include::snippets/check_sync_cli.adoc[]
+
+[IMPORTANT]
+====
+{opensuse} channels can be very large. Synchronization can sometimes take several hours.
+====
+
+
+
+== Trust GPG Keys on Clients
+
+include::snippets/trust_gpg.adoc[]
+
+
+
+== Create Activation Key for a Branch Server and the Retail Terminals
+
+The branch server is based on the {productname} Proxy. Its activation key must contain these child channels:
+
+* openSUSE Leap {opensuse-version} Updates (x86_64)
+* Uyuni Client Tools for openSUSE Leap {opensuse-version} (x86_64)
+* Uyuni Proxy Stable for openSUSE Leap {opensuse-version} (x86_64)
+
+The activation key for retail terminals based on openSUSE Leap {opensuse-version} must contain these child channels:
+
+* openSUSE Leap {opensuse-version} Updates (x86_64)
+* Uyuni Client Tools for openSUSE Leap {opensuse-version} (x86_64)
+
+For more information about creating activation keys, see xref:client-configuration:activation-keys.adoc[].
+
+
+
+== Register the Branch Server and Terminals as Clients
+
+You register both the branch server and the terminals as openSUSE clients. To register your openSUSE clients, you need a bootstrap repository. By default, bootstrap repositories are automatically created, and regenerated daily for all synchronized products. You can manually create the bootstrap repository from the command prompt, using this command:
+
+----
+mgr-create-bootstrap-repo --with-custom-channels
+----
+
+For more information on registering your clients, see xref:client-configuration:registration-overview.adoc[].
+
+
+
+=== Register the Branch Server
+
+A retail branch server is registered as an openSUSE proxy. The proxy can be bootstrapped using the {webui}, or at the command prompt. Ensure you use the activation key you created for the proxy.
+
+For more information about proxies, see xref:installation:uyuni-proxy-registration.adoc[]. For more information about activation keys, see xref:client-configuration:activation-keys.adoc[].
+
+
+
+.Procedure: Setting Up the Uyuni Proxy
+. Check that the ``Uyuni Proxy Stable for openSUSE Leap {opensuse-version} (x86_64)`` channel is assigned to the proxy on the system profile page.
+
+. At the command prompt on the proxy, as root, install the proxy pattern:
++
+
+----
+zypper in -t pattern uyuni_proxy
+----
+
+. Finalize the proxy setup:
++
+----
+configure-proxy.sh
+----
++
+  [command]``configure-proxy.sh`` is an interactive script.
+  For more information about the proxy setup script, see xref:installation:uyuni-proxy-setup.adoc#uyuni-proxy-setup-confproxy[].
+
+. OPTIONAL: If you want to use the same system also as a build host, navigate to the client's system profile and check [systemitem]``OS Image Build Host`` as a [guimenu]``Add-On System Types``.
+
+. Configure the proxy to run as a branch server. For example:
++
+----
+retail_branch_init <branch_server_minion_id> --dedicated-nic eth1 \
+    --branch-ip 192.168.7.5 \
+    --netmask 255.255.255.0 \
+    --dyn-range 192.168.7.100 192.168.7.200 \
+    --server-domain branch.example.org \
+    --branch-prefix uyuni
+----
++
+  For additional options,  use the [command]``retail_branch_init --help`` command.
+
+
+
+

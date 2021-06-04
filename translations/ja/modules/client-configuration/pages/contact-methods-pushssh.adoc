@@ -1,0 +1,162 @@
+[[contact-methods-pushssh]]
+= SSHでのプッシュ
+
+
+SSHでのプッシュは、従来のクライアントで{productname}サーバに直接接続できない環境で使用されます。 この環境では、DMZと呼ばれるファイアウォール保護ゾーンにクライアントはあります。 内部ネットワークとの接続を開くことを認可されているシステム({productname}サーバなど)はDMZ内にはありません。
+
+SSHでのプッシュメソッドは、DMZにあるクライアントに内部ネットワークの{productname}サーバから暗号化トンネルを作成します。 すべてのアクションおよびイベントが実行された後、トンネルはクローズします。
+
+サーバは、SSHを使用して、定期的にクライアントに接続し、チェックインし、スケジュールされたアクションおよびイベントを実行します。
+
+この接続方法は、従来のクライアントでのみ動作します。 Saltクライアントでは、Salt SSHでのプッシュを使用します。
+
+
+[IMPORTANT]
+====
+プロビジョニングモデルを使用したシステムの再インストールは、SSHでのプッシュで管理されているクライアントでは現在サポートされていません。
+====
+
+
+次のイメージは、SSHでのプッシュプロセスのパスを示しています。 [systemitem]``Taskomatic``ブロックの左側のアイテムはすべて、{productname}クライアントで実行されるプロセスを表します。
+
+image::sshpush-taigon.png[scaledwidth=80%]
+
+
+SSHでのトンネル接続では、使用できる2つのポート番号が必要です。1つ目はHTTPのトンネル用、2つ目はHTTPSでのトンネル用です(HTTPは登録プロセス中のみ必要です)。 デフォルトで使用されるポート番号は`1232`と`1233`です。 これらの番号を上書きするには、1024よりも大きい2つのカスタムポート番号を[path]``/etc/rhn/rhn.conf``に追加します。
+
+----
+ssh_push_port_http = high_port_1
+ssh_push_port_https = high_port_2
+----
+
+
+IPアドレスではなくホスト名を使用してクライアントに接続する場合、次のオプションを設定します。
+
+----
+ssh_push_use_hostname = true
+----
+
+
+クライアント接続を同時平行して開くために使用するスレッドの数も調整できます。 デフォルトでは、2つの同時平行スレッドが使用されます。 [path]``/etc/rhn/rhn.conf``で[systemitem]``taskomatic.ssh_push_workers``を設定します。
+
+----
+taskomatic.ssh_push_workers = number
+----
+
+
+セキュリティ上の理由から、SSHでsudoを使用して、rootとしてではなく非特権ユーザとしてシステムにアクセスする必要がある場合があります。
+
+
+.プロシージャ: 非特権SSHアクセスの設定
+. 最新の[path]``spacewalk-taskomatic``パッケージおよび[path]``spacewalk-certs-tools``パッケージが{productname}サーバにインストールされていることを確認してください。
+. それぞれのクライアントシステムで、適切な非特権ユーザを作成します。
+. それぞれのクライアントシステムで、[path]``/etc/sudoers``ファイルを開き、次の行をコメントアウトします。
++
+----
+#Defaults targetpw   # ask for the password of the target user i.e. root
+#ALL    ALL=(ALL) ALL   # WARNING! Only use this together with 'Defaults  targetpw'!
+----
+. それぞれのクライアントシステムの`User privilege specification`セクションで、次の行を追加します。
++
+----
+<user> ALL=(ALL) NOPASSWD:/usr/sbin/mgr_check
+<user> ALL=(ALL) NOPASSWD:/home/<user>/enable.sh
+ <user> ALL=(ALL) NOPASSWD:/home/<user>/bootstrap.sh
+----
+. それぞれのクライアントシステムの[path]``/home/<user>/.bashrc``ファイルで、次の行を追加します。
++
+----
+PATH=$PATH:/usr/sbin
+export PATH
+----
+. {productname}サーバの[path]``/etc/rhn/rhn.conf``設定ファイルで、次の行を追加または修正して、非特権ユーザ名を含めます。
++
+----
+ssh_push_sudo_user = <user>
+----
+
+
+クライアントがDMZにあり、サーバに接続できないため、[command]``mgr-ssh-push-init``ツールを使用してクライアントを{productname}サーバに登録する必要があります。
+
+ツールを使用するには、クライアントのホスト名またはIPアドレス、および{productname}サーバの有効なブートストラップスクリプトへのパスが必要です。 ブートストラップの詳細については、xref:client-configuration:registration-bootstrap.adoc[]を参照してください。
+
+ブートストラップスクリプトは、SSHでのプッシュで設定されたスクリプトとアクティベーションキーを関連付ける必要があります。 アクティベーションキーの詳細については、xref:client-configuration:activation-keys.adoc[]を参照してください。
+
+始める前に、SSHトンネルに使用するポートを指定済みであることを確認する必要があります。 ポート番号を変更する前にクライアントを登録した場合、再登録する必要があります。
+
+[NOTE]
+====
+SSHでのプッシュによって管理されているクライアントはサーバに直接接続できません。 [command]``mgr-ssh-push-init``ツールを使用している場合、[systemitem]``rhnsd``デーモンは無効になっています。
+====
+
+
+.プロシージャ: SSHでのプッシュを使用したクライアントの登録
+. {productname}サーバのコマンドプロンプトで、rootとして、次のコマンドを実行します。
++
+----
+# mgr-ssh-push-init --client <client> --register \
+/srv/www/htdocs/pub/bootstrap/bootstrap_script --tunnel
+----
++
+オプション: トンネルを使用しない場合、[command]``--tunnel``オプションを削除できます。
+. オプション: [command]``ssh_push_sudo_user``を定義済みの場合、[command]``--notty``オプションを追加してrootのパスワードを使用できます。
+. SSH接続がアクティブであることを確認します。
++
+----
+# ssh -i /root/.ssh/id_susemanager -R <high_port>:<susemanager>:443 \
+<client> zypper ref
+----
+
+
+
+.例: SSHでのプッシュへのAPIアクセス
+
+APIを使用して、使用する接続メソッドを管理できます。 このPythonコードの例では、接続メソッドが``ssh-push``に設定されます。
+
+有効な値は次のとおりです。
+
+* `default` (pull)
+* `ssh-push`
+* `ssh-push-tunnel`
+
+----
+client = xmlrpclib.Server(SUMA_HOST + "/rpc/api", verbose=0)
+key = client.auth.login(SUMA_LOGIN, SUMA_PASSWORD)
+ client.system.setDetails(key, 1000012345, {'contact_method' : 'ssh-push'})
+----
+
+
+
+クライアントを登録済みで、SSHでのプッシュを使用するようにする場合、追加手順が必要です。 [command]``mgr-ssh-push-init``ツールを使用してクライアントを設定できます。
+
+
+.プロシージャ: 登録済みシステムをSSHでのプッシュに移行する
+. {productname}サーバのコマンドプロンプトで、rootとして、クライアントを設定します。
++
+----
+# mgr-ssh-push-init --client <client> \
+/srv/www/htdocs/pub/bootstrap/bootstrap_script --tunnel
+----
+. {productname}の{webui}を使用して、クライアントの接続メソッドを`ssh-push`または`ssh-push-tunnel`に変更します。
+. オプション: 既存のアクティベーションキーを編集する必要がある場合、次のコマンドでできます。
++
+----
+client.activationkey.setDetails(key, '1-mykey', {'contact_method' :  'ssh-push'})
+----
+
+
+
+プロキシを使用して接続するクライアントにもSSHでのプッシュを使用できます。 始める前にプロキシが更新されていることを確認してください。
+
+.プロシージャ: SSHでのプッシュを使用したクライアントをプロキシに登録する
+. {productname}サーバのコマンドプロンプトで、rootとして、クライアントを設定します。
++
+----
+# mgr-ssh-push-init --client <client> \
+/srv/www/htdocs/pub/bootstrap/bootstrap_script --tunnel
+----
+. {productname}サーバのコマンドプロンプトで、SSHキーをプロキシにコピーします。
++
+----
+mgr-ssh-push-init --client <proxy>
+----

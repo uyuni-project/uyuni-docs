@@ -1,0 +1,103 @@
+[[installation-proxy]]
+= 패키지에서 {productname} 프록시 설치
+
+패키지에서 {productname} 프록시를 설치하려면 {sles} 미디어를 설치하여 시작해야 합니다. 이 섹션에서는 {productname} 프록시의 기반으로 {sles} 설치를 수행하는 데 필요한 KVM 설정을 다룹니다. 이 섹션에서는 KVM 및 가상 머신 관리자를 설치용 샌드박스로 사용합니다.
+
+
+
+[[installation-proxy-requirements]]
+== SLES KVM 요구사항
+
+이러한 설정을 사용하여 [command]``virt-manager``([literal]``<version>``을 실제 버전 문자열로 바꿈) 명령을 통해 새 가상 머신을 생성합니다.
+
+[cols="1,1", options="header"]
+|===
+| SLES를 위한 KVM 설정
+| 설치 방법: | 로컬 설치 미디어(ISO 이미지 또는 CDROM)
+ | OS:                  | Linux
+ | 버전:              |``SLE-``[literal]``<version>````-Server-x86_64-GM-DVD1.iso``
+ | 메모리:              | _테스트 서버_ 최고 2GB
+ |                      | _프로덕션 서버_ 최소 8GB
+ | CPU:                | 2
+ | 저장소 형식:      | ISO 3GB
+ | 디스크 공간:          | 분할된 230GB
+ |                      | [path]``/`` _(루트)_ 최소 24GB
+ |                      | (가상 디스크 1) [path]``/srv`` 최소 100GB
+ |                      | (가상 디스크 2) [path]``/var/cache`` _(Squid)_ 최소 100GB
+ | 이름:                | example-proxy
+ | 네트워크              | Bridge br0
+|===
+
+
+
+[[installation-proxy-sles-settings]]
+=== SLES KVM 설정
+
+이 섹션에서는 KVM 및 [command]``virt-manager`` 명령을 통해 전체 설치 미디어를 사용한 {productname} 프록시의 설치에 대해 설명합니다. 시작하기 전, {scc}를 사용하여 계정을 생성하고 {sles} 설치 미디어를 다운로드해야 합니다.
+
+
+
+.절차: SLES 설치 준비
+. Virtual Machine Manager 도구([command]``virt-manager``)에서 menu:File[새 가상 머신]을 클릭합니다.
+. btn:[로컬 설치 미디어(ISO 이미지 또는 CDROM)]를 클릭합니다.
+. [guimenu]``새 가상 머신 생성`` 대화 상자에서 btn:[찾아보기]를 클릭한 후 SCC 계정에서 다운로드한 전체 SLES 이미지를 찾습니다.
+. RAM이 2GB 이상이고 CPU가 2개 이상으로 머신을 구성해야 합니다.
+. 설치를 위해 저장소 공간이 230GB 이상인 저장소 장치를 생성합니다.
+    SLES를 설치하는 동안 이 디스크의 파티션을 다음과 같이 구성해야 합니다.
++
++
+[cols="1", options="header"]
+|===
+| 디스크 공간 요구사항
+| [path]``/srv/`` 를 위한 100GB XFS 파티션(또는 전용 가상 디스크)
+| [path]``/var/cache/`` 를 위한 100GB XFS 파티션(또는 전용 가상 디스크)
+|===
++
+나머지 저장소 공간은 루트 파티션을 위해 운영 체제에서 사용됩니다.
+. btn:[완료]를 클릭하여 설치 설정을 저장하고 설치를 시작합니다.
+
+{sles} 설치에 대한 자세한 내용은 https://documentation.suse.com/sles/15-SP2/html/SLES-all/art-sle-installquick.html을 참조하십시오.
+
+
+
+[[installation-proxy-sles]]
+== SUSE Manager Proxy용 SLES 변경
+
+
+
+[[proc-installation-proxy-sles]]
+.절차: {productname} 프록시를 설치하기 위해 SLES 변경
+
+. ‘루트’로 로그인합니다.
+. `sles-release` 패키지의 설치를 제거합니다.
++
+----
+rpm -e --nodeps sles-release
+----
+. SCC를 사용하여 {productname} 프록시를 등록합니다(예: `<productversion>`을 `{productnumber}`(으)로 바꾸고 `<architecture>`를 `x86_64`로 바꿈).
++
+----
+SUSEConnect -e <EMAIL_ADDRESS> -r <SUSE_MANAGER_PROXY_CODE> \
+  -p SUSE-Manager-Proxy/<productversion>/<architecture>
+----
+. {productname} 리포지토리 추가:
++
+----
+SUSEConnect -p sle-module-basesystem/15.2/x86_64
+SUSEConnect -p sle-module-server-applications/15.2/x86_64
+ SUSEConnect -p sle-module-suse-manager-proxy/4.1/x86_64
+----
+. 권장 패키지 설치를 허용했는지 확인합니다.
+    `/etc/zypp/zypp.conf`에서 설정을 확인합니다.
++
+----
+solver.onlyRequires = false
+----
+. {productname} 프록시 패턴을 설치합니다.
++
+----
+zypper in -t pattern suma_proxy
+----
+. 재부팅합니다.
+
+설치된 {productname} 프록시를 클라이언트로 등록을 계속합니다. xref:proxy-registration.adoc[]

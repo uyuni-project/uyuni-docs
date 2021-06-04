@@ -1,0 +1,162 @@
+[[ports]]
+= Síťové porty (protokolu TCP/UDP)
+
+Tato část obsahuje úplný seznam portů, které se používají pro různé komunikace v rámci produktu {productname}.
+
+Nebudete muset otevírat všechny tyto porty. Některé porty je třeba otevřít, pouze pokud používáte službu, která je vyžaduje.
+
+Tento obrázek ukazuje hlavní porty používané v produktu {productname}:
+
+image::ports_diagram.png[]
+
+
+
+== Externí příchozí porty serveru
+
+Aby bylo možné nakonfigurovat bránu firewall na serveru {productname}, je třeba otevřít externí příchozí porty, aby byl server chráněn před neoprávněným přístupem.
+
+Otevření těchto portů umožňuje externímu síťovému provozu přístup na server {productname}.
+
+
+[cols="1,1,1,1", options="header"]
+.Požadavky na externí porty pro server {productname}
+|===
+| Číslo portu | Protokol | Použit | Poznámky
+| 22          |          |         | Požadován pro kontaktní metody ssh-push a ssh-push-tunnel.
+| 67          | TCP/UDP  | DHCP    | Nutný, jen vyžadují-li klienty IP adresy od serveru.
+| 69          | TCP/UDP  | TFTP    | Nutný, používá-li se server jako PXE server pro automatickou instalaci klienta.
+| 80          | TCP      | HTTP    | Dočasně nutný pro některá úložiště bootstrapu a automatické instalace.
+Port 80 není použit pro službu {webui}.
+| 443         | TCP      | HTTPS   | {webui}, klient a požadavky proxy.
+| 4505        |  TCP     | salt    | Nutné pro příjem komunikačních žádostí od klientů.
+Klient navazuje spojení, jež zůstává otevřené pro příjem příkazů od Salt master.
+| 4506        | TCP      | salt    | Nutné pro příjem komunikačních žádostí od klientů.
+Klient navazuje spojení, jež zůstává otevřené pro hlášení výsledků zpět do Salt master.
+| 5222        | TCP      | osad    | Nutné pro zasílání OSAD akcí klientům.
+| 5269        | TCP      | jabberd | Nutné pro zasílání akcí do a z proxy.
+| 25151       | TCP      | Cobbler |
+|===
+
+
+
+== Externí odchozí porty serveru
+
+Aby bylo možné nakonfigurovat bránu firewall na serveru {productname}, je třeba otevřít externí odchozí porty, aby byl omezen přístup serveru.
+
+Otevření těchto portů umožňuje síťovému provozu ze serveru {productname} komunikovat s externími službami.
+
+[cols="1,1,1,1", options="header"]
+.Požadavky na externí porty pro server {productname}
+|===
+| Číslo portu | Protokol | Použit | Poznámky
+| 80          | TCP | HTTP       | Nutný pro {scc}.
+Port 80 není použit pro službu {webui}.
+| 443         | TCP | HTTPS      | Nutný pro {scc}.
+| 5269        | TCP | jabberd    | Nutný pro zasílání akcí do a z proxy.
+| 25151       | TCP | Cobbler    |
+|===
+
+
+
+== Interní porty serveru
+
+Interní port používá server {productname} interně. Interní porty jsou přístupné pouze z ``localhost``.
+
+Ve většině případů nebudete muset tyto porty nastavovat.
+
+[cols="1,1", options="header"]
+.Požadavky na interní porty serveru {productname}
+|===
+| Číslo portu | Poznámky
+| 2828        | Satellite-search (hledání satelitu) API, použito aplikací RHN v Tomcat a Taskomatic.
+| 2829        | Taskomatic API, použito aplikací RHN v Tomcat.
+| 8005        | Tomcat port pro ukončení.
+| 8009        | Tomcat do Apache HTTPD (AJP).
+| 8080        | Tomcat do Apache HTTPD (HTTP).
+| 9080        | Salt-API, použito aplikací RHN v Tomcat a Taskomatic.
+| 32000       | Port pro TCP spojení do Java Virtual Machine (JVM), kde běží Taskomatic a satellite-search (hledání satelitu).
+|===
+
+
+Port 32768 a vyšší se používají jako dočasné porty. Nejčastěji se používají k příjmu připojení TCP. Když je přijat požadavek na připojení TCP, odesílatel zvolí jedno z těchto dočasných čísel portů, aby odpovídalo cílovému portu. Pomocí tohoto příkazu můžete zjistit, které porty jsou dočasnými porty:
+
+----
+cat /proc/sys/net/ipv4/ip_local_port_range
+----
+
+
+
+== Externí příchozí porty proxy
+
+Aby bylo možné proxy chránit před neoprávněným přístupem, je třeba otevřít externí příchozí porty, aby bylo možné konfigurovat bránu firewall na serveru {productname}.
+
+Otevření těchto portů umožňuje externímu síťovému provozu přístup k proxy serveru {productname}.
+
+[cols="1,1,1,1", options="header"]
+.Požadavky na externí porty pro server {productname} Proxy
+|===
+| Číslo portu | Protokol | Použit | Poznámky
+| 22          |          |         | Nutný pro kontaktní metody ssh-push a ssh-push-tunnel.
+Klienty připojené na proxy zahajují check in na serveru a průchod ke klientům.
+| 67          | TCP/UDP  | DHCP    | Nutné, vyžadují-li klienty IP adresy ze serveru.
+| 69          | TCP/UDP  | TFTP    | Nutné, je-li server použit jako PXE server pro automatickou instalaci klienta.
+| 443         | TCP      | HTTPS   | Požadavky {webui}, klienta a proxy.
+| 4505        | TCP      | salt    | Nutné pro příjem komunikačních požadavků od klientů.
+Klient navazuje spojení, které zůstává otevřené pro příjem příkazů ze Salt master.
+| 4506        | TCP      | salt    | Nutné pro příjem komunikačních požadavků od klientů.
+Klient navazuje spojení, které zůstává otevřené pro hlášení výsledků zpět do Salt master.
+| 5222        | TCP      |         | Nutné pro zasílání akcí OSAD klientům.
+| 5269        | TCP      |         | Nutné pro zasílání akcí do a ze serveru.
+|===
+
+
+
+== Externí odchozí porty proxy
+
+Externí odchozí porty je nutno otevřít, aby bylo možno konfigurovat bránu firewall na proxy {productname}, aby bylo možno omezit, kam má proxy přístup.
+
+Otevření těchto portů umožňuje síťovou komunikaci z produktu {productname} Proxy s externími službami.
+
+[cols="1,1,1,1", options="header"]
+.Požadavky na externí porty pro server {productname} Proxy
+|===
+| Číslo portu | Protokol | Použit | Poznámky
+| 80          |          |         | K dosažení serveru.
+| 443         | TCP      | HTTPS   | Nutné pro {scc}.
+| 5269        | TCP      |         | Nutné pro zasílání akcí do a ze serveru.
+|===
+
+
+
+== Externí porty klientů
+
+Pro konfiguraci brány firewall mezi serverem {productname} a jeho klienty je nutné otevřít externí porty klienta.
+
+Ve většině případů nebudete muset tyto porty nastavovat.
+
+[cols="1,1,1,1", options="header"]
+.Požadavky na externí porty pro klienty {productname}
+|===
+| Číslo portu | Směr | Protokol | Poznámky
+| 22          | Dovnitř   | SSH      | Nutný pro kontaktní metody ssh-push a ssh-push-tunnel.
+| 80          | Ven       |          | Použit k dosažení serveru nebo proxy.
+| 5222        | Ven       | TCP      | Nutný pro zasílání akcí OSAD do serveru nebo proxy.
+| 9090        | Ven       | TCP      | Nutný pro uživatelské rozhraní Prometheus.
+| 9093        | Ven       | TCP      | Nutný pro správce výstrah Prometheus.
+| 9100        | Ven       | TCP      | Nutný pro exportér uzlu Prometheus.
+| 9117        | Ven       | TCP      | Nutný pro exportér Apache Prometheus.
+| 9187        | Ven       | TCP      | Nutný pro PostgreSQL Prometheus.
+|===
+
+
+
+== Požadované adresy URL
+
+Existuje několik adres URL, ke kterým musí mít {productname} přístup, aby mohl registrovat klienty a provádět aktualizace. Ve většině případů stačí povolit přístup k těmto adresám URL:
+
+* scc.suse.com
+* updates.suse.com
+
+Pokud používáte jiné než {suse} klienty, možná budete muset povolit přístup k dalším serverům, které poskytují specifické balíčky pro tyto operační systémy. Máte-li například klienty {ubuntu}, budete muset mít přístup na server {ubuntu}.
+
+Další informace o řešení potíží s přístupem k bráně firewall pro klienty, kteří nejsou uživateli {suse}, najdete na stránce xref:administration:tshoot-firewalls.adoc[].

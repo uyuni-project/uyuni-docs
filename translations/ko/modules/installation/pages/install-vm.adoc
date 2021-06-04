@@ -1,0 +1,161 @@
+[[install-vm]]
+= JeOS를 사용한 가상 머신 환경에 SUSE Manager 설치
+
+
+
+[[quickstart.sect.kvm.settings]]
+== 가상 머신 관리자(virt-manager) 설정
+
+이 장에서는 {productname}의 기반으로 {sle} Just Enough Operating System(JeOS) 설치에 필요한 커널 가상 머신(KVM) 설정을 제공합니다. Virtual Machine Manager(_virt-manager_)와 결합된 KVM은이 설치를 위한 샌드박스로 사용됩니다.
+
+
+*virt-manager*를 사용하여 새 가상 머신을 생성할 때 다음 설정을 입력합니다.
+
+[NOTE]
+====
+이 표는 최소 요구사항을 제공합니다. 이러한 설정은 클라이언트가 1개인 서버와 같이 빠른 테스트 설치에 적합합니다. 프로덕션 환경을 사용하려면 xref:hardware-requirements.adoc[]에서 제공되는 요구사항을 확인하십시오.
+====
+
+다음 테이블에서 _버전_을 실제 제품 버전 문자열로 바꿉니다. JeOS 이미지는 https://download.suse.com/에서 제공됩니다.
+
+[cols="1,1", options="header"]
+|===
+2+<| KVM 설정
+| 설치 방법 | 기존 디스크 이미지 가져오기
+ | OS:                 | Linux
+ | 버전:            | SLES_version_-JeOS-for-kvm-and-xen.x86_64-GM.qcow2
+ | 메모리:             | 8192 MB
+ | CPU:              | 4
+ | 저장소 형식:     | _.qcow2_ 24GB(기본) JeOS 루트 파티션
+ | 가상 디스크:      |
+ | VirtIO Disk 2       | [path]``/var/spacewalk``
+용 101GB | VirtIO Disk 3       | [path]``/var/lib/pgsql``
+용 50GB | VirtIO Disk 4       | 스왑용 4GB
+ | 이름:               | test-setup
+ | 네트워크             | 브리지 _br0_
+|===
+
+.{sle} 가상화 가이드
+[NOTE]
+====
+가상화에 대한 자세한 내용은 https://documentation.suse.com/sles/15-SP2/html/SLES-all/book-virt.html을 참조하십시오.
+====
+
+
+
+[[jeos.kvm.settings]]
+== JeOS KVM 설정
+
+{productname} 저장소 파티션에 필요한 추가 가상 디스크 3개를 생성합니다.
+
+.절차: KVM을 사용한 필수 파티션 생성
+. 다운로드한 JeOS KVM 이미지를 사용하여 새 가상 머신을 생성하고 [guimenu]``기존 디스크 이미지 가져오기``를 선택합니다.
+. RAM 및 CPU 수(RAM 8GB 및 CPU 4개 이상)를 구성합니다.
+. KVM 머신에 이름을 지정하고 [guimenu]``구성을 사용자 정의한 후 설치`` 확인란을 선택합니다.
+. btn:[하드웨어 추가]를 클릭하여 이러한 사양의 새 가상 디스크 3개를 생성합니다.
+    이러한 디스크는 <<proc.jeos.susemgr.prep>>에서 파티셔닝 및 마운트됩니다.
++
+
+[NOTE]
+====
+저장소 크기 값은 절대적으로 최솟값이며 소규모 테스트 또는 데모 설치용으로만 적합합니다. 특히 [path]``/var/spacewalk/``에서는 빠르게 추가 공간이 필요하게 됩니다. 또한, Kiwi 이미지가 저장되는 [path]``/srv``에 대한 별도의 파티션도 생성하는 것이 좋습니다.
+====
++
+
+[cols="1,1,1", options="header"]
+|===
+| VirtIO 저장소 디스크 | 이름      | 크기 조정
+| VirtIO Disk 2        | spacewalk | 101GB
+ | VirtIO Disk 3        | pgsql     | 50GB
+ | VirtIO Disk 4        | 스왑      | 4GB
+|===
+
+. btn:[설치 시작]을 클릭하여 JeOS 이미지에서 새 VM을 부팅합니다.
+
+프롬프트를 따라 프로세스가 완료되고 명령 프롬프트가 입력을 대기할 때까지 기본 JeOS의 설치를 완료합니다.
+
+기본 설치 중에는 루트 암호를 입력하라는 메시지가 표시됩니다. 다음 메시지 상자에서 btn:[루트 암호 확인]을 클릭합니다.
+
+
+
+[[jeos.susemgr.prep]]
+== JeOS for SUSE Manager 준비
+
+[[proc.jeos.susemgr.prep]]
+.절차: {productname}의 설치를 위한 JeOS 준비
+
+. ‘루트’로 로그인합니다.
+
+. `sles-release` 패키지의 설치를 제거합니다.
++
+
+----
+rpm -e --nodeps sles-release
+----
+
+. SCC를 사용하여 {productname}을(를) 등록합니다(예: `<productnumber>`을(를) `{productnumber}`(으)로 바꾸고 `<architecture>`를 `x86_64`로 바꿈).
++
+
+----
+SUSEConnect -e <EMAIL_ADDRESS> -r <SUSE_MANAGER_CODE> \
+  -p SUSE-Manager-Server/<productnumber>/<architecture>
+----
+
+. {productname} 리포지토리 추가:
++
+
+----
+SUSEConnect -p sle-module-basesystem/15.2/x86_64
+SUSEConnect -p sle-module-python2/15.2/x86_64
+ SUSEConnect -p sle-module-server-applications/15.2/x86_64
+ SUSEConnect -p sle-module-web-scripting/15.2/x86_64
+ SUSEConnect -p sle-module-suse-manager-server/<productnumber>/x86_64
+----
++
+JeOS는 필수 패키지만 설치하도록 구성됩니다. 모든 기능이 작동하도록 하려면 권장 패키지도 설치하도록 허용해야 합니다. `/etc/zypp/zypp.conf`에서 다음과 같이 변경합니다.
++
+
+----
+solver.onlyRequires = true
+----
++
+
+변경:
++
+----
+solver.onlyRequires = false
+----
+
+. 모든 필수 종속성과 함께 [package]#yast2-storage-ng#를 설치합니다(약 40개 패키지, 설치 시 30MB).
+    저장소 파티션을 준비하기 위해서는 기본 관리 패키지가 필요합니다.
++
+
+----
+zypper in yast2-storage-ng
+----
+. {yast} 파티션 도구를 사용하여 다음 위치에서 가상 디스크를 파티셔닝 및 마운트합니다([command]``yast2 디스크``).
++
+
+[NOTE]
+====
+저장소 크기 값은 절대적으로 최솟값입니다. 그리고 클라이언트가 1개인 서버와 같이 소규모 테스트 또는 데모 설치용으로 적합합니다. 특히 [path]``/var/spacewalk/``에서는 빠르게 추가 공간이 필요하게 됩니다. 또한, Kiwi 이미지가 저장되는 [path]``/srv``에 대한 별도의 파티션도 생성하는 것이 좋습니다.
+====
++
+[cols="1,1,1,1", options="header"]
+|===
+| VirtIO 저장소 디스크 | 이름                     | 저장소 크기 | 파일 시스템 형식
+ | VirtIO Disk 2        | [path]``/var/spacewalk`` | 101GB  | XFS
+ | VirtIO Disk 3        | [path]``/var/lib/pgsql`` | 50GB   | XFS
+ | VirtIO Disk 4        | [path]``스왑``           | 4GB    | 스왑
+|===
+
+. 파티션 도구를 종료하고 {productname} 패턴을 설치합니다(약 730개 패키지, 설치 시 1.4GB의 디스크 공간 사용).
++
+
+----
+zypper in -t pattern suma_server
+----
+
+. 재부팅합니다.
+
+{productname} 설정을 진행하려면, xref:installation:server-setup.adoc[SUSE Manager 설정]을 참조하십시오.

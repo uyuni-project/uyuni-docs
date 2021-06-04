@@ -1,0 +1,225 @@
+[[clients-sleses]]
+= {sleses}クライアントの登録
+
+このセクションでは、{sleses} ({es})オペレーティングシステムを実行している従来のクライアントおよびSaltクライアントの登録について説明します。 {es}クライアントは{rhel}または{centos}に基づいています。 これらは、SLESES、RESまたは{redhat} {es}と呼ばれることもあります。
+
+{suse}によって提供される{es}ソフトウェアチャンネルは、パッケージの更新のみを提供します。パッケージそのものは提供しません。 {es}クライアントを登録するには、{productname}サーバにカスタムの空のベースチャンネルおよび子チャンネルを作成し、{redhat}パッケージまたは{centos}パッケージをそのカスタムのチャンネルにインポートする必要があります。 {es}ソフトウェアチャンネルで提供される更新を適用する前に、初期パッケージを{redhat}または{centos}から直接取得する必要があります。
+
+
+[IMPORTANT]
+====
+ユーザは、{redhat}または{centos}のベースメディアリポジトリおよびインストールメディアをアクセスできるようにする必要があります。
+====
+
+
+ifeval::[{suma-content} == true]
+[IMPORTANT]
+====
+使用しているすべての{es}システムに対して{suse}のサポートを取得する必要があります。
+====
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+[IMPORTANT]
+====
+{suse}は、{uyuni}での{es}オペレーティングシステムをサポートしていません。
+====
+endif::[]
+
+
+[IMPORTANT]
+====
+従来のクライアントは{es}{nbsp}8では使用できません。 {es}{nbsp}8クライアントはSaltクライアントとしてのみサポートされます。
+====
+
+
+
+== ソフトウェアチャンネルの追加
+
+
+{es}クライアントでは、必要なパッケージの一部が{rhel}または{centos}のインストールメディアに含まれています。 {es}クライアントを登録するには、その前にこれらのパッケージをインストールする必要があります。
+
+{es}製品は{scc}によって提供されます。 これには、クライアントツールパッケージも含まれています。
+
+{es}クライアントを{productname}サーバに登録する前に、必要なソフトウェアチャンネルを追加して同期する必要があります。
+
+2つの異なるチャンネルセットを選択する必要があります。一方は{es}用、他方はクライアントツール用です。
+
+正しい{es}チャンネルに関連付けられているアクティベーションキーが必要です。 アクティベーションキーの詳細については、xref:client-configuration:activation-keys.adoc[]を参照してください。
+
+ifeval::[{suma-content} == true]
+
+このプロシージャで必要な製品は次のとおりです。
+
+[[es-channels-wizard]]
+[cols="1,1", options="header"]
+.ES製品 - WebUI
+|===
+
+| OSバージョン
+|製品名
+ 
+ | {es} 6
+ | SUSE Linux Enterprise Server with Expanded Support 6 x86_64
+ 
+ | {es} 7
+ | SUSE Linux Enterprise Server with Expanded Support 7 x86_64
+ 
+ | {es} 8
+ | RHELまたはSLES ESまたはCentOS 8 BaseおよびSUSE Linux Enterprise Server with  Expanded Support 8 x86_64
+
+|===
+
+{productname}には、追加のソフトウェアが含まれているツールチャンネルが必要です。 このプロシージャは次のツールチャンネルを作成します。
+
+[[es-channels-tools]]
+[cols="1,1,1", options="header"]
+.ESツールチェンネル
+|===
+| OSバージョン | ベースチャンネル                     | ツールチャンネル
+|{es} 6     | RHEL Expanded Support 6          | RES6-SUSE-Manager-Tools  x86_64
+ | {es} 7     | RHEL Expanded Support 7          | RES7-SUSE-Manager-Tools  x86_64
+ | {es} 8     | RHEL or SLES ES or CentOS 8 Base | RES8-Manager-Tools-Pool  for x86_64 and RES8-Manager-Tools-Updates for x86_64
+|===
+
+include::snippets/addchannels_vendor_webui.adoc[]
+
+
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+このプロシージャで必要なチャンネルは次のとおりです。
+
+[[es-channels-cli]]
+[cols="1,1,1,1", options="header"]
+.ESチャンネル - CLI
+|===
+
+| OSバージョン
+|ベースチャンネル
+ | クライアントチャンネル
+ | ツールチャンネル
+ 
+ | {es} 6
+ | rhel-x86_64-server-6
+ | -
+ | res6-suse-manager-tools-x86_64
+ 
+ | {es} 7
+ | rhel-x86_64-server-7
+ | -
+ | res7-suse-manager-tools-x86_64
+ 
+ | {es} 8
+ | rhel-x86_64-server-8
+ | -
+ | res8-suse-manager-tools-x86_64
+
+|===
+
+include::snippets/addchannels_novendor_cli.adoc[]
+
+endif::[]
+
+
+include::snippets/appstream_admon.adoc[]
+
+
+
+=== ベースメディアの追加
+
+ベース{es}チャンネルには、パッケージは含まれていません。その理由は、{suse}が{rhel}または{centos}のベースメディアを提供しないためです。 ベースメディアを{redhat}または{centos}から取得する必要があります。ベースメディアは、子チャンネルとして{es}親チャンネルに追加できます。 必要なパッケージのすべてがあることを確認するには、最小版や{jeos}イメージではなく、フルDVDイメージを使用します。
+
+{productname}カスタムチャンネルを使用して、{rhel}または{centos}のメディアを設定できます。 ベースメディアのすべてのパッケージは、子チャンネルにミラーリングする必要があります。
+
+チャンネルの名前は自由に選択できます。
+
+include::snippets/manual_channels.adoc[]
+
+
+[IMPORTANT]
+====
+{redhat} 8クライアントでは、ベースチャンネルとAppStreamチャンネルの両方を追加します。 両方のチャンネルのパッケージが必要です。 両方のチャンネルを追加しないと、パッケージ不足のためブートストラップリポジトリを作成できません。
+====
+
+
+.プロシージャ: ベースメディアをカスタムチャンネルに追加する
+. {productname}サーバのコマンドプロンプトでrootとしてベースメディアイメージを[path]``/tmp/``ディレクトリにコピーします。
+. Create a directory to contain the media content.
+    [command]``<os_name>``を``sleses6``、``sleses7``、または``sleses8``のいずれかに置き換えます。
++
+----
+mkdir -p /srv/www/htdocs/pub/<os_name>
+----
+. イメージをマウントします。
++
+----
+mount -o loop /tmp/<iso_filename> /srv/www/htdocs/pub/<os_name>
+----
+. 前に作成した子チャンネルにパッケージをインポートします。
++
+----
+spacewalk-repo-sync -c <channel-label> -u  file:///srv/www/htdocs/pub/<os_name>/<repopath>/
+----
+
+
+==== オプション: ベースチャンネルをコンテンツURLから追加する
+
+または、{redhat} CDNまたは{centos}が提供するコンテンツURLにアクセスできる場合、カスタムリポジトリを作成してパッケージをミラーリングできます。
+
+このプロシージャに必要な詳細は次のとおりです。
+
+[[es-repos-manual]]
+[cols="1,1", options="header"]
+.ESカスタムリポジトリ設定
+|===
+| オプション                 | パラメータ
+|リポジトリURL         | {redhat} CDNまたは{centos}
+によって提供されるコンテンツURL | 署名済みメタデータがあるかどうか   | すべての{redhat}エンタイトルメントリポジトリ
+のチェックを外します | SSL CA証明書     | [systemitem]``redhat-uep`` ({redhat}のみ)
+ | SSLクライアント証明書 | [systemitem]``Entitlement-Cert-date`` ({redhat}のみ)
+ | SSLクライアントキー         | ``Entitlement-Key-date`` ({redhat}のみ)
+|===
+
+include::snippets/manual_repos.adoc[]
+
+include::snippets/manual_associate.adoc[]
+
+== 同期ステータスの確認
+
+ifeval::[{suma-content} == true]
+
+include::snippets/check_sync_webui_suma.adoc[]
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+include::snippets/check_sync_webui_uyuni.adoc[]
+
+endif::[]
+
+include::snippets/check_sync_cli.adoc[]
+
+[NOTE]
+====
+{es}チャンネルは非常に大きいことがあります。 最初のチャンネル同期は数時間かかる場合があります。
+
+最初の同期が完了したとき、このチャンネルを使用する前にチャンネルを複製することをお勧めします。 この操作を実行すると、元の同期データのバックアップを作成できます。
+====
+
+
+
+== {es}クライアントの登録
+
+{es}クライアントは、登録できるようになりました。
+
+クライアントの登録については、xref:client-configuration:registration-overview.adoc[]を参照してください。
+
+
+[WARNING]
+====
+{sleses}{nbsp}6クライアントを登録して使用するには、{productname}サーバを設定して旧式のSSL暗号化をサポートする必要があります。 このエラーを解決する方法については、``古いクライアントの登録``をxref:client-configuration:tshoot-clients.adoc[]で参照してください。
+====

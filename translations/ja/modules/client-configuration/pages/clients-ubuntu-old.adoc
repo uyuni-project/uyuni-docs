@@ -1,0 +1,220 @@
+[[clients-ubuntu-old]]
+= {ubuntu} 16.04および18.04クライアントの登録
+
+このセクションでは、{ubuntu} 16.04 LTS、18.04 LTSオペレーティングシステムを実行しているSaltクライアントの登録について説明します。
+
+ifeval::[{suma-content} == true]
+
+{productname}は、Saltを使用する{ubuntu} 16.04 LTS、18.04 LTS、および20.04 LTSクライアントをサポートしています。 {ubuntu} 20.04を実行しているSaltクライアントを登録する方法の詳細については、xref:client-configuration:clients-ubuntu.adoc[]を参照してください。
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+{productname}は、Saltを使用する{ubuntu} 16.04 LTSおよび18.04 LTSクライアントをサポートしています。
+
+endif::[]
+
+[IMPORTANT]
+====
+Canonicalは、{productname}を保証またはサポートしていません。
+====
+
+[NOTE]
+====
+{ubuntu}はSaltクライアントでのみサポートされています。 従来のクライアントはサポートされていません。
+====
+
+ブートストラップは、リポジトリの設定やプロファイルの更新の実行など、{ubuntu}クライアントの起動および初期状態の実行のためにサポートされています。 ただし、{ubuntu}のrootユーザはデフォルトで無効になっているため、ブートストラップを使用するには、Pythonの[command]``sudo``特権がある既存ユーザが必要です。
+
+
+
+== ソフトウェアチャンネルの追加
+
+{ubuntu}クライアントを{productname}サーバに登録する前に、必要なソフトウェアチャンネルを追加して同期する必要があります。
+
+ifeval::[{suma-content} == true]
+
+このプロシージャで必要な製品は次のとおりです。
+
+[[ubuntu-old-channels-wizard]]
+[cols="1,1", options="header"]
+.Ubuntu製品 - WebUI
+|===
+| OSバージョン     | 製品名
+|{ubuntu} 16.04 | Ubuntu 16.04
+ | {ubuntu} 18.04 | Ubuntu 18.04
+|===
+
+include::snippets/addchannels_vendor_webui.adoc[]
+
+または、コマンドプロンプトでチャンネルを追加できます。 このプロシージャで必要なチャンネルは次のとおりです。
+
+[[ubuntu-old-channels-cli]]
+[cols="1,1", options="header"]
+.Ubuntuチャンネル - CLI
+|===
+| OSバージョン | ベースチャンネル
+| {ubuntu} 16.04 | ubuntu-16.04-pool-amd64
+ | {ubuntu} 18.04 | ubuntu-18.04-pool-amd64
+|===
+
+include::snippets/addchannels_vendor_cli.adoc[]
+
+endif::[]
+
+ifeval::[{suma-content} == true]
+
+このプロシージャで必要なチャンネルは次のとおりです。
+
+[[ubuntu-old-channels-cli-suma]]
+[cols="1,1,1,1", options="header"]
+.Ubuntuチャンネル - CLI
+|===
+
+| OSバージョン
+|メインチャンネル
+ | セキュリティチャンネル
+ | チャンネルの更新
+ 
+ | {ubuntu} 16.04
+ | ubuntu-1604-amd64-main
+ | ubuntu-1604-amd64-security
+ | ubuntu-1604-amd64-updates
+ 
+ | {ubuntu} 18.04
+ | ubuntu-1804-amd64-main
+ | ubuntu-1804-amd64-main-security
+ | ubuntu-1804-amd64-main-updates
+
+|===
+
+include::snippets/addchannels_novendor_cli.adoc[]
+
+このメソッドを使用して追加されたチャンネルはデフォルトでは定期的に同期されません。 {productname} {webui}を使用して同期スケジュールを設定できます。 menu:ソフトウェア[管理 > チャンネル]に移動し、追加したチャンネルをクリックし、menu:リポジトリ[同期]サブタブを選択します。 同期スケジュールを毎日または毎週に設定し、［btn:[スケジュール]］をクリックします。
+
+
+[NOTE]
+====
+[command]``spacewalk-common-channels``によって提供されるクライアントツールのチャンネルの提供元は{uyuni}です。{suse}ではありません。
+====
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+このプロシージャで必要なチャンネルは次のとおりです。
+[[ubuntu-old-channels-cli-uyuni]]
+[cols="1,1,1,1,1,1,1,1", options="header"]
+.Ubuntuチャンネル - CLI
+|===
+
+| OS Version
+| Base Channel
+| Main Channel
+| Updates Channel
+| Security Channel
+| Universe Channel
+| Universe Updates Channel
+| Universe Security Updates Channel
+| Client Channel
+
+| {ubuntu} 16.04
+| ubuntu-1604-pool-amd64-uyuni
+| ubuntu-1604-amd64-main-uyuni
+| ubuntu-1604-amd64-updates-uyuni
+| ubuntu-1604-amd64-security-uyuni
+| ubuntu-1604-amd64-universe-uyuni
+| ubuntu-1604-amd64-universe-updates-uyuni
+| ubuntu-1604-amd64-universe-security-uyuni
+| ubuntu-1604-amd64-uyuni-client
+
+| {ubuntu} 18.04
+| ubuntu-1804-pool-amd64-uyuni
+| ubuntu-1804-amd64-main-uyuni
+| ubuntu-1804-amd64-main-updates-uyuni
+| ubuntu-1804-amd64-main-security-uyuni
+| ubuntu-1804-amd64-universe-uyuni
+| ubuntu-1804-amd64-universe-updates-uyuni
+| ubuntu-1804-amd64-universe-security-uyuni
+| ubuntu-1804-amd64-uyuni-client
+
+|===
+
+include::snippets/add_channels_cli.adoc[]
+
+[IMPORTANT]
+====
+Ubuntuクライアントをブートストラップする前に、ユニバース(ユニバースにはSaltの重要な依存関係が含まれています)を含む新しいチャンネルはすべて完全に同期されている必要があります。
+====
+
+endif::[]
+
+
+
+== 同期ステータスの確認
+
+ifeval::[{suma-content} == true]
+
+include::snippets/check_sync_webui_suma.adoc[]
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+include::snippets/check_sync_webui_uyuni.adoc[]
+
+endif::[]
+
+include::snippets/check_sync_cli.adoc[]
+
+[NOTE]
+====
+{ubuntu}チャンネルは非常に大きいことがあります。 同期に数時間かかる場合があります。
+====
+
+
+
+ifeval::[{uyuni-content} == true]
+== クライアントでGPGキーを信頼する
+
+include::snippets/trust_gpg.adoc[]
+
+endif::[]
+
+
+
+== rootアクセス
+
+{ubuntu}のrootユーザはデフォルトでは無効になっています。 [filename]``sudoers``ファイルを編集して有効にできます。
+
+.プロシージャ: rootユーザーアクセスの許可
+
+. クライアントで、[filename]``sudoers``ファイルを編集します。
++
+----
+sudo visudo
+----
++
+この行を[filename]``sudoers``ファイルの末尾に追加して[command]``sudo``アクセス権をユーザに付与します。 {webui}でクライアントをブートストラップしているユーザの名前で[systemitem]``<user>``を置き換えます。
++
+----
+<user>  ALL=NOPASSWD: /usr/bin/python, /usr/bin/python2, /usr/bin/python3
+----
+
+[NOTE]
+====
+このプロシージャによりrootアクセス権が付与されます。クライアントの登録に必要なパスワードは不要です。 クライアントは正常にインストールされると、root特権で実行されるため、アクセス権は不要です。 クライアントを正しくインストールした後、[path]``sudoers``ファイルからこの行を削除することをお勧めします。
+====
+
+
+
+== クライアントの登録
+
+{ubuntu}クライアントを登録するには、ブートストラップリポジトリが必要です。 デフォルトでは、ブートストラップリポジトリは自動的に作成され、すべての同期製品に対して毎日再生成されます。 次のコマンドを使用して、コマンドプロンプトからブートストラップリポジトリを手動で作成できます。
+
+----
+mgr-create-bootstrap-repo
+----
+
+クライアントの登録については、xref:client-configuration:registration-overview.adoc[]を参照してください。

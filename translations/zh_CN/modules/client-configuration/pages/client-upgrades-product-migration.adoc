@@ -1,0 +1,82 @@
+[[client-upgrades-spmigration]]
+= Product Migration
+
+Product migration allows you to upgrade SLE-based client systems from an Service Pack (SP) level to a later one. For example, you can migrate {sle}{nbsp}15{nbsp}SP1 to {sle}{nbsp}15{nbsp}SP2.
+
+您还可以将 openSUSE Leap 迁移到更高的次要版本或对应的 SLE SP 级别，例如：
+
+* 将 openSUSE Leap 15.1 迁移到 15.2，或
+* 将 openSUSE Leap 15.1 迁移到 {sle} 15 SP1，或
+* 将 openSUSE Leap 15.2 迁移到 {sle} 15 SP2
+
+[WARNING]
+====
+迁移期间，{productname} 会在安装前自动接受任何必要的许可协议 (EULA)。
+====
+
+在 {sle}{nbsp}12 及更高版本中，{suse} 支持跳过服务包（如果 {scc} 提供该服务包）。 例如，您可以从 {sle}{nbsp}15 升级到 SP2，而无需安装 SP1。 有关支持的 {sle} 升级路径，请参见 https://documentation.suse.com/sles/15-SP2/html/SLES-all/cha-upgrade-paths.html#sec-upgrade-paths-supported。
+
+
+
+[IMPORTANT]
+====
+Product migration is for upgrading within the same major version. You cannot use product migration to migrate from {sle}{nbsp}12 to {sle}{nbsp}15. For more information about major upgrades, see xref:client-configuration:client-upgrades-major.adoc[].
+====
+
+
+[WARNING]
+====
+Product migration does not have a rollback feature. When the migration procedure has begun, rolling back is not possible. Ensure you have a working system backup available, in case of an emergency.
+====
+
+
+
+.过程：执行迁移
+. 从menu:系统[概览]页面中，选择一个客户端。
+. From the system details page of the client, navigate to the menu:Software[Product Migration] tab.
+. 选择目标迁移路径，然后单击 btn:[选择频道]。
+. From the [guimenu]``Product Migration - Channels`` page select the correct base channel, including ``Mandatory Child Channels`` and any additional ``Optional Child Channels``.
+. OPTIONAL: Check [guimenu]``Allow Vendor Change`` to allow packages that have changed vendors to be installed. If this occurs, a notification is shown with details before the migration is started.
++
+[IMPORTANT]
+====
+要将 openSUSE Leap 迁移到 {sle}，必须选中[guimenu]``允许供应商更改``选项。
+====
+. 正确配置您的频道后，单击 btn:[安排迁移]。
+
+
+
+== Product Mass Migration
+
+如果您要将大量客户端迁移到下一 SP 版本，可以使用 {productname} API 调用。
+
+
+
+.Procedure: Performing a Product Mass Migration
+. 列出可用的迁移目标，并记下要迁移的系统 ID：
++
+----
+spacecmd api -- system.listMigrationTargets -A 1000010001
+----
+. 针对每个系统 ID 调用 [systemitem]``listMigrationTarget``，并查看所需的目标产品是否可用。
++
+* If the system ID has an available target, call [systemitem]``system.scheduleProductMigration``.
+* 如果所需目标不可用，则跳过该系统。
+
+根据您的环境调整以下模板：
+
+----
+target = '[....]'
+basechannel = 'channel-label'
+system_ids = [1, 2, 3]
+
+session = auth.login(user, pass)
+for system in system_ids
+  if system.listMigrationTargets(session, system).ident == target
+    system.scheduleProductMigration(session, system, target, basechannel, [], False, <now>)
+  else
+    print "Cannot migrate to requested target -- skipping system"
+  endif
+endfor
+----
+

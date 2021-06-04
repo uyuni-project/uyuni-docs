@@ -1,0 +1,69 @@
+[[virt-vmware]]
+= 使用 VMWare 虚拟化
+
+您可以在 {productname} 中设置虚拟主机管理器 (VHM) 来使用 VMWare vSphere 虚拟机，包括 ESXi 和 vCenter。
+
+开始前，您需要在 {productname} 服务器上设置 VHM，然后清点可用的 VM 主机。 之后，Taskomatic 便可以开始使用 VM API 收集数据。
+
+
+
+== VHM 设置
+
+
+虚拟主机管理器 (VHM) 在 {productname} 服务器上运行。
+
+要运行 VHM，需要打开端口 443 以使您的 {productname} 服务器可访问 VMWare API。
+
+VMWare 主机使用访问权限角色和权限来控制对主机和 Guest 的访问。 请确保您要让 VHM 清点的任何 VMWare 对象或资源均至少具有[parameter]``只读``权限。 如果您要排除任何对象或资源，请将它们标记为[parameter]``无访问权限``。
+
+当您向 {productname} 添加新主机时，需考虑是否需要让 {productname} 清点已指派给用户和对象的角色和权限。
+
+有关用户、角色和权限的详细信息，请参见 VMWare vSphere 文档，网址为：https://docs.vmware.com/en/VMware-vSphere/index.html
+
+
+.过程：创建 VMWare VHM
+
+. 在 {productname} {webui} 中，导航到menu:系统[虚拟主机管理器]。
+. 单击 btn:[创建]，然后选择[guimenu]``基于 VMWare``。
+. 在[guimenu]``添加基于 VMWare 的虚拟主机管理器``部分，使用以下参数：
+* 在[guimenu]``标签``字段中，为 VHM 键入自定义名称。
+* 在[guimenu]``主机名``字段中，键入完全限定的域名 (FQDN) 或主机的 IP 地址。
+* 在[guimenu]``端口``字段中，键入要使用的 ESXi API 端口（例如，[parameter]``443``）。
+* 在[guimenu]``用户名``字段中，键入与 VM 主机关联的用户名。
+* 在[guimenu]``口令``字段中，键入与 VM 主机用户关联的口令。
+. 单击 btn:[创建] 保存更改并创建 VHM。
+. 在[guimenu]``虚拟主机管理器``页面中选择新 VHM。
+. 在[guimenu]``属性``页面中，单击 btn:[刷新数据] 以清点新 VHM。
+
+要查看已清点的对象和资源，请导航到menu:系统[系统列表 > 虚拟系统]。
+
+
+[NOTE]
+====
+有时，在浏览器中使用 HTTPS 连接 ESXi 服务器可能会发生``证书无效``错误。 如果发生此情况，刷新来自虚拟主机服务器的数据将会失败。 要纠正该问题，请解压缩来自 ESXi 服务器的证书，然后将其复制到 [path]``/etc/pki/trust/ anchors``。 在命令行上运行 [command]``update-ca-certificates`` 命令以重新信任证书，然后重启动 spacewalk 服务。
+====
+
+创建并配置好 VHM 后，Taskomatic 即会自动运行数据收集过程。 如果您要手动进行数据收集，请导航到menu:系统[虚拟主机管理器]，选择适当的 VHM，然后单击 btn:[刷新数据]。
+
+{productname} 随附了一个名为 [command]``virtual-host-gatherer`` 的工具，可以使用相应 API 连接到 VHM 并请求虚拟主机的相关信息。 [command]``virtual-host-gatherer`` 计算机会维护可选模块的概念，每个模块可启用一个特定的 VHM。 Taskomatic 会在夜间自动调用此工具。 [command]``virtual-host-gatherer`` 工具的日志文件位于 [path]``/var/log/rhn/ gatherer.log``。
+
+
+
+== 在 VMWare 上对 SSL 错误进行查错
+
+如果您在配置安装的 VMWare 时遇到 SSL 错误，需要下载 VMWare 提供的 CA 证书文件，并在 {productname} 上信任该证书。
+
+
+
+.过程：信任 VMWare CA 证书
+. 从您安装的 VMWare 中下载 CA 证书。
+    您可以通过登录 vCenter {webui} 并单击 btn:[下载可信根 CA 证书] 来实现此目的。
+. 如果下载的 CA 证书文件为 ``.zip`` 格式，请解压缩该存档文件。
+    证书文件的扩展名有多种。 例如，``certificate.0``。
+. 将证书文件复制到 {productname} 服务器上并保存到 [path]``/etc/pki/trust/anchors/`` 目录中。
+. 将复制的证书的文件名后缀改为 ``.crt`` 或 ``.pem``。
+. 在 {productname} 服务器上的命令提示符处更新 CA 证书记录：
++
+----
+update-ca-certificates
+----

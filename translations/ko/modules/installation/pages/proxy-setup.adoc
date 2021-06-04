@@ -1,0 +1,239 @@
+[[proxy-setup]]
+= SUSE Manager 프록시 설정
+
+{productname} 프록시를 추가적으로 구성해야 합니다.
+
+[NOTE]
+.프록시 체인
+====
+Salt 프록시를 체인에서 정렬할 수 있습니다. 이 경우 업스트림 프록시의 이름은 ‘parent’입니다.
+====
+
+TCP 포트 ‘4505’ 및 ‘4506’이 프록시에서 열려 있는지 확인합니다. 프록시는 해당 포트에서 {productname} 서버 또는 상위 프록시로 연결할 수 있어야 합니다.
+
+
+
+[[at.manager.proxy.run.copycert]]
+== 서버 인증서 및 키 복사
+
+프록시는 일부 SSL 정보를 {productname} 서버와 공유합니다. {productname} 서버 또는 상위 프록시에서 인증서 및 키를 복사합니다.
+
+root로 {productname} 서버 또는 상위 프록시(이름: [replaceable]``PARENT``)를 사용하여 프록시에서 다음 명령을 입력합니다.
+
+----
+mkdir -m 700 /root/ssl-build
+cd /root/ssl-build
+ scp root@PARENT:/root/ssl-build/RHN-ORG-PRIVATE-SSL-KEY .
+ scp root@PARENT:/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT .
+ scp root@PARENT:/root/ssl-build/rhn-ca-openssl.cnf .
+----
+
+
+[NOTE]
+====
+보안 체인을 원래 상태로 유지하려면 {productname} 프록시 기능의 SSL 인증서가 {productname} 서버 인증서와 동일한 CA에 의해 서명되어야 합니다. 프록시와 서버에서 다른 CA로 서명된 인증서를 사용하는 것은 지원되지 않습니다.
+====
+
+
+
+[[at.manager.proxy.run.confproxy]]
+== [command]``configure-proxy.sh`` 실행
+
+[command]``configure-proxy.sh`` 스크립트는 {productname} 프록시 설정을 완료합니다.
+
+대화형 [command]``configure-proxy.sh`` 스크립트를 실행합니다. 추가적으로 입력하지 않고 kbd:[Enter]를 눌러 스크립트가 괄호 ``[]`` 사이에 입력된 기본값을 사용하도록 합니다. 요청되는 설정에 대한 정보는 다음과 같습니다.
+
+{productname} 상위 항목:: {productname} 상위 항목은 다른 프록시 또는 {productname} 서버일 수 있습니다.
+
+HTTP 프록시::
+HTTP 프록시를 사용하면 {productname} 프록시가 웹에 액세스할 수 있습니다. 방화벽에 의해 웹에 직접 액세스할 수 없는 경우 HTTP 프록시가 필요합니다.
+
+전자 메일 역추적::
+문제를 보고할 전자 메일 주소입니다.
+
+SSL 사용::
+보안을 위해 ``Y``를 누릅니다.
+
+기존 인증서를 가져오시겠습니까?::
+``N``을 선택합니다. 그러면 이전에 {productname} 서버에서 복사한 새 인증서가 사용됩니다.
+
+조직::
+다음 질문은 프록시의 SSL 인증서 사용 특성에 대한 것입니다. 물론 프록시가 기본 서버와 동일한 조직에 위치하지 않는 경우 조직은 서버에서 사용된 조직과 동일할 수 있습니다.
+
+조직 단위::
+기본값은 프록시의 호스트 이름입니다.
+
+구/군/시::
+프록시의 인증서에 첨부된 추가 정보입니다.
+
+시/도::
+프록시의 인증서에 첨부된 추가 정보입니다.
+
+국가 코드::
+{productname} 설치 중 설정한 국가 코드를 [guimenu]``국가 코드`` 필드에 입력합니다. 예를 들어, 프록시가 미국에 위치하고 {productname}가 독일에 위치한 경우 프록시에 ‘DE’를 입력합니다.
++
+
+[NOTE]
+====
+국가 코드는 대문자 2자여야 합니다. 전체 국가 코드 목록은 https://www.iso.org/obp/ui/#search를 참조하십시오.
+====
+
+Cname 별칭(공백으로 구분)::
+여러 DNS CNAME 별칭으로 프록시에 액세스할 수 있는 경우 사용합니다. 그러지 않으면 비워둘 수 있습니다.
+
+CA 비밀번호::
+{productname} 서버의 인증서에서 사용한 비밀번호를 입력합니다.
+
+SSH-Push Salt Minion을 프록시하기 위해 기존 SSH 키를 사용하시겠습니까?::
+서버의 SSH-Push Salt 클라이언트에서 사용한 SSH 키를 재사용하려면 이 옵션을 사용합니다.
+
+구성 채널 rhn_proxy_config_1000010001을 생성하고 채우시겠습니까?::
+기본값 ``Y``를 사용합니다.
+
+SUSE Manager 사용자 이름::
+{productname} 서버와 동일한 사용자 이름 및 비밀번호를 사용합니다.
+
+CA 키 및 공인 인증서와 같이 일부가 누락된 경우, 스크립트는 필요한 파일을 통합하기 위해 실행해야 하는 명령을 출력합니다. 필수 파일이 복사되면 [command]``configure-proxy.sh`` 명령을 다시 실행합니다. 스크립트를 실행하는 동안 HTTP 오류가 수신되면 스크립트를 다시 실행합니다.
+
+[command]``configure-proxy.sh``는 [systemitem]``squid``, [systemitem]``apache2``, [systemitem]``salt-broker`` 및 [systemitem]``jabberd`` 등 {productname} 프록시에 필요한 서비스를 활성화합니다.
+
+프록시 시스템 및 클라이언트의 상태를 확인하려면 {webui}에서 프록시 시스템의 상세 정보 페이지(menu:시스템[프록시], 시스템 이름)를 클릭합니다. [guimenu]``연결`` 및 [guimenu]``Proxy`` 하위 탭에는 다양한 상태 정보가 표시됩니다.
+
+
+
+[[proxy.pxe.setup]]
+== PXE 부팅 활성화
+
+
+
+[[proxy.pxe.sync]]
+=== 프로파일과 시스템 정보 동기화
+
+프록시를 통한 PXE 부팅을 활성화하려면 {productname} 프록시와 {productname} 서버에서 모두 추가 소프트웨어가 설치 및 구성되어야 합니다.
+
+. {productname} 프록시에 [package]``susemanager-tftpsync-recv`` 패키지를 설치합니다.
++
+
+----
+zypper in susemanager-tftpsync-recv
+----
+
+. {productname} 프록시에서 [command]``configure-tftpsync.sh`` 설정 스크립트를 실행한 후 요청되는 정보를 입력합니다.
++
+
+----
+configure-tftpsync.sh
+----
++
+
+{productname} 서버 및 프록시의 호스트 이름과 IP 주소를 입력해야 합니다. 또한 프록시의 tftpboot 디렉토리 경로도 입력해야 합니다.
+
+. {productname} 서버에 [package]``susemanager-tftpsync``를 설치합니다.
++
+
+----
+zypper in susemanager-tftpsync
+----
+
+. {productname} 서버에서 [command]``configure-tftpsync.sh``를 실행합니다.
+    그러면 구성이 생성되어 {productname} 프록시에 업로드됩니다.
++
+
+----
+configure-tftpsync.sh FQDN_of_Proxy
+----
+
+. {productname} 서버에서 최초 동기화를 시작합니다.
++
+
+----
+cobbler sync
+----
++
+
+즉시 동기화해야 하는 Cobbler 내에서 변경한 후에도 수행할 수 있습니다. 그러지 않으면 Cobbler 동기화가 필요할 때 자동으로 실행됩니다. Cobbler에서 제공하는 자동 설치에 대한 자세한 내용은 xref:client-configuration:autoinst-intro.adoc[운영 체제 설치]를 참조하십시오.
+
+
+
+[[proxy.pxe.dhcp]]
+=== {productname} 프록시를 통해 PXE용 DHCP 구성
+
+{productname}에서는 클라이언트 프로비저닝을 위해 Cobbler를 사용합니다. PXE(tftp)가 설치되고 기본적으로 활성화됩니다. 클라이언트는 DHCP를 사용하여 {productname} 프록시에서 PXE 부팅을 찾을 수 있어야 합니다. 프로비저닝할 클라이언트가 포함된 영역에서 이 DHCP 구성을 사용하십시오.
+
+----
+next-server: <IP_Address_of_Proxy>
+filename: \pxelinux.0\n
+----
+
+
+
+[[replace-susemgrproxy]]
+== {productname} 프록시 바꾸기
+
+프록시는 연결된 클라이언트에 대한 정보를 저장하지 않으므로 언제든지 프록시를 바꿀 수 있습니다. 이 프로세스는 재활성화 키를 사용하여 처리되므로 프록시 기록이 손실되지 않습니다. 재활성화 키를 사용하지 않으면 대체 프록시가 새 ID를 가진 새 프록시가 됩니다. 대체 프록시의 이름 및 IP 주소는 이전 프록시와 동일해야 합니다.
+
+또한, 기존 프록시에서 Salt 프록시로 프록시를 다시 설치하여 변경할 수도 있습니다.
+
+
+[IMPORTANT]
+====
+프록시를 설치하는 동안 클라이언트는 {productname} 서버와 통신할 수 없습니다. 프록시를 삭제한 후에는 시스템 목록이 일시적으로 올바르지 않을 수 있습니다. 이전에 프록시에 연결된 모든 클라이언트는 대신 서버에 직접 연결된 것으로 표시됩니다. 클라이언트에서 첫 번째 작업(예: 원격 명령 실행 또는 패키지나 패치 설치)이 수행된 후 이 정보가 자동으로 수정됩니다. 이 작업에는 몇 시간이 걸릴 수 있습니다.
+====
+
+
+
+=== 프록시 바꾸기
+
+기존 프록시를 종료한 후 대체 프록시를 준비하는 동안 설치된 상태를 유지하십시오. 이 시스템을 위한 재활성화 키를 생성한 후 재활성화 키를 사용하여 새 프록시를 등록하십시오. 재활성화 키를 사용하지 않으면 새 프록시에 모든 클라이언트를 다시 등록해야 합니다.
+
+
+
+.절차: 기존 프록시 바꾸기 및 등록된 클라이언트 유지
+. 마이그레이션을 시작하기 전, 필요한 경우 이전 프록시의 데이터를 저장하십시오. 새 프록시에서도 액세스할 수 있는 중앙 위치에 중요한 데이터 또는 사용자 정의 데이터를 복사하는 것이 좋습니다.
+. 기존 프록시를 종료하십시오.
+. 새 {productname} 프록시를 설치합니다. 설치 지침은 xref:install-proxy-unified.adoc[프록시 설치]를 참조하십시오.
+. {productname} {webui}에서 새로 설치한 {productname} 프록시를 선택한 후 시스템 목록에서 삭제합니다.
+. {webui}에서 이전 프록시 시스템에 대한 재활성화 키를 만듭니다. 이전 프록시의 [guimenu]``System Details``탭에서 [guimenu]``Reactivation``을 클릭합니다. [guimenu]``Generate New Key``를 클릭하고 새 키를 기록해 둡니다.
+. xref:installation:proxy-registration.adoc[]에서의 설명과 같이 부트스트랩 스크립트를 사용하여 새 프록시를 등록하십시오. 부트스트랩 스크립트에서 다음을 사용하여 재활성화 키를 설정합니다.
+. 이전에 생성한 백업에서 프록시 데이터를 복구하십시오. 이 절차의 1단계를 참조하십시오.
+
+Salt 프록시의 경우 일부 추가 단계를 수행한 후 새 프록시를 부트스트랩해야 합니다.
+
+
+
+.절차: Salt 프록시 바꾸기 및 등록된 클라이언트 유지
+. 마이그레이션을 시작하기 전, 필요한 경우 이전 프록시의 데이터를 저장하십시오. 새 프록시에서도 액세스할 수 있는 중앙 위치에 중요한 데이터 또는 사용자 정의 데이터를 복사하는 것이 좋습니다.
+. 기존 프록시를 종료하십시오.
+. {webui}에서 이전 프록시 시스템에 대한 재활성화 키를 만듭니다. 이전 프록시의 [guimenu]``System Details``탭에서 [guimenu]``Reactivation``을 클릭합니다. [guimenu]``Generate New Key``를 클릭하고 새 키를 기록해 둡니다.
+. {webui}에서 menu:Salt[키]로 이동하여 이전 프록시와 연결된 Salt 키를 찾은 다음 btn:[삭제]를 클릭합니다.
+. 새 {productname} 프록시를 설치합니다. 설치 지침은 xref:install-proxy-unified.adoc[프록시 설치]를 참조하십시오.
+. xref:installation:proxy-registration.adoc[]에서의 설명과 같이 부트스트랩 스크립트를 사용하여 새 프록시를 등록하십시오. 부트스트랩 스크립트에서 다음을 사용하여 재활성화 키를 설정합니다.
+. 이전에 생성한 백업에서 프록시 데이터를 복구하십시오. 이 절차의 1단계를 참조하십시오.
+
+재활성화 키 사용에 대한 자세한 내용은 xref:client-configuration:activation-keys.adoc[]을 참조하십시오.
+
+새 프록시를 설치한 후에는 다음을 수행할 수도 있습니다.
+
+* 중앙에 저장한 데이터를 새 프록시 시스템에 복사
+* 필요한 다른 소프트웨어 설치
+* 자동 설치를 위해 프록시가 사용되는 경우 TFTP 동기화 설정
+
+
+
+=== 기존에서 Salt로 프록시 변경
+
+프록시를 다시 설치하여 기존 프록시에서 Salt 프록시로 전환할 수 있습니다. 이 방법에서는 재활성화 키 대신 원래 프록시를 등록할 때 사용한 것과 동일한 활성화 키를 다시 사용합니다. 즉, 클라이언트를 다시 등록할 필요가 없습니다.
+
+
+
+.절차: 기존 프록시를 Salt 프록시로 바꾸기
+. 마이그레이션을 시작하기 전, 필요한 경우 이전 프록시의 데이터를 저장하십시오. 새 프록시에서도 액세스할 수 있는 중앙 위치에 중요한 데이터 또는 사용자 정의 데이터를 복사하는 것이 좋습니다.
+. 프록시를 종료합니다.
+. 새 {productname} 프록시를 설치한 후 바꾸려는 프록시와 IP 주소가 동일한지 확인합니다. 설치 지침은 xref:install-proxy-unified.adoc[Proxy Installation]을 참조하십시오.
+. xref:installation:proxy-registration.adoc[]에서의 설명과 같이 부트스트랩 스크립트를 사용하여 프록시를 등록하십시오. 부트스트랩 스크립트에서 다음을 사용하여 재활성화 키를 설정합니다.
+
+새 프록시를 설치한 후에는 다음을 수행할 수도 있습니다.
+
+* 중앙에 저장한 데이터를 새 프록시 시스템에 복사
+* 필요한 다른 소프트웨어 설치
+* 자동 설치를 위해 프록시가 사용되는 경우 TFTP 동기화 설정

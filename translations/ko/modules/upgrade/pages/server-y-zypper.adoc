@@ -1,0 +1,57 @@
+[[server-y-zypper]]
+= 서버 - Zypper를 사용한 부 버전 업그레이드
+
+
+Zypper를 사용하여 업그레이드하려면 Zypper 마이그레이션 도구를 사용하십시오.
+
+
+[NOTE]
+====
+{productname} 4.0에서 4.2로 업그레이드하기 전 게시되지 않은 패키지가 없는지 확인합니다. menu:패치[패치 관리 > 게시되지 않음]으로 이동하여 게시되지 않은 패키지를 확인합니다. 해당 패키지를 게시하거나 삭제한 후 업그레이드해야 합니다.
+====
+
+
+
+.절차: Zypper를 사용한 업그레이드
+
+. 명령 프롬프트에서 root로 Spacewalk 서비스가 실행되고 있지 않은지 확인합니다.
++
+----
+spacewalk-service stop
+----
++ 
+. Zypper 마이그레이션 도구를 실행합니다.
++
+----
+zypper migration
+----
+Zypper에 가능한 마이그레이션 대상과 함께 자세한 요약 정보가 표시됩니다.
+. 적절한 대상을 선택하고 프롬프트를 따라 마이그레이션을 완료합니다.
+. 서버를 재부팅합니다.
+. 재부팅되면, PostgreSQL 데이터베이스가 버전{nbsp}13으로 마이그레이션될 때까지 {productname} Spacewalk 서비스가 실행되지 않습니다.
+. 텍스트 콘솔에 root로 로그인하고 4.1에서 4.2로 업그레이드하는 경우 데이터베이스 마이그레이션 스크립트를 실행합니다.
++
+----
+/usr/lib/susemanager/bin/pg-migrate-12-to-13.sh
+----
+. 4.0에서 4.2로 업그레이드하는 경우 데이터베이스 마이그레이션 스크립트 실행:
++
+----
+/usr/lib/susemanager/bin/pg-migrate-10-to-13.sh
+----
+. Spacewalk 서비스가 실행 중인지 확인합니다.
++
+----
+spacewalk-service start
+----
++
+[NOTE]
+====
+[command]``spacewalk-schema-upgrade``는 더 이상 필요하지 않습니다. [command]``spacewalk-service start`` 중에 자동으로 실행됩니다.
+====
+
+프로세스가 실패하면 먼저 다음 문제를 확인합니다.
+
+* Zypper에 사용할 수 있는 마이그레이션 도구가 없으면 [package]``zypper-migration-plugin`` 패키지를 설치합니다.
+* 사용할 수 있는 기존 업데이트가 있는 경우 Zypper에서 사용자에게 알리고 먼저 설치할 것을 요청합니다.
+    모든 업데이트를 설치한 후 업그레이드를 수행해야 합니다.

@@ -1,0 +1,322 @@
+[[clients-rh-rhui]]
+= 使用 RHUI 注册 {rhel} 客户端
+
+如果您是直接运行 {rhel} 客户端而不是使用 {sleses} 来运行，则需要使用 Red Hat 来源检索并更新软件包。 本节包含有关使用 {redhat} 更新基础结构 (RHUI) 注册运行 {rhel} 操作系统的传统客户端和 Salt 客户端的信息。 如果您是在公有云（如 Amazon EC2）中运行客户端，请使用此方法。
+
+可以将 RHUI 与 {redhat} 内容分发网络 (CDN) 搭配使用来管理您的 {rhel} 订阅。 有关使用 {redhat} CDN 的信息，请参见 xref:client-configuration:clients-rh-cdn.adoc[]。
+
+
+
+[IMPORTANT]
+====
+{rhel} 客户端基于 {redhat}，与 {sleses}、RES 或 {sles} 不相关。 您需负责将 {productname} 服务器连接到 {redhat} 更新基础结构。 所有使用此 RHUI 证书进行更新的客户端都需要获得正确许可，有关详细信息，请咨询您的云服务提供商，并查看服务的 {redhat} 条款。
+====
+
+[NOTE]
+====
+当使用 RHUI 注册的 {rhel} 客户端关闭时，{redhat} 可能会声称证书无效。 在此情况下，您需要再次打开客户端，或获取新的 RHUI 证书。
+====
+
+
+[NOTE]
+====
+传统客户端仅适用于 {rhel}{nbsp}6 和 7。 当 {rhel}{nbsp} 8 客户端为 Salt 客户端时才受支持。
+====
+
+
+
+== 导入权利和证书
+
+{redhat} 客户端需要 {redhat} 证书颁发机构 (CA) 和权利证书以及权利密钥。
+
+{redhat} 客户端使用 URL 来复制储存库。 URL 更改取决于 {redhat} 客户端是在何处注册的。
+
+{redhat} 客户端可通过三种方式注册：
+
+* redhat.com 上的 {redhat} 内容分发网络 (CDN)
+* {redhat} 从属服务器
+* 云中的 {redhat} 更新基础结构 (RHUI)
+
+本指南将介绍注册到 {redhat} 更新基础结构 (RHUI) 的客户端。 您至少须有一个注册到 RHUI 的系统并拥有授权订阅，以获得储存库内容。
+
+而有关使用 {redhat} 内容分发网络 (CDN) 的信息，请参见 xref:client-configuration:clients-rh-cdn.adoc[]。
+
+
+[IMPORTANT]
+====
+要为客户端系统使用从属证书，必须有从属服务器和订阅。 {productname} 服务器不支持使用从属证书的客户端。
+====
+
+
+需要将客户端系统中的权利证书和密钥复制到 {productname} 服务器可访问的位置。
+
+The keys and certificates might have slightly different names to those shown here. Your entitlement certificate and the {redhat} CA Certificate file have file extensions of [path]``.crt``. The key has a file extension of [path]``.key``.
+
+
+
+.过程：将证书复制到服务器
+. Copy your entitlement certificate and key from the client system, to a location that the {productname} Server can access. Amazon EC2:
++
+----
+cp /etc/pki/rhui/product/content-<version>.crt /<example>/entitlement/
+cp /etc/pki/rhui/content-<version>.key /<example>/entitlement/
+----
++
+Google Cloud Platform:
++
+----
+cp /etc/pki/rhui/product/content.crt /<example>/entitlement/
+cp /etc/pki/rhui/key.pem /<example>/entitlement/
+----
++
+. 将客户端系统中的 {redhat} CA 证书文件复制到权利证书和密钥所在的相同位置：
++
+Amazon EC2：
++
+----
+cp /etc/pki/rhui/cdn.redhat.com-chain.crt /<example>/entitlement
+----
++
+Google Cloud Platform:
++
+----
+cp /etc/pki/rhui/ca.crt /<example>/entitlement
+----
+
+
+要管理 {redhat} 客户端上的储存库，您需要将 CA 和权利证书导入 {productname} 服务器。 这需要您执行三次导入过程以创建相应的三项： 三项分别对应权利证书、权利密钥和 {redhat} 证书。
+
+
+
+.过程：将证书导入服务器
+
+. 在 {productname} 服务器 {webui} 上，导航到menu:系统[自动安装 > GPG 和 SSL 密钥]。
+. 单击 btn:[创建储存的密钥/证书]，并为权利证书设置下列参数：
+* 在[guimenu]``说明``字段中，键入 [systemitem]``Entitlement-Cert-Date``。
+* 在[guimenu]``类型``字段中，选择 [systemitem]``SSL``。
+* 在[guimenu]``选择要上载的文件``字段中，浏览到您保存权利证书的位置，然后选择 [path]``.crt`` 证书文件。
+. 单击 btn:[创建密钥]。
+. 单击 btn:[创建储存的密钥/证书]，并为权利密钥设置下列参数：
+* 在[guimenu]``说明``字段中，键入 [systemitem]``Entitlement-Key-Date``。
+* 在[guimenu]``类型``字段中，选择 [systemitem]``SSL``。
+* 在[guimenu]``选择要上载的文件``字段中，浏览到您保存权利密钥的位置，然后选择 [path]``.key`` 密钥文件。
+. 单击 btn:[创建密钥]。
+. 单击 btn:[创建储存的密钥/证书]，并为 {redhat} 证书设置下列参数：
+* 在[guimenu]``说明``字段中，键入 [systemitem]``redhat-cert``。
+* 在[guimenu]``类型``字段中，选择 [systemitem]``SSL``。
+* 在[guimenu]``选择要上载的文件``字段中，浏览到您保存 {redhat} 证书的位置，然后选择证书文件。
+. 单击 btn:[创建密钥]。
+
+
+
+== 准备自定义储存库和频道
+
+要从 RHUI 镜像软件，您需要在 {productname} 中创建自定义频道和储存库，它们都将通过 URL 链接到 RHUI。 您必须在 Red Hat 门户中拥有这些产品的权利，此功能才能正常工作。 可以使用 yum 实用程序获得要镜像的储存库的 URL：
+
+----
+yum repolist -v | grep baseurl
+----
+
+可以使用这些储存库 URL 来创建自定义储存库。 这样您便可只镜像管理客户端所需的内容。
+
+[IMPORTANT]
+====
+如果您在 {redhat} 门户中拥有正确的权利，就可以只创建 {redhat} 储存库的自定义版本。
+====
+
+
+此过程所需的细节包括：
+
+[[redhat-rhui-repos-manual]]
+[cols="1,1", options="header"]
+.Red Hat 自定义储存库设置
+|===
+| 选项                 | 设置
+|储存库 URL         | RHUI 提供的内容 URL
+| 包含已签名的元数据？   | 取消选中所有 {redhat} Enterprise 储存库
+|SSL CA 证书     | [systemitem]``redhat-cert``
+| SSL 客户端证书 | [systemitem]``Entitlement-Cert-Date``
+| SSL 客户端密钥         | [systemitem]``Entitlement-Key-Date``
+|===
+
+
+include::snippets/manual_repos.adoc[]
+
+
+
+此过程所需的频道包括：
+
+[[redhat-rhui-channels-custom]]
+[cols="1,1,1", options="header"]
+.Red Hat 自定义频道
+|===
+| 操作系统版本 | 基础产品          | 基础频道
+|{redhat} 6 | RHEL6 Base x86_64 | rhel6-pool-x86_64
+| {redhat} 7 | RHEL7 Base x86_64 | rhel7-pool-x86_64
+| {redhat} 8 | RHEL 或 SLES ES 或 CentOS 8 Base | rhel8-pool-x86_64
+|===
+
+
+include::snippets/manual_channels.adoc[]
+
+[IMPORTANT]
+====
+对于 {redhat} 8 客户端，请添加基础频道和 AppStream 频道。 您需要来自这两个频道的软件包。 如果未添加这两个频道，将会因缺少软件包而无法创建引导储存库。
+====
+
+
+include::snippets/manual_associate.adoc[]
+
+
+
+== 添加软件频道
+
+将 {redhat} 客户端注册到您的 {productname} 服务器之前，您需要添加所需的软件频道，并同步这些频道。
+
+ifeval::[{suma-content} == true]
+
+拥有 {susemgr} 订阅，您便能使用 {sleses}（也称为 {redhat} 扩展支持或 RES）的工具频道。 必须使用客户端工具频道来创建引导储存库。 此过程适用于 Salt 客户端和传统客户端。
+endif::[]
+
+ifeval::[{suma-content} == true]
+
+此过程所需的产品包括：
+
+[[redhat-rhui-channels-wizard]]
+[cols="1,1", options="header"]
+.Red Hat 产品 - WebUI
+|===
+| 操作系统版本 | 产品名称
+|{redhat} 6 | RHEL6 Base x86_64
+|{redhat} 7 | RHEL7 Base x86_64
+| {redhat} 8 | RHEL 或 SLES ES 或 CentOS 8 Base
+|===
+
+
+include::snippets/addchannels_vendor_webui.adoc[]
+
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+此过程所需的频道包括：
+
+[[redhat-rhui-channels-cli]]
+[cols="1,1,1,1", options="header"]
+.Red Hat 频道 - CLI
+|===
+
+| 操作系统版本
+|基础频道
+|客户端频道
+|工具频道
+
+|{redhat} 6
+| rhel-x86_64-server-6
+|-
+| res6-suse-manager-tools-x86_64
+
+| {redhat} 7
+| rhel-x86_64-server-7
+|-
+| res7-suse-manager-tools-x86_64
+
+| {redhat} 8
+|rhel-x86_64-server-8
+|-
+| res8-suse-manager-tools-x86_64
+
+|===
+
+
+include::snippets/addchannels_novendor_cli.adoc[]
+
+
+[NOTE]
+====
+[command]``spacewalk-common-channels`` 提供的客户端工具频道来自 {uyuni} 而非 {suse}。
+====
+
+endif::[]
+
+
+include::snippets/appstream_admon.adoc[]
+
+
+要使用 RHUI，需要将所需的 HTTP 标头手动添加到配置文件。 没有这些标头，将无法成功执行客户端同步。
+
+
+
+.过程：将 HTTP 标头添加到配置文件
+. 从您的 RHUI 实例中找到 [systemitem]``X-RHUI-ID`` 和 [systemitem]``X-RHUI-SIGNATURE`` HTTP 标头。
+    您可以在 {redhat} 客户端上使用以下命令从 [systemitem]``169.254.169.254`` 处的云实例元数据 API 中获得值：
++
+----
+echo "X-RHUI-ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document|base64|tr -d '\n')"
+echo "X-RHUI-SIGNATURE=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/signature|base64|tr -d '\n')"
+----
+. 打开 [path]``/etc/rhn/spacewalk-repo-sync/extra_headers.conf`` 配置文件，使用正确信息添加或编辑下面几行：
++
+----
+[channel_label]
+X-RHUI-ID=value
+X-RHUI-SIGNATURE=value
+----
+
+
+
+
+== 检查同步状态
+
+ifeval::[{suma-content} == true]
+
+
+include::snippets/check_sync_webui_suma.adoc[]
+
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+
+include::snippets/check_sync_webui_uyuni.adoc[]
+
+
+endif::[]
+
+
+include::snippets/check_sync_cli.adoc[]
+
+
+[NOTE]
+====
+{rhel} 频道可能会非常大。 同步所需的时间可能会长达数小时。
+====
+
+
+
+ifeval::[{uyuni-content} == true]
+== 在客户端上信任 GPG 密钥
+
+include::snippets/trust_gpg.adoc[]
+
+endif::[]
+
+
+
+== 注册客户端
+
+要注册您的 {redhat} 客户端，需要有引导储存库。 默认会自动创建并且每天会为所有同步的产品重新生成引导储存库。 您可以在命令提示符处使用以下命令手动创建引导储存库：
+
+----
+mgr-create-bootstrap-repo
+----
+
+有关注册客户端的详细信息，请参见 xref:client- configuration:registration-overview.adoc[]。
+
+
+[WARNING]
+====
+要注册和使用 {rhel}{nbsp}6 客户端，您需要配置 {productname} 服务器以支持较旧类型的 SSL 加密。 有关详细信息，请参见 xref:client-configuration: tshoot-clients.adoc[] 中的``注册较旧的客户端``。
+====

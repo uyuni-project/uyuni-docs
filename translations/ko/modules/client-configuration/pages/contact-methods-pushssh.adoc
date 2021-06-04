@@ -1,0 +1,162 @@
+[[contact-methods-pushssh]]
+= SSH를 통한 푸시
+
+
+SSH를 통한 푸시는 기존 클라이언트가 {productname} 서버에 직접 도달할 수 없는 환경에서 사용됩니다. 이 환경에서 클라이언트는 방화벽으로 보호되는 영역인 DMZ라는 곳에 있습니다. DMZ 내의 어떤 시스템도 {productname} 서버를 포함한 내부 네트워크에 연결할 권한이 없습니다.
+
+SSH를 통한 푸시 방법은 DMZ에 있는 클라이언트에 대한 내부 네트워크의 {productname} 서버에서 암호화된 터널을 생성합니다. 모든 작업과 이벤트가 실행되고 나면 터널이 종료됩니다.
+
+서버는 SSH를 사용해 정기적으로 클라이언트에 연결하여 체크인하고 예약된 작업과 이벤트를 수행합니다.
+
+이 연결 방법은 기존 클라이언트에 대해서만 작동합니다. Salt 클라이언트에 대해서는 Salt SSH를 통한 푸시를 사용하십시오.
+
+
+[IMPORTANT]
+====
+조달 모델을 사용한 시스템 재설치는 SSH를 통한 푸시로 관리되는 클라이언트에서는 현재 지원되지 않습니다.
+====
+
+
+This image demonstrates the push via SSH process path. All items left of the [systemitem]``Taskomatic`` block represent processes running on the {productname} client.
+
+image::sshpush-taigon.png[scaledwidth=80%]
+
+
+SSH를 통한 터널링 연결의 경우 사용 가능한 포트 번호가 두 개 필요합니다. 하나는 터널링 HTTP를 위한 것이고 다른 하나는 HTTPS를 통한 터널링을 위한 것입니다(HTTP는 등록 프로세스 중에만 필요함). 기본적으로 사용되는 포트 번호는 `1232` 및 `1233`입니다. 이 번호를 덮어쓰려면 다음과 같이 1024보다 큰 사용자 정의 포트 번호 두 개를 [path]``/etc/rhn/rhn.conf``에 추가하면 됩니다.
+
+----
+ssh_push_port_http = high_port_1
+ssh_push_port_https = high_port_2
+----
+
+
+IP 주소 대신에 호스트 이름을 사용해 클라이언트에 연결하고 싶다면 다음 옵션을 설정하십시오.
+
+----
+ssh_push_use_hostname = true
+----
+
+
+클라이언트에 병렬로 연결하는 데 사용할 스레드의 수를 조정할 수도 있습니다. 기본적으로 두 개의 병렬 스레드를 사용합니다. [path]``/etc/rhn/rhn.conf``에서 [systemitem]``taskomatic.ssh_push_workers``를 다음과 같이 설정합니다.
+
+----
+taskomatic.ssh_push_workers = number
+----
+
+
+보안상의 이유로 sudo를 SSH와 함께 사용해 루트 권한 대신에 권한이 없는 사용자로 시스템에 액세스하고 싶을 때가 있을 수 있습니다.
+
+
+.절차: 권한이 없는 SSH 액세스 구성
+. {productname} 서버에 최신 [path]``spacewalk-taskomatic`` 및 [path]``spacewalk-certs-tools`` 패키지가 설치되어 있는지 확인합니다.
+. 각 클라이언트 시스템에서 적절한 권한 없는 사용자를 생성합니다.
+. 각 클라이언트 시스템에서 [path]``/etc/sudoers`` 파일을 열고 다음과 같은 줄을 코멘트 아웃합니다.
++
+----
+#Defaults targetpw   # ask for the password of the target user i.e. root
+#ALL    ALL=(ALL) ALL   # WARNING! Only use this together with 'Defaults  targetpw'!
+----
+. 각 클라이언트 시스템의 ‘사용자 권한 사양’ 섹션에서 다음과 같은 줄을 추가합니다.
++
+----
+<user> ALL=(ALL) NOPASSWD:/usr/sbin/mgr_check
+<user> ALL=(ALL) NOPASSWD:/home/<user>/enable.sh
+ <user> ALL=(ALL) NOPASSWD:/home/<user>/bootstrap.sh
+----
+. 각 클라이언트 시스템의 [path]``/home/<user>/.bashrc`` 파일에 다음과 같은 줄을 추가합니다.
++
+----
+PATH=$PATH:/usr/sbin
+export PATH
+----
+. {productname} 서버의 [path]``/etc/rhn/rhn.conf`` 구성 파일에서 다음과 같은 줄을 추가하거나 수정하여 권한이 없는 사용자 이름을 포함합니다.
++
+----
+ssh_push_sudo_user = <user>
+----
+
+
+클라이언트가 DMZ에 있어 서버에 도달할 수 없으므로 [command]``mgr-ssh-push-init`` 도구를 사용해 {productname} 서버에 클라이언트를 등록해야 합니다.
+
+도구를 사용하려면 클라이언트 호스트 이름 또는 IP 주소와 {productname} 서버의 유효한 부트스트랩 스크립트에 대한 경로가 필요합니다. 부트스트래핑에 대한 자세한 내용은 xref:client-configuration:registration-bootstrap.adoc[]을 참조하십시오.
+
+부트스트랩 스크립트에는 SSH를 통한 푸시에 대해 구성된 활성화 키가 연결돼 있어야 합니다. 활성화 키에 대한 자세한 내용은 xref:client-configuration:activation-keys.adoc[]를 참조하십시오.
+
+시작하기 전에 SSH 터널링에 사용할 포트를 지정했는지 확인해야 합니다. 포트 번호를 변경하기 전에 클라이언트를 등록한 경우 다시 등록해야 합니다.
+
+[NOTE]
+====
+SSH를 통한 푸시로 관리되는 클라이언트는 서버에 직접 도달할 수 없습니다. [command]``mgr-ssh-push-init`` 도구를 사용하는 경우 [systemitem]``rhnsd`` 데몬이 비활성화됩니다.
+====
+
+
+.절차: SSH를 통한 푸시로 클라이언트 등록
+. {productname} 서버의 명령 프롬프트에서 루트 권한으로 다음 명령을 실행합니다.
++
+----
+# mgr-ssh-push-init --client <client> --register \
+/srv/www/htdocs/pub/bootstrap/bootstrap_script --tunnel
+----
++
+옵션: 터널링을 사용하고 싶지 않다면 [command]``--tunnel`` 옵션을 제거하면 됩니다.
+. 옵션: [command]``ssh_push_sudo_user``를 정의했다면 [command]``--notty`` 옵션을 추가하여 루트 비밀번호 사용을 허용할 수 있습니다.
+. 다음과 같이 SSH 연결이 활성화되어 있는지 확인합니다.
++
+----
+# ssh -i /root/.ssh/id_susemanager -R <high_port>:<susemanager>:443 \
+<client> zypper ref
+----
+
+
+
+.예: SSH를 통한 푸시에 대한 API 액세스
+
+API를 사용해 어떤 연결 방법을 사용할지 관리할 수 있습니다. 다음 Python 코드 예제에서는 연결 방법을 ``ssh-push``로 설정합니다.
+
+유효한 값은 다음과 같습니다.
+
+* `default`(풀)
+* `ssh-push`
+* `ssh-push-tunnel`
+
+----
+client = xmlrpclib.Server(SUMA_HOST + \/rpc/api\, verbose=0)
+key = client.auth.login(SUMA_LOGIN, SUMA_PASSWORD)
+ client.system.setDetails(key, 1000012345, {'contact_method' : 'ssh-push'})
+----
+
+
+
+이미 등록한 클라이언트가 있는데 이 클라이언트를 마이그레이션하여 SSH를 통한 푸시를 사용하고 싶다면 몇 가지 단계가 추가로 필요합니다. [command]``mgr-ssh-push-init`` 도구를 사용해 클라이언트를 설정할 수 있습니다.
+
+
+.절차: 등록한 시스템을 SSH를 통한 푸시로 마이그레이션
+. {productname} 서버의 명령 프롬프트에서 루트 권한으로 다음과 같이 클라이언트를 설정합니다.
++
+----
+# mgr-ssh-push-init --client <client> \
+/srv/www/htdocs/pub/bootstrap/bootstrap_script --tunnel
+----
+. {productname} {webui}를 사용해 클라이언트의 연결 방법을 `ssh-push` 또는 `ssh-push-tunnel`로 변경합니다.
+. 옵션: 기존 활성화 키를 편집해야 하는 경우 다음 명령을 사용할 수 있습니다.
++
+----
+client.activationkey.setDetails(key, '1-mykey', {'contact_method' :  'ssh-push'})
+----
+
+
+
+You can also use Push via SSH for clients that connect using a proxy. Ensure your proxy is updated before you begin.
+
+.절차: SSH를 통한 푸시로 클라이언트를 프록시에 등록
+. {productname} 프록시의 명령 프롬프트에서 루트 권한으로 다음과 같이 클라이언트를 설정합니다.
++
+----
+# mgr-ssh-push-init --client <client> \
+/srv/www/htdocs/pub/bootstrap/bootstrap_script --tunnel
+----
+. {productname} 서버의 명령 프롬프트에서 다음과 같이 SSH 키를 프록시에 복사합니다.
++
+----
+mgr-ssh-push-init --client <proxy>
+----

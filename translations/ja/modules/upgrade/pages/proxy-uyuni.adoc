@@ -1,0 +1,90 @@
+[[proxy-uyuni-upgrade]]
+= プロキシ - アップグレードプロシージャ
+
+プロキシ更新を実行する前に、保守ウィンドウをスケジュールします。 プロキシから{productname}に登録したクライアントは、更新の実行中には{productname}に接続できません。 保守ウィンドウの詳細については、xref:administration:maintenance-windows.adoc[]を参照してください。
+
+
+
+== 準備
+
+準備手順として、openSUSE Leap {opensuse-version}チャンネルをサーバに追加します。
+
+.手順: コマンドプロンプトからのソフトウェアチャンネルの追加
+. {productname} サーバのコマンドプロンプトで root になり、 [command]``spacewalk-common-channels`` コマンドを特定のチャンネルに対して実行します:
++
+----
+spacewalk-common-channels opensuse_leap15_2 \
+opensuse_leap15_2-non-oss \
+ opensuse_leap15_2-non-oss-updates \
+ opensuse_leap15_2-updates \
+ opensuse_leap15_2-uyuni-client \
+ uyuni-proxy-stable-leap-152
+----
+. [command]``spacewalk-repo-sync``を使用して、すべてのチャンネルを完全に同期します。 リポジトリのURLが定義済みの場合、<<uyuni-202007-channeldupes>>で続行します。
+
+
+
+[[uyuni-202007-channeldupes]]
+== 重複リポジトリURLのトラブルシューティング
+
+
+[command]``spacewalk-common-channels``を使用して{productname}に同じURLのリポジトリ(openSUSE Leap 15.0、15.1、および15.2のクライアントツール)を2つ以上追加すると、次のようなエラーが表示されます。
+
+----
+エラー: opensuse_leap15_2-uyuni-client-x86_64:
+redstone.xmlrpc.XmlRpcFault: There's already a defined repository with given url, please reuse it（指定されたURLには定義済みのリポジトリが存在しています。そのリポジトリを再使用してください）
+----
+
+15.1リポジトリを15.2チャンネルに割り当てて回避してください。
+
+.プロシージャ: 15.1リポジトリを15.2チャンネルに割り当てる:
+
+. {productname}サーバの{webui}で、menu:ソフトウェア[管理 > チャンネル]に移動し、[systemitem]`` Uyuni Client Tools for openSUSE Leap 15.2 (x86_64)``チャンネル名をクリックします。
+
+. 右上隅の［btn:[チャンネルの管理]］をクリックします。
+
+. ［[guimenu]``リポジトリ``］タブに移動し、[systemitem]``External - Uyuni Client Tools for openSUSE Leap 15.1 (x86_64)を選択します。
+
+. ［btn:[Update Repositories（リポジトリの更新）]］をクリックします。
+
+. menu:リポジトリ[同期]サブタブに移動し、［btn:[今すぐ同期]］をクリックします。
+
+. [systemitem]``Uyuni Proxy Stable for openSUSE Leap 15.2 (x86_64)``と[systemitem]``External - Uyuni Proxy Stable for openSUSE Leap 15.1 (x86_64)``で同じ操作を実行します。
+
+[systemitem]``openSUSE Leap 15.2 (x86_64)``チャンネルを展開し、パッケージが入力されている子チャンネルを表示します。
+
+
+
+== プロキシのアップグレード
+
+プロキシを更新するには、まずプロキシサービスを停止し、ソフトウェアリポジトリを置き換え、ソフトウェアを更新し、最後にプロキシサービスを再起動します。
+
+
+
+.プロシージャ: {productname}プロキシの更新
+
+. {productname}サーバの{webui}で、プロキシシステムの詳細ページに移動し、［[guimenu]``再アクティベーション``］サブタブをクリックします。
+
+. ［btn:[新しいキーの生成]］をクリックして再アクティベーションキーを生成します。
++
+
+. {productname}プロキシで、プロキシサービスを停止します。
++
+----
+spacewalk-proxy stop
+----
+
+. {productname}サーバの{webui}で、menu:システム[プロキシ]に移動し、プロキシの名前をクリックします。
+. menu:ソフトウェア[ソフトウェアチャンネル]をクリックし、[systemitem]``カスタムチャンネル``一覧にリストされているopenSUSE Leap {opensuse-version}チャンネルをベースチャンネルとして選択します。
+. ［[guimenu]``子チャンネル``］ペインで、{opensuse-version}子チャンネルを選択します。
+. ［btn:[次へ]］、［[guimenu]``ソフトウェアチャンネルの変更確認``］をクリックしてから、［btn:[確認]］をクリックします。
+. menu:ソフトウェア[パッケージ > アップグレード]をクリックし、プロキシで更新するパッケージをすべて選択してから、選択を適用します。
+. 再アクティベーションキーを使用し、[command]``rhnreg_ks``コマンドラインユーティリティを使用して再登録します。 システムは、同じID、履歴、グループを使用して再登録されます。
++
+. {productname}プロキシで、プロキシサービスを開始します。
++
+----
+spacewalk-proxy start
+----
+
+多数のプロキシを更新する必要がある場合、{productname}サーバでこのコマンドシーケンスのアクションチェーンを作成できます。 アクションチェーンを使用して、複数のプロキシで同時に更新を実行できます。

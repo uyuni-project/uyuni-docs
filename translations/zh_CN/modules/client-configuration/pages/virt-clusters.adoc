@@ -1,0 +1,176 @@
+[[virt-caasp]]
+= 群集
+
+您可以使用 {productname} 直接管理 {caasp} 群集。 请在 {webui} 中导航到menu:群集[概览]，来管理您在 {productname} 中注册的群集。
+
+
+
+== 自动安装配置文件
+
+{caasp}{nbsp}4 提供了一个 AutoYaST 配置文件，您可用来自动安装节点。 该配置文件包含在 ``patterns-caasp-Management`` 软件包中。
+
+
+
+
+您可以使用 {productname} 管理一个或多个现有 {caasp} 群集。
+
+[NOTE]
+====
+目前仅支持 {caasp}{nbsp}4。
+====
+
+
+开始前，请确保您已安装 {caasp} 群集。
+
+
+
+== 选择管理节点
+
+要管理 {caasp} 群集，您需要选择一个客户端作为群集的管理节点。 管理节点不能是群集的一部分，并且在您开始使用前必须已与 {caasp} 频道关联。 您可以使用单个管理节点来管理多个群集，前提是这些群集均为同一类型。
+
+
+
+.过程：选择管理节点
+. 在 {productname} {webui} 中，导航到menu:系统[系统列表]，然后单击要选择作为管理节点的客户端的名称。
+. 导航到menu:公式[配置]选项卡，选中 ``CaaSP 管理节点``公式。
+. 单击 btn:[保存] 并应用 highstate。
+
+
+[NOTE]
+====
+完成 highstate 前，请勿使用管理节点。
+====
+
+
+导航到menu:群集[概览]以列出所有已知的群集。 此列表会显示所有现有群集，以及群集类型和与其关联的管理节点， 此外还会显示群集中的节点（如果节点已注册到 {productname} 中）。 对于群集中的节点，则会显示来自 ``skuba`` 和 {kube} API 的其他信息，包括角色、状态以及是否有任何可用更新。
+
+
+
+
+.过程：配置管理节点
+. 将 ``skuba`` 配置目录从您的群集复制到管理节点。
+    这是 ``skuba`` 服务在群集引导后创建的目录。 请记下该新文件位置，以便在 {productname} {webui} 中添加该群集。
+. 提供进行身份验证的方式。
+
+您可以使用两种方式来对 {caasp} 群集进行身份验证，请选择最适合您的环境的方式。
+
+* 将用于访问群集节点的无口令私用 SSH 密钥复制到 {productname} 服务器上，并记下文件位置。
+    您需要有当前密钥和将来要使用的任何客户端的密钥。
+* 您可以使用 ``ssh-agent`` 套接字，并在设置群集时提供该套接字的路径。
+
+可以采用两种方式来搭配使用 ``ssh-agent`` 和 {caasp}。 在本地使用 ``ssh-agent``，或从另一个计算机将 `ssh-agent` 转发到管理节点：
+
+
+
+.过程：使用本地 ssh-agent
+. 在管理节点上的命令提示符处，启动 ``ssh-agent`` 服务：
++
+----
+eval $(ssh-agent)
+----
+. 添加 SSH 密钥：
++
+----
+ssh-add <key>
+----
+. 用于访问该代理的套接字在 ``$SSH_AUTH_SOCK`` 环境变量中提供。
+
+
+
+.过程：将 ssh-agent 转发到管理节点
+. 在提供 ``ssh-agent`` 的系统上的命令提示符处，启用 SSH 转发并指定管理节点的主机名：
++
+----
+ssh -A <management node>
+----
+. 用于访问该代理的套接字在 ``$SSH_AUTH_SOCK`` 环境变量中提供。
+
+
+[NOTE]
+====
+如果您使用的是 ``ssh-agent`` 方式，每次有新 ``ssh-agent`` 启动或新 ``ssh -A`` 连接启动时，套接字路径都会改变。 您可以随时在 {productname} {webui} 中更新 ``ssh-agent`` 套接字路径。 启动任何需要进行 SSH 访问的群集操作时，也会覆盖套接字路径。
+====
+
+
+
+== 管理群集
+
+要在 {productname} 中管理群集，请在 {webui} 中添加群集。
+
+
+
+.过程：添加现有群集
+. 在 {productname} {webui} 中导航到menu:群集[概览]，然后单击 btn:[添加]。
+. 按照提示提供群集的相关信息（包括群集类型），然后选择要关联的管理节点。
+. 键入群集的 ``skuba`` 配置文件路径。
+. 键入要使用的无口令 SSH 密钥，或提供 ``ssh-agent`` 套接字的路径。
+. 键入群集的名称、标签和说明。
+. 单击 btn:[添加]。
+
+
+系统会为您使用 {productname} 管理的每个群集创建一个对应的系统组。 系统组默认命名为 ``Cluster <cluster_name>``。 刷新系统组可更新节点列表。 只有 {productname} 已知的节点会显示。
+
+
+您可以通过导航到menu:群集[概览]，取消选中要删除的群集，然后单击 btn:[删除群集] 从 {productname} 中去除群集。
+
+
+[IMPORTANT]
+====
+删除群集操作会从 {productname} 中去除群集，但不会删除群集节点。 在该群集上运行的工作负载会继续不间断运行。
+====
+
+
+
+== 管理节点
+
+在 {productname} 中创建群集后，便可管理群集中的节点。
+
+在向群集添加新节点前，请检查管理节点能否访问您要使用无口令 SSH 添加的节点或您转发的 ``ssh-agent`` 套接字。
+
+您需要确保要添加的节点已注册到 {productname} 中且已为其指派 {caasp} 频道。
+
+在向群集添加节点前，您可能需要手动进行一些配置。 检查系统是否专门作为 {caasp} 节点使用，以及交换功能是否关闭。 有关详细信息，请参见 https://documentation.suse.com/suse-caasp/4.2/single-html/caasp-deployment/#_disabling_swap
+
+
+
+.过程：向群集添加节点
+. 在 {productname} {webui} 中，导航到menu:群集[概览]，然后单击 btn:[加入节点]。
+. 从可用节点列表中选择要添加的节点。
+    可用节点的列表中仅包含已注册到 {productname} 中，不是管理节点且当前不属于任何群集的节点。
+. 按照提示为要添加的节点输入 {caasp} 参数。
+. 可选：指定仅对要添加的节点有效的自定义 ``ssh-agent`` 套接字。
+. 单击 btn:[保存] 以安排一项操作来向 {caasp} 群集添加节点。
+
+
+
+.过程：从群集中去除节点
+. 在 {productname} {webui} 中，导航到menu:群集[概览]，取消选中要去除的节点，然后单击 btn:[去除节点]。
+. 按照提示定义要去除的节点的参数。
+. 可选：指定仅对要去除的节点有效的自定义 ``ssh-agent`` 套接字。
+. 单击 btn:[保存] 以安排一项操作来去除节点。
+
+有关去除节点的详细信息，请参见 https://documentation.suse.com/suse-caasp/4/single-html/caasp-admin/#_permanent_removal。
+
+
+
+== 升级群集
+
+如果群集有可用更新，您可以使用 {productname} 安排和管理升级。
+
+{productname} 会先升级所有控制平面，然后再升级工作器。 有关详细信息，请参见 https://documentation.suse.com/suse-caasp/4.2/single-html/caasp-admin/#_cluster_updates。
+
+
+.过程：升级群集
+. 在 {productname} {webui} 中，导航到menu:群集[概览]，然后单击要升级的群集。
+. 可选：没有可用于自定义升级过程的 {caasp} 参数。
+    不过，您可以指定仅对要升级的节点有效的自定义 ``ssh-agent`` 套接字。
+. 单击 btn:[保存] 以安排一项操作来升级群集。
+
+
+[NOTE]
+====
+{productname} 仅会与 ``skuba`` 交互来升级群集。 任何其他必需的操作（例如配置更改）都不是由 {productname} 执行。
+====
+
+
+有关升级的详细信息，请参见 https://www.suse.com/releasenotes/x86_64/SUSE-CAASP/4。

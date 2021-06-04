@@ -1,0 +1,161 @@
+[[install-vm]]
+= JeOSを使用して仮想マシン環境でSUSE Managerをインストールする
+
+
+
+[[quickstart.sect.kvm.settings]]
+== 仮想マシンマネージャ(virt-manager)の設定
+
+この章では、{productname}のベースとして{sle} Just Enough Operating System (JeOS)のインストールを行うために必要なカーネル仮想マシン(KVM)設定について説明します。 仮想マシンマネージャ(_virt-manager_)と組み合わせたKVMはこのインストールのサンドボックスとして使用されます。
+
+
+*virt-manager*を使用して、新しい仮想マシンを作成するときに、次の設定を入力します。
+
+[NOTE]
+====
+次の表では、最低要件を指定しています。 これらは、1つのクライアントがあるサーバなど、クイックテストインストールに適しています。 運用環境を使用する場合、xref:hardware-requirements.adoc[]にリストされている要件を確認してください。
+====
+
+次の表では、「_バージョン_」を実際の製品バージョンの文字列で置き換えてください。 https://download.suse.com/でJeOSのイメージを検索してください。
+
+[cols="1,1", options="header"]
+|===
+2+<| KVMの設定
+|インストール方法 |既存のディスクイメージのインポート
+ | OS:                 | Linux
+ |バージョン:             | SLES_version_-JeOS-for-kvm-and-xen.x86_64-GM.qcow2
+ | メモリ:             | 8192MB
+ |CPU数:              | 4
+ | ストレージフォーマット:     | _.qcow2_ 24GB(デフォルト) JeOSルートパーティション
+ | 仮想ディスク:       |
+ | 仮想ディスク2:        | 101GB([path]``/var/spacewalk``用)
+ |仮想ディスク3:       | 50GB([path]``/var/lib/pgsql``用)
+ |仮想ディスク4:       | 4GB(スワップ用)
+ |名前:               | test-setup
+ | ネットワーク             | Bridge _br0_
+|===
+
+.{sle}仮想化ガイド
+[NOTE]
+====
+仮想化については、https://documentation.suse.com/sles/15-SP2/html/SLES-all/book-virt.htmlを参照してください。
+====
+
+
+
+[[jeos.kvm.settings]]
+== JeOS KVMの設定
+
+{productname}のストレージパーティションに必要な追加の仮想ディスクを3つ作成します。
+
+.プロシージャ: KVMを使用して必要なパーティションを作成する
+. ダウンロードしたJeOS KVMイメージを使用して新しい仮想マシンを作成し、［[guimenu]``Import existing disk image（既存のディスクイメージをインポート）``］を選択します。
+. RAMおよびCPU数を設定します(少なくとも8GBのRAMおよび4つのCPU)。
+. KVMマシンに名前を付け、［[guimenu]``Customize configuration before install（インストール前に設定をカスタマイズ）``］チェックボックスを選択します。
+. btn:［ハードウェアの追加］をクリックし、これらを指定して新しい仮想ディスクを3つ作成します。
+    これらのディスクは、<<proc.jeos.susemgr.prep>>でパーティション化され、マウントされます。
++
+
+[NOTE]
+====
+ストレージサイズの値は、絶対最小値です。これは小規模なテストまたはデモインストールにのみ適しています。 特に、[path]``/var/spacewalk/``ではさらに大容量がすぐに必要になる場合があります。 Kiwiイメージが保存される[path]``/srv``用に別のパーティションを作成することも検討してください。
+====
++
+
+[cols="1,1,1", options="header"]
+|===
+| 仮想ストレージディスク | 名前      | サイズ
+|仮想ディスク2:        | spacewalk | 101{nbsp}GB
+ | 仮想ディスク3:        | pgsql     | 50{nbsp}GB
+ | 仮想ディスク4:        | スワップ      | 4{nbsp}GB
+|===
+
+. ［btn:[Begin Installation（インストールの開始）]］をクリックし、JeOSイメージから新しいVMをブートします。
+
+プロセスが完了し、コマンドプロンプトが入力を待機するまで、プロンプトに従って基本的なJeOSインストールを完了します。
+
+基本的なインストールプロンプトの操作中、rootパスワードの入力を求められます。 次のメッセージボックスで、［btn:[Confirm root Password（rootパスワードを確認）]］をクリックします。
+
+
+
+[[jeos.susemgr.prep]]
+== SUSE Manager用にJeOSを準備する
+
+[[proc.jeos.susemgr.prep]]
+.プロシージャ: {productname}のインストールのためにJeOSを準備する
+
+. `root`としてログインします。
+
+. `sles-release`パッケージをアンインストールします。
++
+
+----
+rpm -e --nodeps sles-release
+----
+
+. SCCで{productname}を登録します(`<productnumber>`を`{productnumber}`に置き換えたり、`<architecture>`を`x86_64`に置き換えるなど)。
++
+
+----
+SUSEConnect -e <EMAIL_ADDRESS> -r <SUSE_MANAGER_CODE> \
+  -p SUSE-Manager-Server/<productnumber>/<architecture>
+----
+
+. {productname}リポジトリを追加します。
++
+
+----
+SUSEConnect -p sle-module-basesystem/15.2/x86_64
+SUSEConnect -p sle-module-python2/15.2/x86_64
+ SUSEConnect -p sle-module-server-applications/15.2/x86_64
+ SUSEConnect -p sle-module-web-scripting/15.2/x86_64
+ SUSEConnect -p sle-module-suse-manager-server/<productnumber>/x86_64
+----
++
+JeOSは、必要なパッケージのみをインストールするように設定されています。 動作するすべての機能を取得するには、推奨パッケージもインストールできるようにする必要があります。 `/etc/zypp/zypp.conf`で、
++
+
+----
+solver.onlyRequires = true
+----
++
+
+上記の行を次のように変更します。
++
+----
+solver.onlyRequires = false
+----
+
+. すべての必要な依存関係を設定して[package]#yast2-storage-ng#をインストールします(約40個のパッケージでは、インストール時に30MB)。
+    この基本的な管理パッケージは、ストレージパーティションを準備するために必要です。
++
+
+----
+zypper in yast2-storage-ng
+----
+. {yast}パーティション設定([command]``yast2 disk``)を使用して次の場所で仮想ディスクをパーティション設定してマウントします。
++
+
+[NOTE]
+====
+ストレージサイズの値は絶対最小値です。 これらは、1つのクライアントがあるサーバなど、小規模なテストまたはデモのインストールにのみ適しています。 特に、[path]``/var/spacewalk/``ではさらに大容量がすぐに必要になる場合があります。 Kiwiイメージが保存される[path]``/srv``用に別のパーティションを作成することも検討してください。
+====
++
+[cols="1,1,1,1", options="header"]
+|===
+| 仮想ストレージディスク | 名前                     | ストレージサイズ | ファイルシステムの種類
+ | 仮想ディスク2:        | [path]``/var/spacewalk`` | 101{nbsp}GB  | XFS
+ | 仮想ディスク3:        | [path]``/var/lib/pgsql`` | 50{nbsp}GB   | XFS
+ | 仮想ディスク4:        | [path]``スワップ``           | 4{nbsp}GB    | スワップ
+|===
+
+. パーティション設定を終了し、{productname}パターンをインストールします(約730個のパッケージでは、インストール時に1.4GBのディスクスペースを使用)。
++
+
+----
+zypper in -t pattern suma_server
+----
+
+. 再起動します。
+
+{productname}の設定に進むには、xref:installation:server-setup.adoc[SUSE Managerの設定]を参照してください。

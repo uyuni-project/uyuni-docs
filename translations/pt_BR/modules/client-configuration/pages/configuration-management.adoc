@@ -1,0 +1,217 @@
+[[configuration-management]]
+= Configuration Management
+
+You can use configuration files and channels to manage configuration for your clients, rather than configuring each client manually.
+
+Configuration parameters are scripted and stored in configuration files. You can write configuration files directly using the {productname} {webui}, or you can upload or link to files that exist in other locations.
+
+Configuration files can be centrally managed, or locally managed. Centrally managed configuration files are provided by global configuration channels and can be applied to any client subscribed to the {productname} Server. Locally managed configuration files are used to override centrally managed configuration settings. They are especially useful for {productname} users who do not have configuration administration privileges, but need to make changes to the clients that they manage.
+
+Configuration channels are used to organize configuration files. You can subscribe clients to configuration channels, and deploy configuration files as required.
+
+Configuration files are version-controlled, so you can add configuration settings, test them on your clients, and roll back to a previous revision as required. When you have created your configuration channels, you can also perform comparisons between various configuration files, and between revisions of the same configuration file.
+
+Configuration files can be centrally managed, or locally managed. Centrally managed configuration files are provided by global configuration channels. Locally managed configuration files are created or uploaded to {productname} directly.
+
+The available configuration management features are different for Salt and traditional clients. This table shows the supported features on different client types:
+
+
+.Configuration Management Supported Features
+[cols="1,1,1", options="header"]
+|===
+| Feature
+| Salt
+| Traditional
+
+| Global Configuration Channels
+| {check}
+| {check}
+
+| Deploying Files
+| {check}
+| {check}
+
+| Comparing Files
+| {question}
+| {check}
+
+| Locally Managed Files
+| {cross}
+| {check}
+
+| Sandbox Files
+| {cross}
+| {check}
+
+| Applying the Highstate
+| {check}
+| {cross}
+
+| File Import from a Client
+| {cross}
+| {check}
+
+| Configuration Macros
+| {cross}
+| {check}
+
+|===
+
+
+
+== Prepare Traditional Clients for Configuration Management
+
+Traditional clients require some extra preparation to use configuration management. If you installed your traditional client with {ay} or {kickstart} you probably already have the appropriate packages. For other traditional clients, ensure you have installed the relevant tools child channel for your client operating system. For more information about software channels, see xref:client-configuration:channels.adoc[].
+
+The packages you require are:
+
+* [path]``mgr-cfg``: base libraries and functions needed by all [path]``mgr-cfg-*`` packages
+* [path]``mgr-cfg-actions``: required to run configuration actions scheduled using {productname}.
+* [path]``mgr-cfg-client``: provides a command line interface to the client features of the configuration management system.
+* [path]``mgr-cfg-management``: provides a command line interface to manage {productname} configuration.
+
+You can install these packages during the bootstrap process by navigating to menu:Systems[Activation Keys], clicking the activation key you intend to use during bootstrap, and checking the [guimenu]``Configuration File Deployment`` option. For more information about activation keys, see xref:client-configuration:activation-keys.adoc[].
+
+
+
+== Create Configuration Channels
+
+To create a new central configuration channel:
+
+.Procedure: Creating Central Configuration Channel
+. In the {productname} {webui}, navigate to menu:Configuration[Channels], and click btn:[Create Config Channel].
+. Type a name for the channel.
+. Type a label for the channel.
+    This field must contain only letters, numbers, hyphens (``-``) and underscores (``_``).
+. Type a description for the channel that allows you to distinguish it from other channels.
+. Click btn:[Create Config Channel] to create the new channel.
+
+
+You can also use a configuration channel to manage Salt states on Salt clients.
+
+
+
+.Procedure: Creating a Salt State Channel
+. In the {productname} {webui}, navigate to menu:Configuration[Channels], and click btn:[Create State Channel].
+. Type a name for the channel.
+. Type a label for the channel.
+    This field must contain only letters, numbers, hyphens (``-``) and underscores (``_``).
+. Type a description for the channel that allows you to distinguish it from other channels.
+. Type the [guimenu]``SLS Contents`` for the [path]``init.sls`` file.
+. Click btn:[Create Config Channel] to create the new channel.
+
+
+
+== Add Configuration Files, Directories, or Symbolic Links
+
+When you have created a configuration channel you can add a configuration file, directory, or symbolic link:
+
+
+
+.Procedure: Adding a Configuration File, Directory, or Symbolic Link
+. In the {productname} {webui}, navigate to menu:Configuration[Channels], and click the name of the configuration channel that you want to add a configuration file to, and navigate to the menu:Add Files[Create File] subtab.
+. In the [guimenu]``File Type`` field, choose whether you want to create a text file, directory, or symbolic link.
+. In the [path]``Filename/Path`` field, type the absolute path to the location where the file should be deployed.
+. If you are creating a symbolic link, type the target file and path in the [guimenu]``Symbolic Link Target Filename/Path`` field.
+. Type the [guimenu]``User name`` and [guimenu]``Group name`` for the file in the [guimenu]``Ownership`` field, and the [guimenu]``File Permissions Mode``.
+. If the client has SELinux enabled, you can configure [guimenu]``SELinux contexts`` to enable the required file attributes (for example: user, role, and file type).
+. If the configuration file includes a macro, enter the symbol that marks the beginning and end of the macro.
+. Enter the configuration file contents in the [guimenu]``File Contents`` text box, using the script drop-down box to choose the appropriate scripting language.
+. Click btn:[Create Configuration File].
+
+
+
+== Subscribe Clients to Configuration Channels
+
+You can subscribe individual clients to configuration channels by navigating to menu:Systems[System List], selecting the client you want to subscribe, and navigating to the [guimenu]``Configuration`` tab. To subscribe multiple clients to a configuration channel, you can use the system set manager (SSM).
+
+
+
+.Procedure: Subscribing Multiple Clients to Configuration Channels
+. In the {productname} {webui}, navigate to menu:Systems[Systems List] and select the clients you want to work with.
+. Navigate to menu:Systems[System Set Manager], and go to the menu:Configuration[Subscribe to Channels] subtab to see the list of available configuration channels.
+. OPTIONAL: Click the number in the [guimenu]``Systems currently subscribed`` column to see which clients are currently subscribed to the configuration channel.
+. Check the configuration channels you want to subscribe to, and click btn:[Continue].
+. Rank the configuration channels using the up and down arrows.
+    Where settings conflicts occur between configuration channels, channels closer to the top of the list take precedence.
+. Determine how the channels are applied to the selected clients.
+    Click btn:[Subscribe With Lowest Priority] to add the new channels at a lower priority than currently subscribed channels. Click btn:[Subscribe with Highest Priority] to add the new channels at a higher priority than currently subscribed channels. Click btn:[Replace Existing Subscriptions] to remove existing channels and replace them with the new channels.
+. Click btn:[Apply Subscriptions].
+
+
+[NOTE]
+====
+If new configuration channel priorities conflict with existing channels, the duplicate channel is removed and replaced according to the new priority. If the client's configuration priorities are going to be reordered by an action, the {webui} requires you to confirm the change before proceeding.
+====
+
+
+
+== Compare Configuration Files
+
+You can also use the system set manager (SSM) to compare the configuration file deployed on clients with the configuration file stored on the {productname} Server.
+
+
+
+.Procedure: Comparing Configuration Files
+. In the {productname} {webui}, navigate to menu:Systems[Systems List] and select the clients subscribed to the configuration files you want to compare.
+. Navigate to menu:Systems[System Set Manager], and go to the menu:Configuration[Compare Files] subtab to the list of available configuration files.
+. OPTIONAL: Click the number in the [guimenu]``Systems`` column to see which clients are currently subscribed to the configuration file.
+. Check the configuration files to compare, and click btn:[Schedule File Comparison].
+
+
+
+== Configuration File Macros on Traditional Clients
+
+Being able to store one file and share identical configurations is useful, but in some cases you might need many variations of the same configuration file, or configuration files that differ only in system-specific details, such as host name and MAC address. In this case, you can use macros or variables within the configuration files. This allows you to upload and distribute a single file, with hundreds or even thousands of variations. In addition to variables for custom system information, the following standard macros are supported:
+
+----
+rhn.system.sid
+rhn.system.profile_name
+rhn.system.description
+rhn.system.hostname
+rhn.system.ip_address
+rhn.system.custom_info(key_name)
+rhn.system.net_interface.ip_address(eth_device)
+rhn.system.net_interface.netmask(eth_device)
+rhn.system.net_interface.broadcast(eth_device)
+rhn.system.net_interface.hardware_address(eth_device)
+rhn.system.net_interface.driver_module(eth_device)
+----
+
+To use this feature, either upload or create a configuration file via the [guimenu]``Configuration Channel Details`` page. Then open its [guimenu]``Configuration File Details`` page and include the supported macros of your choice. Ensure that the delimiters used to offset your variables match those set in the [guimenu]``Macro Start Delimiter`` and [guimenu]``Macro End Delimiter`` fields and do not conflict with other characters in the file. We recommend that the delimiters be two characters in length and do not contain the percent (``%``) symbol.
+
+For example, you may have a file applicable to all of your servers that differs only in IP address and host name. Rather than manage a separate configuration file for each server, you can create a single file, such as [path]``server.conf``, with the IP address and host name macros included.
+
+----
+hostname={| rhn.system.hostname |}
+ip_address={| rhn.system.net_interface.ip_address(eth0) |}
+----
+
+When the file is delivered to individual systems, whether through a scheduled action in the {productname} {webui} or at the command line with the {productname} Configuration Client ([command]``mgrcfg-client``), the variables will be replaced with the host name and IP address of the system as recorded in {productname}'s system profile. In this example, the deployed version will look similar to this:
+
+----
+hostname=test.example.domain.com
+ip_address=177.18.54.7
+----
+
+To capture custom system information, insert the key label into the custom information macro (``rhn.system.custom_info``). For example, if you developed a key labeled "asset" you can add it to the custom information macro in a configuration file to have the value substituted on any system containing it. The macro would look like this:
+
+----
+asset={@ rhn.system.custom_info(asset) @}
+----
+
+When the file is deployed to a system containing a value for that key, the macro gets translated, resulting in a string similar to this:
+
+----
+asset=Example#456
+----
+
+To include a default value (for example, if one is required to prevent errors), you can append it to the custom information macro, like this:
+
+----
+asset={@ rhn.system.custom_info(asset) = 'Asset #' @}
+----
+
+This default is overridden by the value on any system containing it.
+
+The {productname} Configuration Manager ([command]``mgrcfg-manager``) is available on {productname} client machines to assist with system management. It will not translate or alter files, as the tool is system agnostic. The [command]``mgrcfg-manager`` command does not depend on system settings. Binary files cannot be interpolated.

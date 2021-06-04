@@ -1,0 +1,103 @@
+[[installation-proxy]]
+= 从软件包安装 {productname} Proxy
+
+要通过软件包安装 {productname} Proxy，首先需要安装 {sles} 媒体。本节介绍将 {sles} 安装为 {productname} Proxy 基础所需的 KVM 设置。本节将使用 KVM 和虚拟机管理器作为安装沙箱。
+
+
+
+[[installation-proxy-requirements]]
+== SLES KVM 要求
+
+通过 [command]``virt-manager``（请将 [literal]``<version>`` 替换为实际版本字符串）使用这些设置创建新的虚拟机：
+
+[cols="1,1", options="header"]
+|===
+| SLES 的 KVM 设置
+| 安装方法：| 本地安装媒体（ISO 映像或 CDROM）
+| 操作系统：                  | Linux
+| 版本：             |``SLE-``[literal]``<version>````-Server-x86_64-GM-DVD1.iso``
+| 内存：              | _测试服务器_ 最少 2{nbsp}GB
+|                      | _生产服务器_ 最少 8{nbsp}GB
+| CPU 数：                | 2
+| 储存格式：      | ISO 3{nbsp}GB
+| 磁盘空间：          | 230{nbsp}GB，在以下位置分摊
+|                      | [path]``/`` _（根目录）_ 最少 24{nbsp}GB
+|                      | （虚拟磁盘 1）[path]``/srv`` 最少 100{nbsp}GB
+|                      | （虚拟磁盘 2）[path]``/var/cache`` _(Squid)_ 最少 100{nbsp}GB
+| 名称：                | example-proxy
+| 网络              | 网桥 br0
+|===
+
+
+
+[[installation-proxy-sles-settings]]
+=== SLES KVM 设置
+
+本节介绍如何使用完整安装媒体以及 KVM 和 [command]``virt-manager`` 安装 {productname} Proxy。在开始之前，需要事先在 {scc} 中创建一个帐户，并下载 {sles} 安装媒体。
+
+
+
+.过程：准备 SLES 安装
+. 在虚拟机管理器工具中 ([command]``virt-manager``)，单击menu:文件[新建虚拟机]。
+. 单击 btn:[本地安装媒体（ISO 映像或 CDROM）]。
+. 在[guimenu]``创建新虚拟机``对话框中，单击 btn:[浏览] 并找到您在 SCC 帐户中下载的完整 SLES 映像。
+. 为您的计算机至少配置 2 GB RAM 和 2 个 CPU。
+. 创建一个储存设备，其中最少可为安装提供 230 GB 储存空间。
+    在安装 SLES 期间，此磁盘应分割为以下分区：
++
++
+[cols="1", options="header"]
+|===
+| 磁盘空间要求
+| 为 [path]``/srv/`` 提供 100{nbsp}GB XFS 分区（或专用虚拟磁盘）
+| 为 [path]``/var/cache/`` 提供 100{nbsp}GB XFS 分区（或专用虚拟磁盘）
+|===
++
+剩余的储存空间将由根分区的操作系统使用。
+. 单击 btn:[完成] 保存安装设置，然后开始安装。
+
+有关安装 {sles} 的详细信息，请参见 https://documentation.suse.com/sles/15-SP2/html/SLES-all/art-sle-installquick.html。
+
+
+
+[[installation-proxy-sles]]
+== 更改 SUSE Manager Proxy 的 SLES
+
+
+
+[[proc-installation-proxy-sles]]
+.过程：更改 {productname} Proxy 安装版本的 SLES
+
+. 以 `root` 身份登录。
+. 卸装 `sles-release` 软件包：
++
+----
+rpm -e --nodeps sles-release
+----
+. 将 {productname} Proxy 注册到 SCC（例如，将 `<productversion>` 替换为 `{productnumber}`，并将 `<architecture>` 替换为 `x86_64`）：
++
+----
+SUSEConnect -e<EMAIL_ADDRESS> -r<SUSE_MANAGER_PROXY_CODE> \
+  -p SUSE-Manager-Proxy/<productversion>/<architecture>
+----
+. 添加 {productname} 储存库
++
+----
+SUSEConnect -p sle-module-basesystem/15.2/x86_64
+SUSEConnect -p sle-module-server-applications/15.2/x86_64
+SUSEConnect -p sle-module-suse-manager-proxy/4.1/x86_64
+----
+. 检查是否允许安装建议的软件包。
+    检查 `/etc/zypp/zypp.conf` 中的设置：
++
+----
+solver.onlyRequires = false
+----
+. 安装 {productname} Proxy 模式：
++
+----
+zypper in -t pattern suma_proxy
+----
+. 重引导。
+
+继续将安装的 {productname} Proxy 注册为客户端：xref:proxy-registration.adoc[]。

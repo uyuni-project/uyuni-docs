@@ -1,0 +1,69 @@
+[[virt-vmware]]
+= VMWare를 이용한 가상화
+
+가상 호스트 관리자(VHM)를 설정하여 {productname}에서 ESXi 및 vCenter를 포함한 VMWare vSphere 가상 머신을 사용할 수 있습니다.
+
+먼저 {productname} 서버에서 VHM을 설정하고 사용 가능한 VM 호스트를 목록에 포함해야 합니다. 이렇게 하면 Taskomatic이 VM API를 사용해 데이터 수집을 시작할 수 있습니다.
+
+
+
+== VHM 설정
+
+
+가상 호스트 관리자(VHM)는 {productname} 서버에서 실행됩니다.
+
+VHM을 실행하려면 {productname} 서버가 포트 443을 열어 VMWare API에 액세스해야 합니다.
+
+VMWare 호스트는 액세스 역할 및 권한을 사용해 호스트 및 게스트에 대한 액세스를 제어합니다. VHM에 의해 목록에 포함되었으면 하는 모든 VMWare 객체 또는 리소스에 최소한 [parameter]``읽기 전용`` 권한이 있는지 확인합니다. 객체 또는 리소스를 제외하려면 해당 객체 또는 리소스를 [parameter]``no-access``로 표시하십시오.
+
+새 호스트를 {productname}에 추가하려면 사용자 및 객체에 할당된 역할 및 권한을 {productname}가 목록에 포함해야 할지 여부를 고려해야 합니다.
+
+사용자, 역할 및 권한에 대한 자세한 내용은 VMWare vSphere 문서: https://docs.vmware.com/en/VMware-vSphere/index.html을 참조하십시오.
+
+
+.절차: VMWare VHM 생성
+
+. {productname} {webui}에서 menu:시스템[가상 호스트 관리자]로 이동합니다.
+. btn:[생성]을 클릭하고 [guimenu]``VMWare 기반``을 선택합니다.
+. [guimenu]``VMWare 기반 가상 호스트 관리자 추가`` 섹션에서 다음과 같은 파라미터를 사용합니다.
+* [guimenu]``레이블`` 필드에 VHM의 사용자 정의 이름을 입력합니다.
+* [guimenu]``호스트 이름`` 필드에 전체 도메인 이름(FQDN) 또는 호스트 IP 주소를 입력합니다.
+* [guimenu]``포트`` 필드에 사용할 ESXi API 포트를 입력합니다(예: [parameter]``443``).
+* [guimenu]``사용자 이름`` 필드에 VM 호스트와 연결된 사용자 이름을 입력합니다.
+* [guimenu]``사용자 이름`` 필드에 VM 호스트 사용자와 연결된 비밀번호를 입력합니다.
+. btn:[생성]을 클릭하여 변경 사항을 저장하고 VHM을 생성합니다.
+. [guimenu]``가상 호스트 관리자`` 페이지에서 새 VHM을 선택합니다.
+. [guimenu]``등록 정보`` 페이지에서 btn:[데이터 새로 고침]을 클릭하여 새 VHM을 목록에 포함합니다.
+
+어떤 객체 및 리소스가 목록에 포함되었는지 확인하려면 menu:시스템[시스템 목록 > 가상 시스템]으로 이동하십시오.
+
+
+[NOTE]
+====
+HTTPS를 사용해 브라우저에서 ESXi 서버에 연결하면 때로 ``잘못된 인증서`` 오류가 로깅될 수 있습니다. 이런 오류가 발생하는 경우 가상 호스트 서버에서 데이터를 새로 고침하는 작업이 실패합니다. 이 문제를 해결하려면 ESXi 서버에서 인증서를 추출하여 [path]``/etc/pki/trust/anchors``로 복사하십시오. 명령줄에서 [command]``update-ca-certificates`` 명령을 실행하여 인증서를 다시 신뢰하고 spacewalk 서비스를 다시 시작합니다.
+====
+
+taskomatic은 VHM을 생성하여 구성한 후 데이터 수집을 자동으로 실행합니다. 데이터 수집을 수동으로 수행하려면 menu:시스템[가상 호스트 관리자]로 이동하여 적절한 VHM을 선택한 후 btn:[데이터 새로 고침]을 클릭합니다.
+
+{productname}는 API를 사용해 VHM에 연결하고 가상 호스트에 대한 정보를 요청할 수 있는 [command]``virtual-host-gatherer``라고 하는 도구와 함께 제공됩니다. [command]``virtual-host-gatherer``는 각 모듈이 특정 VHM을 활성화하는 옵션 모듈의 개념을 유지합니다.. 이 도구는 Taskomat이 야간에 자동으로 호출합니다. [command]``virtual-host-gatherer`` 도구의 로그 파일은 [path]``/var/log/rhn/gatherer.log``에 있습니다.
+
+
+
+== VMWare에서 SSL 오류 문제 해결
+
+VMWare 설치를 구성하는 중에 SSL 오류가 발생한 경우 VMWare에서 CA 인증서 파일을 다운로드하여 {productname}에서 신뢰해야 합니다.
+
+
+
+.절차: VMWare CA 인증서 신뢰
+. VMWare 설치에서 CA 인증서를 다운로드합니다.
+    vCenter {webui}에 로그인해 btn:[신뢰할 수 있는 루트 CA 인증서 다운로드]를 클릭하여 다운로드할 수 있습니다.
+. 다운로드한 CA 인증서 파일이 ``.zip`` 형식인 경우 아카이브의 압축을 풉니다.
+    인증서 파일의 확장자는 숫자입니다. 예를 들면 ``certificate.0``과 같습니다.
+. 인증서 파일을 {productname} 서버로 복사하고 [path]``/etc/pki/trust/anchors/`` 디렉토리에 저장합니다.
+. 복사한 인증서의 파일 이름 접미사를 ``.crt`` 또는 ``.pem``으로 변경합니다.
+. {productname} 서버의 명령 프롬프트에서 다음과 같이 CA 인증서 레코드를 업데이트합니다.
++
+----
+update-ca-certificates
+----

@@ -1,0 +1,71 @@
+[[contact-methods-saltssh]]
+= Salt SSH를 통한 푸시
+
+
+SSH SSH를 통한 푸시는 Salt 클라이언트가 {productname} 서버에 직접 도달할 수 없는 환경에서 사용됩니다. 이 환경에서 클라이언트는 방화벽으로 보호되는 영역인 DMZ라는 곳에 있습니다. DMZ 내의 어떤 시스템도 {productname} 서버를 포함한 내부 네트워크에 연결할 권한이 없습니다.
+
+Salt SSH를 통한 푸시 방법은 DMZ에 있는 클라이언트에 대한 내부 네트워크의 {productname} 서버에서 암호화된 터널을 생성합니다. 모든 작업과 이벤트가 실행되고 나면 터널이 종료됩니다.
+
+서버는 [command]``salt-ssh`` 도구를 사용해 정기적으로 클라이언트에 연결하여 체크인하고 예약된 작업과 이벤트를 수행합니다. Salt SSH에 대한 자세한 내용은 xref:salt:salt-ssh.adoc[]를 참조하십시오.
+
+이 연결 방법은 Salt 클라이언트에 대해서만 작동합니다. 기존 클라이언트에 대해서는 SSH를 통한 푸시를 사용하십시오.
+
+This image demonstrates the Push via Salt SSH process path. All items left of the [systemitem]``Taskomatic`` block represent processes running on the {productname} client.
+
+image::salt-ssh-contact-taigon.png[scaledwidth=80%]
+
+
+Salt SSH를 통한 푸시를 사용하려면 클라이언트에서 실행 중인 SSH 데몬이 있어야 하고, 이 SSH 데몬은 {productname} 서버에서 실행 중인 [systemitem]``salt-api`` 데몬으로 도달할 수 있어야 합니다. 또한 원격 시스템에서 Python을 사용할 수 있어야 하며 이 Python은 Salt가 지원하는 버전이어야 합니다.
+
+[NOTE]
+====
+{rhel}{nbsp}5, {centos}{nbsp}5 및 이전 버전은 지원되지 않는 Python 버전을 사용하므로 지원되지 않습니다.
+====
+
+
+.절차: Salt SSH를 통한 푸시로 클라이언트 등록
+. {productname} {webui}에서 menu:시스템[부트스트랩]으로 이동하여 해당 필드를 완성합니다.
+. SSH를 통한 푸시 연결 방법이 구성된 활성화 키를 선택합니다.
+    활성화 키에 대한 자세한 내용은 xref:client-configuration:activation-keys.adoc[]을 참조하십시오.
+. [systemitem]``SSH를 통해 시스템을 완전히 관리`` 확인란을 선택합니다.
+. btn:[부트스트랩]을 클릭하여 등록을 시작합니다.
+. menu:시스템[개요]로 이동하여 시스템이 올바르게 등록되었는지 확인합니다.
+
+
+
+== 사용 가능한 파라미터
+
+Salt SSH를 통한 푸시를 구성하는 경우 호스트, 활성화 키, 비밀번호 등 시스템 등록 시 사용되는 파라미터를 수정할 수 있습니다. 비밀번호는 부트스트래핑에만 사용되며 어느 곳에도 저장되지 않습니다. 향후 모든 SSH 세션은 키/인증서 페어를 통해 인증됩니다. 이러한 파라미터는 menu:시스템[부트스트랩]에서 구성합니다.
+
+sudo 사용자를 비롯해 시스템 전역에서 사용되는 영구 파라미터도 구성할 수 있습니다. sudo 사용자 구성에 대한 자세한 내용은 xref:client-configuration:contact-methods-pushssh.adoc[]를 참조하십시오.
+
+
+
+== 작업 실행
+
+Salt SSH를 통한 푸시 기능은 Taskomatic을 사용해 [command]``salt-ssh``로 예약된 작업을 실행합니다. Taskomatic 작업은 예약된 작업을 주기적으로 확인하여 실행합니다. 기존 클라이언트에서 SSH를 통해 푸시하는 것과 달리 Salt SSH를 통한 푸시 기능은 예약된 작업에 근거하여 완전한 [command]``salt-ssh`` 호출을 실행합니다.
+
+기본적으로 한 번에 20건의 Salt SSH 작업을 실행할 수 있습니다. 구성 파일에 다음과 같은 줄을 추가하고 ``parallel_threads``의 값을 상향 조정하여 병렬로 실행할 수 있는 작업의 수를 늘릴 수 있습니다. 문제를 방지하기 위해 병렬 작업의 수를 다음과 같이 낮게 유지하는 것이 좋습니다.
+
+----
+taskomatic.com.redhat.rhn.taskomatic.task.SSHMinionActionExecutor.parallel_threads  = <number>
+ org.quartz.threadPool.threadCount = <value of parallel_threads + 20>
+----
+
+이렇게 하여 어느 한 곳의 클라이언트에서 병렬로 실행할 수 있는 작업의 수와 Taskomatic이 사용하는 작업자 스레드의 총 개수를 조정할 수 있습니다. 작업을 여러 클라이언트에서 실행해야 하는 경우 작업은 항상 각 클라이언트에서 순차적으로 실행됩니다.
+
+If the clients are connected through a proxy, you need to adjust the ``MaxSessions`` settings on the proxy. In this case, set the number of parallel connections to be three times the total number of clients.
+
+
+
+== 향후 출시될 기능
+
+Salt SSH를 통한 푸시에서는 아직 지원하지 않는 몇 가지 기능이 있습니다. 다음 기능은 Salt SSH 클라이언트에서 작동하지 않습니다.
+
+* OpenSCAP 감사
+* Beacons, 이로 인해
+** [command]``zypper``를 사용해 시스템에 패키지를 설치해도 패키지 새로 고침이 호출되지 않습니다.
+** 가상 호스트 기능(예: 게스트에 대한 호스트)은 가상 호스트 시스템이 Salt SSH 기반인 경우 작동하지 않습니다.
+
+
+Salt SSH에 대한 자세한 내용은 https://docs.saltstack.com/en/latest/topics/ssh/를 참조하십시오.

@@ -1,0 +1,158 @@
+[[clients-ubuntu]]
+= {ubuntu} 20.04クライアントの登録
+
+このセクションでは、{ubuntu} 20.04 LTSオペレーティングシステムを実行しているSaltクライアントの登録について説明します。
+
+ifeval::[{suma-content} == true]
+{productname}は、Saltを使用する{ubuntu} 16.04 LTS、18.04 LTS、および20.04 LTSクライアントをサポートしています。 {ubuntu} 16.04 LTSおよび18.04 LTSを実行しているSaltクライアントを登録する方法の詳細については、xref:client-configuration:clients-ubuntu-old.adoc[]を参照してください。
+endif::[]
+
+[IMPORTANT]
+====
+Canonicalは、{productname}を保証またはサポートしていません。
+====
+
+[NOTE]
+====
+{ubuntu}はSaltクライアントでのみサポートされています。 従来のクライアントはサポートされていません。
+====
+
+ブートストラップは、リポジトリの設定やプロファイルの更新の実行など、{ubuntu}クライアントの起動および初期状態の実行のためにサポートされています。 ただし、{ubuntu}のrootユーザはデフォルトで無効になっているため、ブートストラップを使用するには、Pythonの[command]``sudo``特権がある既存ユーザが必要です。
+
+
+
+== ソフトウェアチャンネルの追加
+
+{ubuntu}クライアントを{productname}サーバに登録する前に、必要なソフトウェアチャンネルを追加して同期する必要があります。
+
+
+ifeval::[{suma-content} == true]
+
+このプロシージャで必要な製品は次のとおりです。
+
+[[ubuntu-channels-wizard]]
+[cols="1,1", options="header"]
+.Ubuntu製品 - WebUI
+|===
+| OSバージョン | 製品名
+|{ubuntu} 20.04 | Ubuntu 20.04
+|===
+
+include::snippets/addchannels_vendor_webui.adoc[]
+
+または、コマンドプロンプトでチャンネルを追加できます。 このプロシージャで必要なチャンネルは次のとおりです。
+
+[[ubuntu-channels-cli]]
+[cols="1,1", options="header"]
+.Ubuntuチャンネル - CLI
+|===
+| OSバージョン | ベースチャンネル
+|{ubuntu} 20.04 | ubuntu-2004-amd64-main-amd64
+|===
+
+include::snippets/addchannels_vendor_cli.adoc[]
+
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+このプロシージャで必要なチャンネルは次のとおりです。
+[[ubuntu-channels-cli-uyuni]]
+[cols="1,1,1,1,1,1,1,1", options="header"]
+.Ubuntuチャンネル - CLI
+|===
+
+| OS Version
+| Base Channel
+| Main Channel
+| Updates Channel
+| Security Channel
+| Client Channel
+
+| {ubuntu} 20.04
+| ubuntu-2004-amd64-main for amd64
+| ubuntu-2004-amd64-main-uyuni
+| ubuntu-2004-amd64-main-updates-uyuni
+| ubuntu-2004-amd64-main-security-uyuni
+| ubuntu-2004-amd64-uyuni-client
+
+|===
+
+include::snippets/addchannels_novendor_cli.adoc[]
+
+[IMPORTANT]
+====
+You need all the new channels fully synchronized before bootstrapping any Ubuntu client.
+====
+
+endif::[]
+
+
+
+== 同期ステータスの確認
+
+ifeval::[{suma-content} == true]
+
+include::snippets/check_sync_webui_suma.adoc[]
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+include::snippets/check_sync_webui_uyuni.adoc[]
+
+endif::[]
+
+include::snippets/check_sync_cli.adoc[]
+
+[NOTE]
+====
+{ubuntu}チャンネルは非常に大きいことがあります。 同期に数時間かかる場合があります。
+====
+
+
+
+ifeval::[{uyuni-content} == true]
+
+== クライアントでGPGキーを信頼する
+
+include::snippets/trust_gpg.adoc[]
+
+endif::[]
+
+
+
+== rootアクセス
+
+{ubuntu}のrootユーザはデフォルトでは無効になっています。 [filename]``sudoers``ファイルを編集して有効にできます。
+
+.プロシージャ: rootユーザーアクセスの許可
+
+. クライアントで、[filename]``sudoers``ファイルを編集します。
++
+----
+sudo visudo
+----
++
+この行を[filename]``sudoers``ファイルの末尾に追加して[command]``sudo``アクセス権をユーザに付与します。 {webui}でクライアントをブートストラップしているユーザの名前で[systemitem]``<user>``を置き換えます。
++
+----
+<user>  ALL=NOPASSWD: /usr/bin/python, /usr/bin/python2, /usr/bin/python3
+----
+
+[NOTE]
+====
+このプロシージャによりrootアクセス権が付与されます。クライアントの登録に必要なパスワードは不要です。 クライアントは正常にインストールされると、root特権で実行されるため、アクセス権は不要です。 クライアントを正しくインストールした後、[path]``sudoers``ファイルからこの行を削除することをお勧めします。
+====
+
+
+
+== クライアントの登録
+
+{ubuntu}クライアントを登録するには、ブートストラップリポジトリが必要です。 デフォルトでは、ブートストラップリポジトリは自動的に作成され、すべての同期製品に対して毎日再生成されます。 次のコマンドを使用して、コマンドプロンプトからブートストラップリポジトリを手動で作成できます。
+
+----
+mgr-create-bootstrap-repo
+----
+
+クライアントの登録については、xref:client-configuration:registration-overview.adoc[]を参照してください。

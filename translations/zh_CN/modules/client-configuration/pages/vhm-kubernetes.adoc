@@ -1,0 +1,172 @@
+[[kubernetes]]
+= VHM 和 Kubernetes
+
+您可以使用虚拟主机管理器 (VHM) 管理 {kube} 群集。
+
+VHM 允许 {productname} 获取并报告有关您的群集的信息。 有关 VHM 的详细信息，请参见 xref:client-configuration:vhm.adoc[]。
+
+
+要将 {productname} 与 {kube} 搭配使用，您需要将 {productname} 服务器配置为进行容器管理，为其配置所有必需的频道，并且有可用的已注册容器构建主机。
+
+
+此外还需满足以下条件：
+
+* 网络上至少有一个可用的 {kube} 或 {caasp} 群集。
+* {productname} 服务器上已安装 [systemitem]``virtual-host-gatherer-Kubernetes`` 软件包。
+* 已安装 {kube} 1.5.0 或更高版本或 {caasp}。
+* 容器构建主机上已安装 Docker 1.12 或更高版本。
+
+
+
+== 创建 {kube} VHM
+
+可以使用 {productname} 作为 VHM 注册 {kube} 群集。
+
+您需要使用 ``kubeconfig`` 文件来注册 {kube} 群集以及为其授权。 您可以使用 {kube} 命令行工具 ``kubectl`` 获取 ``kubeconfig`` 文件。
+
+如果您使用的是 {caasp}，则可以从 Velum 界面中下载该文件。
+
+
+
+.过程：创建 {kube} VHM
+. 在 {productname} {webui} 中，导航到menu:系统[虚拟主机管理器]。
+. 单击 btn:[创建]，然后选择 [guimenu]``Kubernetes 群集``。
+. 在[guimenu]``添加 Kubernetes 虚拟主机管理器``部分，使用以下参数：
+* 在[guimenu]``标签``字段中，为 VHM 键入自定义名称。
+* 选择包含 {kube} 群集所需数据的 [path]``kubeconfig`` 文件。
+. 在[guimenu]``上下文``字段中，为群集选择适当的上下文。
+    此设置在 [path]``kubeconfig`` 文件中指定。
+. 单击 btn:[创建]。
+
+
+
+.过程：查看群集中的节点
+. 在 {productname} {webui} 中，导航到menu:系统[虚拟主机管理器]。
+. 选择 {kube} 群集。
+. 单击 btn:[安排刷新数据] 以刷新节点数据。
+
+更新节点数据可能需要一些时间。 您可能需要刷新浏览器窗口来查看更新的信息。
+
+任何连接或身份验证问题都会记录到 [path]``gatherer.log`` 中。
+
+
+[NOTE]
+====
+注册期间不会刷新节点数据， 您需要手动刷新才能看到更新的数据。
+====
+
+
+
+== 检索映像运行时数据
+
+您可以在 {productname} {webui} 中导航到menu:映像[映像列表]来查看有关 {kube} 映像的运行时数据。
+
+映像列表表格中包含以下三列：
+
+* [guimenu]``修订版``：
++
+{productname} 每次重新构建映像版本时或每次导入外部构建的映像时递增的序号。
+* [guimenu]``运行时``：
++
+所注册群集中每个映像的运行中实例的总体状态。
+* [guimenu]``实例``：
++
+在 {productname} 中注册的所有群集中运行此映像的实例数。 您可以单击数字旁边的弹出图标查看数字明细。
+
+[guimenu]``运行时``列会显示以下一种状态消息：
+
+* ``所有实例与 SUSE Manager 相一致``：
++
+所有运行中实例都在运行 {productname} 所跟踪的同一映像版本。
+* ``找到已过时的实例``：
++
+部分实例运行的是映像的较旧版本。 您可能需要重新部署映像。
+* ``无信息``：
++
+实例映像的校验和与 {productname} 中包含的映像数据不匹配。 您可能需要重新部署映像。
+
+
+
+.过程：构建映像
+. 在 {productname} {webui} 中，导航到menu:映像[存储区]。
+. 单击 btn:[创建] 以创建映像存储区。
+. 导航到menu:映像[配置文件]。
+. 单击 btn:[创建] 以创建映像配置文件。
+    您需要使用适合部署到 {kube} 的 dockerfile。
+. 导航到menu:映像[构建]以使用新配置文件构建映像。
+. 将映像部署到某个注册的 {kube} 群集中。
+    您可以使用 [command]``kubectl`` 工具执行此操作。
+
+更新的数据现在应该会出现在映像列表（单击menu:映像[映像列表]即会显示）中。
+
+
+
+.过程：导入之前部署的映像
+. 在 {productname} {webui} 中，导航到menu:映像[映像存储区]。
+. 添加拥有您要导入的映像的注册表（如果尚不存在）。
+. 导航到menu:映像[映像列表]，然后单击 btn:[导入]。
+. 填写字段，选择您创建的映像存储区，然后单击 btn:[导入]。
+
+导入的映像现在应该会出现在映像列表（单击menu:映像[映像列表]即会显示）中。
+
+
+
+.过程：重构建之前部署的映像
+
+. 在 {productname} {webui} 中，导航到menu:映像[映像列表]，找到您要重构建的映像所在的行，然后单击 btn:[细节]。
+. 导航到[guimenu]``构建状态``部分，然后单击 btn:[重构建]。
+    重构建可能需要一段时间才能完成。
+
+重构建成功完成后，映像列表（单击menu:映像[映像列表]即会显示）中映像的运行时状态将会更新。 这表示实例运行的是映像以前的版本。
+
+[NOTE]
+====
+只有在映像最初是使用 {productname} 构建的情况下，您才可以重构建映像。 您无法重构建导入的映像。
+====
+
+
+
+.过程：检索其他运行时数据
+. 在 {productname} {webui} 中，导航到menu:映像[映像列表]，找到正在运行的实例所在的行，然后单击 btn:[细节]。
+. 导航到[guimenu]``概览``选项卡。
+    在[guimenu]``映像信息``部分，[guimenu]``运行时``和[guimenu]``实例``字段中会显示相关数据。
+. 导航到[guimenu]``运行时``选项卡。
+    此部分包含有关所有注册群集中运行此映像的 {kube} Pod 的信息。 此部分的信息包括：
++
+* Pod 名称。
+* Pod 所在的名称空间。
+* 特定 Pod 中容器的运行时状态。
+
+
+
+== 权限和证书
+
+
+[IMPORTANT]
+====
+仅当 [path]``kubeconfig`` 文件包含所有嵌入的证书数据时，您才能在 {productname} 中使用该文件。
+====
+
+通过 {productname} 进行的 API 调用包括：
+
+* ``GET /api/v1/pods``
+* ``GET /api/v1/nodes``
+
+建议为 {productname} 赋予如下最小权限：
+
+* 可列出所有节点的 ClusterRole：
++
+----
+resources: ["nodes"]
+verbs: ["list"]
+----
+* 可列出所有名称空间中的 Pod 的 ClusterRole（角色绑定不能对名称空间产生任何限制）。
++
+----
+resources: ["pods"]
+verbs: ["list"]
+----
+
+如果 ``/pods`` 返回 403 响应，{productname} 将会忽略整个群集。
+
+有关使用 RBAC 授权的详细信息，请参见 https://kubernetes.io/docs/admin/authorization/rbac/。

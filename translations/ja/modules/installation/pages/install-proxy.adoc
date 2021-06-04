@@ -1,0 +1,103 @@
+[[installation-proxy]]
+= {productname}プロキシをパッケージからインストール
+
+パッケージから{productname}プロキシをインストールするには、まず{sles}メディアをインストールする必要があります。 このセクションでは、{productname}プロキシのベースとして{sles}のインストールを実行するために必要なKVM設定について説明します。 このセクションでは、KVMおよび仮想マシンマネージャをインストール用サンドボックスとして使用します。
+
+
+
+[[installation-proxy-requirements]]
+== SLES KVMの要件
+
+次の設定を使用し、[command]``virt-manager``を使用して新しい仮想マシンを作成します([literal]``<version>``を実際のバージョン文字列に置き換えます)。
+
+[cols="1,1", options="header"]
+|===
+| SLESのKVM設定
+|インストール方法: | ローカルインストールメディア(ISOイメージまたはCDROM)
+ | OS:                  | Linux
+ | バージョン:              |``SLE-``[literal]``<version>````-Server-x86_64-GM-DVD1.iso``
+ | メモリ:              | _テストサーバ_:{nbsp}2GB以上
+ |                      | _運用サーバ_:{nbsp}8GB以上
+ | CPU:                | 2
+ | ストレージフォーマット:      | ISO 3{nbsp}GB
+ | ディスク容量:          | 230{nbsp}GB(次のように分割)
+ |                      | [path]``/`` _(ルート)_:{nbsp}24GB以上
+ |                      | (仮想ディスク1) [path]``/srv``:{nbsp}100GB以上
+ |                      | (仮想ディスク2) [path]``/var/cache`` _(Squid)_:{nbsp}100GB以上
+ | 名前:                | example-proxy
+ | ネットワーク              | Bridge br0
+|===
+
+
+
+[[installation-proxy-sles-settings]]
+=== SLES KVMの設定
+
+このセクションでは、KVMおよび[command]``virt-manager``を指定した完全インストールメディアを使用して、{productname}プロキシのインストールについて説明します。 インストールを開始する前に、{scc}でアカウントを作成し、{sles}インストールメディアをダウンロードする必要があります。
+
+
+
+.プロシージャ: SLESインストールの準備
+. 仮想マシンマネージャツール([command]``virt-manager``)で、menu:ファイル[New Virtual Machine（新しい仮想マシン）]をクリックします。
+. ［btn:[ローカルインストールメディア(ISOイメージまたはCDROM)]］をクリックします。
+. ［[guimenu]``Create a new virtual machine（新しい仮想マシンの作成）``］ダイアログで、［btn:[Browse（ブラウズ）]］をクリックし、SCCアカウントからダウンロードしたフルSLESイメージを検索します。
+. 2GB以上のRAMと2つ以上のCPUを搭載したマシンを設定します。
+. インストール用に230GB以上のストレージ容量を備えたストレージデバイスを作成します。
+    SLESのインストール中、このディスクは次のパーティションにパーティション設定する必要があります。
++
++
+[cols="1", options="header"]
+|===
+| ディスク容量の要件
+| [path]``/srv/``に100{nbsp}GB XFSパーティション(または専用の仮想ディスク)
+| [path]``/var/cache/``に100{nbsp}GB XFSパーティション(または専用の仮想ディスク)
+|===
++
+残りのストレージ容量は、ルートパーティションとしてオペレーティングシステムが使用します。
+. ［btn:[終了]］をクリックして、インストール設定を保存し、インストールを開始します。
+
+{sles}のインストールの詳細については、https://documentation.suse.com/sles/15-SP2/html/SLES-all/art-sle-installquick.htmlを参照してください。
+
+
+
+[[installation-proxy-sles]]
+== SUSE Managerプロキシ用にSLESを変更する
+
+
+
+[[proc-installation-proxy-sles]]
+.プロシージャ: {productname}プロキシをインストールするためにSLESを変更する
+
+. `root`としてログインします。
+. `sles-release`パッケージをアンインストールします。
++
+----
+rpm -e --nodeps sles-release
+----
+. SCCで{productname}プロキシを登録します(`<productversion>`を`{productnumber}`に置き換えたり、`<architecture>`を`x86_64`に置き換えるなど)。
++
+----
+SUSEConnect -e <EMAIL_ADDRESS> -r <SUSE_MANAGER_PROXY_CODE> \
+  -p SUSE-Manager-Proxy/<productversion>/<architecture>
+----
+. {productname}リポジトリを追加します。
++
+----
+SUSEConnect -p sle-module-basesystem/15.2/x86_64
+SUSEConnect -p sle-module-server-applications/15.2/x86_64
+ SUSEConnect -p sle-module-suse-manager-proxy/4.1/x86_64
+----
+. 推奨パッケージをインストールできるかどうかを確認します。
+    `/etc/zypp/zypp.conf`の設定を確認します。
++
+----
+solver.onlyRequires = false
+----
+. {productname}プロキシパターンをインストールします。
++
+----
+zypper in -t pattern suma_proxy
+----
+. 再起動します。
+
+次に、インストールした{productname}プロキシをクライアントとして登録します: xref:proxy-registration.adoc[]。

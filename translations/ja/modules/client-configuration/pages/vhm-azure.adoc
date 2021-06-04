@@ -1,0 +1,80 @@
+[[vhm-azure]]
+= VHMとAzure
+
+仮想ホストマネージャ(VHM)を使用して、Microsoft Azureからインスタンスを収集できます。
+
+VHMを使用すると、{productname}は、使用している仮想マシンに関する情報を取得して報告できます。 VHMの詳細については、xref:client-configuration:vhm.adoc[]を参照してください。
+
+
+
+== Azure VHMの作成
+
+
+仮想ホストマネージャ(VHM)は{productname}サーバ上で動作します。
+
+[systemitem]``virtual-host-gatherer-libcloud``パッケージを{productname}サーバにインストール済みであることを確認してください。
+
+
+.プロシージャ: Azure VHMの作成
+
+. {productname}の{webui}で、menu:システム[仮想ホストマネージャ]に移動します。
+. ［btn:[作成]］をクリックし、ドロップダウンメニューから［[guimenu]``Azure``］を選択します。
+. ［[guimenu]``Add an Azure Virtual Host Manager（Azure仮想ホストマネージャの追加）``］セクションで、次のパラメータを使用します。
+* ［[guimenu]``ラベル``］フィールドにVHMのカスタム名を入力します。
+* ［[guimenu]``Subscription ID（サブスクリプションID）``］フィールドに、Azureが提供するサブスクリプションIDを入力します。
+* ［[guimenu]``Application ID（アプリケーションID）``］フィールドに、Azureが提供するアプリケーションIDを入力します。
+* ［[guimenu]``Tenant ID（テナントID）``］フィールドに、Azureが提供するテナントIDを入力します。
+* ［[guimenu]``Secret Key（秘密鍵）``］フィールドに、Azureインスタンスに関連付けられた秘密鍵を入力します。
+* ［[guimenu]``Zone（ゾーン）``］フィールドに、VMが存在するゾーンを入力します。
+    これは、サブスクリプションマッチングを動作させるために必要です。
+. ［btn:[作成]］をクリックして変更を保存し、VHMを作成します。
+. ［[guimenu]``仮想ホストマネージャ``］ページで、新しいVHMを選択します。
+. ［[guimenu]``プロパティ``］ページで、［btn:[データの更新]］をクリックし、新しいVHMを評価します。
+
+評価されたオブジェクトおよびリソースを表示するには、menu:システム[システム一覧 > 仮想システム]に移動します。
+
+
+
+== パーミッションの割り当て
+
+作成したVHMは、Azure VMにアクセスするために、正しいパーミッションが割り当てられている必要があります。
+
+サブスクリプション管理者としてAzureアカウントにログインし、Azureユーザアカウントとアプリケーションが正しいグループに属していることを確認してください。 アプリケーションが属しているグループによって、そのロールが決まり、パーミッションが決まります。
+
+パーミッションが正しく設定されていない場合、[command]``virtual-host-gatherer``を実行すると次のようなエラーが発生する場合があります。
+
+----
+General error:（一般エラー:）[AuthorizationFailed] The client 'client_name' with object id  'object_ID' does not have authorization to perform action  'Microsoft.Compute/virtualMachines/read' over scope  '/subscriptions/not-very-secret-subscription-id' or the scope is invalid.（[AuthorizationFailed]。オブジェクトID'object_ID'のクライアント'client_name'には、アクション'Microsoft.Compute/virtualMachines/read'をスコープ'/subscriptions/not-very-secret-subscription-id'で実行する許可がありません。またはスコープが無効です。）If  access was recently granted, please refresh your credentials.（アクセスが最近付与された場合、資格情報を更新してください。）
+----
+
+正しい資格情報を判断するには、{productname}サーバのプロンプトで次のコマンドを実行します。
+
+----
+virtual-host-gatherer -i input_azure.json -o out_azure.json -vvv
+----
+
+[path]``input_azure.json``ファイルには次の情報が含まれています。
+
+----
+[
+    {
+         "id": "azure_vhm",
+         "module": "Azure",
+         "subscription_id": "subscription-id",
+         "application_id": "application-id",
+         "tenant_id": "tenant-id",
+         "secret_key": "secret-key",
+         "zone": "zone"
+     }
+ ]
+----
+
+
+
+== Azure UUID
+
+Azureパブリッククラウドで実行されているインスタンスは、このUUIDを{productname}サーバに報告できます。
+
+----
+13f56399-bd52-4150-9748-7190aae1ff21
+----

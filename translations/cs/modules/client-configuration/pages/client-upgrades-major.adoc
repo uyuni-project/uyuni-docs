@@ -1,0 +1,127 @@
+[[client-upgrades-major]]
+= Client - Major Version Upgrade
+
+Your clients must have the latest available service pack (SP) for the installed operating system, with all the latest updates applied. Before you start, ensure that the system is up to date and all updates have been installed successfully.
+
+The upgrade is controlled by {yast} and {ay}, it does not use Zypper.
+
+
+== Příprava migrace
+
+Before you can migrate your client from SLE{nbsp}12 to SLE{nbsp}15{nbsp}, you need to:
+
+. Prepare installation media
+. Create an auto-installable distribution
+. Create an activation key
+. Upload an {ay} profile
+
+
+
+.Postup: Příprava instalačního média
+. Na serveru {productname} vytvořte místní adresář pro instalační médium SLE {nbsp}15{nbsp}SP2:
++
+----
+mkdir -p /srv/images/sle15sp2
+----
+. Stáhněte obraz ISO s instalačními zdroji a připojte ho ke svému serveru:
++
+----
+mount -o loop DVD1.iso /mnt/
+----
+. Zkopírujte vše z připojeného ISO do místního systému souborů:
++
+----
+cp -r /mnt/* /srv/images/sle15sp2
+----
+. Po dokončení kopie odpojte obraz ISO:
++
+----
+umount /mnt
+----
+
+[NOTE]
+====
+This image is the unified installer and can be used for multiple autoinstallable distributions.
+====
+
+
+
+.Procedure: Creating an Autoinstallable Distribution
+. Na {productname} {webui} přejděte do menu:Systems[Autoinstallation > Distributions] (Systémy[Automatická instalace > Distribuce]) a stiskněte btn:[Create Distribution] (Vytvořit distribuci).
+. V sekci [guimenu]``Create Autoinstallable Distribution`` (Vytvořit automaticky instalovatelnou distribuci) použijte tyto parametry:
+* V sekci [guimenu]``Distribution Label`` (Štítek distribuce) zadejte jedinečný název distribuce.
+    Use only letters, numbers, hyphens, periods, and underscores, and ensure the name is longer than four characters. For example, ``sles15sp2-x86_64``.
+* Do pole [guimenu]``Tree Path`` (Cesta ve stromu) zadejte absolutní cestu ke zdroji instalace.
+    Například [path]``/srv/images/sle15sp2``.
+* In the [guimenu]``Base Channel`` field, select [systemitem]``SLE-Product-SLES15-SP2-Pool for x86_64``.
+* In the [guimenu]``Installer Generation`` field, select [systemitem]``SUSE Linux Enterprise 15``.
+* Do pole [guimenu]``Kernel Options`` (Možnosti jádra) zadejte všechny možnosti, které mají být předány jádru při bootování instalace.
+    Ve výchozím nastavení jsou přidány parametry [option]``install=`` a [option]``self_update=0 pt.options=self_update``.
+* V sekci [guimenu]``Post Kernel Options`` (zaslat volby jádra) zadejte všechny možnosti, které mají být předány jádru při prvním spuštění nainstalovaného systému.
+. Uložte stisknutím tlačítka: [Create Autoinstallable Distribution] (Vytvořit automaticky instalovatelnou distribuci).
+
+
+To switch from the old SLE{nbsp}12{nbsp} base channel to the new SLE{nbsp}15 channel, you need an activation key.
+
+
+
+.Postup: Vytvoření aktivačního klíče
+. In the {productname} Server {webui}, navigate to menu:Systems[Activation Keys] and click [guimenu]``Create Key``.
+. Enter a description for your key.
+. Enter a key or leave it blank to generate an automatic key.
+. OPTIONAL: If you want to limit the usage, enter your value in the [guimenu]``Usage`` text field.
+. Select the [systemitem]``SLE-Product-SLES15-SP2-Pool for x86_64`` base channel.
+. OPTIONAL: Select any [guimenu]``Add-On System Types``.
+    For more information, see https://documentation.suse.com/sles/15-SP2/html/SLES-all/art-modules.html.
+. Click btn:[Create Activation Key].
+. Click the [guimenu]``Child Channels`` tab and select the required channels.
+. Click btn:[Update Key].
+
+
+
+== Vytvořte profil automatické instalace
+
+Profily automatické instalace obsahují všechna instalační a konfigurační data potřebná k instalaci systému. Mohou také obsahovat skripty, které se mají spustit po dokončení instalace. Například skripty, které můžete použít jako výchozí bod viz https://github.com/SUSE/manager-build-profiles/tree/master/AutoYaST. Platné nastavení upgradu AutoYaST viz https://doc.opensuse.org/projects/autoyast/#CreateProfile-upgrade.
+
+
+
+.Postup: Vytvoření profilu automatické instalace
+. Na webu {productname} {webui} přejděte do menu:Systems[Autoinstallation > Profiles] (Systémy [Automatická instalace > Profily]) a nahrajte skript profilu automatické instalace.
+    Například skripty, které lze použít jako výchozí, jsou na https://github.com/SUSE/manager-build-profiles/tree/master/AutoYaST.
+. Do pole ``Možnosti jádra`` napište ``autoupgrade = 1``.
+    Volitelně můžete zahrnout také možnost ``Y2DEBUG=1``. Nastavení ladění není vyžadováno, ale může pomoci při vyšetřování budoucích problémů, se kterými se můžete setkat.
+. Vložte profil automatické instalace nebo použijte pole pro nahrávání souborů.
+. Uložte stisknutím na btn:[Create] (Vytvořit).
+. Vyžaduje-li nahraný profil nastavit proměnné, přejděte do menu:Systems[Autoinstallation > Profiles] (Systémy[Automatická instalace > Profily]), vyberte profil, který chcete upravit, a přejděte na kartu [guimenu]``Variables`` (Proměnné).
+    Zadejte požadované proměnné použitím tohoto formátu:
++
+----
+<key>=<value>
+----
+
+
+
+== Migrace
+
+Než začnete, zkontrolujte, zda jsou všechny kanály odkazované v profilu automatické instalace dostupné a plně synchronizované.
+
+You can monitor the mirroring progress in [path]``/var/log/rhn/reposync/<channel-label>.log``.
+
+
+
+.Postup: Migrace
+. In the {productname} Server {webui}, navigate to [guimenu]``Systems`` and select the client to be upgraded.
+. Navigate to the [guimenu]``Provisioning`` tab, and select the autoinstallation profile you uploaded.
+. Click btn:[Schedule Autoinstallation and Finish]. The system downloads the required files, change the bootloader entries, reboot, and start the upgrade.
+
+
+Next time the client synchronizes with the {productname} Server, it receives a re-installation job. The re-installation job fetches the new kernel and initrd packages. It also writes a new [path]``/boot/grub/menu.lst``, containing pointers to the new kernel and initrd packages.
+
+When the client next boots, it uses grub to boot the new kernel with its initrd. PXE booting is not used during this process.
+
+Approximately three minutes after the job was fetched, the client goes down for reboot.
+
+[NOTE]
+====
+For Salt clients, use the ``spacewalk/minion_script`` snippet to register the client again after migration has completed.
+====

@@ -1,0 +1,239 @@
+[[proxy-setup]]
+= SUSE Manager Proxy 设置
+
+{productname} Proxy 需要额外进行配置。
+
+[NOTE]
+.代理链
+====
+可以在链中排列 Salt 代理。在这种情况下，上游代理名为 `parent`。
+====
+
+确保 TCP 端口 `4505` 和 `4506` 已在代理上打开。代理必须能够在这些端口上访问 {productname} Server 或父代理。
+
+
+
+[[at.manager.proxy.run.copycert]]
+== 复制服务器证书和密钥
+
+代理将与 {productname} Server 共享一些 SSL 信息。请从 {productname} Server 或父代理复制证书及其密钥。
+
+在代理上，以 root 身份使用您的 {productname} Server 或父代理（名为 [replaceable]``PARENT``）输入以下命令：
+
+----
+mkdir -m 700 /root/ssl-build
+cd /root/ssl-build
+scp root@PARENT:/root/ssl-build/RHN-ORG-PRIVATE-SSL-KEY .
+scp root@PARENT:/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT .
+scp root@PARENT:/root/ssl-build/rhn-ca-openssl.cnf .
+----
+
+
+[NOTE]
+====
+为使安全链保持不变，{productname} Proxy 功能要求为 SSL 证书签名的 CA 与为 {productname} Server 证书签名的 CA 相同。不支持对代理和服务器使用由不同 CA 签名的证书。
+====
+
+
+
+[[at.manager.proxy.run.confproxy]]
+== 运行 [command]``configure-proxy.sh``
+
+[command]``configure-proxy.sh`` 脚本将完成 {productname} Proxy 的设置。
+
+执行交互式 [command]``configure-proxy.sh`` 脚本。如果在不提供其他输入的情况下按 kbd:[Enter]，脚本将使用方括号 ``[]`` 中提供的默认值。下面是有关所请求设置的一些信息：
+
+{productname} 父项：{productname} 父项可以是另一个代理或 {productname} 服务器。
+
+HTTP 代理::
+{productname} Proxy 可以通过 HTTP 代理访问 Web。如果防火墙禁止直接访问 Web，则需要使用 HTTP 代理。
+
+回溯电子邮件::
+要将问题报告到的电子邮件地址。
+
+使用 SSL::
+出于安全原因，请按 ``Y``。
+
+您要导入现有证书吗？::
+请按 ``N``。这可以确保使用前面从 {productname} Server 复制的新证书。
+
+组织::
+下一组问题与代理 SSL 证书的用法特征有关。组织可能是服务器上使用的同一组织，当然，如果您的代理不在主服务器所在的同一组织中，则两个组织是不同的。
+
+组织单位::
+此处的默认值是代理的主机名。
+
+城市::
+附加到代理证书的其他信息。
+
+州/省::
+附加到代理证书的其他信息。
+
+国家/地区代码::
+在[guimenu]``国家/地区代码``字段中，输入安装 {productname} 期间设置的国家/地区代码。例如，如果您的代理位于美国，而 {productname} 位于德国，请为代理输入 `DE`。
++
+
+[NOTE]
+====
+国家/地区代码必须是两个大写字母。有关国家/地区代码的完整列表，请参见 https://www.iso.org/obp/ui/#search。
+====
+
+CNAME 别名（空格分隔）::
+如果可以通过不同的 DNS CNAME 别名访问您的代理，请使用此字段。否则可将其留空。
+
+CA 口令::
+输入 {productname} Server 的证书使用的口令。
+
+您要使用现有的 SSH 密钥来代理 SSH-Push Salt 受控端吗？::
+如果您要重复使用对服务器上的 SSH-Push Salt 客户端所用的 SSH 密钥，请使用此选项。
+
+要创建并填充配置频道 rhn_proxy_config_1000010001 吗？::
+接受默认值 ``Y``。
+
+SUSE Manager 用户名::
+使用 {productname} Server 上的相同用户名和口令。
+
+如果缺少某些部分（例如 CA 密钥和公共证书），脚本将列显必须执行的以集成所需文件的命令。复制必需的文件后，请再次运行 [command]``configure-proxy.sh``。如果在执行脚本期间收到 HTTP 错误，请再次运行脚本。
+
+[command]``configure-proxy.sh`` 激活 {productname} Proxy 所需的服务，例如 [systemitem]``squid``、[systemitem]``apache2``、[systemitem]``salt-broker`` 和 [systemitem]``jabberd``。
+
+要检查代理系统及其客户端的状态，请在 {webui} 中单击代理系统的细节页（单击menu:系统[代理]，然后单击系统名称）。[guimenu]``连接``和[guimenu]``代理``子选项卡会显示各种状态信息。
+
+
+
+[[proxy.pxe.setup]]
+== 启用 PXE 引导
+
+
+
+[[proxy.pxe.sync]]
+=== 同步配置文件和系统信息
+
+要通过代理启用 PXE 引导，必须在 {productname} Proxy 和 {productname} Server 上安装并配置额外的软件。
+
+. 在 {productname} Proxy 上安装 [package]``susemanager-tftpsync-recv`` 软件包：
++
+
+----
+zypper in susemanager-tftpsync-recv
+----
+
+. 在 {productname} Proxy 上，运行 [command]``configure-tftpsync.sh`` 设置脚本并输入请求的信息：
++
+
+----
+configure-tftpsync.sh
+----
++
+
+需要提供 {productname} Server 和代理的主机名与 IP 地址。此外，需要输入代理上 tftpboot 目录的路径。
+
+. 在 {productname} Server 上安装 [package]``susemanager-tftpsync``：
++
+
+----
+zypper in susemanager-tftpsync
+----
+
+. 在 {productname} Server 上运行 [command]``configure-tftpsync.sh``。
+    这会创建配置并将其上载到 {productname} Proxy：
++
+
+----
+configure-tftpsync.sh FQDN_of_Proxy
+----
+
+. 在 {productname} Server 上启动初始同步：
++
+
+----
+cobbler sync
+----
++
+
+也可以在 Cobbler 中发生了需要立即同步的更改后执行此操作。如果不执行此操作，Cobbler 同步将在需要时自动运行。有关 Cobbler 所支持的自动安装的详细信息，请参见 xref:client-configuration:autoinst-intro.adoc[操作系统安装]。
+
+
+
+[[proxy.pxe.dhcp]]
+=== 通过 {productname} Proxy 为 PXE 配置 DHCP
+
+{productname} 使用 Cobbler 进行客户端置备。PXE (tftp) 默认已安装并已激活。客户端必须能够使用 DHCP 在 {productname} Proxy 上找到 PXE 引导。对于包含要置备的客户端的区域，请使用以下 DHCP 配置：
+
+----
+next-server: <IP_Address_of_Proxy>
+filename: "pxelinux.0"
+----
+
+
+
+[[replace-susemgrproxy]]
+== 更换 {productname} 代理
+
+代理不会储存有关与它连接的客户端的任何信息，因此您随时可更换代理。此过程通过重新激活密钥处理，这样可防止您丢失代理的历史记录。如果不使用重新激活密钥，更换代理将会变成新代理，但会使用新的 ID。更换代理必须使用与其前任代理相同的名称和 IP 地址。
+
+要将传统代理转变为 Salt 代理，您可以重新安装代理。
+
+
+[IMPORTANT]
+====
+在安装代理期间，客户端将无法访问 {productname} Server。删除某个代理后，系统列表可能暂时不正确。以前已连接到该代理的所有客户端将显示为直接连接到服务器。在客户端上成功完成第一个操作（例如执行远程命令，或者安装软件包或补丁）后，此信息将自动更正。这种更正可能发生在几小时之后。
+====
+
+
+
+=== 替换代理
+
+准备替换时，请关闭旧代理并使其保持已安装状态。为此系统创建重新激活密钥，然后使用重新激活密钥注册新代理。如果您不使用重新激活密钥，则需要针对新代理重新注册所有客户端。
+
+
+
+.过程：替换传统代理并保持客户端的已注册状态
+. 开始迁移前，请根据需要保存旧代理的数据。请考虑将重要数据或自定义数据复制到新代理也可访问的中心位置。
+. 关闭旧代理。
+. 安装新的 {productname} 代理。有关安装说明，请参见 xref:install-proxy-unified.adoc[代理安装]。
+. 在 {productname} {webui} 中，选择新安装的 {productname} 代理并将其从系统列表中删除。
+. 在 {webui} 中，为旧代理系统创建重新激活密钥。在旧代理的[guimenu]``系统细节``选项卡上单击[guimenu]``重新激活``。单击[guimenu]``生成新密钥``并记下新密钥。
+. 按 xref:installation:proxy-registration.adoc[] 中所述使用引导脚本注册新代理。 在引导脚本中，使用 [systemitem]``ACTIVATION_KEYS`` 参数设置重新激活密钥。
+. 基于您之前创建的备份恢复代理数据。 请参见此过程的第 1 步。
+
+对于 Salt 代理，您需要在引导新代理之前执行一些额外的步骤。
+
+
+
+.过程：替换 Salt 代理并保持客户端的已注册状态
+. 开始迁移前，请根据需要保存旧代理的数据。请考虑将重要数据或自定义数据复制到新代理也可访问的中心位置。
+. 关闭旧代理。
+. 在 {webui} 中，为旧代理系统创建重新激活密钥。在旧代理的[guimenu]``系统细节``选项卡上单击[guimenu]``重新激活``。单击[guimenu]``生成新密钥``并记下新密钥。
+. 在 {webui} 中，导航到 menu:Salt[密钥]，找到与旧代理关联的 Salt 密钥，然后单击 btn:[删除]。
+. 安装新的 {productname} 代理。有关安装说明，请参见 xref:install-proxy-unified.adoc[代理安装]。
+. 按 xref:installation:proxy-registration.adoc[] 中所述使用引导脚本注册新代理。 在引导脚本中，使用 [systemitem]``ACTIVATION_KEYS`` 参数设置重新激活密钥。
+. 基于您之前创建的备份恢复代理数据。 请参见此过程的第 1 步。
+
+有关使用重新激活密钥的详细信息，请参见 xref:client-configuration:activation-keys.adoc[]。
+
+安装新代理后，可能还需要：
+
+* 将集中保存的数据复制到新代理系统
+* 安装任何其他所需软件
+* 设置 TFTP 同步（如果该代理用于自动安装）
+
+
+
+=== 将传统代理转变为 Salt 代理
+
+要将传统代理转变为 Salt 代理，可以重新安装代理。 采用此方法时，请不要使用重新激活密钥，而应重复使用原先注册代理时所用的相同激活密钥。 这意味着您不必重新注册客户端。
+
+
+
+.过程：将传统代理替换为 Salt 代理
+. 开始迁移前，请根据需要保存旧代理的数据。请考虑将重要数据或自定义数据复制到新代理也可访问的中心位置。
+. 关闭代理。
+. 安装新的 {productname} 代理，并确保其 IP 地址与要更换的代理的 IP 地址相同。有关安装说明，请参见 xref:install-proxy-unified.adoc[代理安装]。
+. 按 xref:installation:proxy-registration.adoc[] 中所述使用引导脚本注册代理。在引导脚本中，使用 [systemitem]``ACTIVATION_KEYS`` 参数设置旧代理所用的激活密钥。
+
+安装新代理后，可能还需要：
+
+* 将集中保存的数据复制到新代理系统
+* 安装任何其他所需软件
+* 设置 TFTP 同步（如果该代理用于自动安装）

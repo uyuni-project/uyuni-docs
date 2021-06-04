@@ -1,0 +1,255 @@
+[[install-hardware-requirements]]
+= 硬件要求
+
+ifeval::[{suma-content} == true]
+下表概述了 {x86_64} 和 {ppc64le} 体系结构上的 {productname} Server 与 Proxy 的硬件和软件要求。
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+下表概述了 {x86_64} 体系结构上的 {productname} Server 与 Proxy 的硬件和软件要求。
+endif::[]
+
+ifeval::[{suma-content} == true]
+有关 {ibmz} 硬件要求，请参见 xref:installation:install-ibmz.adoc[]。
+endif::[]
+
+有关 {productname} {smr} 硬件要求，请参见 xref:retail:retail-requirements.adoc[]。
+
+
+
+[[server-hardware-requirements]]
+== 服务器硬件要求
+
+{productname} Server 将软件包储存在 [path]``/var/spacewalk/`` 目录中。如果此目录耗尽了磁盘空间，储存库同步将会失败。可以根据您打算镜像的客户端和储存库来估算 [path]``/var/spacewalk/`` 目录所需的空间量。
+
+
+
+[cols="1,1,1", options="header"]
+.{x86_64} 体系结构的服务器硬件要求
+|===
+
+| 硬件
+| 细节
+| 建议
+
+| CPU
+| -
+| 最少 4 个专用的 64 位 CPU 核心
+
+| RAM
+| 测试服务器
+| 最少 8{nbsp}GB
+
+|
+| 基本安装
+| 最少 16{nbsp}GB
+
+|
+| 生产服务器
+| 最少 32{nbsp}GB
+
+| 磁盘空间
+| [path]``/``（根目录）
+| 最少 24{nbsp}GB
+
+|
+| [path]``/var/lib/pgsql``
+| 最少 50{nbsp}GB
+
+|
+| [path]``/var/spacewalk``
+| 每个 {suse} 产品最少需要 50{nbsp}GB，每个 Red Hat 产品最少需要 360{nbsp}GB
+
+|
+| [path]``/var/cache``
+| 最少 10{nbsp}GB。
+为每个 {suse} 产品增加 100{nbsp}MB，为每个 Red Hat 或其他产品增加 1{nbsp}GB。
+如果服务器是 ISS 主服务器，则空间需要增加一倍。
+
+|
+| 交换空间
+| 3{nbsp}GB
+
+|===
+
+
+有关服务器间同步 (ISS) 的详细信息，请参见 xref:administration:iss.adoc[]。
+
+
+
+ifeval::[{suma-content} == true]
+[cols="1,1,1", options="header"]
+.IBM POWER8 或 POWER9 体系结构的服务器硬件要求
+|===
+
+| 硬件
+| 细节
+| 建议
+
+| CPU
+|
+| 最少 4 个专用核心
+
+| RAM
+| 测试服务器
+| 最少 8{nbsp}GB
+
+|
+| 基本安装
+| 最少 16{nbsp}GB
+
+|
+| 生产服务器
+| 最少 32{nbsp}GB
+
+| 磁盘空间
+| [path]``/``（根目录）
+| 最少 100{nbsp}GB
+
+|
+| [path]``/var/lib/pgsql``
+| 最少 50{nbsp}GB
+
+|
+| [path]``/var/spacewalk``
+| 每个 SUSE 产品最少需要 50{nbsp}GB，每个 Red Hat 产品最少需要 360{nbsp}GB
+
+|
+| [path]``/var/cache``
+| 最少 10{nbsp}GB。
+为每个 {suse} 产品增加 100{nbsp}MB，为每个 Red Hat 或其他产品增加 1{nbsp}GB。
+如果服务器是 ISS 主服务器，则空间需要增加一倍。
+
+|
+| 交换空间
+| 3{nbsp}GB
+
+|===
+
+
+
+endif::[]
+
+
+
+
+== 代理硬件要求
+
+[cols="1,1,1", options="header"]
+.代理硬件要求
+|===
+
+| 硬件
+| 细节
+| 建议
+
+| CPU
+|
+| 最少 2 个专用的 64 位 CPU 核心
+
+| RAM
+| 测试服务器
+| 最少 2{nbsp}GB
+
+|
+| 生产服务器
+| 最少 8{nbsp}GB
+
+| 磁盘空间
+| [path]``/``（根目录）
+| 最少 24{nbsp}GB
+
+|
+| [path]``/srv``
+| 最少 100{nbsp}GB
+
+|
+| [path]``/var/cache`` (Squid)
+| 最少 100{nbsp}GB
+
+|===
+
+
+{productname} Proxy 将软件包缓存在 [path]``/var/cache/`` 目录中。如果 [path]``/var/cache/`` 中的可用空间不足，代理将去除旧的未使用软件包，并将其替换为较新的软件包。
+
+鉴于这种行为：
+
+* 代理上的 [path]``/var/cache/`` 目录越大，代理与 {productname} Server 之间的流量就越少。
+* 使代理上的 [path]``/var/cache/`` 目录与 {productname} Server 上的 [path]``/var/spacewalk/`` 保持相同的大小，可以避免在首次同步后出现大量的流量。
+* {productname} Server 上的 [path]``/var/cache/`` 目录相比代理上的目录可能较小。
+    有关大小估算的指导，请参见 <<server-hardware-requirements>> 一节。
+
+
+
+== 储存设备和权限
+
+我们建议将 {productname} 的储存库和数据库储存在单独的储存设备上。这有助于避免数据丢失。必须在运行 YaST {productname} 安装过程之前设置储存设备。
+
+{productname} 需要三个不同的卷：
+
+* 数据库卷：[path]``/var/lib/pgsql``
+* 频道卷：[path]``/var/spacewalk``
+* 缓存：[path]``/var/cache``
+
+我们建议使用 XFS 作为所有卷的文件系统类型。此外，对于本地安装，请考虑使用逻辑卷管理 (LVM) 来管理磁盘。用于储存储存库的磁盘大小取决于您要使用 {productname} 管理的发行套件和频道数目。请参见本节中的表格来估算所需大小。
+
+在 {productname} Server 上，使用以下命令找到所有可用的储存设备：
+
+----
+hwinfo --disk | grep -E "Device File:"
+----
+
+使用 [command]``lsblk`` 命令查看每个设备的名称和大小。
+
+结合设备名使用 [command]``suma-storage`` 命令将外部磁盘设置为数据库和储存库的位置：
+
+----
+suma-storage <channel_devicename> [<database_devicename>]
+----
+
+外部储存卷将设置为装入到 [path]``/manager_storage`` 和 [path]``/pgsql_storage`` 的 XFS 分区。
+
+可对频道数据和数据库使用同一个储存设备。但不建议这样做，因为不断增长的频道储存库可能会填满储存，从而给数据库完整性带来风险。使用独立的储存设备还可以提高性能。如果您想要使用单个储存设备，请结合单个设备名参数运行 [command]``suma-storage``。
+
+如果您正在安装代理，[command]``suma-storage`` 命令只采用单个设备名参数，并将外部储存位置设置为 Squid 缓存。
+
+为 {productname} Server 和 Proxy 创建磁盘分区时，请确保正确设置权限。
+
+对于 [path]``/var/lib/pgsql``：
+
+* 拥有者：读取、写入、执行
+* 组：读取、执行
+* 用户：无
+
+对于 [path]``/var/spacewalk``：
+
+* 拥有者：读取、写入、执行
+* 组：读取、写入、执行
+* 用户：读取、执行
+
+使用以下命令检查权限：
+
+----
+ls -l /var/lib/pgsql /var/spacewalk
+----
+
+输出应如下所示：
+
+----
+drwxr-x--- 1 postgres postgres /var/lib/pgsql
+drwxrwxr-x 1 wwwrun   www      /var/spacewalk
+----
+
+如果需要，请使用以下命令更改权限：
+
+----
+chmod 750 /var/lib/pgsql
+chmod 775 /var/spacewalk
+----
+
+对于拥有者，请使用以下命令：
+
+----
+chown postgres:postgres /var/lib/pgsql
+chown wwwrun:www /var/spacewalk
+----

@@ -1,0 +1,217 @@
+[[configuration-management]]
+= 配置管理
+
+您可以使用配置文件和频道管理客户端的配置，而无需手动配置每个客户端。
+
+配置参数编写在脚本中并储存在配置文件中。 您可以使用 {productname} {webui} 直接写入配置文件，也可以上载或关联到其他位置存在的文件。
+
+您可以集中管理或在本地管理配置文件。 集中管理的配置文件由全局配置频道提供，并且可以应用到订阅了 {productname} 服务器的任何客户端。 在本地管理的配置文件用于覆盖集中管理的配置设置。 对于没有配置管理特权，但又需要更改所管理的客户端的 {productname} 用户，这些文件特别有用。
+
+Configuration channels are used to organize configuration files. You can subscribe clients to configuration channels, and deploy configuration files as required.
+
+配置文件有版本控制，因此您可以添加配置设置，在您的客户端上对其进行测试，并根据需要将其回滚到之前的修订版。 如果您已创建配置频道，还可以在不同的配置文件以及同一配置文件的不同修订版之间进行比较。
+
+您可以集中管理或在本地管理配置文件。 集中管理的配置文件由全局配置频道提供。 在本地管理的配置文件直接创建或上载到 {productname} 中。
+
+Salt 客户端与传统客户端可用的配置管理功能有所不同。 下表显示了不同客户端类型支持的功能：
+
+
+.配置管理支持的功能
+[cols="1,1,1", options="header"]
+|===
+| 功能
+|Salt
+ |传统
+ 
+ |全局配置频道
+ | {check}
+ | {check}
+ 
+ | 部署文件
+ | {check}
+ | {check}
+ 
+ | 比较文件
+ | {question}
+ | {check}
+ 
+ | 本地管理的文件
+ | {cross}
+ | {check}
+ 
+ | 沙箱文件
+ | {cross}
+ | {check}
+ 
+ | 应用 Highstate
+ | {check}
+ | {cross}
+ 
+ | 从客户端导入文件
+ | {cross}
+ | {check}
+ 
+ | 配置宏
+ | {cross}
+ | {check}
+ 
+|===
+
+
+
+== 为配置管理准备传统客户端
+
+传统客户端需要进行一些额外的准备工作才能使用配置管理。 如果您是使用 {ay} 或 {kickstart} 安装传统客户端的，那么您可能已经拥有相应的软件包。 对于其他传统客户端，请确保您已为客户端操作系统安装了相关的工具子频道。 有关软件频道的详细信息，请参见 xref:client-configuration:channels.adoc[]。
+
+您需要的软件包包括：
+
+* [path]``mgr-cfg``：所有 [path]``mgr-cfg-*`` 软件包都需要的基础库和功能
+* [path]``mgr-cfg-actions``：运行通过 {productname} 安排的配置操作需要该软件包。
+* [path]``mgr-cfg-client``：提供配置管理系统的客户端功能的命令行界面。
+* [path]``mgr-cfg-management``：提供用于管理 {productname} 配置的命令行界面。
+
+您可以在引导过程中安装这些软件包，方法是导航到menu:系统[激活密钥]，单击要在引导期间使用的激活密钥，并选中[guimenu]``配置文件部署``选项。 有关激活密钥的详细信息，请参见 xref:client-configuration:activation-keys.adoc[]。
+
+
+
+== 创建配置频道
+
+要创建新的中心配置频道，请执行以下操作：
+
+.过程：创建中心配置频道
+. 在 {productname} {webui} 中，导航到menu:配置[频道]，然后单击 btn:[创建配置频道]。
+. 键入频道的名称。
+. 键入频道的标签。
+    此字段只能包含字母、数字、连字符 (``-``) 和下划线 (``_``)。
+. 键入用于与其他频道进行区分的频道说明。
+. 单击 btn:[创建配置频道] 以创建新频道。
+
+
+您也可以使用配置频道管理 Salt 客户端上的 Salt 状态。
+
+
+
+.过程：创建 Salt 状态频道
+. 在 {productname} {webui} 中，导航到menu:配置[频道]，然后单击 btn:[创建状态频道]。
+. 键入频道的名称。
+. 键入频道的标签。
+    此字段只能包含字母、数字、连字符 (``-``) 和下划线 (``_``)。
+. 键入用于与其他频道进行区分的频道说明。
+. 为 [path]``init.sls`` 文件键入 [guimenu]``SLS 内容``。
+. 单击 btn:[创建配置频道] 以创建新频道。
+
+
+
+== 添加配置文件、目录或符号链接
+
+如果您已创建配置频道，则可以添加配置文件、目录或符号链接：
+
+
+
+.过程：添加配置文件、目录或符号链接
+. 在 {productname} {webui} 中，导航到menu:配置[频道]，单击要向其添加配置文件的配置频道的名称，然后导航到menu:添加文件[创建文件]子选项卡。
+. 在[guimenu]``文件类型``字段中，选择是要创建文本文件、目录还是符号链接。
+. 在[path]``文件名/路径``字段中，键入应部署文件的位置的绝对路径。
+. 如果您要创建符号链接，请在[guimenu]``符号链接目标文件名/路径``字段中键入目标文件和路径。
+. 在[guimenu]``所有权``字段中键入该文件的[guimenu]``用户名``和[guimenu]``组名称``，以及[guimenu]``文件权限模式``。
+. 如果客户端启用了 SELinux，您可以配置 [guimenu]``SELinux 上下文``以启用所需的文件属性（例如用户、角色和文件类型）。
+. 如果配置文件包含宏，请输入标记宏开始位置和结束位置的符号。
+. 在[guimenu]``文件内容``文本框中，使用脚本下拉框选择相应的脚本语言输入配置文件内容。
+. 单击 btn:[创建配置文件]。
+
+
+
+== 为客户端订阅配置频道
+
+您可以为单个客户端订阅配置频道，方法是导航到menu:系统[系统列表]，选择要使用的客户端，然后导航到[guimenu]``配置``选项卡。 要为多个客户端订阅配置频道，可以使用系统集管理器 (SSM)。
+
+
+
+.过程：为多个客户端订阅配置频道
+. 在 {productname} {webui} 中，导航到menu:系统[系统列表]，然后选择要使用的客户端。
+. 导航到menu:系统[系统集管理器]，然后转到menu:配置[订阅频道]子选项卡，以查看可用配置频道的列表。
+. 可选：单击[guimenu]``目前订阅的系统``列中的数字以查看目前订阅了配置频道的客户端。
+. 选中要订阅的配置频道，然后单击 btn:[继续]。
+. 使用向上和向下箭头对配置频道排名。
+    两个配置频道之间的设置发生冲突时，系统会优先使用更靠近列表顶部的频道。
+. 确定频道应用到所选客户端的方式。
+    单击 btn:[订阅为最低优先级] 可将新频道添加为比目前订阅的频道都低的优先级。 单击 btn:[订阅为最高优先级] 可将新频道添加为比目前订阅的频道都高的优先级。 单击 btn:[替换现有订阅] 可去除现有频道并将其替换为新频道。
+. 单击 btn:[应用订阅]。
+
+
+[NOTE]
+====
+如果新配置频道优先级与现有频道冲突，系统会去除重复的频道并根据新优先级进行替换。 如果某个操作要对客户端的配置优先级重新排序，{webui} 会要求您在继续之前先确认更改。
+====
+
+
+
+== 比较配置文件
+
+您也可以使用系统集管理器 (SSM) 将客户端上部署的配置文件与储存在 {productname} 服务器上的配置文件进行比较。
+
+
+
+.过程：比较配置文件
+. 在 {productname} {webui} 中，导航到menu:系统[系统列表]，然后选择订阅了要比较的配置文件的客户端。
+. 导航到menu:系统[系统集管理器]，然后转到menu:配置[比较文件]子选项卡，以查看可用配置文件的列表。
+. 可选：单击[guimenu]``系统``列中的数字以查看目前订阅了配置文件的客户端。
+. 选中要比较的配置文件，然后单击 btn:[安排文件比较]。
+
+
+
+== Configuration File Macros on Traditional Clients
+
+Being able to store one file and share identical configurations is useful, but in some cases you might need many variations of the same configuration file, or configuration files that differ only in system-specific details, such as host name and MAC address. In this case, you can use macros or variables within the configuration files. This allows you to upload and distribute a single file, with hundreds or even thousands of variations. In addition to variables for custom system information, the following standard macros are supported:
+
+----
+rhn.system.sid
+rhn.system.profile_name
+rhn.system.description
+rhn.system.hostname
+rhn.system.ip_address
+rhn.system.custom_info(key_name)
+rhn.system.net_interface.ip_address(eth_device)
+rhn.system.net_interface.netmask(eth_device)
+rhn.system.net_interface.broadcast(eth_device)
+rhn.system.net_interface.hardware_address(eth_device)
+rhn.system.net_interface.driver_module(eth_device)
+----
+
+To use this feature, either upload or create a configuration file via the [guimenu]``Configuration Channel Details`` page. Then open its [guimenu]``Configuration File Details`` page and include the supported macros of your choice. Ensure that the delimiters used to offset your variables match those set in the [guimenu]``Macro Start Delimiter`` and [guimenu]``Macro End Delimiter`` fields and do not conflict with other characters in the file. We recommend that the delimiters be two characters in length and do not contain the percent (``%``) symbol.
+
+For example, you may have a file applicable to all of your servers that differs only in IP address and host name. Rather than manage a separate configuration file for each server, you can create a single file, such as [path]``server.conf``, with the IP address and host name macros included.
+
+----
+hostname={| rhn.system.hostname |}
+ip_address={| rhn.system.net_interface.ip_address(eth0) |}
+----
+
+When the file is delivered to individual systems, whether through a scheduled action in the {productname} {webui} or at the command line with the {productname} Configuration Client ([command]``mgrcfg-client``), the variables will be replaced with the host name and IP address of the system as recorded in {productname}'s system profile. In this example, the deployed version will look similar to this:
+
+----
+hostname=test.example.domain.com
+ip_address=177.18.54.7
+----
+
+To capture custom system information, insert the key label into the custom information macro (``rhn.system.custom_info``). For example, if you developed a key labeled "asset" you can add it to the custom information macro in a configuration file to have the value substituted on any system containing it. The macro would look like this:
+
+----
+asset={@ rhn.system.custom_info(asset) @}
+----
+
+When the file is deployed to a system containing a value for that key, the macro gets translated, resulting in a string similar to this:
+
+----
+asset=Example#456
+----
+
+To include a default value (for example, if one is required to prevent errors), you can append it to the custom information macro, like this:
+
+----
+asset={@ rhn.system.custom_info(asset) = 'Asset #' @}
+----
+
+This default is overridden by the value on any system containing it.
+
+The {productname} Configuration Manager ([command]``mgrcfg-manager``) is available on {productname} client machines to assist with system management. It will not translate or alter files, as the tool is system agnostic. The [command]``mgrcfg-manager`` command does not depend on system settings. Binary files cannot be interpolated.

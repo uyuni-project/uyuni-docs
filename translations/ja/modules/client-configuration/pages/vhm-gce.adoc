@@ -1,0 +1,84 @@
+[[vhm-hce]]
+= VHMおよびGoogle Compute Engine
+
+仮想ホストマネージャ(VHM)を使用して、Google Compute Engine (GCE)からインスタンスを収集できます。
+
+VHMを使用すると、{productname}は、使用している仮想マシンに関する情報を取得して報告できます。 VHMの詳細については、xref:client-configuration:vhm.adoc[]を参照してください。
+
+
+
+== GCE VHMの作成
+
+
+仮想ホストマネージャ(VHM)は{productname}サーバ上で動作します。
+
+VHMを実行するには、{productname}サーバでポート443がオープンになっていて、クライアントにアクセスする必要があります。
+
+[systemitem]``virtual-host-gatherer-libcloud``パッケージを{productname}サーバにインストール済みであることを確認してください。
+
+開始する前に、GCEパネルにログインし、証明書ファイルをダウンロードします。 このファイルを{productname}サーバにローカルに格納し、パスをメモします。
+
+
+
+.プロシージャ: GCE VHMの作成
+
+. {productname}の{webui}で、menu:システム[仮想ホストマネージャ]に移動します。
+. ［btn:[作成]］をクリックし、ドロップダウンメニューから［[guimenu]``Google Compute Engine``］を選択します。
+. ［[guimenu]``Add a Google Conpute Engine Virtual Host Manager（Google Conpute Engineの仮想ホストマネージャの追加）``］セクションで、次のパラメータを使用します。
+* ［[guimenu]``ラベル``］フィールドにVHMのカスタム名を入力します。
+* ［[guimenu]``Service Account Email（サービスアカウントメール）``］フィールドに、Googleアカウントに関連付けられているメールアドレスを入力します。
+* ［[guimenu]``Cert Path（証明書のパス）``］フィールドに、GCEパネルからダウンロードした証明書へのパスを入力します。
+* ［[guimenu]``プロジェクトID``］フィールドに、GCEインスタンスで使用するプロジェクトIDを入力します。
+* ［[guimenu]``Zone（ゾーン）``］フィールドに、VMが存在するゾーンを入力します。
+    これは、サブスクリプションマッチングを動作させるために必要です。
+. ［btn:[作成]］をクリックして変更を保存し、VHMを作成します。
+. ［[guimenu]``仮想ホストマネージャ``］ページで、新しいVHMを選択します。
+. ［[guimenu]``プロパティ``］ページで、［btn:[データの更新]］をクリックし、新しいVHMを評価します。
+
+評価されたオブジェクトおよびリソースを表示するには、menu:システム[システム一覧 > 仮想システム]に移動します。
+
+
+
+== パーミッションの割り当て
+
+作成したVHMは、GCE VMにアクセスするために、正しいパーミッションが割り当てられている必要があります。
+
+Googleクラウドプラットフォームのアカウントに管理者としてログインし、クラウドのIDおよびアクセス管理(IAM)ツールを使用して、サービスアカウントに適切なロールがあることを確認してください。 VMに`VM``ロールが割り当てられていることも確認する必要があります。
+
+パーミッションが正しく設定されていない場合、[command]``virtual-host-gatherer``を実行すると次のようなエラーが発生する場合があります。
+
+----
+ERROR:（エラー:）{'domain': 'global', 'reason': 'forbidden', 'message': "Required  'compute.zones.list' permission for 'projects/project-id'"}
+ ERROR:（エラー:）Could not connect to the Google Compute Engine Public Cloud using  specified credentials.（指定した資格情報を使用してGoogle Compute Engineのパブリッククラウドに接続できませんでした。）
+----
+
+正しい資格情報を判断するには、{productname}サーバのプロンプトで次のコマンドを実行します。
+
+----
+virtual-host-gatherer -i input_google.json -o out_google.json -vvv
+----
+
+[path]``input_google.json``ファイルには次の情報が含まれています。
+
+----
+[
+    {
+         "id": "google_vhm",
+         "module": "GoogleCE",
+         "service_account_email": "mail@example.com",
+         "cert_path": "secret-key",
+         "project_id": "project-id",
+         "zone": "zone"
+     }
+ ]
+----
+
+
+
+== GCE UUID
+
+Googleパブリッククラウドで実行されているインスタンスは、このUUIDを{productname}サーバに報告できます。
+
+----
+152986662232938449
+----

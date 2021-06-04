@@ -1,0 +1,58 @@
+[server-major-upgrade]
+= サーバ - メジャーアップグレード
+
+{productname}のコアコンポーネントが新しいメジャーバージョンにアップグレードされた場合、{productname}サーバでメジャーアップグレードを実行する必要があります。 これは、PostgreSQL、Salt、またはopenSUSE Leapのバージョンアップグレードが必要な場合です。 openSUSE Leapは、基盤となるベースオペレーティングシステム(OS)です。
+
+[IMPORTANT]
+====
+追加の手動手順が必要な場合があります。この情報はリリースノートでのみ確認できます。 アップグレードの追加情報については、リリースノート(https://www.uyuni-project.org/pages/stable-version.html)を参照してください。
+====
+
+
+[command]``server-migrator.sh``スクリプトを使用すると、{productname}サーバが最新バージョンに移行されます。 基盤となるオペレーティングシステムもバージョン{opensuse-version}にアップグレードされます。 このスクリプトは[package]``susemanager``パッケージの一部です。
+
+
+使用しているPostgreSQLのバージョンは、基盤となるオペレーティングシステムによって異なります。 {opensuse}{nbsp}Leap{nbsp}15.2はPostgreSQL{nbsp}12を使用しているため、これはそのオペレーティングシステムで{uyuni}が使用するバージョンです。 {opensuse}{nbsp}Leap{nbsp}15.3にはPostgreSQL{nbsp}13が搭載されていることが予想されます。
+
+
+
+.プロシージャ: {productname}サーバの移行
+. [command]``server-migrator.sh``スクリプトを実行する前に、最新バージョンの[package]``susemanager``パッケージがインストールされているかどうかを確認してください。
++
+----
+zypper ref
+zypper up susemanager
+----
+. [command]``/usr/lib/susemanager/bin/server-migrator.sh``スクリプトを実行してベースOSおよび{productname}サーバをアップグレードします。
+. データベースをPostgreSQL 12に移行するには、次の移行スクリプトを実行します。
++
+----
+/usr/lib/susemanager/bin/pg-migrate-10-to-12.sh
+----
++
+PostgreSQLデータベースの移行の詳細については、xref:db-migration-12.adoc[]を参照してください。
+. To migrate the database to PostgreSQL 13 from PostgreSQL 12 run the migration script:
++
+----
+/usr/lib/susemanager/bin/pg-migrate-12-to-13.sh
+----
++
+PostgreSQLデータベースの移行の詳細については、xref:db-migration-13.adoc[]を参照してください。
+. To migrate the database to PostgreSQL 13 from PostgreSQL 10 run the migration script:
++
+----
+/usr/lib/susemanager/bin/pg-migrate-10-to-13.sh
+----
++
+PostgreSQLデータベースの移行の詳細については、xref:db-migration-13.adoc[]を参照してください。
+. 移行が完了したら、{productname}サーバを手動で再起動します。
++
+----
+shutdown -r now
+----
+
+
+[IMPORTANT]
+====
+移行中に発生した問題は修正できません。 移行を開始する前に、バックアップを作成したことを確認してください。 仮想マシンで{productname}サーバを実行している場合、移行を開始する前にスナップショットを作成することをお勧めします。
+====

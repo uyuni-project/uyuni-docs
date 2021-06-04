@@ -1,0 +1,275 @@
+[[troubleshooting-clients]]
+= 对客户端查错
+
+
+
+== 自动安装
+
+根据您的基础频道，新的自动安装配置文件可能会订阅缺少必需软件包的频道。
+
+要使自动安装可以正常进行，必须提供以下软件包：
+
+* [package]``pyOpenSSL``
+* [package]``rhnlib``
+* [package]``libxml2-python``
+* [package]``spacewalk-koan``
+
+为了解决此问题，请先进行以下检查：
+
+* 检查是否为您的组织和用户提供了与自动安装配置文件中的基础频道相关的工具软件频道。
+* 检查是否为您的 {productname} 提供了工具频道作为子频道。
+* 检查关联的频道中是否提供了必需的软件包和任何依赖项。
+
+
+
+== 裸机系统
+
+如果网络中的裸机系统不会自动添加到[guilabel]``系统``列表中，请先进行以下检查：
+
+* 您必须已安装 [path]``pxe-default-image`` 软件包。
+* 文件路径和参数必须配置正确。检查 [path]``pxe-default-image`` 提供的 [path]``vmlinuz0`` 和 [path]``initrd0.img`` 文件是否位于 [path]``rhn.conf`` 配置文件中指定的位置。
+* 确保将裸机系统连接到 {productname} 服务器的网络设备可正常运行，并且您可以从该服务器访问 {productname} 服务器 IP 地址。
+* 要置备的裸机系统必须在引导序列中启用 PXE 引导，并且必须未在尝试引导操作系统。
+* 引导期间，DHCP 服务器必须响应 DHCP 请求。检查 PXE 引导消息，确保：
+** DHCP 服务器指派的是预期的 IP 地址
+** DHCP 服务器为要引导的 [option]``next-server`` 指派的是 {productname} 服务器 IP 地址。
+* 确保 Cobbler 正在运行，并且已启用发现功能。
+
+如果您在引导后看到短暂显示的蓝色 Cobbler 菜单，则说明发现功能已启动。 如果该过程未成功完成，请暂时禁用自动关闭以帮助诊断问题。要禁用自动关闭，请执行以下操作：
+
+. 使用方向键在 Cobbler 菜单中选择 [option]``pxe-default-profile``，然后在计时器到期前按 Tab 键。
+. 使用集成编辑器添加内核引导参数 [option]``spacewalk-finally=running``，然后按 Enter 继续引导。
+. 使用用户名 [option]``root`` 和口令 [option]``linux`` 进入外壳继续调试。
+
+[IMPORTANT]
+.重复的配置文件
+====
+受技术所限，我们无法可靠地区分新裸机系统与先前已发现的系统。 因此，建议您不要多次启动裸机系统，因为这会导致产生重复的配置文件。
+====
+
+
+
+== Bootstrap End-of-Life {centos} 6 Clients
+
+{centos} 6 is now at end-of-life, and the images provided in the client repository for this operating system are out of date. Bootstrapping new {centos} 6 clients using these packages will fail. This failure will not happen on {centos} 6 clients that are already installed and bootstrapped.
+
+If you need to bootstrap new {centos} 6 clients you can edit the existing repositories to reflect the correct URL.
+
+
+
+.Procedure: Troubleshooting Bootstrapping a New {centos} 6 Client
+. On the {centos} 6 client, at the command prompt, open the ``CentOS-Base.repo`` file, located in the ``/etc/yum.repos.d/`` directory.
+. Locate the ``mirrorlist`` entry, pointing to ``mirrorlist.centos.org``. There may be more than one entry. For example:
++
+----
+mirrorlist=http://mirrorlist.centos.org/?release=6&arch=$basearch&repo=os
+----
++
+. Comment out the ``mirrorlist`` entry, to prevent the package manager looking for the URL.
+. Edit the ``baseurl`` line to point to a ``vault.centos.org`` URL, and specify the {centos} 6 repositories. For example:
++
+----
+baseurl=https://vault.centos.org/centos/6/os/$basearch/
+----
+. Repeat for each repository listed in the file.
+. Bootstrap the client. For more information about bootstrapping {centos} clients, see xref:client-configuration:clients-centos.adoc[].
+
+For more information about the {centos} 6 end-of-life, see http://mirror.centos.org/centos/6/readme.
+
+
+
+== 生命周期已结束产品的引导储存库
+
+同步受支持的产品时，会自动在 {productname} 服务器上创建及重新生成引导储存库。 当产品到达生命周期结束日期并不再受到支持时，如果您要继续使用此产品，就必须手动创建引导储存库。
+
+有关激活密钥的详细信息，请参见 xref:client-configuration:activation-keys.adoc[]。
+
+
+
+.过程：创建生命周期已结束产品的引导储存库
+
+. 在 {productname} Server 上的命令提示符下，以 root 身份使用 [command]``spacewalk-common-channels`` 命令添加相应的频道：
++
+----
+mgr-create-bootstrap-repo --list --force
+1. SLE-11-SP4-x86_64
+2. SLE-12-SP2-x86_64
+3. SLE-12-SP3-x86_64
+----
+. 创建引导储存库，并使用适当的储存库名称作为产品标签：
++
+----
+mgr-create-bootstrap-repo --create SLE-12-SP2-x86_64 --force
+----
+如果您不想手动创建引导储存库，可以检查您需要的产品和引导储存库是否有 LTSS。
+
+
+
+== 克隆的 Salt 客户端
+
+如果您曾经使用过超级管理程序克隆实用程序，并尝试注册克隆的 Salt 客户端，您可能会收到以下错误：
+
+----
+抱歉，找不到该系统。
+----
+
+发生该错误的原因是新的克隆系统与现有的已注册系统具有相同的计算机 ID。 您可以手动调整此数据以修复该错误，然后便可成功注册克隆的系统。
+
+
+有关详细信息和说明，请参见 xref:administration:tshoot- registerclones.adoc[]。
+
+
+
+== 禁用 FQDNS grain
+
+FQDNS grain 会返回系统中所有完全限定 DNS 服务的列表。 通常很快就能完成这些信息的收集，但如果 DNS 设置配置错误，花费的时间可能会长很多。 在某些情况下，客户端会变成无响应状态或者会崩溃。
+
+为了防止发生此问题，您可以使用 Salt 标志来禁用 FQDNS grain。 如果禁用 grain，您便可以使用网络模块提供 FQDNS 服务，而不会面临客户端变成无响应状态的风险。
+
+[NOTE]
+====
+这仅适用于较旧的 Salt 客户端。 如果您是最近注册 Salt 客户端的，FQDNS grain 默认会禁用。
+====
+
+
+在 {productname} 服务器上的命令提示符处，使用以下命令禁用 FQDNS grain：
+
+----
+salt '*' state.sls util.mgr_disable_fqdns_grain
+----
+
+此命令会重启动每个客户端并生成服务器需要处理的 Salt 事件。 如果您的客户端非常多，可以采用批量模式执行该命令：
+
+----
+salt --batch-size 50 '*' state.sls util.mgr_disable_fqdns_grain
+----
+
+等待批命令执行完。 请勿按 kbd:[Ctrl+C] 中断该过程。
+
+
+
+== 使用 noexec 装入 /tmp
+
+Salt 从客户端文件系统的 [filename]``/tmp`` 中运行远程命令。 因此，切勿使用 [option]``noexec`` 选项装入 [filename]``/tmp``。
+
+
+
+== 传递启动事件的 Grain
+
+Salt 客户端每次启动时都会将 ``machine_id`` grain 传递给 {productname}。{productname} 使用此 grain 确定客户端是否已注册。 此过程需要进行同步 Salt 调用。同步 Salt 调用会阻止其他进程，因此如果您有大量客户端同时启动，该过程可能会造成很严重的延迟。
+
+为了解决此问题，Salt 中引入了一项新功能来避免进行单独的同步 Salt 调用。
+
+要使用此功能，您可以在支持该功能的客户端上向客户端配置中添加一个配置参数。
+
+如果想要更轻松地执行此过程，您可以使用 ``mgr_start_event_grains.sls`` 助手 Salt 状态。
+
+[NOTE]
+====
+这仅适用于已注册的客户端。 如果您是最近注册 Salt 客户端的，系统默认会添加此配置参数。
+====
+
+
+在 {productname} 服务器上的命令提示符处，使用以下命令启用 ``start_event_grains`` 配置助手：
+
+----
+salt '*' state.sls util.mgr_start_event_grains
+----
+
+此命令会在客户端的配置文件中添加所需的配置，并在客户端重启动时应用更改。 如果您的客户端非常多，可以采用批量模式执行该命令：
+
+----
+salt --batch-size 50 '*' state.sls mgr_start_event_grains
+----
+
+
+
+== 代理连接和 FQDN
+
+有时，通过代理连接的客户端会显示在 {webui} 中，但不会显示它们是通过代理连接的。 如果您连接时使用的不是完全限定的域名 (FQDN)，而代理对 {productname} 而言是未知的，就可能发生此情况。
+
+要更正此行为，请在代理上的客户端配置文件中指定其他 FQDN 作为 grain。
+
+----
+grains:
+  susemanager:
+    custom_fqdns:
+      - name.one
+      - name.two
+----
+
+
+
+== Red Hat CDN Channel and Multiple Certificates
+
+The {redhat} content delivery network (CDN) channels sometimes provide multiple certificates, but the {productname} {webui} can only import a single certificate. If CDN presents a certificate that is different to the one the {productname} {webui} knows about, validation fails and permission to access the repository is denied, even though the certificate is accurate. The error message received is:
+
+----
+[error]
+Repository '<repo_name>' is invalid.
+<repo.pem> Valid metadata not found at specified URL
+History:
+ - [|] Error trying to read from '<repo.pem>'
+ - Permission to access '<repo.pem>' denied.
+Please check if the URIs defined for this repository are pointing to a valid repository.
+Skipping repository '<repo_nam' because of the above error.
+Could not refresh the repositories because of errors.
+HH:MM:SS RepoMDError: Cannot access repository. Maybe repository GPG keys are not imported
+----
+
+To resolve this issue, merge all valid certificates into a single ``.pem`` file, and rebuild the certificates for use by {productname}:
+
+
+
+.Procedure: Resolving Multiple {redhat} CDN Certificates
+. On the {redhat} client, at the command prompt, as root, gather all current certificates from ``/etc/pki/entitlement/`` in a single ``rh-cert.pem`` file:
++
+----
+cat 866705146090697087.pem 3539668047766796506.pem redhat-entitlement-authority.pem > rh-cert.pem
+----
+. Gather all current keys from ``/etc/pki/entitlement/`` in a single ``rh-key.pem`` file:
++
+----
+cat 866705146090697087-key.pem 3539668047766796506-key.pem > rh-key.pem
+----
+
+You can now import the new certificates to the {productname} Server, using the instructions in xref:client-configuration:clients-rh-cdn.adoc[].
+
+
+
+== 注册较旧的客户端
+
+
+
+
+
+
+
+要注册并使用 {centos}{nbsp}6、{oracle}{nbsp}6、{rhel}{nbsp}6 或 {sleses}{nbsp}6 客户端，需要配置 {productname} 服务器以支持较旧类型的 SSL 加密。
+
+如果您尝试在命令提示符处注册，会看到如下所示的错误：
+
+----
+储存库 '<Repository_Name>' 无效。
+[|]在指定的 URL 中未找到有效元数据
+请检查为此储存库定义的 URL 是否指向有效储存库。
+由于发生上述错误，正在跳过储存库 '<Repository_Name>'。
+'www.example.com' 的下载 (curl) 错误：
+错误代码：无法识别的错误
+错误消息：error:1409442E:SSL routines:SSL3_READ_BYTES:tlsv1 alert protocol version
+----
+
+如果您尝试在 {webui} 中注册，会看到如下所示的错误：
+
+----
+呈现 SLS 'base:bootstrap' 失败：Jinja 错误：>>> 未找到适用于 RHEL6 和 SLES11 的 TLS 1.2 及更高版本。请检查您的 Apache 配置。
+...
+----
+
+发生此情况的原因是 Apache 需要使用 TLS{nbsp} 1.2 版，但较旧的操作系统不支持此版本的 TLS 协议。 要修复此错误，您需要强制服务器上的 Apache 接受更广范围的协议版本。 在 {productname} 服务器上，以 root 身份打开 [path]``/etc/apache2/ssl-global.conf`` 配置文件，找到 [systemitem]``SSLProtocol`` 一行，将其更新为如下内容：
+
+----
+SSLProtocol all -SSLv2 -SSLv3
+----
+
+此操作需要在服务器上手动完成并在代理上使用 Salt 状态（如果适用）。 进行更改后，在每个系统上重启动 [systemitem]``apache`` 服务。

@@ -1,0 +1,84 @@
+[[clients-pubcloud]]
+= パブリッククラウドでのクライアントの登録
+
+{productname}サーバを設定すると、クライアントの登録を開始できます。
+
+
+
+== オンデマンドイメージの準備
+
+{suse}によって提供されるオンデマンドイメージから起動するインスタンスは自動的に登録され、更新されたインフラストラクチャおよび{sle}モジュールはアクティブ化されます。 {productname}クライアントとしてオンデマンドイメージを使用するには、使用を始める前にこの自動化を無効にする必要があります。
+
+
+
+.プロシージャ: オンデマンドイメージの準備
+. オンデマンドインスタンスにログインします。
+. コマンドプロンプトでrootとして、登録データとリポジトリを削除します。
++
+----
+registercloudguest --clean
+----
+. ``cloud-regionsrv-client``パッケージを削除します。
++
+----
+zypper rm cloud-regionsrv-client
+----
+. 使用しているクラウドプロバイダ固有の追加パッケージを削除します。
++
+* Amazon EC2:
++
+----
+zypper rm regionServiceClientConfigEC2 regionServiceCertsEC2
+----
++
+* Google Compute Engine:
++
+----
+zypper rm cloud-regionsrv-client-plugin-gce regionServiceClientConfigGCE  regionServiceCertsGCE
+----
++
+* Microsoft Azure:
++
+----
+zypper rm regionServiceClientConfigAzure regionServiceCertsAzure
+----
+
+{productname}を{scc}に登録する手順については、xref:installation:server-setup.adoc[]を参照してください。
+
+
+
+== クライアントの登録
+
+{productname}の{webui}で、menu:システム[ブートストラップ]に移動し、［``ホスト``］、［``SSHポート``］、［``ユーザ``］、および［``パスワード``］の各フィールドに入力します。 ［``ホスト``］フィールドで安定版FQDNを使用していることを確認してください。別の有効期間が短いFQDNをパブリッククラウドで使用している場合、{productname}ではホストを検索できません。
+
+[NOTE]
+====
+従来のクライアントをブートストラップしようとしている場合、クライアントにログインしている間にサーバのホスト名を解決できることを確認してください。 サーバのFQDNをクライアントの[path]``/etc/hosts``ローカル解決ファイルに追加する必要があります。 サーバのローカルIPアドレスで[command]``hostname -f``コマンドを使用していることを確認してください。
+====
+
+パブリッククラウドのイメージでは通常、ユーザ名とパスワードでSSHにログインできません。証明書でのみSSHにログインできます。 {webui}からブートストラップを使用する場合、ユーザ名とSSHキーによるSSHへのログインを有効にする必要があります。 この操作を実行するには、menu:システム[ブートストラップ]に移動し、認証メソッドを変更します。
+
+クラウドプロバイダがMicrosoft Azureの場合、ユーザ名とパスワードでログインできます。 この操作を実行するには、AzureUserがrootとしてパスワードなしでコマンドを実行できる必要があります。 この操作を実行するには、[path]``/etc/sudoers.d/waagent``ファイルを開き、次の行を追加または編集します。
+
+----
+AzureUser ALL=(ALL) NOPASSWD: ALL
+----
+
+[WARNING]
+====
+AzureUserがrootとしてパスワードなしでコマンドを実行できると、セキュリティ上のリスクが生じます。 この方法の使用はテストのみにしてください。 運用システムでは実行しないでください。
+====
+
+ブートストラッププロセスが正常に完了したら、クライアントは［menu:システム[システム一覧]］にリストされます。
+
+* プロセスをより詳細に制御したい場合、多数のクライアントを登録する必要がある場合、または従来のクライアントを登録している場合、ブートストラップスクリプトを作成します。 詳細については、xref:client-configuration:registration-bootstrap.adoc[]を参照してください。
+* Saltクライアントで、さらに詳細にプロセスを制御するには、コマンド行でsingleコマンドを実行すると便利です。 詳細については、xref:client-configuration:registration-cli.adoc[]を参照してください。
+* 相互に複製されたクライアントを登録しようとする場合、追加の設定をして、相互に上書きしないようにする必要があります。 複製を登録する方法の詳細については、xref:administration:tshoot-registerclones.adoc[]を参照してください。
+
+
+
+== アクティベーションキー
+
+アクティベーションキーは従来のクライアントとSaltクライアントで使用し、クライアントが正しいソフトウェアのエンタイトルメントを持ち、適切なチャンネルに接続して関連グループに加入するようします。 それぞれのアクティベーションキーは、キーを作成するときに設定できる組織にひもづけされます。
+
+アクティベーションキーの詳細については、xref:client-configuration:activation-keys.adoc[]を参照してください。

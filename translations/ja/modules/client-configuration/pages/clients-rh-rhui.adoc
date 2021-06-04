@@ -1,0 +1,322 @@
+[[clients-rh-rhui]]
+= RHUIで{rhel}クライアントを登録する
+
+{sleses}を使用するのではなく、{rhel}クライアントを直接実行している場合、Red Hatソースを使用してパッケージを取得および更新する必要があります。 このセクションでは、{redhat}更新インフラストラクチャ(RHUI)を使用して、{rhel}オペレーティングシステムを実行している従来のクライアントおよびSaltクライアントを登録する方法について説明します。 Amazon EC2などのパブリッククラウドでクライアントを実行している場合、このメソッドを使用します。
+
+RHUIを{redhat}コンテンツデリバリネットワーク(CDN)と組み合わせて使用して、{rhel}サブスクリプションを管理できます。 {redhat} CDNの使用については、xref:client-configuration:clients-rh-cdn.adoc[]を参照してください。
+
+
+
+[IMPORTANT]
+====
+{rhel}クライアントは、{redhat}に基づいていて、{sleses}、RES、または{sles}とは関係がありません。 {productname}サーバの{redhat}更新インフラストラクチャへの接続はユーザが行います。 このRHUI証明書を使用して更新したすべてのクライアントは、正しくライセンス供与されている必要があります。クラウドプロバイダに確認し、詳細については、{redhat}のサービス条項を確認してください。
+====
+
+[NOTE]
+====
+RHUIで登録された{rhel}クライアントの電源がオフになっている場合、{redhat}が証明書を無効と宣言する場合があります。 この場合、クライアントの電源を再度オンにするか、新しいRHUI証明書を取得する必要があります。
+====
+
+
+[NOTE]
+====
+従来のクライアントは{rhel}{nbsp}6および7でのみサポートされています。 {rhel}{nbsp}8クライアントはSaltクライアントとしてサポートされています。
+====
+
+
+
+== エンタイトルメントと証明書のインポート
+
+{redhat}クライアントには、{redhat}認証局(CA)、エンタイトルメント証明書、およびエンタイトルメントキーが必要です。
+
+{redhat}クライアントは、URLを使用してリポジトリを複製します。 URLは、{redhat}クライアントを登録した場所に応じて変わります。
+
+{redhat}クライアントは次の3種類の方法で登録できます。
+
+* redhat.comにある{redhat}コンテンツデリバリネットワーク(CDN)
+* {redhat}サテライトサーバ
+* クラウドの{redhat}更新インフラストラクチャ(RHUI)
+
+このガイドでは、{redhat}更新インフラストラクチャ(RHUI)に登録されるクライアントについて説明します。 リポジトリコンテンツの認可済みサブスクリプションを使用して、1つ以上のシステムがRHUIに登録されている必要があります。
+
+代わりに{redhat}コンテンツデリバリネットワーク(CDN)を使用する方法については、xref:client-configuration:clients-rh-cdn.adoc[]を参照してください。
+
+
+[IMPORTANT]
+====
+クライアントシステムのサテライト証明書では、サテライトサーバおよびサブスクリプションが必要です。 サテライト証明書を使用するクライアントは{productname}サーバではサポートされていません。
+====
+
+
+{productname}サーバがアクセスできる場所にエンタイトルメント証明書とキーをクライアントシステムからコピーする必要があります。
+
+The keys and certificates might have slightly different names to those shown here. Your entitlement certificate and the {redhat} CA Certificate file have file extensions of [path]``.crt``. The key has a file extension of [path]``.key``.
+
+
+
+.プロシージャ: 証明書をサーバにコピーする
+. Copy your entitlement certificate and key from the client system, to a location that the {productname} Server can access. Amazon EC2:
++
+----
+cp /etc/pki/rhui/product/content-<version>.crt /<example>/entitlement/
+cp /etc/pki/rhui/content-<version>.key /<example>/entitlement/
+----
++
+Google Cloud Platform:
++
+----
+cp /etc/pki/rhui/product/content.crt /<example>/entitlement/
+cp /etc/pki/rhui/key.pem /<example>/entitlement/
+----
++
+. {redhat} CA証明書ファイルをクライアントシステムから、エンタイトルメント証明書およびキーと同じ場所にコピーします。
++
+Amazon EC2:
++
+----
+cp /etc/pki/rhui/cdn.redhat.com-chain.crt /<example>/entitlement
+----
++
+Google Cloud Platform:
++
+----
+cp /etc/pki/rhui/ca.crt /<example>/entitlement
+----
+
+
+{redhat}クライアントでリポジトリを管理するには、CAおよびエンタイトルメント証明書を{productname}サーバにインポートする必要があります。 この操作を実行するには、インポートプロシージャを3回実行して、3つのエントリを作成する必要があります。 エンタイトルメント証明書、エンタイトルメントキーおよび{redhat}証明書にそれぞれ1つずつです。
+
+
+
+.プロシージャ: 証明書をサーバにインポートする
+
+. {productname}サーバの{webui}で、menu:システム[自動インストール > GPGキーとSSLキー]に移動します。
+. ［btn:[格納されているキーまたは証明書の作成]］をクリックして、エンタイトルメント証明書用に次のパラメータを設定します。
+* ［[guimenu]``説明``］フィールドに[systemitem]``Entitlement-Cert-Date``と入力します。
+* ［[guimenu]``タイプ``］フィールドで、[systemitem]``SSL``を選択します。
+* ［[guimenu]``アップロードするファイルの選択``］フィールドで、エンタイトルメント証明書を保存した場所をブラウズし、[path]``.crt``証明書ファイルを選択します。
+. ［btn:[キーの作成]］をクリックします。
+. ［btn:[格納されているキーまたは証明書の作成]］をクリックして、エンタイトルメントキー用に次のパラメータを設定します。
+* ［[guimenu]``説明``］フィールドに[systemitem]``Entitlement-Key-Date``と入力します。
+* ［[guimenu]``タイプ``］フィールドで、[systemitem]``SSL``を選択します。
+* ［[guimenu]``アップロードするファイルの選択``］フィールドで、エンタイトルメントキーを保存した場所をブラウズし、[path]``.key``キーファイルを選択します。
+. ［btn:[キーの作成]］をクリックします。
+. ［btn:[格納されているキーまたは証明書の作成]］をクリックして、{redhat}証明書用に次のパラメータを設定します。
+* [[guimenu]``説明``］フィールドに[systemitem]``redhat-cert``と入力します。
+* ［[guimenu]``タイプ``］フィールドで、[systemitem]``SSL``を選択します。
+* ［[guimenu]``アップロードするファイルの選択``］フィールドで、{redhat}証明書を保存した場所をブラウズし、証明書ファイルを選択します。
+. ［btn:[キーの作成]］をクリックします。
+
+
+
+== カスタムリポジトリおよびチャンネルの準備
+
+RHUIからソフトウェアをミラーリングするには、URLでRHUIにリンクされているカスタムチャンネルおよびリポジトリを{productname}に作成する必要があります。 Red Hatポータルでこれらの製品を正しく動作させるには、該当製品のエンタイトルメントが必要です。 yumユーティリティを使用して、ミラーリングするリポジトリのURLを取得できます。
+
+----
+yum repolist -v | grep baseurl
+----
+
+これらのリポジトリURLを使用して、カスタムリポジトリを作成できます。 クライアントを管理するために必要なコンテンツのみミラーリングできます。
+
+[IMPORTANT]
+====
+{redhat}ポータルに正しいエンタイトルメントがある場合、{redhat}リポジトリのカスタムバージョンのみ作成できます。
+====
+
+
+このプロシージャに必要な詳細は次のとおりです。
+
+[[redhat-rhui-repos-manual]]
+[cols="1,1", options="header"]
+.Red Hatカスタムリポジトリ設定
+|===
+| オプション                 | 設定
+|リポジトリURL         | RHUIによって提供されるコンテンツURL
+ | 署名済みメタデータがあるかどうか   | すべての{redhat}エンタイトルメントリポジトリ
+のチェックを外します | SSL CA証明書     | [systemitem]``redhat-cert``
+ | SSLクライアント証明書 | [systemitem]``Entitlement-Cert-Date``
+ | SSLクライアントキー         | [systemitem]``Entitlement-Key-Date``
+|===
+
+
+include::snippets/manual_repos.adoc[]
+
+
+
+このプロシージャで必要なチャンネルは次のとおりです。
+
+[[redhat-rhui-channels-custom]]
+[cols="1,1,1", options="header"]
+.Red Hatカスタムチャンネル
+|===
+| OSバージョン | ベース製品          | ベースチャンネル
+|{redhat} 6 | RHEL6 Base x86_64 | rhel6-pool-x86_64
+ | {redhat} 7 | RHEL7 Base x86_64 | rhel7-pool-x86_64
+ | {redhat} 8 | RHELまたはSLES ESまたはCentOS 8 Base | rhel8-pool-x86_64
+|===
+
+
+include::snippets/manual_channels.adoc[]
+
+[IMPORTANT]
+====
+{redhat} 8クライアントでは、ベースチャンネルとAppStreamチャンネルの両方を追加します。 両方のチャンネルのパッケージが必要です。 両方のチャンネルを追加しないと、パッケージ不足のためブートストラップリポジトリを作成できません。
+====
+
+
+include::snippets/manual_associate.adoc[]
+
+
+
+== ソフトウェアチャンネルの追加
+
+{redhat}クライアントを{productname}サーバに登録する前に、必要なソフトウェアチャンネルを追加して同期する必要があります。
+
+ifeval::[{suma-content} == true]
+
+{susemgr}サブスクリプションでは、{sleses}のツールチャンネルを使用できます({redhat}拡張サポートまたはRESとも呼ばれます)。 クライアントツールチャンネルを使用してブートストラップリポジトリを作成する必要があります。 このプロシージャは、Saltクライアントと従来のクライアントの両方に適用されます。
+endif::[]
+
+ifeval::[{suma-content} == true]
+
+このプロシージャで必要な製品は次のとおりです。
+
+[[redhat-rhui-channels-wizard]]
+[cols="1,1", options="header"]
+.Red Hat製品 - WebUI
+|===
+| OSバージョン | 製品名
+|{redhat} 6 | RHEL6 Base x86_64
+ | {redhat} 7 | RHEL7 Base x86_64
+ | {redhat} 8 | RHELまたはSLES ESまたはCentOS 8 Base
+|===
+
+
+include::snippets/addchannels_vendor_webui.adoc[]
+
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+このプロシージャで必要なチャンネルは次のとおりです。
+
+[[redhat-rhui-channels-cli]]
+[cols="1,1,1,1", options="header"]
+.Red Hatチャンネル - CLI
+|===
+
+| OSバージョン
+|ベースチャンネル
+ | クライアントチャンネル
+ | ツールチャンネル
+ 
+ | {redhat} 6
+ | rhel-x86_64-server-6
+ | -
+ | res6-suse-manager-tools-x86_64
+ 
+ | {redhat} 7
+ | rhel-x86_64-server-7
+ | -
+ | res7-suse-manager-tools-x86_64
+ 
+ | {redhat} 8
+ | rhel-x86_64-server-8
+ | -
+ | res8-suse-manager-tools-x86_64
+
+|===
+
+
+include::snippets/addchannels_novendor_cli.adoc[]
+
+
+[NOTE]
+====
+[command]``spacewalk-common-channels``によって提供されるクライアントツールのチャンネルの提供元は{uyuni}です。{suse}ではありません。
+====
+
+endif::[]
+
+
+include::snippets/appstream_admon.adoc[]
+
+
+RHUIを使用するには、必要なHTTPヘッダを設定ファイルに手動で追加する必要があります。 このヘッダがないと、クライアントの同期を正常に実行できません。
+
+
+
+.プロシージャ: HTTPヘッダを設定ファイルに追加する
+. [systemitem]`および`X-RHUI-ID``[systemitem]``X-RHUI-SIGNATURE`` HTTPヘッダをRHUIインスタンスから検索します。
+    {redhat}クライアントで次のコマンドを使用して、[systemitem]``169.254.169.254``でクラウドインスタンスメタデータAPIから値を取得できます。
++
+----
+echo "X-RHUI-ID=$(curl -s  http://169.254.169.254/latest/dynamic/instance-identity/document|base64|tr  -d '\n')"
+ echo "X-RHUI-SIGNATURE=$(curl -s  http://169.254.169.254/latest/dynamic/instance-identity/signature|base64|tr  -d '\n')"
+----
+. [path]``/etc/rhn/spacewalk-repo-sync/extra_headers.conf``設定ファイルを開き、次の行を追加するか、または正しい情報を使用して編集します。
++
+----
+[channel_label]
+X-RHUI-ID=value
+ X-RHUI-SIGNATURE=value
+----
+
+
+
+
+== 同期ステータスの確認
+
+ifeval::[{suma-content} == true]
+
+
+include::snippets/check_sync_webui_suma.adoc[]
+
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+
+include::snippets/check_sync_webui_uyuni.adoc[]
+
+
+endif::[]
+
+
+include::snippets/check_sync_cli.adoc[]
+
+
+[NOTE]
+====
+{rhel}チャンネルは非常に大きいことがあります。 同期に数時間かかる場合があります。
+====
+
+
+
+ifeval::[{uyuni-content} == true]
+== クライアントでGPGキーを信頼する
+
+include::snippets/trust_gpg.adoc[]
+
+endif::[]
+
+
+
+== クライアントの登録
+
+{redhat}クライアントを登録するには、ブートストラップリポジトリが必要です。 デフォルトでは、ブートストラップリポジトリは自動的に作成され、すべての同期製品に対して毎日再生成されます。 次のコマンドを使用して、コマンドプロンプトからブートストラップリポジトリを手動で作成できます。
+
+----
+mgr-create-bootstrap-repo
+----
+
+クライアントの登録については、xref:client-configuration:registration-overview.adoc[]を参照してください。
+
+
+[WARNING]
+====
+{rhel}{nbsp}6クライアントを登録して使用するには、{productname}サーバを設定して旧式のSSL暗号化をサポートする必要があります。 詳細については、``古いクライアントの登録``をxref:client-configuration:tshoot-clients.adoc[]で参照してください。
+====

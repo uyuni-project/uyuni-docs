@@ -1,0 +1,62 @@
+[[install-pubcloud-requirements]]
+= 公有云要求
+
+本节介绍在公有云基础结构上安装 {productname} 所要满足的要求。我们已在 Amazon EC2、Google Compute Engine 和 Microsoft Azure 上对这些指令进行过测试，不过它们进行一定修改后在其他提供商的云服务上也应能正常工作。
+
+在开始之前，请注意以下一些事项：
+
+* {productname} 设置过程执行正向确认的反向 DNS 查找。此操作必须成功，设置过程才能完成，并且 {productname} 才能按预期方式运行。请务必在设置 {productname} 之前执行主机名和 IP 配置。
+* {productname} Server 和 Proxy 实例需在适当的网络配置中运行，该网络配置可让您控制 DNS 项，但无法通过因特网自由访问。
+* 在此网络配置中必须提供 DNS 解析：`hostname -f` 必须返回完全限定的域名 (FQDN)。
+* DNS 解析对于连接客户端也很重要。
+* DNS 取决于所选的云框架。有关详细说明，请参见云提供商文档。
+* 我们建议将软件储存库、服务器数据库和代理 squid 缓存储存在外部虚拟磁盘上。这可以防止在实例意外终止时丢失数据。本节包含有关设置外部虚拟磁盘的说明。
+
+
+[NOTE]
+====
+如果您正在尝试引导传统客户端，请在已登录到客户端的情况下检查是否可以解析服务器的主机名。可能需要将服务器的 FQDN 添加到客户端上的 [path]``/etc/hosts`` 本地解析文件。请结合服务器的本地 IP 地址使用 [command]``hostname -f`` 命令进行检查。
+====
+
+
+
+== 网络要求
+
+在公有云上使用 {productname} 时，必须使用受限制的网络。我们建议使用带有适当防火墙设置的 VPN 专用子网。只能允许指定 IP 范围内的计算机访问该实例。
+
+[WARNING]
+====
+在公有云上运行 {productname} 时，必须应用安全措施来限制对该实例的访问。全球可访问的 {productname} 实例违反了 {productname} EULA 的条款，且不受 {suse} 的支持。
+====
+
+要访问 {productname} {webui}，请在配置网络访问控制时允许 HTTPS。这将允许您访问 {productname} {webui}。
+
+在 EC2 和 Azure 中，创建一个新安全组，并添加 HTTPS 入站和出站规则。在 GCE 中，选中``防火墙``部分下的``允许 HTTPS 流量``复选框。
+
+
+
+== 准备储存卷
+
+我们建议将 {productname} 的储存库和数据库储存在不同于根卷的储存设备上。这有助于避免数据丢失。不要使用逻辑卷管理 (LVM) 进行公有云安装。
+
+必须在运行 YaST {productname} 设置过程之前设置储存设备。
+
+用于储存储存库的磁盘大小取决于您要使用 {productname} 管理的发行套件和频道数目。挂接虚拟磁盘时，它们将作为 Unix 设备节点显示在实例中。设备节点的名称因提供商及所选实例类型而异。
+
+确保 {productname} Server 的根卷大小不少于 100{nbsp}GB。如果可能，请另外添加一个 500{nbsp}GB 或以上大小的储存磁盘，并选择 SSD 储存类型。当您的实例启动时，{productname} Server 的云映像会使用脚本来指派这个单独的卷。
+
+启动实例后，您便可登录 {productname} Server，并使用以下命令查找所有可用的储存设备：
+
+----
+hwinfo --disk | grep -E "Device File:"
+----
+
+如果您不确定应选择哪个设备，可使用 [command]``lsblk`` 命令查看每个设备的名称和大小。请选择与要寻找的虚拟磁盘大小匹配的名称。
+
+您可以使用 [command]``suma-storage`` 命令设置外部磁盘。这会创建一个装入到 ``/manager_storage`` 的 XFS 分区，并使用它作为储存数据库和储存库的位置：
+
+----
+$ /usr/bin/suma-storage /dev/sdb
+----
+
+有关设置储存卷和分区的详细信息（包括建议的最小大小），请参见 xref:installation:hardware-requirements.adoc[]。

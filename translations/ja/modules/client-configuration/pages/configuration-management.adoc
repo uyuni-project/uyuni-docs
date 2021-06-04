@@ -1,0 +1,217 @@
+[[configuration-management]]
+= 設定管理
+
+クライアントそれぞれを手動で設定するのではなく、設定ファイルおよびチャンネルを使用してクライアントの設定を管理できます。
+
+設定パラメータは、スクリプト化され、設定ファイルに保存されます。 {productname}の{webui}を使用して設定ファイルを直接書き込むことができます。または、別の場所にあるファイルをアップロードまたはリンクできます。
+
+設定ファイルは一元管理またはローカルで管理できます。 一元管理された設定ファイルは、グローバル設定チャンネルで提供され、{productname}サーバにサブスクライブされるクライアントに適用できます。 ローカル管理された設定ファイルは、一元管理された設定ファイルを上書きするために使用されます。 このファイルは、設定管理特権がない{productname}ユーザにとって特に便利ですが、管理しているクライアントを変更する必要があります。
+
+Configuration channels are used to organize configuration files. You can subscribe clients to configuration channels, and deploy configuration files as required.
+
+設定ファイルはバージョン管理されるため、設定を追加し、クライアントで設定をテストし、必要に応じて前のリビジョンにロールバックできます。 設定チャンネルを作成したら、さまざまな設定ファイル間の比較や同じ設定ファイルの異なるリビジョン間の比較も実行できます。
+
+設定ファイルは一元管理またはローカルで管理できます。 一元管理された設定ファイルはグローバル設定チャンネルによって提供されます。 ローカル管理された設定ファイルは{productname}に直接作成またはアップロードされます。
+
+使用できる設定管理機能はSaltクライアントと従来のクライアントで異なります。 次の表は、それぞれのクライアントタイプでサポートされる機能を示しています。
+
+
+.設定管理でサポートされる機能
+[cols="1,1,1", options="header"]
+|===
+| 機能
+|Salt
+ | 従来
+ 
+ | グローバル設定チャンネル
+ | {check}
+ | {check}
+ 
+ | ファイルの展開
+ | {check}
+ | {check}
+ 
+ | ファイルの比較
+ | {question}
+ | {check}
+ 
+ | ローカル管理ファイル
+ | {cross}
+ | {check}
+ 
+ | サンドボックスファイル
+ | {cross}
+ | {check}
+ 
+ | Highstateの適用
+ | {check}
+ | {cross}
+ 
+ | クライアントからのファイルのインポート
+ | {cross}
+ | {check}
+ 
+ | 設定マクロ
+ | {cross}
+ | {check}
+
+|===
+
+
+
+== 設定管理用に従来のクライアントを準備する
+
+従来のクライアントでは、設定管理を使用するために追加の準備操作が必要です。 {ay}または{kickstart}を使用して従来のクライアントをインストールした場合、おそらく適切なパッケージがすでに準備されています。 その他の従来のクライアントでは、そのクライアントのオペレーティングシステム用に関連するツールの子チャンネルがインストールされていることを確認します。 ソフトウェアチャンネルの詳細については、xref:client-configuration:channels.adoc[]を参照してください。
+
+必要なパッケージは次のとおりです。
+
+* [path]``mgr-cfg``: すべての[path]``mgr-cfg-*``パッケージで必要なベースライブラリおよび関数
+* [path]``mgr-cfg-actions``: {productname}を使用してスケジュールされた設定アクションを実行するために必要です。
+* [path]``mgr-cfg-client``: 設定管理システムのクライアントの機能へのコマンドラインインターフェースを提供します。
+* [path]``mgr-cfg-management``: {productname}設定を管理するためのコマンドラインインターフェースを提供します。
+
+menu:システム[アクティベーションキー]に移動し、ブートストラップ中に使用するアクティベーションキーをクリックし、［[guimenu]``設定ファイルの配備``］オプションにチェックを付けることによってブートストラッププロセス中にこれらのパッケージをインストールできます。 アクティベーションキーの詳細については、xref:client-configuration:activation-keys.adoc[]を参照してください。
+
+
+
+== 設定チャンネルの作成
+
+新しいセントラル設定チャンネルを作成するには:
+
+.プロシージャ: セントラル設定チャンネルの作成
+. {productname}の{webui}で、menu:設定[チャンネル]に移動し、［btn:[設定チャンネルの作成]］をクリックします。
+. チャンネルの名前を入力します。
+. チャンネルのラベルを入力します。
+    このフィールドには、半角の英字、数字、ハイフン(``-``)、および下線(``_``)のみを含める必要があります。
+. 他のチャンネルから区別できるようにチャンネルの説明を入力します。
+. ［btn:[設定チャンネルの作成]］をクリックして新しいチャンネルを作成します。
+
+
+設定チャンネルを使用して、SaltクライアントのSaltの状態を管理することもできます。
+
+
+
+.プロシージャ: Saltの状態チャンネルの作成
+. {productname}の{webui}で、menu:設定[チャンネル]に移動し、［btn:[状態チャンネルの作成]］をクリックします。
+. チャンネルの名前を入力します。
+. チャンネルのラベルを入力します。
+    このフィールドには、半角の英字、数字、ハイフン(``-``)、および下線(``_``)のみを含める必要があります。
+. 他のチャンネルから区別できるようにチャンネルの説明を入力します。
+. [path]``init.sls``ファイルの［[guimenu]``SLSコンテンツ``］を入力します。
+. ［btn:[設定チャンネルの作成]］をクリックして新しいチャンネルを作成します。
+
+
+
+== 設定ファイル、ディレクトリ、またはシンボリックリンクの追加
+
+設定チャンネルを作成済みの場合、設定ファイル、ディレクトリ、またはシンボリックlink:を追加できます。
+
+
+
+.プロシージャ: 設定ファイル、ディレクトリ、またはシンボリックリンクの追加
+. {productname}の{webui}で、menu:設定[チャンネル]に移動し、設定ファイルに追加する設定チャンネルの名前をクリックし、menu:ファイルの追加[ファイルの作成]サブタブに移動します。
+. ［[guimenu]``ファイルタイプ``］フィールドで、テキストファイル、ディレクトリ、またはシンボリックリンクを作成するかどうかを選択します。
+. ［[path]``ファイル名/パス``］フィールドで、ファイルを展開する場所への絶対パスを入力します。
+. シンボリックリンクを作成している場合、［[guimenu]``シンボリックリンクの目的ファイル名/パス``］フィールドにターゲットのファイルおよびパスを入力します。
+. ［[guimenu]``所有権``］フィールドおよび［[guimenu]``ファイルアクセス許可モード``］にファイルの［[guimenu]``ユーザ名``］および［[guimenu]``グループ名``］を入力します。
+. クライアントでSELinuxが有効になっている場合、［[guimenu]``SELinux contexts（SELinuxコンテキスト）``］を設定して、必要なファイル属性(ユーザ、ロール、ファイルタイプなど)を有効にできます。
+. 設定ファイルにマクロが含まれている場合、マクロの先頭および末尾をマークする記号を入力します。
+. ［[guimenu]``ファイルの内容``］テキストボックスで設定ファイルの内容を入力し、スクリプトドロップダウンボックスを使用して、適切なスクリプト言語を選択します。
+. ［btn:[設定ファイルの作成]］をクリックします。
+
+
+
+== クライアントを設定チャンネルにサブスクライブする
+
+個々のクライアントを設定チャンネルにサブスクライブできます。そのためには、menu:システム[システム一覧]に移動し、サブスクライブするクライアントを選択し、［[guimenu]``設定``］タブに移動します。 複数のクライアントを設定チャンネルにサブスクライブするには、システムセットマネージャ(SSM)を使用できます。
+
+
+
+.プロシージャ: 複数のクライアントを設定チャンネルにサブスクライブする
+. {productname}の{webui}で、menu:システム[システム一覧]に移動し、操作するクライアントを選択します。
+. menu:システム[システムセットマネージャ]に移動し、menu:設定[チャンネルにサブスクライブ]サブタブに移動し、使用できる設定チャンネルの一覧を表示します。
+. オプション: ［[guimenu]``現在サブスクライブしているシステム``］列で番号をクリックして、設定チャンネルに現在サブスクライブされているクライアントを表示します。
+. サブスクライブ先の設定チャンネルを確認し、［btn:[続行]］をクリックします。
+. 上下矢印を使用して設定チャンネルをランクします。
+    設定の競合が設定チャンネルで発生した場合、一覧の上の方にあるチャンネルが優先されます。
+. 選択したクライアントにチャンネルを適用する方法を決定します。
+    ［btn:[最も低い順位でサブスクライブ]］をクリックして、現在サブスクライブしているチャンネルより低い優先度で新しいチャンネルを追加します。 ［btn:[最も高い順位でサブスクライブ]］をクリックして、現在サブスクライブしているチャンネルより高い優先度で新しいチャンネルを追加します。 ［btn:[既存のサブスクリプションを置換]］をクリックして、既存のチャンネルを削除し、新しいチャンネルに置き換えます。
+. ［btn:[サブスクリプションの適用]］をクリックします。
+
+
+[NOTE]
+====
+新しい設定チャンネルの優先度が既存のチャンネルと競合する場合、重複チャンネルが削除され、新しい優先度に応じて置き換えられます。 クライアントの設定優先度をアクションで順序変更する場合、{webui}では続行する前に変更を確認する必要があります。
+====
+
+
+
+== 設定ファイルの比較
+
+システムセットマネージャ(SSM)を使用して、{productname}サーバに保存されている設定ファイルを使用してクライアントに展開された設定ファイルを比較することもできます。
+
+
+
+.プロシージャ: 設定ファイルの比較
+. {productname}の{webui}で、menu:システム[システム一覧]に移動して、比較する設定ファイルにサブスクライブされているクライアントを選択します。
+. menu:システム[システムセットマネージャ]に移動し、menu:設定[ファイルの比較]サブタブに移動し、使用できる設定チャンネルの一覧を表示します。
+. オプション: ［[guimenu]``システム``］列で番号をクリックして、設定ファイルに現在サブスクライブされているクライアントを表示します。
+. 比較する設定ファイルを確認し、［btn:[ファイルの比較をスケジュール]］をクリックします。
+
+
+
+== Configuration File Macros on Traditional Clients
+
+Being able to store one file and share identical configurations is useful, but in some cases you might need many variations of the same configuration file, or configuration files that differ only in system-specific details, such as host name and MAC address. In this case, you can use macros or variables within the configuration files. This allows you to upload and distribute a single file, with hundreds or even thousands of variations. In addition to variables for custom system information, the following standard macros are supported:
+
+----
+rhn.system.sid
+rhn.system.profile_name
+rhn.system.description
+rhn.system.hostname
+rhn.system.ip_address
+rhn.system.custom_info(key_name)
+rhn.system.net_interface.ip_address(eth_device)
+rhn.system.net_interface.netmask(eth_device)
+rhn.system.net_interface.broadcast(eth_device)
+rhn.system.net_interface.hardware_address(eth_device)
+rhn.system.net_interface.driver_module(eth_device)
+----
+
+To use this feature, either upload or create a configuration file via the [guimenu]``Configuration Channel Details`` page. Then open its [guimenu]``Configuration File Details`` page and include the supported macros of your choice. Ensure that the delimiters used to offset your variables match those set in the [guimenu]``Macro Start Delimiter`` and [guimenu]``Macro End Delimiter`` fields and do not conflict with other characters in the file. We recommend that the delimiters be two characters in length and do not contain the percent (``%``) symbol.
+
+For example, you may have a file applicable to all of your servers that differs only in IP address and host name. Rather than manage a separate configuration file for each server, you can create a single file, such as [path]``server.conf``, with the IP address and host name macros included.
+
+----
+hostname={| rhn.system.hostname |}
+ip_address={| rhn.system.net_interface.ip_address(eth0) |}
+----
+
+When the file is delivered to individual systems, whether through a scheduled action in the {productname} {webui} or at the command line with the {productname} Configuration Client ([command]``mgrcfg-client``), the variables will be replaced with the host name and IP address of the system as recorded in {productname}'s system profile. In this example, the deployed version will look similar to this:
+
+----
+hostname=test.example.domain.com
+ip_address=177.18.54.7
+----
+
+To capture custom system information, insert the key label into the custom information macro (``rhn.system.custom_info``). For example, if you developed a key labeled "asset" you can add it to the custom information macro in a configuration file to have the value substituted on any system containing it. The macro would look like this:
+
+----
+asset={@ rhn.system.custom_info(asset) @}
+----
+
+When the file is deployed to a system containing a value for that key, the macro gets translated, resulting in a string similar to this:
+
+----
+asset=Example#456
+----
+
+To include a default value (for example, if one is required to prevent errors), you can append it to the custom information macro, like this:
+
+----
+asset={@ rhn.system.custom_info(asset) = 'Asset #' @}
+----
+
+This default is overridden by the value on any system containing it.
+
+The {productname} Configuration Manager ([command]``mgrcfg-manager``) is available on {productname} client machines to assist with system management. It will not translate or alter files, as the tool is system agnostic. The [command]``mgrcfg-manager`` command does not depend on system settings. Binary files cannot be interpolated.

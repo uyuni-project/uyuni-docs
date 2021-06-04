@@ -1,0 +1,217 @@
+[[configuration-management]]
+= 구성 관리
+
+각 클라이언트를 수동으로 구성하는 대신에 구성 파일 및 채널을 사용해 클라이언트에 대한 구성을 관리할 수 있습니다.
+
+구성 파라미터는 스크립트되고 구성 파일에 저장됩니다. {productname} {webui}를 사용해 직접 구성 파일을 작성할 수 있습니다. 또는 다른 위치에 있는 파일을 업로드하거나 그러한 파일에 링크할 수 있습니다.
+
+구성 파일은 중앙에서 관리하거나 로컬에서 관리할 수 있습니다. 중앙에서 관리하는 구성 파일은 전역 구성 채널이 제공하며 {productname} 서버에 가입한 모든 클라이언트에 적용할 수 있습니다. 로컬로 관리하는 구성 파일은 중앙에서 관리하는 구성 설정을 무효화하는 데 사용되며 구성 관리 권한이 없지만 자신이 관리하는 클라이언트를 변경해야 하는 {productname} 사용자에게 특히 유용합니다.
+
+Configuration channels are used to organize configuration files. You can subscribe clients to configuration channels, and deploy configuration files as required.
+
+구성 파일은 버전이 관리되므로 구성 설정을 추가하고, 이를 클라이언트에서 테스트하고, 필요에 따라 이전 리비전으로 롤백할 수 있습니다. 구성 채널을 생성했다면 다양한 구성 파일 간에, 그리고 동일한 구성 파일의 리비전 간에 비교를 수행할 수도 있습니다.
+
+구성 파일은 중앙에서 관리하거나 로컬에서 관리할 수 있습니다. 중앙에서 관리하는 구성 파일은 전역 구성 채널이 제공합니다. 로컬에서 관리하는 구성 파일은 생성되거나 {productname}로 직접 업로드됩니다.
+
+Salt 클라이언트와 기존 클라이언트에 사용할 수 있는 구성 관리 기능은 서로 다릅니다. 아래 표에는 서로 다른 클라이언트 유형에서 지원되는 기능이 표시되어 있습니다.
+
+
+.지원되는 구성 관리 기능
+[cols="1,1,1", options="header"]
+|===
+| 기능
+| Salt
+ | 기존
+ 
+ | 전역 구성 채널
+ | {check}
+ | {check}
+ 
+ | 파일 배포
+ | {check}
+ | {check}
+ 
+ | 파일 비교
+ | {question}
+ | {check}
+ 
+ | 로컬에서 관리하는 파일
+ | {cross}
+ | {check}
+ 
+ | 샌드박스 파일
+ | {cross}
+ | {check}
+ 
+ | Highstate 적용
+ | {check}
+ | {cross}
+ 
+ | 클라이언트에서 파일 임포트
+ | {cross}
+ | {check}
+ 
+ | 구성 매크로
+ | {cross}
+ | {check}
+
+|===
+
+
+
+== 구성 관리를 위한 기존 클라이언트 준비
+
+구성 관리를 사용하려면 기존 클라이언트에 몇 가지 추가 준비 작업이 필요합니다. {ay} 또는 {kickstart}로 기존 클라이언트를 설치했다면 아마도 적절한 패키지가 이미 있을 것입니다. 다른 기존 클라이언트의 경우 클라이언트 운영 체제에 대해 관련 도구 하위 채널을 설치했는지 확인하십시오. 소프트웨어 채널에 대한 자세한 내용은 xref:client-configuration:channels.adoc[]를 참조하십시오.
+
+사용자에게 필요한 패키지는 다음과 같습니다.
+
+* [path]``mgr-cfg``: 모든 [path]``mgr-cfg-*`` 패키지에 필요한 기본 라이브러리 및 함수
+* [path]``mgr-cfg-actions``: required to run configuration actions scheduled using {productname}.
+* [path]``mgr-cfg-client``: 구성 관리 시스템의 클라이언트 기능에 명령줄 인터페이스 제공
+* [path]``mgr-cfg-management``: {productname} 구성을 관리할 수 있는 명령줄 인터페이스 제공
+
+menu:시스템[활성화 키]로 이동하여 부트스트랩 중에 사용하려는 활성화 키를 클릭하고 [guimenu]``구성 파일 배포`` 옵션 확인란을 선택하여 부트스트랩 프로세스 중에 이 패키지를 설치할 수 있습니다. 활성화 키에 대한 자세한 내용은 xref:client-configuration:activation-keys.adoc[]를 참조하십시오.
+
+
+
+== 구성 채널 생성
+
+새로운 중앙 구성 채널을 생성하려면 다음과 같이 하십시오.
+
+.절차: 중앙 구성 채널 생성
+. {productname} {webui}에서 menu:구성[채널]로 이동하여 btn:[구성 채널 생성]을 클릭합니다.
+. 채널의 이름을 입력합니다.
+. 채널의 레이블을 입력합니다.
+    이 필드는 글자, 숫자, 하이픈(``-``), 밑줄(``_``)만 포함해야 합니다.
+. 다른 채널과 구별할 수 있게 해주는 채널 설명을 입력합니다.
+. btn:[구성 채널 생성]을 클릭하여 새 채널을 생성합니다.
+
+
+구성 채널을 사용해 Salt 클라이언트에서 Salt 상태를 관리할 수도 있습니다.
+
+
+
+.절차: Salt 상태 채널 생성
+. {productname} {webui}에서 menu:구성[채널]로 이동하여 btn:[상태 채널 생성]을 클릭합니다.
+. 채널의 이름을 입력합니다.
+. 채널의 레이블을 입력합니다.
+    이 필드는 글자, 숫자, 하이픈(``-``), 밑줄(``_``)만 포함해야 합니다.
+. 다른 채널과 구별할 수 있게 해주는 채널 설명을 입력합니다.
+. [path]``init.sls`` 파일에 대해 [guimenu]``SLS 컨텐트``를 입력합니다.
+. btn:[구성 채널 생성]을 클릭하여 새 채널을 생성합니다.
+
+
+
+== 구성 파일, 디렉토리 또는 심볼 링크 추가
+
+구성 채널을 생성했으면 이제 구성 파일, 디렉토리 또는 심볼 링크 link:를 추가할 수 있습니다.
+
+
+
+.절차: 구성 파일, 디렉토리 또는 심볼 링크 추가
+. {productname} {webui}에서 menu:구성[채널]로 이동하여 구성 파일을 추가하려는 구성 채널의 이름을 클릭한 후, menu:파일 추가[파일 생성] 하위 탭으로 이동합니다.
+. [guimenu]``파일 형식`` 필드에서 텍스트 파일, 디렉토리, 심볼 링크 중 생성하려는 것을 선택합니다.
+. [path]``파일 이름/경로`` 필드에 파일을 배포해야 하는 위치의 절대 경로를 입력합니다.
+. 심볼 링크를 생성하려면 [guimenu]``심볼 링크 대상 파일 이름/경로`` 필드에 대상 파일 및 경로를 입력하십시오.
+. [guimenu]``소유권`` 필드에서 파일의 [guimenu]``사용자 이름`` 및 [guimenu]``그룹 이름``을 입력하고 [guimenu]``파일 권한 모드``를 입력합니다.
+. 클라이언트가 SELinux를 활성화한 경우 [guimenu]``SELinux 컨텍스트``를 구성하여 필수 파일 속성(예: 사용자, 역할, 파일 형식)을 활성화할 수 있습니다.
+. 구성 파일에 매크로가 포함된 경우 매크로의 시작과 끝을 표시하는 기호를 입력하십시오.
+. [guimenu]``파일 내용`` 텍스트 상자에 구성 파일 내용을 입력합니다. 이때 스크립트 드롭다운 상자를 사용해 적절할 스크립팅 언어를 선택합니다.
+. btn:[구성 파일 생성]을 클릭합니다.
+
+
+
+== 클라이언트를 구성 채널에 가입
+
+menu:시스템[시스템 목록]으로 이동하여 가입하려는 클라이언트를 선택하고 [guimenu]``구성`` 탭으로 이동하여 개별 클라이언트를 구성 채널에 가입할 수 있습니다. 여러 클라이언트를 구성 채널에 가입하려면 시스템 세트 관리자(SSM)를 사용하면 됩니다.
+
+
+
+.절차: 여러 클라이언트를 구성 채널에 가입
+. {productname} {webui}에서 menu:시스템[시스템 목록]으로 이동하여 작업하려는 클라이언트를 선택합니다.
+. menu:시스템[시스템 세트 관리자]로 이동하여 menu:구성[채널에 가입] 하위 탭에서 사용 가능한 구성 채널의 목록을 확인합니다.
+. 옵션: [guimenu]``현재 가입된 시스템`` 열의 숫자를 클릭하여 현재 어떤 클라이언트가 구성 채널에 가입되어 있는지 확인합니다.
+. 가입하려는 구성 채널을 확인하고 btn:[계속]을 클릭합니다.
+. 위 및 아래 방향 화살표를 사용해 구성 채널의 순위를 지정합니다.
+    설정이 구성 채널 간에 서로 충돌하는 경우 목록 상단에 더 가까이 있는 채널이 우선합니다.
+. 선택한 클라이언트에 채널이 적용되는 방식을 결정합니다.
+    btn:[최하위 우선순위로 가입]을 클릭하여 새 채널을 현재 가입된 채널보다 낮은 우선순위로 추가합니다. btn:[최상위 우선순위로 가입]을 클릭하여 새 채널을 현재 가입된 채널보다 높은 우선순위로 추가합니다. btn:[기존 구독 대체]를 클릭하여 기존 채널을 제거하고 새 채널로 교체합니다.
+. btn:[구독 적용]을 클릭합니다.
+
+
+[NOTE]
+====
+새 구성 채널 우선순위가 기존 채널과 충돌하는 경우 중복 채널이 제거되고 새로운 우선순위에 따라 교체됩니다. 작업에 의해 클라이언트의 구성 우선순위가 변경되는 경우 {webui}는 작업을 진행하기 전에 이러한 변경을 확인하도록 사용자에게 요구합니다.
+====
+
+
+
+== 구성 파일 비교
+
+또한 시스템 세트 관리자(SSM)를 사용해 클라이언트에 배포된 구성 파일을 {productname} 서버에 저장된 구성 파일과 비교할 수 있습니다.
+
+
+
+.절차: 구성 파일 비교
+. {productname} {webui}에서 menu:시스템[시스템 목록]으로 이동하여 비교하려는 구성 파일에 가입된 클라이언트를 선택합니다.
+. menu:시스템[시스템 세트 관리자]로 이동하여 menu:구성[파일 비교] 하위 탭에서 사용 가능한 구성 채널의 목록으로 이동합니다.
+. 옵션: [guimenu]``시스템`` 열의 숫자를 클릭하여 현재 어떤 클라이언트가 구성 파일에 가입되어 있는지 확인합니다.
+. 비교할 구성 파일을 확인하고 btn:[파일 비교 작업 일정 잡기]를 클릭합니다.
+
+
+
+== Configuration File Macros on Traditional Clients
+
+Being able to store one file and share identical configurations is useful, but in some cases you might need many variations of the same configuration file, or configuration files that differ only in system-specific details, such as host name and MAC address. In this case, you can use macros or variables within the configuration files. This allows you to upload and distribute a single file, with hundreds or even thousands of variations. In addition to variables for custom system information, the following standard macros are supported:
+
+----
+rhn.system.sid
+rhn.system.profile_name
+rhn.system.description
+rhn.system.hostname
+rhn.system.ip_address
+rhn.system.custom_info(key_name)
+rhn.system.net_interface.ip_address(eth_device)
+rhn.system.net_interface.netmask(eth_device)
+rhn.system.net_interface.broadcast(eth_device)
+rhn.system.net_interface.hardware_address(eth_device)
+rhn.system.net_interface.driver_module(eth_device)
+----
+
+To use this feature, either upload or create a configuration file via the [guimenu]``Configuration Channel Details`` page. Then open its [guimenu]``Configuration File Details`` page and include the supported macros of your choice. Ensure that the delimiters used to offset your variables match those set in the [guimenu]``Macro Start Delimiter`` and [guimenu]``Macro End Delimiter`` fields and do not conflict with other characters in the file. We recommend that the delimiters be two characters in length and do not contain the percent (``%``) symbol.
+
+For example, you may have a file applicable to all of your servers that differs only in IP address and host name. Rather than manage a separate configuration file for each server, you can create a single file, such as [path]``server.conf``, with the IP address and host name macros included.
+
+----
+hostname={| rhn.system.hostname |}
+ip_address={| rhn.system.net_interface.ip_address(eth0) |}
+----
+
+When the file is delivered to individual systems, whether through a scheduled action in the {productname} {webui} or at the command line with the {productname} Configuration Client ([command]``mgrcfg-client``), the variables will be replaced with the host name and IP address of the system as recorded in {productname}'s system profile. In this example, the deployed version will look similar to this:
+
+----
+hostname=test.example.domain.com
+ip_address=177.18.54.7
+----
+
+To capture custom system information, insert the key label into the custom information macro (``rhn.system.custom_info``). For example, if you developed a key labeled "asset" you can add it to the custom information macro in a configuration file to have the value substituted on any system containing it. The macro would look like this:
+
+----
+asset={@ rhn.system.custom_info(asset) @}
+----
+
+When the file is deployed to a system containing a value for that key, the macro gets translated, resulting in a string similar to this:
+
+----
+asset=Example#456
+----
+
+To include a default value (for example, if one is required to prevent errors), you can append it to the custom information macro, like this:
+
+----
+asset={@ rhn.system.custom_info(asset) = 'Asset #' @}
+----
+
+This default is overridden by the value on any system containing it.
+
+The {productname} Configuration Manager ([command]``mgrcfg-manager``) is available on {productname} client machines to assist with system management. It will not translate or alter files, as the tool is system agnostic. The [command]``mgrcfg-manager`` command does not depend on system settings. Binary files cannot be interpolated.

@@ -1,0 +1,166 @@
+[[activation-keys]]
+= Aktivační klíče
+
+Aktivační klíče se používají u tradičních klientů a klientů Salt, aby bylo zajištěno, že vaši klienti mají správná softwarová oprávnění, připojují se k příslušným kanálům a jsou přihlášeni k odběru příslušných skupin. Každý aktivační klíč je vázán na organizaci, kterou můžete nastavit při vytváření klíče.
+
+In {productname}, an activation key is a group of configuration settings with a label. You can apply all configuration settings associated with an activation key by adding its label as a parameter to a bootstrap script. We recommend you use an activation key label in combination with a bootstrap script. When the bootstrap script is executed all configuration settings associated with the label are applied to the system the script is run on.
+
+An activation key can specify:
+
+* Channel assignment
+* System types or add-on entitlements
+* Contact method
+* Configuration files
+* Packages to be installed
+* System group assignment
+
+Activation keys are used at the time a client is registered, and not used again. After the client has been registered, the client can be changed in any way, regardless of what the activation key specifies. The association between the activation key and the client is recorded only for historical purposes.
+
+image::provision-config-keys.png[scaledwidth=80%]
+
+
+
+.Postup: Vytvoření aktivačního klíče
+. V {productname} {webui} jako správce (administrátor) přejděte do menu:Systems[Activation Keys] (Aktivační klíče).
+. Klikněte na tlačítko btn:[Create Key] (Vytvořit klíč).
+. On the [guimenu]``Activation Key Details`` page, in the [guimenu]``Description`` field, enter a description of the activation key.
+. In the [guimenu]``Key`` field, enter a name for the activation key.
+    Například ``SLES12-SP4`` pro {sles}{nbsp}12{nbsp}SP4.
++
+[IMPORTANT]
+====
+Nepoužívejte čárky v poli [guimenu]``Key`` (klíč) pro produkty {suse}. U produktů Red Hat však *musíte* použít čárky. Další informace viz xref:reference:systems/activation-keys.adoc[].
+====
++
+. V rozbalovacím seznamu [guimenu]``Base Channels`` (základní kanály) vyberte příslušný základní kanál softwaru a povolte používání souvisejících podřízených kanálů.
+    Další informace viz xref:reference:admin/setup-wizard.adoc#vle.webui.admin.wizard.products[] a xref:administration:custom-channels.adoc[].
+. Vyberte podřízené kanály, které potřebujete (například povinné nástroje {susemgr} a aktualizační kanály).
+. Check the [guimenu]``Add-On System Types`` check box if you need to enable any of the options.
+. Doporučujeme ponechat [guimenu]``Contact Method`` (způsob kontaktu) nastavený na [guimenu]``Default`` (výchozí).
+. Doporučujeme ponechat nastavení [guimenu]``Universal Default`` (univerzální výchozí) nezaškrtnuté.
+. Stisknutím btn:[Create Activation Key] (vytvořit aktivační klíč) vytvořte aktivační klíč.
+. Zaškrtnutím možnosti [guimenu]``Configuration File Deployment`` (nasazení konfiguračního souboru) povolíte správu konfigurace pro tento klíč a stisknutím btn:[Update Activation Key] (aktualizovat aktivační klíč) tuto změnu uložíte.
+
+[NOTE]
+====
+Zaškrtávací možnost [guimenu]``Configuration File Deployment`` (nasazení konfiguračního souboru) se zobrazí až po vytvoření aktivačního klíče. Potřebujete-li povolit správu konfigurace, nezapomeňte se vrátit a zaškrtnout tuto možnost.
+====
+
+
+
+== Combining Multiple Activation Keys
+
+You can combine activation keys when executing the bootstrap script on your traditional clients. Combining keys allows for more control on what is installed on your systems and reduces duplication of keys for large or complex environments.
+
+[NOTE]
+====
+Combining activation keys works only on traditional clients. Salt clients do not support combined activation keys. If you use a combined key with a Salt client, only the first key is used.
+====
+
+You can specify multiple activation keys at the command prompt, or in a single autoinstallation profile.
+
+At the command prompt on the {productname} Server, use the [command]``rhnreg_ks` command, and separate the key names with a comma. To specify multiple keys in a {kickstart} profile, navigate to menu:Systems[Autoinstallation] and edit the profile you want to use.
+
+Be careful when combining activation keys, as conflicts between some values could cause client registration to fail. Check that these values do not have conflicting information before you begin:
+
+* Software packages
+* Software child channels
+* Configuration channels.
+
+If conflicts are detected, they are handled like this:
+
+* Conflicts in base software channels: registration fails.
+* Conflicts in system types: registration fails.
+* Conflicts in the `enable configuration` flag: configuration management is enabled.
+* If one key is system-specific: registration fails.
+
+
+
+== Reactivation Keys
+
+Reactivation keys can be used once only to re-register a client and regain all {productname} settings. Reactivation keys are client-specific, and include the system ID, history, groups, and channels.
+
+To create a reactivation key, navigate to [guimenu]``Systems``, click the client to create a reactivation key for, and navigate to the menu:Details[Reactivation] tab. Click btn:[Generate New Key] to create the reactivation key. Record the details of the key for later use. Unlike typical activation keys, which are not associated with a specific system ID, keys created here do not show up on the menu:Systems[Activation Keys] page.
+
+For Salt clients, after you have created a reactivation key, you can use it as the ``management_key`` grain in [path]``/etc/salt/minion.d/susemanager.conf``. For example:
+
+----
+grains:
+    susemanager:
+        management_key: "re-1-daf44db90c0853edbb5db03f2b37986e"
+----
+
+Restart the [command]``salt-minion`` process to apply the reactivation key.
+
+You can use a reactivation key with a bootstrap script. For more information about bootstrap scripts, see xref:client-configuration:registration-bootstrap.adoc[].
+
+For traditional clients, after you have created a reactivation key, you can use it with the [command]``rhnreg_ks`` command line utility. This command re-registers the client and restore its {productname} settings. On traditional clients, you can combine reactivation keys with activation keys to aggregate the settings of multiple keys for a single system profile. For example:
+
+----
+rhnreg_ks --server=<server-url>/XMLRPC \
+          --activationkey=<reactivation-key>,<activationkey> \
+          --force
+----
+
+[WARNING]
+====
+If you autoinstall a client with its existing {productname} profile, the profile uses the reactivation key to re-register the system and restore its settings. Do not regenerate, delete, or use this key while a profile-based autoinstallation is in progress. Doing so causes the autoinstallation to fail.
+====
+
+
+
+== Activation Key Best Practices
+
+.Default Parent Channel
+
+Avoid using the [systemitem]``SUSE Manager Default`` parent channel. This setting forces {productname} to choose a parent channel that best corresponds to the installed operating system, which can sometimes lead to unexpected behavior. Instead, we recommend you create activation keys specific to each distribution and architecture.
+
+.Bootstrapping with Activation Keys
+
+If you are using bootstrap scripts, consider creating an activation key for each script. This helps you align channel assignments, package installation, system group memberships, and configuration channel assignments. You also need less manual interaction with your system after registration.
+
+.Bandwidth Requirements
+
+Using activation keys might result in automatic downloading of software at registration time, which might not be desirable in environments where bandwidth is constrained.
+
+These options create bandwidth usage:
+
+* Assigning a SUSE Product Pool channel results in the automatic installation of the corresponding product descriptor package.
+* Any package in the [guimenu]``Packages`` section is installed.
+* Any Salt state from the [guimenu]``Configuration`` section might trigger downloads depending on its contents.
+
+.Key Label Naming
+
+If you do not enter a human-readable name for your activation keys, the system automatically generates a number string, which can make it difficult to manage your keys.
+
+Consider a naming scheme for your activation keys to help you keep track of them. Creating names which are associated with your organization's infrastructure makes it easier for you when performing more complex operations.
+
+When creating key labels, consider these tips:
+
+* OS naming (mandatory): Keys should always refer to the OS they provide settings for
+* Architecture naming (recommended): Unless your company is running on one architecture only, for example x86_64, then providing labels with an architecture type is a good idea.
+* Server type naming: What is this server being used for?
+* Location naming: Where is the server located? Room, building, or department?
+* Date naming: Maintenance windows, quarter, etc.
+* Custom naming: What naming scheme suits your organizations needs?
+
+Example activation key label names:
+
+----
+sles12-sp2-web_server-room_129-x86_64
+----
+
+----
+sles12-sp2-test_packages-blg_502-room_21-ppc64le
+----
+
+[IMPORTANT]
+====
+Nepoužívejte čárky v poli [guimenu]``Key`` (klíč) pro produkty {suse}. U produktů Red Hat však *musíte* použít čárky. Další informace viz xref:reference:systems/activation-keys.adoc[].
+====
+
+.Included Channels
+
+When creating activation keys you also need to keep in mind which software channels are associated with it. Keys should have a specific base channel assigned to them. Using the default base channel is not recommended. For more information, see the client operating system you are installing at xref:client-configuration:registration-overview.adoc[].
+
+

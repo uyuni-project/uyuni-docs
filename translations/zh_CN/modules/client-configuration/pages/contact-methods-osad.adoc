@@ -1,0 +1,82 @@
+[[contact-methods-osad]]
+= OSAD
+
+
+OSAD 是 {productname} 与传统客户端之间的一种替代联系方法。 {productname} 默认使用 [systemitem]``rhnsd``，后者每四小时联系一次服务器以执行安排的操作。 OSAD 允许传统客户端立即执行安排的操作。
+
+[NOTE]
+====
+除了 [systemitem]``rhnsd`` 之外，另外还需使用 OSAD。 如果禁用 [systemitem]``rhnsd``，您的客户端在 24 小时后将会显示为未签入状态。
+====
+
+OSAD 包含数个不同的组件：
+
+* [systemitem]``osa-dispatcher`` 服务在服务器上运行，并通过数据库检查来确定是否需要 ping 客户端，或者是否需要执行操作。
+* [systemitem]``osad`` 服务在客户端上运行。它会对来自 [systemitem]``osa-dispatcher`` 的 ping 请求做出响应，并运行 [command]``mgr_check`` 以执行操作（如果收到相应指示）。
+* [systemitem]``jabberd`` 服务是一个守护程序，使用 [systemitem]``XMPP`` 协议在客户端与服务器之间通讯。
+    [systemitem]``jabberd`` 服务还会处理身份验证。
+* [command]``mgr_check`` 工具在客户端上运行以执行操作，
+    由来自 [systemitem]``osa-dispatcher`` 服务的通讯触发。
+
+[systemitem]``osa-dispatcher`` 会定期运行查询，以检查客户端上次显示网络活动的时间。 如果该组件发现某个客户端近期未显示活动，将会使用 [systemitem]``jabberd`` ping 在注册到您的 {productname} 服务器的所有客户端上运行的所有 [systemitem]``osad`` 实例。 [systemitem]``osad`` 实例会使用 [systemitem]``jabberd`` 对 ping 请求做出响应，该组件在服务器的后台运行。 如果 [systemitem]``osa-dispatcher`` 收到响应，就会将客户端标记为联机。 如果 [systemitem]``osa-dispatcher`` 在某个时间段内未收到响应，就会将客户端标记为脱机。
+
+如果在启用了 OSAD 的系统上安排操作，任务将会立即执行。 [systemitem]``osa-dispatcher`` 会定期检查客户端有无需要执行的操作。 如果发现未执行的操作，会使用 [systemitem]``jabberd`` 在客户端上执行 [command]``mgr_check``，后者即会执行该操作。
+
+
+OSAD 客户端使用服务器的完全限定域名 (FQDN) 与 [systemitem]``osa-dispatcher`` 服务通讯。
+
+[systemitem]``osad`` 通讯需要使用 SSL。 如果 SSL 证书不可用，客户端系统上的守护程序将无法连接。 请确保您的防火墙规则设置为允许必需的端口。 有关详细信息，请参见 xref:installation:ports.adoc[]。
+
+
+.过程：启用 OSAD
+. 在 {productname} 服务器上的命令提示符处，以 root 身份启动 [systemitem]``osa-dispatcher`` 服务：
++
+----
+systemctl start osa-dispatcher
+----
+. 在每个客户端上，安装[systemitem]``工具``子频道中的 [systemitem]``mgr-osad`` 软件包。
+    您应仅将 [systemitem]``mgr-osad`` 软件包安装在客户端上。 如果在 {productname} 服务器上安装 [systemitem]``mgr-osad`` 软件包，它会与 [systemitem]``osa-dispatcher`` 软件包冲突。
+. 在每个客户端上，以 root 身份启动 [systemitem]``osad`` 服务：
++
+----
+systemctl start osad
+----
++
+由于 [systemitem]``osad`` 和 [systemitem]``osa-dispatcher`` 是作为服务运行的，您可以使用标准命令管理它们，包括 [command]``stop``、[command]``restart`` 和 [command]``status``。
+
+
+使用本地配置文件配置每个 OSAD 组件。 建议您保留所有 OSAD 组件的默认配置参数。
+
+
+[cols="1,1,1", options="header"]
+|===
+| 组件                        | 位置 | 配置文件的路径
+| [systemitem]``osa-dispatcher``   | 服务器   | [path]``/etc/rhn/rhn.conf`` 部分： [systemitem]``OSA 配置``
+ | [systemitem]``osad``             | 客户端   | [path]``/etc/sysconfig/rhn/osad.conf``
+ | [systemitem]``osad`` 日志文件    | 客户端   | [path]``/var/log/osad``
+ | [systemitem]``jabberd`` 日志文件 | 服务器和客户端     | [path]``/var/log/messages``
+|===
+
+
+.对 OSAD 查错
+
+如果您的 OSAD 客户端无法连接到服务器，或者 [systemitem]``jabberd`` 服务需要很长时间才能响应端口 5552，原因可能是打开的文件数已超过上限。
+
+每个客户端都需要一个始终打开的 TCP 连接来连到服务器，该连接将使用单个文件处理程序。 如果当前打开的文件处理程序数超过允许 [systemitem]``jabberd`` 使用的最大文件数，[systemitem]``jabberd`` 会将请求排队，并拒绝连接。
+
+要解决此问题，您可以通过编辑 [path]``/etc/security/limits.conf`` 配置文件并添加下面几行来提高 [systemitem]``jabberd`` 的文件数上限：
+
+----
+jabber soft nofile 5100
+jabber hard nofile 6000
+----
+
+按如下方法计算您的环境所需的限制：为客户端数软限制添加 100，为当前客户端数硬限制添加 1000。
+
+在上面的示例中，我们假设当前有 5000 个客户端，因此软限制为 5100，硬限制为 6000。
+
+您还需要使用所选的硬限制更新 [path]``/etc/jabberd/c2s.xml`` 文件中的 [systemitem]``max_fds`` 参数：
+
+----
+<max_fds>6000</max_fds>
+----

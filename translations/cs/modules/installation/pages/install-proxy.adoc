@@ -1,0 +1,103 @@
+[[installation-proxy]]
+= Nainstalujte {productname} Proxy z balíčků
+
+Chcete-li nainstalovat {productname} Proxy z balíčků, budete muset začít instalací média {sles}. Tato část popisuje nastavení KVM potřebná k provedení instalace {sles} jako základu pro {productname} Proxy. V této části používáme KVM a správce virtuálních strojů jako chráněné prostředí pro instalaci.
+
+
+
+[[installation-proxy-requirements]]
+== Požadavky SLES KVM
+
+Tato nastavení použijte k vytvoření nového virtuálního počítače příkazem [command]``virt-manager`` (nahraďte [literal]``<verze>`` skutečným řetězcem verze):
+
+[cols="1,1", options="header"]
+|===
+| Nastavení KVM pro SLES
+| Metoda instalace: | Lokální instalační médium (ISO-obraz nebo CDROM)
+| OS:                  | Linux
+| Verze:             |``SLE-``[literal]``<verze>````-Server-x86_64-GM-DVD1.iso``
+| Paměť:              | _Testový server_ Minumum 2{nbsp}GB
+|                      | _Provozní server_ Minimum 8{nbsp}GB
+| Počet CPU:                | 2
+| Formát paměti:      | ISO 3{nbsp}GB
+| Diskový prostor:          | 230{nbsp}GB rozděleno mezi
+|                      | [path]``/`` _(root)_ Minimum 24{nbsp}GB
+|                      | (Virtuální disk 1) [path]``/srv`` Minimum 100{nbsp}GB
+|                      | (Virtuální disk 2) [path]``/var/cache`` _(Squid)_ Minimum 100{nbsp}GB
+| Název:                | příklad-proxy
+| Síť              | Most br0
+|===
+
+
+
+[[installation-proxy-sles-settings]]
+=== Nastavení SLES KVM
+
+Tato část popisuje instalaci {productname} Proxy pomocí úplného instalačního média s KVM a [command]``virt-manager``. Než začnete, budete si muset vytvořit účet u {scc} a stáhnout instalační médium {sles}.
+
+
+
+.Postup: Příprava na instalaci SLES
+. V nástroji Virtual Machine Manager ([command]``virt-manager``) klikněte na menu:File[New Virtual Machine].
+. Klikněte na btn:[Local install media (ISO image or CDROM)] (Místní instalační médium (obraz ISO nebo CDROM)).
+. V dialogovém okně [guimenu]``Vytvořit nový virtuální stroj``. klikněte na btn:[Browse] a vyhledejte celý obraz SLES, který jste stáhli ze svého účtu SCC.
+. Nakonfigurujte svůj počítač s minimálně 2 GB RAM a minimálně 2 CPU.
+. Vytvořte úložné zařízení s minimálně 230 GB úložného prostoru pro instalaci.
+    Během instalace SLES by měl být tento disk rozdělen na tyto oddíly:
++
++
+[cols="1", options="header"]
+|===
+| Požadavky na diskový prostor
+| 100{nbsp}GB oddíl XFS (nebo celý virtuální disk) pro [path]``/srv/``
+| 100{nbsp}GB oddíl XFS (nebo celý virtuální disk) pro [path]``/var/cache/``
+|===
++
+Zbývající úložný prostor použije operační systém pro kořenový oddíl.
+. Stisknutím btn:[Finish] uložíte nastavení instalace a zahájíte instalaci.
+
+Další informace o instalaci aplikace {sles} najdete na adrese https://documentation.suse.com/sles/15-SP2/html/SLES-all/art-sle-installquick.html.
+
+
+
+[[installation-proxy-sles]]
+== Změňte SLES pro SUSE Manager Proxy
+
+
+
+[[proc-installation-proxy-sles]]
+.Postup: Změna SLES pro instalaci serveru proxy {productname}
+
+. Přihlaste se jako `root`.
+. Odinstalujte balíček `sles-release`:
++
+----
+rpm -e --nodeps sles-release
+----
+. Zaregistrujte server {productname} Proxy pomocí SCC (například `<productversion>` nahraďte `{productnumber}` a `<architecture>` nahraďte `x86_64`):
++
+----
+SUSEConnect -e <EMAIL_ADDRESS>  -r<SUSE_MANAGER_PROXY_CODE> \
+ -p SUSE-Manager-Proxy/<productversion>/<architecture>
+----
+. Přidejte úložiště {productname}:
++
+----
+SUSEConnect -p sle-module-basesystem/15.2/x86_64
+SUSEConnect -p sle-module-server-applications/15.2/x86_64
+SUSEConnect -p sle-module-suse-manager-proxy/4.1/x86_64
+----
+. Zkontrolujte, zda jste povolili instalaci doporučených balíčků.
+    Zkontrolujte nastavení v `/etc/zypp/zypp.conf`:
++
+----
+solver.onlyRequires = false
+----
+. Nainstalujte vzor proxy {productname}:
++
+----
+zypper in -t pattern suma_proxy
+----
+. Rebootujte.
+
+Pokračujte v registraci instalovaného {productname} Proxy jako klienta: xref:proxy-registration.adoc[].

@@ -1,0 +1,92 @@
+[[installation-zsystems]]
+= 在 {ibmz} 上安装
+
+
+本节面向负责操作 {ibmz} 大型机的 z/VM 系统程序员。假设您是一名接受过 {ibmz} 操作协议培训的 z/VM 系统程序员，本节将逐步指导您在现有的大型机系统上安装 {productname}。本节不会介绍可用于 {ibmz} 的各种硬件配置文件，而只会大致概述在 {ibmz} 上成功部署 {productname} Server 所要执行的过程以及所要满足的要求。
+
+本节介绍如何使用 {sle} 安装媒体安装 {susemgr} Server。您事先必须已将 {susemgr} 产品注册到 {scc}，并已获取注册代码。
+
+有关如何注册到 {scc}、从 {scc} 检索组织身份凭证或者获取安装媒体的信息，请参见 xref:general-requirements.adoc[]。
+
+
+
+== 系统要求
+
+在开始之前，请检查您的环境是否满足基本系统要求。
+
+
+.兼容的 {ibmz} 系统：
+
+* IBM zEnterprise System z196
+* IBM zEnterprise System z114
+* IBM zEnterprise EC12
+* IBM zEnterprise EC12
+* IBM zEnterprise BC12
+* IBM z13
+* LinuxOne Rockhopper
+* LinuxOne Emperor
+
+
+[cols="1,1", options="header"]
+.硬件要求
+|===
+| 硬件     | 建议
+| CPU          | 最少 4 个专用的 64 位 CPU 核心
+| RAM：         | 测试服务器：最少 3{nbsp}GB RAM，2{nbsp}GB 交换空间
+|              | 基本安装：最少 16{nbsp}GB
+|              | 生产服务器：最少 32{nbsp}GB
+| 磁盘空间：  | 根分区：最少 100{nbsp}GB
+|              | [path]``/var/lib/pgsql``：最少 50{nbsp}GB
+|              | [path]``/var/spacewalk``：每个 SUSE 产品最少需要 50{nbsp}GB，每个 Red Hat 产品最少需要 360{nbsp}GB
+|===
+
+[IMPORTANT]
+====
+应该根据您的环境将内存要求分摊到可用的 RAM、VDISK 和交换空间。在生产系统上，需根据您要安装的客户端数目评估物理内存与 VDISK 之比。
+====
+
+需要为数据库储存提供额外的磁盘。此磁盘应是 [systemitem]``zFCP`` 或 [systemitem]``DASD`` 设备，因为这些设备最适合与 [systemitem]``HYPERPAV`` 配合使用。数据库储存磁盘应该：
+
+* 为 [path]``/var/lib/pgsql`` 最少提供 50{nbsp}GB
+* 为 [path]``/var/spacewalk`` 中的每个 SUSE 产品最少提供 50{nbsp}GB
+* 为 [path]``/var/spacewalk`` 中的每个 Red Hat 产品最少提供 360{nbsp}GB
+
+在运行 [command]``yast2 susemanager_setup`` 之前，需确保为 {productname} 提供足够的磁盘储存。默认情况下，{productname} 文件系统（包括嵌入的数据库和补丁目录）驻留在根目录中。尽管在安装完成后可以进行调整，但必须严格指定并监视这些调整。有关储存管理和回收磁盘空间的信息，请参见《{productname} Administration Guide》（{productname} 管理指南）中有关查错的章节。
+
+[WARNING]
+====
+如果您的 {productname} 耗尽了磁盘空间，其数据库和文件结构可能会受到严重影响。只能使用以前的备份或通过全新安装 {productname} 实现完全恢复。{suse} 技术服务无法为遇到磁盘空间不足情况的系统提供支持。
+====
+
+.网络要求：
+
+* OSA Express 以太网（包括快速和千兆位以太网）
+* HiperSocket 或 Guest LAN
+* 10{nbsp}GBE，VSWITCH
+* 基于融合以太网的 RDMA (RoCE)
+
+仍已包含但不再支持以下接口：
+
+* CTC 或虚拟 CTC
+* IUCV 的 IP 网络接口
+
+在开始安装之前，要从中运行 {productname} 的 z/VM Guest 需要一个静态 IP 地址和主机名，因为在完成初始安装之后不容易更改这些设置。主机名包含的字符应少于八个，并不能包含任何大写字母。
+
+
+
+
+
+== 在 {ibmz} 上安装 {productname}
+
+本节介绍如何安装 {sle} 系列中的产品 {productname}。有关在 {ibmz} 硬件上部署产品的一般信息，请参见 https://documentation.suse.com/sles/15-SP2/html/SLES-all/cha-zseries.html。
+
+.过程：从 DVD 映像安装 {susemgr} Server
+[role=procedure]
+
+. 使用统一安装程序引导您的系统。
+    如果引导失败，您可能需要在 BIOS 中调整引导顺序。
+. 出现提示时，选择[guimenu]``安装``。
+
+然后按照 xref:installation:install-server-unified.adoc[] 中所述继续操作。
+
+要完成 {productname} 安装，请参见 xref:installation:server-setup.adoc[]。

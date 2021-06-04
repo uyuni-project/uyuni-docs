@@ -1,0 +1,101 @@
+[[autoinst-cdrom]]
+= Install via a CD-ROM or a USB Key
+
+For clients that are not yet registered to {productname}, and if network boot over PXE is not an option, a bootable CD-ROM or USB key can be used to install the system.
+
+One option to prepare such a removable medium is to use Cobbler. For information about using Cobbler to prepare an ISO image, see xref:client-configuration:autoinst-cdrom.adoc#build-iso-with-cobbler[Build an ISO Image With Cobbler].
+
+The other option is to use mechanisms specific to the distribution:
+
+* For {suse} systems, prepare an ISO image using KIWI. For information, see xref:client-configuration:autoinst-cdrom.adoc#build-iso-with-kiwi[Build a SUSE ISO Image With KIWI].
+* For {redhat} systems, use ``mkisofs``. For information, see xref:client-configuration:autoinst-cdrom.adoc#build-iso-with-mkisofs[Build a RedHat ISO Image With mkisofs].
+
+In all cases, you use the resulting image to burn a CD-ROM or prepare a USB key.
+
+
+[[build-iso-with-cobbler]]
+== Build an ISO Image With Cobbler
+
+Cobbler can create ISO boot images that contain a set of distributions, kernels, and a menu that works in a similar way to a PXE installation.
+
+[NOTE]
+====
+{ibmz}에서는 Cobbler를 이용한 ISO 빌드를 지원하지 않습니다.
+====
+
+In order to prepare an ISO image with Cobbler, you need to prepare a distribution and a profile, similar to using network boot over PXE. For information about creating a distribution, see xref:client-configuration:autoinst-distributions.adoc[Autoinstallable Distributions]. For information about creating a profile, see xref:client-configuration:autoinst-profiles.adoc[Autoinstallation Profiles].
+
+Cobbler [command]``buildiso`` 명령은 파라미터를 받아들여 부팅 ISO의 이름 및 출력 위치를 정의합니다. 예:
+
+----
+cobbler buildiso --iso=/path/to/boot.iso
+----
+
+The boot ISO includes all profiles and systems by default. You can limit which profiles and systems are used with the [option]``--profiles`` and [option]``--systems`` options. For example:
+
+----
+cobbler buildiso --systems="system1 system2 system3" \
+  --profiles="profile1 profile2 profile3"
+----
+
+[NOTE]
+====
+ISO 이미지를 공용 [path]``tmp`` 디렉토리에 쓸 수 없는 경우 [path]``/usr/lib/systemd/system/cobblerd.service``에서 systemd 설정을 확인하십시오.
+====
+
+
+[[build-iso-with-kiwi]]
+== Build a SUSE ISO Image With KIWI
+
+KIWI is an image creation system. You can use KIWI to create a bootable ISO image to be used by the target system for installation of a {suse} system. When the system is rebooted or switched on, it boots from the image, loads the {ay} configuration from your {productname}, and installs {sles} according to the {ay} profile.
+
+ISO 이미지를 사용하려면 시스템을 부팅하고 프롬프트에 ‘autoyast’를 입력하십시오({ay} 부팅을 위한 레이블을 ``autoyast`` 상태로 두었다고 가정함). kbd:[Enter] 키를 눌러 {ay} 설치를 시작합니다.
+
+
+For more information about KIWI, see http://doc.opensuse.org/projects/kiwi/doc/.
+
+
+[[build-iso-with-mkisofs]]
+== Build a RedHat ISO Image With mkisofs
+
+You can use [command]``mkisofs`` to create a bootable ISO image to be used by the target system for installation of a {redhat} system. When the system is rebooted or switched on, it boots from the image, loads the {kickstart} configuration from your {productname}, and installs {rhel} according to the {kickstart} profile.
+
+
+
+.Procedure: Building a Bootable ISO With mkisofs
+. 대상 배포의 첫 CD-ROM에서 [path]``/isolinux``의 내용을 복사합니다.
+. Edit the [path]``isolinux.cfg`` file to default to 'ks'. Change the 'ks' section to read:
++
+----
+label ks
+kernel vmlinuz
+   append text ks=`url` initrd=initrd.img lang= devfs=nomount \
+     ramdisk_size=16438 `ksdevice`
+----
++
+IP 주소 기반 {kickstart} URL은 다음과 같습니다.
++
+----
+http://`my.manager.server`/kickstart/ks/mode/ip_range
+----
++
+IP 범위를 통해 정의되는 {kickstart} 배포는 오류 발생을 방지하기 위해 현재 빌드 중인 것에서 배포하는 것과 일치해야 합니다.
+. OPTIONAL: If you want to use the [replaceable]``ksdevice``, it looks like this:
++
+----
+ksdevice=eth0
+----
++
+새로운 배포 레이블을 지정하여 패밀리 내에서 Kickstart 프로파일에 대한 배포를 변경할 수 있습니다(예: {rhel} AS 4에서 {rhel} ES 4로 변경). 버전 간(4에서 5로) 또는 업데이트 간(U1에서 U2로) 변경은 불가능하다는 점에 유의하십시오.
+. Customize [path]``isolinux.cfg`` further as required. For example, you can add multiple options, different boot messages, or shorter timeout periods.
+. 다음과 같은 명령으로 ISO를 생성합니다.
++
+----
+mkisofs -o file.iso -b isolinux.bin -c boot.cat -no-emul-boot \
+  -boot-load-size 4 -boot-info-table -R -J -v -T isolinux/
+----
++
+[path]``isolinux/``는 배포 CD에서 복사되는 수정된 isolinux 파일을 포함하는 디렉토리의 상대 경로이고, [path]``file.iso``는 현재 디렉토리에 배치되는 출력 ISO 파일입니다.
+. Burn the ISO to CD-ROM and insert the disk. Alternatively prepare an USB key and insert it.
+. 시스템을 부팅하고 프롬프트에서 [command]``ks``를 입력합니다(Kickstart 부팅에 대한 레이블을 ‘ks’로 둔 경우).
+. kbd:[Enter] 키를 눌러 {kickstart}를 시작합니다.

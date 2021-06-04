@@ -1,0 +1,84 @@
+[[vhm-hce]]
+= VHM 和 Google Compute Engine
+
+您可以使用虚拟主机管理器 (VHM) 收集 Google Compute Engine (GCE) 中的实例。
+
+VHM 允许 {productname} 获取并报告有关您的虚拟机的信息。 有关 VHM 的详细信息，请参见 xref:client-configuration:vhm.adoc[]。
+
+
+
+== 创建 GCE VHM
+
+
+虚拟主机管理器 (VHM) 在 {productname} 服务器上运行。
+
+要运行 VHM，需要打开端口 443 以使您的 {productname} 服务器可访问客户端。
+
+确保您已在 {productname} 服务器上安装 [systemitem]``virtual-host-gatherer-libcloud`` 软件包。
+
+开始前，请登录 GCE 面板并下载证书文件。 将此文件储存在 {productname} 服务器本地，并记下路径。
+
+
+
+.过程：创建 GCE VHM
+
+. 在 {productname} {webui} 中，导航到menu:系统[虚拟主机管理器]。
+. 单击 btn:[创建] 并从下拉菜单中选择 [guimenu]``Google Compute Engine``。
+. 在[guimenu]``添加 Google Conpute Engine 虚拟主机管理器``部分，使用以下参数：
+* 在[guimenu]``标签``字段中，为 VHM 键入自定义名称。
+* 在[guimenu]``服务帐户电子邮件``字段中，键入与您的 Google 帐户关联的电子邮件地址。
+* 在[guimenu]``证书路径``字段中，键入从 GCE 面板下载的证书的路径。
+* 在[guimenu]``项目 ID`` 字段中，键入 GCE 实例使用的项目 ID。
+* 在[guimenu]``区域``字段中，键入您的 VM 所在的区域。
+    要使订阅匹配功能正常工作，就必须提供此信息。
+. 单击 btn:[创建] 保存更改并创建 VHM。
+. 在[guimenu]``虚拟主机管理器``页面中，选择新 VHM。
+. 在[guimenu]``属性``页面中，单击 btn:[刷新数据] 以清点新 VHM。
+
+要查看已清点的对象和资源，请导航到menu:系统[系统列表 > 虚拟系统]。
+
+
+
+== 指派权限
+
+要让您创建的 VHM 可以访问 GCE VM，需要为其指派正确的权限。
+
+以管理员身份登录您的 Google Cloud Platform 帐户，并使用 Cloud Identity and Access Management (IAM) 工具确保服务帐户拥有适当的角色。 您还需要确保已为 VM 指派 `VM`` 角色。
+
+如果未正确设置权限，您在运行 [command]``virtual-host-gatherer`` 时可能会收到如下所示的错误：
+
+----
+错误：{'domain': 'global', 'reason': 'forbidden', 'message': "需要 'compute.zones.list' 权限，'projects/project-id'"}
+错误：无法使用指定的身份凭证连接 Google Compute Engine 公有云。
+----
+
+要确定正确的身份凭证，请在 {productname} 服务器上的提示符处运行以下命令：
+
+----
+virtual-host-gatherer -i input_google.json -o out_google.json -vvv
+----
+
+[path]``input_google.json`` 文件应包含以下信息：
+
+----
+[
+    {
+        "id": "google_vhm",
+        "module": "GoogleCE",
+        "service_account_email": "mail@example.com",
+        "cert_path": "secret-key",
+        "project_id": "project-id",
+        "zone": "zone"
+    }
+]
+----
+
+
+
+== GCE UUID
+
+在 Google 公有云上运行的实例会向 {productname} 服务器报告如下 UUID：
+
+----
+152986662232938449
+----

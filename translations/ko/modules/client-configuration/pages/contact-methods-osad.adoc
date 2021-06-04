@@ -1,0 +1,82 @@
+[[contact-methods-osad]]
+= OSAD
+
+
+OSAD는 {productname}와 기존 클라이언트 간 연락 방법을 대체할 수 있는 수단입니다. 기본적으로 {productname}는 네 시간마다 서버에 연결하여 예약된 작업을 실행하는 [systemitem]``rhnsd``를 사용합니다. OSAD를 통해 기존 클라이언트는 예약된 작업을 즉시 실행할 수 있습니다.
+
+[NOTE]
+====
+[systemitem]``rhnsd``뿐 아니라 OSAD도 사용하십시오. [systemitem]``rhnsd``를 비활성화하면 24시간 후에 클라이언트가 체크인하지 않은 것으로 표시됩니다.
+====
+
+OSAD에는 서로 뚜렷이 구분되는 구성요소가 몇 가지 있습니다.
+
+* [systemitem]``osa-dispatcher`` 서비스는 서버에서 실행되며 데이터베이스 검사를 사용해 클라이언트에 ping을 수행해야 하는지 또는 작업을 실행해야 하는지 여부를 판단합니다.
+* [systemitem]``osad`` 서비스는 클라이언트에서 실행됩니다. 이 서비스는 [systemitem]``osa-dispatcher``에서 보내는 ping에 반응하며 [command]``mgr_check``을 실행하여 지시에 따라 작업을 수행합니다.
+* [systemitem]``jabberd`` 서비스는 클라이언트와 서버 간 통신을 위해 [systemitem]``XMPP`` 프로토콜을 사용하는 데몬입니다.
+    또한 [systemitem]``jabberd`` 서비스는 인증을 처리합니다.
+* [command]``mgr_check`` 도구는 작업을 수행할 클라이언트에서 실행되며
+    [systemitem]``osa-dispatcher`` 서비스가 통신을 시도하면 트리거됩니다.
+
+[systemitem]``osa-dispatcher``는 주기적으로 쿼리를 실행하여 클라이언트가 마지막으로 네트워크 활동을 보인 시점을 확인합니다. 최근에 활동을 보이지 않은 클라이언트를 찾으면 {productname} 서버에 등록된 모든 클라이언트에서 실행되는 모든 [systemitem]``osad`` 인스턴스에 [systemitem]``jabberd``를 사용해 ping을 실행합니다. [systemitem]``osad`` 인스턴스는 서버의 배경에서 실행 중인 [systemitem]``jabberd``를 사용해 ping에 응답합니다. [systemitem]``osa-dispatcher``가 이 응답을 수신하면 클라이언트를 온라인으로 표시합니다. [systemitem]``osa-dispatcher``가 특정 기간 내에 응답을 수신하는 데 실패하는 경우에는 클라이언트를 오프라인으로 표시합니다.
+
+OSAD를 지원하는 시스템에서 작업을 예약하면 작업이 즉시 수행됩니다. [systemitem]``osa-dispatcher``는 클라이언트에 실행해야 할 작업이 있는지 주기적으로 확인합니다. 미결 작업이 발견되면 [systemitem]``jabberd``를 사용해 클라이언트에서 [command]``mgr_check``를 실행합니다. 그러면 클라이언트가 작업을 실행합니다.
+
+
+OSAD 클라이언트는 서버의 전체 도메인 이름(FQDN)을 사용해 [systemitem]``osa-dispatcher`` 서비스와 통신합니다.
+
+SSL이 있어야 [systemitem]``osad`` 통신이 가능합니다. SSL 인증서를 사용할 수 없는 경우 클라이언트 시스템의 데몬이 연결하지 못합니다. 방화벽 규칙이 필요한 포트를 허용하도록 설정되어 있는지 확인하십시오. 자세한 내용은 xref:installation:ports.adoc[]를 참조하십시오.
+
+
+.절차: OSAD 활성화
+. {productname} 서버의 명령 프롬프트에서 루트 권한으로 다음과 같이 [systemitem]``osa-dispatcher`` 서비스를 시작합니다.
++
+----
+systemctl start osa-dispatcher
+----
+. 각 클라이언트의 [systemitem]``Tools`` 하위 채널에서 [systemitem]``mgr-osad`` 패키지를 설치합니다.
+    [systemitem]``mgr-osad`` 패키지는 클라이언트에만 설치해야 합니다. {productname} 서버에 [systemitem]``mgr-osad`` 패키지를 설치하면 [systemitem]``osa-dispatcher`` 패키지와 충돌합니다.
+. 각 클라이언트에서 루트 권한으로 다음과 같이 [systemitem]``osad`` 서비스를 시작합니다.
++
+----
+systemctl start osad
+----
++
+[systemitem]``osad`` 및 [systemitem]``osa-dispatcher``가 서비스로 실행되므로 [command]``stop``, [command]``restart``, [command]``status`` 등 표준 명령을 사용해 관리할 수 있습니다.
+
+
+각 OSAD 구성요소는 로컬 구성 파일을 사용해 구성합니다. 모든 OSAD 구성요소에 대해 기본 구성 파라미터를 유지하는 것이 좋습니다.
+
+
+[cols="1,1,1", options="header"]
+|===
+| 구성요소                        | 위치 | 구성 파일 경로
+| [systemitem]``osa-dispatcher``   | 서버   | [path]``/etc/rhn/rhn.conf`` 섹션: [systemitem]``OSA configuration``
+ | [systemitem]``osad``             | 클라이언트   |  [path]``/etc/sysconfig/rhn/osad.conf``
+ | [systemitem]``osad`` 로그 파일    | 클라이언트   | [path]``/var/log/osad``
+ | [systemitem]``jabberd`` 로그 파일 | 서버와 클라이언트 모두     |  [path]``/var/log/messages``
+|===
+
+
+.OSAD 문제 해결
+
+OSAD 클라이언트가 서버에 연결할 수 없거나 [systemitem]``jabberd`` 서비스가 포트 5552에 응답하는 데 많은 시간이 걸리는 경우 이는 열린 파일 수를 초과했기 때문일 수 있습니다.
+
+각 클라이언트에는 서버에 대한 한 건의 상시 개방 TCP 연결이 필요합니다. 이 연결에서는 하나의 파일 처리기를 사용합니다. 현재 개방된 파일 처리기의 수가 [systemitem]``jabberd`` 사용이 허용되는 최대 파일 수를 초과하면 [systemitem]``jabberd``가 요청을 대기열로 보내고 연결을 거부합니다.
+
+이 문제를 해결하려면 [path]``/etc/security/limits.conf`` 구성 파일을 편집하고 다음 줄을 추가하여 [systemitem]``jabberd``의 파일 한도를 높이면 됩니다.
+
+----
+jabber soft nofile 5100
+jabber hard nofile 6000
+----
+
+소프트 한도의 경우 클라이언트 수에 100을 더하고, 하드 한도의 경우 현재 클라이언트 수에 1000을 더하여 환경에 필요한 한도를 계산합니다.
+
+위 예에서는 현재 클라이언트를 500개로 가정하였으므로 소프트 한도는 5100이고 하드 한도는 6000입니다.
+
+또한 선택한 하드 한도로 [path]``/etc/jabberd/c2s.xml`` 파일에서 다음과 같이 [systemitem]``max_fds`` 파라미터를 업데이트해야 합니다.
+
+----
+<max_fds>6000</max_fds>
+----

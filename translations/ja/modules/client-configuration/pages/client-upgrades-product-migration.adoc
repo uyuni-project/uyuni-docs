@@ -1,0 +1,82 @@
+[[client-upgrades-spmigration]]
+= 製品移行
+
+Product migration allows you to upgrade SLE-based client systems from an Service Pack (SP) level to a later one. For example, you can migrate {sle}{nbsp}15{nbsp}SP1 to {sle}{nbsp}15{nbsp}SP2.
+
+openSUSE Leapを新しいマイナーバージョンまたは対応するSLE SPレベルに移行することもできます。次に例を示します。
+
+* openSUSE Leap 15.1から15.2、または
+* openSUSE Leap 15.1から{sle} 15 SP1、または
+* openSUSE Leap 15.2から{sle} 15 SP2
+
+[WARNING]
+====
+移行中、{productname}は、インストール前に必要なライセンス(EULA)を自動的に受け入れます。
+====
+
+{sle}{nbsp}12以降では、{scc}がサービスパックを提供している場合、{suse}はサービスパックのスキップをサポートしています。 たとえば、{sle}{nbsp}15からSP2にアップグレードできます。SP1はインストールされません。 サポートされている{sle}のアップグレードパスは、https://documentation.suse.com/sles/15-SP2/html/SLES-all/cha-upgrade-paths.html#sec-upgrade-paths-supportedを参照してください。
+
+
+
+[IMPORTANT]
+====
+Product migration is for upgrading within the same major version. You cannot use product migration to migrate from {sle}{nbsp}12 to {sle}{nbsp}15. For more information about major upgrades, see xref:client-configuration:client-upgrades-major.adoc[].
+====
+
+
+[WARNING]
+====
+Product migration does not have a rollback feature. When the migration procedure has begun, rolling back is not possible. Ensure you have a working system backup available, in case of an emergency.
+====
+
+
+
+.プロシージャ: 移行の実行
+. menu:システム[概要]ページからクライアントを選択します。
+. From the system details page of the client, navigate to the menu:Software[Product Migration] tab.
+. ターゲットの移行パスを選択し、［btn:[チャンネルの選択]］をクリックします。
+. From the [guimenu]``Product Migration - Channels`` page select the correct base channel, including ``Mandatory Child Channels`` and any additional ``Optional Child Channels``.
+. OPTIONAL: Check [guimenu]``Allow Vendor Change`` to allow packages that have changed vendors to be installed. If this occurs, a notification is shown with details before the migration is started.
++
+[IMPORTANT]
+====
+openSUSE Leapを{sle}に移行するには、［[guimenu]``ベンダー変更を許可する``］オプションにチェックを付ける必要があります。
+====
+. チャンネルを正しく設定したら［btn:[移行のスケジュール]］をクリックします。
+
+
+
+== Product Mass Migration
+
+多数のクライアントを次のSPバージョンに移行する場合、{productname} APIコールを使用できます。
+
+
+
+.Procedure: Performing a Product Mass Migration
+. 実行可能な移行ターゲットをリストし、移行するシステムIDをメモします。
++
+----
+spacecmd api -- system.listMigrationTargets -A 1000010001
+----
+. それぞれのシステムIDに対して、[systemitem]``listMigrationTarget``を呼び出し、目的の製品が使用可能であることを確認します。
++
+* If the system ID has an available target, call [systemitem]``system.scheduleProductMigration``.
+* 目的のターゲットを使用できない場合、そのシステムをスキップします。
+
+次のテンプレートを環境に合わせます。
+
+----
+target = '[....]'
+basechannel = 'channel-label'
+ system_ids = [1, 2, 3]
+
+session = auth.login(user, pass)
+for system in system_ids
+  if system.listMigrationTargets(session, system).ident == target
+    system.scheduleProductMigration(session, system, target, basechannel, [], False, <now>)
+  else
+    print "Cannot migrate to requested target -- skipping system"
+  endif
+endfor
+----
+

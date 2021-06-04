@@ -1,0 +1,92 @@
+[[installation-zsystems]]
+= {ibmz}에 설치
+
+
+이 섹션은 {ibmz} 메인프레임을 운영하는 z/VM 시스템 프로그래머를 대상으로 제공됩니다. 그리고 독자가 {ibmz} 작동 프로토콜에 대한 z/VM 시스템 프로그래머 교육을 받은 것으로 간주하고 기존 메인프레임 시스템에 {productname}를 설치하는 단계를 설명합니다. 이 섹션에서는 {ibmz}에서 사용할 수 있는 다양한 하드웨어 구성 프로파일을 다루지 않지만, {ibmz}에 {productname} 서버를 배포하기 위해 필요한 절차 및 요구사항에 대한 기본적인 개요를 제공합니다.
+
+이 섹션에서는 {sle} 설치 미디어를 사용한 {susemgr} 서버 설치 방법을 설명합니다. {scc}를 사용하여 {susemgr} 제품을 등록하고 등록 코드를 가져온 상태여야 합니다.
+
+{scc}를 사용한 등록, {scc}에서 조직 인증서 검색 또는 설치 미디어 가져오기에 대한 자세한 내용은 xref:general-requirements.adoc[]을 참조하십시오.
+
+
+
+== 시스템 요구사항
+
+시작하기 전, 환경이 기본 시스템 요구사항을 충족하는지 확인하십시오.
+
+
+.호환 {ibmz} 시스템:
+
+* IBM zEnterprise System z196
+* IBM zEnterprise System z114
+* IBM zEnterprise EC12
+* IBM zEnterprise EC12
+* IBM zEnterprise BC12
+* IBM z13
+* LinuxOne Rockhopper
+* LinuxOne Emperor
+
+
+[cols="1,1", options="header"]
+.하드웨어 요구사항
+|===
+| 하드웨어     | 권장
+| CPU          | 최소 4개의 전용 64비트 CPU 코어
+ | RAM:         | 테스트 서버: 최소 3GB RAM 및 2GB 스왑 공간
+ |              | 기본 설치: 최소 16GB
+ |              | 프로덕션 서버: 최소 32GB
+ | 디스크 공간:  | 루트 파티션: 최소 100GB
+ |              | [path]``/var/lib/pgsql``: 최소 50GB
+ |              | [path]``/var/spacewalk``: SUSE 제품당 최소 50GB 및 Red Hat 제품당 360GB
+|===
+
+[IMPORTANT]
+====
+메모리는 사용할 수 있는 RAM VDISK 전체에서 분할되고 환경에 적합하도록 스왑되어야 합니다. 프로덕션 시스템에서 실제 메모리 대 VDISK의 비율을 설치 중인 클라이언트의 수에 따라 평가해야 합니다.
+====
+
+데이터베이스 저장소를 위한 추가 디스크가 필요합니다. [systemitem]``HYPERPAV``에서 사용이 선호되므로 [systemitem]``zFCP`` 또는 [systemitem]``DASD`` 장치여야 합니다. 데이터베이스 저장소 디스크의 용량은 다음과 같아야 합니다.
+
+* [path]``/var/lib/pgsql``의 경우 최소 50GB
+* [path]``/var/spacewalk``에서 각 SUSE 제품의 경우 최소 50GB
+* [path]``/var/spacewalk``에서 각 Red Hat 제품의 경우 최소 360GB
+
+{productname}에 디스크 저장소가 충분한지 확인한 후 [command]``yast2 susemanager_setup``을 실행해야 합니다. 기본적으로 기본 데이터베이스 및 패치 디렉토리 등 {productname} 파일 시스템은 루트 디렉토리에 위치합니다. 설치가 완료되면 조정할 수 있지만, 조정 사항을 지정하고 면밀하게 모니터링하는 것이 중요합니다. 저장소 관리 및 디스크 공간 회수에 대한 내용은 {productname} 관리 가이드의 문제 해결 섹션을 참조하십시오.
+
+[WARNING]
+====
+{productname}에서 디스크 공간이 부족한 경우 데이터베이스 및 파일 구조에 심각한 영향을 미칠 수 있습니다. 전체 복구는 이전 백업을 사용하거나 {productname}을(를) 새로 설치하여 수행할 수 있습니다. {suse} 기술 서비스는 디스크 공간 부족이 발생한 시스템에는 지원을 제공할 수 없습니다.
+====
+
+.네트워크 요구사항:
+
+* OSA Express Ethernet(고속 및 기가비트 이더넷 포함)
+* HiperSockets 또는 Guest LAN
+* 10GBE, VSWITCH
+* RDMA over Converged Ethernet(RoCE)
+
+포함되지만 더 이상 지원되지 않는 인터페이스:
+
+* CTC 또는 가상 CTC
+* IUCV용 IP 네트워크 인터페이스
+
+설치 후 변경이 어렵기 때문에 시작하기 전 {productname}을(를) 실행할 z/VM에 고정 IP 주소 및 호스트 이름이 있어야 합니다. 호스트 이름은 8자 미만이고 대문자가 포함되지 않아야 합니다.
+
+
+
+
+
+== {ibmz}에 {productname} 설치
+
+이 섹션은 {sle} 제품군의 제품으로 {productname}을(를) 설치하는 방법을 설명합니다. {ibmz} 하드웨어에서의 제품 배포에 대한 일반 정보는 https://documentation.suse.com/sles/15-SP2/html/SLES-all/cha-zseries.html을 참조하십시오.
+
+.절차: DVD 이미지를 사용하여 {susemgr} 서버 설치
+[role=procedure]
+
+. 통합 설치 프로그램을 사용하여 시스템을 부팅합니다.
+    부팅에 실패하면, BIOS에서 부팅 순서를 조정해야 합니다.
+. 메시지가 표시되면, [guimenu]``설치``를 선택합니다.
+
+그리고 xref:installation:install-server-unified.adoc[]의 설명을 따릅니다.
+
+{productname}의 설치를 완료하려면 xref:installation:server-setup.adoc[]을 참조하십시오.

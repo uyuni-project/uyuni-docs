@@ -1,0 +1,60 @@
+[[registering-clients-cli]]
+= Register on the Command Line (Salt)
+
+
+In most cases, Salt clients are registered accurately with the default bootstrap methods. However, you can use Salt to register the client to the {productname} Server manually by editing the Salt minion file on the client, and providing the fully qualified domain name (FQDN) of the server. This method uses ports 4505 and 4506 inbound to the server. This method requires no configuration on the {productname} Server aside from ensuring that these ports are open.
+
+[NOTE]
+====
+Registering on the command line is also possible with traditional clients, but it requires more steps. It is not covered here. Use the bootstrap script procedure to register traditional clients. For more information, see xref:registration-bootstrap.adoc[].
+====
+
+This procedure requires that you have installed the [package]``salt-minion`` package on the Salt client before registration. For SLE 12 based clients, you also must have activated the [systemitem]``Advanced Systems Management`` module.
+
+
+
+.Procedure: Registering Clients with Salt Minion Configuration File
+. On the Salt client, open the [literal]``minion`` configuration file. The configuration file is either located at:
++
+----
+/etc/salt/minion
+----
++
+or:
++
+----
+/etc/salt/minion.d/NAME.conf
+----
+. Add or edit the FQDN of the {productname} Server or of the Proxy as the `master`, and add the activation key to the client configuration file:
++
+----
+master: SERVER.EXAMPLE.COM
+server_id_use_src: adler42
+enable_legacy_startup_events: False
+enable_fqdns_grains: False
+grains:
+  susemanager:
+    activation_key: "<Activation_Key_Name>"
+----
+
+. Restart the [systemitem]``salt-minion`` service:
++
+----
+systemctl restart salt-minion
+----
+. On the {productname} Server, accept the new client key; replace [systemitem]``<client>`` with the name of your client:
++
+----
+salt-key -a '<client>'
+----
+
+For more information about the [path]``/etc/salt/minion`` configuration file, see https://docs.saltstack.com/en/latest/ref/configuration/minion.html.
+
+
+[WARNING]
+====
+To register and use {centos}{nbsp}6, {oracle}{nbsp}6, {rhel}{nbsp}6, or {sleses}{nbsp}6 clients, you need to configure the {productname} Server to support older types of SSL encryption. For more information about how to resolve this error, see ``Registering Older Clients`` at xref:client-configuration:tshoot-clients.adoc[].
+====
+
+
+

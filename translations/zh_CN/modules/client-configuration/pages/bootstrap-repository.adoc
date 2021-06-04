@@ -1,0 +1,140 @@
+[[client-cfg-tools-repository]]
+= 引导储存库
+
+A bootstrap repository contains required packages for registering Salt or traditional clients during bootstrapping, as well as packages for installing Salt on clients. When products are synchronized, bootstrap repositories are automatically created and regenerated on the {productname} Server.
+
+
+== 准备创建引导储存库
+
+如果您选择某个产品以进行同步，当所有必需的频道都完全镜像后，会立即自动创建引导储存库。
+
+ifeval::[{suma-content} == true]
+
+include::snippets/check_sync_webui_suma.adoc[]
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+include::snippets/check_sync_webui_uyuni.adoc[]
+
+endif::[]
+
+include::snippets/check_sync_cli.adoc[]
+
+
+
+== 自动模式的选项
+
+您可以更改自动引导储存库的创建方式。 本节介绍了各种相应设置。
+
+
+
+.刷新模式
+
+默认只会使用最新软件包更新现有储存库， 而您可以将其配置为始终从空储存库开始。 要启用此行为，请在 [path]``/etc/rhn/rhn.conf`` 中添加或编辑此值。
+
+----
+server.susemanager.bootstrap_repo_flush = 1
+----
+
+
+
+.自动模式
+
+默认会启用引导储存库的自动重新生成功能。 要禁用此功能，请在 [path]``/etc/rhn/rhn. conf`` 中添加或编辑此值。
+
+----
+server.susemanager.auto_generate_bootstrap_repo = 0
+----
+
+
+
+=== 配置引导数据文件
+
+该工具使用包含有关每个发行套件所需软件包的信息的数据文件。 该数据文件储存在 [path]``/usr/share/ susemanager/mgr_bootstrap_data.py``。 {suse} 会定期更新此文件。 如果您要更改此文件，请不要直接编辑， 而是应在同一目录中创建一份副本，然后编辑该副本：
+
+----
+cd /usr/share/susemanager/
+cp mgr_bootstrap_data.py my_data.py
+----
+
+更改后，将 {productname} 配置为使用这个新文件。 在 [path]``/etc/rhn/rhn.conf`` 中添加或编辑此值：
+
+----
+server.susemanager.bootstrap_repo_datamodule = my_data
+----
+
+[IMPORTANT]
+====
+下次更新时，{suse} 提供的新数据将重写原来的数据文件，而不是这个新文件。 您需要在新文件中使用 {suse} 提供的更改覆盖相应内容，以使其保持最新。
+====
+
+
+
+== 手动生成引导储存库
+
+默认情况下，每天都会重新生成引导储存库。 您可以在命令提示符处手动创建引导储存库。
+
+
+
+.过程：生成 {sle} 的引导储存库
+. 在 {productname} 服务器上的命令提示符处，以 root 身份列出可用的引导储存库：
++
+----
+mgr-create-bootstrap-repo -l
+----
+. 创建引导储存库，并使用适当的储存库名称作为产品标签：
++
+----
+mgr-create-bootstrap-repo -c SLE-version-x86_64
+----
+
+客户端储存库位于 [path]``/srv/www/htdocs/pub/repositories/ `` 中。
+
+
+
+如果您镜像了多个产品（例如 SLES 和 SLES for SAP），或者您使用的是自定义频道，在创建引导储存库时将需要指定要使用的父频道。 并不是在所有情况下都需要如此。 例如，部分 SLES{nbsp}15 版本使用共同的代码库，因此无需指定父频道。 只有您的环境需要时，才需使用此过程。
+
+
+
+.可选过程：指定引导储存库的父频道
+. 检查您有哪些父频道可用：
++
+----
+mgr-create-bootstrap-repo -c SLE-15-x86_64
+找到多个父频道选项。请使用 
+--with-parent-channel <label> 选项并选择以下其中一个父频道：
+- sle-product-sles15-pool-x86_64
+- sle-product-sles_sap15-pool-x86_64
+- sle-product-sled15-pool-x86_64
+----
+. 指定适当的父频道：
++
+----
+mgr-create-bootstrap-repo -c SLE-15-x86_64 --with-parent-channel sle-product-sled15-pool-x86_64
+----
+
+
+
+=== 包含多个体系结构的储存库
+
+
+如果您要创建包含多个不同体系结构的引导储存库，则需要确保所有体系结构是否都已正确更新。 例如，{slea} 的 {x86_64} 和 {ibmz} 体系结构使用相同的引导储存库 URL：``/srv/www/htdocs/pub/repositories/sle/15/2/bootstrap/``。
+
+如果启用 ``flush`` 选项，当您尝试生成多个体系结构的引导储存库时，将仅生成一个体系结构。 要避免此问题，请在创建其他体系结构时于命令提示符处使用 ``--no-flush`` 选项。 例如：
+
+----
+mgr-create-bootstrap-repo -c SLE-15-SP2-x86_64
+mgr-create-bootstrap-repo --no-flush -c SLE-15-SP2-s390x
+----
+
+
+
+== 引导和自定义频道
+
+如果您要使用自定义频道，则可以在 [command]``mgr-create-bootstrap-repo`` 命令中使用 [option]``--with-custom- channels`` 选项。 在此情况下，您还需要指定要使用的父频道。
+
+如果您使用自定义频道，则自动创建引导储存库可能会失败。 在这种情况下，您需要手动创建储存库。
+
+有关自定义频道的详细信息，请参见 xref:administration:custom- channels.adoc[]。

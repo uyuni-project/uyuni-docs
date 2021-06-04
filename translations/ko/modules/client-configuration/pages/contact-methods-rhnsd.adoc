@@ -1,0 +1,60 @@
+[[contact-methods-rhnsd]]
+= SUSE Manager 데몬(rhnsd)
+
+
+{productname} 데몬([command]``rhnsd``)은 기존 클라이언트 시스템에서 실행되며 {productname}와 주기적으로 연결하여 새로운 업데이트 및 알림을 확인합니다. Salt 클라이언트에는 적용되지 않습니다.
+
+이러한 시스템에서는 systemd를 사용하지 않으므로 이 데몬은 {sle}{nbsp}11 및 {rhnminrelease6}에서만 사용됩니다. 이후 운영 체제에서는 systemd 타이머([systemitem]``rhnsd.timer``)가 사용되고 [systemitem]``rhnsd.service``로 제어됩니다.
+
+[command]``/etc/init.d/rhnsd``로 데몬을 시작하십시오.
+
+이 데몬은 기본적으로 네 시간마다 새 작업을 확인합니다. 따라서 클라이언트가 예약된 작업을 실행하는 데 다소 시간이 걸릴 수 있습니다.
+
+업데이트를 확인하기 위해 [systemitem]``rhnsd``는 [path]``/usr/sbin/``에 있는 외부 [systemitem]``mgr_check`` 프로그램을 실행합니다. {productname}에 대한 네트워크 연결을 설정하는 소형 응용 프로그램입니다. {productname} 데몬은 네트워크 포트를 수신 대기하거나 네트워크와 직접 대화하지 않습니다. 모든 네트워크 활동은 [systemitem]``mgr_check`` 유틸리티가 수행합니다.
+
+This figure provides an overview of the default [systemitem]``rhnsd`` process path. All items left of the [systemitem]``Python XMLRPC server`` block represent processes running on the {productname} client.
+
+image::rhnsd-taigon.png[scaledwidth=80]
+
+
+
+== rhnsd 구성
+
+`rhnsd` 초기화 스크립트는 [path]``/etc/sysconfig/rhn/rhnsd``에 클라이언트 시스템에 관한 구성 파일이 있습니다.
+
+이 데몬에 중요한 파라미터는 체크인 빈도입니다. 기본 간격 시간은 네 시간(240분)입니다. 허용되는 최소 시간 간격은 한 시간(60분)입니다. 이 간격을 한 시간 이하로 설정하는 경우 기본값인 네 시간으로 다시 변경됩니다(240분).
+
+`rhnsd` 구성 파일을 수정하는 경우 루트 권한으로 다음 명령을 실행하여 데몬을 다시 시작하고 변경 사항을 적용하십시오.
+----
+/etc/init.d/rhnsd restart
+----
+
+`rhnsd`의 상태를 확인하려면 루트 권한으로 다음 명령을 사용하십시오.
+----
+/etc/init.d/rhnsd status
+----
+
+{sle}{nbsp}12 이후에서는 기본 시간 간격이 다음 섹션과 같이 [path]``/etc/systemd/system/timers.target.wants/rhnsd.timer``에 설정됩니다.
+
+----
+[Timer]
+OnCalendar=00/4:00
+ RandomizedDelaySec=30min
+----
+
+다음과 같이 [command]``systemctl``을 사용해 [path]``rhnsd.timer``에 대해 무효화 드롭인 파일을 생성할 수 있습니다.
+
+----
+systemctl edit rhnsd.timer
+----
+
+예를 들어 시간 간격을 두 시간을 구성하고 싶은 경우 다음과 같이 합니다.
+
+----
+[Timer]
+OnCalendar=00/2:00
+----
+
+파일은 [path]``/etc/systemd/system/rhnsd.timer.d/override.conf``로 저장됩니다.
+
+systemd 타이머에 대한 자세한 내용은 [command]``systemd.timer`` and [command]``systemctl`` 맨 페이지를 확인하십시오.

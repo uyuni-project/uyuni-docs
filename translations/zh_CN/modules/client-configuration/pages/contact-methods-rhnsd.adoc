@@ -1,0 +1,60 @@
+[[contact-methods-rhnsd]]
+= SUSE Manager 守护程序 (rhnsd)
+
+
+{productname} 守护程序 ([command]``rhnsd``) 在传统客户端系统上运行，会定期与 {productname} 连接以检查有无新更新和通知。 它不适用于 Salt 客户端。
+
+只有 {sle}{nbsp} 11 和 {rhnminrelease6} 上使用该守护程序，因为这些系统不使用 systemd。 更高版本的操作系统上会使用 systemd 计时器 ([systemitem]``rhnsd.timer``)，该计时器由 [systemitem]``rhnsd. service`` 控制。
+
+使用 [command]``/etc/init.d/rhnsd`` 启动守护程序。
+
+默认情况下，该守护程序每四小时会检查一次有无新操作。 这意味着一段时间后客户端才会执行安排的操作。
+
+为检查更新，[systemitem]``rhnsd`` 会运行位于 [path]``/usr/sbin/`` 中的外部 [systemitem]``mgr_check`` 程序。 这是一个小应用程序，可建立与 {productname} 的网络连接。 {productname} 守护程序不会侦听任何网络端口，也不会直接与网络通讯。 所有网络活动均由 [systemitem]``mgr_check`` 实用程序执行。
+
+下图提供了 [systemitem]``rhnsd`` 的默认进程路径的概览。 [systemitem]``Python XMLRPC 服务器``块左侧的各项表示在 {productname} 客户端上运行的进程。
+
+image::rhnsd-taigon.png[scaledwidth=80]
+
+
+
+== 配置 rhnsd
+
+`rhnsd` 初始化脚本在客户端系统上的 [path]``/etc/sysconfig/rhn/rhnsd`` 中有一个配置文件。
+
+该守护程序的一个重要参数为签入频率。 默认的间隔时间为四小时（240 分钟）。 允许的最短时间间隔为一小时（60 分钟）。 如果您将时间间隔设为不到一小时，该值会改回为默认值 4 小时（240 分钟）。
+
+如果修改了 `rhnsd` 配置文件，请以 root 身份执行以下命令，以重启动守护程序并应用更改：
+----
+/etc/init.d/rhnsd restart
+----
+
+要查看 `rhnsd` 的状态，请以 root 身份使用以下命令：
+----
+/etc/init.d/rhnsd status
+----
+
+在 {sle}{nbsp}12 及更高版本上，默认时间间隔在 [path]``/etc/ systemd/system/timers.target.wants/rhnsd.timer`` 中的以下部分设置：
+
+----
+[Timer]
+OnCalendar=00/4:00
+RandomizedDelaySec=30min
+----
+
+您可以使用 [command]``systemctl`` 创建 [path]``rhnsd.timer`` 的 overriding drop-in 文件：
+
+----
+systemctl edit rhnsd.timer
+----
+
+例如，如果您要配置两小时的时间间隔，请使用以下命令：
+
+----
+[Timer]
+OnCalendar=00/2:00
+----
+
+文件保存在 [path]``/etc/systemd/system/rhnsd.timer.d/override.conf`` 中。
+
+有关 systemd 计时器的详细信息，请参见 [command]``systemd. timer`` 和 [command]``systemctl`` 手册页。

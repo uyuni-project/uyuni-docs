@@ -1,0 +1,158 @@
+[[clients-ubuntu]]
+= 注册 {ubuntu} 20.04 客户端
+
+本节包含有关注册运行 {ubuntu} 20.04 LTS 操作系统的 Salt 客户端的信息。
+
+ifeval::[{suma-content} == true]
+{productname} 支持使用 Salt 的 {ubuntu} 16.04 LTS、18.04 LTS 和 20.04 LTS 客户端。 有关注册运行 {ubuntu} 16.04 LTS 和 18.04 LTS 的 Salt 客户端的信息，请参见 xref:client-configuration:clients-ubuntu-old.adoc[]。
+endif::[]
+
+[IMPORTANT]
+====
+Canonical 未授权也不支持 {productname}。
+====
+
+[NOTE]
+====
+{ubuntu} 仅在作为 Salt 客户端的情况下受支持， 作为传统客户端时不受支持。
+====
+
+支持使用引导功能启动 {ubuntu} 客户端，并执行初始状态运行，例如设置储存库和执行配置文件更新。 不过，默认会禁用 {ubuntu} 上的 root 用户，因此要使用引导，需要有一个具有 Python [command]``sudo`` 特权的现有用户。
+
+
+
+== 添加软件频道
+
+将 {ubuntu} 客户端注册到您的 {productname} 服务器之前，您需要添加所需的软件频道，并同步这些频道。
+
+
+ifeval::[{suma-content} == true]
+
+此过程所需的产品包括：
+
+[[ubuntu-channels-wizard]]
+[cols="1,1", options="header"]
+.Ubuntu 产品 - WebUI
+|===
+| 操作系统版本 | 产品名称
+|{ubuntu} 20.04 | Ubuntu 20.04
+|===
+
+include::snippets/addchannels_vendor_webui.adoc[]
+
+或者，您也可以在命令提示符处添加频道。 此过程所需的频道包括：
+
+[[ubuntu-channels-cli]]
+[cols="1,1", options="header"]
+.Ubuntu 频道 - CLI
+|===
+| 操作系统版本 | 基础频道
+|{ubuntu} 20.04 | ubuntu-2004-amd64-main-amd64
+|===
+
+include::snippets/addchannels_vendor_cli.adoc[]
+
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+此过程所需的频道包括：
+[[ubuntu-channels-cli-uyuni]]
+[cols="1,1,1,1,1,1,1,1", options="header"]
+.Ubuntu 频道 - CLI
+|===
+
+| OS Version
+| Base Channel
+| Main Channel
+| Updates Channel
+| Security Channel
+| Client Channel
+
+| {ubuntu} 20.04
+| ubuntu-2004-amd64-main for amd64
+| ubuntu-2004-amd64-main-uyuni
+| ubuntu-2004-amd64-main-updates-uyuni
+| ubuntu-2004-amd64-main-security-uyuni
+| ubuntu-2004-amd64-uyuni-client
+
+|===
+
+include::snippets/addchannels_novendor_cli.adoc[]
+
+[IMPORTANT]
+====
+You need all the new channels fully synchronized before bootstrapping any Ubuntu client.
+====
+
+endif::[]
+
+
+
+== 检查同步状态
+
+ifeval::[{suma-content} == true]
+
+include::snippets/check_sync_webui_suma.adoc[]
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+include::snippets/check_sync_webui_uyuni.adoc[]
+
+endif::[]
+
+include::snippets/check_sync_cli.adoc[]
+
+[NOTE]
+====
+{ubuntu} 频道可能会非常大。 同步所需的时间可能会长达数小时。
+====
+
+
+
+ifeval::[{uyuni-content} == true]
+
+== 在客户端上信任 GPG 密钥
+
+include::snippets/trust_gpg.adoc[]
+
+endif::[]
+
+
+
+== Root 访问权限
+
+{ubuntu} 上的 root 用户默认会被禁用。 您可以通过编辑 [filename]``sudoers`` 文件启用该用户。
+
+.过程：向 Root 用户授予访问权限
+
+. 在客户端上，编辑 [filename]``sudoers`` 文件：
++
+----
+sudo visudo
+----
++
+在 [filename]``sudoers`` 文件末尾添加下面一行，以向用户授予 [command]``sudo`` 访问权限。 以在 {webui} 中引导客户端的用户的名称替换 [systemitem]``<user>``。
++
+----
+<user>  ALL=NOPASSWD: /usr/bin/python, /usr/bin/python2, /usr/bin/python3
+----
+
+[NOTE]
+====
+此过程无需口令便可授予 root 访问权限，而注册客户端需要提供口令。 客户端成功安装后会以 root 特权运行，因此将不再需要该访问权限。 客户端成功安装之后，建议您从 [path]``sudoers`` 文件中去除该行。
+====
+
+
+
+== 注册客户端
+
+要注册您的 {ubuntu} 客户端，需要有引导储存库。 默认会自动创建并且每天会为所有同步的产品重新生成引导储存库。 您可以在命令提示符处使用以下命令手动创建引导储存库：
+
+----
+mgr-create-bootstrap-repo
+----
+
+有关注册客户端的详细信息，请参见 xref:client- configuration:registration-overview.adoc[]。

@@ -1,0 +1,281 @@
+[[troubleshooting-clients]]
+= クライアントのトラブルシューティング
+
+
+
+== 自動インストール
+
+ベースチャンネルによっては、新しい自動インストールプロファイルは、必要なパッケージがないチャンネルにサブスクライブされる場合があります。
+
+自動インストールを動作させるには、次のパッケージが必要です。
+
+* [package]``pyOpenSSL``
+* [package]``rhnlib``
+* [package]``libxml2-python``
+* [package]``spacewalk-koan``
+
+この問題を解決するには、まず次の点について確認してください。
+
+* 自動インストールプロファイルのベースチャンネルに関するツールソフトウェアチャンネルを組織およびユーザーで使用できることを確認します。
+* ツールチャンネルが子チャンネルとして{productname}で使用できることを確認します。
+* 必要なパッケージおよび依存関係が関連チャンネルで使用できることを確認します。
+
+
+
+== ベアメタルシステム
+
+ネットワークのベアメタルシステムが［[guilabel]``システム``］リストに自動的に追加されない場合、まず次の点について確認してください。
+
+* [path]``pxe-default-image``パッケージがインストールされている必要があります。
+* ファイルのパスおよびパラメータが正しく設定されている必要があります。[path]``rhn.conf``設定ファイルで指定された場所に、[path]``pxe-default-image``で提供される[path]``vmlinuz0``ファイルと[path]``initrd0.img``ファイルがあることを確認します。
+* ベアメタルシステムを{productname}サーバに接続するネットワーク機器が正しく動作していて、そのサーバから{productname}サーバのIPアドレスにアクセスできることを確認します。
+* プロビジョニングするベアメタルシステムは、ブートシーケンスでPXEブートが有効になっている必要があり、オペレーティングシステムをブートしていない必要があります。
+* DHCPサーバは、ブート中にDHCPリクエストに応答する必要があります。PXEブートメッセージで次の点を確認してください。
+** DHCPサーバが目的のIPアドレスを割り当てている。
+** DHCPサーバが{productname}サーバのIPアドレスをブート用に[option]``next-server``として割り当てている。
+* Cobblerが実行中であり検出機能が有効なことを確認してください。
+
+ブート後すぐに青いCobblerメニューが表示される場合、検出が開始されています。 正常に完了しない場合、自動シャットダウンを一時的に無効にして、問題の診断に活用してください。自動シャットダウンを無効にするには:
+
+. Cobblerメニューで矢印キーを使用して[option]``pxe-default-profile``を選択し、タイマーが切れる前にTabキーを押します。
+. カーネルブートパラメータ[option]``spacewalk-finally=running``を追加します。そのためには、統合されたエディタを使用します。その後、Enterキーを押してブートを続行します。
+. ユーザ名を[option]``root``、パスワードを[option]``linux``にしてシェルに入力し、デバッグを続行します。
+
+[IMPORTANT]
+.重複プロファイル
+====
+技術的な制約により、新しいベアメタルシステムを以前に検出されたシステムと高い信頼性で区別することはできません。 したがって、ベアメタルシステムの電源を複数回オンにしないことをお勧めします。この操作を実行するとプロファイルの重複が発生します。
+====
+
+
+
+== サポートが終了した{centos} 6クライアントのブートストラップ
+
+{centos} 6はサポート終了になっており、このオペレーティングシステム用にクライアントリポジトリで提供されるイメージは失効しています。 これらのパッケージを使用した新しい{centos} 6クライアントのブートストラップは失敗します。 この障害は、インストールおよびブートストラップが完了している{centos} 6クライアントでは発生しません。
+
+新しい{centos} 6クライアントをブートストラップする必要がある場合、既存のリポジトリを編集し、正しいURLを反映します。
+
+
+
+.プロシージャ: 新しい{centos} 6クライアントのブートストラップのトラブルシューティング
+. {centos} 6クライアントのコマンドプロンプトで、``CentOS-Base.repo``ファイルを開きます。このファイルは``/etc/yum.repos.d/``ディレクトリにあります。
+. ``mirrorlist``エントリを見つけます。これは``mirrorlist.centos.org``を指しています。 エントリは複数存在する可能性があります。 次に例を示します。
++
+----
+mirrorlist=http://mirrorlist.centos.org/?release=6&arch=$basearch&repo=os
+----
++
+. ``mirrorlist``エントリをコメントアウトし、パッケージマネージャがURLを探さないようにします。
+. ``baseurl``行を編集し、``vault.centos.org`` URLを指すようにし、{centos} 6のリポジトリを指定します。 次に例を示します。
++
+----
+baseurl=https://vault.centos.org/centos/6/os/$basearch/
+----
+. ファイルでリストされている各リポジトリで繰り返します。
+. クライアントをブートストラップします。 {centos}クライアントのブートストラップの詳細については、xref:client-configuration:clients-centos.adoc[]を参照してください。
+
+{centos} 6のサポート終了の詳細については、http://mirror.centos.org/centos/6/readmeを参照してください。
+
+
+
+== サポート終了製品のブートストラップリポジトリ
+
+サポートされている製品を同期するとき、ブートストラップリポジトリは、自動的に作成され、{productname}サーバに再生成されます。 製品がサポート終了になり、サポートされなくなったが、製品の使用を継続する場合、ブートストラップリポジトリを手動で作成する必要があります。
+
+ブートストラップリポジトリの詳細については、xref:client-configuration:bootstrap-repository.adoc[]を参照してください。
+
+
+
+.プロシージャ: サポート終了製品のブートストラップリポジトリの作成
+
+. {productname} サーバのコマンドプロンプトで root になり、 [option]``--force`` オプションを指定してサポート対象外のブートストラップスクリプトの一覧を表示してください。たとえば下記のようになります:
++
+----
+mgr-create-bootstrap-repo --list --force
+1. SLE-11-SP4-x86_64
+ 2. SLE-12-SP2-x86_64
+ 3. SLE-12-SP3-x86_64
+----
+. 製品ラベルとして適切なリポジトリ名を使用して、ブートストラップリポジトリを作成します。
++
+----
+mgr-create-bootstrap-repo --create SLE-12-SP2-x86_64 --force
+----
+ブートストラップリポジトリを手動で作成しない場合、必要な製品およびブートストラップリポジトリでLTSSが使用できるかどうかを確認できます。
+
+
+
+== 複製したSaltクライアント
+
+ハイパーバイザ複製ユーティリティを使用していて、複製したSaltクライアントを登録しようすると、次のエラーが発生します。
+
+----
+残念ながら、このシステムは見つかりませんでした。
+----
+
+新しい複製システムのマシンIDが既存の登録済みシステムのマシンIDと同じことが原因です。 マシンIDを手動で調整してエラーに対処すると、複製したシステムを正常に登録できます。
+
+
+詳細および手順については、xref:administration:tshoot-registerclones.adoc[]を参照してください。
+
+
+
+== FQDNS grainの無効化
+
+FQDNS grainは、システムのすべての完全修飾DNSサービスのリストを返します。 この情報の収集は、通常、高速プロセスですが、DNS設定が間違っていると、長時間かかる可能性があります。 場合によっては、クライアントが無応答またはクラッシュする場合があります。
+
+この問題を回避するには、Saltフラグを使用してFQDNS grainを無効にできます。 grainを無効にした場合、ネットワークモジュールを使用して、FQDNSサービスを提供できます。この場合、クライアントが無応答になるリスクはありません。
+
+[NOTE]
+====
+この操作は、古いSaltクライアントにのみ適用されます。 最近Saltクライアントを登録した場合、FQDNS grainはデフォルトで無効になっています。
+====
+
+
+{productname}サーバのコマンドプロンプトで、次のコマンドを使用してFQDNS grainを無効にします。
+
+----
+salt '*' state.sls util.mgr_disable_fqdns_grain
+----
+
+このコマンドを実行すると、各クライアントが再起動され、サーバが処理する必要があるSaltイベントが生成されます。 クライアント数が多い場合、バッチモードでコマンドを実行できます。
+
+----
+salt --batch-size 50 '*' state.sls util.mgr_disable_fqdns_grain
+----
+
+バッチコマンドの実行完了を待機します。 kbd:[Ctrl+C]でプロセスを中断しないでください。
+
+
+
+== noexecで/tmpをマウントする
+
+Saltは、クライアントのファイルシステムの[filename]``/tmp``からリモートコマンドを実行します。 したがって、[filename]``/tmp``に[option]``noexec``オプションをマウントしないでください。
+
+
+
+== grainを渡してイベントを開始する
+
+Saltクライアントは、起動するたびに、``machine_id`` grainを{productname}に渡します。{productname}は、このgrainを使用して、クライアントが登録されたかどうかを判定します。 このプロセスでは、同期Saltコールが必要です。同期Saltコールは、その他のプロセスをブロックするため、多数のクライアントを同時に起動する場合、大幅な遅延が発生する可能性があります。
+
+この問題を克服するために、別々のSaltコールを回避するための新しい機能がSaltに導入されました。
+
+この機能を使用するには、この機能をサポートしているクライアントのクライアント設定に設定パラメータを追加できます。
+
+このプロセスを簡単にするには、``mgr_start_event_grains.sls``ヘルパーSaltの状態を使用します。
+
+[NOTE]
+====
+この操作は、登録済みのクライアントにのみ適用されます。 最近Saltクライアントを登録した場合、この設定パラメータはデフォルトで追加されています。
+====
+
+
+{productname}サーバのコマンドプロンプトで、次のコマンドを使用して``start_event_grains``設定ヘルパーを有効にします。
+
+----
+salt '*' state.sls util.mgr_start_event_grains
+----
+
+このコマンドを実行すると、必要な設定がクライアントの設定ファイルに追加され、クライアントを再起動したときに適用されます。 クライアント数が多い場合、バッチモードでコマンドを実行できます。
+
+----
+salt --batch-size 50 '*' state.sls mgr_start_event_grains
+----
+
+
+
+== プロキシの接続およびFQDN
+
+プロキシ経由で接続されているクライアントが{webui}に表示されることがありますが、そのようなクライアントがプロキシ経由で接続されていることは示されません。 完全修飾ドメイン名(FQDN)を使用して接続していない場合、{productname}でプロキシが認識されないと、この動作が発生することがあります。
+
+この動作を修正するには、プロキシのクライアント設定ファイルでgrainとして追加のFQDNを指定します。
+
+----
+grains:
+  susemanager:
+     custom_fqdns:
+       - name.one
+       - name.two
+----
+
+
+
+== Red Hat CDN Channel and Multiple Certificates
+
+The {redhat} content delivery network (CDN) channels sometimes provide multiple certificates, but the {productname} {webui} can only import a single certificate. If CDN presents a certificate that is different to the one the {productname} {webui} knows about, validation fails and permission to access the repository is denied, even though the certificate is accurate. The error message received is:
+
+----
+[error]
+Repository '<repo_name>' is invalid.
+<repo.pem> Valid metadata not found at specified URL
+History:
+ - [|] Error trying to read from '<repo.pem>'
+ - Permission to access '<repo.pem>' denied.
+Please check if the URIs defined for this repository are pointing to a valid repository.
+Skipping repository '<repo_nam' because of the above error.
+Could not refresh the repositories because of errors.
+HH:MM:SS RepoMDError: Cannot access repository. Maybe repository GPG keys are not imported
+----
+
+To resolve this issue, merge all valid certificates into a single ``.pem`` file, and rebuild the certificates for use by {productname}:
+
+
+
+.Procedure: Resolving Multiple {redhat} CDN Certificates
+. On the {redhat} client, at the command prompt, as root, gather all current certificates from ``/etc/pki/entitlement/`` in a single ``rh-cert.pem`` file:
++
+----
+cat 866705146090697087.pem 3539668047766796506.pem redhat-entitlement-authority.pem > rh-cert.pem
+----
+. Gather all current keys from ``/etc/pki/entitlement/`` in a single ``rh-key.pem`` file:
++
+----
+cat 866705146090697087-key.pem 3539668047766796506-key.pem > rh-key.pem
+----
+
+You can now import the new certificates to the {productname} Server, using the instructions in xref:client-configuration:clients-rh-cdn.adoc[].
+
+
+
+== 古いクライアントの登録
+
+
+
+
+
+
+
+{centos}{nbsp}6、 {oracle}{nbsp}6、{rhel}{nbsp}6、または{sleses}{nbsp}6の各クライアントを登録して使用するには、 {productname} サーバを設定して旧式のSSL暗号化をサポートする必要があります。
+
+コマンドプロンプトで登録しようすると、次のような内容を示すエラーが発生します。
+
+----
+Repository '<Repository_Name>' is invalid.
+[（リポジトリ'<Repository_Name>'は無効です。
+[）|]Valid metadata not found at specified URL(s)
+ Please check if the URIs defined for this repository are pointing to a valid  repository.
+（有効なメタデータが指定されているURLで見つかりませんでした
+このリポジトリ用に定義されているURIが有効なリポジトリを指しているかどうかを確認してください。
+）Skipping repository '<Repository_Name>' because of the above error.
+（上記のエラーのため、リポジトリ'<Repository_Name>'をスキップします。
+）Download (curl) error for 'www.example.com':（'www.example.com'に(curl)エラーをダウンロードします:
+）Error code:（エラーコード:）Unrecognized error
+ Error message: error:1409442E:SSL routines:SSL3_READ_BYTES:tlsv1 alert  protocol version
+（認識できないエラー
+ エラーメッセージ: エラー:1409442E:SSLルーチン:SSL3_READ_BYTES:tlsv1 警告プロトコルバージョン）
+----
+
+{webui}で登録しようすると、次のような内容を示すエラーが発生します。
+
+----
+Rendering SLS 'base:bootstrap' failed:（SLS 'base:bootstrap'のレンダリングに失敗しました:）Jinja error:（Jinjaエラー:）>>> No TLS 1.2 and above  for RHEL6 and SLES11.（>>> RHEL6およびSLES11用のNo TLS 1.2以降。）Please check your Apache config.（Apache設定を確認してください。）
+...
+----
+
+ApacheではTLS{nbsp}v1.2を必要とするため、この動作が発生しますが、古いオペレーティングシステムは、このバージョンのTLSプロトコルをサポートしていません。 このエラーを修正するには、サーバ上のApacheが広範なプロトコルバージョンを受け入れる必要があります。 {productname}サーバでrootとして[path]``/etc/apache2/ssl-global.conf``設定ファイルを開き、[systemitem]``SSLProtocol``行を検索し、次のように更新します。
+
+----
+SSLProtocol all -SSLv2 -SSLv3
+----
+
+この操作は、サーバ上で手動で実行する必要があります。その際、該当する場合には、プロキシでSaltの状態にします。 変更後、各システムで[systemitem]``apache``サービスを再起動します。

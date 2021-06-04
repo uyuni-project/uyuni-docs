@@ -1,0 +1,141 @@
+[[client-cfg-tools-repository]]
+= ブートストラップリポジトリ
+
+A bootstrap repository contains required packages for registering Salt or traditional clients during bootstrapping, as well as packages for installing Salt on clients. When products are synchronized, bootstrap repositories are automatically created and regenerated on the {productname} Server.
+
+
+== ブートストラップリポジトリの作成準備
+
+同期する製品を選択するとき、ブートストラップリポジトリは、必須のチャンネルすべてが完全にミラーリングされるとすぐに自動的に作成されます。
+
+ifeval::[{suma-content} == true]
+
+include::snippets/check_sync_webui_suma.adoc[]
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+include::snippets/check_sync_webui_uyuni.adoc[]
+
+endif::[]
+
+include::snippets/check_sync_cli.adoc[]
+
+
+
+== 自動モードのオプション
+
+ブートストラップリポジトリの自動作成動作を変更できます。 このセクションでは、さまざまな設定を説明します。
+
+
+
+.フラッシュモード
+
+デフォルトでは、既存のリポジトリは、最新パッケージでのみ更新されます。 代わりに、必ず空のリポジトリで始まるように設定できます。 この動作を有効にするには、[path]``/etc/rhn/rhn.conf``で次の値を追加または編集します。
+
+----
+server.susemanager.bootstrap_repo_flush = 1
+----
+
+
+
+.自動モード
+
+デフォルトでは、ブートストラップリポジトリの自動再生成は有効になっています。 無効にするには、[path]``/etc/rhn/rhn.conf``で次の値を追加または編集します。
+
+----
+server.susemanager.auto_generate_bootstrap_repo = 0
+----
+
+
+
+=== ブートストラップデータファイルの設定
+
+このツールは、各ディストリビューションに必要なパッケージに関する情報を含むデータファイルを使用します。 データファイルは[path]``/usr/share/susemanager/mgr_bootstrap_data.py``に保存されています。 {suse}はこのファイルを定期的に更新します。 このファイルを変更する場合、直接編集しないでください。 代わりに、同じディレクトリにコピーを作成し、コピーを編集します。
+
+----
+cd /usr/share/susemanager/
+cp mgr_bootstrap_data.py my_data.py
+----
+
+変更したら、{productname}を設定して新しいファイルを使用します。 [path]``/etc/rhn/rhn.conf``でこの値を追加または編集します。
+
+----
+server.susemanager.bootstrap_repo_datamodule = my_data
+----
+
+[IMPORTANT]
+====
+次の更新時、{suse}の新しいデータによって、新しいデータファイルではなく元のデータファイルが上書きされます。 {suse}によって行われた変更を使用して新しいファイルを最新に保つ必要があります。
+====
+
+
+
+== ブートストラップリポジトリの手動生成
+
+デフォルトでは、ブートストラップリポジトリは毎日再生成されます。 コマンドプロンプトからブートストラップリポジトリを手動で作成できます。
+
+
+
+.プロシージャ: {sle}のブートストラップリポジトリの生成
+. {productname}サーバのコマンドプロンプトで、rootとして、使用できるブートストラップリポジトリをリストします。
++
+----
+mgr-create-bootstrap-repo -l
+----
+. 製品ラベルとして適切なリポジトリ名を使用して、ブートストラップリポジトリを作成します。
++
+----
+mgr-create-bootstrap-repo -c SLE-version-x86_64
+----
+
+クライアントリポジトリは[path]``/srv/www/htdocs/pub/repositories/``にあります。
+
+
+
+複数の製品(SLESとSLES for SAPなど)をミラーリング済みの場合、またはカスタムチャンネルを使用している場合、ブートストラップリポジトリを作成するときに使用する親チャンネルを指定する必要が生じる場合があります。 これは、あらゆる状況で必須ではありません。 たとえば、SLES{nbsp}15の一部のバージョンには共通のコードベースがあるため、親チャンネルを指定する必要はありません。 このプロシージャは、ご使用の環境で必要な場合のみ使用します。
+
+
+
+.オプションのプロシージャ: ブートストラップリポジトリの親チャンネルの指定
+. 利用できる親チャンネルを確認します。
++
+----
+mgr-create-bootstrap-repo -c SLE-15-x86_64
+Multiple options for parent channel found.（親チャンネルの複数にオプションが表示されます。）Please use option
+ --with-parent-channel <label> and choose one of:（オプション
+ --with-parent-channel <label>を使用し、次のいずれかを選択してください。）
+- sle-product-sles15-pool-x86_64
+ - sle-product-sles_sap15-pool-x86_64
+ - sle-product-sled15-pool-x86_64
+----
+. 適切な親チャンネルを指定します。
++
+----
+mgr-create-bootstrap-repo -c SLE-15-x86_64 --with-parent-channel  sle-product-sled15-pool-x86_64
+----
+
+
+
+=== 複数アーキテクチャを含むリポジトリ
+
+
+複数の異なるアーキテクチャを含むブートストラップリポジトリを作成している場合、すべてのアーキテクチャが正しく更新されることに注意を払う必要があります。 たとえば、{slea}の{x86_64}アーキテクチャおよび{ibmz}アーキテクチャは、同じブートストラップリポジトリURL(``/srv/www/htdocs/pub/repositories/sle/15/2/bootstrap/``)を使用します。
+
+``フラッシュ``オプションを有効にすると、複数のアーキテクチャのブートストラップリポジトリを生成しようとしても、生成されるアーキテクチャは1つのみです。 この動作を回避するには、追加のアーキテクチャを作成するとき、コマンドプロンプトで``--no-flush``オプションを使用します。 次に例を示します。
+
+----
+mgr-create-bootstrap-repo -c SLE-15-SP2-x86_64
+mgr-create-bootstrap-repo --no-flush -c SLE-15-SP2-s390x
+----
+
+
+
+== ブートストラップとカスタムチャンネル
+
+カスタムチャンネルを使用している場合、[command]``mgr-create-bootstrap-repo``コマンドを使用して[option]``--with-custom-channels``オプションを使用できます。 この場合、使用する親チャンネルも指定する必要があります。
+
+カスタムチャンネルを使用すると、ブートストラップリポジトリの自動作成が失敗する場合があります。 この場合、リポジトリを手動で作成する必要があります。
+
+カスタムチャンネルの詳細については、xref:administration:custom-channels.adoc[]を参照してください。

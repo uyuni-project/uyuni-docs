@@ -1,0 +1,239 @@
+[[proxy-setup]]
+= Nastavení SUSE Manager Proxy
+
+Proxy {productname} vyžaduje další konfiguraci.
+
+[NOTE]
+.Proxy řetězce
+====
+Je možné uspořádat více Salt proxy do řetězce. V takovém případě se nadřazený proxy jmenuje `rodič`.
+====
+
+Zkontrolujte, zda jsou na serveru proxy otevřené TCP porty `4505` a `4506`. Proxy server musí být na těchto portech schopen dosáhnout serveru {productname} nebo nadřazeného proxy serveru.
+
+
+
+[[at.manager.proxy.run.copycert]]
+== Zkopírujte certifikát a klíč serveru
+
+Proxy bude sdílet některé informace SSL se serverem {productname}. Zkopírujte certifikát a jeho klíč ze serveru {productname} nebo z nadřazeného serveru proxy.
+
+Jako root zadejte následující příkazy na serveru proxy pomocí serveru {productname} nebo nadřazeného proxy (s názvem [replaceable]``RODIČ``):
+
+----
+mkdir -m 700 /root/ssl-build
+cd /root/ssl-build
+scp root@PARENT:/root/ssl-build/RHN-ORG-PRIVATE-SSL-KEY .
+scp root@PARENT:/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT .
+scp root@PARENT:/root/ssl-build/rhn-ca-openssl.cnf .
+----
+
+
+[NOTE]
+====
+Chcete-li zachovat neporušený řetězec zabezpečení, vyžaduje funkce Proxy {productname} SSL certifikát podepsaný stejnou CA jako certifikát serveru {productname}. Používání certifikátů podepsaných různými CA pro proxy a server není podporováno.
+====
+
+
+
+[[at.manager.proxy.run.confproxy]]
+== Spusťte příkaz [command]``configure-proxy.sh``
+
+Skript [příkaz]``configure-proxy.sh`` dokončí nastavení vašeho proxy {productname}.
+
+Spusťte interaktivní skript [command]``configure-proxy.sh. Stisknutí tlačítka kbd:[Enter] bez zadání dalších parametrů způsobí, že skript použije výchozí hodnoty uvedené v hranatých závorkách ``[] ``. Zde je několik informací o požadovaném nastavení:
+
+Rodič {productname}:: Rodič (nadřazený) {productname} může být buď jiný proxy, nebo {productname} Server.
+
+Proxy HTTP::
+Proxy HTTP umožňuje vašemu proxy {productname} přístup na web. To je nutné, pokud je přímý přístup na web zakázán bránou firewall.
+
+E-mail zpětné stopy (traceback)::
+E-mailová adresa, kam hlásit problémy.
+
+Použití SSL::
+Z bezpečnostních důvodů stiskněte `` Y``.
+
+Chcete importovat existující certifikáty?::
+Odpovězte ``N``. Tím je zajištěno použití nových certifikátů, které byly dříve zkopírovány ze serveru {productname}.
+
+Organizace::
+Další otázky se týkají charakteristik, které se mají použít pro certifikát SSL serveru proxy. Organizace může být stejná organizace, která byla použita na serveru, pokud ovšem váš proxy server není ve stejné organizaci jako váš hlavní server.
+
+Organizační jednotka::
+Výchozí hodnota je zde název hostitele proxy (v síti).
+
+Město::
+Další informace připojené k certifikátu proxy.
+
+Stát::
+Další informace připojené k certifikátu proxy.
+
+Kód země::
+Do pole [guimenu]``kód země`` zadejte kód země nastavený během instalace produktu {productname}. Pokud je váš proxy například v USA a váš {productname} je v DE, zadejte jako proxy `DE`.
++
+
+[NOTE]
+====
+Kód země musí obsahovat dvě velká písmena. Úplný seznam kódů zemí najdete na https://www.iso.org/obp/ui/#search.
+====
+
+Aliasy Cname (Common name, obecný název - oddělené mezerou)::
+Tuto možnost použijte, je-li Váš proxy dostupný různými aliasy DNS CNAME. Jinak může zůstat prázdná.
+
+Heslo CA (certifikační autority)::
+Zadejte heslo, které bylo použito pro certifikát vašeho serveru {productname}.
+
+Chcete použít existující klíč SSH pro proxy SSH-Push Salt Minion?::
+Tuto možnost použijte, pokud chcete znovu použít klíč SSH, který byl použit pro klienty SSH-Push Salt na serveru.
+
+Vytvořit a otevřít konfigurační kanál rhn_proxy_config_1000010001?::
+Přijměte výchozí ``Y``.
+
+Uživatelské jméno pro SUSE Manager::
+Použijte stejné uživatelské jméno a heslo jako na serveru {productname}.
+
+Pokud součásti chybí, například klíč CA a veřejný certifikát, skript vytiskne příkazy, které musíte provést, abyste integrovali potřebné soubory. Po zkopírování povinných souborů spusťte znovu [příkaz]``configure-proxy.sh``. Pokud se během provádění skriptu zobrazí chyba HTTP, spusťte skript znovu.
+
+[command]``configure-proxy.sh`` aktivuje služby vyžadované {productname} Proxy, například [systemitem]``squid``, [systemitem]``apache2``, [systemitem]``salt-broker`` a [systemitem]``jabberd``.
+
+Chcete-li zkontrolovat stav systému proxy a jeho klientů, klikněte na stránku s podrobnostmi o systému proxy na {webui} (menu:Systems[Proxy], poté název systému). Pod-záložky [guimenu]``Připojení`` a [guimenu]``Proxy`` zobrazují různé informace o stavu.
+
+
+
+[[proxy.pxe.setup]]
+== Povolte spuštění PXE
+
+
+
+[[proxy.pxe.sync]]
+=== Synchronizace profilů a systémových informací
+
+Chcete-li povolit spouštění PXE prostřednictvím serveru proxy, je nutné nainstalovat a nakonfigurovat další software na serveru {productname} Proxy i na serveru {productname}.
+
+. Na server {productname} Proxy nainstalujte balíček [package]``susemanager-tftpsync-recv``:
++
+
+----
+zypper in susemanager-tftpsync-recv
+----
+
+. Na serveru {productname} Proxy spusťte instalační skript [command]``configure-tftpsync.sh`` a zadejte požadované informace:
++
+
+----
+configure-tftpsync.sh
+----
++
+
+Musíte uvést název hostitele a IP adresu serveru a proxy {productname}. Musíte také zadat cestu k adresáři tftpboot na serveru proxy.
+
+. Na server {productname} instalujte [package]``susemanager-tftpsync``:
++
+
+----
+zypper in susemanager-tftpsync
+----
+
+. Na serveru {productname} spusťte [command]``configure-tftpsync.sh``.
+    Tímto se vytvoří konfigurace a nahraje se na server {productname} Proxy:
++
+
+----
+configure-tftpsync.sh FQDN_adresa_Proxy
+----
+
+. Spusťte počáteční synchronizaci na serveru {productname}:
++
+
+----
+cobbler sync
+----
++
+
+Lze to provést také po změně v Cobbleru, kterou je třeba okamžitě synchronizovat. Jinak bude synchronizace Cobbleru spuštěna automaticky v případě potřeby. Další informace o autoinstalaci Cobblerem - xref:client-configuration:autoinst-intro.adoc[Operating System Installation].
+
+
+
+[[proxy.pxe.dhcp]]
+=== Konfigurujte DHCP pro PXE prostřednictvím serveru {productname} Proxy
+
+{productname} používá pro správu klientů Cobbler. Ve výchozím nastavení je nainstalován a aktivován PXE (tftp). Klienti musí být schopni najít boot PXE na {productname} Proxy použitím DHCP. Pro zónu obsahující klienty, kteří mají být zřízeni, použijte tuto konfiguraci DHCP:
+
+----
+next-server: <IP_adresa_Proxy>
+filename: "pxelinux.0"
+----
+
+
+
+[[replace-susemgrproxy]]
+== Změna proxy {productname}
+
+Proxy server můžete nahradit kdykoli, neboť neukládá žádné informace o klientech, kteří jsou k němu připojeni. Tento proces je zpracován pomocí reaktivačního klíče, který vám zabrání ve ztrátě historie serveru proxy. Nepoužijete-li reaktivační klíč, náhradní proxy bude považován za nový s novým ID. Nahrazený proxy musí mít stejný název a IP adresu jako jeho předchůdce.
+
+Můžete také přeinstalovat server proxy, abyste jej mohli změnit z tradičního proxy na Salt proxy.
+
+
+[IMPORTANT]
+====
+Během instalace proxy nebudou klienti schopni se dostat na server {productname}. Po odstranění serveru proxy může být seznam systémů dočasně nesprávný. Všichni klienti, kteří byli dříve připojeni k proxy, se místo toho zobrazí jako přímo připojeni k serveru. Po první úspěšné operaci na klientovi, jako je provedení vzdáleného příkazu nebo instalace balíčku nebo opravy, budou tyto informace automaticky opraveny. Může to trvat několik hodin.
+====
+
+
+
+=== Nahrazení proxy
+
+Vypněte starý proxy server a nechte jej nainstalovaný, zatímco budete připravovat náhradu. Vytvořte reaktivační klíč pro tento systém a poté zaregistrujte nový proxy pomocí reaktivačního klíče. Pokud nepoužíváte reaktivační klíč, budete muset znovu zaregistrovat všechny klienty k novému proxy.
+
+
+
+.Postup: Výměna tradičního proxy a zachování registrace klientů
+. Před zahájením migrace uložte, je-li třeba, data původního proxy. Zvažte kopírování důležitých nebo vlastních dat uživatele do centrálního umístění, ke kterému může přistupovat také nový proxy server.
+. Vypněte původní proxy.
+. Instalujte nový {productname} Proxy. Pokyny k instalaci viz xref:install-proxy-unified.adoc[Proxy Installation].
+. Na {productname} {webui} vyberte nově nainstalovaný {productname} Proxy a odstraňte jej ze seznamu systémů.
+. Ve {webui} vytvořte reaktivační klíč pro starý proxy systém. Na záložce [guimenu]``System Details`` (podrobnosti systému) starého proxy klikněte na [guimenu]``Reactivation`` (re-aktivace). Klikněte [guimenu]``Generate New Key`` (generovat nový klíč) a nový klíč si poznamenejte.
+. Registrujte nový proxy zaváděcím (bootstrap) skriptem, jak je popsáno v xref:installation:proxy-registration.adoc[]. V uvedeném skriptu nastavte re-aktivační klíč parametrem [systemitem]``REACTIVATION_KEY``.
+. Obnovte data proxy ze zálohy, kterou jste provedli dříve (v kroku 1 tohoto postupu).
+
+Před bootstrapem nového Salt proxy je třeba provést určité dodatečné kroky.
+
+
+
+.Postup: Výměna Salt proxy a zachování registrace klientů
+. Před zahájením migrace uložte, je-li třeba, data původního proxy. Zvažte kopírování důležitých nebo vlastních dat uživatele do centrálního umístění, ke kterému může přistupovat také nový proxy server.
+. Vypněte původní proxy.
+. Ve {webui} vytvořte reaktivační klíč pro starý proxy systém. Na záložce [guimenu]``System Details`` (podrobnosti systému) starého proxy klikněte na [guimenu]``Reactivation`` (re-aktivace). Klikněte [guimenu]``Generate New Key`` (generovat nový klíč) a nový klíč si poznamenejte.
+. Ve {Webui} navigujte do menu:Salt[Keys], vyhledejte klíč Salt spojený s původním proxy a stiskněte btn:[delete] (Smazat).
+. Instalujte nový {productname} Proxy. Pokyny k instalaci viz xref:install-proxy-unified.adoc[Proxy Installation].
+. Registrujte nový proxy zaváděcím (bootstrap) skriptem, jak je popsáno v xref:installation:proxy-registration.adoc[]. V uvedeném skriptu nastavte re-aktivační klíč parametrem [systemitem]``REACTIVATION_KEY``.
+. Obnovte data proxy ze zálohy, kterou jste provedli dříve (v kroku 1 tohoto postupu).
+
+Další informace o použití re-aktivačních klíčů viz xref:client-configuration:activation-keys.adoc[].
+
+Po instalaci nového serveru proxy možná budete muset:
+
+* Zkopírujte centrálně uložená data do nového systému proxy
+* Instalujte veškerý další potřebný software
+* Používá-li se pro automatickou instalaci proxy, nastavte synchronizaci TFTP
+
+
+
+=== Změňte proxy z tradičního na Salt
+
+Proxy můžete přeinstalovat a tak přepnout z tradičního na Salt proxy. V této metodě namísto reaktivačního klíče znovu použijte stejný aktivační klíč, který jste použili k původní registraci proxy. To znamená, že nemusíte znovu registrovat klienty.
+
+
+
+.Postup: Výměna tradičního proxy za Salt proxy
+. Před zahájením migrace uložte, je-li třeba, data původního proxy. Zvažte kopírování důležitých nebo vlastních dat uživatele do centrálního umístění, ke kterému může přistupovat také nový proxy server.
+. Vypněte proxy.
+. Nainstalujte nový server {productname} Proxy a zajistěte, aby měl stejnou IP adresu jako ten, který nahrazujete. Pokyny k instalaci viz xref:install-proxy-unified.adoc[Proxy Installation].
+. Zaregistrujte proxy bootstrapovým skriptem, jak je popsáno v xref:installation:proxy-registration.adoc[]. Ve skriptu bootstrap nastavte aktivační klíč použitý u starého proxy v parametru [systemitem]``ACTIVATION_KEYS``.
+
+Po instalaci nového serveru proxy možná budete muset:
+
+* Zkopírujte centrálně uložená data do nového systému proxy
+* Instalujte veškerý další potřebný software
+* Používá-li se pro automatickou instalaci proxy, nastavte synchronizaci TFTP

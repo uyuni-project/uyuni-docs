@@ -1,0 +1,128 @@
+[[registering.clients.bootstrap]]
+= 부트스트랩 스크립트로 클라이언트 등록
+
+부트스트랩 스크립트로 클라이언트를 등록하면 파라미터를 제어할 수 있고, 다수의 클라이언트를 한 번에 등록해야 하는 경우 도움이 됩니다. 이 방법은 Salt 및 기존 클라이언트 둘 다에 사용할 수 있습니다.
+
+부트스트랩 스크립트를 사용해 클라이언트를 등록하려면 시작할 템플릿 부트스트랩 스크립트를 생성하는 것이 좋습니다. 이 스크립트는 이후 복사 및 수정할 수 있습니다. 사용자가 실행하는 부트스트랩 스크립트는 클라이언트 등록 시 클라이언트에서 실행되며 필요한 모든 패키지가 클라이언트에 배포되도록 보장합니다. 부트스트랩 스크립트에는 몇 가지 파라미터가 포함되어 있는데, 이 파라미터들은 클라이언트 시스템이 활성화 키 및 GPG 키를 포함한 기본 채널에 할당되도록 보장합니다.
+
+리포지토리 정보를 주의 깊게 확인하여 기본 채널 리포지토리와 일치하게 하는 것이 중요합니다. 리포지토리 정보가 정확히 일치하지 않으면 부트스트랩 스크립트가 패키지를 정확히 다운로드할 수 없습니다.
+
+[NOTE]
+====
+모든 비SLE 클라이언트와 버전 15 이전 SLE 클라이언트에 부트스트랩 리포지토리가 필요합니다. 부트스트랩 리포지토리는 클라이언트에 Salt를 설치하고 Salt 또는 기존 클라이언트를 등록하기 위한 용도의 패키지를 포함합니다. 부트스트랩 리포지토리 생성에 대한 내용은 xref:client-configuration:bootstrap-repository.adoc[]를 참조하십시오.
+====
+
+{webui}를 사용해 Salt 클라이언트를 부트스트래핑 중이라면 시작하기 전에 클라이언트 시스템에 Python이 설치되어 있는지 확인해야 합니다. {sles}{nbsp}12 또는 그 이전 버전을 실행 중인 Salt 클라이언트의 경우 [package]``python-xml`` 패키지도 필요합니다.
+
+ifeval::[{uyuni-content} == true]
+[IMPORTANT]
+.GPG 키 및 Uyuni 클라이언트 도구
+====
+Uyuni 클라이언트 도구가 사용하는 GPG 키는 기본적으로 신뢰할 수 없습니다. 부트스트랩 스크립트를 생성할 때 [systemitem]``ORG_GPG_KEY`` 파라미터와 함께 공용 키 지문이 포함된 파일의 경로를 추가하십시오.
+====
+endif::[]
+
+[NOTE]
+.openSUSE Leap 15 및 SLES 15와 Python 3
+====
+openSUSE Leap 15 및 SLES 15는 기본적으로 Python 3를 사용합니다. Python 2에 기반을 둔 부트스트랩 스크립트는 openSUSE Leap 15 및 SLE 15 시스템에 대해 다시 생성해야 합니다. Python 2를 사용해 openSUSE Leap 15 또는 SLE 15 시스템을 등록하는 경우 부트스트랩 스크립트는 실패합니다.
+====
+
+
+
+== Create a Bootstrap Script from {webui}
+
+{productname} {webui}를 사용하면 편집 가능한 부트스트랩 스크립트를 생성할 수 있습니다.
+
+.절차: 부트스트랩 스크립트 생성
+. {productname} {webui}에서menu:관리[관리자 구성 > 부트스트랩 스크립트]로 이동합니다.
+. 기존 클라이언트를 설치하는 경우 [guimenu]``SUSE Manager 구성 - 부트스트랩`` 대화 상자에서 [guimenu]``Salt를 사용한 부트스트랩`` 확인란의 선택을 취소합니다.
+    Salt 클라이언트의 경우 선택한 상태로 둡니다.
+. 필수 필드는 이전의 설치 단계에서 얻은 값으로 미리 채워져 있습니다.
+    각 설정에 대한 상세 정보는 xref:reference:admin/bootstrap-script.adoc[]을 참조하십시오.
+. Click btn:[Update] to create the script.
+. 부트스트랩 스크립트는 서버의 [path]``/srv/www/htdocs/pub/bootstrap`` 디렉토리에 생성되고 저장됩니다.
+    또는 HTTPS를 통해 부트스트랩 스크립트에 액세스할 수 있습니다. ``example.com``을 다음과 같은 {productname} 서버의 호스트 이름으로 바꿉니다.
+----
+https://<example.com>/pub/bootstrap/bootstrap.sh
+----
+
+
+[IMPORTANT]
+====
+부트스트랩 스크립트에서 SSL을 비활성화하지 마십시오. {webui}에서 [guimenu]``SSL 활성화`` 확인란이 선택되어 있는지, 또는 `USING_SSL=1`이라는 설정이 부트스트랩 스크립트에 있는지 확인합니다. SSL을 비활성화하면 등록 프로세스에 사용자 정의 SSL 인증서가 필요합니다. 사용자 정의 인증서에 대한 자세한 내용은 xref:administration:ssl-certs.adoc[]를 참조하십시오.
+====
+
+
+[WARNING]
+====
+{centos}{nbsp}6, {oracle}{nbsp}6, {rhel}{nbsp}6 또는 {sleses}{nbsp}6 클라이언트를 등록하고 사용하려면 {productname} 서버가 이전 형식의 SSL 암호화를 지원하도록 구성해야 합니다. 이 오류를 해결하는 방법에 대한 자세한 내용은 xref:client-configuration:tshoot-clients.adoc[]에서 ``이전 클라이언트 등록``을 참조하십시오.
+====
+
+
+
+[[modify.bootstrap.script]]
+== 부트스트랩 스크립트 편집
+
+생성한 템플릿 부트스트랩 스크립트를 복사 및 수정하여 사용자 정의할 수 있습니다. {productname}에서 사용할 부트스트랩 스크립트를 수정할 때 충족해야 할 최소 요구사항은 활성화 키를 포함해야 한다는 것입니다. 대부분의 패키지는 GPG로 서명되므로 패키지를 설치할 시스템에 신뢰할 수 있는 GPG 키도 있어야 합니다.
+
+이 절차에서 활성화 키의 정확한 이름을 알아야 합니다. menu:홈[개요]로 이동하여 [guimenu]``작업`` 상자에서 [guimenu]``활성화 키 관리``를 클릭합니다. 채널에 대해 생성된 모든 키는 이 페이지에 나열되어 있습니다. 부트스트랩 스크립트에서 사용하려는 키의 전체 이름을 키 필드에 표시된 대로 정확히 입력해야 합니다. 활성화 키에 대한 자세한 내용은 xref:client-configuration:activation-keys.adoc[]를 참조하십시오.
+
+
+
+.절차: 부트스트랩 스크립트 수정
+. {productname} 서버의 명령줄에서 루트 권한으로 다음과 같이 부트스트랩 디렉토리로 변경합니다.
++
+----
+cd /srv/www/htdocs/pub/bootstrap/
+----
+. 각 클라이언트에서 사용할 템플릿 부트스트랩 스크립트 사본 2개를 생성하여 이름을 변경합니다.
++
+----
+cp bootstrap.sh bootstrap-sles12.sh
+cp bootstrap.sh bootstrap-sles15.sh
+----
+. Open [path]``bootstrap-sles15.sh`` for modification.
+    아래와 같은 텍스트가 나올 때까지 아래로 스크롤합니다. ``exit 1``이 파일에 있는 경우 해시 또는 파운드 기호(&#35;)를 줄 첫머리에 입력하여 코멘트 아웃합니다. 이렇게 하면 스크립트가 활성화됩니다. 이 스크립트의 키 이름을 ``ACTIVATION_KEYS=`` 필드에 다음과 같이 입력합니다.
++
+----
+echo \Enable this script: comment (with #'s) this block (or, at least  just\n echo 	he exit below)\n echo
+ #exit 1
+
+# can be edited, but probably correct (unless created during initial install):
+# NOTE: ACTIVATION_KEYS *must* be used to bootstrap a client machine.
+ACTIVATION_KEYS=1-sles15
+ORG_GPG_KEY=
+----
+
+. 완료한 후 파일을 저장하고 두 번째 부트스트랩 스크립트에 대해 이 절차를 반복하십시오.
+
+
+
+== 클라이언트 연결
+
+스크립트 생성을 완료했으면 이 스크립트를 사용해 클라이언트를 등록할 수 있습니다.
+
+
+.절차: 부트스트랩 스크립트 실행
+. {productname} 서버에서 루트 권한으로 로그인합니다.
+    명령 프롬프트에서 다음과 같이 부트스트랩 디렉토리로 변경합니다.
++
+----
+cd /srv/www/htdocs/pub/bootstrap/
+----
+. 다음 명령을 실행하여 클라이언트에서 부트스트랩 스크립트를 실행하고, [systemitem]`` EXAMPLE.COM``을 클라이언트의 호스트 이름으로 교체합니다.
++
+----
+cat bootstrap-sles15.sh | ssh root@EXAMPLE.COM /bin/bash
+----
+스크립트는 앞서 생성한 리포지토리 디렉토리에 있는 필수 종속성을 다운로드합니다.
+. 스크립트가 실행되고 나면 {productname} {webui}를 열고 menu:시스템[개요]로 이동하여 새 클라이언트가 나열되어 있는지 확인하여 클라이언트가 올바르게 등록되었는지 확인할 수 있습니다.
+. If you used the script to register the Salt client, open the {productname} {webui} and navigate to menu:Salt[Keys] to accept the client key.
+
+[WARNING]
+====
+{productname}를 사용해 클라이언트에 새 패키지 또는 업데이트를 설치하면 최종 사용자 라이선스 계약(EULA)이 자동으로 수락됩니다. 패키지 EULA를 검토하려면 {webui}에서 패키지 상세 정보 페이지를 여십시오.
+====
+
+

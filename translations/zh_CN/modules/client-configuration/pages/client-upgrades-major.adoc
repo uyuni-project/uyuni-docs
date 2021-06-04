@@ -1,0 +1,127 @@
+[[client-upgrades-major]]
+= 客户端 - 主要版本升级
+
+您的客户端必须有所安装操作系统的最新可用服务包 (SP) 且已应用所有最新更新。 开始前，请确保系统是最新的，并且已成功安装所有更新。
+
+升级由 {yast} 和 {ay} 控制，该过程不使用 Zypper。
+
+
+== 准备迁移
+
+您需要先完成以下步骤，然后才能将客户端从 SLE{nbsp}12 迁移到 SLE{nbsp}15{nbsp}：
+
+. 准备安装媒体
+. Create an auto-installable distribution
+. 创建激活密钥
+. 上载 {ay} 配置文件
+
+
+
+.过程：准备安装媒体
+. 在 {productname} 服务器上，创建 SLE{nbsp} 15{nbsp}SP2 安装媒体的本地目录：
++
+----
+mkdir -p /srv/images/sle15sp2
+----
+. 下载有安装源的 ISO 映像，并在服务器上装入 ISO 映像：
++
+----
+mount -o loop DVD1.iso /mnt/
+----
+. 将装入的 ISO 的所有内容都复制到本地文件系统：
++
+----
+cp -r /mnt/* /srv/images/sle15sp2
+----
+. 复制完成后，卸载 ISO 映像：
++
+----
+umount /mnt
+----
+
+[NOTE]
+====
+This image is the unified installer and can be used for multiple autoinstallable distributions.
+====
+
+
+
+.过程：创建可自动安装的发行套件
+. 在 {productname} {webui} 中，导航到menu:系统[自动安装 > 发行套件]，然后单击 btn:[创建发行套件]。
+. 在[guimenu]``创建可自动安装的发行套件``部分，使用以下参数：
+* 在[guimenu]``发行套件标签``部分，键入发行套件的唯一名称。
+    请仅使用字母、数字、连字符、点和下划线，并确保名称包含四个以上字符。 例如：``sles15sp2-x86_64``。
+* 在[guimenu]``树路径``字段中，键入安装源的绝对路径。
+    例如：[path]``/srv/images/sle15sp2``。
+* 在[guimenu]``基础频道``字段中，选择 [systemitem]``SLE-Product-SLES15-SP2-Pool for x86_64``。
+* 在[guimenu]``安装程序代系``字段中，选择 [systemitem]``SUSE Linux Enterprise 15``。
+* 在[guimenu]``内核选项``字段中，键入在安装期间引导时要传递给内核的任何选项。
+    默认会添加 [option]``install=`` 参数和 [option]``self_update=0 pt.options=self_update`` 参数。
+* 在[guimenu]``后内核选项``部分，键入在首次引导安装的系统时要传递给内核的任何选项。
+. 单击 btn:[创建可自动安装的发行套件] 保存设置。
+
+
+要从旧 SLE{nbsp}12{nbsp} 基础频道切换到新的 SLE{nbsp}15 频道，需要有激活密钥。
+
+
+
+.过程：创建激活密钥
+. 在 {productname} 服务器 {webui} 中，导航到menu:系统[激活密钥]，然后单击[guimenu]``创建密钥``。
+. 输入密钥说明。
+. 输入密钥或将其留空以生成自动密钥。
+. 可选：如果您要限制使用次数，请在[guimenu]``使用``文本字段中输入值。
+. 选择 [systemitem]``SLE-Product-SLES15-SP2-Pool for x86_64`` 基础频道。
+. 可选：选择任何[guimenu]``附加系统类型``。
+    有关详细信息，请参见 https://documentation.suse.com/sles/15-SP2/html/SLES-all/art-modules.html。
+. 单击 btn:[创建激活密钥]。
+. 单击[guimenu]``子频道``选项卡，然后选择所需频道。
+. 单击 btn:[更新密钥]。
+
+
+
+== 创建自动安装配置文件
+
+自动安装配置文件包含安装系统所需的所有安装和配置数据， 还包含在完成安装后需要执行的脚本。 例如，可用作着手点的脚本，请参见 https://github.com/SUSE/manager-build-profiles/tree/master/AutoYaST。 有关有效的 AutoYaST 升级设置，请参见 https://doc.opensuse.org/projects/autoyast/#CreateProfile-upgrade。
+
+
+
+.过程：创建自动安装配置文件
+. 在 {productname} {webui} 中，导航到menu:系统[自动安装 > 配置文件]，然后上载自动安装配置文件脚本。
+    例如，可用作着手点的脚本，请参见 https://github.com/SUSE/manager-build-profiles/tree/master/AutoYaST。
+. 在``内核选项``字段中，键入 ``autoupgrade=1``。
+    （可选）您也可以包含 ``Y2DEBUG=1`` 选项。 调试设置不是必需的设置，不过此设置有助于对您未来可能遇到的任何问题进行查错。
+. 粘贴自动安装配置文件或使用文件上载字段。
+. 单击 btn:[创建] 保存设置。
+. 如果需要为上载的配置文件设置变量，请导航到menu:系统[自动安装 > 配置文件]，选择要编辑的配置文件，然后导航到[guimenu]``变量``选项卡。
+    使用以下格式指定所需的变量：
++
+----
+<key>=<value>
+----
+
+
+
+== 迁移
+
+在开始前，需检查自动安装配置文件中引用的所有频道是否可用并已完全同步。
+
+您可以在 [path]``/var/log/rhn/reposync/ <channel-label>.log`` 中监控镜像进度。
+
+
+
+.过程：迁移
+. 在 {productname} 服务器 {webui} 中，导航到[guimenu]``系统``，然后选择要升级的客户端。
+. 导航到[guimenu]``置备``选项卡，然后选择上载的自动安装配置文件。
+. 单击 btn:[安排自动安装并完成]。 系统会下载所需的文件，更改引导加载程序项，重引导并开始升级。
+
+
+客户端下次与 {productname} 服务器同步时，会收到重新安装作业。 重新安装作业会提取新内核和 initrd 软件包， 还会向新 [path]``/boot/grub/menu.lst`` 写入数据，包含指向新内核和 initrd 软件包的指针。
+
+客户端下次引导时，会使用 grub 来引导新内核及其 initrd。 此过程中不会使用 PXE 引导。
+
+提取作业约 3 分钟后，客户端会关闭以重引导。
+
+[NOTE]
+====
+对于 Salt 客户端，请在迁移完成后使用 ``spacewalk/minion_script`` 代码段再次注册客户端。
+====

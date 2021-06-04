@@ -1,0 +1,322 @@
+[[clients-rh-rhui]]
+= {rhel} 클라이언트를 RHUI로 등록
+
+{sleses}가 아닌 {rhel} 클라이언트를 직접 실행 중이라면 Red Hat 소스를 사용해 패키지를 검색하고 업데이트해야 합니다. 이 섹션에는 {rhel} 운영 체제를 실행하는 기존 및 Salt 클라이언트를 {redhat} 업데이트 인프라(RHUI)를 사용해 등록하는 방법에 대한 정보가 포함되어 있습니다. Amazon EC2와 같은 공용 클라우드에서 클라이언트를 실행 중이라면 이 방법을 사용하십시오.
+
+RHUI를 {redhat} 컨텐트 제공 네트워크(CDN)와 함께 사용하여 {rhel} 구독을 관리할 수 있습니다. {redhat} CDN 사용에 대한 정보는 xref:client-configuration:clients-rh-cdn.adoc[]을 참조하십시오.
+
+
+
+[IMPORTANT]
+====
+{rhel} 클라이언트는 {redhat}에 기반을 두고 있으며 {sleses}, RES 또는 {sles}와는 무관합니다. 사용자는 {productname} 서버를 {redhat} 업데이트 인프라에 연결할 책임이 있습니다. 이 RHUI 인증서를 사용해 업데이트를 가져오는 모든 클라이언트는 올바른 라이선스를 보유해야 합니다. 자세한 내용은 해당 클라우드 공급자에게 문의하거나 {redhat} 서비스 약관을 확인하시기 바랍니다.
+====
+
+[NOTE]
+====
+RHUI로 등록한 {rhel} 클라이언트가 켜져 있지 않은 경우 {redhat}은 인증서가 잘못되었다고 선언할 수 있습니다. 이 경우 클라이언트를 다시 켜거나 새 RHUI 인증서를 가져와야 합니다.
+====
+
+
+[NOTE]
+====
+기존 클라이언트는 {rhel}{nbsp}6 및 7에서만 사용할 수 있습니다. {rhel}{nbsp}8 클라이언트는 Salt 클라이언트로 지원됩니다.
+====
+
+
+
+== 자격 및 인증서 임포트
+
+{redhat} 클라이언트는 {redhat} 인증 주체(CA)와 자격 인증서 및 자격 키가 있어야 합니다.
+
+{redhat} 클라이언트는 URL을 사용해 리포지토리를 복제합니다. URL은 {redhat} 클라이언트가 어디에 등록되었는지에 따라 달라집니다.
+
+{redhat} 클라이언트는 다음 세 가지 방식으로 등록할 수 있습니다.
+
+* redhat.com의 {redhat} 컨텐트 제공 네트워크(CDN)
+* {redhat} Satellite 서버
+* 클라우드의 {redhat} 업데이트 인프라(RHUI)
+
+이 안내서에서는 {redhat} 업데이트 인프라(RHUI)에 등록된 클라이언트에 대해 설명합니다. RHUI에 등록된 시스템이 최소 한 개 있어야 하고, 이와 함께 리포지토리 컨텐트에 대한 인증 구독이 있어야 합니다.
+
+{redhat} 컨텐트 제공 네트워크(CDN)를 사용하는 방법에 대한 정보 대신에 xref:client-configuration:clients-rh-cdn.adoc[]을 참조하십시오.
+
+
+[IMPORTANT]
+====
+클라이언트 시스템에 대한 Satellite 서버는 Satellite 서버 및 구독이 있어야 합니다. Satellite 인증서를 사용하는 클라이언트는 {productname} 서버에서 지원하지 않습니다.
+====
+
+
+클라이언트 시스템에서 {productname} 서버가 액세스할 수 있는 위치로 자격 인증서 및 키를 복사해야 합니다.
+
+The keys and certificates might have slightly different names to those shown here. Your entitlement certificate and the {redhat} CA Certificate file have file extensions of [path]``.crt``. The key has a file extension of [path]``.key``.
+
+
+
+.절차: 인증서를 서버에 복사
+. Copy your entitlement certificate and key from the client system, to a location that the {productname} Server can access. Amazon EC2:
++
+----
+cp /etc/pki/rhui/product/content-<version>.crt /<example>/entitlement/
+cp /etc/pki/rhui/content-<version>.key /<example>/entitlement/
+----
++
+Google Cloud Platform:
++
+----
+cp /etc/pki/rhui/product/content.crt /<example>/entitlement/
+cp /etc/pki/rhui/key.pem /<example>/entitlement/
+----
++
+. 다음과 같이 클라이언트 시스템에서 자격 인증서 및 키와 동일한 위치로 {redhat} CA 인증서 파일을 복사합니다.
++
+Amazon EC2:
++
+----
+cp /etc/pki/rhui/cdn.redhat.com-chain.crt /<example>/entitlement
+----
++
+Google Cloud Platform:
++
+----
+cp /etc/pki/rhui/ca.crt /<example>/entitlement
+----
+
+
+{redhat} 클라이언트에서 리포지토리를 관리하려면 CA 및 자격 인증서를 {productname} 서버로 임포트해야 합니다. 이렇게 하려면 임포트 절차를 세 차례 수행하여 자격 인증서, 자격 키, {redhat} 인증서 각각에 대해 하나씩 세 항목을 생성해야 합니다.
+
+
+
+.절차: 인증서를 서버에 임포트
+
+. {productname} 서버 {webui}에서 menu:시스템[자동 설치 > GPG 및 SSL 키]로 이동합니다.
+. btn:[저장된 키/인증서 생성]을 클릭하고 자격 인증서에 대해 다음 파라미터를 설정합니다.
+* [guimenu]``설명`` 필드에 [systemitem]``Entitlement-Cert-Date``를 입력합니다.
+* [guimenu]``유형`` 필드에서 [systemitem]``SSL``을 선택합니다.
+* [guimenu]``업로드할 파일을 선택해주십시오`` 필드에서 자격 인증서를 저장한 위치로 이동하여 [path]``.crt`` 인증서 파일을 선택합니다.
+. btn:[키 생성]을 클릭합니다.
+. btn:[저장된 키/인증서 생성]을 클릭하고 자격 키에 대해 다음 파라미터를 설정합니다.
+* [guimenu]``설명`` 필드에 [systemitem]``Entitlement-Key-Date``를 입력합니다.
+* [guimenu]``유형`` 필드에서 [systemitem]``SSL``을 선택합니다.
+* [guimenu]``업로드할 파일을 선택해주십시오`` 필드에서 자격 키를 저장한 위치로 이동하여 [path]``.key`` 키 파일을 선택합니다.
+. btn:[키 생성]을 클릭합니다.
+. btn:[저장된 키/인증서 생성]을 클릭하고 {redhat} 인증서에 대해 다음 파라미터를 설정합니다.
+* [guimenu]``설명`` 필드에 [systemitem]``redhat-cert``를 입력합니다.
+* [guimenu]``유형`` 필드에서 [systemitem]``SSL``을 선택합니다.
+* [guimenu]``업로드할 파일을 선택해주십시오`` 필드에서 {redhat} 인증서를 저장한 위치로 이동하여 인증서 파일을 선택합니다.
+. btn:[키 생성]을 클릭합니다.
+
+
+
+== 사용자 정의 리포지토리 및 채널 준비
+
+RHUI에서 소프트웨어를 미러링하려면 URL로 RHUI에 링크된 사용자 정의 채널 및 리포지토리를 {productname}에 생성해야 합니다. 이 작업이 제대로 수행되려면 Red Hat 포털에 이러한 제품에 대한 자격이 있어야 합니다. 미러링하려는 리포지토리의 URL을 다음과 같이 yum 유틸리티를 사용해 가져올 수 있습니다.
+
+----
+yum repolist -v | grep baseurl
+----
+
+이 리포지토리 URL을 사용해 사용자 정의 리포지토리를 생성할 수 있습니다. 이렇게 하면 클라이언트를 관리하는 데 필요한 컨텐트만 미러링할 수 있습니다.
+
+[IMPORTANT]
+====
+{redhat} 포털에 올바른 자격이 있는 경우 {redhat} 리포지토리의 사용자 정의 버전만 생성할 수 있습니다.
+====
+
+
+이 절차에 필요한 상세 정보는 다음과 같습니다.
+
+[[redhat-rhui-repos-manual]]
+[cols="1,1", options="header"]
+.Red Hat 사용자 정의 리포지토리 설정
+|===
+| 옵션                 | 설정
+| 리포지토리 URL         | RHUI가 제공하는 컨텐트 URL
+ | 서명 메타데이터가 있습니까?   | 모든 {redhat} Enterprise 리포지토리를 선택 취소
+ | SSL CA 인증서     | [systemitem]``redhat-cert``
+ | SSL 클라이언트 인증서 | [systemitem]``Entitlement-Cert-Date``
+ | SSL 클라이언트 키         | [systemitem]``Entitlement-Key-Date``
+|===
+
+
+include::snippets/manual_repos.adoc[]
+
+
+
+이 절차에 필요한 채널은 다음과 같습니다.
+
+[[redhat-rhui-channels-custom]]
+[cols="1,1,1", options="header"]
+.Red Hat 사용자 정의 채널
+|===
+| OS 버전 | 기본 제품          | 기본 채널
+| {redhat} 6 | RHEL6 Base x86_64 | rhel6-pool-x86_64
+ | {redhat} 7 | RHEL7 Base x86_64 | rhel7-pool-x86_64
+ | {redhat} 8 | RHEL or SLES ES or CentOS 8 Base | rhel8-pool-x86_64
+|===
+
+
+include::snippets/manual_channels.adoc[]
+
+[IMPORTANT]
+====
+{redhat} 8 클라이언트의 경우 기본 채널과 AppStream 채널을 모두 추가하십시오. 사용자에게는 두 채널의 패키지가 모두 필요합니다. 두 채널을 모두 추가하지 않으면 패키지가 누락되어 부트스트랩 리포지토리를 생성할 수 없습니다.
+====
+
+
+include::snippets/manual_associate.adoc[]
+
+
+
+== 소프트웨어 채널 추가
+
+{redhat} 클라이언트를 {productname} 서버에 등록하기 전에 필요한 소프트웨어 채널을 추가하고 이 채널을 동기화해야 합니다.
+
+ifeval::[{suma-content} == true]
+
+{susemgr} 구독을 통해 사용자는 {sleses}용 도구 채널({redhat} Expanded Support 또는 RES라고도 함)을 이용할 수 있는 자격을 얻게 됩니다. 사용자는 클라이언트 도구 채널을 사용해 부트스트랩 리포지토리를 생성해야 합니다. 이 절차는 Salt 및 기존 클라이언트 둘 다에 적용됩니다.
+endif::[]
+
+ifeval::[{suma-content} == true]
+
+이 절차에 필요한 제품은 다음과 같습니다.
+
+[[redhat-rhui-channels-wizard]]
+[cols="1,1", options="header"]
+.Red Hat 제품 - WebUI
+|===
+| OS 버전 | 제품 이름
+| {redhat} 6 | RHEL6 기본 x86_64
+ | {redhat} 7 | RHEL7 기본 x86_64
+ | {redhat} 8 | RHEL 또는 SLES ES 또는 CentOS 8 기본
+|===
+
+
+include::snippets/addchannels_vendor_webui.adoc[]
+
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+이 절차에 필요한 채널은 다음과 같습니다.
+
+[[redhat-rhui-channels-cli]]
+[cols="1,1,1,1", options="header"]
+.Red Hat 채널- CLI
+|===
+
+| OS 버전
+| 기본 채널
+ | 클라이언트 채널
+ | 도구 채널
+ 
+ | {redhat} 6
+ | rhel-x86_64-server-6
+ | -
+ | res6-suse-manager-tools-x86_64
+ 
+ | {redhat} 7
+ | rhel-x86_64-server-7
+ | -
+ | res7-suse-manager-tools-x86_64
+ 
+ | {redhat} 8
+ | rhel-x86_64-server-8
+ | -
+ | res8-suse-manager-tools-x86_64
+
+|===
+
+
+include::snippets/addchannels_novendor_cli.adoc[]
+
+
+[NOTE]
+====
+[command]``spacewalk-common-channels``가 제공하는 클라이언트 도구 채널은 {suse}가 아닌 {uyuni}가 공급합니다.
+====
+
+endif::[]
+
+
+include::snippets/appstream_admon.adoc[]
+
+
+RHUI를 사용하려면 필요한 HTTP 헤더를 구성 파일에 수동으로 추가해야 합니다. 이 헤더가 없으면 클라이언트 동기화를 성공적으로 수행할 수 없습니다.
+
+
+
+.절차: HTTP 헤더를 구성 파일에 추가
+. RHUI 인스턴스에서 [systemitem]``X-RHUI-ID`` 및 [systemitem]``X-RHUI-SIGNATURE`` HTTP 헤더를 찾습니다.
+    {redhat} 클라이언트에서 다음 명령을 사용해 [systemitem]``169.254.169.254``의 클라우드 인스턴스 메타데이터 API에서 값을 가져올 수 있습니다.
++
+----
+echo "X-RHUI-ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document|base64|tr -d '\n')"
+echo "X-RHUI-SIGNATURE=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/signature|base64|tr -d '\n')"
+----
+. [path]``/etc/rhn/spacewalk-repo-sync/extra_headers.conf`` 구성 파일을 열고, 다음과 같은 줄을 추가하거나 정확한 정보로 편집합니다.
++
+----
+[channel_label]
+X-RHUI-ID=value
+ X-RHUI-SIGNATURE=value
+----
+
+
+
+
+== 동기화 상태 확인
+
+ifeval::[{suma-content} == true]
+
+
+include::snippets/check_sync_webui_suma.adoc[]
+
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+
+include::snippets/check_sync_webui_uyuni.adoc[]
+
+
+endif::[]
+
+
+include::snippets/check_sync_cli.adoc[]
+
+
+[NOTE]
+====
+{rhel} 채널은 규모가 매우 클 수 있습니다. 때로 동기화에 몇 시간이 걸릴 수 있습니다.
+====
+
+
+
+ifeval::[{uyuni-content} == true]
+== 클라이언트의 GPG 키 신뢰
+
+include::snippets/trust_gpg.adoc[]
+
+endif::[]
+
+
+
+== 클라이언트 등록
+
+{redhat} 클라이언트를 등록하려면 부트스트랩 리포지토리가 필요합니다. 기본적으로 부트스트랩 리포지토리는 자동으로 생성되며 동기화된 모든 제품에 대해 매일 재생성됩니다. 명령 프롬프트에서 다음 명령을 사용해 부트스트랩 리포지토리를 수동으로 생성할 수 있습니다.
+
+----
+mgr-create-bootstrap-repo
+----
+
+클라이언트 등록에 대한 자세한 내용은 xref:client-configuration:registration-overview.adoc[]를 참조하십시오.
+
+
+[WARNING]
+====
+{rhel}{nbsp}6 클라이언트를 등록하고 사용하려면 {productname} 서버가 이전 형식의 SSL 암호화를 지원하도록 구성해야 합니다. 자세한 내용은 xref:client-configuration:tshoot-clients.adoc[]에서 ``이전 클라이언트 등록``을 참조하십시오.
+====

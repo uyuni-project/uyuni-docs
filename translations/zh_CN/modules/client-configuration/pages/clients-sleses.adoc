@@ -1,0 +1,225 @@
+[[clients-sleses]]
+= 注册 {sleses} 客户端
+
+本节包含有关注册运行 {sleses} ({es}) 操作系统的传统客户端和 Salt 客户端的信息。 {es} 客户端基于 {rhel} 或 {centos}， 有时也称为 SLESES、RES 或 {redhat} {es}。
+
+{suse} 提供的 {es} 软件频道只提供软件包更新，不提供软件包本身。 要注册 {es} 客户端，您需要在 {productname} 服务器上创建自定义的空基础频道和子频道，然后将 {redhat} 或 {centos} 软件包导入到自定义频道中。 您必须直接从 {redhat} 或 {centos} 获取初始软件包，然后才能应用 {es} 软件频道提供的更新。
+
+
+[IMPORTANT]
+====
+您需负责安排对 {redhat} 或 {centos} 基础媒体储存库和安装媒体的访问权限。
+====
+
+
+ifeval::[{suma-content} == true]
+[IMPORTANT]
+====
+对于您的所有 {es} 系统，您均须从 {suse} 获取支持。
+====
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+[IMPORTANT]
+====
+对于 {uyuni} 上的 {es} 系统，{suse} 不提供支持。
+====
+endif::[]
+
+
+[IMPORTANT]
+====
+传统客户端不适用于 {es}{nbsp}8。 仅当 {es}{nbsp}8 客户端为 Salt 客户端时才受支持。
+====
+
+
+
+== 添加软件频道
+
+
+对于 {es} 客户端，所需的一些软件包包含在 {rhel} 或 {centos} 安装媒体中。 您必须安装这些软件包后才能注册 {es} 客户端。
+
+{es} 产品由 {scc} 提供。 它还包含客户端工具软件包。
+
+将 {es} 客户端注册到您的 {productname} 服务器之前，您需要添加所需的软件频道，并同步这些频道。
+
+您需要选择两组不同的频道，一组频道用于提供 {es}，另一组频道用于提供客户端工具。
+
+有关激活密钥的详细信息，请参见 xref:client-configuration:activation-keys.adoc[]。
+
+ifeval::[{suma-content} == true]
+
+此过程所需的产品包括：
+
+[[es-channels-wizard]]
+[cols="1,1", options="header"]
+.ES 产品 - WebUI
+|===
+
+| 操作系统版本
+|产品名称
+
+| {es} 6
+| SUSE Linux Enterprise Server with Expanded Support 6 x86_64
+
+| {es} 7
+| SUSE Linux Enterprise Server with Expanded Support 7 x86_64
+
+| {es} 8
+| RHEL 或 SLES ES 或 CentOS 8 Base 和 SUSE Linux Enterprise Server with Expanded Support 8 x86_64
+
+|===
+
+{productname} 需要包含其他软件的工具频道。 此过程将创建以下工具频道：
+
+[[es-channels-tools]]
+[cols="1,1,1", options="header"]
+.ES 工具频道
+|===
+| 操作系统版本 | 基础频道                     | 工具频道
+|{es} 6     | RHEL Expanded Support 6          | RES6-SUSE-Manager-Tools x86_64
+| {es} 7     | RHEL Expanded Support 7          | RES7-SUSE-Manager-Tools x86_64
+| {es} 8     | RHEL 或 SLES ES 或 CentOS 8 Base | RES8-Manager-Tools-Pool for x86_64 和 RES8-Manager-Tools-Updates for x86_64
+|===
+
+include::snippets/addchannels_vendor_webui.adoc[]
+
+
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+此过程所需的频道包括：
+
+[[es-channels-cli]]
+[cols="1,1,1,1", options="header"]
+.ES 频道 - CLI
+|===
+
+| 操作系统版本
+|基础频道
+|客户端频道
+|工具频道
+
+| {es} 6
+| rhel-x86_64-server-6
+| -
+| res6-suse-manager-tools-x86_64
+
+| {es} 7
+| rhel-x86_64-server-7
+| -
+| res7-suse-manager-tools-x86_64
+
+| {es} 8
+| rhel-x86_64-server-8
+| -
+| res8-suse-manager-tools-x86_64
+
+|===
+
+include::snippets/addchannels_novendor_cli.adoc[]
+
+endif::[]
+
+
+include::snippets/appstream_admon.adoc[]
+
+
+
+=== 添加基础媒体
+
+基础 {es} 频道不包含任何软件包，因为 {suse} 不提供 {rhel} 或 {centos} 基础媒体。 您需要从 {redhat} 或 {centos} 获取基础媒体，然后可将其作为子频道添加到 {es} 父频道。 为确保您拥有所需的全部软件包，请使用完整的 DVD 映像，而不是最小映像或 {jeos} 映像。
+
+您可以使用 {productname} 自定义频道设置 {rhel} 或 {centos} 媒体。 基础媒体上的所有软件包都必须镜像到一个子频道。
+
+您可以自由选择频道名称。
+
+include::snippets/manual_channels.adoc[]
+
+
+[IMPORTANT]
+====
+对于 {redhat} 8 客户端，请添加基础频道和 AppStream 频道。 您需要来自这两个频道的软件包。 如果未添加这两个频道，将会因缺少软件包而无法创建引导储存库。
+====
+
+
+.过程：将基础媒体添加到自定义频道
+. 在 {productname} 服务器上的命令提示符处，以 root 身份将基础媒体映像复制到 [path]``/tmp/`` 目录。
+. 创建一个目录以包含媒体内容。
+    用 ``sleses6``、``sleses7`` 或 ``sleses8`` 替换 [command]``<os_name>``：
++
+----
+mkdir -p /srv/www/htdocs/pub/<os_name>
+----
+. 装入映像：
++
+----
+mount -o loop /tmp/<iso_filename> /srv/www/htdocs/pub/<os_name>
+----
+. 将软件包导入您之前创建的子频道：
++
+----
+spacewalk-repo-sync -c <channel-label> -u file:///srv/www/htdocs/pub/ <os_name>/<repopath>/
+----
+
+
+==== 可选：通过内容 URL 添加基础媒体
+
+或者，如果您可以访问 {redhat} CDN 或 {centos} 提供的内容 URL，则可以创建自定义储存库以镜像软件包。
+
+此过程所需的细节包括：
+
+[[es-repos-manual]]
+[cols="1,1", options="header"]
+.ES 自定义储存库设置
+|===
+| 选项                 | 参数
+|储存库 URL         | {redhat} CDN 或 {centos} 提供的内容 URL
+|包含已签名的元数据？   | 取消选中所有 {redhat} Enterprise 储存库
+|SSL CA 证书     | [systemitem]``redhat-uep``（仅适用于 {redhat}）
+|SSL 客户端证书 | [systemitem]``Entitlement-Cert-date``（仅适用于 {redhat}）
+|SSL 客户端密钥         | ``Entitlement-Key-date``（仅适用于 {redhat}）
+|===
+
+include::snippets/manual_repos.adoc[]
+
+include::snippets/manual_associate.adoc[]
+
+== 检查同步状态
+
+ifeval::[{suma-content} == true]
+
+include::snippets/check_sync_webui_suma.adoc[]
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+include::snippets/check_sync_webui_uyuni.adoc[]
+
+endif::[]
+
+include::snippets/check_sync_cli.adoc[]
+
+[NOTE]
+====
+{es} 频道可能会非常大。 有时，初始频道同步所需的时间可能会长达数小时。
+
+初始同步完成后，建议您克隆频道后再加以使用。 这样您便拥有一份原始同步数据的备份。
+====
+
+
+
+== 注册 {es} 客户端
+
+现在可以注册您的 {es} 客户端。
+
+有关注册客户端的详细信息，请参见 xref:client- configuration:registration-overview.adoc[]。
+
+
+[WARNING]
+====
+要注册和使用 {sleses}{nbsp}6 客户端，您需要配置 {productname} 服务器以支持较旧类型的 SSL 加密。 有关如何解决此错误的详细信息，请参见 xref:client-configuration:tshoot-clients.adoc[] 中的``注册较旧的客户端``。
+====

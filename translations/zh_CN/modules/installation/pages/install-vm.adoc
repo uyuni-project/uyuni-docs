@@ -1,0 +1,161 @@
+[[install-vm]]
+= 在包含 JeOS 的虚拟机环境中安装 SUSE Manager
+
+
+
+[[quickstart.sect.kvm.settings]]
+== 虚拟机管理器 (virt-manager) 设置
+
+本章提供将 {sle} Just Enough Operating System (JeOS) 安装为 {productname} 基础所需的内核虚拟机 (KVM) 设置。将使用结合了虚拟机管理器 (_virt-manager_) 的 KVM 作为此项安装的沙箱。
+
+
+使用 *virt-manager* 创建新虚拟机时请输入以下设置。
+
+[NOTE]
+====
+下表指定了最低要求。这些要求适用于快速测试安装，例如包含一个客户端的服务器。如果您想要使用生产环境，请查看 xref:hardware-requirements.adoc[] 中所列的要求。
+====
+
+在下表中，请将 _version_ 替换为实际产品版本字符串。在 https://download.suse.com/ 上找到 JeOS 映像。
+
+[cols="1,1", options="header"]
+|===
+2+<| KVM 设置
+| 安装方法 | 导入现有磁盘映像
+| 操作系统：                 | Linux
+| 版本：            | SLES_version_-JeOS-for-kvm-and-xen.x86_64-GM.qcow2
+| 内存：             | 8192 MB
+| CPU 数：              | 4
+| 储存格式：     | _.qcow2_ 24 GB（默认）JeOS 根分区
+| 虚拟磁盘：      |
+| VirtIO 磁盘 2       | 为 [path]``/var/spacewalk`` 提供 101 GB
+| VirtIO 磁盘 3       | 为 [path]``/var/lib/pgsql`` 提供 50 GB
+| VirtIO 磁盘 4       | 4 GB 交换空间
+| 名称：               | test-setup
+| 网络             | 网桥 _br0_
+|===
+
+.{sle} 虚拟化指南
+[NOTE]
+====
+有关虚拟化的详细信息，请参见 https://documentation.suse.com/sles/15-SP2/html/SLES-all/book-virt.html。
+====
+
+
+
+[[jeos.kvm.settings]]
+== JeOS KVM 设置
+
+创建 {productname} 储存分区所需的额外三个虚拟磁盘。
+
+.过程：在 KVM 中创建所需的分区
+. 使用下载的 JeOS KVM 映像创建一个新虚拟机，然后选择[guimenu]``导入现有磁盘映像``。
+. 配置 RAM 和 CPU 数目（至少 8 GB RAM，4 个 CPU）。
+. 为 KVM 计算机命名，并选中[guimenu]``在安装之前自定义配置``复选框。
+. 单击 btn:[添加硬件] 以使用这些指定值创建三个新的虚拟磁盘。
+    这些磁盘将会分区并装入到 <<proc.jeos.susemgr.prep>>。
++
+
+[NOTE]
+====
+储存大小值是绝对最小值 — 仅适用于小规模测试或演示安装。尤其是 [path]``/var/spacewalk/`` 可能很快就需要更多的空间。另外，请考虑为 Kiwi 映像所储存到的 [path]``/srv`` 创建一个单独的分区。
+====
++
+
+[cols="1,1,1", options="header"]
+|===
+| VirtIO 储存磁盘 | 名称      | 大小
+| VirtIO 磁盘 2        | spacewalk | 101{nbsp}GB
+| VirtIO 磁盘 3        | pgsql     | 50{nbsp}GB
+| VirtIO 磁盘 4        | swap      | 4{nbsp}GB
+|===
+
+. 单击 btn:[开始安装] 以从 JeOS 映像引导新 VM。
+
+按照提示进行基本的 JeOS 安装，直到该过程完成并出现等待输入的命令提示符。
+
+在执行基本安装的过程中，系统会提示您输入 root 口令。在下一个消息框中单击 btn:[确认 root 口令]。
+
+
+
+[[jeos.susemgr.prep]]
+== 为 SUSE Manager 准备 JeOS
+
+[[proc.jeos.susemgr.prep]]
+.过程：为 {productname} 安装准备 JeOS
+
+. 以 `root` 身份登录。
+
+. 卸装 `sles-release` 软件包：
++
+
+----
+rpm -e --nodeps sles-release
+----
+
+. 将 {productname} 注册到 SCC（例如，将 `<productnumber>` 替换为 `{productnumber}`，并将 `<architecture>` 替换为 `x86_64`）：
++
+
+----
+SUSEConnect -e<EMAIL_ADDRESS> -r<SUSE_MANAGER_CODE> \
+  -p SUSE-Manager-Server/<productnumber>/<architecture>
+----
+
+. 添加 {productname} 储存库
++
+
+----
+SUSEConnect -p sle-module-basesystem/15.2/x86_64
+SUSEConnect -p sle-module-python2/15.2/x86_64
+SUSEConnect -p sle-module-server-applications/15.2/x86_64
+SUSEConnect -p sle-module-web-scripting/15.2/x86_64
+SUSEConnect -p sle-module-suse-manager-server/<productnumber>/x86_64
+----
++
+JeOS 已配置为仅安装所需的软件包。要使所有功能正常工作，还应该允许安装建议的软件包。在 `/etc/zypp/zypp.conf` 中，将：
++
+
+----
+solver.onlyRequires = true
+----
++
+
+更改为：
++
+----
+solver.onlyRequires = false
+----
+
+. 安装包含全部所需依赖项的 [package]#yast2-storage-ng#（大约有 40 个软件包，安装后大小为 30 MB）。
+    在准备储存分区时需要此基本管理软件包：
++
+
+----
+zypper in yast2-storage-ng
+----
+. 使用 {yast} 分区程序 ([command]``yast2 disk``) 将虚拟磁盘分区并将其装入到以下位置。
++
+
+[NOTE]
+====
+储存大小值是绝对最小值。它们仅适用于小规模测试或演示安装，例如包含一个客户端的服务器。具体而言，[path]``/var/spacewalk/`` 可能很快就需要更多的空间。另外，请考虑为 Kiwi 映像所储存到的 [path]``/srv`` 创建一个单独的分区。
+====
++
+[cols="1,1,1,1", options="header"]
+|===
+| VirtIO 储存磁盘 | 名称                     | 储存大小 | 文件系统类型
+| VirtIO 磁盘 2        | [path]``/var/spacewalk`` | 101{nbsp}GB  | XFS
+| VirtIO 磁盘 3        | [path]``/var/lib/pgsql`` | 50{nbsp}GB   | XFS
+| VirtIO 磁盘 4        | [path]``swap``           | 4{nbsp}GB    | 交换空间
+|===
+
+. 退出分区程序并安装 {productname} 模式（大约有 730 个软件包，安装后会占用 1.4 GB 磁盘空间）：
++
+
+----
+zypper in -t pattern suma_server
+----
+
+. 重引导。
+
+要继续设置 {productname}，请参见 xref:installation:server-setup.adoc[SUSE Manager 设置]。

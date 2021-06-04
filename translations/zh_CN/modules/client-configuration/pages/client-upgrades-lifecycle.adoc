@@ -1,0 +1,105 @@
+[[client-upgrades-clm]]
+= 使用内容生命周期管理器升级
+
+如果您需要管理的 {sles} 客户端有很多，可以使用内容生命周期管理器自动执行就地升级。
+
+
+
+== 准备升级
+
+升级客户端之前，需要完成以下准备工作：
+
+* 创建内容生命周期项目
+* 创建激活密钥
+* Create an autoinstallable distribution
+* 创建自动安装配置文件
+
+.过程：创建内容生命周期项目
+. 为您的发行套件创建内容生命周期项目。
+    有关详细信息，请参见 xref:administration:content-lifecycle.adoc[]。
+. 务必为您的项目选择简短的非描述性名称。
+. 添加您的发行套件所需的所有源频道模块。
+. 视需要添加过滤器，并至少设置一个环境。
+
+
+
+.过程：创建激活密钥
+. 为您的发行套件创建激活密钥。
+    有关详细信息，请参见 xref:client-configuration:activation-keys.adoc[]。
+. 确保您的激活密钥包含所有过滤出的项目频道。
+
+
+
+.过程：创建可自动安装的发行套件
+. Create an autoinstallable distribution for every base channel you want to migrate.
+    For more information, see xref:client-configuration:autoinst-distributions.adoc[].
+. 为您的发行套件指定一个标签来表示内容生命周期项目的名称。
+. 在``安装程序代系``字段中，选择要使用的 SLES 版本。
+
+
+
+.过程：创建自动安装配置文件
+. 为要升级到的每个目标发行套件和服务包创建自动安装配置文件。
+    For more information, see xref:client-configuration:autoinst-profiles.adoc[].
+. 必须为 Salt 客户端和传统客户端使用不同的配置文件。
+. 您可以在配置文件中使用变量来区分不同的生命周期环境。
+
+
+有关自动安装配置文件的示例，请参见 https://github.com/SUSE/manager-build-profiles/tree/master/AutoYaST。
+
+在自动安装配置文件中使用以下变量来实现自动就地升级：
+
+
+
+.例如：在自动安装配置文件中使用的变量
+----
+registration_key=1-15sp1-demo-test
+org=1
+channel_prefix=15sp1-demo-test
+distro_label=15sp1-demo-test
+----
+
+
+
+.例如：在自动安装配置文件中使用的项
+----
+ <listentry>
+     <ask_on_error config:type="boolean">true</ask_on_error>
+     <media_url>https://$redhat_management_server/ks/dist/child/$channel_prefix-sle-module-web-scripting15-sp1-pool-x86_64/$distro_label</media_url>
+     <name>$channel_prefix SLE-Module-Web-Scripting15-SP1 Pool for x86_64 </name>
+     <product>Web Scripting Module 15 SP1 x86_64 Pool</product>
+</listentry>
+----
+
+
+
+== 升级
+
+
+准备好要升级的服务器后，您便可置备客户端。
+
+
+
+.过程：置备客户端
+. 在 {productname} {webui} 中，导航到menu:系统[系统列表]，选择要置备的客户端，以将其添加到系统集管理器中。
+. 导航到menu:系统[系统集管理器 > 概览]，然后单击[guimenu]``置备``选项卡。
+. 选择要使用的自动安装配置文件。
+
+
+对于可以使用 PXE 的客户端，当您完成置备后，客户端便会立即自动迁移。 对于所有其他客户端，您可以使用 Cobbler 来执行升级。
+
+
+
+.过程：使用 Cobbler 升级客户端
+. 在命令提示符处，以 root 身份查看可用的 Cobbler 配置文件：
++
+----
+cobbler profile list
+----
+. 使用您选择的配置文件构建 ISO 文件：
++
+----
+cobbler buildiso --iso=/tmp/SLE_15-sp1.iso --profiles=SLE_15-sp1:1:Example
+----
+
+For more information about using CD-ROMs to provision clients, see xref:client-configuration:autoinst-cdrom.adoc[].

@@ -1,0 +1,60 @@
+[[contact-methods-rhnsd]]
+= SUSE Managerデーモン(rhnsd)
+
+
+{productname}デーモン([command]``rhnsd``)は従来のクライアントシステムで動作し、{productname}と定期的に接続し、新しい更新および通知を確認します。 Saltクライアントには適用されません。
+
+これは、{sle}{nbsp}11および{rhnminrelease6}でのみ使用されます。その理由はこれらのシステムはsystemdを使用しないためです。 後者のオペレーティングシステムでは、systemdタイマー([systemitem]``rhnsd.timer``)が使用され、[systemitem]``rhnsd.service``によって制御されます。
+
+[command]``/etc/init.d/rhnsd``でデーモンを起動します。
+
+デフォルトでは4時間ごとに新しいアクションの確認が行われます。 つまり、スケジュールされたアクションをクライアントで実行するには時間がかかることがあります。
+
+更新を確認するために、[systemitem]``rhnsd``は、[path]``/usr/sbin/``にある外部の[systemitem]``mgr_check``プログラムを実行します。 このプログラムは、{productname}へのネットワーク接続を確立する小さいアプリケーションです。 {productname}デーモンは、ネットワークポートをリッスンせず、ネットワークに直接問い合わせしません。 すべてのネットワークアクティビティは、[systemitem]``mgr_check``ユーティリティによって実行されます。
+
+次の図は、デフォルトの[systemitem]``rhnsd``プロセスのパスの概要を示しています。 [systemitem]``Python XMLRPC server``ブロックの左側のアイテムはすべて、{productname}クライアントで実行されるプロセスを表します。
+
+image::rhnsd-taigon.png[scaledwidth=80]
+
+
+
+== rhnsdの設定
+
+`rhnsd`初期化スクリプトには、クライアントシステムの設定ファイルが[path]``/etc/sysconfig/rhn/rhnsd``にあります。
+
+デーモンの重要なパラメータはそのチェックイン頻度です。 デフォルトの間隔は4時間(240分)です。 設定可能な最短間隔は1時間(60分)です。 間隔を1時間未満に設定すると、デフォルトの4時間(240分)に戻ります。
+
+`rhnsd`設定ファイルを変更する場合、次のコマンドをrootとしてデーモンを再起動し、変更を取得します。
+----
+/etc/init.d/rhnsd restart
+----
+
+`rhnsd`のステータスを表示するには、次のコマンドをrootとして実行します。
+----
+/etc/init.d/rhnsd status
+----
+
+{sle}{nbsp}12以降では、デフォルトの間隔は[path]``/etc/systemd/system/timers.target.wants/rhnsd.timer``で設定されます。このセクションでは次のようになります。
+
+----
+[Timer]
+OnCalendar=00/4:00
+ RandomizedDelaySec=30min
+----
+
+[command]``systemctl``を使用して[path]``rhnsd.timer``の上書きドロップインファイルを作成できます。
+
+----
+systemctl edit rhnsd.timer
+----
+
+たとえば、2時間の間隔を設定する場合、次のようになります。
+
+----
+[Timer]
+OnCalendar=00/2:00
+----
+
+ファイルは[path]``/etc/systemd/system/rhnsd.timer.d/override.conf``として保存されます。
+
+systemdタイマーの詳細については、[command]``systemd.timer``および[command]``systemctl``のマニュアルを参照してください。

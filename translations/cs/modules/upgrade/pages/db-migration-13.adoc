@@ -1,0 +1,103 @@
+[[db-migration-13]]
+= Migrace databáze z verze 10 nebo 12 na 13
+
+Tato část popisuje upgrade databáze PostgreSQL z verze{nbsp}10 nebo verze{nbsp}12 na verzi{nbsp}13. Používáte-li již PostgreSQL 13, nemusíte tuto migraci provádět. Používáte-li starší verzi, například verzi 9.6, podívejte se na xref:upgrade:db-migration-10.adoc[].
+
+Chcete-li upgradovat na nejnovější verzi {productname}, musíte používat PostgreSQL verze 12 nebo 13, podle operačního systému, kde běží:
+
+* Používáte-li SLES 15 SP3, použijte PostgreSQL 13.
+* Používáte-li Leap 15.2, použijte PostgreSQL 12.
+
+
+
+[[db-migration-13-prepare]]
+== Příprava upgradu
+
+Před zahájením upgradu připravte svůj stávající {productname} Server a vytvořte zálohu databáze.
+
+PostgreSQL ukládá data na [path]``/var/lib/pgsql/data/``.
+
+
+
+.Postup: Příprava na upgrade
+. Zkontrolujte aktivní verzi PostgreSQL:
++
+----
+psql --version
+----
++
+Používáte-li PostgreSQL{nbsp}10 nebo 12, můžete upgradovat na PostgreSQL{nbsp}13. Používáte-li již PostgreSQL verzi 13, nemusíte tuto migraci provádět.
+. Zkontrolujte aktivní verzi smdba:
++
+----
+rpm -q smdba
+----
++
+PostgreSQL{nbsp}13 vyžaduje ``smdba`` verze alespoň 1.7.6 nebo vyšší.
+. Zálohujte databázi. Další informace o zálohování viz xref:administration:backup-restore.adoc[].
+
+
+
+[[db-migration-13-upgrade]]
+== Upgradujte PostgreSQL
+
+[WARNING]
+====
+Před provedením migrace vždy zazálohujte databázi.
+====
+
+PostgreSQL lze upgradovat běžným nebo rychlým způsobem:
+
+Běžný upgrade vytvoří úplnou kopii databáze, takže potřebujete dvojnásobek stávající velikosti dostupné databáze. Běžné upgrady mohou trvat značně dlouho, v závislosti na velikosti databáze a rychlosti paměti úložného systému.
+
+Rychlý upgrade trvá jen několik minut a nevyužívá téměř žádné přídavné místo na disku. Pokud však rychlý upgrade selže, musíte obnovit databázi ze zálohy. Rychlý upgrade snižuje riziko vyčerpání místa na disku, ale zvyšuje riziko ztráty dat, když neexistuje záloha nebo z ní nelze obnovit. Běžný upgrade zkopíruje soubory databáze namísto vytváření pevných odkazů mezi soubory.
+
+PostgreSQL ukládá data na [path]``/var/lib/pgsql/data/``.
+
+
+
+.Postup: Běžný upgrade
+. Zálohujte databázi. Další informace o zálohování viz xref:administration:backup-restore.adoc[].
+. Zahajte upgrade. Máte-li verzi 12, spusťte:
++
+----
+/usr/lib/susemanager/bin/pg-migrate-12-to-13.sh
+----
++
+  Máte-li verzi 10, spusťte:
++
+----
+/usr/lib/susemanager/bin/pg-migrate-10-to-13.sh
+----
+. Po úspěšném dokončení upgradu můžete bezpečně odstranit starý adresář databáze a získat zpět dočasně zabraný prostor disku. Starý adresář je přejmenován na [path]``/var/lib/pgsql/data-pg12``nebo [path]``/var/lib/pgsql/data-pg10``, podle verze, od níž začínáte.
+
+Skript [path]``pg-migrate-12-to-13.sh`` nebo [path]``pg-migrate-10-to-13.sh`` provádí tyto operace:
+
+* Zastaví služby spacewalk
+* Vypne spuštěnou databázi
+* Zkontroluje, zda je nainstalován PostgreSQL{nbsp}13 a v případě potřeby jej nainstaluje
+* Přepne nové výchozí nastavení z předchozí verze PostgreSQL na PostgreSQL{nbsp}13
+* Zahájí migraci databáze
+* Vytvoří konfigurační soubor PostgreSQL vyladěný pro použití s {productname}
+* Spustí služby databáze a spacewalk
+
+[NOTE]
+====
+Nezdaří-li se upgrade, pokusí se migrační skript obnovit databázi do původního stavu.
+====
+
+
+
+.Postup rychlého upgradu PostgreSQL
+. Zálohujte databázi. Bez ověřené zálohy databáze nesmíte zahájit rychlou aktualizaci. Další informace o zálohování viz xref:administration:backup-restore.adoc[].
+. Zahajte upgrade. Migrujete-li z verze 12:
++
+----
+/usr/lib/susemanager/bin/pg-migrate-12-to-13.sh fast
+----
++  Migrujete-li z verze 10:
++
+----
+/usr/lib/susemanager/bin/pg-migrate-10-to-13.sh fast
+----
+. Po úspěšném dokončení upgradu můžete bezpečně odstranit starý adresář databáze a získat zpět dočasně zabraný prostor disku. Starý adresář je přejmenován na [path]``/var/lib/pgsql/data-pg12`` nebo [path]``/var/lib/pgsql/data-pg10``, podle verze, kterou začínáte.

@@ -1,0 +1,103 @@
+[[db-migration-13]]
+= 버전 10 또는 12에서 13으로 데이터베이스 마이그레이션
+
+이 섹션에서는 버전{nbsp}10 또는 버전{nbsp}12에서 버전{nbsp}13으로의 PostgreSQL 데이터베이스 업그레이드에 대해 설명합니다. PostgreSQL 13을 이미 사용 중인 경우에는 이 마이그레이션을 수행할 필요가 없습니다. 기존 버전(예: 버전 9.6)을 사용 중인 경우에는 xref:upgrade:db-migration-10.adoc[]을 참조하십시오.
+
+최신 {productname} 버전으로 업그레이드하려면 기본 운영 체제에 따라 PostgreSQL 버전 12 또는 13을 사용해야 합니다.
+
+* SLES 15 SP3를 실행 중인 경우에는 PostgreSQL 13을 사용하십시오.
+* Leap 15.2를 실행 중인 경우에는 PostgreSQL 12를 사용하십시오.
+
+
+
+[[db-migration-13-prepare]]
+== 업그레이드 준비
+
+업그레이드하기 전에 기존 {productname} 서버를 준비한 후 데이터베이스를 백업합니다.
+
+PostgreSQL에서는 데이터가 [path]``/var/lib/pgsql/data/``에 저장됩니다.
+
+
+
+.절차: 업그레이드 준비
+. 활성 PostgreSQL 버전을 확인합니다.
++
+----
+psql --version
+----
++
+PostgreSQL{nbsp}10 또는 12를 사용 중인 경우에는 PostgreSQL{nbsp}13으로 업그레이드할 수 있습니다. 이미 PostgreSQL 버전 13을 사용 중인 경우 이 마이그레이션을 수행할 필요가 없습니다.
+. 활성 smdba 버전을 확인합니다.
++
+----
+rpm -q smdba
+----
++
+PostgreSQL{nbsp}13에는 ``smdba``버전 1.7.6 이상이 필요합니다.
+. 데이터베이스를 백업하십시오. 백업에 대한 자세한 정보는 xref:administration:backup-restore.adoc[]을 참조하십시오.
+
+
+
+[[db-migration-13-upgrade]]
+== PostgreSQL 업그레이드
+
+[WARNING]
+====
+항상 데이터베이스를 백업한 후 마이그레이션을 수행해야 합니다.
+====
+
+PostgreSQL 업그레이드는 일반 업그레이드와 빠른 업그레이드의 두 가지 방법으로 수행할 수 있습니다.
+
+정기적으로 업그레이드하면 데이터베이스의 완전한 사본이 생성되므로 두 배의 기존 데이터베이스 여유 공간 크기가 필요합니다. 정기 업그레이드를 수행하기 위해서는 데이터베이스의 크기 및 스토리지 시스템의 속도에 따라 상당한 시간이 걸릴 수 있습니다.
+
+빠른 업그레이드에는 몇 분이 걸릴 수 있으며, 추가적인 디스크 공간을 거의 사용하지 않습니다. 그러나 빠른 업그레이드가 실패하면 백업에서 데이터베이스를 복원해야 합니다. 빠른 업그레이드는 디스크 공간이 부족해지는 위험을 줄여주지만, 백업이 없거나 다시 수행할 수 없는 경우 데이터 위험이 증가합니다. 일반 업그레이드는 파일 간의 하드 링크를 생성하는 대신 데이터베이스 파일을 복사합니다.
+
+PostgreSQL에서는 데이터가 [path]``/var/lib/pgsql/data/``에 저장됩니다.
+
+
+
+.절차: 일반 업그레이드 수행
+. 데이터베이스를 백업하십시오. 백업에 대한 자세한 정보는 xref:administration:backup-restore.adoc[]을 참조하십시오.
+. 업그레이드를 시작하십시오. 버전 12가 있는 경우, 다음을 실행하십시오.
++
+----
+/usr/lib/susemanager/bin/pg-migrate-12-to-13.sh
+----
++
+  버전 10이 있는 경우, 다음을 실행하십시오.
++
+----
+/usr/lib/susemanager/bin/pg-migrate-10-to-13.sh
+----
+. 업그레이드가 완료되면 이전 데이터베이스 디렉토리를 안전하게 삭제하고 손실된 디스크 공간을 회수할 수 있습니다. 이전 디렉토리는 시작한 버전에 따라 [path]``/var/lib/pgsql/data-pg12`` 또는 [path]``/var/lib/pgsql/data-pg10``으로 이름이 변경되었습니다.
+
+[path]``pg-migrate-12-to-13.sh`` 또는 [path]``pg-migrate-10-to-13.sh`` 스크립트가 수행하는 작업:
+
+* Spacewalk 서비스 중지
+* 실행 중인 데이터베이스 종료
+* PostgreSQL{nbsp}13이 설치되어 있는지 확인하고 필요한 경우 설치하십시오.
+* 이전 버전의 PostgreSQL{nbsp}에서 새 기본값인 PostgreSQL{nbsp}13으로 전환
+* 데이터베이스 마이그레이션 시작
+* {productname}에서 사용할 수 있도록 조정된 PostgreSQL 구성 파일 생성
+* 데이터베이스 및 Spacewalk 서비스 시작
+
+[NOTE]
+====
+업그레이드에 실패하면 마이그레이션 스크립트가 데이터베이스를 원래 상태로 복원하려고 시도합니다.
+====
+
+
+
+.절차: 빠른 PostgreSQL 업그레이드 수행
+. 데이터베이스 백업을 실행하십시오. 검증된 데이터베이스 백업이 없으면 빠른 업그레이드를 시작할 수 없습니다. 백업에 대한 자세한 내용은 xref:administration:backup-restore.adoc[]을 참조하십시오.
+. 업그레이드를 시작하십시오. 버전 12에서 마이그레이션하는 경우:
++
+----
+/usr/lib/susemanager/bin/pg-migrate-12-to-13.sh fast
+----
++  버전 10에서 마이그레이션하는 경우:
++
+----
+/usr/lib/susemanager/bin/pg-migrate-10-to-13.sh fast
+----
+. 업그레이드가 완료되면 이전 데이터베이스 디렉토리를 안전하게 삭제하고 손실된 디스크 공간을 회수할 수 있습니다. 이전 디렉토리는 시작한 버전에 따라 [path]``/var/lib/pgsql/data-pg12`` 또는 [path]``/var/lib/pgsql/data-pg10``으로 이름이 변경되었습니다.

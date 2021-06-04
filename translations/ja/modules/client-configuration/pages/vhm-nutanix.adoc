@@ -1,0 +1,52 @@
+[[virt-nutanix]]
+= Nutanixによる仮想化
+
+ifeval::[{suma-content} == true]
+
+{suse}はNutanixエコシステムパートナーで、SUSE Managerは"Nutanix AHV integrated"カテゴリでNutanix対応の認証を取得しています。
+
+Nutanixの統合の詳細については、https://www.nutanix.com/partners/technology-alliances/suseを参照してください。
+
+image::nutanix-ready.png[scaledwidth=20%]
+
+endif::[]
+
+{productname}ではNutanix AHV仮想マシンを使用できます。そのためには、仮想ホストマネージャ(VHM)を設定します。 まず、{productname}サーバでVHMを設定し、使用できるVMホストを評価する必要があります。
+
+
+
+== VHMの設定
+
+
+仮想ホストマネージャ(VHM)は{productname}サーバ上で動作します。
+
+[systemitem]``virtual-host-gatherer-Nutanix``パッケージを{productname}サーバにインストール済みであることを確認してください。
+
+VHMを実行するには、{productname}サーバでポート9440がオープンになっていて、Nutanix Prism Element APIにアクセスする必要があります。
+
+
+.プロシージャ: Nutanix VHMの作成
+
+. {productname}の{webui}で、menu:システム[仮想ホストマネージャ]に移動します。
+. ［btn:[作成]］をクリックし、［[guimenu]``Nutanix AHV``］を選択します。
+. ［[guimenu]``Add a Nutanix AHV Virtual Host Manager（Nutanix AHV仮想ホストマネージャの追加）``］セクションで、次のパラメータを使用します。
+* ［[guimenu]``ラベル``］フィールドにVHMのカスタム名を入力します。
+* ［[guimenu]``ホスト名``］フィールドに、完全修飾ドメイン名(FQDN)またはホストIPアドレスを入力します。
+* [[guimenu]``ポート``］フィールドに、使用するPrism Element APIポートを入力します([parameter]``9440``など)。
+* ［[guimenu]``ユーザ名``］フィールドに、VMホストに関連付けられているユーザ名を入力します。
+* ［[guimenu]``パスワード``］フィールドに、VMホストユーザに関連付けられているパスワードを入力します。
+. ［btn:[作成]］をクリックして変更を保存し、VHMを作成します。
+. ［[guimenu]``仮想ホストマネージャ``］ページで、新しいVHMを選択します。
+. ［[guimenu]``プロパティ``］ページで、［btn:[データの更新]］をクリックし、新しいVHMを評価します。
+
+評価されたオブジェクトおよびリソースを表示するには、menu:システム[システム一覧 > 仮想システム]に移動します。
+
+
+[NOTE]
+====
+HTTPSを使用してブラウザからNutanix Prism APIサーバに接続すると、``無効な証明書``エラーがログされる場合があります。 このエラーが発生すると、仮想ホストマネージャからのデータの更新は失敗します。 Nutanix APIサーバでは、(自己証明書ではなく)有効なSSL証明書が必要です。 Nutanix SSL証明書にカスタムCA認証局を使用している場合、カスタムCA証明書を{productname}サーバの[path]``/etc/pki/trust/anchors``にコピーします。 証明書を再度信頼します。そのためには、コマンドラインで[command]``update-ca-certificates``コマンドを実行し、spacewalkサービスを再起動します。
+====
+
+VHMが作成されて設定されると、Taskomaticは、データ収集を自動的に実行します。 データ収集を手動で実行する場合、menu:システム[仮想ホストマネージャ]に移動し、適切なVHMを選択して［btn:[データの更新]］をクリックします。
+
+APIを使用してVHMに接続して仮想ホストの情報をリクエストできる[command]``virtual-host-gatherer``というツールが{productname}に付属しています。 [command]``virtual-host-gatherer``は、オプションモジュールの概念を維持していて、各モジュールが特定のVHMを有効にします。 このツールは、Taskomaticによって毎晩自動的に呼び出されます。 [command]``virtual-host-gatherer``ツールのログファイルは[path]``/var/log/rhn/gatherer.log``にあります。

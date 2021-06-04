@@ -1,0 +1,47 @@
+[[salt.rate.limiting]]
+= Rate Limiting
+
+Salt is able to run commands in parallel on a large number of clients. This can potentially create large amounts of load on your infrastructure. You can use these rate-limiting parameters to control the load in your environment.
+
+These parameters are all configured in the [filename]``/etc/rhn/rhn.conf`` configuration file.
+
+[NOTE]
+====
+Salt commands that are executed from the command line are not subject to these parameters.
+====
+
+
+
+== Batching
+
+There are two parameters that control how actions are sent to clients, one for the batch size, and one for the delay.
+
+When the {productname} Server sends a batch of actions to the target clients, it will send it to the number of clients determined in the batch size parameter. After the specified delay period, commands will be sent to the next batch of clients. The number of clients in each subsequent batch is equal to the number of clients that have completed in the previous batch.
+
+Choosing a lower batch size will reduce system load and parallelism, but might reduce overall performance for processing actions.
+
+The batch size parameter sets the maximum number of clients that can execute a single action at the same time. Adjust the [systemitem]``java.salt_batch_size`` parameter. Defaults to 200.
+
+Increasing the delay increases the chance that multiple clients will have completed before the next action is issued (more clients are grouped together in subsequent batches), resulting in fewer overall commands, and reducing load.
+
+The batch delay parameter sets the amount of time, in seconds, to wait after a command from the previous batch is processed before beginning to process the command on the next client. Adjust the [systemitem]``java.salt_batch_delay`` parameter. Defaults to 1.0 seconds.
+
+
+
+== Deaktivace Salt Mine
+
+Ve starších verzích používal {productname} nástroj nazývaný Salt Mine ke kontrole dostupnosti klienta. Salt Mine nutil klienty kontaktovat server každou hodinu, což vytvořilo výrazné zatížení. Se zavedením efektivnějšího mechanismu v {productname}{nbsp}3.2 již není nástroj Salt Mine potřebný. Místo toho používá {productname} Server Taskomatic k pingu pouze těch klientů, které se jeví offline dvanáct hodin nebo více; ve výchozím nastavení jsou všechny klienty kontaktovány alespoň jednou za dvacet čtyři hodin. To můžete upravit změnou parametru [systemitem]``web.system_checkin_threshold``v souboru [path]``rhn.conf``. Hodnota je zadána ve dnech, výchozí hodnota je [literal]``1``.
+
+Nově registrované klienty Salt budou mít Salt Mine standardně vypnutý. Běží-li na Vašem systému Salt Mine, můžete snížit zátěž systému jeho vypnutím. Je to zvláště účinné při mnoha klientech.
+
+Salt Mine vypnete na serveru tímto příkazem:
+----
+salt '*' state.sls util.mgr_mine_config_clean_up
+----
+
+Tím se restartují klienty a generují se některé události Salt, které mají být zpracovány serverem. Pokud máte velký počet klientů, manipulace s těmito událostmi by mohly vytvořit nadměrné zatížení. Chcete-li se tomu vyhnout, můžete provést příkaz v dávkovém režimu:
+----
+salt --batch-size 50 '*' state.sls util.mgr_mine_config_clean_up
+----
+
+Budete muset počkat, než se tento příkaz dokončí. Neukončujte proces klávesovou kombinací kbd:[Ctrl+C].

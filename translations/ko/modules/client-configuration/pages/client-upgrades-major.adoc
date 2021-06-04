@@ -1,0 +1,127 @@
+[[client-upgrades-major]]
+= 클라이언트 - 주 버전 업그레이드
+
+클라이언트에는 최신 업데이트가 모두 적용되고, 설치된 운영 체제용으로 사용 가능한 최신 서비스 팩(SP)이 있어야 합니다. 시작하기 전에 시스템이 최신 상태이고 모든 업데이트가 설치되었는지 확인하십시오.
+
+업그레이드는 {yast} 및 {ay}에서 제어하며 Zypper는 사용하지 않습니다.
+
+
+== 마이그레이션 준비
+
+클라이언트를 SLE{nbsp}12에서 SLE{nbsp}15{nbsp}로 마이그레이션하려면 먼저 다음 작업을 수행해야 합니다.
+
+. 설치 미디어 준비
+. Create an auto-installable distribution
+. 활성화 키 생성
+. {ay} 프로파일 업로드
+
+
+
+.절차: 설치 미디어 준비
+. 다음과 같이 {productname} 서버에서 SLE{nbsp}15{nbsp}SP2 설치 미디어에 대해 로컬 디렉토리를 생성합니다.
++
+----
+mkdir -p /srv/images/sle15sp2
+----
+. 설치 원본과 함께 ISO 이미지를 다운로드하고 서버에 ISO 이미지를 마운트합니다.
++
+----
+mount -o loop DVD1.iso /mnt/
+----
+. 마운트한 ISO의 모든 항목을 로컬 파일 시스템에 복사합니다.
++
+----
+cp -r /mnt/* /srv/images/sle15sp2
+----
+. 복사가 완료되면 ISO 이미지를 마운트 해제합니다.
++
+----
+umount /mnt
+----
+
+[NOTE]
+====
+This image is the unified installer and can be used for multiple autoinstallable distributions.
+====
+
+
+
+.절차: 자동 설치 가능한 배포 생성
+. {productname} {webui}에서 menu:시스템[자동 설치 > 배포판]으로 이동한 후 btn:[배포 생성]을 클릭합니다.
+. [guimenu]``자동 설치 가능한 배포판 생성`` 섹션에서 파라미터를 다음과 같이 적용합니다.
+* [guimenu]``배포판 레이블`` 섹션에 배포판의 고유 이름을 입력합니다.
+    글자, 숫자, 하이픈, 마침표, 밑줄만 사용하고, 이름을 구성하는 문자는 다섯 개 이상이어야 합니다. 예: ``sles15sp2-x86_64``.
+* [guimenu]``트리 경로`` 필드에 설치 원본의 절대 경로를 입력합니다.
+    예: [path]``/srv/images/sle15sp2``.
+* [guimenu]``기본 채널`` 필드에서 [systemitem]``x86_64용 SLE-Product-SLES15-SP2-Pool``을 선택합니다.
+* [guimenu]``설치 프로그램 생성`` 필드에서 [systemitem]``SUSE Linux Enterprise 15``를 선택합니다.
+* [guimenu]``커널 옵션`` 필드에 설치를 부팅할 때 커널로 전달될 옵션을 입력합니다.
+    [option]``install=`` 파라미터와 [option]``self_update=0 pt.options=self_update``파라미터가 기본적으로 추가됩니다.
+* [guimenu]``커널 후 옵션`` 섹션에 처음으로 설치된 시스템을 부팅할 때 커널로 전달될 옵션을 입력합니다.
+. btn:[자동 설치 가능한 배포판 생성]을 클릭하여 저장합니다.
+
+
+기존 SLE{nbsp}12{nbsp} 기본 채널에서 새로운 SLE{nbsp}15 채널로 전환하려면 활성화 키가 필요합니다.
+
+
+
+.절차: 활성화 키 생성
+. {productname} 서버 {webui}에서 menu:시스템[활성화 키]로 이동하여 [guimenu]``키 생성``을 클릭합니다.
+. 키에 대한 설명을 입력합니다.
+. 키를 입력하거나 공백으로 두어 자동 키를 생성합니다.
+. 옵션: 사용을 제한하려면 [guimenu]``사용`` 텍스트 필드에 값을 입력합니다.
+. [systemitem]``SLE-Product-SLES15-SP2-Pool for x86_64`` 기본 채널을 선택합니다.
+. 옵션: [guimenu]``추가 시스템 유형``을 선택합니다.
+    자세한 내용은 https://documentation.suse.com/sles/15-SP2/html/SLES-all/art-modules.html을 참조하십시오.
+. btn:[활성화 키 생성]을 클릭합니다.
+. [guimenu]``하위 채널`` 탭을 클릭하고 필요한 채널을 선택합니다.
+. btn:[키 업데이트]를 클릭합니다.
+
+
+
+== 자동 설치 프로파일 생성
+
+자동 설치 프로파일에는 시스템을 설치하기 위해 필요한 모든 설치와 구성 데이터가 포함되어 있습니다. 또한 설치 완료 후 실행될 스크립트도 포함되어 있습니다. 예를 들어 시작 지점으로 사용할 수 있는 스크립트는 https://github.com/SUSE/manager-build-profiles/tree/master/AutoYaST를 참조하십시오. 올바른 AutoYaST 업그레이드 설정은 https://doc.opensuse.org/projects/autoyast/#CreateProfile-upgrade를 참조하십시오.
+
+
+
+.절차: 자동 설치 프로파일 생성
+. {productname} {webui}에서 menu:시스템[자동 설치 > 프로파일]로 이동하여 자동 설치 프로파일 스크립트를 업로드합니다.
+    예를 들어 시작 지점으로 사용할 수 있는 스크립트는 https://github.com/SUSE/manager-build-profiles/tree/master/AutoYaST를 참조하십시오.
+. ``커널 옵션`` 필드에 ``autoupgrade=1``을 입력합니다.
+    선택 사항으로 ``Y2DEBUG=1`` 옵션도 포함할 수 있습니다. 디버그 설정은 필요하지 않지만, 발생 가능한 향후 문제를 조사하는 데 유용할 수 있습니다.
+. 자동 설치 프로파일을 붙여넣거나 파일 업로드 필드를 사용합니다.
+. btn:[생성]을 클릭하여 저장합니다.
+. 업로드한 프로파일에 변수를 설정해야 하면, menu:시스템[자동 설치 > 프로파일]로 이동하여 편집할 프로파일을 선택하고 [guimenu]``변수`` 탭으로 이동합니다.
+    다음 형식을 사용하여 필수 변수를 지정합니다.
++
+----
+<key>=<value>
+----
+
+
+
+== 마이그레이션
+
+시작하기 전, 자동 설치 프로파일에서 참조된 모든 채널을 사용할 수 있고 완전히 동기화되었는지 확인합니다.
+
+[path]``/var/log/rhn/reposync/<channel-label>.log``에서 미러링 프로세스를 모니터링할 수 있습니다.
+
+
+
+.절차: 마이그레이션
+. {productname} 서버 {webui}에서 [guimenu]``시스템``으로 이동하여 업그레이드할 클라이언트를 선택합니다.
+. [guimenu]``조달`` 탭으로 이동하여 업로드한 자동 설치 프로파일을 선택합니다.
+. btn:[자동 설치 일정 잡기 후 완료]를 클릭합니다. 시스템이 필요한 파일을 다운로드하고, 부트로더 항목을 변경하고, 재부팅한 후 업그레이드를 시작합니다.
+
+
+클라이언트는 다음번에 {productname} 서버와 동기화될 때 재설치 작업을 수신합니다. 재설치 작업은 새로운 커널 및 initrd 패키지를 가져옵니다. 또한 새 커널 및 initrd 패키지에 대한 포인터가 포함된 새로운 [path]``/boot/grub/menu.lst``를 작성합니다.
+
+클라이언트는 다음번 부팅 시 grub을 사용해 initrd로 새 커널을 부팅합니다. 이 프로세스 중에는 PXE 부팅이 사용되지 않습니다.
+
+작업을 가져온 후 약 3분이 지나면 클라이언트는 재부팅을 시작합니다.
+
+[NOTE]
+====
+Salt 클라이언트의 경우 마이그레이션이 완료되면 ``spacewalk/minion_script`` 코드 조각을 사용해 클라이언트를 다시 등록합니다.
+====

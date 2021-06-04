@@ -1,0 +1,371 @@
+[[clients-rh-cdn]]
+= 使用 CDN 注册 {rhel} 客户端
+
+如果您是直接运行 {rhel} 客户端而不是使用 {sleses} 来运行，则需要使用 Red Hat 来源检索并更新软件包。 本节包含有关使用 {redhat} 内容分发网络 (CDN) 注册运行 {rhel} 操作系统的传统客户端和 Salt 客户端的信息。
+
+而有关使用 {redhat} 更新基础结构 (RHUI) 的信息，请参见 xref:client-configuration:clients-rh-rhui.adoc[]。
+
+
+
+[IMPORTANT]
+====
+{rhel} 客户端基于 {redhat}，与 {sleses}、RES 或 {sles} 不相关。 您需负责安排对 {redhat} 基础媒体储存库和 {rhela} 安装媒体的访问权限，以及将 {productname} 服务器连接到 {redhat} 内容分发网络。 对于您的所有 {rhela} 系统，您均须从 {redhat} 获取支持。 如果不这么做，可能会违反与 {redhat} 的条款。
+====
+
+
+[NOTE]
+====
+传统客户端仅适用于 {rhel}{nbsp}6 和 7。 当 {rhel}{nbsp} 8 客户端为 Salt 客户端时才受支持。
+====
+
+
+
+== 导入权利和证书
+
+{redhat} 客户端需要 {redhat} 证书颁发机构 (CA) 和权利证书以及权利密钥。
+
+权利证书内嵌失效日期，与支持订阅的期限匹配。 为避免服务中断，您需要在每个支持订阅期结束时重复此过程。
+
+{redhat} 提供了一个订阅管理器工具，可用于管理订阅指派。 此工具在本地运行，可跟踪安装的产品和订阅。 客户端必须在订阅管理器中注册才能获得证书。
+
+{redhat} 客户端使用 URL 来复制储存库。 URL 更改取决于 {redhat} 客户端是在何处注册的。
+
+{redhat} 客户端可通过三种方式注册：
+
+* redhat.com 上的 {redhat} 内容分发网络 (CDN)
+* {redhat} 从属服务器
+* 云中的 {redhat} 更新基础结构 (RHUI)
+
+本指南将介绍注册到 {redhat} CDN 的客户端。 您至少须有一个注册到 CDN 的系统并拥有授权订阅，以获得储存库内容。
+
+而有关使用 {redhat} 更新基础结构 (RHUI) 的信息，请参见 xref:client-configuration:clients-rh-rhui.adoc[]。
+
+
+[IMPORTANT]
+====
+要为客户端系统使用从属证书，必须有从属服务器和订阅。 {productname} 服务器不支持使用从属证书的客户端。
+====
+
+[WARNING]
+====
+权利证书内嵌失效日期，与支持订阅的期限匹配。 为避免服务中断，您需要在每个支持订阅期结束时重复此过程。
+====
+
+{redhat} 提供了订阅管理器工具，可用于管理订阅指派。 此工具在客户端系统本地运行，可跟踪安装的产品和订阅。 使用订阅管理器注册到 redhat.com，然后执行下列过程获得证书。
+
+
+
+.过程：将客户端注册到订阅管理器
+
+. 在客户端系统上的命令提示符处注册订阅管理器工具：
++
+----
+subscription-manager register
+----
++
+出现提示时，输入您的 {redhat} 门户用户名和口令。
+. 将客户端系统中的权利证书和密钥复制到 {productname} 服务器可访问的位置：
++
+----
+cp/etc/pki/entitlement/ /<example>/entitlement/
+----
++
+[NOTE]
+====
+您的权利证书和密钥的文件扩展名均为 [path]``.pem``。 密钥的文件名中还包含 [path]``key``。
+====
++
+. 将客户端系统中的 {redhat} CA 证书文件复制到权利证书和密钥所在的相同网络位置：
++
+----
+cp /etc/rhsm/ca/redhat-uep.pem /<example>/entitlement
+----
+
+
+要管理 {redhat} 客户端上的储存库，您需要将 CA 和权利证书导入 {productname} 服务器。 这需要您执行三次导入过程以创建相应的三项： 三项分别对应权利证书、权利密钥和 {redhat} 证书。
+
+
+
+.过程：将证书导入服务器
+
+. 在 {productname} 服务器 {webui} 上，导航到menu:系统[自动安装 > GPG 和 SSL 密钥]。
++
+
+. 单击 btn:[创建储存的密钥/证书]，并为权利证书设置下列参数：
+* 在[guimenu]``说明``字段中键入 [systemitem]``Entitlement-Cert- date``。
+* 在[guimenu]``类型``字段中，选择 [systemitem]``SSL``。
+* 在[guimenu]``选择要上载的文件``字段中，浏览到您保存权利证书的位置，然后选择 [path]``.pem`` 证书文件。
+. 单击 btn:[创建密钥]。
+. 单击 btn:[创建储存的密钥/证书]，并为权利密钥设置下列参数：
+* 在[guimenu]``说明``字段中键入 [systemitem]``Entitlement-key- date``。
+* 在[guimenu]``类型``字段中，选择 [systemitem]``SSL``。
+* 在[guimenu]``选择要上载的文件``字段中，浏览到您保存权利密钥的位置，然后选择 [path]``.pem`` 密钥文件。
+. 单击 btn:[创建密钥]。
+. 单击 btn:[创建储存的密钥/证书]，并为 {redhat} 证书设置下列参数：
+* 在[guimenu]``说明``字段中键入 [systemitem]``redhat-uep``。
+* 在[guimenu]``类型``字段中，选择 [systemitem]``SSL``。
+* 在[guimenu]``选择要上载的文件``字段中，浏览到您保存 {redhat} 证书的位置，然后选择证书文件。
+. 单击 btn:[创建密钥]。
+
+
+
+== 准备自定义储存库和频道
+
+要从 Red Hat CDN 镜像软件，您需要在 {productname} 中创建自定义频道和储存库，它们都将通过 URL 链接到 CDN。 您必须在 Red Hat 门户中拥有这些产品的权利，此功能才能正常工作。 可以使用订阅管理器工具获得要镜像的储存库的 URL：
+
+----
+subscription-manager repos
+----
+
+可以使用这些储存库 URL 来创建自定义储存库。 这样您便可只镜像管理客户端所需的内容。
+
+[IMPORTANT]
+====
+如果您在 {redhat} 门户中拥有正确的权利，就可以只创建 {redhat} 储存库的自定义版本。
+====
+
+
+此过程所需的细节包括：
+
+[[redhat-repos-manual]]
+[cols="1,1", options="header"]
+.Red Hat 自定义储存库设置
+|===
+| 选项                 | 设置
+|储存库 URL         | {redhat} CDN 提供的内容 URL
+|包含已签名的元数据？   | 取消选中所有 {redhat} Enterprise 储存库
+|SSL CA 证书     | [systemitem]``redhat-uep``
+|SSL 客户端证书 | [systemitem]``Entitlement-Cert-date``
+|SSL 客户端密钥         | ``Entitlement-Key-date``
+|===
+
+
+include::snippets/manual_repos.adoc[]
+
+
+
+此过程所需的频道包括：
+
+[[redhat-channels-custom]]
+[cols="1,1,1", options="header"]
+.Red Hat 自定义频道
+|===
+| 操作系统版本 | 基础产品          | 基础频道
+|{redhat} 6 | RHEL6 Base x86_64 | rhel6-pool-x86_64
+| {redhat} 7 | RHEL7 Base x86_64 | rhel7-pool-x86_64
+| {redhat} 8 | RHEL 或 SLES ES 或 CentOS 8 Base | rhel8-pool-x86_64
+|===
+
+
+include::snippets/manual_channels.adoc[]
+
+[IMPORTANT]
+====
+对于 {redhat} 8 客户端，请添加基础频道和 AppStream 频道。 您需要来自这两个频道的软件包。 如果未添加这两个频道，将会因缺少软件包而无法创建引导储存库。
+====
+
+
+include::snippets/manual_associate.adoc[]
+
+
+
+== 添加软件频道
+
+将 {redhat} 客户端注册到您的 {productname} 服务器之前，您需要添加所需的软件频道，并同步这些频道。
+
+ifeval::[{suma-content} == true]
+
+拥有 {susemgr} 订阅，您便能使用 {sleses}（也称为 {redhat} 扩展支持或 RES）的工具频道。 必须使用客户端工具频道来创建引导储存库。 此过程适用于 Salt 客户端和传统客户端。
+endif::[]
+
+ifeval::[{suma-content} == true]
+
+此过程所需的产品包括：
+
+[[redhat-channels-wizard]]
+[cols="1,1", options="header"]
+.Red Hat 产品 - WebUI
+|===
+| 操作系统版本 | 产品名称
+|{redhat} 6 | RHEL6 Base x86_64
+|{redhat} 7 | RHEL7 Base x86_64
+| {redhat} 8 | RHEL 或 SLES ES 或 CentOS 8 Base
+|===
+
+
+include::snippets/addchannels_vendor_webui.adoc[]
+
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+此过程所需的频道包括：
+
+[[redhat-channels-cli]]
+[cols="1,1,1,1", options="header"]
+.Red Hat 频道 - CLI
+|===
+
+| 操作系统版本
+|基础频道
+|客户端频道
+|工具频道
+
+|{redhat} 6
+| rhel-x86_64-server-6
+|-
+| res6-suse-manager-tools-x86_64
+
+| {redhat} 7
+| rhel-x86_64-server-7
+|-
+| res7-suse-manager-tools-x86_64
+
+| {redhat} 8
+|rhel-x86_64-server-8
+|-
+| res8-suse-manager-tools-x86_64
+
+|===
+
+
+include::snippets/addchannels_novendor_cli.adoc[]
+
+
+[NOTE]
+====
+[command]``spacewalk-common-channels`` 提供的客户端工具频道来自 {uyuni} 而非 {suse}。
+====
+
+endif::[]
+
+
+include::snippets/appstream_admon.adoc[]
+
+
+
+
+== 检查同步状态
+
+ifeval::[{suma-content} == true]
+
+
+include::snippets/check_sync_webui_suma.adoc[]
+
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+
+include::snippets/check_sync_webui_uyuni.adoc[]
+
+
+endif::[]
+
+
+include::snippets/check_sync_cli.adoc[]
+
+
+[NOTE]
+====
+{rhel} 频道可能会非常大。 同步所需的时间可能会长达数小时。
+====
+
+
+.过程：可选：创建 Salt 状态以部署配置文件
+
+. 在 {productname} 服务器 {webui} 上，导航到menu:配置[频道]。
+. 单击 btn:[创建状态频道]。
+* 在[guimenu]``名称``字段中，键入 [systemitem]``subscription-manager: disable yum plugins``。
+* 在[guimenu]``标签``字段中，键入 [systemitem]``subscription-manager-disable-yum-plugins``。
+* 在[guimenu]``说明``字段中，键入 [systemitem]``subscription-manager: disable yum plugins``。
+* 将 [guimenu]``SLS 内容``字段留空。
+. 单击 btn:[创建配置频道]
+. 单击 btn:[创建配置文件]
+* 在[guimenu]``文件名/路径``字段中，键入 [systemitem]``/etc/yum/ pluginconf.d/subscription-manager.conf``。
+* 在[guimenu]``文件内容``字段中，键入：
+----
+[main]
+enabled=0
+----
+. 单击 btn:[创建配置文件]
+. 记下 [guimenu]``Salt 文件系统路径``字段的值。
+. 单击配置频道的名称。
+. 单击[guimenu]``查看/编辑 'init.sls' 文件``
+* 在[guimenu]``文件内容``字段中，键入：
+----
+configure_subscription-manager-disable-yum-plugins:
+  cmd.run:
+    - name: subscription-manager config --rhsm.auto_enable_yum_plugins=0
+    - watch:
+      - file: /etc/yum/pluginconf.d/subscription-manager.conf
+  file.managed:
+    - name: /etc/yum/pluginconf.d/subscription-manager.conf
+    - source: salt:///etc/yum/pluginconf.d/subscription-manager.conf
+----
+. 单击 btn:[更新配置文件]。
+
+
+[NOTE]
+====
+``创建 Salt 状态以部署配置文件``是可选过程。
+====
+
+
+.过程：为 {rhel} 客户端创建系统组
+
+. 在 {productname} 服务器 {webui} 上，导航到menu:系统[系统组]。
+. 单击 btn:[创建组]。
+* 在[guimenu]``名称``字段中，键入 [systemitem]``rhel-systems``。
+* 在[guimenu]``说明``字段中，键入[systemitem]``所有 RHEL 系统``。
+. 单击 btn:[创建组]。
+. 单击[guimenu]``状态``选项卡。
+. 单击[guimenu]``配置频道``选项卡。
+. 在搜索框中键入 [systemitem]``subscription-manager: disable yum plugins``。
+. 单击 btn:[搜索] 以查看状态。
+. 单击[systemitem]``指派``列中的状态对应的复选框。
+. 单击 btn:[保存更改]。
+. 单击 btn:[确认]。
+
+如果您已将 RHEL 系统添加到 {productname}，请将其指派给新的系统组，然后应用 highstate。
+
+
+
+.过程：将系统组添加到激活密钥
+
+您需要修改用于 RHEL 系统的激活密钥，以包含之前创建的系统组。
+
+. 在 {productname} 服务器 {webui} 上，导航到menu:系统[激活密钥]。
+. 单击用于 RHEL 系统的每个激活密钥并：
+. 依次导航到[guimenu]``组``选项卡和[guimenu]``加入``子选项卡。
+. 选中[systemitem]``选择 rhel-systems``。
+. 单击 btn:[加入所选的组]。
+
+
+
+ifeval::[{uyuni-content} == true]
+== 在客户端上信任 GPG 密钥
+
+include::snippets/trust_gpg.adoc[]
+
+endif::[]
+
+
+
+== 注册客户端
+
+要注册您的 {redhat} 客户端，需要有引导储存库。 默认会自动创建并且每天会为所有同步的产品重新生成引导储存库。 您可以在命令提示符处使用以下命令手动创建引导储存库：
+
+----
+mgr-create-bootstrap-repo
+----
+
+有关注册客户端的详细信息，请参见 xref:client- configuration:registration-overview.adoc[]。
+
+
+[WARNING]
+====
+要注册和使用 {rhel}{nbsp}6 客户端，您需要配置 {productname} 服务器以支持较旧类型的 SSL 加密。 有关如何解决此错误的详细信息，请参见 xref:client-configuration:tshoot-clients.adoc[] 中的``注册较旧的客户端``。
+====

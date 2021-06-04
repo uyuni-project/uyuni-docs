@@ -1,0 +1,69 @@
+[[virt-vmware]]
+= VMWareによる仮想化
+
+{productname}では、ESXiやvCenterなどのVMWare vSphere仮想マシンを使用できます。そのためには、仮想ホストマネージャ(VHM)を設定します。
+
+まず、{productname}サーバでVHMを設定し、使用できるVMホストを評価する必要があります。 次に、Taskomaticは、VMのAPIを使用してデータ収集を開始できます。
+
+
+
+== VHMの設定
+
+
+仮想ホストマネージャ(VHM)は{productname}サーバ上で動作します。
+
+VHMを実行するには、{productname}サーバでポート443がオープンになっていて、VMWare APIにアクセスする必要があります。
+
+VMWareホストは、アクセスロールとパーミッションを使用して、ホストおよびゲストへのアクセスを制御します。 VHMで評価するVMWareのオブジェクトまたはリソースに少なくとも[parameter]``read-only``パーミッションがあることを確認してください。 任意のオブジェクトまたはリソースを除外する場合、除外対象に[parameter]``no-access``というマークを付けます。
+
+新しいホストを{productname}に追加している場合、ユーザおよびオブジェクトに割り当てられているロールおよびパーミッションを{productname}で評価する必要があるかどうかを検討する必要があります。
+
+ユーザ、ロール、およびパーミッションの詳細については、VMWare vSphereのドキュメント(https://docs.vmware.com/en/VMware-vSphere/index.html)を参照してください。
+
+
+.プロシージャ: VMWare VHMの作成
+
+. {productname}の{webui}で、menu:システム[仮想ホストマネージャ]に移動します。
+. ［btn:[作成]］をクリックし、［[guimenu]``VMWareベース``］を選択します。
+. ［[guimenu]``Add a VMWare-based Virtual Host Manager（VMWareベースの仮想ホストマネージャの追加）``］セクションで、次のパラメータを使用します。
+* ［[guimenu]``ラベル``］フィールドにVHMのカスタム名を入力します。
+* ［[guimenu]``ホスト名``］フィールドに、完全修飾ドメイン名(FQDN)またはホストIPアドレスを入力します。
+* [[guimenu]``ポート``］フィールドに、使用するESXi APIポートを入力します([parameter]``443``など)。
+* ［[guimenu]``ユーザ名``］フィールドに、VMホストに関連付けられているユーザ名を入力します。
+* ［[guimenu]``パスワード``］フィールドに、VMホストユーザに関連付けられているパスワードを入力します。
+. ［btn:[作成]］をクリックして変更を保存し、VHMを作成します。
+. ［[guimenu]``仮想ホストマネージャ``］ページで、新しいVHMを選択します。
+. ［[guimenu]``プロパティ``］ページで、［btn:[データの更新]］をクリックし、新しいVHMを評価します。
+
+評価されたオブジェクトおよびリソースを表示するには、menu:システム[システム一覧 > 仮想システム]に移動します。
+
+
+[NOTE]
+====
+HTTPSを使用してブラウザからESXiサーバに接続すると、``無効な証明書``エラーがログされる場合があります。 このエラーが発生すると、仮想ホストサーバからのデータの更新は失敗します。 この問題を修正するには、ESXiサーバから証明書を抽出して[path]``/etc/pki/trust/anchors``にコピーします。 証明書を再度信頼します。そのためには、コマンドラインで[command]``update-ca-certificates``コマンドを実行し、spacewalkサービスを再起動します。
+====
+
+VHMが作成されて設定されると、Taskomaticは、データ収集を自動的に実行します。 データ収集を手動で実行する場合、menu:システム[仮想ホストマネージャ]に移動し、適切なVHMを選択して［btn:[データの更新]］をクリックします。
+
+APIを使用してVHMに接続して仮想ホストの情報をリクエストできる[command]``virtual-host-gatherer``というツールが{productname}に付属しています。 [command]``virtual-host-gatherer``は、オプションモジュールの概念を維持していて、各モジュールが特定のVHMを有効にします。 このツールは、Taskomaticによって毎晩自動的に呼び出されます。 [command]``virtual-host-gatherer``ツールのログファイルは[path]``/var/log/rhn/gatherer.log``にあります。
+
+
+
+== VMWareでのSSLエラーのトラブルシューティング
+
+VMWareのインストール環境を設定中にSSLエラーが発生した場合、VMWareからCA証明書をダウンロードし、{productname}で信頼する必要があります。
+
+
+
+.プロシージャ: VMWare CA証明書を信頼する
+. VMWareインストール環境からCA証明書をダウンロードします。
+    そのためには、vCenterの{webui}にログインし、［btn:[Download trusted root CA certificates（信頼できるルートCA証明書のダウンロード）]］をクリックします。
+. ダウンロードしたCA証明書ファイルが``.zip``フォーマットの場合、アーカイブを抽出します。
+    証明書ファイルには拡張子として番号が含まれています。 たとえば、``certificate.0``のようになります。
+. 証明書ファイルを{productname}サーバにコピーし、[path]``/etc/pki/trust/anchors/``ディレクトリに保存します。
+. コピーした証明書のファイル名のサフィックスを``.crt``または``.pem``に変更します。
+. {productname}サーバのコマンドプロンプトで、CA証明書のレコードを更新します。
++
+----
+update-ca-certificates
+----

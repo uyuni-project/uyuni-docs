@@ -1,0 +1,166 @@
+[[activation-keys]]
+= 激活密钥
+
+将激活密钥与传统客户端和 Salt 客户端搭配使用可确保您的客户端拥有正确的软件权利、可连接到适当的频道以及订阅相关的组。 每个激活密钥都绑定到一个组织，您可以在创建密钥时设置此项。
+
+在 {productname} 中，激活密钥是一组带有标签的配置设置。 您可以通过将某个激活密钥的标签作为参数添加到引导脚本，来应用与该激活密钥关联的所有配置设置。 我们建议您结合引导脚本来使用激活密钥标签。 当执行引导脚本时，与该标签关联的所有配置设置都将应用到运行脚本的系统上。
+
+激活密钥可以指定以下各项：
+
+* 频道指派
+* 系统类型或附加权利
+* 联系方法
+* 配置文件
+* 要安装的软件包
+* 系统组
+
+Activation keys are used at the time a client is registered, and not used again. After the client has been registered, the client can be changed in any way, regardless of what the activation key specifies. The association between the activation key and the client is recorded only for historical purposes.
+
+image::provision-config-keys.png[scaledwidth=80%]
+
+
+
+.过程：创建激活密钥
+. 在 {productname} {webui} 中，以管理员身份导航到menu:系统[激活密钥]。
+. 单击 btn:[创建密钥] 按钮。
+. On the [guimenu]``Activation Key Details`` page, in the [guimenu]``Description`` field, enter a description of the activation key.
+. In the [guimenu]``Key`` field, enter a name for the activation key.
+    例如，``SLES12-SP4`` 表示 {sles}{nbsp}12{nbsp}SP4。
++
+[IMPORTANT]
+====
+对于任何 {suse} 产品，请不要在[guimenu]``密钥``字段中使用逗号。 不过，对于 Red Hat 产品，则 *必须* 使用逗号。 有关详细信息，请参见 xref:reference:systems/activation-keys.adoc[]。
+====
++
+. 在[guimenu]``基础频道``下拉框中，选择适当的基础软件频道，并允许填充相关子频道。
+    有关详细信息，请参见 xref:reference:admin/setup-wizard.adoc#vle.webui. admin.wizard.products[] 和 xref:administration:custom-channels.adoc[]。
+. 选择所需的子频道（例如，必需的 {susemgr} 工具和更新频道）。
+. Check the [guimenu]``Add-On System Types`` check box if you need to enable any of the options.
+. 建议您保留[guimenu]``默认``设置的[guimenu]``联系方法``。
+. 建议您将[guimenu]``统一默认``设置保留未选中状态。
+. 单击 btn:[创建激活密钥] 以创建激活密钥。
+. 选中[guimenu]``配置文件部署``复选框以对此密钥启用配置管理，然后单击 btn:[更新激活密钥] 保存此更改。
+
+[NOTE]
+====
+在您创建激活密钥前，[guimenu]``配置文件部署``复选框将不会显示。 如果您需要启用配置管理，请务必返回并选中该复选框。
+====
+
+
+
+== Combining Multiple Activation Keys
+
+在传统客户端上执行引导脚本时，可以组合多个激活密钥。 组合密钥可让您更好地控制系统上可以安装哪些产品，并可减少大型或复杂环境密钥的重复几率。
+
+[NOTE]
+====
+组合激活密钥仅可用于传统客户端。 Salt 客户端不支持组合激活密钥。 如果您对 Salt 客户端使用组合密钥，系统只会使用第一个密钥。
+====
+
+您可以在命令提示符处或在单个自动安装配置文件中指定多个激活密钥。
+
+在 {productname} 服务器的命令提示符处，使用 [command]``rhnreg_ks`` 命令并用逗号分隔密钥名称。 要在 {kickstart} 配置文件中指定多个密钥，请导航到menu:系统[自动安装]，然后编辑您要使用的配置文件。
+
+在组合激活密钥时需小心，因为如果某些值相互冲突，则可能会导致客户端注册失败。 开始前，请检查以下值，确保它们未包含冲突信息：
+
+* 软件包
+* 软件子频道
+* 配置频道
+
+如果检测到冲突，系统的处理方式如下：
+
+* 基础软件频道中的冲突：注册失败。
+* 系统类型中的冲突：注册失败。
+* `启用配置` 标志中的冲突：启用配置管理。
+* 如果其中一个密钥为系统特定密钥：注册失败。
+
+
+
+== 重新激活密钥
+
+重新激活密钥可用来重新注册客户端并重新获得所有 {productname} 设置，但只能使用一次。 重新激活密钥为客户端特定密钥，包含系统 ID、历史记录、组和频道。
+
+要创建重新激活密钥，请导航到[guimenu]``系统``，单击要为其创建重新激活密钥的客户端，然后导航到menu:细节[重新激活]选项卡。 单击 btn:[生成新密钥] 以创建重新激活密钥。 记录密钥细节以供日后使用。 与未与特定系统 ID 关联的典型激活密钥不同，此处创建的密钥不会显示在menu:系统[激活密钥]页面中。
+
+对于 Salt 客户端，当您创建重新激活密钥后，可在 [path]``/etc/salt/minion.d/susemanager. conf`` 中将其作为 ``management_key`` grain 使用。例如：
+
+----
+grains:
+    susemanager:
+         management_key: "re-1-daf44db90c0853edbb5db03f2b37986e"
+----
+
+重启动 [command]``salt-minion`` 进程以应用重新激活密钥。
+
+有关激活密钥的详细信息，请参见 xref:client-configuration:activation-keys.adoc[]。
+
+对于传统客户端，当您创建重新激活密钥后，可结合 [command]``rhnreg_ks`` 命令行实用程序使用该密钥。 此命令会重新注册客户端并恢复其 {productname} 设置。 在传统客户端上，您可以将重新激活密钥与激活密钥进行合并，以便为单个系统配置文件聚合多个密钥的设置。 例如：
+
+----
+rhnreg_ks --server=<server-url>/XMLRPC \
+          --activationkey=<reactivation-key>,<activationkey> \
+          --force
+----
+
+[WARNING]
+====
+如果您使用客户端现有的 {productname} 配置文件自动安装客户端，该配置文件会使用重新激活密钥来重新注册系统并恢复其设置。 请勿在正在进行基于配置文件的自动安装时重新生成、删除或使用此密钥， 否则会导致自动安装失败。
+====
+
+
+
+== 激活密钥最佳实践
+
+.默认父频道
+
+避免使用 [systemitem]``SUSE Manager Default`` 父频道。 此设置会强制 {productname} 选择与所安装操作系统最匹配的父频道，而这有时可能会导致非预期的行为。 请改为创建特定于每个发行套件和体系结构的激活密钥。
+
+.使用激活密钥引导
+
+如果您要使用引导脚本，请考虑为每个脚本创建一个激活密钥。 这有助于您调整频道指派、软件包安装、系统组成员资格和配置频道指派。 注册后，您需要与系统手动交互的情形也会减少。
+
+.带宽要求
+
+使用激活密钥可能导致在注册时自动下载软件，这对于存在带宽限制的环境来说可能并不适宜。
+
+下列选择会产生带宽用量：
+
+* 指派 SUSE Product Pool 频道会导致自动安装相应的产品描述符软件包。
+* 安装[guimenu]``软件包``部分中的所有软件包。
+* [guimenu]``配置``部分中的任何 Salt 状态都可能会触发下载，具体视其内容而定。
+
+.密钥标签命名
+
+如果您没有为激活密钥输入直观易懂的名称，系统会自动生成一串数字字符串，这会使得您的密钥难以管理。
+
+请考虑为您的激活密钥使用一种命名模式，以方便您进行跟踪。 设计与您组织的基础结构相关的名称有助于您更轻松地执行较复杂的操作。
+
+在创建密钥标签时，请考虑以下提示：
+
+* 操作系统命名（必需）：密钥应始终代表提供的设置所适用的操作系统
+* 体系结构命名（建议）：除非您的公司仅在一个体系结构上运行（例如 x86_64），否则最好提供含体系结构类型的标签。
+* 服务器类型命名：此服务器的用途是什么？
+* 位置命名：服务器位于何处？机房、建筑物或部门？
+* 日期命名：维护时段、季度等。
+* 自定义命名：哪种命名模式符合您组织的需求？
+
+激活密钥标签名称示例：
+
+----
+sles12-sp2-web_server-room_129-x86_64
+----
+
+----
+sles12-sp2-test_packages-blg_502-room_21-ppc64le
+----
+
+[IMPORTANT]
+====
+对于任何 {suse} 产品，请不要在[guimenu]``密钥``字段中使用逗号。 不过，对于 Red Hat 产品，则 *必须* 使用逗号。 有关详细信息，请参见 xref:reference:systems/activation-keys.adoc[]。
+====
+
+.包含的频道
+
+在创建激活密钥时，您还需要注意哪些软件频道与其关联。 应为密钥指派特定的基础频道， 不建议使用默认基础频道。 有关详细信息，请在 xref:client-configuration:registration-overview.adoc[] 中查看您要安装的客户端操作系统。
+
+

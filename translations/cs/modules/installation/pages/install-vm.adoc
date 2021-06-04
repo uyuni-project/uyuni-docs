@@ -1,0 +1,161 @@
+[[install-vm]]
+= Nainstalujte si SUSE Manager do prostředí virtuálních strojů s JeOS
+
+
+
+[[quickstart.sect.kvm.settings]]
+== Nastavení Virtual Machine Manager (virt-manager)
+
+Tato kapitola uvádí požadovaná nastavení virtuálního stroje jádra (Kernel Virtual Machine, KVM) pro instalaci {sle} Just enough Operating System (JeOS) jako základu pro {productname}. Jako chráněný prostor (sandbox) pro tuto instalaci bude použit KVM v kombinaci se Správcem virtuálního stroje (Virtual Machine Manager, _virt-manager_).
+
+
+Při vytváření nového virtuálního počítače pomocí *virt-manager* zadejte následující nastavení.
+
+[NOTE]
+====
+Tato tabulka uvádí minimální požadavky. Jsou vhodné pro rychlou testovací instalaci, například pro server s jedním klientem. Chcete-li použít produkční prostředí, zkontrolujte požadavky uvedené v dokumentu xref:hardware-requirements.adoc[].
+====
+
+V následující tabulce nahraďte _version_ skutečným řetězcem verze produktu. Obraz JeOS najdete na https://download.suse.com/.
+
+[cols="1,1", options="header"]
+|===
+2+<| Nastavení KVM
+| Instalační metoda | Importovat obraz existujícího disku
+| OS:                 | Linux
+| Verze:            | SLES_version_-JeOS-for-kvm-and-xen.x86_64-GM.qcow2
+| Paměť:             | 8192 MB
+| Počet CPU:              | 4
+| Formát paměti:     | _.qcow2_ 24 GB (Default) Kořenový oddíl JeOS
+| Virtuální disky:      |
+| Virt.IO disk 2       | 101 GB pro [path]``/var/spacewalk``
+| Virt.IO disk 3       | 50 GB pro [path]``/var/lib/pgsql``
+| Virt.IO disk 4       | 4 GB na odkládání
+| Název:               | test-nastav
+| Síť:             | Most _br0_
+|===
+
+.{sle} Průvodce virtualizací
+[NOTE]
+====
+Další informace o virtualizaci viz https://documentation.suse.com/sles/15-SP2/html/SLES-all/book-virt.html.
+====
+
+
+
+[[jeos.kvm.settings]]
+== Nastavení JeOS KVM
+
+Vytvořte další tři virtuální disky požadované pro úložné oddíly {productname}.
+
+.Postup: Vytvoření požadovaných oddílů s KVM
+. Vytvořte nový virtuální stroj použitím staženého obrazu JeOS KVM a vyberte [guimenu] ``Importovat existující obraz disku``.
+. Nakonfigurujte RAM a počet CPU (alespoň 8 GB RAM a 4 CPU).
+. Pojmenujte svůj KVM stroj a zaškrtněte možnost [guimenu]``Přizpůsobit konfiguraci před instalací``.
+. Stisknutím btn:[Přidat hardware] vytvoříte tři nové virtuální disky s těmito specifikacemi.
+    Tyto disky budou rozděleny na oddíly a připojeny v <<proc.jeos.susemgr.prep>>.
++
+
+[NOTE]
+====
+Hodnoty velikosti úložiště jsou absolutní minimum - vhodné pouze pro malou zkušební nebo demo instalaci. Zejména [path]``/var/spacewalk/`` může rychle potřebovat více místa. Zvažte také vytvoření samostatného oddílu pro [path]``/srv``, kde jsou uloženy obrazy Kiwi.
+====
++
+
+[cols="1,1,1", options="header"]
+|===
+| Virt.IO paměťové disky | Název    | Velikost
+| Virt.IO disk 2        | spacewalk | 101{nbsp}GB
+| Virt.IO disk 3        | pgsql     | 50{nbsp}GB
+| Virt.IO disk 4        | swap      | 4{nbsp}GB
+|===
+
+. Stisknutím btn:[Zahájit instalaci] spustíte nový virtuální počítač z obrazu JeOS.
+
+Podle pokynů dokončete základní instalaci JeOS, dokud nebude proces ukončen a příkazový řádek nebude čekat na zadání.
+
+Během základních výzev k instalaci budete vyzváni k zadání hesla superuživatele root. V dalším okně se zprávou stiskněte btn:[Potvrdit heslo uživatele root].
+
+
+
+[[jeos.susemgr.prep]]
+== Příprava JeOS na SUSE Manager
+
+[[proc.jeos.susemgr.prep]]
+.Postup: Příprava JeOS na instalaci {productname}
+
+. Přihlaste se jako `root`.
+
+. Odinstalujte balíček `sles-release`:
++
+
+----
+rpm -e --nodeps sles-release
+----
+
+. Zaregistrujte produkt {productname} u SCC (například nahraďte řetězec `<productnumber>` názvem `{productnumber}` a `<architecture>`architekturou `x86_64`):
++
+
+----
+SUSEConnect -e <EMAIL_ADDRESS> -r<SUSE_MANAGER_CODE> \
+ -p SUSE-Manager-Server/<productnumber>/<architecture>
+----
+
+. Přidejte úložiště {productname}:
++
+
+----
+SUSEConnect -p sle-module-basesystem/15.2/x86_64
+SUSEConnect -p sle-module-python2/15.2/x86_64
+SUSEConnect -p sle-module-server-applications/15.2/x86_64
+SUSEConnect -p sle-module-web-scripting/15.2/x86_64
+SUSEConnect -p sle-module-suse-manager-server/<productnumber>/x86_64
+----
++
+JeOS je nakonfigurován tak, aby instaloval pouze požadované balíčky. Chcete-li, aby všechny funkce fungovaly, měli byste povolit instalaci také doporučených balíčků. V `/etc/zypp/zypp.conf` změňte:
++
+
+----
+solver.onlyRequires = true
+----
++
+
+Na:
++
+----
+solver.onlyRequires = false
+----
+
+. Nainstalujte [package]#yast2-storage-ng# se všemi požadovanými závislostmi (přibližně 40 balíčků, 30 MB při instalaci).
+    Tento základní administrativní balíček je vyžadován pro přípravu diskových oddílů:
++
+
+----
+zypper in yast2-storage-ng
+----
+. Rozdělte na oddíly a připojte virtuální disky na tato místa pomocí {yast} Partitioner ([command]``yast2 disk``).
++
+
+[NOTE]
+====
+Hodnoty velikosti úložiště jsou absolutní minimum. Jsou vhodné pouze pro malou testovací nebo předváděcí instalaci, například server s jedním klientem. Zejména [path] ``/var/spacewalk/`` může rychle potřebovat více místa. Zvažte také vytvoření samostatného oddílu pro [path]``/srv``, kde jsou uloženy obrazy Kiwi.
+====
++
+[cols="1,1,1,1", options="header"]
+|===
+| Paměťové disky Virt.IO | Název                    | Velikost paměti | Typ systému souborů
+| Virt.IO disk 2        | [path]``/var/spacewalk`` | 101{nbsp}GB  | XFS
+| Virt.IO disk 3        | [path]``/var/lib/pgsql`` | 50{nbsp}GB   | XFS
+| Virt.IO disk 4        | [path]``swap``           | 4{nbsp}GB    | swap (odkládací)
+|===
+
+. Ukončete oddíl a nainstalujte vzor {productname} (přibližně 730 balíčků, po instalaci 1,4 GB diskového prostoru):
++
+
+----
+zypper in -t pattern suma_server
+----
+
+. Rebootujte.
+
+Další nastavení produktu {productname} viz xref:installation:server-setup.adoc[SUSE Manager Setup].

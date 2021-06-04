@@ -1,0 +1,162 @@
+[[contact-methods-pushssh]]
+= 通过 SSH 推送
+
+
+通过 SSH 推送方法用于传统客户端无法直接访问 {productname} 服务器的环境。 在此环境中，客户端位于受防火墙保护的区域，该区域称为 DMZ。 DMZ 内的所有系统均无权打开连至内部网络（包括 {productname} 服务器）的连接。
+
+通过 SSH 推送方法会创建一个加密隧道，该隧道从内部网络上的 {productname} 服务器连到位于 DMZ 中的客户端。 执行完所有操作和事件之后，该隧道即会关闭。
+
+服务器使用 SSH 定期联系客户端，以签入和执行安排的操作和事件。
+
+该联系方法只适用于传统客户端。 对于 Salt 客户端，请使用通过 Salt SSH 推送方法。
+
+
+[IMPORTANT]
+====
+在使用通过 SSH 推送方法管理的客户端上， 目前不支持使用置备模式重新安装系统。
+====
+
+
+下图说明了通过 SSH 推送的进程路径。 [systemitem]``Taskomatic`` 块左侧的各项表示在 {productname} 客户端上运行的进程。
+
+image::sshpush-taigon.png[scaledwidth=80%]
+
+
+要通过 SSH 实现隧道连接，需要两个可用的端口号，一个用于建立 HTTP 隧道，另一个用于通过 HTTPS 建立隧道（只有注册期间需使用 HTTP）。 默认会使用端口号 `1232` 和 `1233`。 要重写这些端口号，您可以在 [path]``/etc/rhn/rhn.conf`` 中添加两个大于 1024 的自定义端口号：
+
+----
+ssh_push_port_http = high_port_1
+ssh_push_port_https = high_port_2
+----
+
+
+如果您要使用客户端的主机名而非 IP 地址来联系客户端，请设置以下选项：
+
+----
+ssh_push_use_hostname = true
+----
+
+
+您还可以调整同时打开的客户端连接可使用的线程数。 默认使用两个并行线程。 请在 [path]``/etc/rhn/rhn. conf``: 中设置 [systemitem]``taskomatic.ssh_push_workers``
+
+----
+taskomatic.ssh_push_workers = number
+----
+
+
+出于安全原因，您可能需要结合使用 sudo 和 SSH，以非特权用户身份而不是 root 身份访问系统。
+
+
+.过程：配置非特权 SSH 访问
+. 确保您已在 {productname} 服务器上安装最新的 [path]``spacewalk-taskomatic`` 和 [path]``spacewalk-certs-tools`` 软件包。
+. 在每个客户端系统上，创建相应的非特权用户。
+. 在每个客户端系统上，打开 [path]``/etc/sudoers`` 文件，注释掉下面几行：
++
+----
+#Defaults targetpw   # ask for the password of the target user i.e. root
+#ALL    ALL=(ALL) ALL   # WARNING! Only use this together with 'Defaults targetpw'!
+----
+. 在每个客户端系统上，于 `用户特权指定` 部分添加下面几行：
++
+----
+<user> ALL=(ALL) NOPASSWD:/usr/sbin/mgr_check
+<user> ALL=(ALL) NOPASSWD:/home/<user>/enable.sh
+<user> ALL=(ALL) NOPASSWD:/home/<user>/bootstrap.sh
+----
+. 在每个客户端系统上，于 [path]``/home/<user>/.bashrc`` 文件中添加下面几行：
++
+----
+PATH=$PATH:/usr/sbin
+export PATH
+----
+. 在 {productname} 服务器上，于 [path]``/etc/rhn/rhn.conf`` 配置文件中添加或修改下面一行以包含非特权用户名：
++
+----
+ssh_push_sudo_user = <user>
+----
+
+
+由于客户端位于 DMZ 中并且无法访问服务器，您需要使用 [command]``mgr-ssh-push-init`` 工具将其注册到 {productname} 服务器。
+
+要使用该工具，您需要有客户端主机名或 IP 地址，以及 {productname} 服务器上的有效引导脚本的路径。 有关引导的详细信息，请参见 xref:client-configuration:registration-bootstrap.adoc[]。
+
+有关激活密钥的详细信息，请参见 xref:client-configuration:activation-keys.adoc[]。
+
+开始前，您需要确保已指定要用于 SSH 隧道的端口。 如果您在更改端口号之前已注册客户端，则需要再次注册客户端。
+
+[NOTE]
+====
+使用通过 SSH 推送方法管理的客户端无法直接访问服务器。 使用 [command]``mgr-ssh-push-init`` 工具时，[systemitem]``rhnsd`` 守护程序处于禁用状态。
+====
+
+
+.过程：使用通过 SSH 推送方法注册客户端
+. 在 {productname} 服务器上的命令提示符处，以 root 身份执行以下命令：
++
+----
+# mgr-ssh-push-init --client <client> --register \
+/srv/www/htdocs/pub/bootstrap/bootstrap_script --tunnel
+----
++
+可选：如果不想使用隧道，可以去除 [command]``--tunnel`` 选项。
+. 可选：如果您已定义 [command]``ssh_push_sudo_user``，可以添加 [command]``--notty`` 选项以允许使用 root 口令。
+. 校验 SSH 连接是否处于活动状态：
++
+----
+# ssh -i /root/.ssh/id_susemanager -R <high_port>:<susemanager>:443 \
+<client> zypper ref
+----
+
+
+
+.例如：使用 API 访问通过 SSH 推送方法
+
+您可以使用 API 来管理要使用的联系方法。 下面的示例 Python 代码将联系方法设为 ``ssh-push``。
+
+有效值为：
+
+* `default` (pull)
+* `ssh-push`
+* `ssh-push-tunnel`
+
+----
+client = xmlrpclib.Server(SUMA_HOST + "/rpc/api", verbose=0)
+key = client.auth.login(SUMA_LOGIN, SUMA_PASSWORD)
+client.system.setDetails(key, 1000012345, {'contact_method' : 'ssh-push'})
+----
+
+
+
+如果您要将某个已注册的客户端迁移为使用通过 SSH 推送方法，则需要执行一些额外的步骤。 您可以使用 [command]``mgr-ssh-push-init`` 工具来设置客户端。
+
+
+.过程：将已注册的系统迁移为通过 SSH 推送
+. 在 {productname} 服务器上的命令提示符处，以 root 身份设置客户端：
++
+----
+# mgr-ssh-push-init --client <client> \
+/srv/www/htdocs/pub/bootstrap/bootstrap_script --tunnel
+----
+. 使用 {productname} {webui} 将客户端的联系方法更改为 `ssh- push` 或 `ssh-push-tunnel`。
+. 可选：如果您需要编辑某个现有激活密钥，可以使用以下命令：
++
+----
+client.activationkey.setDetails(key, '1-mykey', {'contact_method' : 'ssh-push'})
+----
+
+
+
+对于使用代理进行连接的客户端，也可以使用通过 SSH 推送方法。 开始前，请确保您的代理已更新。
+
+.过程：使用通过 SSH 推送方法将客户端注册到代理
+. 在 {productname} 代理上的命令提示符处，以 root 身份设置客户端：
++
+----
+# mgr-ssh-push-init --client <client> \
+/srv/www/htdocs/pub/bootstrap/bootstrap_script --tunnel
+----
+. 在 {productname} 服务器上的命令提示符处，将 SSH 密钥复制到代理上：
++
+----
+mgr-ssh-push-init --client <proxy>
+----

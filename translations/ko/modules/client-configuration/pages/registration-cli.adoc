@@ -1,0 +1,60 @@
+[[registering-clients-cli]]
+= 명령줄에서 등록(Salt)
+
+
+In most cases, Salt clients are registered accurately with the default bootstrap methods. However, you can use Salt to register the client to the {productname} Server manually by editing the Salt minion file on the client, and providing the fully qualified domain name (FQDN) of the server. This method uses ports 4505 and 4506 inbound to the server. This method requires no configuration on the {productname} Server aside from ensuring that these ports are open.
+
+[NOTE]
+====
+기존 클라이언트의 경우 명령줄에서 등록하는 것도 가능하지만 그러려면 더 많은 단계를 거쳐야 합니다. 여기서는 이에 관해 다루지 않겠습니다. 부트스트랩 스크립트 절차를 사용해 기존 클라이언트를 등록하십시오. 자세한 내용은 xref:registration-bootstrap.adoc[]를 참조하십시오.
+====
+
+This procedure requires that you have installed the [package]``salt-minion`` package on the Salt client before registration. For SLE 12 based clients, you also must have activated the [systemitem]``Advanced Systems Management`` module.
+
+
+
+.절차: Salt Minion 구성 파일로 클라이언트 등록
+. On the Salt client, open the [literal]``minion`` configuration file. The configuration file is either located at:
++
+----
+/etc/salt/minion
+----
++
+또는
++
+----
+/etc/salt/minion.d/NAME.conf
+----
+. Add or edit the FQDN of the {productname} Server or of the Proxy as the `master`, and add the activation key to the client configuration file:
++
+----
+master: SERVER.EXAMPLE.COM
+server_id_use_src: adler42
+enable_legacy_startup_events: False
+enable_fqdns_grains: False
+grains:
+  susemanager:
+    activation_key: "<Activation_Key_Name>"
+----
+
+. 다음과 같이 [systemitem]``salt-minion`` 서비스를 재시작합니다.
++
+----
+systemctl restart salt-minion
+----
+. {productname} 서버에서 새로운 클라이언트 키를 수락하고, 다음과 같이 [systemitem]``<client>``를 클라이언트의 이름으로 교체합니다.
++
+----
+salt-key -a '<client>'
+----
+
+[path]``/etc/salt/minion`` 구성 파일에 대한 자세한 내용은 https://docs.saltstack.com/en/latest/ref/configuration/minion.html을 참조하십시오.
+
+
+[WARNING]
+====
+{centos}{nbsp}6, {oracle}{nbsp}6, {rhel}{nbsp}6 또는 {sleses}{nbsp}6 클라이언트를 등록하고 사용하려면 {productname} 서버가 이전 형식의 SSL 암호화를 지원하도록 구성해야 합니다. 이 오류를 해결하는 방법에 대한 자세한 내용은 xref:client-configuration:tshoot-clients.adoc[]에서 ``이전 클라이언트 등록``을 참조하십시오.
+====
+
+
+

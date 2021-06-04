@@ -1,0 +1,71 @@
+[[contact-methods-saltssh]]
+= 通过 Salt SSH 推送
+
+
+通过 Salt SSH 推送方法用于 Salt 客户端无法直接访问 {productname} 服务器的环境。 在此环境中，客户端位于受防火墙保护的区域，该区域称为 DMZ。 DMZ 内的所有系统均无权打开连至内部网络（包括 {productname} 服务器）的连接。
+
+通过 Salt SSH 推送方法会创建一个加密隧道，该隧道从内部网络上的 {productname} 服务器连到位于 DMZ 中的客户端。 执行完所有操作和事件之后，该隧道即会关闭。
+
+服务器使用 [command]``salt-ssh`` 工具定期联系客户端，以签入和执行安排的操作和事件。 有关 Salt SSH 的详细信息，请参见 xref:salt:salt-ssh.adoc[]。
+
+此联系方法只适用于 Salt 客户端。 对于传统客户端，请使用通过 SSH 推送方法。
+
+下图说明了通过 Salt SSH 推送的进程路径。 [systemitem]``Taskomatic`` 块左侧的各项表示在 {productname} 客户端上运行的进程。
+
+image::salt-ssh-contact-taigon.png[scaledwidth=80%]
+
+
+要使用通过 Salt SSH 推送方法，必须在客户端上运行 SSH 守护程序，并且 {productname} 服务器上运行的 [systemitem]``salt-api`` 守护程序必须能够访问 SSH 守护程序。 此外，远程系统上必须可以使用 Python，并且其为 Salt 支持的版本。
+
+[NOTE]
+====
+不支持 {rhel}{nbsp}5、{centos}{nbsp}5 及更早版本，因为它们使用的是不支持的 Python 版本。
+====
+
+
+.过程：使用通过 Salt SSH 推送方法注册客户端
+. 在 {productname} {webui} 中，导航到menu:系统[引导]，然后填写相应的字段。
+. 选择配置了通过 SSH 推送联系方法的激活密钥。
+    有关激活密钥的详细信息，请参见 xref:client-configuration:activation-keys.adoc[]。
+. 选中[systemitem]``完全通过 SSH 管理系统``复选框。
+. 单击 btn:[Bootstrap] 开始注册。
+. 导航到menu:系统[概览]，确认该系统已正确注册。
+
+
+
+== 可用参数
+
+如果您要配置通过 Salt SSH 推送方法，可以修改注册系统时使用的参数，包括主机、激活密钥和口令。 口令只能用于引导，不会保存在任何位置。 所有将来的 SSH 会话均通过密钥/证书对获得授权。 这些参数在menu:系统[引导]中配置。
+
+您也可以配置在系统范围使用的持久性参数，包括 sudo 用户。 有关配置 sudo 用户的详细信息，请参见 xref:client-configuration:contact-methods-pushssh.adoc[]。
+
+
+
+== 操作的执行
+
+通过 Salt SSH 推送功能使用 taskomatic 来通过 [command]``salt-ssh`` 执行安排的操作。 Taskomatic 作业会定期检查并执行安排的操作。 与传统客户端上的通过 SSH 推送方法不同，通过 Salt SSH 推送功能根据安排的操作执行完整的 [command]``salt- ssh`` 调用。
+
+默认可以同时执行 20 项 Salt SSH 操作。 您可以在配置文件中添加下面几行，并上调 ``parallel_threads`` 的值，以增加可同时执行的操作数。 建议您将并行操作数设置为较低的值，以免出现问题：
+
+----
+taskomatic.com.redhat.rhn.taskomatic.task.SSHMinionActionExecutor.parallel_threads = <number>
+org.quartz.threadPool.threadCount = <value of parallel_threads + 20>
+----
+
+这样可调整任何客户端上同时运行的操作数，以及 taskomatic 使用的工作器线程总数。 如果需要在多个客户端上运行操作，则每个客户端上的操作始终按顺序执行。
+
+如果客户端是通过代理连接的，则需要调整代理上的 ``MaxSessions`` 设置。 在此情况下，请将并行连接的数量设置为客户端总数的三倍。
+
+
+
+== 未来的功能
+
+有些针对通过 Salt SSH 推送的功能目前尚不受支持。 这些功能在 Salt SSH 客户端上不可用：
+
+* OpenSCAP 审计
+* 导致以下事件的信标：
+** 使用 [command]``zypper`` 在系统上安装软件包不会调用软件包刷新。
+** 如果虚拟主机系统基于 Salt SSH，则虚拟主机功能（例如 Guest 主机）将无法正常工作。
+
+
+有关 Salt SSH 的详细信息，请参见 https://docs.saltstack.com/en/latest/topics/ssh/。

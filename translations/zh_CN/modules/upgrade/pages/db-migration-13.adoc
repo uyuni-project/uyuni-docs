@@ -1,0 +1,103 @@
+[[db-migration-13]]
+= Database Migration from Version 10 or 12 to 13
+
+This section covers upgrading the PostgreSQL database from version{nbsp}10 or version{nbsp}12 to version{nbsp}13. If you are already using PostgreSQL 13, you do not need to perform this migration. If you are using an older version, such as version 9.6, see xref:upgrade:db-migration-10.adoc[].
+
+如果您要升级到最新的 {productname} 版本，则当前使用的必须是 PostgreSQL 版本 12 或 13，具体取决于底层操作系统：
+
+* 如果您运行的是 SLES 15 SP3，请使用 PostgreSQL 13。
+* 如果您运行的是 Leap 15.2，请使用 PostgreSQL 12。
+
+
+
+[[db-migration-13-prepare]]
+== 准备升级
+
+在开始升级前，准备现有 {productname} 服务器并创建数据库备份。
+
+PostgreSQL 将数据储存在 [path]``/var/lib/pgsql/data/`` 中。
+
+
+
+.过程：准备升级
+. 检查活动 PostgreSQL 版本：
++
+----
+psql --version
+----
++
+If you are using PostgreSQL{nbsp}10 or 12, you can upgrade to PostgreSQL{nbsp}13. If you are already using PostgreSQL version 13, you do not need to perform this migration.
+. 检查活动 smdba 版本：
++
+----
+rpm -q smdba
+----
++
+PostgreSQL{nbsp}13 需要 ``smdba`` 1.7.6 或更高版本。
+. 备份数据库。 有关备份的详细信息，请参见 xref:administration:backup-restore.adoc[]。
+
+
+
+[[db-migration-13-upgrade]]
+== 升级 PostgreSQL
+
+[WARNING]
+====
+在每次进行迁移前都需创建数据库备份。
+====
+
+升级 PostgreSQL 的方式有两种：常规升级或快速升级：
+
+常规升级会创建完整的数据库副本，因此需要两倍于现有数据库大小的可用空间。 常规升级可能需要大量时间，具体取决于数据库大小和储存系统的速度。
+
+快速升级只需要几分钟时间，并且几乎不会使用额外的磁盘空间。 但是，如果快速升级失败，则必须通过备份来恢复数据库。 快速升级可降低磁盘空间用尽的风险，但会增加数据丢失的风险（如果没有备份或备份无法重放）。 常规升级会复制数据库文件，而不是在文件之间创建硬链接。
+
+PostgreSQL 将数据储存在 [path]``/var/lib/pgsql/data/`` 中。
+
+
+
+.过程：执行常规升级
+. 备份数据库。 有关备份的详细信息，请参见 xref:administration:backup-restore.adoc[]。
+. Start the upgrade. If you have version 12, run:
++
+----
+/usr/lib/susemanager/bin/pg-migrate-12-to-13.sh
+----
++
+  If you have version 10, run:
++
+----
+/usr/lib/susemanager/bin/pg-migrate-10-to-13.sh
+----
+. When the upgrade has successfully completed, you can safely delete the old database directory and reclaim lost disk space. The old directory is renamed to [path]``/var/lib/pgsql/data-pg12`` or [path]``/var/lib/pgsql/data-pg10``, depending on the version you started from.
+
+The [path]``pg-migrate-12-to-13.sh`` or [path]``pg-migrate-10-to-13.sh`` script performs these operations:
+
+* 停止 spacewalk 服务
+* 关闭正在运行的数据库
+* 检查是否安装了 PostgreSQL{nbsp}13，并根据需要安装
+* Switch from previous version of PostgreSQL{nbsp} to PostgreSQL{nbsp}13 as the new default
+* 发起数据库迁移
+* 创建已针对 {productname} 优化的 PostgreSQL 配置文件
+* 启动数据库和 spacewalk 服务
+
+[NOTE]
+====
+如果升级失败，迁移脚本会尝试将数据库恢复其原始状态。
+====
+
+
+
+.过程：执行快速 PostgreSQL 升级
+. 备份数据库。 如果没有已经过校验的数据库备份，切勿启动快速升级。 有关备份的详细信息，请参见 xref:administration:backup-restore.adoc[]。
+. Start the upgrade. If you are migrating from version 12:
++
+----
+/usr/lib/susemanager/bin/pg-migrate-12-to-13.sh fast
+----
++  If you are migrating from version 10:
++
+----
+/usr/lib/susemanager/bin/pg-migrate-10-to-13.sh fast
+----
+. When the upgrade has successfully completed, you can safely delete the old database directory and reclaim lost disk space. The old directory is renamed to [path]``/var/lib/pgsql/data-pg12`` or [path]``/var/lib/pgsql/data-pg10``, depending on the version you started from..

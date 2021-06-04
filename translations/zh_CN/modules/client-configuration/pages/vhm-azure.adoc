@@ -1,0 +1,80 @@
+[[vhm-azure]]
+= VHM 和 Azure
+
+您可以使用虚拟主机管理器 (VHM) 收集 Microsoft Azure 中的实例。
+
+VHM 允许 {productname} 获取并报告有关您的虚拟机的信息。 有关 VHM 的详细信息，请参见 xref:client-configuration:vhm.adoc[]。
+
+
+
+== 创建 Azure VHM
+
+
+虚拟主机管理器 (VHM) 在 {productname} 服务器上运行。
+
+确保您已在 {productname} 服务器上安装 [systemitem]``virtual-host-gatherer-libcloud`` 软件包。
+
+
+.过程：创建 Azure VHM
+
+. 在 {productname} {webui} 中，导航到menu:系统[虚拟主机管理器]。
+. 单击 btn:[创建] 并从下拉菜单中选择 [guimenu]``Azure``。
+. 在[guimenu]``添加 Azure 虚拟主机管理器``部分，使用以下参数：
+* 在[guimenu]``标签``字段中，为 VHM 键入自定义名称。
+* 在[guimenu]``订阅 ID`` 字段中，键入 Azure 提供的订阅 ID。
+* 在[guimenu]``应用程序 ID`` 字段中，键入 Azure 提供的应用程序 ID。
+* 在[guimenu]``租户 ID`` 字段中，键入 Azure 提供的租户 ID。
+* 在[guimenu]``机密密钥``字段中，键入与 Azure 实例关联的机密密钥。
+* 在[guimenu]``区域``字段中，键入您的 VM 所在的区域。
+    要使订阅匹配功能正常工作，就必须提供此信息。
+. 单击 btn:[创建] 保存更改并创建 VHM。
+. 在[guimenu]``虚拟主机管理器``页面中，选择新 VHM。
+. 在[guimenu]``属性``页面中，单击 btn:[刷新数据] 以清点新 VHM。
+
+要查看已清点的对象和资源，请导航到menu:系统[系统列表 > 虚拟系统]。
+
+
+
+== 指派权限
+
+要让您创建的 VHM 访问 Azure VM，需要为其指派正确的权限。
+
+请以订阅管理员身份登录您的 Azure 帐户，并确保该 Azure 用户帐户和应用程序在正确的组中。 应用程序所在的组决定了应用程序所拥有的角色，因而决定了其拥有的权限。
+
+如果未正确设置权限，您在运行 [command]``virtual-host-gatherer`` 时可能会收到如下所示的错误：
+
+----
+一般错误：[AuthorizationFailed] 对象 ID 为 'object_ID' 的客户端 'client_name' 无权在 '/subscriptions/not-very-secret-subscription-id' 范围执行操作 'Microsoft.Compute/virtualMachines/read'，或该范围无效。如果访问权限是最近授予的，请刷新您的身份凭证。
+----
+
+要确定正确的身份凭证，请在 {productname} 服务器上的提示符处运行以下命令：
+
+----
+virtual-host-gatherer -i input_azure.json -o out_azure.json -vvv
+----
+
+[path]``input_azure.json`` 文件应包含以下信息：
+
+----
+[
+    {
+        "id": "azure_vhm",
+        "module": "Azure",
+        "subscription_id": "subscription-id",
+        "application_id": "application-id",
+        "tenant_id": "tenant-id",
+        "secret_key": "secret-key",
+        "zone": "zone"
+    }
+]
+----
+
+
+
+== Azure UUID
+
+在 Azure 公有云上运行的实例会向 {productname} 服务器报告如下 UUID：
+
+----
+13f56399-bd52-4150-9748-7190aae1ff21
+----

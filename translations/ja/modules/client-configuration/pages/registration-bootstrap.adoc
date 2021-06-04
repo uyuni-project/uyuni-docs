@@ -1,0 +1,130 @@
+[[registering.clients.bootstrap]]
+= ブートストラップスクリプトを使用してクライアントを登録する
+
+ブートストラップスクリプトでクライアントを登録すると、パラメータを制御できるようになり、同時に多数のクライアントを登録する必要がある場合に役立ちます。 このメソッドは、Saltクライアントと従来のクライアントの両方で動作します。
+
+ブートストラップスクリプトを使用してクライアントを登録するには、まずブートストラップスクリプトのテンプレートを作成することをお勧めします。このテンプレートはその後コピーして変更できます。 作成したブートストラップスクリプトは、登録時にクライアントで実行され、必要なパッケージがすべてクライアントに展開されていることを確認します。 ブートストラップスクリプトに含まれているパラメータがあります。このパラメータによって、クライアントシステムを、アクティベーションキーやGPGキーなどそのベースチャンネルに割り当てることができるようになります。
+
+リポジトリ情報を注意深く確認して、ベースチャンネルリポジトリと一致していることを確認することが重要です。 リポジトリ情報が正確に一致しないと、ブートストラップスクリプトは正しいパッケージをダウンロードできません。
+
+[NOTE]
+====
+SLE以外のすべてのクライアントおよびバージョン15より前のバージョンのSLEクライアントではブートストラップリポジトリが必要です。 ブートストラップリポジトリには、クライアントにSaltをインストールするためのパッケージ、Saltまたは従来のクライアントを登録するためのパッケージが用意されています。 ブートストラップリポジトリの作成については、xref:client-configuration:bootstrap-repository.adoc[]を参照してください。
+====
+
+{webui}を使用してSaltクライアントをブートストラップしている場合、まずクライアントシステムにPythonがインストールされていることを確認する必要があります。 {sles}{nbsp}12以前のバージョンを実行しているSaltクライアントでは、[package]``python-xml``パッケージも必要です。
+
+ifeval::[{uyuni-content} == true]
+[IMPORTANT]
+.GPGキーおよびUyuniクライアントツール
+====
+Uyuniクライアントツールで使用されるGPGキーは、デフォルトでは信頼されていません。 ブートストラップスクリプトを作成するとき、[systemitem]``ORG_GPG_KEY``パラメータを使用して公開鍵の指紋を含むファイルへのパスを追加します。
+====
+endif::[]
+
+[NOTE]
+.openSUSE Leap 15およびSLES 15およびPython 3
+====
+デフォルトではopenSUSE Leap 15およびSLE 15はPython 3を使用します。 Python 2に基づくブートストラップスクリプトは、openSUSE Leap 15システムおよびSLE 15システム用に再作成する必要があります。 Python 2を使用してopenSUSE Leap 15システムまたはSLE 15システムを登録する場合、ブートストラップスクリプトは失敗します。
+====
+
+
+
+== Create a Bootstrap Script from {webui}
+
+{productname}の{webui}を使用して、編集できるブートストラップスクリプトを作成できます。
+
+.プロシージャ: ブートストラップスクリプトの作成
+. {productname}の{webui}で、menu:管理[マネージャ設定 > ブートストラップスクリプト]に移動します。
+. ［[guimenu]``SUSE Manager Configuration - Bootstrap（SUSEマネージャ設定 - ブートストラップ）``］ダイアログで、従来のクライアントをインストールしている場合、［[guimenu]``Saltを使用するブートストラップ``］チェックボックスのチェックを外します。
+    Saltクライアントでは、チェックを付けたままにします。
+. 必須フィールドには、前のインストール手順から取り出した値が事前に入力されています。
+    各設定の詳細については、xref:reference:admin/bootstrap-script.adoc[]を参照してください。
+. Click btn:[Update] to create the script.
+. ブートストラップスクリプトが生成され、サーバの[path]``/srv/www/htdocs/pub/bootstrap``ディレクトリに保存されます。
+    または、HTTPS経由でブートストラップスクリプトにアクセスできます。 ``example.com``を{productname}サーバのホスト名に置き換えます。
+----
+https://<example.com>/pub/bootstrap/bootstrap.sh
+----
+
+
+[IMPORTANT]
+====
+ブートストラップスクリプトのSSLを無効にしないでください。 {webui}で［[guimenu]``Enable SSL（SSLの有効化）``］がチェックされていること、または設定`USING_SSL=1`がブートストラップスクリプトに存在していることを確認してください。 SSLを無効にすると、登録プロセスでカスタムSSL証明書が必要です。 カスタム証明書の詳細については、xref:administration:ssl-certs.adoc[]を参照してください。
+====
+
+
+[WARNING]
+====
+{centos}{nbsp}6、{oracle}{nbsp}6、{rhel}{nbsp}6、または{sleses}{nbsp}6の各クライアントを登録して使用するには、{productname}サーバを設定して旧式のSSL暗号化をサポートする必要があります。 このエラーを解決する方法については、``古いクライアントの登録``をxref:client-configuration:tshoot-clients.adoc[]で参照してください。
+====
+
+
+
+[[modify.bootstrap.script]]
+== ブートストラップスクリプトの編集
+
+作成したブートストラップスクリプトのテンプレートをコピーして変更し、カスタマイズできます。 {productname}で使用するためにブートストラップスクリプトを編集するときの最小要件は、アクティベーションキーを含めることです。 ほとんどのパッケージはGPGで署名されているため、信頼できるGPGキーをシステムで用意してインストールすることも必要です。
+
+このプロシージャでは、アクティベーションキーの正確な名前を知っている必要があります。 menu:ホーム[概要]に移動し、［[guimenu]``タスク``］ボックスで、［[guimenu]``アクティベーションキーの管理``］をクリックします。 チャンネル用に作成したすべてのキーがこのページに一覧表示されます。 ブートストラップスクリプトで使用するキーのフルネームを、キーフィールドに表示されているように正確に入力する必要があります。 アクティベーションキーの詳細については、xref:client-configuration:activation-keys.adoc[]を参照してください。
+
+
+
+.プロシージャ: ブートストラップスクリプトの変更
+. {productname}サーバのコマンドラインでrootとして、ブートストラップディレクトリを次のように変更します。
++
+----
+cd /srv/www/htdocs/pub/bootstrap/
+----
+. 各クライアントで使用するブートストラップスクリプトのテンプレートのコピーを2つ作成し、名前を変更します。
++
+----
+cp bootstrap.sh bootstrap-sles12.sh
+cp bootstrap.sh bootstrap-sles15.sh
+----
+. Open [path]``bootstrap-sles15.sh`` for modification.
+    次のテキストが表示されるまで下方にスクロールします。 ファイルに「``exit 1``」がある場合、その行の先頭にハッシュまたはポンド記号(&#35;)を入力してコメントアウトします。 これによって、スクリプトがアクティブになります。 ``ACTIVATION_KEYS=``フィールドにこのスクリプトのキーの名前を入力します。
++
+----
+echo "Enable this script: comment (with #'s) this block (or, at least  just"
+ echo "the exit below)"
+ echo
+ #exit 1
+
+# can be edited, but probably correct (unless created during initial install):
+# NOTE: ACTIVATION_KEYS *must* be used to bootstrap a client machine.
+ACTIVATION_KEYS=1-sles15
+ORG_GPG_KEY=
+----
+
+. 完了したら、ファイルを保存し、2つ目のブートストラップスクリプトでこの手順を繰り返します。
+
+
+
+== クライアントの接続
+
+スクリプトの作成を完了したら、このスクリプトを使用してクライアントを登録できます。
+
+
+.プロシージャ: ブートストラップスクリプトの実行
+. {productname}でrootとしてログインします。
+    コマンドプロンプトでブートストラップディレクトリに変更します。
++
+----
+cd /srv/www/htdocs/pub/bootstrap/
+----
+. 次のコマンドを実行して、クライアントでブートストラップスクリプトを実行します。[systemitem]`` EXAMPLE.COM``をクライアントのホスト名に置き換えます。
++
+----
+cat bootstrap-sles15.sh | ssh root@EXAMPLE.COM /bin/bash
+----
+このスクリプトは、前に作成したリポジトリディレクトリにある必要な依存関係をダウンロードします。
+. スクリプトの実行が完了すると、クライアントが正しく登録されたかどうかを確認できます。そのためには、{productname}の{webui}を開き、menu:システム[概要]に移動して、新しいクライアントがリストされていることを確認します。
+. If you used the script to register the Salt client, open the {productname} {webui} and navigate to menu:Salt[Keys] to accept the client key.
+
+[WARNING]
+====
+{productname}を使用してクライアントに新しいパッケージまたは更新がインストールされると、エンドユーザライセンスアグリーメント(EULA)が自動的に受け入れられます。 パッケージのEULAを確認するには、{webui}でパッケージ詳細ページを開きます。
+====
+
+
