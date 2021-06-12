@@ -459,8 +459,8 @@ pdf-quickstart-sap-uyuni: pdf-quickstart-sap-uyuni-en pdf-quickstart-sap-uyuni-z
 pdf-quickstart-uyuni-uyuni: pdf-quickstart-uyuni-uyuni-en pdf-quickstart-uyuni-uyuni-zh_CN # pdf-quickstart-uyuni-uyuni-es pdf-quickstart-uyuni-uyuni-cs pdf-quickstart-uyuni-uyuni-ja pdf-quickstart-uyuni-uyuni-ko
 
 include Makefile.en
-include Makefile.es
+#include Makefile.es
 include Makefile.zh_CN
-include Makefile.cs
+#include Makefile.cs
 include Makefile.ja
 include Makefile.ko
