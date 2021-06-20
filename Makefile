@@ -348,9 +348,9 @@ for-publication:
 
 .PHONY: set-html-language-selector-suma
 set-html-language-selector-suma:
-	$(call enable-suma-html-language-selector,zh_CN,china,china,Chinese)
-	$(call enable-suma-html-language-selector,ja,jaFlag,china,Japanese)
-	$(call enable-suma-html-language-selector,ko,koFlag,china,Korean)
+	$(call enable-suma-html-language-selector,zh_CN,china,china,中国人)
+	$(call enable-suma-html-language-selector,ja,jaFlag,japan,日本語)
+	$(call enable-suma-html-language-selector,ko,koFlag,korea,한국어)
 
 .PHONY: reset-html-language-selector-suma
 reset-html-language-selector-suma:
