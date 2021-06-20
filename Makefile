@@ -85,6 +85,18 @@ define antora-uyuni-function
 	DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) antora $(current_dir)/$(1)/uyuni-site.yml --generator antora-site-generator-lunr
 endef
 
+define fix-lunr-search-in-suma-translation
+	$(call fix-lunr-search-in-translation,suse-manager,$(1))
+endef
+
+define fix-lunr-search-in-uyuni-translation
+	$(call fix-lunr-search-in-translation,uyuni,$(1))
+endef
+
+define fix-lunr-search-in-translation
+	$(shell sed -i s,\/$(1)\/,\/$(2)\/$(1)\/,g $(CURDIR)/$(HTML_BUILD_DIR)/$(2)/search-index.js)
+endef
+
 define clean-function
 	if [ -d ./$(1) ]; then \
 		cd ./$(1) && rm -rf build/ \
@@ -340,11 +352,18 @@ validate-suma: validate-suma-en validate-suma-zh_CN validate-suma-ja validate-su
 pdf-tar-suma: pdf-tar-suma-en pdf-tar-suma-zh_CN pdf-tar-suma-ja pdf-tar-suma-ko # pdf-tar-suma-es pdf-tar-suma-cs
 
 .PHONY: antora-suma
-antora-suma: set-html-language-selector-suma antora-suma-en antora-suma-zh_CN antora-suma-ja antora-suma-ko reset-html-language-selector-suma # antora-suma-es antora-suma-cs
+antora-suma: set-html-language-selector-suma antora-suma-en antora-suma-zh_CN antora-suma-ja antora-suma-ko fix-lunr-search-in-suma-translations reset-html-language-selector-suma # antora-suma-es antora-suma-cs
 
 .PHONY: for-publication
 for-publication:
 	touch $(CURDIR)/for-publication
+
+.PHONY: fix-lunr-search-in-suma-translations
+fix-lunr-search-in-suma-translations:
+	$(call fix-lunr-search-in-suma-translation,en)
+	$(call fix-lunr-search-in-suma-translation,zh_CN)
+	$(call fix-lunr-search-in-suma-translation,ja)
+	$(call fix-lunr-search-in-suma-translation,ko)
 
 .PHONY: set-html-language-selector-suma
 set-html-language-selector-suma:
@@ -355,6 +374,13 @@ set-html-language-selector-suma:
 .PHONY: reset-html-language-selector-suma
 reset-html-language-selector-suma:
 	[ -d ".git" ] && git checkout $(SUPPLEMENTAL_FILES_SUMA)
+
+.PHONY: fix-lunr-search-in-uyuni-translations
+fix-lunr-search-in-uyuni-translations:
+	$(call fix-lunr-search-in-uyuni-translation,en)
+	$(call fix-lunr-search-in-uyuni-translation,zh_CN)
+	$(call fix-lunr-search-in-uyuni-translation,ja)
+	$(call fix-lunr-search-in-uyuni-translation,ko)
 
 .PHONY: set-html-language-selector-uyuni
 set-html-language-selector-uyuni:
@@ -413,7 +439,7 @@ validate-uyuni: validate-uyuni-en validate-uyuni-zh_CN validate-uyuni-ja validat
 pdf-tar-uyuni: pdf-tar-uyuni-en pdf-tar-uyuni-zh_CN pdf-tar-uyuni-ja pdf-tar-uyuni-ko # pdf-tar-uyuni-es pdf-tar-uyuni-cs
 
 .PHONY: antora-uyuni
-antora-uyuni: set-html-language-selector-uyuni antora-uyuni-en antora-uyuni-zh_CN  antora-uyuni-ja antora-uyuni-ko reset-html-language-selector-uyuni # antora-uyuni-es antora-uyuni-cs
+antora-uyuni: set-html-language-selector-uyuni antora-uyuni-en antora-uyuni-zh_CN  antora-uyuni-ja antora-uyuni-ko fix-lunr-search-in-uyuni-translations reset-html-language-selector-uyuni # antora-uyuni-es antora-uyuni-cs
 
 .PHONY: antora-uyuni-for-publication
 antora-uyuni-for-publication: for-publication antora-uyuni
