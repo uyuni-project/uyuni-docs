@@ -358,7 +358,9 @@ reset-html-language-selector-suma:
 
 .PHONY: set-html-language-selector-uyuni
 set-html-language-selector-uyuni:
-	$(call enable-uyuni-html-language-selector,zh_CN,china,china,Chinese)
+	$(call enable-uyuni-html-language-selector,zh_CN,china,china,中国人)
+	$(call enable-uyuni-html-language-selector,ja,jaFlag,japan,日本語)
+	$(call enable-uyuni-html-language-selector,ko,koFlag,korea,한국어)
 
 .PHONY: reset-html-language-selector-uyuni
 reset-html-language-selector-uyuni:
