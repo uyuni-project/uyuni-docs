@@ -32,7 +32,7 @@ prepare-antora-suma-$(LANGCODE_CS):
 	-mkdir -p $(LANGDIR_CS) && \
 	cp -a antora.yml $(LANGDIR_CS)/antora.yml && \
 	sed "s/\.\/branding/\.\.\/\.\.\/branding/;\
-	s/\-\ url\:\ https\:\/\/github.com\/uyuni-project\/uyuni-docs\.git/\-\ url\:\ \.\.\/\.\.\//;\
+	s/\-\ url\:\ \./\-\ url\:\ \.\.\/\.\.\//;\
 	s/start_path\:\ \./\start_path\:\ translations\/$(LANGCODE_CS)/;\
 	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/$(LANGCODE_CS)/;" suma-site.yml > $(LANGDIR_CS)/suma-site.yml && \
 	cd $(LANGDIR_CS) && \
