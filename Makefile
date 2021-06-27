@@ -162,6 +162,7 @@ define pdf-book-create
 		-a examplesdir=modules/$(6)/examples \
 		-a imagesdir=modules/$(6)/assets/images \
 		-a revdate="$(shell LANG=$(9) LC_ALL=$(9) LC_TYPE=$(9) date +'$(10)')" \
+		$(11) \
 		--base-dir . \
 		--out-file $(7)/$(5)_$(6)_guide.pdf \
 		modules/$(6)/nav-$(6)-guide.pdf.$(8).adoc
@@ -179,6 +180,7 @@ define pdf-book-create-uyuni
 		-a examplesdir=modules/$(6)/examples \
 		-a imagesdir=modules/$(6)/assets/images \
 		-a revdate="$(shell LANG=$(9) LC_ALL=$(9) LC_TYPE=$(9) date +'$(10)')" \
+		$(11) \
 		--base-dir . \
 		--out-file $(7)/$(5)_$(6)_guide.pdf \
 		modules/$(6)/nav-$(6)-guide.pdf.$(8).adoc
@@ -201,118 +203,118 @@ endef
 # SUMA PDF Books
 # Generate PDF version of the Installation Guide
 define pdf-install-product
-	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),installation,$(6),$(7),$(8),$(9))
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),installation,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Client Configuration Guide
 define pdf-client-configuration-product
-	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),client-configuration,$(6),$(7),$(8),$(9))
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),client-configuration,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Upgrade Guide
 define pdf-upgrade-product
-	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),upgrade,$(6),$(7),$(8),$(9))
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),upgrade,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Reference Guide
 define pdf-reference-product
-	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),reference,$(6),$(7),$(8),$(9))
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),reference,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Administration Guide
 define pdf-administration-product
-	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),administration,$(6),$(7),$(8),$(9))
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),administration,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Salt Guide
 define pdf-salt-product
-	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),salt,$(6),$(7),$(8),$(9))
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),salt,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Retail Guide
 define pdf-retail-product
-	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),retail,$(6),$(7),$(8),$(9))
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),retail,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Architecture Guide
 #define pdf-architecture-product
-#	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),architecture,$(6),$(7),$(8),$(9))
+#	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),architecture,$(6),$(7),$(8),$(9),$(10))
 #endef
 
 # Generate PDF version of the Public Cloud Guide
 define pdf-quickstart-public-cloud-product
-	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),quickstart-public-cloud,$(6),$(7),$(8),$(9))
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),quickstart-public-cloud,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the SAP Guide
 define pdf-quickstart-sap-product
-	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),quickstart-sap,$(6),$(7),$(8),$(9))
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),quickstart-sap,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Large Deployment Guide
 define pdf-large-deployment-product
-	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),large-deployments,$(6),$(7),$(8),$(9))
+	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),large-deployments,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # UYUNI PDF Books
 # Generate PDF version of the Installation Guide
 define pdf-install-product-uyuni
-	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),installation,$(6),$(7),$(8),$(9))
+	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),installation,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Client Configuration Guide
 define pdf-client-configuration-product-uyuni
-	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),client-configuration,$(6),$(7),$(8),$(9))
+	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),client-configuration,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Upgrade Guide
 define pdf-upgrade-product-uyuni
-	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),upgrade,$(6),$(7),$(8),$(9))
+	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),upgrade,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Reference Guide
 define pdf-reference-product-uyuni
-	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),reference,$(6),$(7),$(8),$(9))
+	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),reference,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Administration Guide
 define pdf-administration-product-uyuni
-	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),administration,$(6),$(7),$(8),$(9))
+	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),administration,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Salt Guide
 define pdf-salt-product-uyuni
-	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),salt,$(6),$(7),$(8),$(9))
+	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),salt,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Retail Guide
 define pdf-retail-product-uyuni
-	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),retail,$(6),$(7),$(8),$(9))
+	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),retail,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Architecture Guide
 #define pdf-architecture-product-uyuni
-#	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),architecture,$(6),$(7),$(8),$(9))
+#	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),architecture,$(6),$(7),$(8),$(9),$(10))
 #endef
 
 # Generate PDF version of the Public Cloud Guide
 define pdf-quickstart-public-cloud-product-uyuni
-	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),quickstart-public-cloud,$(6),$(7),$(8),$(9))
+	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),quickstart-public-cloud,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the SAP Guide
 define pdf-quickstart-sap-product-uyuni
-	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),quickstart-sap,$(6),$(7),$(8),$(9))
+	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),quickstart-sap,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Uyuni Guide
 define pdf-quickstart-uyuni-product-uyuni
-	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),quickstart-uyuni,$(6),$(7),$(8),$(9))
+	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),quickstart-uyuni,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Large Deployment Guide
 define pdf-large-deployment-product-uyuni
-	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),large-deployments,$(6),$(7),$(8),$(9))
+	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),large-deployments,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Help Menu
