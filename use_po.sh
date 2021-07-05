@@ -63,19 +63,19 @@ done
 # TODO: Merge this with the above (generating asciidoc from po files) to save some processing
 ####################################################################
 
-if [ -f $CURRENT_DIR/for-publication ]; then
-    for module in $(find $CURRENT_DIR/$PO_DIR -mindepth 1 -maxdepth 1 -type d -printf "%f\n"); do
-        for langpo in $(find $CURRENT_DIR/$PO_DIR/$module -mindepth 1 -maxdepth 1 -type f -name "*.po" -printf "%f\n"); do
-            lang=`basename $langpo .po`
-            untranslated_strings=`pocount-3.8 --csv $CURRENT_DIR/$PO_DIR/$module/$langpo | tail -n 1 | cut -d ',' -f 7 | sed -e 's/^[ \t]*//'`
-            if (($untranslated_strings > $TRANSLATION_THRESHOLD_STRINGS)); then
-                mkdir -p $CURRENT_DIR/$PUB_DIR/$lang/modules/$module
-                cp -a $CURRENT_DIR/modules/$module/* $CURRENT_DIR/$PUB_DIR/$lang/modules/$module
-                touch $CURRENT_DIR/$PUB_DIR/$lang/modules/$module/_overwritten-with-English
-            fi
-        done
-    done
-fi
+#if [ -f $CURRENT_DIR/for-publication ]; then
+#    for module in $(find $CURRENT_DIR/$PO_DIR -mindepth 1 -maxdepth 1 -type d -printf "%f\n"); do
+#        for langpo in $(find $CURRENT_DIR/$PO_DIR/$module -mindepth 1 -maxdepth 1 -type f -name "*.po" -printf "%f\n"); do
+#            lang=`basename $langpo .po`
+#            untranslated_strings=`pocount-3.8 --csv $CURRENT_DIR/$PO_DIR/$module/$langpo | tail -n 1 | cut -d ',' -f 7 | sed -e 's/^[ \t]*//'`
+#            if (($untranslated_strings > $TRANSLATION_THRESHOLD_STRINGS)); then
+#                mkdir -p $CURRENT_DIR/$PUB_DIR/$lang/modules/$module
+#                cp -a $CURRENT_DIR/modules/$module/* $CURRENT_DIR/$PUB_DIR/$lang/modules/$module
+#                touch $CURRENT_DIR/$PUB_DIR/$lang/modules/$module/_overwritten-with-English
+#            fi
+#        done
+#    done
+#fi
 
 ############################################################
 # COPY LOCALIZED SCREENSHOTS TO LOCALIZED ASCIIDOC DIRECTORY
