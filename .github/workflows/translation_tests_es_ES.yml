@@ -1,0 +1,54 @@
+name: translation_test_es_es
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  LANG: "es_ES.UTF-8"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: '[CHECKOUT] Master'
+      uses: actions/checkout@v1
+
+    - name: '[TOOLCHAIN] Set up Ruby 2.6'
+      uses: actions/setup-ruby@v1
+      with:
+        ruby-version: 2.6.x
+
+    - name: '[TOOLCHAIN] Set up NodeJS'
+      uses: actions/setup-node@v1
+      with:
+        node-version: '10.x'
+    #- run: npm install
+
+    - name: '[TOOLCHAIN] po4a'
+      run: |
+        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E77D14FE3C9A28E588A34E7469977F2B42813EC6
+        sudo add-apt-repository ppa:pgquiles/uyuni
+        sudo apt-get install -y po4a
+
+    - name: '[TOOLCHAIN] Install Asciidoctor and Asciidoctor PDF'
+      run: |
+        gem install asciidoctor
+        gem install asciidoctor-pdf --pre
+        sudo apt-get install -y graphicsmagick
+        sudo apt-get install -y libgraphicsmagick1-dev
+        gem install prawn-gmagick -v 0.0.9
+        gem install rouge
+        gem install pygments.rb
+        gem install coderay
+        asciidoctor --version
+        asciidoctor-pdf --version
+        
+    - name: '[BUILD] UYUNI Japanese PDF Documents'
+      run: |
+        sudo locale-gen es_ES.UTF-8
+        sudo update-locale LANG=es_ES.UTF-8
+        make pdf-all-uyuni-es
+
