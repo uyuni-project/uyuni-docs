@@ -33,12 +33,12 @@ prepare-antora-suma-$(LANGCODE_ES):
 	-mkdir -p $(LANGDIR_ES) && \
 	cp -a antora.yml $(LANGDIR_ES)/antora.yml && \
 	sed "s/\(url\:\ https\:\/\/documentation\.suse\.com\/suma\/4\.2\/\)/\1$(LANGCODE_ES)\//;\
-	s/\.\/branding/\.\.\/\.\.\/branding/;\
+	s/\.\/branding/\.\.\/branding/;\
 	s/\-\ url\:\ \./\-\ url\:\ \.\.\/\.\.\//;\
 	s/start_path\:\ \./\start_path\:\ translations\/$(LANGCODE_ES)/;\
 	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/$(LANGCODE_ES)/;" suma-site.yml > $(LANGDIR_ES)/suma-site.yml && \
 	cd $(LANGDIR_ES) && \
-	if [ ! -e branding ]; then ln -s ../../branding; fi && \
+	if [ ! -e branding ]; then ln -s ../branding; fi && \
 	cp -a $(CURDIR)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(CURDIR)/$(LANGDIR_ES)/modules/ROOT/pages/
 
 .PHONY: antora-suma-$(LANGCODE_ES)
@@ -174,12 +174,12 @@ prepare-antora-uyuni-$(LANGCODE_ES):
 	-mkdir -p $(LANGDIR_ES) && \
 	cp antora.yml $(LANGDIR_ES)/antora.yml && \
 	sed "s/\(url\:\ https\:\/\/www\.uyuni-project\.org\/uyuni-docs\/\)/\1\$\(LANGCODE_ES\)\//;\
-	s/\.\/branding/\.\.\/\.\.\/branding/;\
+	s/\.\/branding/\.\.\/branding/;\
 	s/\-\ url\:\ \./\-\ url\:\ \.\.\/\.\.\//;\
 	s/start_path\:\ \./\start_path\:\ translations\/$(LANGCODE_ES)/;\
 	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/$(LANGCODE_ES)/;" uyuni-site.yml > $(LANGDIR_ES)/uyuni-site.yml && \
 	cd $(LANGDIR_ES) && \
-	if [ ! -e branding ]; then ln -s ../../branding; fi && \
+	if [ ! -e branding ]; then ln -s ../branding; fi && \
 	cp -a $(CURDIR)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(CURDIR)/$(LANGDIR_ES)/modules/ROOT/pages/
 
 .PHONY: antora-uyuni-$(LANGCODE_ES)
