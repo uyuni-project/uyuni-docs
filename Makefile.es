@@ -32,7 +32,8 @@ pdf-tar-suma-$(LANGCODE_ES):
 prepare-antora-suma-$(LANGCODE_ES):
 	-mkdir -p $(LANGDIR_ES) && \
 	cp -a antora.yml $(LANGDIR_ES)/antora.yml && \
-	sed "s/\.\/branding/\.\.\/\.\.\/branding/;\
+	sed "s/\(url\:\ https\:\/\/documentation\.suse\.com\/suma\/4\.2\/\)/\1$(LANGCODE_ES)\//;\
+	s/\.\/branding/\.\.\/\.\.\/branding/;\
 	s/\-\ url\:\ \./\-\ url\:\ \.\.\/\.\.\//;\
 	s/start_path\:\ \./\start_path\:\ translations\/$(LANGCODE_ES)/;\
 	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/$(LANGCODE_ES)/;" suma-site.yml > $(LANGDIR_ES)/suma-site.yml && \
@@ -172,7 +173,8 @@ pdf-tar-uyuni-$(LANGCODE_ES):
 prepare-antora-uyuni-$(LANGCODE_ES):
 	-mkdir -p $(LANGDIR_ES) && \
 	cp antora.yml $(LANGDIR_ES)/antora.yml && \
-	sed "s/\.\/branding/\.\.\/\.\.\/branding/;\
+	sed "s/\(url\:\ https\:\/\/www\.uyuni-project\.org\/uyuni-docs\/\)/\1\$\(LANGCODE_ES\)\//;\
+	s/\.\/branding/\.\.\/\.\.\/branding/;\
 	s/\-\ url\:\ \./\-\ url\:\ \.\.\/\.\.\//;\
 	s/start_path\:\ \./\start_path\:\ translations\/$(LANGCODE_ES)/;\
 	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/$(LANGCODE_ES)/;" uyuni-site.yml > $(LANGDIR_ES)/uyuni-site.yml && \
