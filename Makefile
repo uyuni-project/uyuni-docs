@@ -125,7 +125,7 @@ endef
 # $(4) language name as the user will see it in the selector
 # $(5) supplemental files directory (theme directory)
 define enable-html-language-selector
-	sed -n -i 'p; s,<\!--\ LANGUAGESELECTOR\ -->,<a role=\"button\" class=\"navbar-item\" id=\"$(1)\" onclick="selectLanguage(this.id)"><img src="{{uiRootPath}}/img/$(2).svg" class="langIcon $(3)">\&nbsp;$(4)</a>,p' $(5)
+	sed -n -i 'p; s,<\!--\ LANGUAGESELECTOR\ -->,<a role=\"button\" class=\"navbar-item\" id=\"$(1)\" onclick="selectLanguage(this.id)"><img src="{{uiRootPath}}/img/$(2).svg" class="langIcon $(3)">\&nbsp;$(4)</a>,p' translations/$(5)
 endef
 
 define enable-suma-html-language-selector
@@ -344,6 +344,11 @@ pot:
 translations:
 	$(current_dir)/use_po.sh
 
+.PHONY: copy-branding
+copy-branding:
+	mkdir -p $(CURDIR)/translations
+	cp -a $(CURDIR)/branding $(CURDIR)/translations/branding
+
 .PHONY: clean
 clean: clean-en clean-zh_CN clean-ja clean-ko # clean-es clean-cs
 
@@ -354,7 +359,7 @@ validate-suma: validate-suma-en validate-suma-zh_CN validate-suma-ja validate-su
 pdf-tar-suma: pdf-tar-suma-en pdf-tar-suma-zh_CN pdf-tar-suma-ja pdf-tar-suma-ko # pdf-tar-suma-es pdf-tar-suma-cs
 
 .PHONY: antora-suma
-antora-suma: set-html-language-selector-suma antora-suma-en antora-suma-zh_CN antora-suma-ja antora-suma-ko fix-lunr-search-in-suma-translations reset-html-language-selector-suma # antora-suma-es antora-suma-cs
+antora-suma: copy-branding set-html-language-selector-suma antora-suma-en antora-suma-zh_CN antora-suma-ja antora-suma-ko fix-lunr-search-in-suma-translations # antora-suma-es antora-suma-cs
 
 .PHONY: for-publication
 for-publication:
@@ -373,10 +378,6 @@ set-html-language-selector-suma:
 	$(call enable-suma-html-language-selector,ja,jaFlag,japan,日本語)
 	$(call enable-suma-html-language-selector,ko,koFlag,korea,한국어)
 
-.PHONY: reset-html-language-selector-suma
-reset-html-language-selector-suma:
-	[ -d ".git" ] && git checkout $(SUPPLEMENTAL_FILES_SUMA)
-
 .PHONY: fix-lunr-search-in-uyuni-translations
 fix-lunr-search-in-uyuni-translations:
 	$(call fix-lunr-search-in-uyuni-translation,en)
@@ -389,10 +390,6 @@ set-html-language-selector-uyuni:
 	$(call enable-uyuni-html-language-selector,zh_CN,china,china,中国人)
 	$(call enable-uyuni-html-language-selector,ja,jaFlag,japan,日本語)
 	$(call enable-uyuni-html-language-selector,ko,koFlag,korea,한국어)
-
-.PHONY: reset-html-language-selector-uyuni
-reset-html-language-selector-uyuni:
-	[ -d ".git" ] && git checkout $(SUPPLEMENTAL_FILES_UYUNI)
 
 .PHONY: antora-suma-for-publication
 antora-suma-for-publication: for-publication antora-suma
@@ -443,7 +440,7 @@ validate-uyuni: validate-uyuni-en validate-uyuni-zh_CN validate-uyuni-ja validat
 pdf-tar-uyuni: pdf-tar-uyuni-en pdf-tar-uyuni-zh_CN pdf-tar-uyuni-ja pdf-tar-uyuni-ko # pdf-tar-uyuni-es pdf-tar-uyuni-cs
 
 .PHONY: antora-uyuni
-antora-uyuni: set-html-language-selector-uyuni antora-uyuni-en antora-uyuni-zh_CN  antora-uyuni-ja antora-uyuni-ko fix-lunr-search-in-uyuni-translations reset-html-language-selector-uyuni # antora-uyuni-es antora-uyuni-cs
+antora-uyuni: copy-branding set-html-language-selector-uyuni antora-uyuni-en antora-uyuni-zh_CN  antora-uyuni-ja antora-uyuni-ko fix-lunr-search-in-uyuni-translations # antora-uyuni-es antora-uyuni-cs
 
 .PHONY: antora-uyuni-for-publication
 antora-uyuni-for-publication: for-publication antora-uyuni
