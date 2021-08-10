@@ -24,8 +24,14 @@ Check with the docs squad coordinator for confirmation.
 - [ ] Release Manager accepts package.
 - [ ] Create the PR to publish Uyuni to gh-pages: https://github.com/uyuni-project/uyuni-docs/tree/gh-pages. Add the release engineer as the assignee, and use a label with current Uyuni version. **Do not merge, the release engineer will do it**
 
+## API Docs
 
-## Release Day:
+- [ ] Obtain API doc RPM
+- [ ] Add asciidoc sources to api project
+- [ ] Check the diff and verify there were no additions to the navigation links (New API calls)
+- [ ] Create a new gh-pages-uyuni-YYYY.MM branch for the API docs and supply Julio with PR
 
-- [ ] Build docs from release branch and visually check output.
+## Release Day:- 
 - [ ] When endpoints are live, visually check output.
+
+
