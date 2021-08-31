@@ -38,8 +38,8 @@ PDF_THEME_UYUNI ?= uyuni
 # UYUNI Chinese PDF Theme
 PDF_THEME_UYUNI_CJK ?= uyuni-cjk
 
-SUPPLEMENTAL_FILES_SUMA=$(shell grep supplemental_files suma-site.yml | grep -v \#supplemental_files | cut -d ':' -f 2 | sed "s, ,,g")/partials/header-content.hbs
-SUPPLEMENTAL_FILES_UYUNI=$(shell grep supplemental_files uyuni-site.yml | grep -v \#supplemental_files | cut -d ':' -f 2 | sed "s, ,,g")/partials/header-content.hbs
+SUPPLEMENTAL_FILES_SUMA=$(shell grep supplemental_files suma-site.yml | cut -d ':' -f 2 | sed "s, ,,g")/partials/header-content.hbs
+SUPPLEMENTAL_FILES_UYUNI=$(shell grep supplemental_files uyuni-site.yml | cut -d ':' -f 2 | sed "s, ,,g")/partials/header-content.hbs
 	
 #REVDATE ?= "$(shell date +'%B %d, %Y')"
 CURDIR ?= .

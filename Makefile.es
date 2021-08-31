@@ -42,7 +42,7 @@ prepare-antora-suma-$(LANGCODE_ES):
 	cp -a $(CURDIR)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(CURDIR)/$(LANGDIR_ES)/modules/ROOT/pages/
 
 .PHONY: antora-suma-$(LANGCODE_ES)
-antora-suma-$(LANGCODE_ES): clean-$(LANGCODE_ES) pdf-all-suma-$(LANGCODE_ES) pdf-tar-suma-$(LANGCODE_ES)
+antora-suma-$(LANGCODE_ES): clean-$(LANGCODE_ES) repare-antora-suma-$(LANGCODE_ES) pdf-all-suma-$(LANGCODE_ES) pdf-tar-suma-$(LANGCODE_ES)
 #	$(call enable-suma-in-antorayml,.)
 	$(call antora-suma-function,$(LANGDIR_ES),$(LANGCODE_ES))
 
@@ -183,7 +183,7 @@ prepare-antora-uyuni-$(LANGCODE_ES):
 	cp -a $(CURDIR)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(CURDIR)/$(LANGDIR_ES)/modules/ROOT/pages/
 
 .PHONY: antora-uyuni-$(LANGCODE_ES)
-antora-uyuni-$(LANGCODE_ES): clean-$(LANGCODE_ES) pdf-all-uyuni-$(LANGCODE_ES) pdf-tar-uyuni-$(LANGCODE_ES)
+antora-uyuni-$(LANGCODE_ES): clean-$(LANGCODE_ES) prepare-antora-uyuni-$(LANGCODE_ES) pdf-all-uyuni-$(LANGCODE_ES) pdf-tar-uyuni-$(LANGCODE_ES)
 	$(call antora-uyuni-function,$(LANGDIR_ES),$(LANGCODE_ES))
 
 .PHONY: obs-packages-uyuni-$(LANGCODE_ES)
