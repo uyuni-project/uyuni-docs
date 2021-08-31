@@ -98,23 +98,10 @@ define fix-lunr-search-in-translation
 endef
 
 define clean-function
-	if [ -d ./$(1) ]; then \
-		cd ./$(1) && rm -rf build/ \
-		translations/ \
-		.cache/ \
-		public/ \
-		modules/installation/nav-installation-guide.pdf.$(2).adoc \
-		modules/client-configuration/nav-client-configuration-guide.pdf.$(2).adoc \
-		modules/upgrade/nav-upgrade-guide.pdf.$(2).adoc \
-		modules/reference/nav-reference-guide.pdf.$(2).adoc \
-		modules/administration/nav-administration-guide.pdf.$(2).adoc \
-		modules/salt/nav-salt-guide.pdf.$(2).adoc \
-		modules/retail/nav-retail-guide.pdf.$(2).adoc \
-		modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.$(2).adoc \
-		modules/large-deployments/nav-large-deployments-guide.pdf.$(2).adoc \
-		modules/quickstart-sap/nav-quickstart-sap-guide.pdf.$(2).adoc \
-		modules/quickstart-uyuni/nav-quickstart-uyuni-guide.pdf.$(2).adoc; \
-	fi
+	rm -rf build/$(2)  #e.g. build/en
+	rm -rf $(1)        #e.g. translations/en
+	rm -rf translations/$(2)/branding 
+	find . -name "*pdf.$(2).adoc" -type f -exec rm -f {} \;
 endef
 
 # Enable HTML language selector
