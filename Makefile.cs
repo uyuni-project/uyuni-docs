@@ -4,8 +4,8 @@ LOCALE_CS=cs_CZ.UTF-8
 GNUDATEFORMAT_CS=%e. %B %Y
 ASCIIDOCTOR_PDF_ADDITIONAL_ATTRIBUTES_CS=
 
-HTML_BUILD_DIR_CS := $(CURDIR)/build/$(LANGCODE_CS)
-PDF_BUILD_DIR_CS := $(CURDIR)/build/$(LANGCODE_CS)/pdf
+HTML_BUILD_DIR_CS := $(current_dir)/build/$(LANGCODE_CS)
+PDF_BUILD_DIR_CS := $(current_dir)/build/$(LANGCODE_CS)/pdf
 
 # SUMA OBS Tarball Filenames
 HTML_OUTPUT_SUMA_CS ?= susemanager-docs_cs
@@ -38,15 +38,15 @@ pdf-tar-suma-$(LANGCODE_CS):
 
 .PHONY: prepare-antora-suma-$(LANGCODE_CS)
 prepare-antora-suma-$(LANGCODE_CS): copy-branding-$(LANGCODE_CS)
-	-mkdir -p $(LANGDIR_CS) && \
+	mkdir -p $(current_dir)/$(LANGDIR_CS) && \
 	cp -a antora.yml $(LANGDIR_CS)/antora.yml && \
 	sed "s/\(url\:\ https\:\/\/documentation\.suse\.com\/suma\/4\.2\/\)/\1$(LANGCODE_CS)\//;\
 	s/\-\ url\:\ \./\-\ url\:\ \.\.\/\.\.\//;\
 	s/start_path\:\ \./\start_path\:\ translations\/$(LANGCODE_CS)/;\
 	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/$(LANGCODE_CS)/;" suma-site.yml > $(LANGDIR_CS)/suma-site.yml && \
-	cd $(LANGDIR_CS) && \
-	if [ ! -e branding ]; then ln -s ../branding; fi && \
-	cp -a $(CURDIR)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(CURDIR)/$(LANGDIR_CS)/modules/ROOT/pages/
+	mkdir -p $(current_dir)/$(LANGDIR_CS)/modules/ROOT/pages/ &&\
+	find modules/ -maxdepth 1 -name "*" -type d -exec mkdir -p $(current_dir)/$(LANGDIR_CS)/{} \; && \
+	cp -a $(current_dir)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(current_dir)/$(LANGDIR_CS)/modules/ROOT/pages/
 
 .PHONY: antora-suma-$(LANGCODE_CS)
 antora-suma-$(LANGCODE_CS): clean-$(LANGCODE_CS) prepare-antora-suma-$(LANGCODE_CS) pdf-all-suma-$(LANGCODE_CS) pdf-tar-suma-$(LANGCODE_CS)
@@ -178,15 +178,15 @@ pdf-tar-uyuni-$(LANGCODE_CS):
 
 .PHONY: prepare-antora-uyuni-$(LANGCODE_CS)
 prepare-antora-uyuni-$(LANGCODE_CS): copy-branding-$(LANGCODE_CS)
-	-mkdir -p $(LANGDIR_CS) && \
+	mkdir -p $(current_dir)/$(LANGDIR_CS) && \
 	cp antora.yml $(LANGDIR_CS)/antora.yml && \
 	sed "s/\(url\:\ https\:\/\/www\.uyuni-project\.org\/uyuni-docs\/\)/\1$(LANGCODE_CS)\/;\
 	s/\-\ url\:\ \./\-\ url\:\ \.\.\/\.\.\//;\
 	s/start_path\:\ \./\start_path\:\ translations\/$(LANGCODE_CS)/;\
 	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/$(LANGCODE_CS)/;" uyuni-site.yml > $(LANGDIR_CS)/uyuni-site.yml && \
-	cd $(LANGDIR_CS) && \
-	if [ ! -e branding ]; then ln -s ../branding; fi && \
-	cp -a $(CURDIR)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(CURDIR)/$(LANGDIR_CS)/modules/ROOT/pages/
+	mkdir -p $(current_dir)/$(LANGDIR_CS)/modules/ROOT/pages/ &&\
+	find modules/ -maxdepth 1 -name "*" -type d -exec mkdir -p $(current_dir)/$(LANGDIR_CS)/{} \; && \
+	cp -a $(current_dir)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(current_dir)/$(LANGDIR_CS)/modules/ROOT/pages/
 
 .PHONY: antora-uyuni-$(LANGCODE_CS)
 antora-uyuni-$(LANGCODE_CS): clean-$(LANGCODE_CS) prepare-antora-uyuni-$(LANGCODE_CS) pdf-all-uyuni-$(LANGCODE_CS) pdf-tar-uyuni-$(LANGCODE_CS)

@@ -53,8 +53,9 @@ current_dir := $(dir $(mkfile_path))
 
 # Function definition
 define validate-product
-	cd ./$(1)
+	cd $(current_dir)/$(1)
 	NODE_PATH="$(npm -g root)" antora --generator @antora/xref-validator $(2)
+	cd $(current_dir)
 endef
 
 define enable-suma-in-antorayml
@@ -64,25 +65,29 @@ define enable-suma-in-antorayml
 	s/^ # *\(title: *SUSE Manager\)/\1/;\
 	s/^ *\(title: *Uyuni\)/#\1/;\
 	s/^ *\(name: *uyuni\)/#\1/;" $(current_dir)/$(1)/antora.yml
+	cd $(current_dir)
 endef
 
 define antora-suma-function
 	$(call enable-suma-in-antorayml,$(1)) && \
-	DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) antora $(current_dir)/$(1)/suma-site.yml --generator antora-site-generator-lunr
+	cd ./$(1) && DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) antora $(current_dir)/$(1)/suma-site.yml --generator antora-site-generator-lunr
+	cd $(current_dir)
 endef
 
 define enable-uyuni-in-antorayml
 #	$(call reset-html-language-selector-uyuni)
-	cd ./$(1) && \
+	cd $(current_dir)/$(1) && \
 	sed -i "s/^ *\(name: *suse-manager\)/#\1/;\
 	s/^ *\(title: *SUSE Manager\)/#\1/;\
 	s/^ *# *\(title: *Uyuni\)/\1/;\
 	s/^ *# *\(name: *uyuni\)/\1/;" $(current_dir)/$(1)/antora.yml
+	cd $(current_dir)
 endef
 
 define antora-uyuni-function
 	$(call enable-uyuni-in-antorayml,$(1)) && \
-	DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) antora $(current_dir)/$(1)/uyuni-site.yml --generator antora-site-generator-lunr
+	cd ./$(1) && DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) antora $(current_dir)/$(1)/uyuni-site.yml --generator antora-site-generator-lunr
+	cd $(current_dir)
 endef
 
 define fix-lunr-search-in-suma-translation
@@ -94,7 +99,7 @@ define fix-lunr-search-in-uyuni-translation
 endef
 
 define fix-lunr-search-in-translation
-	$(shell sed -i s,\/$(1)\/,\/$(2)\/$(1)\/,g $(CURDIR)/$(HTML_BUILD_DIR)/$(2)/search-index.js)
+	$(shell sed -i s,\/$(1)\/,\/$(2)\/$(1)\/,g $(current_dir)/$(HTML_BUILD_DIR)/$(2)/search-index.js)
 endef
 
 define clean-function
@@ -124,20 +129,19 @@ endef
 
 # Create tar of PDF files
 define pdf-tar-product
-#	cd ./$(HTML_BUILD_DIR) && tar -czvf $(2).tar.gz $(shell realpath --relative-to=`pwd`/$(HTML_BUILD_DIR) $(3)) && mv $(2).tar.gz $(1)/
-	cd ./$(HTML_BUILD_DIR) && zip -r9 $(2).zip $(shell realpath --relative-to=`pwd`/$(HTML_BUILD_DIR) $(3)) && mv $(2).zip $(1)/
+	cd $(current_dir)/$(HTML_BUILD_DIR) && zip -r9 $(2).zip $(shell realpath --relative-to=`pwd`/$(HTML_BUILD_DIR) $(3)) && mv $(2).zip $(1)/ && cd $(current_dir)
 endef
 
 # Generate OBS tar files
 define obs-packages-product
-	tar --exclude='$(2)' -czvf $(3).tar.gz -C $(CURDIR) $(HTML_BUILD_DIR)/$(1) && tar -czvf $(4).tar.gz -C $(CURDIR) $(HTML_BUILD_DIR)/$(2)
+	tar --exclude='$(2)' -czvf $(3).tar.gz -C $(current_dir) $(HTML_BUILD_DIR)/$(1) && tar -czvf $(4).tar.gz -C $(current_dir) $(HTML_BUILD_DIR)/$(2)
 	mkdir -p build/packages
 	mv $(3).tar.gz $(4).tar.gz build/packages
 endef
 
 # SUMA Book Builder
 define pdf-book-create
-	cd ./$(1) && LANG=$(9) LC_ALL=$(9) LC_TYPE=$(9) asciidoctor-pdf \
+	cd $(current_dir)/$(1) && LANG=$(9) LC_ALL=$(9) LC_TYPE=$(9) asciidoctor-pdf \
 		-r $(current_dir)/extensions/xref-converter.rb \
 		-a lang=$(8) \
 		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
@@ -152,10 +156,11 @@ define pdf-book-create
 		--base-dir . \
 		--out-file $(7)/$(5)_$(6)_guide.pdf \
 		modules/$(6)/nav-$(6)-guide.pdf.$(8).adoc
+	cd $(current_dir)
 endef
 
 define pdf-book-create-uyuni
-	cd ./$(1) && LANG=$(9) LC_ALL=$(9) LC_TYPE=$(9) asciidoctor-pdf \
+	cd $(current_dir)/$(1) && LANG=$(9) LC_ALL=$(9) LC_TYPE=$(9) asciidoctor-pdf \
 		-r $(current_dir)/extensions/xref-converter.rb \
 		-a lang=$(8) \
 		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
@@ -170,19 +175,23 @@ define pdf-book-create-uyuni
 		--base-dir . \
 		--out-file $(7)/$(5)_$(6)_guide.pdf \
 		modules/$(6)/nav-$(6)-guide.pdf.$(8).adoc
+	cd $(current_dir)
 endef
 
 define clean-branding
-        rm -rf $(CURDIR)/translations/$(1)/branding
+	cd $(current_dir)
+        rm -rf $(current_dir)/translations/$(1)/branding
 endef
 	
 define copy-branding
-        mkdir -p $(CURDIR)/translations/$(1)
-        cp -a $(CURDIR)/branding $(CURDIR)/translations/$(1)/
+	cd $(current_dir)
+        mkdir -p $(current_dir)/translations/$(1)
+        cp -a $(current_dir)/branding $(current_dir)/translations/$(1)/
 endef
 	
 # Create an Index
 define pdf-book-create-index
+	cd $(current_dir)
 	sed -E  -e 's/\*\*\*\*\*\ xref\:(.*)\.adoc\[(.*)\]/include\:\:modules\/$(2)\/pages\/\1\.adoc\[leveloffset\=\+4\]/' \
 		-e 's/\*\*\*\*\ xref\:(.*)\.adoc\[(.*)\]/include\:\:modules\/$(2)\/pages\/\1\.adoc\[leveloffset\=\+3\]/' \
 		-e 's/\*\*\*\ xref\:(.*)\.adoc\[(.*)\]/include\:\:modules\/$(2)\/pages\/\1\.adoc\[leveloffset\=\+2\]/' \
@@ -198,36 +207,43 @@ endef
 # SUMA PDF Books
 # Generate PDF version of the Installation Guide
 define pdf-install-product
+	cd $(current_dir)
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),installation,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Client Configuration Guide
 define pdf-client-configuration-product
+	cd $(current_dir)
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),client-configuration,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Upgrade Guide
 define pdf-upgrade-product
+	cd $(current_dir)
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),upgrade,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Reference Guide
 define pdf-reference-product
+	cd $(current_dir)
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),reference,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Administration Guide
 define pdf-administration-product
+	cd $(current_dir)
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),administration,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Salt Guide
 define pdf-salt-product
+	cd $(current_dir)
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),salt,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Retail Guide
 define pdf-retail-product
+	cd $(current_dir)
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),retail,$(6),$(7),$(8),$(9),$(10))
 endef
 
@@ -238,52 +254,62 @@ endef
 
 # Generate PDF version of the Public Cloud Guide
 define pdf-quickstart-public-cloud-product
+	cd $(current_dir)
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),quickstart-public-cloud,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the SAP Guide
 define pdf-quickstart-sap-product
+	cd $(current_dir)
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),quickstart-sap,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Large Deployment Guide
 define pdf-large-deployment-product
+	cd $(current_dir)
 	$(call pdf-book-create,$(1),$(2),$(3),$(4),$(5),large-deployments,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # UYUNI PDF Books
 # Generate PDF version of the Installation Guide
 define pdf-install-product-uyuni
+	cd $(current_dir)
 	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),installation,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Client Configuration Guide
 define pdf-client-configuration-product-uyuni
+	cd $(current_dir)
 	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),client-configuration,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Upgrade Guide
 define pdf-upgrade-product-uyuni
+	cd $(current_dir)
 	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),upgrade,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Reference Guide
 define pdf-reference-product-uyuni
+	cd $(current_dir)
 	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),reference,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Administration Guide
 define pdf-administration-product-uyuni
+	cd $(current_dir)
 	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),administration,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Salt Guide
 define pdf-salt-product-uyuni
+	cd $(current_dir)
 	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),salt,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Retail Guide
 define pdf-retail-product-uyuni
+	cd $(current_dir)
 	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),retail,$(6),$(7),$(8),$(9),$(10))
 endef
 
@@ -294,21 +320,25 @@ endef
 
 # Generate PDF version of the Public Cloud Guide
 define pdf-quickstart-public-cloud-product-uyuni
+	cd $(current_dir)
 	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),quickstart-public-cloud,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the SAP Guide
 define pdf-quickstart-sap-product-uyuni
+	cd $(current_dir)
 	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),quickstart-sap,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Uyuni Guide
 define pdf-quickstart-uyuni-product-uyuni
+	cd $(current_dir)
 	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),quickstart-uyuni,$(6),$(7),$(8),$(9),$(10))
 endef
 
 # Generate PDF version of the Large Deployment Guide
 define pdf-large-deployment-product-uyuni
+	cd $(current_dir)
 	$(call pdf-book-create-uyuni,$(1),$(2),$(3),$(4),$(5),large-deployments,$(6),$(7),$(8),$(9),$(10))
 endef
 
@@ -332,33 +362,33 @@ help: ## Prints a basic help menu about available targets
 
 .PHONY: pot
 pot:
-	(cd l10n-weblate && ./update-cfg-files)
+	(cd $(current_dir)/l10n-weblate && ./update-cfg-files)
 	$(current_dir)/make_pot.sh
-
+	cd $(current_dir)
 .PHONY: translations
 translations:
 	$(current_dir)/use_po.sh
 
 .PHONY: copy-branding
 copy-branding:
-	mkdir -p $(CURDIR)/translations
-	cp -a $(CURDIR)/branding $(CURDIR)/translations/branding
+	mkdir -p $(current_dir)/translations
+	cp -a $(current_dir)/branding $(current_dir)/translations/
 
 .PHONY: clean
-clean: clean-en clean-zh_CN clean-ja clean-ko # clean-es clean-cs
+clean: clean-en clean-zh_CN clean-ja clean-ko clean-es clean-cs
 
 .PHONY: validate-suma
-validate-suma: validate-suma-en validate-suma-zh_CN validate-suma-ja validate-suma-ko # validate-suma-es validate-suma-cs
+validate-suma: validate-suma-en validate-suma-zh_CN validate-suma-ja validate-suma-ko validate-suma-es validate-suma-cs
 
 .PHONY: pdf-tar-suma
-pdf-tar-suma: pdf-tar-suma-en pdf-tar-suma-zh_CN pdf-tar-suma-ja pdf-tar-suma-ko # pdf-tar-suma-es pdf-tar-suma-cs
+pdf-tar-suma: pdf-tar-suma-en pdf-tar-suma-zh_CN pdf-tar-suma-ja pdf-tar-suma-ko pdf-tar-suma-es pdf-tar-suma-cs
 
 .PHONY: antora-suma
-antora-suma: copy-branding set-html-language-selector-suma antora-suma-en antora-suma-zh_CN antora-suma-ja antora-suma-ko fix-lunr-search-in-suma-translations # antora-suma-es antora-suma-cs
+antora-suma: copy-branding set-html-language-selector-suma antora-suma-en antora-suma-zh_CN antora-suma-ja antora-suma-ko fix-lunr-search-in-suma-translations antora-suma-es antora-suma-cs
 
 .PHONY: for-publication
 for-publication:
-	touch $(CURDIR)/for-publication
+	touch $(current_dir)/for-publication
 
 .PHONY: fix-lunr-search-in-suma-translations
 fix-lunr-search-in-suma-translations:
@@ -366,6 +396,8 @@ fix-lunr-search-in-suma-translations:
 	$(call fix-lunr-search-in-suma-translation,zh_CN)
 	$(call fix-lunr-search-in-suma-translation,ja)
 	$(call fix-lunr-search-in-suma-translation,ko)
+	$(call fix-lunr-search-in-suma-translation,es)
+	$(call fix-lunr-search-in-suma-translation,cs)
 
 .PHONY: set-html-language-selector-suma
 set-html-language-selector-suma:
@@ -379,6 +411,8 @@ fix-lunr-search-in-uyuni-translations:
 	$(call fix-lunr-search-in-uyuni-translation,zh_CN)
 	$(call fix-lunr-search-in-uyuni-translation,ja)
 	$(call fix-lunr-search-in-uyuni-translation,ko)
+	$(call fix-lunr-search-in-uyuni-translation,es)
+	$(call fix-lunr-search-in-uyuni-translation,cs)
 
 .PHONY: set-html-language-selector-uyuni
 set-html-language-selector-uyuni:
@@ -390,101 +424,101 @@ set-html-language-selector-uyuni:
 antora-suma-for-publication: for-publication antora-suma
 
 .PHONY: obs-packages-suma
-obs-packages-suma: obs-packages-suma-en obs-packages-suma-zh_CN obs-packages-suma-ja obs-packages-suma-ko # obs-packages-suma-es obs-packages-suma-cs
+obs-packages-suma: obs-packages-suma-en obs-packages-suma-zh_CN obs-packages-suma-ja obs-packages-suma-ko obs-packages-suma-es obs-packages-suma-cs
 
 .PHONY: pdf-all-suma
-pdf-all-suma: pdf-all-suma-en pdf-all-suma-zh_CN pdf-all-suma-ja pdf-all-suma-ko # pdf-all-suma-es pdf-all-suma-cs
+pdf-all-suma: pdf-all-suma-en pdf-all-suma-zh_CN pdf-all-suma-ja pdf-all-suma-ko pdf-all-suma-es pdf-all-suma-cs
 
 .PHONY: pdf-install-suma
-pdf-install-suma: pdf-install-suma-en pdf-install-suma-zh_CN pdf-install-suma-ja pdf-install-suma-ko # pdf-install-suma-es pdf-install-suma-cs 
+pdf-install-suma: pdf-install-suma-en pdf-install-suma-zh_CN pdf-install-suma-ja pdf-install-suma-ko pdf-install-suma-es pdf-install-suma-cs 
 
 .PHONY: pdf-client-configuration-suma
-pdf-client-configuration-suma: pdf-client-configuration-suma-en pdf-client-configuration-suma-zh_CN pdf-client-configuration-suma-ja pdf-client-configuration-suma-ko # pdf-client-configuration-suma-es pdf-client-configuration-suma-cs 
+pdf-client-configuration-suma: pdf-client-configuration-suma-en pdf-client-configuration-suma-zh_CN pdf-client-configuration-suma-ja pdf-client-configuration-suma-ko pdf-client-configuration-suma-es pdf-client-configuration-suma-cs 
 
 .PHONY: pdf-upgrade-suma
-pdf-upgrade-suma: pdf-upgrade-suma-en pdf-upgrade-suma-zh_CN pdf-upgrade-suma-ja pdf-upgrade-suma-ko # pdf-upgrade-suma-es pdf-upgrade-suma-cs 
+pdf-upgrade-suma: pdf-upgrade-suma-en pdf-upgrade-suma-zh_CN pdf-upgrade-suma-ja pdf-upgrade-suma-ko pdf-upgrade-suma-es pdf-upgrade-suma-cs 
 
 .PHONY: pdf-reference-suma
-pdf-reference-suma: pdf-reference-suma-en pdf-reference-suma-zh_CN pdf-reference-suma-ja pdf-reference-suma-ko # pdf-reference-suma-es pdf-reference-suma-cs 
+pdf-reference-suma: pdf-reference-suma-en pdf-reference-suma-zh_CN pdf-reference-suma-ja pdf-reference-suma-ko pdf-reference-suma-es pdf-reference-suma-cs 
 
 .PHONY: pdf-administration-suma
-pdf-administration-suma: pdf-administration-suma-en pdf-administration-suma-zh_CN pdf-administration-suma-ja pdf-administration-suma-ko # pdf-administration-suma-es pdf-administration-suma-cs 
+pdf-administration-suma: pdf-administration-suma-en pdf-administration-suma-zh_CN pdf-administration-suma-ja pdf-administration-suma-ko pdf-administration-suma-es pdf-administration-suma-cs 
 
 .PHONY: pdf-salt-suma
-pdf-salt-suma: pdf-salt-suma-en pdf-salt-suma-zh_CN pdf-salt-suma-ja pdf-salt-suma-ko # pdf-salt-suma-es pdf-salt-suma-cs
+pdf-salt-suma: pdf-salt-suma-en pdf-salt-suma-zh_CN pdf-salt-suma-ja pdf-salt-suma-ko pdf-salt-suma-es pdf-salt-suma-cs
 
 .PHONY: pdf-retail-suma
-pdf-retail-suma: pdf-retail-suma-en pdf-retail-suma-zh_CN pdf-retail-suma-ja pdf-retail-suma-ko # pdf-retail-suma-es pdf-retail-suma-cs
+pdf-retail-suma: pdf-retail-suma-en pdf-retail-suma-zh_CN pdf-retail-suma-ja pdf-retail-suma-ko pdf-retail-suma-es pdf-retail-suma-cs
 
 .PHONY: pdf-large-deployment-suma
-pdf-large-deployment-suma: pdf-large-deployment-suma-en pdf-large-deployment-suma-zh_CN pdf-large-deployment-suma-ja pdf-large-deployment-suma-ko # pdf-large-deployment-suma-es pdf-large-deployment-suma-cs
+pdf-large-deployment-suma: pdf-large-deployment-suma-en pdf-large-deployment-suma-zh_CN pdf-large-deployment-suma-ja pdf-large-deployment-suma-ko pdf-large-deployment-suma-es pdf-large-deployment-suma-cs
 
 #.PHONY: pdf-architecture-suma
 #pdf-architecture-suma: pdf-architecture-suma-en pdf-architecture-suma-es pdf-architecture-suma-zh_CN pdf-architecture-suma-cs
 
 .PHONY: pdf-quickstart-public-cloud-suma
-pdf-quickstart-public-cloud-suma: pdf-quickstart-public-cloud-suma-en pdf-quickstart-public-cloud-suma-zh_CN pdf-quickstart-public-cloud-suma-ja pdf-quickstart-public-cloud-suma-ko # pdf-quickstart-public-cloud-suma-es pdf-quickstart-public-cloud-suma-cs
+pdf-quickstart-public-cloud-suma: pdf-quickstart-public-cloud-suma-en pdf-quickstart-public-cloud-suma-zh_CN pdf-quickstart-public-cloud-suma-ja pdf-quickstart-public-cloud-suma-ko pdf-quickstart-public-cloud-suma-es pdf-quickstart-public-cloud-suma-cs
 
 .PHONY: pdf-quickstart-sap-suma
-pdf-quickstart-sap-suma: pdf-quickstart-sap-suma-en pdf-quickstart-sap-suma-zh_CN pdf-quickstart-sap-suma-ja pdf-quickstart-sap-suma-ko # pdf-quickstart-sap-suma-es pdf-quickstart-sap-suma-cs
+pdf-quickstart-sap-suma: pdf-quickstart-sap-suma-en pdf-quickstart-sap-suma-zh_CN pdf-quickstart-sap-suma-ja pdf-quickstart-sap-suma-ko pdf-quickstart-sap-suma-es pdf-quickstart-sap-suma-cs
 
 .PHONY: validate-uyuni
-validate-uyuni: validate-uyuni-en validate-uyuni-zh_CN validate-uyuni-ja validate-uyuni-ko # validate-uyuni-es validate-uyuni-cs
+validate-uyuni: validate-uyuni-en validate-uyuni-zh_CN validate-uyuni-ja validate-uyuni-ko validate-uyuni-es validate-uyuni-cs
 
 .PHONY: pdf-tar-uyuni
-pdf-tar-uyuni: pdf-tar-uyuni-en pdf-tar-uyuni-zh_CN pdf-tar-uyuni-ja pdf-tar-uyuni-ko # pdf-tar-uyuni-es pdf-tar-uyuni-cs
+pdf-tar-uyuni: pdf-tar-uyuni-en pdf-tar-uyuni-zh_CN pdf-tar-uyuni-ja pdf-tar-uyuni-ko pdf-tar-uyuni-es pdf-tar-uyuni-cs
 
 .PHONY: antora-uyuni
-antora-uyuni: copy-branding set-html-language-selector-uyuni antora-uyuni-en antora-uyuni-zh_CN  antora-uyuni-ja antora-uyuni-ko fix-lunr-search-in-uyuni-translations # antora-uyuni-es antora-uyuni-cs
+antora-uyuni: copy-branding set-html-language-selector-uyuni antora-uyuni-en antora-uyuni-zh_CN  antora-uyuni-ja antora-uyuni-ko fix-lunr-search-in-uyuni-translations antora-uyuni-es antora-uyuni-cs
 
 .PHONY: antora-uyuni-for-publication
 antora-uyuni-for-publication: for-publication antora-uyuni
 
 .PHONY: obs-packages-uyuni
-obs-packages-uyuni: obs-packages-uyuni-en obs-packages-uyuni-zh_CN obs-packages-uyuni-ja obs-packages-uyuni-ko # obs-packages-uyuni-es obs-packages-uyuni-cs
+obs-packages-uyuni: obs-packages-uyuni-en obs-packages-uyuni-zh_CN obs-packages-uyuni-ja obs-packages-uyuni-ko obs-packages-uyuni-es obs-packages-uyuni-cs
 
 .PHONY: pdf-all-uyuni
-pdf-all-uyuni: pdf-all-uyuni-en pdf-all-uyuni-zh_CN pdf-all-uyuni-ja pdf-all-uyuni-ko # pdf-all-uyuni-es pdf-all-uyuni-cs
+pdf-all-uyuni: pdf-all-uyuni-en pdf-all-uyuni-zh_CN pdf-all-uyuni-ja pdf-all-uyuni-ko pdf-all-uyuni-es pdf-all-uyuni-cs
 
 .PHONY: pdf-install-uyuni
-pdf-install-uyuni: pdf-install-uyuni-en pdf-install-uyuni-zh_CN pdf-install-uyuni-ja pdf-install-uyuni-ko # pdf-install-uyuni-es pdf-install-uyuni-cs
+pdf-install-uyuni: pdf-install-uyuni-en pdf-install-uyuni-zh_CN pdf-install-uyuni-ja pdf-install-uyuni-ko pdf-install-uyuni-es pdf-install-uyuni-cs
 
 .PHONY: pdf-client-configuration-uyuni
-pdf-client-configuration-uyuni: pdf-client-configuration-uyuni-en pdf-client-configuration-uyuni-zh_CN pdf-client-configuration-uyuni-ja pdf-client-configuration-uyuni-ko # pdf-client-configuration-uyuni-es pdf-client-configuration-uyuni-cs
+pdf-client-configuration-uyuni: pdf-client-configuration-uyuni-en pdf-client-configuration-uyuni-zh_CN pdf-client-configuration-uyuni-ja pdf-client-configuration-uyuni-ko pdf-client-configuration-uyuni-es pdf-client-configuration-uyuni-cs
 
 .PHONY: pdf-upgrade-uyuni
-pdf-upgrade-uyuni: pdf-upgrade-uyuni-en pdf-upgrade-uyuni-zh_CN pdf-upgrade-uyuni-ja pdf-upgrade-uyuni-ko # pdf-upgrade-uyuni-es pdf-upgrade-uyuni-cs
+pdf-upgrade-uyuni: pdf-upgrade-uyuni-en pdf-upgrade-uyuni-zh_CN pdf-upgrade-uyuni-ja pdf-upgrade-uyuni-ko pdf-upgrade-uyuni-es pdf-upgrade-uyuni-cs
 
 .PHONY: pdf-reference-uyuni
-pdf-reference-uyuni: pdf-reference-uyuni-en pdf-reference-uyuni-zh_CN pdf-reference-uyuni-ja pdf-reference-uyuni-ko # pdf-reference-uyuni-es pdf-reference-uyuni-cs
+pdf-reference-uyuni: pdf-reference-uyuni-en pdf-reference-uyuni-zh_CN pdf-reference-uyuni-ja pdf-reference-uyuni-ko pdf-reference-uyuni-es pdf-reference-uyuni-cs
 
 .PHONY: pdf-administration-uyuni
-pdf-administration-uyuni: pdf-administration-uyuni-en pdf-administration-uyuni-zh_CN pdf-administration-uyuni-ja pdf-administration-uyuni-ko # pdf-administration-uyuni-es pdf-administration-uyuni-cs
+pdf-administration-uyuni: pdf-administration-uyuni-en pdf-administration-uyuni-zh_CN pdf-administration-uyuni-ja pdf-administration-uyuni-ko pdf-administration-uyuni-es pdf-administration-uyuni-cs
 
 .PHONY: pdf-salt-uyuni
-pdf-salt-uyuni: pdf-salt-uyuni-en pdf-salt-uyuni-zh_CN pdf-salt-uyuni-ja pdf-salt-uyuni-ko # pdf-salt-uyuni-es pdf-salt-uyuni-cs
+pdf-salt-uyuni: pdf-salt-uyuni-en pdf-salt-uyuni-zh_CN pdf-salt-uyuni-ja pdf-salt-uyuni-ko pdf-salt-uyuni-es pdf-salt-uyuni-cs
 
 .PHONY: pdf-retail-uyuni
-pdf-retail-uyuni: pdf-retail-uyuni-en pdf-retail-uyuni-zh_CN pdf-retail-uyuni-ja pdf-retail-uyuni-ko # pdf-retail-uyuni-es pdf-retail-uyuni-cs
+pdf-retail-uyuni: pdf-retail-uyuni-en pdf-retail-uyuni-zh_CN pdf-retail-uyuni-ja pdf-retail-uyuni-ko pdf-retail-uyuni-es pdf-retail-uyuni-cs
 
 .PHONY: pdf-large-deployment-uyuni
-pdf-large-deployment-uyuni: pdf-large-deployment-uyuni-en pdf-large-deployment-uyuni-zh_CN pdf-large-deployment-uyuni-ja pdf-large-deployment-uyuni-ko # pdf-large-deployment-uyuni-es pdf-large-deployment-uyuni-cs
+pdf-large-deployment-uyuni: pdf-large-deployment-uyuni-en pdf-large-deployment-uyuni-zh_CN pdf-large-deployment-uyuni-ja pdf-large-deployment-uyuni-ko pdf-large-deployment-uyuni-es pdf-large-deployment-uyuni-cs
 
 #.PHONY: pdf-architecture-uyuni
 #pdf-architecture-uyuni: pdf-architecture-uyuni-en pdf-architecture-uyuni-es pdf-architecture-uyuni-cs
 
 .PHONY: pdf-quickstart-public-cloud-uyuni
-pdf-quickstart-public-cloud-uyuni: pdf-quickstart-public-cloud-uyuni-en pdf-quickstart-public-cloud-uyuni-zh_CN pdf-quickstart-public-cloud-uyuni-ja pdf-quickstart-public-cloud-uyuni-ko # pdf-quickstart-public-cloud-uyuni-es pdf-quickstart-public-cloud-uyuni-cs
+pdf-quickstart-public-cloud-uyuni: pdf-quickstart-public-cloud-uyuni-en pdf-quickstart-public-cloud-uyuni-zh_CN pdf-quickstart-public-cloud-uyuni-ja pdf-quickstart-public-cloud-uyuni-ko pdf-quickstart-public-cloud-uyuni-es pdf-quickstart-public-cloud-uyuni-cs
 
 .PHONY: pdf-quickstart-sap-uyuni
-pdf-quickstart-sap-uyuni: pdf-quickstart-sap-uyuni-en pdf-quickstart-sap-uyuni-zh_CN pdf-quickstart-sap-uyuni-ja pdf-quickstart-sap-uyuni-ko # pdf-quickstart-sap-uyuni-es pdf-quickstart-sap-uyuni-cs
+pdf-quickstart-sap-uyuni: pdf-quickstart-sap-uyuni-en pdf-quickstart-sap-uyuni-zh_CN pdf-quickstart-sap-uyuni-ja pdf-quickstart-sap-uyuni-ko pdf-quickstart-sap-uyuni-es pdf-quickstart-sap-uyuni-cs
 
 .PHONY: pdf-quickstart-uyuni-uyuni
-pdf-quickstart-uyuni-uyuni: pdf-quickstart-uyuni-uyuni-en pdf-quickstart-uyuni-uyuni-zh_CN pdf-quickstart-uyuni-uyuni-ja pdf-quickstart-uyuni-uyuni-ko # pdf-quickstart-uyuni-uyuni-es pdf-quickstart-uyuni-uyuni-cs
+pdf-quickstart-uyuni-uyuni: pdf-quickstart-uyuni-uyuni-en pdf-quickstart-uyuni-uyuni-zh_CN pdf-quickstart-uyuni-uyuni-ja pdf-quickstart-uyuni-uyuni-ko pdf-quickstart-uyuni-uyuni-es pdf-quickstart-uyuni-uyuni-cs
 
 include Makefile.en
-#include Makefile.es
+include Makefile.es
 include Makefile.zh_CN
-#include Makefile.cs
+include Makefile.cs
 include Makefile.ja
 include Makefile.ko
