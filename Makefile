@@ -100,7 +100,6 @@ endef
 define clean-function
 	rm -rf build/$(2)  #e.g. build/en
 	rm -rf $(1)        #e.g. translations/en
-	rm -rf translations/$(2)/branding 
 	find . -name "*pdf.$(2).adoc" -type f -exec rm -f {} \;
 endef
 
@@ -173,6 +172,15 @@ define pdf-book-create-uyuni
 		modules/$(6)/nav-$(6)-guide.pdf.$(8).adoc
 endef
 
+define clean-branding
+        rm -rf $(CURDIR)/translations/$(1)/branding
+endef
+	
+define copy-branding
+        mkdir -p $(CURDIR)/translations/$(1)
+        cp -a $(CURDIR)/branding $(CURDIR)/translations/$(1)/
+endef
+	
 # Create an Index
 define pdf-book-create-index
 	sed -E  -e 's/\*\*\*\*\*\ xref\:(.*)\.adoc\[(.*)\]/include\:\:modules\/$(2)\/pages\/\1\.adoc\[leveloffset\=\+4\]/' \
