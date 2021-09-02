@@ -17,9 +17,8 @@ PDF_OUTPUT_UYUNI_ES ?= uyuni-docs_es-pdf
 
 # Clean up build artifacts
 .PHONY: clean-$(LANGCODE_ES)
-clean-$(LANGCODE_ES): ## Remove build artifacts from output directory (Antora and PDF)
+clean-$(LANGCODE_ES): clean-branding-$(LANGCODE_ES) ## Remove build artifacts from output directory (Antora and PDF)
 	$(call clean-function,$(LANGDIR_ES),$(LANGCODE_ES))
-	$(call clean-branding,$(LANGCODE_ES))
 
 .PHONY: clean-branding-$(LANGCODE_ES)
 clean-branding-$(LANGCODE_ES):
@@ -38,8 +37,7 @@ pdf-tar-suma-$(LANGCODE_ES):
 	$(call pdf-tar-product,$(LANGCODE_ES),$(PDF_OUTPUT_SUMA_ES),$(PDF_BUILD_DIR_ES))
 
 .PHONY: prepare-antora-suma-$(LANGCODE_ES)
-prepare-antora-suma-$(LANGCODE_ES):
-	$(call copy-branding,$(LANGCODE_ES))
+prepare-antora-suma-$(LANGCODE_ES): copy-branding-$(LANGCODE_ES)
 	-mkdir -p $(LANGDIR_ES) && \
 	cp -a antora.yml $(LANGDIR_ES)/antora.yml && \
 	sed "s/\(url\:\ https\:\/\/documentation\.suse\.com\/suma\/4\.2\/\)/\1$(LANGCODE_ES)\//;\
@@ -180,8 +178,7 @@ pdf-tar-uyuni-$(LANGCODE_ES):
 	$(call pdf-tar-product,$(LANGCODE_ES),$(PDF_OUTPUT_UYUNI_ES),$(PDF_BUILD_DIR_ES))
 
 .PHONY: prepare-antora-uyuni-$(LANGCODE_ES)
-prepare-antora-uyuni-$(LANGCODE_ES):
-	$(call copy-branding,$(LANGCODE_ES))
+prepare-antora-uyuni-$(LANGCODE_ES): copy-branding-$(LANGCODE_ES)
 	-mkdir -p $(LANGDIR_ES) && \
 	cp antora.yml $(LANGDIR_ES)/antora.yml && \
 	sed "s/\(url\:\ https\:\/\/www\.uyuni-project\.org\/uyuni-docs\/\)/\1\$\(LANGCODE_ES\)\//;\
