@@ -19,6 +19,15 @@ PDF_OUTPUT_UYUNI_ES ?= uyuni-docs_es-pdf
 .PHONY: clean-$(LANGCODE_ES)
 clean-$(LANGCODE_ES): ## Remove build artifacts from output directory (Antora and PDF)
 	$(call clean-function,$(LANGDIR_ES),$(LANGCODE_ES))
+	$(call clean-branding,$(LANGCODE_ES))
+
+.PHONY: clean-branding-$(LANGCODE_ES)
+clean-branding-$(LANGCODE_ES):
+	$(call clean-branding,$(LANGCODE_ES))
+
+.PHONY: copy-branding-$(LANGCODE_ES)
+copy-branding-$(LANGCODE_ES):
+	$(call copy-branding,$(LANGCODE_ES))
 
 .PHONY: validate-suma-$(LANGCODE_ES)
 validate-suma-$(LANGCODE_ES):
@@ -30,6 +39,7 @@ pdf-tar-suma-$(LANGCODE_ES):
 
 .PHONY: prepare-antora-suma-$(LANGCODE_ES)
 prepare-antora-suma-$(LANGCODE_ES):
+	$(call copy-branding,$(LANGCODE_ES))
 	-mkdir -p $(LANGDIR_ES) && \
 	cp -a antora.yml $(LANGDIR_ES)/antora.yml && \
 	sed "s/\(url\:\ https\:\/\/documentation\.suse\.com\/suma\/4\.2\/\)/\1$(LANGCODE_ES)\//;\
@@ -42,7 +52,7 @@ prepare-antora-suma-$(LANGCODE_ES):
 	cp -a $(CURDIR)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(CURDIR)/$(LANGDIR_ES)/modules/ROOT/pages/
 
 .PHONY: antora-suma-$(LANGCODE_ES)
-antora-suma-$(LANGCODE_ES): clean-$(LANGCODE_ES) repare-antora-suma-$(LANGCODE_ES) pdf-all-suma-$(LANGCODE_ES) pdf-tar-suma-$(LANGCODE_ES)
+antora-suma-$(LANGCODE_ES): clean-$(LANGCODE_ES) prepare-antora-suma-$(LANGCODE_ES) pdf-all-suma-$(LANGCODE_ES) pdf-tar-suma-$(LANGCODE_ES)
 #	$(call enable-suma-in-antorayml,.)
 	$(call antora-suma-function,$(LANGDIR_ES),$(LANGCODE_ES))
 
@@ -171,6 +181,7 @@ pdf-tar-uyuni-$(LANGCODE_ES):
 
 .PHONY: prepare-antora-uyuni-$(LANGCODE_ES)
 prepare-antora-uyuni-$(LANGCODE_ES):
+	$(call copy-branding,$(LANGCODE_ES))
 	-mkdir -p $(LANGDIR_ES) && \
 	cp antora.yml $(LANGDIR_ES)/antora.yml && \
 	sed "s/\(url\:\ https\:\/\/www\.uyuni-project\.org\/uyuni-docs\/\)/\1\$\(LANGCODE_ES\)\//;\
