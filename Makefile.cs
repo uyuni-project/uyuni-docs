@@ -177,8 +177,7 @@ pdf-tar-uyuni-$(LANGCODE_CS):
 	$(call pdf-tar-product,$(LANGCODE_CS),$(PDF_OUTPUT_UYUNI_CS),$(PDF_BUILD_DIR_CS))
 
 .PHONY: prepare-antora-uyuni-$(LANGCODE_CS)
-prepare-antora-uyuni-$(LANGCODE_CS):
-	$(call copy-branding,$(LANGCODE_CS))
+prepare-antora-uyuni-$(LANGCODE_CS): copy-branding-$(LANGCODE_CS)
 	-mkdir -p $(LANGDIR_CS) && \
 	cp antora.yml $(LANGDIR_CS)/antora.yml && \
 	sed "s/\(url\:\ https\:\/\/www\.uyuni-project\.org\/uyuni-docs\/\)/\1$(LANGCODE_CS)\/;\
