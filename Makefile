@@ -100,7 +100,7 @@ endef
 
 define fix-lunr-search-in-translation
 	cd $(current_dir)
-	$(shell sed -i s,\/$(1)\/,\/$(2)\/$(1)\/,g $(current_dir)/$(HTML_BUILD_DIR)/$(2)/search-index.js)
+	$(shell sed -i s,\/$(1)\/,\/$(2)\/$(1)\/,g $(current_dir)/$(HTML_BUILD_DIR)/search-index.js)
 endef
 
 define clean-function
