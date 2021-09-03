@@ -176,8 +176,8 @@ pdf-tar-uyuni-$(LANGCODE_CS):
 prepare-antora-uyuni-$(LANGCODE_CS): copy-branding-$(LANGCODE_CS)
 	cd $(current_dir)
 	mkdir -p $(current_dir)/$(LANGDIR_CS) && \
-	cp antora.yml $(LANGDIR_CS)/antora.yml && \
-	sed "s/\(url\:\ https\:\/\/www\.uyuni-project\.org\/uyuni-docs\/\)/\1$(LANGCODE_CS)\/;\
+	cp -a antora.yml $(LANGDIR_CS)/antora.yml && \
+	sed "s/\(url\:\ https\:\/\/www\.uyuni-project\.org\/uyuni-docs\/\)/\1$(LANGCODE_CS)\//;\
 	s/\-\ url\:\ \./\-\ url\:\ \.\.\/\.\.\//;\
 	s/start_path\:\ \./\start_path\:\ translations\/$(LANGCODE_CS)/;\
 	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/$(LANGCODE_CS)/;" uyuni-site.yml > $(LANGDIR_CS)/uyuni-site.yml && \
