@@ -51,11 +51,11 @@ prepare-antora-suma-$(LANGCODE_ES): copy-branding-$(LANGCODE_ES)
 	cd $(current_dir)
 
 .PHONY: antora-suma-$(LANGCODE_ES)
-antora-suma-$(LANGCODE_ES): clean-$(LANGCODE_ES) prepare-antora-suma-$(LANGCODE_ES) pdf-all-suma-$(LANGCODE_ES) pdf-tar-suma-$(LANGCODE_ES)
+antora-suma-$(LANGCODE_ES): prepare-antora-suma-$(LANGCODE_ES) pdf-all-suma-$(LANGCODE_ES) pdf-tar-suma-$(LANGCODE_ES)
 	$(call antora-suma-function,$(LANGDIR_ES),$(LANGCODE_ES))
 
 .PHONY: obs-packages-suma-$(LANGCODE_ES)
-obs-packages-suma-$(LANGCODE_ES): clean-$(LANGCODE_ES) pdf-all-suma-$(LANGCODE_ES) antora-suma-$(LANGCODE_ES) ## Generate SUMA OBS tar files
+obs-packages-suma-$(LANGCODE_ES): pdf-all-suma-$(LANGCODE_ES) antora-suma-$(LANGCODE_ES) ## Generate SUMA OBS tar files
 	$(call obs-packages-product,$(LANGCODE_ES),$(LANGCODE_ES)/pdf,$(HTML_OUTPUT_SUMA_ES),$(PDF_OUTPUT_SUMA_ES))
 
 # Generate PDF versions of all SUMA books
@@ -187,11 +187,11 @@ prepare-antora-uyuni-$(LANGCODE_ES): copy-branding-$(LANGCODE_ES)
 	cd $(current_dir)
 
 .PHONY: antora-uyuni-$(LANGCODE_ES)
-antora-uyuni-$(LANGCODE_ES): clean-$(LANGCODE_ES) prepare-antora-uyuni-$(LANGCODE_ES) pdf-all-uyuni-$(LANGCODE_ES) pdf-tar-uyuni-$(LANGCODE_ES)
+antora-uyuni-$(LANGCODE_ES): prepare-antora-uyuni-$(LANGCODE_ES) pdf-all-uyuni-$(LANGCODE_ES) pdf-tar-uyuni-$(LANGCODE_ES)
 	$(call antora-uyuni-function,$(LANGDIR_ES),$(LANGCODE_ES))
 
 .PHONY: obs-packages-uyuni-$(LANGCODE_ES)
-obs-packages-uyuni-$(LANGCODE_ES): clean-$(LANGCODE_ES) pdf-all-uyuni-$(LANGCODE_ES) antora-uyuni-$(LANGCODE_ES) ## Generate UYUNI OBS tar files
+obs-packages-uyuni-$(LANGCODE_ES): pdf-all-uyuni-$(LANGCODE_ES) antora-uyuni-$(LANGCODE_ES) ## Generate UYUNI OBS tar files
 	$(call obs-packages-product,$(LANGCODE_ES),$(LANGCODE_ES)/pdf,$(HTML_OUTPUT_UYUNI_ES),$(PDF_OUTPUT_UYUNI_ES))
 
 # Generate PDF versions of all UYUNI books

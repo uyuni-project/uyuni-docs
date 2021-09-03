@@ -366,6 +366,7 @@ help: ## Prints a basic help menu about available targets
 pot:
 	(cd $(current_dir)/l10n-weblate && ./update-cfg-files)
 	$(current_dir)/make_pot.sh
+
 .PHONY: translations
 translations:
 	$(current_dir)/use_po.sh
