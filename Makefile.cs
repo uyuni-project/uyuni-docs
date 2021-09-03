@@ -38,6 +38,7 @@ pdf-tar-suma-$(LANGCODE_CS):
 
 .PHONY: prepare-antora-suma-$(LANGCODE_CS)
 prepare-antora-suma-$(LANGCODE_CS): copy-branding-$(LANGCODE_CS)
+	cd $(current_dir)
 	mkdir -p $(current_dir)/$(LANGDIR_CS) && \
 	cp -a antora.yml $(LANGDIR_CS)/antora.yml && \
 	sed "s/\(url\:\ https\:\/\/documentation\.suse\.com\/suma\/4\.2\/\)/\1$(LANGCODE_CS)\//;\
@@ -47,10 +48,10 @@ prepare-antora-suma-$(LANGCODE_CS): copy-branding-$(LANGCODE_CS)
 	mkdir -p $(current_dir)/$(LANGDIR_CS)/modules/ROOT/pages/ &&\
 	find modules/ -maxdepth 1 -name "*" -type d -exec mkdir -p $(current_dir)/$(LANGDIR_CS)/{} \; && \
 	cp -a $(current_dir)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(current_dir)/$(LANGDIR_CS)/modules/ROOT/pages/
+	cd $(current_dir)
 
 .PHONY: antora-suma-$(LANGCODE_CS)
 antora-suma-$(LANGCODE_CS): clean-$(LANGCODE_CS) prepare-antora-suma-$(LANGCODE_CS) pdf-all-suma-$(LANGCODE_CS) pdf-tar-suma-$(LANGCODE_CS)
-#	$(call enable-suma-in-antorayml,.)
 	$(call antora-suma-function,$(LANGDIR_CS),$(LANGCODE_CS))
 
 .PHONY: obs-packages-suma-$(LANGCODE_CS)
@@ -134,11 +135,6 @@ modules/large-deployments/nav-large-deployments.pdf.$(LANGCODE_CS).adoc:
 pdf-large-deployment-suma-$(LANGCODE_CS): modules/large-deployments/nav-large-deployments.pdf.$(LANGCODE_CS).adoc
 	$(call pdf-large-deployment-product,$(LANGDIR_CS),$(PDF_THEME_SUMA),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA),$(PDF_BUILD_DIR_CS),$(LANGCODE_CS),$(LOCALE_CS),$(GNUDATEFORMAT_CS))
 
-
-#.PHONY: modules/architecture/nav-architecture-guide.pdf.$(LANGCODE_CS).adoc
-#modules/architecture/nav-architecture-guide.pdf.$(LANGCODE_CS).adoc:
-#	$(call pdf-book-create-index,$(LANGDIR_CS),architecture,$(LANGCODE_CS))
-
 #.PHONY: pdf-architecture-suma-$(LANGCODE_CS)
 ### Generate PDF version of the SUMA Architecture Guide
 #pdf-architecture-suma-$(LANGCODE_CS): modules/architecture/nav-architecture-guide.pdf.$(LANGCODE_CS).adoc
@@ -178,6 +174,7 @@ pdf-tar-uyuni-$(LANGCODE_CS):
 
 .PHONY: prepare-antora-uyuni-$(LANGCODE_CS)
 prepare-antora-uyuni-$(LANGCODE_CS): copy-branding-$(LANGCODE_CS)
+	cd $(current_dir)
 	mkdir -p $(current_dir)/$(LANGDIR_CS) && \
 	cp antora.yml $(LANGDIR_CS)/antora.yml && \
 	sed "s/\(url\:\ https\:\/\/www\.uyuni-project\.org\/uyuni-docs\/\)/\1$(LANGCODE_CS)\/;\
@@ -187,6 +184,7 @@ prepare-antora-uyuni-$(LANGCODE_CS): copy-branding-$(LANGCODE_CS)
 	mkdir -p $(current_dir)/$(LANGDIR_CS)/modules/ROOT/pages/ &&\
 	find modules/ -maxdepth 1 -name "*" -type d -exec mkdir -p $(current_dir)/$(LANGDIR_CS)/{} \; && \
 	cp -a $(current_dir)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(current_dir)/$(LANGDIR_CS)/modules/ROOT/pages/
+	cd $(current_dir)
 
 .PHONY: antora-uyuni-$(LANGCODE_CS)
 antora-uyuni-$(LANGCODE_CS): clean-$(LANGCODE_CS) prepare-antora-uyuni-$(LANGCODE_CS) pdf-all-uyuni-$(LANGCODE_CS) pdf-tar-uyuni-$(LANGCODE_CS)

@@ -55,7 +55,6 @@ current_dir := $(dir $(mkfile_path))
 define validate-product
 	cd $(current_dir)/$(1)
 	NODE_PATH="$(npm -g root)" antora --generator @antora/xref-validator $(2)
-	cd $(current_dir)
 endef
 
 define enable-suma-in-antorayml
@@ -69,9 +68,9 @@ define enable-suma-in-antorayml
 endef
 
 define antora-suma-function
+	cd $(current_dir)
 	$(call enable-suma-in-antorayml,$(1)) && \
 	cd ./$(1) && DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) antora $(current_dir)/$(1)/suma-site.yml --generator antora-site-generator-lunr
-	cd $(current_dir)
 endef
 
 define enable-uyuni-in-antorayml
@@ -81,28 +80,31 @@ define enable-uyuni-in-antorayml
 	s/^ *\(title: *SUSE Manager\)/#\1/;\
 	s/^ *# *\(title: *Uyuni\)/\1/;\
 	s/^ *# *\(name: *uyuni\)/\1/;" $(current_dir)/$(1)/antora.yml
-	cd $(current_dir)
 endef
 
 define antora-uyuni-function
+	cd $(current_dir)
 	$(call enable-uyuni-in-antorayml,$(1)) && \
 	cd ./$(1) && DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) antora $(current_dir)/$(1)/uyuni-site.yml --generator antora-site-generator-lunr
-	cd $(current_dir)
 endef
 
 define fix-lunr-search-in-suma-translation
+	cd $(current_dir)
 	$(call fix-lunr-search-in-translation,suse-manager,$(1))
 endef
 
 define fix-lunr-search-in-uyuni-translation
+	cd $(current_dir)
 	$(call fix-lunr-search-in-translation,uyuni,$(1))
 endef
 
 define fix-lunr-search-in-translation
+	cd $(current_dir)
 	$(shell sed -i s,\/$(1)\/,\/$(2)\/$(1)\/,g $(current_dir)/$(HTML_BUILD_DIR)/$(2)/search-index.js)
 endef
 
 define clean-function
+	cd $(current_dir)
 	rm -rf build/$(2)  #e.g. build/en
 	rm -rf $(1)        #e.g. translations/en
 	find . -name "*pdf.$(2).adoc" -type f -exec rm -f {} \;
@@ -116,6 +118,7 @@ endef
 # $(4) language name as the user will see it in the selector
 # $(5) supplemental files directory (theme directory)
 define enable-html-language-selector
+	cd $(current_dir)
 	sed -n -i 'p; s,<\!--\ LANGUAGESELECTOR\ -->,<a role=\"button\" class=\"navbar-item\" id=\"$(1)\" onclick="selectLanguage(this.id)"><img src="{{uiRootPath}}/img/$(2).svg" class="langIcon $(3)">\&nbsp;$(4)</a>,p' translations/$(5)
 endef
 
@@ -134,6 +137,7 @@ endef
 
 # Generate OBS tar files
 define obs-packages-product
+	cd $(current_dir)
 	tar --exclude='$(2)' -czvf $(3).tar.gz -C $(current_dir) $(HTML_BUILD_DIR)/$(1) && tar -czvf $(4).tar.gz -C $(current_dir) $(HTML_BUILD_DIR)/$(2)
 	mkdir -p build/packages
 	mv $(3).tar.gz $(4).tar.gz build/packages
@@ -156,7 +160,6 @@ define pdf-book-create
 		--base-dir . \
 		--out-file $(7)/$(5)_$(6)_guide.pdf \
 		modules/$(6)/nav-$(6)-guide.pdf.$(8).adoc
-	cd $(current_dir)
 endef
 
 define pdf-book-create-uyuni
@@ -175,7 +178,6 @@ define pdf-book-create-uyuni
 		--base-dir . \
 		--out-file $(7)/$(5)_$(6)_guide.pdf \
 		modules/$(6)/nav-$(6)-guide.pdf.$(8).adoc
-	cd $(current_dir)
 endef
 
 define clean-branding
@@ -364,13 +366,13 @@ help: ## Prints a basic help menu about available targets
 pot:
 	(cd $(current_dir)/l10n-weblate && ./update-cfg-files)
 	$(current_dir)/make_pot.sh
-	cd $(current_dir)
 .PHONY: translations
 translations:
 	$(current_dir)/use_po.sh
 
 .PHONY: copy-branding
 copy-branding:
+	cd $(current_dir)
 	mkdir -p $(current_dir)/translations
 	cp -a $(current_dir)/branding $(current_dir)/translations/
 
@@ -392,6 +394,7 @@ for-publication:
 
 .PHONY: fix-lunr-search-in-suma-translations
 fix-lunr-search-in-suma-translations:
+	cd $(current_dir)
 	$(call fix-lunr-search-in-suma-translation,en)
 	$(call fix-lunr-search-in-suma-translation,zh_CN)
 	$(call fix-lunr-search-in-suma-translation,ja)
@@ -401,12 +404,14 @@ fix-lunr-search-in-suma-translations:
 
 .PHONY: set-html-language-selector-suma
 set-html-language-selector-suma:
+	cd $(current_dir)
 	$(call enable-suma-html-language-selector,zh_CN,china,china,中国人)
 	$(call enable-suma-html-language-selector,ja,jaFlag,japan,日本語)
 	$(call enable-suma-html-language-selector,ko,koFlag,korea,한국어)
 
 .PHONY: fix-lunr-search-in-uyuni-translations
 fix-lunr-search-in-uyuni-translations:
+	cd $(current_dir)
 	$(call fix-lunr-search-in-uyuni-translation,en)
 	$(call fix-lunr-search-in-uyuni-translation,zh_CN)
 	$(call fix-lunr-search-in-uyuni-translation,ja)
@@ -416,6 +421,7 @@ fix-lunr-search-in-uyuni-translations:
 
 .PHONY: set-html-language-selector-uyuni
 set-html-language-selector-uyuni:
+	cd $(current_dir)
 	$(call enable-uyuni-html-language-selector,zh_CN,china,china,中国人)
 	$(call enable-uyuni-html-language-selector,ja,jaFlag,japan,日本語)
 	$(call enable-uyuni-html-language-selector,ko,koFlag,korea,한국어)
