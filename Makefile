@@ -476,7 +476,7 @@ validate-uyuni: validate-uyuni-en validate-uyuni-zh_CN validate-uyuni-ja validat
 pdf-tar-uyuni: pdf-tar-uyuni-en pdf-tar-uyuni-zh_CN pdf-tar-uyuni-ja pdf-tar-uyuni-ko pdf-tar-uyuni-es pdf-tar-uyuni-cs
 
 .PHONY: antora-uyuni
-antora-uyuni: copy-branding set-html-language-selector-uyuni antora-uyuni-en antora-uyuni-zh_CN  antora-uyuni-ja antora-uyuni-ko fix-lunr-search-in-uyuni-translations antora-uyuni-es antora-uyuni-cs
+antora-uyuni: copy-branding set-html-language-selector-uyuni antora-uyuni-en antora-uyuni-zh_CN antora-uyuni-ja antora-uyuni-ko antora-uyuni-es antora-uyuni-cs fix-lunr-search-in-uyuni-translations
 
 .PHONY: antora-uyuni-for-publication
 antora-uyuni-for-publication: for-publication antora-uyuni

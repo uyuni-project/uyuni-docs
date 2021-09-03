@@ -46,7 +46,7 @@ prepare-antora-suma-$(LANGCODE_ES): copy-branding-$(LANGCODE_ES)
 	s/start_path\:\ \./\start_path\:\ translations\/$(LANGCODE_ES)/;\
 	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/$(LANGCODE_ES)/;" suma-site.yml > $(LANGDIR_ES)/suma-site.yml && \
 	mkdir -p $(current_dir)/$(LANGDIR_ES)/modules/ROOT/pages/ &&\
-	find modules/ -maxdepth 1 -name "*" -type d -exec mkdir -p $(current_dir)/$(LANGCODE_ES)/{} \; && \
+	find modules/ -maxdepth 1 -name "*" -type d -exec mkdir -p $(current_dir)/$(LANGDIR_ES)/{} \; && \
 	cp -a $(current_dir)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(current_dir)/$(LANGDIR_ES)/modules/ROOT/pages/
 	cd $(current_dir)
 
@@ -182,7 +182,7 @@ prepare-antora-uyuni-$(LANGCODE_ES): copy-branding-$(LANGCODE_ES)
 	s/start_path\:\ \./\start_path\:\ translations\/$(LANGCODE_ES)/;\
 	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/$(LANGCODE_ES)/;" uyuni-site.yml > $(LANGDIR_ES)/uyuni-site.yml && \
 	mkdir -p $(current_dir)/$(LANGDIR_ES)/modules/ROOT/pages/ &&\
-	find modules/ -maxdepth 1 -name "*" -type d -exec mkdir -p $(current_dir)/$(LANGCODE_ES)/{} \; && \
+	find modules/ -maxdepth 1 -name "*" -type d -exec mkdir -p $(current_dir)/$(LANGDIR_ES)/{} \; && \
 	cp -a $(current_dir)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(current_dir)/$(LANGDIR_ES)/modules/ROOT/pages/
 	cd $(current_dir)
 
