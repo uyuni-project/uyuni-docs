@@ -85,7 +85,7 @@ endef
 define antora-uyuni-function
 	cd $(current_dir)
 	$(call enable-uyuni-in-antorayml,$(1)) && \
-	cd ./$(1) && DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) antora $(current_dir)/$(1)/uyuni-site.yml --generator antora-site-generator-lunr
+	cd $(current_dir)/$(1) && DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) antora $(current_dir)/$(1)/uyuni-site.yml --generator antora-site-generator-lunr
 endef
 
 define fix-lunr-search-in-suma-translation
