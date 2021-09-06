@@ -36,8 +36,13 @@ validate-suma-$(LANGCODE_CS):
 pdf-tar-suma-$(LANGCODE_CS):
 	$(call pdf-tar-product,$(LANGCODE_CS),$(PDF_OUTPUT_SUMA_CS),$(PDF_BUILD_DIR_CS))
 
+.PHONY: set-html-language-selector-suma-$(LANGCODE_CS) set-html-language-selector-suma
+set-html-language-selector-suma-$(LANGCODE_CS):
+	mkdir -p $(shell dirname translations/$(LANGCODE_CS)/$(SUPPLEMENTAL_FILES_SUMA))
+	cp -a translations/$(SUPPLEMENTAL_FILES_SUMA) translations/$(LANGCODE_CS)/$(SUPPLEMENTAL_FILES_SUMA)
+
 .PHONY: prepare-antora-suma-$(LANGCODE_CS)
-prepare-antora-suma-$(LANGCODE_CS): copy-branding-$(LANGCODE_CS)
+prepare-antora-suma-$(LANGCODE_CS): copy-branding-$(LANGCODE_CS) set-html-language-selector-suma-$(LANGCODE_CS)
 	cd $(current_dir)
 	mkdir -p $(current_dir)/$(LANGDIR_CS) && \
 	cp -a antora.yml $(LANGDIR_CS)/antora.yml && \
@@ -172,8 +177,13 @@ validate-uyuni-$(LANGCODE_CS):
 pdf-tar-uyuni-$(LANGCODE_CS):
 	$(call pdf-tar-product,$(LANGCODE_CS),$(PDF_OUTPUT_UYUNI_CS),$(PDF_BUILD_DIR_CS))
 
+.PHONY: set-html-language-selector-uyuni-$(LANGCODE_CS) set-html-language-selector-uyuni
+set-html-language-selector-uyuni-$(LANGCODE_CS):
+	mkdir -p $(shell dirname translations/$(LANGCODE_CS)/$(SUPPLEMENTAL_FILES_UYUNI))
+	cp -a translations/$(SUPPLEMENTAL_FILES_UYUNI) translations/$(LANGCODE_CS)/$(SUPPLEMENTAL_FILES_UYUNI)
+
 .PHONY: prepare-antora-uyuni-$(LANGCODE_CS)
-prepare-antora-uyuni-$(LANGCODE_CS): copy-branding-$(LANGCODE_CS)
+prepare-antora-uyuni-$(LANGCODE_CS): copy-branding-$(LANGCODE_CS) set-html-language-selector-uyuni set-html-language-selector-uyuni-$(LANGCODE_CS)
 	cd $(current_dir)
 	mkdir -p $(current_dir)/$(LANGDIR_CS) && \
 	cp -a antora.yml $(LANGDIR_CS)/antora.yml && \
