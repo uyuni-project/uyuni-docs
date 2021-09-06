@@ -4,8 +4,8 @@ LOCALE_JA=ja_JP.UTF-8
 GNUDATEFORMAT_JA=%Y年%m月%e日
 ASCIIDOCTOR_PDF_ADDITIONAL_ATTRIBUTES_JA=-a scripts=cjk
 
-HTML_BUILD_DIR_JA := $(CURDIR)/build/$(LANGCODE_JA)
-PDF_BUILD_DIR_JA := $(CURDIR)/build/$(LANGCODE_JA)/pdf
+HTML_BUILD_DIR_JA := $(current_dir)/build/$(LANGCODE_JA)
+PDF_BUILD_DIR_JA := $(current_dir)/build/$(LANGCODE_JA)/pdf
 
 # SUMA OBS Tarball Filenames
 HTML_OUTPUT_SUMA_JA ?= susemanager-docs_ja
@@ -17,8 +17,16 @@ PDF_OUTPUT_UYUNI_JA ?= uyuni-docs_ja-pdf
 
 # Clean up build artifacts
 .PHONY: clean-$(LANGCODE_JA)
-clean-$(LANGCODE_JA): ## Remove build artifacts from output directory (Antora and PDF)
+clean-$(LANGCODE_JA): clean-branding-$(LANGCODE_JA) ## Remove build artifacts from output directory (Antora and PDF)
 	$(call clean-function,$(LANGDIR_JA),$(LANGCODE_JA))
+
+.PHONY: clean-branding-$(LANGCODE_JA)
+clean-branding-$(LANGCODE_JA):
+	$(call clean-branding,$(LANGCODE_JA))
+
+.PHONY: copy-branding-$(LANGCODE_JA)
+copy-branding-$(LANGCODE_JA):
+	$(call copy-branding,$(LANGCODE_JA))
 
 .PHONY: validate-suma-$(LANGCODE_JA)
 validate-suma-$(LANGCODE_JA):
@@ -29,25 +37,25 @@ pdf-tar-suma-$(LANGCODE_JA):
 	$(call pdf-tar-product,$(LANGCODE_JA),$(PDF_OUTPUT_SUMA_JA),$(PDF_BUILD_DIR_JA))
 
 .PHONY: prepare-antora-suma-$(LANGCODE_JA)
-prepare-antora-suma-$(LANGCODE_JA):
-	-mkdir -p $(LANGDIR_JA) && \
+prepare-antora-suma-$(LANGCODE_JA): copy-branding-$(LANGCODE_JA)
+	cd $(current_dir)
+	mkdir -p $(current_dir)/$(LANGDIR_JA) && \
 	cp -a antora.yml $(LANGDIR_JA)/antora.yml && \
 	sed "s/\(url\:\ https\:\/\/documentation\.suse\.com\/suma\/4\.2\/\)/\1$(LANGCODE_JA)\//;\
-	s/\.\/branding/\.\.\/branding/;\
 	s/\-\ url\:\ \./\-\ url\:\ \.\.\/\.\.\//;\
 	s/start_path\:\ \./\start_path\:\ translations\/$(LANGCODE_JA)/;\
 	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/$(LANGCODE_JA)/;" suma-site.yml > $(LANGDIR_JA)/suma-site.yml && \
-	cd $(LANGDIR_JA) && \
-	if [ ! -e branding ]; then ln -s ../branding; fi && \
-	cp -a $(CURDIR)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(CURDIR)/$(LANGDIR_JA)/modules/ROOT/pages/
+	mkdir -p $(current_dir)/$(LANGDIR_JA)/modules/ROOT/pages/ &&\
+	find modules/ -maxdepth 1 -name "*" -type d -exec mkdir -p $(current_dir)/$(LANGDIR_JA)/{} \; && \
+	cp -a $(current_dir)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(current_dir)/$(LANGDIR_JA)/modules/ROOT/pages/
+	cd $(current_dir)
 
 .PHONY: antora-suma-$(LANGCODE_JA)
-antora-suma-$(LANGCODE_JA): clean-$(LANGCODE_JA) pdf-all-suma-$(LANGCODE_JA) pdf-tar-suma-$(LANGCODE_JA)
-#	$(call enable-suma-in-antorayml,.)
+antora-suma-$(LANGCODE_JA): prepare-antora-suma-$(LANGCODE_JA) pdf-all-suma-$(LANGCODE_JA) pdf-tar-suma-$(LANGCODE_JA)
 	$(call antora-suma-function,$(LANGDIR_JA),$(LANGCODE_JA))
 
 .PHONY: obs-packages-suma-$(LANGCODE_JA)
-obs-packages-suma-$(LANGCODE_JA): clean-$(LANGCODE_JA) pdf-all-suma-$(LANGCODE_JA) antora-suma-$(LANGCODE_JA) ## Generate SUMA OBS tar files
+obs-packages-suma-$(LANGCODE_JA): pdf-all-suma-$(LANGCODE_JA) antora-suma-$(LANGCODE_JA) ## Generate SUMA OBS tar files
 	$(call obs-packages-product,$(LANGCODE_JA),$(LANGCODE_JA)/pdf,$(HTML_OUTPUT_SUMA_JA),$(PDF_OUTPUT_SUMA_JA))
 
 # Generate PDF versions of all SUMA books
@@ -170,24 +178,25 @@ pdf-tar-uyuni-$(LANGCODE_JA):
 	$(call pdf-tar-product,$(LANGCODE_JA),$(PDF_OUTPUT_UYUNI_JA),$(PDF_BUILD_DIR_JA))
 
 .PHONY: prepare-antora-uyuni-$(LANGCODE_JA)
-prepare-antora-uyuni-$(LANGCODE_JA):
-	-mkdir -p $(LANGDIR_JA) && \
+prepare-antora-uyuni-$(LANGCODE_JA): copy-branding-$(LANGCODE_JA)
+	cd $(current_dir)
+	mkdir -p $(current_dir)/$(LANGDIR_JA) && \
 	cp antora.yml $(LANGDIR_JA)/antora.yml && \
 	sed "s/\(url\:\ https\:\/\/www\.uyuni-project\.org\/uyuni-docs\/\)/\1$(LANGCODE_JA)\//;\
-	s/\.\/branding/\.\.\/branding/;\
 	s/\-\ url\:\ \./\-\ url\:\ \.\.\/\.\.\//;\
 	s/start_path\:\ \./\start_path\:\ translations\/$(LANGCODE_JA)/;\
 	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/$(LANGCODE_JA)/;" uyuni-site.yml > $(LANGDIR_JA)/uyuni-site.yml && \
-	cd $(LANGDIR_JA) && \
-	if [ ! -e branding ]; then ln -s ../branding; fi && \
-	cp -a $(CURDIR)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(CURDIR)/$(LANGDIR_JA)/modules/ROOT/pages/
+	mkdir -p $(current_dir)/$(LANGDIR_JA)/modules/ROOT/pages/ &&\
+	find modules/ -maxdepth 1 -name "*" -type d -exec mkdir -p $(current_dir)/$(LANGDIR_JA)/{} \; && \
+	cp -a $(current_dir)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(current_dir)/$(LANGDIR_JA)/modules/ROOT/pages/
+	cd $(current_dir)
 
 .PHONY: antora-uyuni-$(LANGCODE_JA)
-antora-uyuni-$(LANGCODE_JA): clean-$(LANGCODE_JA) pdf-all-uyuni-$(LANGCODE_JA) pdf-tar-uyuni-$(LANGCODE_JA)
+antora-uyuni-$(LANGCODE_JA): prepare-antora-uyuni-$(LANGCODE_JA) pdf-all-uyuni-$(LANGCODE_JA) pdf-tar-uyuni-$(LANGCODE_JA)
 	$(call antora-uyuni-function,$(LANGDIR_JA),$(LANGCODE_JA))
 
 .PHONY: obs-packages-uyuni-$(LANGCODE_JA)
-obs-packages-uyuni-$(LANGCODE_JA): clean-$(LANGCODE_JA) pdf-all-uyuni-$(LANGCODE_JA) antora-uyuni-$(LANGCODE_JA) ## Generate UYUNI OBS tar files
+obs-packages-uyuni-$(LANGCODE_JA): pdf-all-uyuni-$(LANGCODE_JA) antora-uyuni-$(LANGCODE_JA) ## Generate UYUNI OBS tar files
 	$(call obs-packages-product,$(LANGCODE_JA),$(LANGCODE_JA)/pdf,$(HTML_OUTPUT_UYUNI_JA),$(PDF_OUTPUT_UYUNI_JA))
 
 # Generate PDF versions of all UYUNI books
