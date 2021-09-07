@@ -377,8 +377,14 @@ copy-branding:
 	mkdir -p $(current_dir)/translations
 	cp -a $(current_dir)/branding $(current_dir)/translations/
 
+.PHONY: clean-branding
+clean-branding:
+	rm -rf $(current_dir)/translations/*
+
 .PHONY: clean
-clean: clean-en clean-zh_CN clean-ja clean-ko clean-es clean-cs
+clean: clean-branding
+	rm -rf $(current_dir)/build/*
+
 
 .PHONY: validate-suma
 validate-suma: validate-suma-en validate-suma-zh_CN validate-suma-ja validate-suma-ko validate-suma-es validate-suma-cs
