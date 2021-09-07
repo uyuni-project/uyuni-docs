@@ -25,7 +25,7 @@ clean-branding-$(LANGCODE_ES):
 	$(call clean-branding,$(LANGCODE_ES))
 
 .PHONY: copy-branding-$(LANGCODE_ES)
-copy-branding-$(LANGCODE_ES):
+copy-branding-$(LANGCODE_ES): copy-branding
 	$(call copy-branding,$(LANGCODE_ES))
 
 .PHONY: validate-suma-$(LANGCODE_ES)
