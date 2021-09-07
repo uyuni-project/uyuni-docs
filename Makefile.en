@@ -4,8 +4,8 @@ LOCALE_EN=en_US.utf8
 GNUDATEFORMAT_EN=%B %d, %Y
 ASCIIDOCTOR_PDF_ADDITIONAL_ATTRIBUTES_EN=
 
-HTML_BUILD_DIR_EN := $(CURDIR)/build/$(LANGCODE_EN)
-PDF_BUILD_DIR_EN := $(CURDIR)/build/$(LANGCODE_EN)/pdf
+HTML_BUILD_DIR_EN := $(current_dir)/build/$(LANGCODE_EN)
+PDF_BUILD_DIR_EN := $(current_dir)/build/$(LANGCODE_EN)/pdf
 
 # SUMA OBS Tarball Filenames
 HTML_OUTPUT_SUMA_EN ?= susemanager-docs_en
@@ -17,10 +17,16 @@ PDF_OUTPUT_UYUNI_EN ?= uyuni-docs_en-pdf
 
 # Clean up build artifacts
 .PHONY: clean-$(LANGCODE_EN)
-clean-$(LANGCODE_EN): ## Remove build artifacts from output directory (Antora and PDF)
+clean-$(LANGCODE_EN): clean-branding-$(LANGCODE_EN) ## Remove build artifacts from output directory (Antora and PDF)
 	$(call clean-function,$(LANGDIR_EN),$(LANGCODE_EN))
 
-# SUMA DOCUMENTATION BUILD COMMANDS
+.PHONY: clean-branding-$(LANGCODE_EN)
+clean-branding-$(LANGCODE_EN):
+	$(call clean-branding,$(LANGCODE_EN))
+
+.PHONY: copy-branding-$(LANGCODE_EN)
+copy-branding-$(LANGCODE_EN): copy-branding
+	$(call copy-branding,$(LANGCODE_EN))
 
 .PHONY: validate-suma-$(LANGCODE_EN)
 validate-suma-$(LANGCODE_EN): ## Validates page references and prints a report (Does not build the site)
@@ -30,26 +36,30 @@ validate-suma-$(LANGCODE_EN): ## Validates page references and prints a report (
 pdf-tar-suma-$(LANGCODE_EN): ## Create tar of PDF files
 	$(call pdf-tar-product,$(LANGCODE_EN),$(PDF_OUTPUT_SUMA_EN),$(PDF_BUILD_DIR_EN))
 
-prepare-antora-suma-$(LANGCODE_EN):
-	-mkdir -p $(LANGDIR_EN) && \
+.PHONY: set-html-language-selector-suma-$(LANGCODE_EN) set-html-language-selector-suma
+set-html-language-selector-suma-$(LANGCODE_EN):
+	mkdir -p $(shell dirname translations/$(LANGCODE_EN)/$(SUPPLEMENTAL_FILES_SUMA))
+	cp -a translations/$(SUPPLEMENTAL_FILES_SUMA) translations/$(LANGCODE_EN)/$(SUPPLEMENTAL_FILES_SUMA)
+
+.PHONY: prepare-antora-suma-$(LANGCODE_EN)
+prepare-antora-suma-$(LANGCODE_EN): copy-branding-$(LANGCODE_EN) set-html-language-selector-suma-$(LANGCODE_EN)
+	cd $(current_dir)
+	mkdir -p $(current_dir)/$(LANGDIR_EN) && \
 	cp -a antora.yml $(LANGDIR_EN)/antora.yml && \
 	sed "s/\(url\:\ https\:\/\/documentation\.suse\.com\/suma\/4\.2\/\)/\1$(LANGCODE_EN)\//;\
-	s/\.\/branding/\.\.\/branding/;\
 	s/\-\ url\:\ \./\-\ url\:\ \.\.\/\.\.\//;\
 	s/start_path\:\ \./\start_path\:\ translations\/$(LANGCODE_EN)/;\
 	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/$(LANGCODE_EN)/;" suma-site.yml > $(LANGDIR_EN)/suma-site.yml && \
-	cd $(LANGDIR_EN) && \
-	if [ ! -e branding ]; then ln -s ../branding; fi && \
-	cp -a $(CURDIR)/modules $(CURDIR)/$(LANGDIR_EN)/
+	cp -a $(current_dir)/modules $(current_dir)/$(LANGDIR_EN)/
 
 # To build for suma-webui or uyuni you need to comment out the correct name/title in the antora.yml file. (TODO remove this manual method.)
 .PHONY: antora-suma-$(LANGCODE_EN)
-antora-suma-$(LANGCODE_EN): clean-$(LANGCODE_EN) pdf-all-suma-$(LANGCODE_EN) pdf-tar-suma-$(LANGCODE_EN) ## Build the SUMA Antora static site (See README for more information)
+antora-suma-$(LANGCODE_EN): prepare-antora-suma-$(LANGCODE_EN) pdf-all-suma-$(LANGCODE_EN) pdf-tar-suma-$(LANGCODE_EN) ## Build the SUMA Antora static site (See README for more information)
 	$(call antora-suma-function,$(LANGDIR_EN),$(LANGCODE_EN))
 
 # SUMA
 .PHONY: obs-packages-suma-$(LANGCODE_EN)
-obs-packages-suma-$(LANGCODE_EN): clean-$(LANGCODE_EN) pdf-all-suma-$(LANGCODE_EN) antora-suma-$(LANGCODE_EN) ## Generate SUMA OBS tar files
+obs-packages-suma-$(LANGCODE_EN): pdf-all-suma-$(LANGCODE_EN) antora-suma-$(LANGCODE_EN) ## Generate SUMA OBS tar files
 	$(call obs-packages-product,$(LANGCODE_EN),$(LANGCODE_EN)/pdf,$(HTML_OUTPUT_SUMA_EN),$(PDF_OUTPUT_SUMA_EN))
 
 # Generate PDF versions of all SUMA books
@@ -169,27 +179,30 @@ validate-uyuni-$(LANGCODE_EN): ## Validates page references and prints a report 
 pdf-tar-uyuni-$(LANGCODE_EN): ## Create tar of PDF files
 	$(call pdf-tar-product,$(LANGCODE_EN),$(PDF_OUTPUT_UYUNI_EN),$(PDF_BUILD_DIR_EN))
 
-.PHONY: prepare-antora-uyuni-$(LANGCODE_ZH_CN)
-prepare-antora-uyuni-$(LANGCODE_EN):
-	-mkdir -p $(LANGDIR_EN) && \
+.PHONY: set-html-language-selector-uyuni-$(LANGCODE_EN) set-html-language-selector-uyuni
+set-html-language-selector-uyuni-$(LANGCODE_EN):
+	mkdir -p $(shell dirname translations/$(LANGCODE_EN)/$(SUPPLEMENTAL_FILES_UYUNI))
+	cp -a translations/$(SUPPLEMENTAL_FILES_UYUNI) translations/$(LANGCODE_EN)/$(SUPPLEMENTAL_FILES_UYUNI)
+
+.PHONY: prepare-antora-uyuni-$(LANGCODE_EN)
+prepare-antora-uyuni-$(LANGCODE_EN): copy-branding-$(LANGCODE_EN) set-html-language-selector-uyuni set-html-language-selector-uyuni-$(LANGCODE_EN)
+	cd $(current_dir)
+	mkdir -p $(current_dir)/$(LANGDIR_EN) && \
 	cp antora.yml $(LANGDIR_EN)/antora.yml && \
 	sed "s/\(url\:\ https\:\/\/www\.uyuni-project\.org\/uyuni-docs\/\)/\1$(LANGCODE_EN)\//;\
-	s/\.\/branding/\.\.\/branding/;\
 	s/\-\ url\:\ \./\-\ url\:\ \.\.\/\.\.\//;\
 	s/start_path\:\ \./\start_path\:\ translations\/$(LANGCODE_EN)/;\
 	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/$(LANGCODE_EN)/;" uyuni-site.yml > $(LANGDIR_EN)/uyuni-site.yml && \
-	cd $(LANGDIR_EN) && \
-	if [ ! -e branding ]; then ln -s ../branding; fi && \
-	cp -a $(CURDIR)/modules $(CURDIR)/$(LANGDIR_EN)/
+	cp -a $(current_dir)/modules $(current_dir)/$(LANGDIR_EN)/
 
 # To build for uyuni-webui or uyuni you need to comment out the correct name/title in the antora.yml file. (TODO remove this manual method.)
 .PHONY: antora-uyuni-$(LANGCODE_EN)
-antora-uyuni-$(LANGCODE_EN): clean-$(LANGCODE_EN) pdf-all-uyuni-$(LANGCODE_EN) pdf-tar-uyuni-$(LANGCODE_EN) ## Build the UYUNI Antora static site (See README for more information)
+antora-uyuni-$(LANGCODE_EN): prepare-antora-uyuni-$(LANGCODE_EN) pdf-all-uyuni-$(LANGCODE_EN) pdf-tar-uyuni-$(LANGCODE_EN) ## Build the UYUNI Antora static site (See README for more information)
 	$(call antora-uyuni-function,$(LANGDIR_EN),$(LANGCODE_EN))
 
 # UYUNI
 .PHONY: obs-packages-uyuni-$(LANGCODE_EN)
-obs-packages-uyuni-$(LANGCODE_EN): clean-$(LANGCODE_EN) pdf-all-uyuni-$(LANGCODE_EN) antora-uyuni-$(LANGCODE_EN) ## Generate UYUNI OBS tar files
+obs-packages-uyuni-$(LANGCODE_EN): pdf-all-uyuni-$(LANGCODE_EN) antora-uyuni-$(LANGCODE_EN) ## Generate UYUNI OBS tar files
 	$(call obs-packages-product,$(LANGCODE_EN),$(LANGCODE_EN)/pdf,$(HTML_OUTPUT_UYUNI_EN),$(PDF_OUTPUT_UYUNI_EN))
 
 # Generate PDF versions of all UYUNI books
