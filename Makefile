@@ -213,6 +213,10 @@ help: ## Prints a basic help menu about available targets
 		printf "%s\n" $$help_info; \
 	done
 
+.PHONY: configure
+configure:
+	./configure
+
 .PHONY: pot
 pot:
 	(cd $(current_dir)/l10n-weblate && ./update-cfg-files)
@@ -259,6 +263,12 @@ set-html-language-selector-uyuni:
 	$(call enable-uyuni-html-language-selector,zh_CN,china,china,中国人)
 	$(call enable-uyuni-html-language-selector,ja,jaFlag,japan,日本語)
 	$(call enable-uyuni-html-language-selector,ko,koFlag,korea,한국어)
+
+.PHONY: all-suma
+all-suma: configure obs-packages-suma
+
+.PHONY: all-uyuni
+all-uyuni: configure obs-packages-uyuni
 
 -include Makefile.section.functions
 -include Makefile.lang
