@@ -27,8 +27,8 @@ PDF_THEME_UYUNI ?= uyuni
 # UYUNI Chinese PDF Theme
 PDF_THEME_UYUNI_CJK ?= uyuni-cjk
 
-SUPPLEMENTAL_FILES_SUMA=$(shell grep supplemental_files suma-site.yml | cut -d ':' -f 2 | sed "s, ,,g")/partials/header-content.hbs
-SUPPLEMENTAL_FILES_UYUNI=$(shell grep supplemental_files uyuni-site.yml | cut -d ':' -f 2 | sed "s, ,,g")/partials/header-content.hbs
+SUPPLEMENTAL_FILES_SUMA=$(shell grep supplemental_files site.yml | cut -d ':' -f 2 | sed "s, ,,g")/partials/header-content.hbs
+SUPPLEMENTAL_FILES_UYUNI=$(shell grep supplemental_files site.yml | cut -d ':' -f 2 | sed "s, ,,g")/partials/header-content.hbs
 	
 #REVDATE ?= "$(shell date +'%B %d, %Y')"
 CURDIR ?= .
@@ -213,9 +213,13 @@ help: ## Prints a basic help menu about available targets
 		printf "%s\n" $$help_info; \
 	done
 
-.PHONY: configure
-configure:
-	./configure
+.PHONY: configure-suma
+configure-suma:
+	./configure suma
+
+.PHONY: configure-uyuni
+configure-uyuni:
+	./configure uyuni
 
 .PHONY: pot
 pot:
@@ -265,10 +269,10 @@ set-html-language-selector-uyuni:
 	$(call enable-uyuni-html-language-selector,ko,koFlag,korea,한국어)
 
 .PHONY: all-suma
-all-suma: configure obs-packages-suma
+all-suma: configure-suma obs-packages-suma
 
 .PHONY: all-uyuni
-all-uyuni: configure obs-packages-uyuni
+all-uyuni: configure-uyuni obs-packages-uyuni
 
 -include Makefile.section.functions
 -include Makefile.lang

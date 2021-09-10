@@ -2,7 +2,8 @@
 
 #Import necessary functions from Jinja2 module
 from jinja2 import Environment, FileSystemLoader
-import shutil
+import pathlib
+import sys
 
 #Import YAML module
 import yaml
@@ -44,4 +45,39 @@ print("Creating new target using language target..")
 with open('Makefile.lang.target', 'w') as f:
     print(template_target.render(config_data), file=f)
     f.close()
+    
+#Create site.yml and entities.adoc
+if len(sys.argv) >= 2: 
+    param_product = sys.argv[1]
+    #Create site.yml
+    products = config_data["products"]
+    try:
+        product = products[param_product]
+    except KeyError:
+        print(f"ERROR: {param_product} is not defined in parameters.yaml. site.yml and entities.adoc cannot be created.")
+        sys.exit()
+
+    print("Creating entities.adoc")
+    print("Creating parameters specific for " + param_product + " for entities file..")
+    pathlib.Path("branding/locale/").mkdir(parents=True, exist_ok=True)
+    with open('branding/locale/entities.specific.adoc', 'w') as f:
+        template_target = env.get_template('entities.specific.adoc.j2')
+        print(template_target.render(product), file=f)
+        f.close()
+
+    pathlib.Path("branding/pdf/").mkdir(parents=True, exist_ok=True)
+    with open('branding/pdf/entities.adoc', 'w') as f:
+        template_target = env.get_template('entities.adoc.j2')
+        print(template_target.render(config_data), file=f)
+        f.close()
+
+    with open('site.yml', 'w') as f:
+        print("Creating site.yml.")
+        template_target = env.get_template('site.yml.common.j2')
+        print(template_target.render(config_data), file=f)
+        print("Creating parameters specific for " + param_product + " in site.yml")
+        template_target = env.get_template('site.yml.j2')
+        print(template_target.render(product), file=f)
+        f.close()
+
 print("Configuration Completed!")
