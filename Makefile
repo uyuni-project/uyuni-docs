@@ -77,21 +77,6 @@ define antora-uyuni-function
 	cd $(current_dir)/$(1) && DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) antora $(current_dir)/$(1)/uyuni-site.yml --generator antora-site-generator-lunr
 endef
 
-define fix-lunr-search-in-suma-translation
-	cd $(current_dir)
-	$(call fix-lunr-search-in-translation,suse-manager,$(1))
-endef
-
-define fix-lunr-search-in-uyuni-translation
-	cd $(current_dir)
-	$(call fix-lunr-search-in-translation,uyuni,$(1))
-endef
-
-define fix-lunr-search-in-translation
-	cd $(current_dir)
-	$(shell sed -i s,\/$(1)\/,\/$(2)\/$(1)\/,g $(current_dir)/$(HTML_BUILD_DIR)/$(2)/search-index.js)
-endef
-
 define clean-function
 	cd $(current_dir)
 	rm -rf build/$(2)  #e.g. build/en
