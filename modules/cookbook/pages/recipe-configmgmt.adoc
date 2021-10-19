@@ -105,9 +105,12 @@ int_reboot_if_needed:
     - name: shutdown -r +5
 {%- if grains['os_family'] == 'RedHat' and grains['osmajorrelease'] >= 8 %}
     - onlyif: 'dnf -q needs-restarting -r; [ $? -eq 1 ]'
+{%- elif grains['os_family'] == 'RedHat' and grains['osmajorrelease'] <= 7 %}
+    - onlyif: 'needs-restarting -r; [ $? -eq 1 ]'
+{%- elif grains['os_family'] == 'Debian' %}
+    - onlyif: 
+      - test -e /var/run/reboot-required
 {%- else %}
     - onlyif: 'zypper ps -s; [ $? -eq 102 ]'
 {%- endif %}
-    - require:
-      - pkg: int_keep_system_up2date_pkgs
 ----
