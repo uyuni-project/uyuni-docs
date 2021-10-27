@@ -1,5 +1,5 @@
 [[setup-ansible-control-node]]
-= How to setup an Ansible control node
+= Setup an Ansible control node
 
 To setup an Ansible control node, execute the following steps from the {productname} {webui}.
 
@@ -61,9 +61,73 @@ For executing remediation's you will need to install the SCAP security guide pac
 
 
 [[configure-ansible-inventory-files]]
-== Configuring Ansible inventory files
+== Creating Ansible inventory files
+
+Ansible Integration tools deploys a playbook as an inventory file. Therefore, you should create one inventory file for each distinct OS listed in _Table 1_.
+
+.Procedure: Creating the Ansible inventory files
+. Create and add your hosts to an inventory file to be managed by Ansible. The default path for an Ansible inventory is `etc/ansible/hosts`.
++
+
+.Inventory Example
+[example]
+----
+client240.mgr.suse.de
+client241.mgr.suse.de
+client242.mgr.suse.de
+client243.mgr.suse.de  ansible_ssh_private_key_file=/etc/ansible/some_ssh_key
+
+[mygroup1]
+client241.mgr.suse.de
+client242.mgr.suse.de
+
+[mygroup2]
+client243.mgr.suse.de
+
+[all:vars]
+ansible_ssh_private_key_file=/etc/ansible/my_ansible_private_key
+----
++
+
+. Create the SSH keys that you're using in your inventory.
++
+
+----
+# ssh-keygen -f /etc/ansible/my_ansible_private_key
+----
++
+
+. Copy the generated SSH keys to the Ansible managed clients. Example:
++
+----
+# ssh-copy-id -i /etc/ansible/my_ansible_private_key root@client240.mgr.suse.de
+
+----
++
+
+. Test that Ansible is working by executing the following commands from the control node:
++
+
+----
+# ansible all -m ping
+# ansible mygroup1 -m ping
+# ansible client240.mgr.suse.de -m ping
+----
 
 
+== Add inventory files to the Ansible control node
 
+.Procedure: Adding Ansible inventory files to the control node
+. From the ansible control menu select: menu:Ansible[Control Node]. Under the **Playbook Directories** section add `/usr/share/scap-security-guide/ansible` to the **Add a Playbook Directories** field and then click "Save";
 
+. Under **Inventory Files** add your inventory file locations to the **Add an Inventory file** field and click **Save**.
++
+.Examples
+[example]
+----
+/etc/ansible/sles15
+/etc/ansible/sles12
+/etc/ansible/centos7
+----
 
+You may now run remediation's see: xref:ansible-compliance-as-code.adoc[]
