@@ -34,9 +34,9 @@ class PDFConverter < (Asciidoctor::Converter.for 'pdf')
     title = node.text
     out = [ xmodule.capitalize ]
     out << subdir.capitalize if subdir
-    out << title
+
     #puts "\t#{out.join(@caret)}"
-    %(<strong>[ #{out.join(@caret)} ]</strong>)
+    %(<strong>#{out.join(@caret)}</strong>)
 #    if node.type == :xref
 #      @caret ||= (load_theme node.document).menu_caret_content || %( \u203a )
 #      puts "node is a #{node.class}"
