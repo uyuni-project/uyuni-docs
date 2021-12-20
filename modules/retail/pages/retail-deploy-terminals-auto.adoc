@@ -59,9 +59,12 @@ cpio -H newc -o | gzip >> /srv/saltboot/boot/initrd.gz
 [[retail.deployterminals.auto.keep]]
 == Configure Saltboot to Keep Auto-Signed Grains
 
+Use different procedure for SLE 15 and SLE 11/12.
 
 
-.Procedure: Configuring Saltboot to Keep Auto-Signed Grains
+
+// For SLE15 templates, the procedure is the following:
+.Procedure: Configuring Saltboot to Keep Auto-Signed Grains (SLE 15)
 . In the location where the image source is built, such as a build host or source repository, create a configuration file called [path]``etc/salt/minion.d/autosign-grains.conf``.
 . Edit the new configuration file with these details.
   You can use any value you like as the auto-sign key:
@@ -75,6 +78,41 @@ grains:
 autosign_grains:
     - autosign_key
 ----
+
+
+
+// For SLE12 and SLE11 templates, the procedure is the following:
+.Procedure: Configuring Saltboot to Keep Auto-Signed Grains (SLE 11 and SLE 12)
+. In the location where the image source is built, such as a build host or source repository, create a configuration file called [path]``etc/salt/minion.d/autosign-grains.conf``.
+  This must be outside of the root directory provided by the template.
+  This way you prevent the inclusion of unwanted files in the ``initrd``.
+. Edit the new configuration file with these details.
+  You can use any value you like as the auto-sign key:
++
+----
+# create the grain
+grains:
+    autosign_key: <AUTOSIGN_KEY>
+
+# send the grain as part of auth request
+autosign_grains:
+    - autosign_key
+----
+
+. Create a tarball of this directory:
++
+----
+tar -czf autosign-grains.tgz etc
+----
+
+. Edit the [path]``config.xml`` template file.
+  In the [literal]``<packages type="image">`` element, add:
++
+----
+<archive name="autosign.tgz" bootinclude="true"/>
+----
+
+. Save the file and rebuild the image.
 
 
 
