@@ -52,7 +52,7 @@ dd bs=1M if=<usb image name> of=<path to usb device>
 
 When you have the image on the USB drive, check that the terminals you want to deploy allow local booting.
 You can check this by editing the Saltboot formula in the {productname} {smr} {webui}.
-For more information about the Saltboot formula, see xref:salt:formula-saltboot.adoc[].
+For more information about the Saltboot formula, see xref:specialized-guides:salt-formula-saltboot.adoc[].
 
 
 
@@ -123,7 +123,7 @@ echo ./etc/sysconfig/network/ifcfg-wlan0 | cpio -H newc -o | gzip >> /srv/saltbo
 ----
 . Check that the terminals you want to deploy allow local booting.
   You can check this by editing the Saltboot formula in the {productname} {smr} {webui}.
-  For more information about the Saltboot formula, see xref:salt:formula-saltboot.adoc[].
+  For more information about the Saltboot formula, see xref:specialized-guides:salt-formula-saltboot.adoc[].
 
 
 
@@ -214,101 +214,3 @@ Then you can specify a second Salt state with the wireless details for use durin
 The boot phase supports only WPA2 PSK wireless configuration.
 Salt-managed production configuration supports all features supported by all major operating systems.
 ====
-
-
-
-== Deploy Terminals and Auto-Accept Keys
-
-You can configure {productname} to automatically accept the keys of newly deployed terminals.
-This is achieved using Salt grains.
-
-[IMPORTANT]
-====
-Automatically accepting keys is less secure than manually checking and accepting keys.
-Only use this method on trusted networks.
-====
-
-There are three different ways you can configure auto-signed grains:
-
-* Configure Saltboot to send automatically signed grains once and then delete them.
-  To do this, append the Saltboot configuration to an existing ``initrd``.
-* Choose to keep the automatically signed grains on the Salt client.
-  To do this, include the configuration file in the image source before the client image is built.
-  After booting, the auto-signed grain is stored on the client as a regular Salt grain.
-* Configure Saltboot during PXE boot using kernel parameters.
-
-When you have configured Saltboot using one of these methods, you need to configure the {productname} Server to accept them.
-
-
-
-.Procedure: Configuring Saltboot to Send Auto-Signed Grain Once
-. On the branch server, create a configuration file called [path]``/etc/salt/minion.d/autosign-grains-onetime.conf``.
-. Edit the new configuration file with these details.
-  You can use any value you like as the auto-sign key:
-+
-----
-# create the grain
-grains:
-    autosign_key: <AUTOSIGN_KEY>
-
-# send the grain as part of auth request
-autosign_grains:
-    - autosign_key
-----
-. At the command prompt, add the new configuration file to the existing ``initrd``:
-+
-----
-echo ./etc/salt/minion.d/autosign-grains-onetime.conf | /
-cpio -H newc -o | gzip >> /srv/saltboot/boot/initrd.gz
-----
-
-
-
-.Procedure: Configuring Saltboot to Keep Auto-Signed Grains
-. In the location where the image source is built, such as a build host or source repository, create a configuration file called [path]``etc/salt/minion.d/autosign-grains.conf``.
-. Edit the new configuration file with these details.
-  You can use any value you like as the auto-sign key:
-+
-----
-# create the grain
-grains:
-    autosign_key: <AUTOSIGN_KEY>
-
-# send the grain as part of auth request
-autosign_grains:
-    - autosign_key
-----
-
-
-
-.Procedure: Configuring Saltboot to Auto-Sign During PXE Boot
-. Configure the PXE formula to specify these kernel parameters during booting:
-+
-----
-SALT_AUTOSIGN_GRAINS=autosign_key:<AUTOSIGN_KEY>
-----
-. PXE boot the Salt client.
-  The formula creates the [path]``./etc/salt/minion.d/autosign-grains-onetime.conf`` configuration file and passes it to ``initrd``.
-
-
-When you have configured Saltboot using one of these methods, you need to configure the server to accept them.
-The server stores the autosign keys in a file within the [path]``/etc/salt/master.d/`` directory.
-You can enable auto-signing by creating an auto-sign file that contains the key you created when you configured Saltboot.
-
-
-
-.Procedure: Configuring the Server to Auto-Accept
-. On the {productname} Server, open the master configuration file in the [path]``/etc/salt/master.d/`` directory, and add or edit this line:
-+
-----
-autosign_grains_dir: /etc/salt/autosign_grains
-----
-. Create a file at [path]``/etc/salt/autosign_grains/autosign_key``, that contains the auto-sign key you specified with Saltboot:
-+
-----
-<AUTOSIGN_KEY>
-----
-  For multiple keys, put each one on a new line.
-
-
-For more information about configuring the server to automatically accept grains, see https://docs.saltstack.com/en/latest/topics/tutorials/autoaccept_grains.html.
