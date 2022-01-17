@@ -1,0 +1,59 @@
+
+EPEL or any other custom channel containing conflicting packages is
+created as a child channel within a parent channel (e.g. RHEL8). As a
+result, the when bootstrap repository is being created, conflicting
+packages with higher version could be included into the repo. Such
+packages (e.g. python3-zmq, zeromq) may corrupt creation of bootstrap
+repository or cause issues during bootstrap of the client.
+
+When the custom channel (e.g. EPEL channel) is added below the parent
+channel, issues with conflicting packages can not be solved
+directly. The way how to solve this is to separate the custom channel
+from the parent channel. The custom channel needs to be created in a
+separate tree. In case that the custom channel needs to be delivered
+as a child, such environemnt can be created using CLM. Sources in a
+CLM project can be added there from different trees. Using such
+approach, the custom channel stays below parent within built
+environment, however, vendor channel tree stay without custom channel
+and the bootstrap repo and onboarding of clients works correctly.
+
+There is already a feature in development which helps to avoid the
+issue (Salt Bundle), however, it still takes some time (months) to get
+the feature into production environment.
+
+When the custom channel with the conflicting packages (salt, zeromq,
+and so on) is created as a child channel, following steps may help to
+resolve the issue:
+
+1. Remove the custom channel as a child channel from parent
+channel. More details:
+https://documentation.suse.com/suma/4.2/en/suse-manager/administration/custom-channels.html#_manage_custom_channels
+
+2. Custom channel needs to be created in a separate tree. More
+details:
+https://documentation.suse.com/suma/4.2/en/suse-manager/administration/custom-channels.html#_creating_custom_channels_and_repositories
+
+3. In order to get the custom channel as a child channel within
+Content Lifecycle management:
+
+=> In SUSE Manager webUI -> Content Lifecycle -> Create Project -> put in "Name" and "Label"
+=> Attach Source to the project -> use needed vendor channels + custom channel => (sharing example using CentOS8)
+=> Add environment into the Project -> example using CentOS8
+=> Build the environment environnment by hitting the "Build" button -> it creates an environment (with vendor and custom channels) which can be associated with Activation key and used to bootstrap the client
+
+4. Important note: in the CLM project, it is recommend to add a filter
+which filters out (exclude) the problematic/conflicting packages. The
+reason for that is that the conflicting packages with higher version
+would be installed anyway during the update of the client. More detail
+about filtering:
+https://documentation.suse.com/suma/4.2/en/suse-manager/administration/content-lifecycle-examples.html#exclude-higher-kernel-version
+
+5. In order to get the latest patches into CLM environment (with
+vendor and custom channel), it is needed to re-built the environment
+by clicking on "Build" button in the project
+
+6. More details about CLM can be found in:
+https://documentation.suse.com/suma/4.2/en/suse-manager/administration/content-lifecycle.html
+
+7. There is another workaround described in release notes:
+https://www.suse.com/releasenotes/x86_64/SUSE-MANAGER/4.2/index.html#_epel_and_salt_packages
