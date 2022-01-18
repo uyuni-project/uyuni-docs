@@ -53,7 +53,7 @@ fi
 #######################################################################
 
 for f in $(ls $CURRENT_DIR/$PO_DIR/*.cfg); do
-    po4a --srcdir $CURRENT_DIR --destdir $CURRENT_DIR -k $TRANSLATION_THRESHOLD_PERCENTAGE -M utf-8 -L utf-8 --no-update $f
+    po4a --srcdir $CURRENT_DIR --destdir $CURRENT_DIR -k $TRANSLATION_THRESHOLD_PERCENTAGE -M utf-8 -L utf-8 --no-update -o nolinting $f
 done
 
 
