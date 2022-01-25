@@ -1,5 +1,5 @@
-[[set.up.payg.instances]]
-= Set up {payg}
+[[connect.payg.instances]]
+= Connect {payg}
 
 In the three major public cloud providers (AWS, GCP and Azure), SUSE:
 
@@ -8,25 +8,28 @@ In the three major public cloud providers (AWS, GCP and Azure), SUSE:
 
 //{payg} instances are registered to the closest RMT Server at launch time (region/Server name is auto-determined).
 
-This document describes how to set up {payg} instance on {productname} server, and what happens in case instance is no longer available or accessible from the server.
+This document describes how to connect existing {payg} instance to {productname} server, and instance status refreshing.
 
-//OM: It is also possible to set up PAYG using XML RPC, but we don't have that procedure desribed yet
+Before using {payg} feature make sure that: 
+* {productname} server needs to be deployed in the same region as the {payg} instance
+* enter valid {scc} credentials in [guimenu]``Admin > Setup Wizard > Organization Credentials``, even they provides limited access to products
 
 
-== Setting up {payg} 
 
-[[proc-setting-up-new-payg]]
-.Procedure: Setting up new {payg}  instance
+== Connecting {payg} instance
+
+[[proc-conencting-new-payg]]
+.Procedure: Conencting new {payg}  instance
 [role=procedure]
 . In the [guimenu]``Admin > Setup Wizard > {payg}`` click btn:[Add {payg}].
 . In the new screen, click btn:[Create] to add new {payg} connection data
 . In the menu:Add new {payg} data[Description], add the description of the newly created connection.
 . In the menu:Add new {payg} data[Hostname], enter the actual name of the instance as it appears on the cloud.
 . In the menu:Add new {payg} data[Port], enter 22.
-. In the menu:Add new {payg} data[Username], add the actual username as specified in the cloud (Ricardo?)
-. In the menu:Add new {payg} data[Password], enter... (Ricardo?)
+. In the menu:Add new {payg} data[Username], add the actual username as specified in the cloud
+. In the menu:Add new {payg} data[Password], enter the password
 . In the menu:Add new {payg} data[Key], add the correct instance key
-. In the menu:Add new {payg} data[Key Password], add ... (Ricardo?)
+. In the menu:Add new {payg} data[Key Password], add key passphrase
 
 [IMPORTANT]
 ====
@@ -35,7 +38,7 @@ Authentication keys must always be in PEM format.
 
 If you are not connecting directly to the cloud, but via SSH bastion, proceed with <<proc-adding-ssh-bastion-connection-data>>.
 
-Otherwise, continue with <<proc-finishing-payg-setting-up>>.
+Otherwise, continue with <<proc-finishing-payg-connecting>>.
 
 [[proc-adding-ssh-bastion-connection-data]]
 .Procedure: Adding SSH bastion connection data
@@ -49,20 +52,21 @@ Otherwise, continue with <<proc-finishing-payg-setting-up>>.
 
 Complete the setup process with with <<proc-finishing-payg-setting-up>>.
 
-[[proc-finishing-payg-setting-up]]
-.Procedure: Finishing {payg} setting up
+[[proc-finishing-payg-connecting]]
+.Procedure: Finishing {payg} conencting
 [role=procedure]
 . Click btn:[Create] to complete adding new {payg} connection data
 . You will return to [guimenu]``Admin > Setup Wizard > Pay-as-you-go`` screen.
-. If all of the entered authentication data for the instance are correct, the column Status will soon show "Credentials successfully updated".
+. If the authentication data for the instance are correct, the column Status will soon show "Credentials successfully updated".
 
 [IMPORTANT]
 ====
-If the invalid data are entered at any point, the newly created instance will be shown in Setup Wizard > PAYG, with column Status displaying Error message.
+If the invalid data are entered at any point, the newly created instance will be shown in [guimenu]``Admin > Setup Wizard > {payg}``, with column Status displaying error message.
 ====
 
 
 As soon as the authentication data is available on the server, a list of available products is updated.
+
 Available products are all versions of the same product family and architecture as the one installed in the {payg} instance. 
 E.g. if the instance has {sle} 15 SP1 product installed, {sle}15 SP2 and {sle}15 SP3 will be automatically added and shown in [guimenu]``Admin > Setup Wizard > Products``. 
 
@@ -70,44 +74,46 @@ Once the products are shown as available, they need to be scheduled for syncing 
 
 To monitor the progress of channel syncing in GUI, go to [guimenu]``Software > Channel List > All``. 
 
-To monitor the syncing progress in the log files, go to /var/log/rhn/reposync directory on (Ricardo - which server?)
+To monitor the syncing progress in the log files, go to /var/log/rhn/reposync directory on the {productiname} server.
 
 
 === Deleting the instance
 
 The following procedure describes how to delete the instance.
 
-[[proc-deleting-payg-instances]]
-.Procedure: Deleting PAYG instances
+[[proc-deleting-payg-instance]]
+.Procedure: Deleting {payg} instance
 [role=procedure]
 . Go to [guimenu]``Admin > Setup Wizard > {payg}``
-. Find the instance you want manage on the list of existing instances
+. Find the instance on the list of existing instances
 . Click on the instance details
-. Select btn:[Delete] and confirm your selection.
-. You will be returned to the list of instances and the one that was just deleted will no longer be shown.
+. Select btn:[Delete] and confirm your selection
+. You will be returned to the list of instances and the one that was just deleted will no longer be shown
 
 
 
-== Status refreshing  
+== Instance status and availability  
 
-Instance status is refreshed every 10 minutes and is shown in the column Status (...or else WHERE too).
+{productname} server uses instance credentails to connect to the RMT server and download the packages using reposync.
+These credentials are refreshed every 10 minutes by taskomatic, which always uses the last known authentication credentials to access the instance.
 
-{payg} instances remain registered on {productname} server regardless of their status on the cloud. << CHECK with Ricardo
-The connection is refreshed by taskomatic and always uses the last known authentication credentials to access the instance.
+Up-to date status of the {payg} instance is shown in the column Status or on the instance details page.
 When the instance is not reachable, the reposync will fail.
 
+{payg} instance remains connected to {productname} server unless it is explicitly deleted.
+To delete the instance, use <<proc-deleting-payg-instance>>. 
+ 
 
-There are a number of reasons why instance may not be accessible from the {productname}.
+There {payg} instance may not be accessible from the {productname} at all times.
 
 . If the instance exists, but is stopped, the last known credentials will be used to try to connect to that instance. 
-    The availability of these credentials will vary depending on the cloud provider.
+    The duration of availability of these credentials will vary depending on the cloud provider.
 
-. If the instance no longer exists, but is still registered with SUMA, the authentication will fail.
-    The error message is shown in the column status. 
-    (The level of detail the error message displays varies << RICARDO, let's check this?)
+. If the instance no longer exists, but is still registered with SUMA, its credentials are no longer valid and the authentication will fail.
+    The error message is shown in the column Status. 
 +
 [WARNING]
 ====
-The error message shown to the user only indicates that the instance is not available. 
-Further diagnostics about the status of the instance needs to be done on the cloud. 
+The error message only indicates that the instance is not available. 
+Further diagnostics about the status of the instance needs to be done on the cloud provider. 
 ====
