@@ -1,2 +1,123 @@
-lklakk
+[[connect.payg.instances]]
+= Connect {payg} instance
 
+In the three major public cloud providers (AWS, GCP and Azure), SUSE:
+
+* provides customized {payg} product images for SLES, SLES for SAP, etc.
+* operates per-region RMT Servers mirroring repositories for products available as {payg}
+
+This document describes how to connect existing {payg} instance to {productname} server, and gives basic information about credentials collection from the instance.
+The goal of the connection is to extract authentication data so {productname} server is able to connect to cloud RMT host.
+
+Before using {payg} feature make sure that: 
+
+* {productname} server is deployed in the same region as the {payg} instance
+* valid {scc} credentials are entered in menu:Admin[Setup Wizard > Organization Credentials], even they provide only limited access to products
+
+
+== Connecting {payg} instance
+
+[[proc-connecting-new-payg]]
+.Procedure: Connecting new {payg} instance
+[role=procedure]
+. In the {productname} {webui}, navigate  to menu:Admin[Setup Wizard > {payg}], and click btn:[Add {payg}].
+. Start with the page section [guimenu]``{payg} connection Description``.
+. In the [guimenu]``Description`` field, add the description.
+. Move to the page section [guimenu]``Instance SSH connection data``.
+. In the [guimenu]``Host`` field, enter the instance DNS or IP address to connect from {productname}.
+. In the [guimenu]``SSH Port`` field, enter the port number or use default value 22.
+. In the [guimenu]``User`` field, enter the username as specified in the cloud.
+. In the [guimenu]``Password`` field, enter the password.
+. In the [guimenu]``SSH Private Key`` field, enter the instance key.
+. In the [guimenu]``SSH Private Key Passphrase`` field, enter the key passphrase.
+
+[IMPORTANT]
+====
+Authentication keys must always be in PEM format.
+====
+
+If you are not connecting directly to the instance, but via SSH bastion, proceed with <<proc-adding-ssh-bastion-connection-data>>.
+
+Otherwise, continue with <<proc-finishing-payg-connecting>>.
+
+[[proc-adding-ssh-bastion-connection-data]]
+.Procedure: Adding SSH bastion connection data
+[role=procedure]
+. Navigate to the page section [guimenu]``Bastion SSH connection data``.
+. In the [guimenu]``Host`` field, enter the bastion hostname.
+. In the [guimenu]``SSH Port`` field, enter the bastion port number.
+. In the [guimenu]``User`` field, enter the bastion username.
+. In the [guimenu]``Password`` field, enter the bastion password.
+. In the [guimenu]``SSH Private Key`` field, enter the bastion key.
+. In the [guimenu]``SSH Private Key Passphrase`` field, enter the bastion key passphrase.
+
+Complete the setup process with with <<proc-finishing-payg-connecting>>.
+
+[[proc-finishing-payg-connecting]]
+.Procedure: Finishing {payg} connecting
+[role=procedure]
+. To complete adding new {payg} connection data, click btn:[Create].
+. Return to {payg} connection data [guimenu]``Details`` page. 
+    The updated connection status is displayed on the top section named [guimenu]``Information``.
+. Connection status is shown in [guimenu]``Admin > Setup Wizard > Pay-as-you-go`` screen too.
+. If the authentication data for the instance are correct, the column [guimenu]``Status`` shows "Credentials successfully updated".
+
+[IMPORTANT]
+====
+If the invalid data are entered at any point, the newly created instance is shown in [guimenu]``Admin > Setup Wizard > {payg}``, with column [guimenu]``Status`` displaying error message.
+====
+
+
+As soon as the authentication data is available on the server, the list of available products is updated.
+
+Available products are all versions of the same product family and architecture as the one installed in the {payg} instance. 
+For example, if the instance has the {slsa}{nbsp}15 SP1 product installed, {slsa}{nbsp}15 SP2 and {slsa}{nbsp}15 SP3 are automatically shown in [guimenu]``Admin > Setup Wizard > Products``. 
+
+Once the products are shown as available, the user can add a product to {productname} by selecting the checkbox next to the product name and clicking btn:[Add product].
+
+After the success message you can verify the newly added channels in the {webui}, by navigating to [guimenu]``Software > Channel List > All``. 
+
+To monitor the syncing progress of each channel, check the log files in the [path]``/var/log/rhn/reposync`` directory on the {productname} Server.
+
+
+=== Deleting the instance connection data
+
+The following procedure describes how to delete SSH connection data of the instance.
+
+[[proc-deleting-connection-data-to-instance]]
+.Procedure: Deleting connection data to instance
+[role=procedure]
+. Open [guimenu]``Admin > Setup Wizard > {payg}``.
+. Find the instance on the list of existing instances.
+. Click on the instance details.
+. Select btn:[Delete] and confirm your selection.
+. You are returned to the list of instances. 
+    The one that was just deleted is no longer shown.
+
+
+
+== Instance credential collect status
+
+{productname} server uses credentails collected from the instance to connect to the RMT server and to download the packages using reposync.
+These credentials are refreshed every 10 minutes by taskomatic using the defined SSH connection data. Connection to RMT server always uses the last known authentication credentials collected from the {payg} instance.
+
+Up-to date status of the {payg} instance credentials collect is shown in the column Status or on the instance details page.
+When the instance is not reachable, the credential update process will fail.
+
+{payg} instance remains connected to {productname} server unless SSH connection data is explicitly deleted.
+To delete the SSH connection data to the instance, use <<proc-deleting-connection-data-to-instance>>. 
+ 
+
+{payg} instance may not be accessible from the {productname} server at all times.
+
+. If the instance exists, but is stopped, the last known credentials will be used to try to connect to the instance. 
+    How long the credentials remain valid depends on the cloud provider.
+
+. If the instance no longer exists, but is still registered with SUMA, its credentials are no longer valid and the authentication will fail.
+    The error message is shown in the column Status. 
++
+[WARNING]
+====
+The error message only indicates that the instance is not available. 
+Further diagnostics about the status of the instance needs to be done on the cloud provider. 
+====
