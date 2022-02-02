@@ -1,0 +1,72 @@
+[[troubleshooting-customchannel]]
+= Troubleshooting Custom Channel with Conflicting Packages
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+////
+Cause: Conflicting packages in custom channel
+Consequence: Creating bootstrap repo can fail
+Fix: Separate trees from each other
+Result: Clean and functional boostrap repo will be created
+////
+
+When setting up a custom channel with conflicting packages features such as creating a bootstrap repository can result in undefined behavior and make registering clients fail.
+
+For example, conflicting packages with higher version numbers could be
+included into the bootstrap repository.
+Such packages (for example, [package]``python3-zmq`` or [package]``zeromq``) may corrupt the creation of the bootstrap repository or cause issues during bootstrap of the client.
+
+When the custom channel (for example, an EPEL channel) is added below the parent vendor channel, issues with conflicting packages cannot be solved directly.
+The way how to solve this is to separate the custom channel from the vendor channel.
+The custom channel needs to be created in a separate tree.
+In case that the custom channel needs to be delivered
+as a child, such environemnt can be created using Content Lifecycle Management (CLM).
+Sources in a CLM project can be added there from different trees.
+Using such an approach, the custom channel stays below the parent within the built environment.
+However, the vendor channel tree stays without the custom channel and the bootstrap repository.
+Then registering clients works correctly.
+
+When the custom channel with the conflicting packages (salt, zeromq,
+and so on) is created as a child channel, following steps can help to
+avoid the issue:
+
+.Procedure: Avoiding Conflicting Packages in Custom Channels
+
+. Remove the custom channel as a child channel from parent channel.
+  For more information, see xref:administration:custom-channels.adoc#_manage_custom_channels[].
+. Create the custom channel in a separate tree.
+  For more information, see xref:administration:custom-channels.adoc#_creating_custom_channels_and_repositories[].
+. To get the custom channel as a child channel within
+Content Lifecycle Management (CLM):
++
+* In the {productname} {webui}, navigate to menu:Content Lifecycle[], and click btn:[Create Project].
+  Enter [guimenu]``Name`` and [guimenu]``Label``.
+* Attach Source to the project.
+  Use the needed vendor channels and the custom channel.  // (sharing example using CentOS8)
+* Add environment into the Project.  // example using CentOS8
+* To build the environment click the btn:[Build] button.
+  This creates an environment with vendor and custom channels that can be associated with an activation key and used to bootstrap the client.
+. Important note: In the CLM project, it is recommend to add a filter, which excludes the problematic or conflicting packages.
+  Otherwise the conflicting packages with higher version numbers would be installed during the update of the client.
+  For more information about filtering, see xref:administration:content-lifecycle-examples.adoc#exclude-higher-kernel-version[].
+. To get the latest patches into the CLM environment (with vendor and custom channel), click the btn:[Build] button in the project.
+  This is needed to re-built the environment.
+
+* For more information about CLM, see xref:administration:content-lifecycle.adoc[].
+* For another workaround, see https://www.suse.com/releasenotes/x86_64/SUSE-MANAGER/4.2/index.html#_epel_and_salt_packages.
