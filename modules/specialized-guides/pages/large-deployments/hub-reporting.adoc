@@ -1,9 +1,25 @@
 [[lsd-hub-reporting]]
 = Hub Reporting
+The Hub prepares and provides content for multiple peripheral {productname} Servers. The goal is now to get data from these Servers back and have combined reporting data available on the Hub.
+The data are made available for external Reporting Tools.
 
-== Create a DB user for the reporting
+== Architecture
+The main database is a PostgresDB in the {productname} Hub system.  It stores all the information collected from all the servers, and eventually aggregates them. 
+Other databases with the same schema are also present in all the servers, to collect information for that system. In summary:
 
-Users can be managed using ``uyuni-setup-reportdb-user`` .
+- the DB in {productname} Hub stores, collects and eventually aggregates data coming from all the DBs of the peripheral Servers,
+- the DB in {productname} Hub stores also its own data - data from the systems directly connected and managed by the Hub,
+- the DB in peripheral {productname} Server stores its own data,
+- the reporting tool can be connected either to the Hub or to any {productname} Server.
+
+== Setup
+
+#TODO Add temporary installation steps (at the end everything should be installed by default)
+
+=== Create a DB user for the reporting
+
+Before connecting an external Reporting Tools to the Database, a user with read-only permission should be created.
+For doing that, it is possible to use ``uyuni-setup-reportdb-user`` .
 
 ----
 usage: uyuni-setup-reportdb-user [options]
@@ -24,3 +40,20 @@ options:
   --modify
             Set a new password
 ----
+
+== Database Schema
+
+The schema export the most important tables from the main {productname} Database as a de-normalized variant containing only data which are relevant for a report.
+
+A ready-to-use report can be provided with views doing joins over multiple tables.
+
+Every table gets an extra column for the {productname} server id of server which provide the data `mgm_id`. 
+On a single {productname} Server this column has the standard value 1 which represent "localhost". 
+On the {productname} Hub it is replaced with the real server id the managed server has in the hub database.
+
+The `synced_date` represent the time when the data were exported from the main {productname} Server database.
+
+#TODO Update image
+
+image::reportdb_schema.png[]
+
