@@ -1,6 +1,6 @@
 Follow the instructions given here each time you create a new document with the workflow you want to describe.
 
-1. Make a copy of the workflow-TEMPLATE.adoc file and rename it as workflow-your-chosen-filename.adoc
+1. Make a copy of the workflow-TEMPLATE.txt file and rename it as workflow-your-chosen-filename.adoc (note the change in extension)
 
 2. Use full words in "your-chosen-filename", separating each word with the dash "-". 
 E.g. instead of workflow-clm.adoc, use workflow-content-lifecycle-management.adoc.
