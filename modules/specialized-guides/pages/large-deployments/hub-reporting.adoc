@@ -1,0 +1,60 @@
+[[lsd-hub-reporting]]
+= Hub Reporting
+
+The Hub prepares and provides content for multiple peripheral {productname} Servers. The goal of the reporting feature is to get data from these Servers back and have combined reporting data available on the Hub.
+The data is made available for external Reporting Tools.
+
+== Architecture
+The main database is a PostgresDB in the {productname} Hub system. 
+It stores all the information collected from all the servers, and eventually aggregates them. 
+Every peripheral Server has its own reporting database where the information is collected for that system. 
+In summary:
+
+- the DB in {productname} Hub stores, collects and eventually aggregates data coming from all the DBs of the peripheral Servers,
+- the DB in {productname} Hub stores also its own data from the systems directly connected and managed by the Hub,
+- the DB in peripheral {productname} Server stores its own data,
+- the reporting tool can be connected either to the Hub or to any {productname} Server.
+
+== Setup
+The reporting database and schema are set up by default using the local PostgreSQL server.
+The reporting database is a separate database accessible via the network.
+
+=== Create a DB user for the reporting
+
+Before connecting an external Reporting Tools to the Database, a user with read-only permission should be created.
+For doing that, it is possible to use ``uyuni-setup-reportdb-user``.
+
+----
+usage: uyuni-setup-reportdb-user [options]
+
+options:
+  --help 
+            show this help message and exit
+  --non-interactive
+            Switches to non-interactive mode
+  --dbuser=DBUSER
+            Report DB User
+  --dbpassword=DBPASSWORD
+            Report DB Password
+  --add
+            Add the new user
+  --delete
+            Delete the user
+  --modify
+            Set a new password
+----
+
+== Database Schema
+
+The schema exports the most important tables from the main {productname} Database as a de-normalized variant containing only data which are relevant for a report.
+
+Ready-to-use reports are provided as views, aggregating data over multiple tables.
+
+Every table gets an extra id column (`mgm_id`) specifying the {productname} server which provided the data. 
+On a single {productname} Server this column has the standard value `1` which represent "localhost." 
+On the {productname} Hub it is replaced with the real server id the managed server has in the hub database.
+
+Another common additional field is `synced_date`, which represent the time when the data were exported from the main {productname} Server database.
+
+image::reportdb_schema.png[]
+

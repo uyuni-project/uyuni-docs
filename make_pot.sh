@@ -34,7 +34,7 @@ fi
 #######################################################################
 
 for f in `ls $CURRENT_DIR/$PO_DIR/*.cfg`; do
-    po4a -v --srcdir $CURRENT_DIR --destdir $CURRENT_DIR -k 0 -M utf-8 -L utf-8 --no-translations $f
+    po4a -v --srcdir $CURRENT_DIR --destdir $CURRENT_DIR -k 0 -M utf-8 -L utf-8 --no-translations -o nolinting $f
 done
 
 
