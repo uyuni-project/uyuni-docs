@@ -1,6 +1,16 @@
 [[contact-methods-salt]]
 = Salt Bundle
 
+== What is Salt Bundle?
+
+The Salt Bundle is a single binary package containing Salt Minion, Python 3, required Python modules and libraries.
+
+As the Salt Bundle is shipped with Python 3 and all the requirements for Salt. The Bundle is not using the Python installed on the system, so it can be installed on the client which doesn't meet the requirements for Salt version.
+
+It is also possible to install Salt Bundle on the system where Salt Minion is used already to manage the client by the Salt Master other than {productname} Server.
+
+== Client Registration with Salt Bundle as a Minion
+
 The registration method with the Salt bundle is the recommended registration method as long as it covers your use case.
 This section explains the advantages and limitations of the current implementation.
 The Salt bundle is provided as the [package]``venv-salt-minion`` that consists of Salt, Python, and the Python modules Salt depends on.
@@ -10,6 +20,8 @@ Using the Salt bundle, it is no longer needed that the client provides the requi
 If you bootstrap new clients, registration with the Salt bundle is the default method.
 You can switch existing clients to the Salt bundle method.
 If you switch, the [package]``salt-minion`` package and its Python version and the Python modules will stay installed.
+
+=== Switching from Salt Minion to Salt Bundle
 
 The Salt state [literal]``util.mgr_switch_to_venv_minion`` is available to switch from [package]``salt-minion`` to [package]``venv-salt-minion``.
 It is recommended to switch to [package]``venv-salt-minion`` in two steps to avoid trouble with shifting processes:
@@ -37,3 +49,33 @@ In this case specify one of these options:
 * Set [literal]``AVOID_VENV_SALT_MINION`` to [literal]``1`` in the generated bootstrap script.
 * For bootstrap state set the [literal]``mgr_avoid_venv_salt_minion`` pillar to  [literal]``True``.
 
+== Salt SSH with the Salt Bundle
+
+The Salt Bundle is also used to handle Salt SSH session on the client side.
+
+The pre flight script is deploying the Salt Bundle on the client without installing the package. Original `salt-thin` method is not used in this case.
+
+Salt API is calling Python 3 deployed with the Bundle to handle Salt SSH session on the client, so Salt SSH (including bootstrapping with {webui}) is not dependant on Python installed on the system.
+
+[IMPORTANT]
+====
+The bootstrap repository must be created before bootstrapping the client with {webui}. The pre flight script is detecting the OS on the client and using the bootstrap repository relevant for the OS version.
+For more information, see xref:client-configuration:bootstrap-repository.adoc#_prepare_to_create_a_bootstrap_repository[Prepare to Create a Bootstrap Repository]
+====
+
+[NOTE]
+====
+Using `salt-thin` can be enabled as a fallback method, but it requires Python 3 to be installed on the client.
+This method is not recommended and supported and can be used for development purposes only.
+Set [option]``web.ssh_use_salt_thin`` to `true` in the [path]``/etc/rhn/rhn.conf`` configuration file.
+====
+
+== Using the Salt Bundle with the Salt Minion
+
+The Salt Bundle can be used with the Salt Minion managed by the Salt Master other than {productname} Server at the same time.
+
+[IMPORTANT]
+====
+To bootstrap the client with the Salt Minion managed by the Salt Master other than {productname} Server it is recommended to use [command]``mgr-bootstrap`` [option]``--force-bundle`` on generating bootstrap script, or set [option]``FORCE_VENV_SALT_MINION`` to `1` in the bootstrap script.
+For bootstrapping with {webui} [literal]``mgr_force_venv_salt_minion`` set to [literal]``true`` pillar can be specified globally. See xref:specialized-guides:salt/salt-states-and-pillars.adoc[Salt States and Pillars] for more information.
+====
