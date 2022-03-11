@@ -45,13 +45,9 @@ The only mandatory parameter for the script is the newly configured IP address o
     You also need to provide configuration settings for reverse name resolution.
     Changing network settings is done in the same way as with renaming any other system.
 . Reboot the {productname} Server to use the new network configuration and to ensure the hostname has changed.
-. Remove the old [package]``rhn-org-httpd-ssl-key-pair`` package:
-+
-----
-zypper rm  package rhn-org-httpd-ssl-key-pair
-----
 . Run the script [command]``spacewalk-hostname-rename`` script with the public IP address of the server.
     If the server is not using the new hostname, the script fails.
+    Be aware that this script refreshes the pillar data for all Salt minion: the time it takes to run depends on the number of registered Salt systems.
 . Re-configure your clients to make your environment aware of the new hostname and IP address.
 +
 In the Salt minion configuration file [path]``/etc/salt/minion``, you must make sure to specify the name of the new Salt master ({productname} Server):
@@ -59,6 +55,15 @@ In the Salt minion configuration file [path]``/etc/salt/minion``, you must make 
 ----
 master: <new_hostname>
 ----
+
+Once this is changed, restart the [literal]``salt-minion` process:
+
+----
+systemctl restart salt-minion
+----
+
+In order to fully propagate the hostname to the minion configuration (in the repositories URL for instance) apply the high state.
+
 +
 Traditional clients have the [path]``/etc/sysconfig/rhn/up2date`` configuration file that must be changed.
 With a re-activation key you can re-register traditional clients (if there are any).

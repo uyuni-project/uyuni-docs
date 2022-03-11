@@ -76,6 +76,7 @@ mgr-create-bootstrap-repo --list --force
 ----
 mgr-create-bootstrap-repo --create SLE-12-SP2-x86_64 --force
 ----
+
 If you do not want to create bootstrap repositories manually, you can check whether LTSS is available for the product and bootstrap repository you need.
 
 
@@ -187,6 +188,45 @@ grains:
 
 
 
+== Red Hat CDN Channel and Multiple Certificates
+
+The {redhat} content delivery network (CDN) channels sometimes provide multiple certificates, but the {productname} {webui} can only import a single certificate.
+If CDN presents a certificate that is different to the one the {productname} {webui} knows about, validation fails and permission to access the repository is denied, even though the certificate is accurate.
+The error message received is:
+
+----
+[error]
+Repository '<repo_name>' is invalid.
+<repo.pem> Valid metadata not found at specified URL
+History:
+ - [|] Error trying to read from '<repo.pem>'
+ - Permission to access '<repo.pem>' denied.
+Please check if the URIs defined for this repository are pointing to a valid repository.
+Skipping repository '<repo_nam' because of the above error.
+Could not refresh the repositories because of errors.
+HH:MM:SS RepoMDError: Cannot access repository. Maybe repository GPG keys are not imported
+----
+
+To resolve this issue, merge all valid certificates into a single ``.pem`` file, and rebuild the certificates for use by {productname}:
+
+
+
+.Procedure: Resolving Multiple {redhat} CDN Certificates
+. On the {redhat} client, at the command prompt, as root, gather all current certificates from ``/etc/pki/entitlement/`` in a single ``rh-cert.pem`` file:
++
+----
+cat 866705146090697087.pem 3539668047766796506.pem redhat-entitlement-authority.pem > rh-cert.pem
+----
+. Gather all current keys from ``/etc/pki/entitlement/`` in a single ``rh-key.pem`` file:
++
+----
+cat 866705146090697087-key.pem 3539668047766796506-key.pem > rh-key.pem
+----
+
+You can now import the new certificates to the {productname} Server, using the instructions in xref:client-configuration:clients-rh-cdn.adoc[].
+
+
+
 == Registering Older Clients
 
 //
@@ -226,7 +266,7 @@ grains:
 
 //* Result: the client is successfully registered
 
-To register and use {centos}{nbsp}6, {oracle}{nbsp}6, {rhel}{nbsp}6, or {sleses}{nbsp}6 clients, you need to configure the {productname} Server to support older types of SSL encryption.
+To register and use {centos}{nbsp}6, {oracle}{nbsp}6, {rhel}{nbsp}6, {sleses}{nbsp}6, or {sles} 11 clients, you need to configure the {productname} Server to support older types of SSL encryption.
 
 If you are attempting to register at the command prompt, you see an error like this:
 
@@ -257,3 +297,42 @@ SSLProtocol all -SSLv2 -SSLv3
 
 This needs to be done manually on the server, and with a Salt state on the Proxy, if applicable.
 Restart the [systemitem]``apache`` service on each system after making the changes.
+
+
+== Salt clients shown as down and DNS settings
+
+Even if the Salt client is running, actions such as package refresh or apply states can be marked as failed with the message:
+
+----
+Minion is down or could not be contacted.
+----
+
+In this case try rescheduling the action.
+If rescheduling succeeds, the cause of the problem can be a wrong DNS configuration.
+
+When the Salt client is restarted, or in case the grains are refreshed, the client calculates its FQDN grains, and it is unresponsive until the grains are proceeded.
+When a scheduled action on {productname} Server is going to be executed, {productname} Server performs a ``test.ping`` to the client before the actual action to ensure the client is actually running and the action can be triggered.
+
+By default, {productname} Server waits for 5 seconds to get the response from ``test.ping`` command.
+If the response is not received within 5 seconds, then the action is set to fail with the message that the client is down or could not be contacted.
+
+To correct this, fix the DNS resolution on the client, so the client does not get stuck for 5 seconds while solving its FQDN.
+
+If this is not possible, try to increase the value for ``java.salt_presence_ping_timeout`` in the ``/etc/rhn/rhn.conf`` file on the {productname} Server to a value higher than 4.
+
+For example:
+
+----
+java.salt_presence_ping_timeout = 6
+----
+
+After that, restart ``spacewalk-services`` with:
+
+----
+spacewalk-services restart
+----
+
+[NOTE]
+====
+Increasing this value will cause {productname} Server to take longer to check if a minion is unreachable or unresponsive, causing the {productname} Server to be slower or less responsive overall.
+====

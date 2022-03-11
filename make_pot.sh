@@ -34,7 +34,7 @@ fi
 #######################################################################
 
 for f in `ls $CURRENT_DIR/$PO_DIR/*.cfg`; do
-    po4a --srcdir $CURRENT_DIR --destdir $CURRENT_DIR -k 0 -M utf-8 -L utf-8 --no-translations $f
+    po4a -v --srcdir $CURRENT_DIR --destdir $CURRENT_DIR -k 0 -M utf-8 -L utf-8 --no-translations $f
 done
 
 
@@ -44,9 +44,9 @@ done
 
 for module in $(find $CURRENT_DIR/$PO_DIR -mindepth 1 -maxdepth 1 -type d -printf "%f\n"); do
     for langpo in $(find $CURRENT_DIR/$PO_DIR/$module -mindepth 1 -maxdepth 1 -type f -name "*.po" -printf "%f\n"); do
-        if [ -e $CURRENT_DIR/$module/assets/images ]; then
+        if [ -e $CURRENT_DIR/$SRCDIR_MODULE/$module/assets/images ]; then
             lang=`basename $langpo .po`
-            rsync -u --inplace -a --delete $CURRENT_DIR/modules/$module/assets/* $CURRENT_DIR/$PO_DIR/$module/assets-$lang/
+            rsync -u --inplace -a --delete $CURRENT_DIR/$SRCDIR_MODULE/$module/assets/* $CURRENT_DIR/$PO_DIR/$module/assets-$lang/
         fi
     done
 done

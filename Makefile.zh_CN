@@ -1,0 +1,253 @@
+LANGCODE_ZH_CN=zh_CN
+LANGDIR_ZH_CN=translations/$(LANGCODE_ZH_CN)
+LOCALE_ZH_CN=zh_CN.UTF-8
+GNUDATEFORMAT_ZH_CN=%Y年%m月%e日
+#GNUDATEFORMAT_ZH_CN=%Y.%m.%e
+
+HTML_BUILD_DIR_ZH_CN := $(CURDIR)/build/$(LANGCODE_ZH_CN)
+PDF_BUILD_DIR_ZH_CN := $(CURDIR)/build/$(LANGCODE_ZH_CN)/pdf
+
+# SUMA OBS Tarball Filenames
+HTML_OUTPUT_SUMA_ZH_CN ?= susemanager-docs_zh_CN
+PDF_OUTPUT_SUMA_ZH_CN ?= susemanager-docs_zh_CN-pdf
+
+# UYUNI OBS Tarball Filenames
+HTML_OUTPUT_UYUNI_ZH_CN ?= uyuni-docs_zh_CN
+PDF_OUTPUT_UYUNI_ZH_CN ?= uyuni-docs_zh_CN-pdf
+
+# Clean up build artifacts
+.PHONY: clean-$(LANGCODE_ZH_CN)
+clean-$(LANGCODE_ZH_CN): ## Remove build artifacts from output directory (Antora and PDF)
+	$(call clean-function,$(LANGDIR_ZH_CN),$(LANGCODE_ZH_CN))
+
+.PHONY: validate-suma-$(LANGCODE_ZH_CN)
+validate-suma-$(LANGCODE_ZH_CN):
+	$(call validate-product,$(LANGDIR_ZH_CN),suma-site.yml)
+
+.PHONY: pdf-tar-suma-$(LANGCODE_ZH_CN)
+pdf-tar-suma-$(LANGCODE_ZH_CN):
+	$(call pdf-tar-product,$(LANGCODE_ZH_CN),$(PDF_OUTPUT_SUMA_ZH_CN),$(PDF_BUILD_DIR_ZH_CN))
+
+.PHONY: prepare-antora-suma-$(LANGCODE_ZH_CN)
+prepare-antora-suma-$(LANGCODE_ZH_CN):
+	-mkdir -p $(LANGDIR_ZH_CN) && \
+	cp -a antora.yml $(LANGDIR_ZH_CN)/antora.yml && \
+	sed "s/\.\/branding/\.\.\/\.\.\/branding/;\
+	s/\-\ url\:\ \./\-\ url\:\ \.\.\/\.\.\//;\
+	s/start_path\:\ \./\start_path\:\ translations\/$(LANGCODE_ZH_CN)/;\
+	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/$(LANGCODE_ZH_CN)/;" suma-site.yml > $(LANGDIR_ZH_CN)/suma-site.yml && \
+	cd $(LANGDIR_ZH_CN) && \
+	if [ ! -e branding ]; then ln -s ../../branding; fi && \
+	cp -a $(CURDIR)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(CURDIR)/$(LANGDIR_ZH_CN)/modules/ROOT/pages/
+
+.PHONY: antora-suma-$(LANGCODE_ZH_CN)
+antora-suma-$(LANGCODE_ZH_CN): clean-$(LANGCODE_ZH_CN) pdf-all-suma-$(LANGCODE_ZH_CN) pdf-tar-suma-$(LANGCODE_ZH_CN)
+#	$(call enable-suma-in-antorayml,.)
+	$(call antora-suma-function,$(LANGDIR_ZH_CN),$(LANGCODE_ZH_CN))
+
+.PHONY: obs-packages-suma-$(LANGCODE_ZH_CN)
+obs-packages-suma-$(LANGCODE_ZH_CN): clean-$(LANGCODE_ZH_CN) pdf-all-suma-$(LANGCODE_ZH_CN) antora-suma-$(LANGCODE_ZH_CN) ## Generate SUMA OBS tar files
+	$(call obs-packages-product,$(LANGCODE_ZH_CN),$(LANGCODE_ZH_CN)/pdf,$(HTML_OUTPUT_SUMA_ZH_CN),$(PDF_OUTPUT_SUMA_ZH_CN))
+
+# Generate PDF versions of all SUMA books
+.PHONY: pdf-all-suma-$(LANGCODE_ZH_CN)
+pdf-all-suma-$(LANGCODE_ZH_CN):  translations prepare-antora-suma-$(LANGCODE_ZH_CN) pdf-install-suma-$(LANGCODE_ZH_CN) pdf-client-configuration-suma-$(LANGCODE_ZH_CN) pdf-upgrade-suma-$(LANGCODE_ZH_CN) pdf-reference-suma-$(LANGCODE_ZH_CN) pdf-administration-suma-$(LANGCODE_ZH_CN) pdf-salt-suma-$(LANGCODE_ZH_CN) pdf-retail-suma-$(LANGCODE_ZH_CN) pdf-quickstart-public-cloud-suma-$(LANGCODE_ZH_CN) pdf-large-deployment-suma-$(LANGCODE_ZH_CN) ##pdf-architecture-suma-webui-$(LANGCODE_ZH_CN)
+
+.PHONY: modules/installation/nav-installation-guide.pdf.$(LANGCODE_ZH_CN).adoc
+modules/installation/nav-installation-guide.pdf.$(LANGCODE_ZH_CN).adoc:
+	$(call pdf-book-create-index,$(LANGDIR_ZH_CN),installation,$(LANGCODE_ZH_CN))
+
+## Generate PDF version of the SUMA Installation Guide
+.PHONY: pdf-install-suma-$(LANGCODE_ZH_CN)
+pdf-install-suma-$(LANGCODE_ZH_CN): modules/installation/nav-installation-guide.pdf.$(LANGCODE_ZH_CN).adoc
+	$(call pdf-install-product,$(LANGDIR_ZH_CN),$(PDF_THEME_SUMA_CJK),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA),$(PDF_BUILD_DIR_ZH_CN),$(LANGCODE_ZH_CN),$(LOCALE_ZH_CN),$(GNUDATEFORMAT_ZH_CN))
+
+
+.PHONY: modules/client-configuration/nav-client-configuration-guide.pdf.$(LANGCODE_ZH_CN).adoc
+modules/client-configuration/nav-client-configuration-guide.pdf.$(LANGCODE_ZH_CN).adoc:
+	$(call pdf-book-create-index,$(LANGDIR_ZH_CN),client-configuration,$(LANGCODE_ZH_CN))
+
+## Generate PDF version of the SUMA Client Configuration Guide
+.PHONY: pdf-client-configuration-suma-$(LANGCODE_ZH_CN)
+pdf-client-configuration-suma-$(LANGCODE_ZH_CN): modules/client-configuration/nav-client-configuration-guide.pdf.$(LANGCODE_ZH_CN).adoc
+	$(call pdf-client-configuration-product,$(LANGDIR_ZH_CN),$(PDF_THEME_SUMA_CJK),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA),$(PDF_BUILD_DIR_ZH_CN),$(LANGCODE_ZH_CN),$(LOCALE_ZH_CN),$(GNUDATEFORMAT_ZH_CN))
+
+.PHONY: modules/upgrade/nav-upgrade-guide.pdf.$(LANGCODE_ZH_CN).adoc
+modules/upgrade/nav-upgrade-guide.pdf.$(LANGCODE_ZH_CN).adoc:
+	$(call pdf-book-create-index,$(LANGDIR_ZH_CN),upgrade,$(LANGCODE_ZH_CN))
+
+## Generate PDF version of the SUMA Upgrade Guide
+.PHONY: pdf-upgrade-suma-$(LANGCODE_ZH_CN)
+pdf-upgrade-suma-$(LANGCODE_ZH_CN): modules/upgrade/nav-upgrade-guide.pdf.$(LANGCODE_ZH_CN).adoc
+	$(call pdf-upgrade-product,$(LANGDIR_ZH_CN),$(PDF_THEME_SUMA_CJK),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA),$(PDF_BUILD_DIR_ZH_CN),$(LANGCODE_ZH_CN),$(LOCALE_ZH_CN),$(GNUDATEFORMAT_ZH_CN))
+
+.PHONY: modules/reference/nav-reference-guide.pdf.$(LANGCODE_ZH_CN).adoc
+modules/reference/nav-reference-guide.pdf.$(LANGCODE_ZH_CN).adoc:
+	$(call pdf-book-create-index,$(LANGDIR_ZH_CN),reference,$(LANGCODE_ZH_CN))
+
+## Generate PDF version of the SUMA Reference Manual
+.PHONY: pdf-reference-suma-$(LANGCODE_ZH_CN)
+pdf-reference-suma-$(LANGCODE_ZH_CN): modules/reference/nav-reference-guide.pdf.$(LANGCODE_ZH_CN).adoc
+	$(call pdf-reference-product,$(LANGDIR_ZH_CN),$(PDF_THEME_SUMA_CJK),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA),$(PDF_BUILD_DIR_ZH_CN),$(LANGCODE_ZH_CN),$(LOCALE_ZH_CN),$(GNUDATEFORMAT_ZH_CN))
+
+.PHONY: modules/administration/nav-administration-guide.pdf.$(LANGCODE_ZH_CN).adoc
+modules/administration/nav-administration-guide.pdf.$(LANGCODE_ZH_CN).adoc:
+	$(call pdf-book-create-index,$(LANGDIR_ZH_CN),administration,$(LANGCODE_ZH_CN))
+
+.PHONY: pdf-administration-suma-$(LANGCODE_ZH_CN)
+## Generate PDF version of the SUMA Administration Guide
+pdf-administration-suma-$(LANGCODE_ZH_CN): modules/administration/nav-administration-guide.pdf.$(LANGCODE_ZH_CN).adoc
+	$(call pdf-administration-product,$(LANGDIR_ZH_CN),$(PDF_THEME_SUMA_CJK),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA),$(PDF_BUILD_DIR_ZH_CN),$(LANGCODE_ZH_CN),$(LOCALE_ZH_CN),$(GNUDATEFORMAT_ZH_CN))
+
+.PHONY: modules/salt/nav-salt-guide.pdf.$(LANGCODE_ZH_CN).adoc
+modules/salt/nav-salt-guide.pdf.$(LANGCODE_ZH_CN).adoc:
+	$(call pdf-book-create-index,$(LANGDIR_ZH_CN),salt,$(LANGCODE_ZH_CN))
+
+.PHONY: pdf-salt-suma-$(LANGCODE_ZH_CN)
+## Generate PDF version of the SUMA Salt Guide
+pdf-salt-suma-$(LANGCODE_ZH_CN): modules/salt/nav-salt-guide.pdf.$(LANGCODE_ZH_CN).adoc
+	$(call pdf-salt-product,$(LANGDIR_ZH_CN),$(PDF_THEME_SUMA_CJK),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA),$(PDF_BUILD_DIR_ZH_CN),$(LANGCODE_ZH_CN),$(LOCALE_ZH_CN),$(GNUDATEFORMAT_ZH_CN))
+
+.PHONY: modules/retail/nav-retail-guide.pdf.$(LANGCODE_ZH_CN).adoc
+modules/retail/nav-retail-guide.pdf.$(LANGCODE_ZH_CN).adoc:
+	$(call pdf-book-create-index,$(LANGDIR_ZH_CN),retail,$(LANGCODE_ZH_CN))
+
+.PHONY: pdf-retail-suma-$(LANGCODE_ZH_CN)
+## Generate PDF version of the SUMA Retail Guide
+pdf-retail-suma-$(LANGCODE_ZH_CN): modules/retail/nav-retail-guide.pdf.$(LANGCODE_ZH_CN).adoc
+	$(call pdf-retail-product,$(LANGDIR_ZH_CN),$(PDF_THEME_SUMA_CJK),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA),$(PDF_BUILD_DIR_ZH_CN),$(LANGCODE_ZH_CN),$(LOCALE_ZH_CN),$(GNUDATEFORMAT_ZH_CN))
+
+.PHONY: modules/large-deployments/nav-large-deployments.pdf.$(LANGCODE_ZH_CN).adoc
+modules/large-deployments/nav-large-deployments.pdf.$(LANGCODE_ZH_CN).adoc:
+	$(call pdf-book-create-index,$(LANGDIR_ZH_CN),large-deployments,$(LANGCODE_ZH_CN))
+
+.PHONY: pdf-large-deployment-suma-$(LANGCODE_ZH_CN)
+## Generate PDF version of the SUMA Large Deployment Guide
+pdf-large-deployment-suma-$(LANGCODE_ZH_CN): modules/large-deployments/nav-large-deployments.pdf.$(LANGCODE_ZH_CN).adoc
+	$(call pdf-large-deployment-product,$(LANGDIR_ZH_CN),$(PDF_THEME_SUMA_CJK),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA),$(PDF_BUILD_DIR_ZH_CN),$(LANGCODE_ZH_CN),$(LOCALE_ZH_CN),$(GNUDATEFORMAT_ZH_CN))
+
+
+#.PHONY: modules/architecture/nav-architecture-guide.pdf.$(LANGCODE_ZH_CN).adoc
+#modules/architecture/nav-architecture-guide.pdf.$(LANGCODE_ZH_CN).adoc:
+#	$(call pdf-book-create-index,$(LANGDIR_ZH_CN),architecture,$(LANGCODE_ZH_CN))
+
+#.PHONY: pdf-architecture-suma-$(LANGCODE_ZH_CN)
+### Generate PDF version of the SUMA Architecture Guide
+#pdf-architecture-suma-$(LANGCODE_ZH_CN): modules/architecture/nav-architecture-guide.pdf.$(LANGCODE_ZH_CN).adoc
+#	$(call pdf-architecture-product,$(LANGDIR_ZH_CN),$(PDF_THEME_SUMA_CJK),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA),$(PDF_BUILD_DIR_ZH_CN),$(LANGCODE_ZH_CN),$(LOCALE_ZH_CN),$(GNUDATEFORMAT_ZH_CN))
+
+.PHONY: modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.$(LANGCODE_ZH_CN).adoc
+modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.$(LANGCODE_ZH_CN).adoc:
+	$(call pdf-book-create-index,$(LANGDIR_ZH_CN),quickstart-public-cloud,$(LANGCODE_ZH_CN))
+
+.PHONY: pdf-quickstart-public-cloud-suma-$(LANGCODE_ZH_CN)
+## Generate PDF version of the SUMA Quickstart Guide for Public Cloud
+pdf-quickstart-public-cloud-suma-$(LANGCODE_ZH_CN): modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.$(LANGCODE_ZH_CN).adoc
+	$(call pdf-quickstart-public-cloud-product,$(LANGDIR_ZH_CN),$(PDF_THEME_SUMA_CJK),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA),$(PDF_BUILD_DIR_ZH_CN),$(LANGCODE_ZH_CN),$(LOCALE_ZH_CN),$(GNUDATEFORMAT_ZH_CN))
+
+.PHONY: modules/quickstart-sap/nav-quickstart-sap-guide.pdf.$(LANGCODE_ZH_CN).adoc
+modules/quickstart-sap/nav-quickstart-sap-guide.pdf.$(LANGCODE_ZH_CN).adoc:
+	$(call pdf-book-create-index,$(LANGDIR_ZH_CN),quickstart-sap,$(LANGCODE_ZH_CN))
+
+.PHONY: pdf-quickstart-sap-suma-$(LANGCODE_ZH_CN)
+## Generate PDF version of the SUMA Quickstart Guide for SAP
+pdf-quickstart-sap-suma-$(LANGCODE_ZH_CN): modules/quickstart-sap/nav-quickstart-sap-guide.pdf.$(LANGCODE_ZH_CN).adoc
+	$(call pdf-quickstart-sap-product,$(LANGDIR_ZH_CN),$(PDF_THEME_SUMA_CJK),$(PRODUCTNAME_SUMA),$(SUMA_CONTENT),$(FILENAME_SUMA),$(PDF_BUILD_DIR_ZH_CN),$(LANGCODE_ZH_CN),$(LOCALE_ZH_CN),$(GNUDATEFORMAT_ZH_CN))
+
+.PHONY: modules/quickstart-uyuni/nav-quickstart-uyuni-guide.pdf.$(LANGCODE_ZH_CN).adoc
+modules/quickstart-uyuni/nav-quickstart-uyuni-guide.pdf.$(LANGCODE_ZH_CN).adoc:
+	$(call pdf-book-create-index,$(LANGDIR_ZH_CN),quickstart-uyuni,$(LANGCODE_ZH_CN))
+
+# UYUNI
+
+.PHONY: validate-uyuni-$(LANGCODE_ZH_CN)
+validate-uyuni-$(LANGCODE_ZH_CN):
+	$(call validate-product,$(LANGDIR_ZH_CN),uyuni-site.yml)
+
+.PHONY: pdf-tar-uyuni-$(LANGCODE_ZH_CN)
+pdf-tar-uyuni-$(LANGCODE_ZH_CN):
+	$(call pdf-tar-product,$(LANGCODE_ZH_CN),$(PDF_OUTPUT_UYUNI_ZH_CN),$(PDF_BUILD_DIR_ZH_CN))
+
+.PHONY: prepare-antora-uyuni-$(LANGCODE_ZH_CN)
+prepare-antora-uyuni-$(LANGCODE_ZH_CN):
+	-mkdir -p $(LANGDIR_ZH_CN) && \
+	cp antora.yml $(LANGDIR_ZH_CN)/antora.yml && \
+	sed "s/\.\/branding/\.\.\/\.\.\/branding/;\
+	s/\-\ url\:\ \./\-\ url\:\ \.\.\/\.\.\//;\
+	s/start_path\:\ \./\start_path\:\ translations\/$(LANGCODE_ZH_CN)/;\
+	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/$(LANGCODE_ZH_CN)/;" uyuni-site.yml > $(LANGDIR_ZH_CN)/uyuni-site.yml && \
+	cd $(LANGDIR_ZH_CN) && \
+	if [ ! -e branding ]; then ln -s ../../branding; fi && \
+	cp -a $(CURDIR)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(CURDIR)/$(LANGDIR_ZH_CN)/modules/ROOT/pages/
+
+.PHONY: antora-uyuni-$(LANGCODE_ZH_CN)
+antora-uyuni-$(LANGCODE_ZH_CN): clean-$(LANGCODE_ZH_CN) pdf-all-uyuni-$(LANGCODE_ZH_CN) pdf-tar-uyuni-$(LANGCODE_ZH_CN)
+	$(call antora-uyuni-function,$(LANGDIR_ZH_CN),$(LANGCODE_ZH_CN))
+
+.PHONY: obs-packages-uyuni-$(LANGCODE_ZH_CN)
+obs-packages-uyuni-$(LANGCODE_ZH_CN): clean-$(LANGCODE_ZH_CN) pdf-all-uyuni-$(LANGCODE_ZH_CN) antora-uyuni-$(LANGCODE_ZH_CN) ## Generate UYUNI OBS tar files
+	$(call obs-packages-product,$(LANGCODE_ZH_CN),$(LANGCODE_ZH_CN)/pdf,$(HTML_OUTPUT_UYUNI_ZH_CN),$(PDF_OUTPUT_UYUNI_ZH_CN))
+
+# Generate PDF versions of all UYUNI books
+.PHONY: pdf-all-uyuni-$(LANGCODE_ZH_CN)
+pdf-all-uyuni-$(LANGCODE_ZH_CN): translations prepare-antora-uyuni-$(LANGCODE_ZH_CN) pdf-install-uyuni-$(LANGCODE_ZH_CN) pdf-client-configuration-uyuni-$(LANGCODE_ZH_CN) pdf-upgrade-uyuni-$(LANGCODE_ZH_CN) pdf-reference-uyuni-$(LANGCODE_ZH_CN) pdf-administration-uyuni-$(LANGCODE_ZH_CN) pdf-salt-uyuni-$(LANGCODE_ZH_CN) pdf-retail-uyuni-$(LANGCODE_ZH_CN) pdf-quickstart-public-cloud-uyuni-$(LANGCODE_ZH_CN) pdf-quickstart-uyuni-uyuni-$(LANGCODE_ZH_CN)  pdf-large-deployment-uyuni-$(LANGCODE_ZH_CN) ##pdf-architecture-uyuni-webui-$(LANGCODE_ZH_CN)
+
+## Generate PDF version of the UYUNI Installation Guide
+.PHONY: pdf-install-uyuni-$(LANGCODE_ZH_CN)
+pdf-install-uyuni-$(LANGCODE_ZH_CN): modules/installation/nav-installation-guide.pdf.$(LANGCODE_ZH_CN).adoc
+	$(call pdf-install-product-uyuni,$(LANGDIR_ZH_CN),$(PDF_THEME_UYUNI_CJK),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI),$(PDF_BUILD_DIR_ZH_CN),$(LANGCODE_ZH_CN),$(LOCALE_ZH_CN),$(GNUDATEFORMAT_ZH_CN))
+
+## Generate PDF version of the UYUNI Client Configuration Guide
+.PHONY: pdf-client-configuration-uyuni-$(LANGCODE_ZH_CN)
+pdf-client-configuration-uyuni-$(LANGCODE_ZH_CN): modules/client-configuration/nav-client-configuration-guide.pdf.$(LANGCODE_ZH_CN).adoc
+	$(call pdf-client-configuration-product-uyuni,$(LANGDIR_ZH_CN),$(PDF_THEME_UYUNI_CJK),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI),$(PDF_BUILD_DIR_ZH_CN),$(LANGCODE_ZH_CN),$(LOCALE_ZH_CN),$(GNUDATEFORMAT_ZH_CN))
+
+## Generate PDF version of the UYUNI Upgrade Guide
+.PHONY: pdf-upgrade-uyuni-$(LANGCODE_ZH_CN)
+pdf-upgrade-uyuni-$(LANGCODE_ZH_CN): modules/upgrade/nav-upgrade-guide.pdf.$(LANGCODE_ZH_CN).adoc
+	$(call pdf-upgrade-product-uyuni,$(LANGDIR_ZH_CN),$(PDF_THEME_UYUNI_CJK),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI),$(PDF_BUILD_DIR_ZH_CN),$(LANGCODE_ZH_CN),$(LOCALE_ZH_CN),$(GNUDATEFORMAT_ZH_CN))
+
+## Generate PDF version of the UYUNI Reference Manual
+.PHONY: pdf-reference-uyuni-$(LANGCODE_ZH_CN)
+pdf-reference-uyuni-$(LANGCODE_ZH_CN): modules/reference/nav-reference-guide.pdf.$(LANGCODE_ZH_CN).adoc
+	$(call pdf-reference-product-uyuni,$(LANGDIR_ZH_CN),$(PDF_THEME_UYUNI_CJK),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI),$(PDF_BUILD_DIR_ZH_CN),$(LANGCODE_ZH_CN),$(LOCALE_ZH_CN),$(GNUDATEFORMAT_ZH_CN))
+
+.PHONY: pdf-administration-uyuni-$(LANGCODE_ZH_CN)
+## Generate PDF version of the UYUNI Administration Guide
+pdf-administration-uyuni-$(LANGCODE_ZH_CN): modules/administration/nav-administration-guide.pdf.$(LANGCODE_ZH_CN).adoc
+	$(call pdf-administration-product-uyuni,$(LANGDIR_ZH_CN),$(PDF_THEME_UYUNI_CJK),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI),$(PDF_BUILD_DIR_ZH_CN),$(LANGCODE_ZH_CN),$(LOCALE_ZH_CN),$(GNUDATEFORMAT_ZH_CN))
+
+.PHONY: pdf-salt-uyuni-$(LANGCODE_ZH_CN)
+## Generate PDF version of the UYUNI Salt Guide
+pdf-salt-uyuni-$(LANGCODE_ZH_CN): modules/salt/nav-salt-guide.pdf.$(LANGCODE_ZH_CN).adoc
+	$(call pdf-salt-product-uyuni,$(LANGDIR_ZH_CN),$(PDF_THEME_UYUNI_CJK),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI),$(PDF_BUILD_DIR_ZH_CN),$(LANGCODE_ZH_CN),$(LOCALE_ZH_CN),$(GNUDATEFORMAT_ZH_CN))
+
+.PHONY: pdf-retail-uyuni-$(LANGCODE_ZH_CN)
+## Generate PDF version of the UYUNI Retail Guide
+pdf-retail-uyuni-$(LANGCODE_ZH_CN): modules/retail/nav-retail-guide.pdf.$(LANGCODE_ZH_CN).adoc
+	$(call pdf-retail-product-uyuni,$(LANGDIR_ZH_CN),$(PDF_THEME_UYUNI_CJK),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI),$(PDF_BUILD_DIR_ZH_CN),$(LANGCODE_ZH_CN),$(LOCALE_ZH_CN),$(GNUDATEFORMAT_ZH_CN))
+
+.PHONY: pdf-large-deployment-uyuni-$(LANGCODE_ZH_CN)
+## Generate PDF version of the UYUNI Large Deployment Guide
+pdf-large-deployment-uyuni-$(LANGCODE_ZH_CN): modules/large-deployments/nav-large-deployments.pdf.$(LANGCODE_ZH_CN).adoc
+	$(call pdf-large-deployment-product-uyuni,$(LANGDIR_ZH_CN),$(PDF_THEME_UYUNI_CJK),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI),$(PDF_BUILD_DIR_ZH_CN),$(LANGCODE_ZH_CN),$(LOCALE_ZH_CN),$(GNUDATEFORMAT_ZH_CN))
+
+#.PHONY: pdf-architecture-uyuni-$(LANGCODE_ZH_CN)
+### Generate PDF version of the UYUNI Architecture Guide
+#pdf-architecture-uyuni-$(LANGCODE_ZH_CN): modules/architecture/nav-architecture-guide.pdf.$(LANGCODE_ZH_CN).adoc
+#	$(call pdf-architecture-product-uyuni,$(LANGDIR_ZH_CN),$(PDF_THEME_UYUNI_CJK),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI),$(PDF_BUILD_DIR_ZH_CN),$(LANGCODE_ZH_CN),$(LOCALE_ZH_CN),$(GNUDATEFORMAT_ZH_CN))
+
+.PHONY: pdf-quickstart-public-cloud-uyuni-$(LANGCODE_ZH_CN)
+## Generate PDF version of the UYUNI Quickstart Guide for Public Cloud
+pdf-quickstart-public-cloud-uyuni-$(LANGCODE_ZH_CN): modules/quickstart-public-cloud/nav-quickstart-public-cloud-guide.pdf.$(LANGCODE_ZH_CN).adoc
+	$(call pdf-quickstart-public-cloud-product-uyuni,$(LANGDIR_ZH_CN),$(PDF_THEME_UYUNI_CJK),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI),$(PDF_BUILD_DIR_ZH_CN),$(LANGCODE_ZH_CN),$(LOCALE_ZH_CN),$(GNUDATEFORMAT_ZH_CN))
+
+.PHONY: pdf-quickstart-sap-uyuni-$(LANGCODE_ZH_CN)
+## Generate PDF version of the UYUNI Quickstart Guide for SAP
+pdf-quickstart-sap-uyuni-$(LANGCODE_ZH_CN): modules/quickstart-sap/nav-quickstart-sap-guide.pdf.$(LANGCODE_ZH_CN).adoc
+	$(call pdf-quickstart-sap-product-uyuni,$(LANGDIR_ZH_CN),$(PDF_THEME_UYUNI_CJK),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI),$(PDF_BUILD_DIR_ZH_CN),$(LANGCODE_ZH_CN),$(LOCALE_ZH_CN),$(GNUDATEFORMAT_ZH_CN))
+
+.PHONY: pdf-quickstart-uyuni-uyuni-$(LANGCODE_ZH_CN)
+## Generate PDF version of the UYUNI Quickstart Guide for Uyuni
+pdf-quickstart-uyuni-uyuni-$(LANGCODE_ZH_CN): modules/quickstart-uyuni/nav-quickstart-uyuni-guide.pdf.$(LANGCODE_ZH_CN).adoc
+	$(call pdf-quickstart-uyuni-product-uyuni,$(LANGDIR_ZH_CN),$(PDF_THEME_UYUNI),$(PRODUCTNAME_UYUNI),$(UYUNI_CONTENT),$(FILENAME_UYUNI),$(PDF_BUILD_DIR_ZH_CN),$(LANGCODE_ZH_CN),$(LOCALE_ZH_CN),$(GNUDATEFORMAT_ZH_CN))
