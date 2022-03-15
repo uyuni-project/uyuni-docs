@@ -27,8 +27,16 @@ Use this method for in-place firewall environments that block HTTP or HTTPS conn
 As with all Salt calls, {productname} invokes `salt-ssh` via the `salt-api`.
 
 Salt SSH relies on a roster to obtain details such as hostname, ports, and the SSH parameters of a client.
-{productname} keeps these details in the database and makes them available to Salt by generating a temporary roster file for each Salt SSH call.
-The location of the temporary roster file is supplied to `salt-ssh` using the `--roster-file= option`.
+{productname} keeps these details in the database and makes them available to Salt SSH by using the [literal]``uyuni`` roster module, or by generating a temporary roster file on bootstrapping new clients with the {webui}.
+The location of the temporary roster file is supplied to Salt SSH using the [option]``roster-file`` option.
+For the registered clients [option]``roster`` set to `uyuni` is used instead to get the roster from the database with `uyuni` salt roster module.
+
+[IMPORTANT]
+====
+It is not recommended to run [command]``salt-ssh`` as [literal]``root`` user. This can cause permission issues the next time {productname} tries to use Salt SSH.
+Use [command]``mgr-salt-ssh`` instead because it is changing effective user to `salt` on each call.
+If you want to use [command]``mgr-salt-ssh`` with a user other than [literal]``root``, the user should have the permission to change effective user to [literal]``salt``.
+====
 
 
 
@@ -39,7 +47,7 @@ Salt SSH supports both password and key authentication.
 
 Password authentication is used only when bootstrapping.
 During the bootstrap step the key of the server is not authorized on the client and therefore a password must be used for a connection to be made.
-The password is used transiently in a temporary roster file used for bootstrapping.
+The password is used transiently in a temporary roster file used for bootstrapping and the roster file is removed on finishing processing the event.
 This password is not stored.
 
 All other common Salt calls use key authentication.
@@ -101,13 +109,13 @@ Manual package manager operations that require server connectivity are not possi
 
 Salt SSH calls run in this sequence:
 
-. Prepare the Salt roster for the call
+. Set `roster` parameter to `uyuni` for registered clients or prepare the Salt roster on bootstrapping for the call
 .. Create remote port forwarding option if the contact method is `ssh-push-tunnel`
 .. Compute the `ProxyCommand` if the client is connected through a proxy
 .. Create Roster content
-. Create a temporary roster file
+. Create a temporary roster file (only in case of bootstrapping new client)
 . Execute a synchronous `salt-ssh` call using the API
-. Remove the temporary roster file
+. Remove the temporary roster file (only in case of bootstrapping new client)
 
 The roster content contains:
 
@@ -120,6 +128,8 @@ The roster content contains:
 * `timeout`: defaults to 180 seconds
 * `minion_opts`:
 ** `master`: Set to the minion ID if the contact method is `ssh-push-tunnel`
+* `ssh_pre_flight`: The path to the shell script executed on the client before running any Salt command
+* `ssh_pre_flight_args`: The list of arguments to call the pre flight script on the client
 
 
 
@@ -140,10 +150,10 @@ This happens for both regular and SSH clients.
 . Generate pillar data for bootstrap.
     The pillar data is compiled and stored on the Salt master, and retrieved by the client.
 . Generate the roster for bootstrapping into a temporary file on the client.
-    You can generate the roster using the Salt API, with this command:
+    You can use the roster by passing it to the Salt API, with this command:
 +
 ----
-salt-ssh --roster-file=<temporary_bootstrap_roster> minion state.apply certs,<bootstrap_state>`
+mgr-salt-ssh --roster-file=<temporary_bootstrap_roster> minion state.apply certs,<bootstrap_state>`
 ----
 +
 For `bootstrap_state`, use `bootstrap` for regular clients or `ssh_bootstrap` for SSH clients.
@@ -178,6 +188,8 @@ The roster content contains:
 * `ssh_options`: other SSH options:
 ** `ProxyCommand` if the client connects through a proxy
 * `timeout`: defaults to 180 seconds
+* `ssh_pre_flight`: The path to the pre flight shell script (default: [path]``/usr/share/susemanager/salt-ssh/preflight.sh``)
+* `ssh_pre_flight_args`: The list of arguments to call the pre flight script on the client
 
 This image provides an overview of the Salt SSH bootstrap process.
 
