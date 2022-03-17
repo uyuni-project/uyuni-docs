@@ -287,7 +287,7 @@
     <a class="nav-link" href="../../client-configuration/contact-methods-saltssh.html">Salt SSH를 통한 푸시</a>
   </li>
   <li class="nav-item" data-depth="4">
-    <a class="nav-link" href="../../client-configuration/contact-methods-salt-cfgfile.html">Salt Minion 구성 파일</a>
+    <a class="nav-link" href="../../client-configuration/contact-methods-saltbundle.html">Salt Bundle</a>
   </li>
 </ul>
   </li>
@@ -328,9 +328,6 @@
   <li class="nav-item" data-depth="4">
     <a class="nav-link" href="../../client-configuration/registration-cli.html">명령줄에서 등록</a>
   </li>
-  <li class="nav-item" data-depth="4">
-    <a class="nav-link" href="../../client-configuration/registration-methods-saltbundle.html">Register with Salt Bundle</a>
-  </li>
 </ul>
   </li>
   <li class="nav-item" data-depth="3">
@@ -339,6 +336,9 @@
 <ul class="nav-list">
   <li class="nav-item" data-depth="4">
     <a class="nav-link" href="../../client-configuration/clients-sle.html">SUSE Linux Enterprise 클라이언트</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../../client-configuration/clients-slemicro.html">SLE Micro 클라이언트</a>
   </li>
   <li class="nav-item" data-depth="4">
     <a class="nav-link" href="../../client-configuration/clients-sleses.html">Expanded Support 클라이언트</a>
@@ -351,9 +351,6 @@
 <ul class="nav-list">
   <li class="nav-item" data-depth="4">
     <a class="nav-link" href="../../client-configuration/clients-opensuseleap.html">openSUSE Leap 클라이언트</a>
-  </li>
-  <li class="nav-item" data-depth="4">
-    <a class="nav-link" href="../../client-configuration/clients-slemicro.html">SLE Micro 클라이언트</a>
   </li>
   <li class="nav-item" data-depth="4">
     <a class="nav-link" href="../../client-configuration/clients-microos.html">openSUSE MicroOS</a>
@@ -463,7 +460,13 @@
 </ul>
   </li>
   <li class="nav-item" data-depth="3">
+    <button class="nav-item-toggle"></button>
     <a class="nav-link" href="../../client-configuration/clients-pubcloud.html">공용 클라우드 클라이언트 </a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../../client-configuration/automatic-client-registration.html">Automatic Registration of Clients Created by Terraform</a>
+  </li>
+</ul>
   </li>
 </ul>
   </li>
@@ -532,7 +535,7 @@
     <a class="nav-link" href="../../client-configuration/autoinst-reinstall.html">등록된 시스템 재설치</a>
   </li>
   <li class="nav-item" data-depth="3">
-    <a class="nav-link" href="../../client-configuration/autoinst-pxeboot.html">네트워크를 통한 설치</a>
+    <a class="nav-link" href="../../client-configuration/autoinst-pxeboot.html">Install via the Network (PXE Boot)</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../client-configuration/autoinst-cdrom.html">CD-ROM 또는 USB 키를 통한 설치</a>
@@ -1593,6 +1596,9 @@
     <a class="nav-link" href="salt-states-and-pillars.html">Salt States and Pillars</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="salt-gpg-encrypted-pillars.html">GPG Encrypted Pillars</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="salt-custom-states.html">Custom Salt States</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -1787,7 +1793,7 @@
         <i class="fas fa-arrow-right custom-color" data-tippy="Next Page" id="nextPage"></i></a></span>
     &nbsp;
     <a href="https://github.com/uyuni-project/uyuni-docs/issues"><i class="fas fa-bug custom-color" data-tippy="Create an Issue" id="createIssue"></i>&nbsp;</a>
-  <a href="https://github.com/uyuni-project/uyuni-docs/edit/uyuni-2022.02/translations/ko/modules/specialized-guides/pages/salt/salt-ssh.adoc"><i class="fas fa-edit custom-color" data-tippy="Edit this page and submit a pull request" id="submitPR"></i></a>
+  <a href="https://github.com/uyuni-project/uyuni-docs/edit/uyuni-2022.03/translations/ko/modules/specialized-guides/pages/salt/salt-ssh.adoc"><i class="fas fa-edit custom-color" data-tippy="Edit this page and submit a pull request" id="submitPR"></i></a>
 </div>
 </div>
 <article class="doc"><a name="section-top"></a>
@@ -1839,7 +1845,24 @@
 <p>As with all Salt calls, Uyuni invokes <code>salt-ssh</code> via the <code>salt-api</code>.</p>
 </div>
 <div class="paragraph">
-<p>Salt SSH relies on a roster to obtain details such as hostname, ports, and the SSH parameters of a client. Uyuni keeps these details in the database and makes them available to Salt by generating a temporary roster file for each Salt SSH call. The location of the temporary roster file is supplied to <code>salt-ssh</code> using the <code>--roster-file= option</code>.</p>
+<p>Salt SSH relies on a roster to obtain details such as hostname, ports, and the SSH parameters of a client. Uyuni keeps these details in the database and makes them available to Salt SSH by using the <code class="literal">uyuni</code> roster module, or by generating a temporary roster file on bootstrapping new clients with the Web UI. The location of the temporary roster file is supplied to Salt SSH using the <code class="option">roster-file</code> option. For the registered clients <code class="option">roster</code> set to <code>uyuni</code> is used instead to get the roster from the database with <code>uyuni</code> salt roster module.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>It is not recommended to run <code class="command">salt-ssh</code> as <code class="literal">root</code> user. This can cause permission issues the next time Uyuni tries to use Salt SSH. Use <code class="command">mgr-salt-ssh</code>, which changes the effective user to <code class="literal">salt</code> and avoids file permission issues. If you want to use <code class="command">mgr-salt-ssh</code> with a user other than <code class="literal">root</code>, the user should have the permission to change effective user to <code class="literal">salt</code>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><code class="command">mgr-salt-ssh</code> uses <code class="option">roster</code> set to <code class="literal">uyuni</code> by default, if neither <code class="option">roster</code> nor <code class="option">roster-file</code> specified in the command line. It helps to call Salt commands to the registered Salt SSH clients with no roster file generation.</p>
 </div>
 </div>
 </div>
@@ -1850,7 +1873,7 @@
 <p>Salt SSH supports both password and key authentication. Uyuni uses both methods:</p>
 </div>
 <div class="paragraph">
-<p>Password authentication is used only when bootstrapping. During the bootstrap step the key of the server is not authorized on the client and therefore a password must be used for a connection to be made. The password is used transiently in a temporary roster file used for bootstrapping. This password is not stored.</p>
+<p>Password authentication is used only when bootstrapping. During the bootstrap step the key of the server is not authorized on the client and therefore a password must be used for a connection to be made. The password is used transiently in a temporary roster file used for bootstrapping and the roster file is removed on finishing processing the event. This password is not stored.</p>
 </div>
 <div class="paragraph">
 <p>All other common Salt calls use key authentication. During the bootstrap step the SSH key of the server is authorized on the client and added to the client <code class="path">/.ssh/authorized_keys</code> file. Subsequent calls no longer require a password.</p>
@@ -1937,7 +1960,7 @@
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Prepare the Salt roster for the call</p>
+<p>Set <code>roster</code> parameter to <code>uyuni</code> for registered clients or prepare the Salt roster on bootstrapping for the call</p>
 <div class="olist loweralpha">
 <ol class="loweralpha" type="a">
 <li>
@@ -1953,13 +1976,13 @@
 </div>
 </li>
 <li>
-<p>Create a temporary roster file</p>
+<p>Create a temporary roster file (only in case of bootstrapping new client)</p>
 </li>
 <li>
 <p>Execute a synchronous <code>salt-ssh</code> call using the API</p>
 </li>
 <li>
-<p>Remove the temporary roster file</p>
+<p>Remove the temporary roster file (only in case of bootstrapping new client)</p>
 </li>
 </ol>
 </div>
@@ -2003,6 +2026,12 @@
 </ul>
 </div>
 </li>
+<li>
+<p><code>ssh_pre_flight</code>: The path to the shell script executed on the client before running any Salt command</p>
+</li>
+<li>
+<p><code>ssh_pre_flight_args</code>: The list of arguments to call the pre flight script on the client</p>
+</li>
 </ul>
 </div>
 </div>
@@ -2031,10 +2060,10 @@ The pillar data is compiled and stored on the Salt master, and retrieved by the 
 </li>
 <li>
 <p>Generate the roster for bootstrapping into a temporary file on the client.
-You can generate the roster using the Salt API, with this command:</p>
+You can use the roster by passing it to the Salt API, with this command:</p>
 <div class="listingblock">
 <div class="content">
-<pre>salt-ssh --roster-file=&lt;temporary_bootstrap_roster&gt; minion state.apply certs,&lt;bootstrap_state&gt;`</pre>
+<pre>mgr-salt-ssh --roster-file=&lt;temporary_bootstrap_roster&gt; minion state.apply certs,&lt;bootstrap_state&gt;`</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -2123,6 +2152,12 @@ This depends on your proxy configuration, including how many proxies you need to
 </li>
 <li>
 <p><code>timeout</code>: defaults to 180 seconds</p>
+</li>
+<li>
+<p><code>ssh_pre_flight</code>: The path to the pre flight shell script (default: <code class="path">/usr/share/susemanager/salt-ssh/preflight.sh</code>)</p>
+</li>
+<li>
+<p><code>ssh_pre_flight_args</code>: The list of arguments to call the pre flight script on the client</p>
 </li>
 </ul>
 </div>

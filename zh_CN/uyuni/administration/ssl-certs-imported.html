@@ -287,7 +287,7 @@
     <a class="nav-link" href="../client-configuration/contact-methods-saltssh.html">通过 Salt SSH 推送</a>
   </li>
   <li class="nav-item" data-depth="4">
-    <a class="nav-link" href="../client-configuration/contact-methods-salt-cfgfile.html">Salt 受控端配置文件</a>
+    <a class="nav-link" href="../client-configuration/contact-methods-saltbundle.html">Salt Bundle</a>
   </li>
 </ul>
   </li>
@@ -328,9 +328,6 @@
   <li class="nav-item" data-depth="4">
     <a class="nav-link" href="../client-configuration/registration-cli.html">在命令行上注册</a>
   </li>
-  <li class="nav-item" data-depth="4">
-    <a class="nav-link" href="../client-configuration/registration-methods-saltbundle.html">Register with Salt Bundle</a>
-  </li>
 </ul>
   </li>
   <li class="nav-item" data-depth="3">
@@ -339,6 +336,9 @@
 <ul class="nav-list">
   <li class="nav-item" data-depth="4">
     <a class="nav-link" href="../client-configuration/clients-sle.html">SUSE Linux Enterprise 客户端</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../client-configuration/clients-slemicro.html">SLE Micro 客户端</a>
   </li>
   <li class="nav-item" data-depth="4">
     <a class="nav-link" href="../client-configuration/clients-sleses.html">扩展支持的客户端</a>
@@ -351,9 +351,6 @@
 <ul class="nav-list">
   <li class="nav-item" data-depth="4">
     <a class="nav-link" href="../client-configuration/clients-opensuseleap.html">openSUSE Leap 客户端</a>
-  </li>
-  <li class="nav-item" data-depth="4">
-    <a class="nav-link" href="../client-configuration/clients-slemicro.html">SLE Micro 客户端</a>
   </li>
   <li class="nav-item" data-depth="4">
     <a class="nav-link" href="../client-configuration/clients-microos.html">openSUSE MicroOS</a>
@@ -463,7 +460,13 @@
 </ul>
   </li>
   <li class="nav-item" data-depth="3">
+    <button class="nav-item-toggle"></button>
     <a class="nav-link" href="../client-configuration/clients-pubcloud.html">公有云客户端</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../client-configuration/automatic-client-registration.html">Automatic Registration of Clients Created by Terraform</a>
+  </li>
+</ul>
   </li>
 </ul>
   </li>
@@ -532,7 +535,7 @@
     <a class="nav-link" href="../client-configuration/autoinst-reinstall.html">重新安装已注册系统</a>
   </li>
   <li class="nav-item" data-depth="3">
-    <a class="nav-link" href="../client-configuration/autoinst-pxeboot.html">通过网络安装</a>
+    <a class="nav-link" href="../client-configuration/autoinst-pxeboot.html">Install via the Network (PXE Boot)</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../client-configuration/autoinst-cdrom.html">通过 CD-ROM 或 USB 密钥安装</a>
@@ -1593,6 +1596,9 @@
     <a class="nav-link" href="../specialized-guides/salt/salt-states-and-pillars.html">Salt States and Pillars</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../specialized-guides/salt/salt-gpg-encrypted-pillars.html">GPG Encrypted Pillars</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../specialized-guides/salt/salt-custom-states.html">Custom Salt States</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -1787,7 +1793,7 @@
         <i class="fas fa-arrow-right custom-color" data-tippy="Next Page" id="nextPage"></i></a></span>
     &nbsp;
     <a href="https://github.com/uyuni-project/uyuni-docs/issues"><i class="fas fa-bug custom-color" data-tippy="Create an Issue" id="createIssue"></i>&nbsp;</a>
-  <a href="https://github.com/uyuni-project/uyuni-docs/edit/uyuni-2022.02/translations/zh_CN/modules/administration/pages/ssl-certs-imported.adoc"><i class="fas fa-edit custom-color" data-tippy="Edit this page and submit a pull request" id="submitPR"></i></a>
+  <a href="https://github.com/uyuni-project/uyuni-docs/edit/uyuni-2022.03/translations/zh_CN/modules/administration/pages/ssl-certs-imported.adoc"><i class="fas fa-edit custom-color" data-tippy="Edit this page and submit a pull request" id="submitPR"></i></a>
 </div>
 </div>
 <article class="doc"><a name="section-top"></a>
@@ -1797,16 +1803,17 @@
 <ul class="sectlevel1">
 <li><a href="#_import_certificates_for_new_installations">1. Import Certificates for New Installations</a></li>
 <li><a href="#_import_certificates_for_new_proxy_installations">2. Import Certificates for New Proxy Installations</a></li>
-<li><a href="#_replace_certificates_with_a_third_party_certificate">3. Replace Certificates with a Third Party Certificate</a></li>
+<li><a href="#_replace_certificates">3. Replace Certificates</a>
+<ul class="sectlevel2">
+<li><a href="#_extra_handling_of_traditional_clients">3.1. Extra handling of traditional Clients</a></li>
+</ul>
+</li>
 </ul>
 </div>
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>By default, Uyuni uses a self-signed certificate. For additional security, you can import a custom certificate, signed by a third party certificate authority (CA).</p>
-</div>
-<div class="paragraph">
-<p>This section covers how to use an imported SSL certificate with a new Uyuni installation, and how to replace existing self-signed certificates with imported certificates.</p>
+<p>This section covers how to configure SSL certificate for new Uyuni installation, and how to replace existing certificates.</p>
 </div>
 <div class="paragraph">
 <p>Before you begin, ensure you have:</p>
@@ -1814,10 +1821,10 @@
 <div class="ulist">
 <ul>
 <li>
-<p>A certificate authority (CA) SSL public certificate. If you are chaining CAs, it must include the root CA, and all intermediate CAs.</p>
+<p>A certificate authority (CA) SSL public certificate. If you are using a CA chain, all intermediate CAs must also be available.</p>
 </li>
 <li>
-<p>An SSL server key</p>
+<p>An SSL server private key</p>
 </li>
 <li>
 <p>An SSL server certificate</p>
@@ -1825,13 +1832,13 @@
 </ul>
 </div>
 <div class="paragraph">
-<p>Your key and certificate files must be in PEM format.</p>
+<p>All files must be in PEM format.</p>
 </div>
 <div class="paragraph">
-<p>The host name of the SSL keys and certificates must match the fully qualified host name of the machine you deploy them on. You can set the host names in the <code>X509v3 Subject Alternative Name</code> section of the certificate. You can also list multiple host names if your environment requires it.</p>
+<p>The host name of the SSL server certificate must match the fully qualified host name of the machine you deploy them on. You can set the host names in the <code>X509v3 Subject Alternative Name</code> section of the certificate. You can also list multiple host names if your environment requires it.</p>
 </div>
 <div class="paragraph">
-<p>Third-party authorities commonly use intermediate CAs to sign requested server certificates. In this case, all CAs in the chain are required to be available in a single file to deploy the CA to the clients.</p>
+<p>Third-party authorities commonly use intermediate CAs to sign requested server certificates. In this case, all CAs in the chain are required to be available. If there is no extra parameter or option available to specify intermediate CAs, take care that all CAs (Root CA and intermediate CAs) are stored in one file.</p>
 </div>
 </div>
 </div>
@@ -1937,50 +1944,29 @@ export SERVER_CERT=&lt;path_to_web_server_certificate&gt;</pre>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_replace_certificates_with_a_third_party_certificate"><a class="anchor" href="#_replace_certificates_with_a_third_party_certificate"></a><a class="link" href="#_replace_certificates_with_a_third_party_certificate">3. Replace Certificates with a Third Party Certificate</a></h2>
+<h2 id="_replace_certificates"><a class="anchor" href="#_replace_certificates"></a><a class="link" href="#_replace_certificates">3. Replace Certificates</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>You can replace active certificates on your Uyuni installation with a new third party certificate. To replace the certificates, you can replace the installed CA certificate RPM with a new RPM containing the third party certificate, and then update the database.</p>
-</div>
-<div class="paragraph">
-<p>This procedure is similar to the one described in <a href="ssl-certs-selfsigned.html#ssl-certs-selfsigned-create-replace" class="page">administration:ssl-certs-selfsigned.adoc#ssl-certs-selfsigned-create-replace</a>. The difference is that we import the certificates generated by an external PKI.</p>
+<p>You can replace active certificates on your Uyuni installation with a new certificate. To replace the certificates, you can replace the installed CA certificate with the new CA, and then update the database.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure: Replacing Existing Certificates</div>
 <ol class="arabic">
 <li>
-<p>On the Uyuni Server, at the command prompt, move the old certificate directory to a backup location:</p>
+<p>On the Uyuni Server, at the command prompt, call the command <code>mgr-ssl-cert-setup</code> and provide the certificates as parameters:</p>
 <div class="listingblock">
 <div class="content">
-<pre>mv /root/ssl-build /root/old-ssl-build</pre>
+<pre>mgr-ssl-cert-setup --root-ca-file=&lt;Path_to_Root_CA_Certificate&gt; --server-cert-file=&lt;Server_Cert_File&gt; --server-key-file=&lt;Server_Key_File&gt;</pre>
 </div>
 </div>
 </li>
-<li>
-<p>Generate a CA certificate RPM from the new certificate:</p>
-<div class="listingblock">
-<div class="content">
-<pre>rhn-ssl-tool --gen-ca --rpm-only --dir="/root/ssl-build" --from-ca-cert=&lt;Path_to_CA_Certificates&gt;</pre>
+</ol>
 </div>
+<div class="paragraph">
+<p>Intermediate CAs can either be available in the file which is specified with <code>--root-ca-file</code> or specified as extra options with <code>--intermediate-ca-file</code>. The <code>--intermediate-ca-file</code> option can be specified multiple times. This command performs a number of tests on the provided files to test if they are valid and can be used for the requested use case.</p>
 </div>
-</li>
-<li>
-<p>Generate a new server certificate RPM:</p>
-<div class="listingblock">
-<div class="content">
-<pre>rhn-ssl-tool --gen-server --rpm-only --dir="/root/ssl-build" --from-server-key=&lt;Server_Key_File&gt; --from-server-cert=&lt;Server_Cert_File&gt;</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Install the RPM that contains the newly generated certificate. Check that you have the latest version of the RPM before running this command.
-The version number is incremented every time you re-create the certificates.</p>
-<div class="listingblock">
-<div class="content">
-<pre>rpm -Uhv /root/ssl-build/sumahostname/rhn-org-httpd-ssl-key-pair-sumahostname-1.0-2.noarch.rpm</pre>
-</div>
-</div>
-</li>
+<div class="olist arabic">
+<ol class="arabic">
 <li>
 <p>Restart services to pick up the changes:</p>
 <div class="listingblock">
@@ -1989,21 +1975,56 @@ The version number is incremented every time you re-create the certificates.</p>
 </div>
 </div>
 </li>
+<li>
+<p>Update the database with the new CA:</p>
+<div class="listingblock">
+<div class="content">
+<pre>/usr/bin/rhn-ssl-dbstore --ca-cert=&lt;Path_to_Root_CA_Certificate&gt;</pre>
+</div>
+</div>
+</li>
 </ol>
 </div>
 <div class="paragraph">
-<p>When you create the new server certificate RPM, you might get a warning that server certificate request file could not be found. This file is not required, and the procedure completes correctly without it. However, if you want to avoid the error, you can copy the file into the server directory, and name it <code class="path">server.csr</code>:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>cp &lt;Certificate_Request_File&gt;.csr /root/ssl-build/&lt;Server_Name&gt;/server.csr</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>When you have created the new <code class="path">ssl-build</code> directory, you can create combined certificate RPMs and deploy them on the clients. For the procedures to do this, see <a href="ssl-certs-selfsigned.html" class="page">administration:ssl-certs-selfsigned.adoc</a>.</p>
-</div>
-<div class="paragraph">
 <p>If you are using a proxy, you need to generate a server certificate RPM for each proxy, using their host names and cnames.</p>
+</div>
+<div class="paragraph">
+<p>If the Root CA was changed, it needs to get deployed to all the clients connected to Uyuni.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure: Deploying the Root CA on Salt Clients</div>
+<ol class="arabic">
+<li>
+<p>In the Uyuni Web UI, navigate to <span class="menuseq"><b class="menu">Systems</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">Overview</b></span>.</p>
+</li>
+<li>
+<p>Check all your Salt Clients to add them to the system set manager.</p>
+</li>
+<li>
+<p>Navigate to <span class="menuseq"><b class="menu">Systems</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="submenu">System Set Manager</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">Overview</b></span>.</p>
+</li>
+<li>
+<p>In the <code class="guimenu">States</code> field, click <b class="button">Apply</b> to apply the system states.</p>
+</li>
+<li>
+<p>In the <code class="guimenu">Highstate</code> page, click <b class="button">Apply Highstate</b> to propagate the changes to the clients.</p>
+</li>
+</ol>
+</div>
+<div class="sect2">
+<h3 id="_extra_handling_of_traditional_clients"><a class="anchor" href="#_extra_handling_of_traditional_clients"></a><a class="link" href="#_extra_handling_of_traditional_clients">3.1. Extra handling of traditional Clients</a></h3>
+<div class="paragraph">
+<p>Traditional Clients are deprecated and should be replaced with Salt Client.</p>
+</div>
+<div class="paragraph">
+<p>If the CA needs to be replaced when there are still traditional managed clients connected to Uyuni some extra steps are required.</p>
+</div>
+<div class="paragraph">
+<p>Important is, that the clients do not get disconnected when the new CA is activated on the Uyuni Server and Proxies. Deploy the 'old' and the 'new' Root CA certificates to the affected clients and trust them. Use a configuration channel to deploy the certificte files to the clients and the remote command feature to regenerate the trust store.</p>
+</div>
+<div class="paragraph">
+<p>After the new certificates are activated on the Uyuni Server and Proxies, test if the connections are working and actions can still be scheduled on the clients. If this is the case, the 'old' Root CA can be removed from clients.</p>
+</div>
 </div>
 </div>
 </div>
