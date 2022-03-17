@@ -287,7 +287,7 @@
     <a class="nav-link" href="contact-methods-saltssh.html">Salt SSH를 통한 푸시</a>
   </li>
   <li class="nav-item" data-depth="4">
-    <a class="nav-link" href="contact-methods-salt-cfgfile.html">Salt Minion 구성 파일</a>
+    <a class="nav-link" href="contact-methods-saltbundle.html">Salt Bundle</a>
   </li>
 </ul>
   </li>
@@ -328,9 +328,6 @@
   <li class="nav-item" data-depth="4">
     <a class="nav-link" href="registration-cli.html">명령줄에서 등록</a>
   </li>
-  <li class="nav-item" data-depth="4">
-    <a class="nav-link" href="registration-methods-saltbundle.html">Register with Salt Bundle</a>
-  </li>
 </ul>
   </li>
   <li class="nav-item" data-depth="3">
@@ -339,6 +336,9 @@
 <ul class="nav-list">
   <li class="nav-item" data-depth="4">
     <a class="nav-link" href="clients-sle.html">SUSE Linux Enterprise 클라이언트</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="clients-slemicro.html">SLE Micro 클라이언트</a>
   </li>
   <li class="nav-item" data-depth="4">
     <a class="nav-link" href="clients-sleses.html">Expanded Support 클라이언트</a>
@@ -351,9 +351,6 @@
 <ul class="nav-list">
   <li class="nav-item" data-depth="4">
     <a class="nav-link" href="clients-opensuseleap.html">openSUSE Leap 클라이언트</a>
-  </li>
-  <li class="nav-item" data-depth="4">
-    <a class="nav-link" href="clients-slemicro.html">SLE Micro 클라이언트</a>
   </li>
   <li class="nav-item" data-depth="4">
     <a class="nav-link" href="clients-microos.html">openSUSE MicroOS</a>
@@ -463,7 +460,13 @@
 </ul>
   </li>
   <li class="nav-item" data-depth="3">
+    <button class="nav-item-toggle"></button>
     <a class="nav-link" href="clients-pubcloud.html">공용 클라우드 클라이언트 </a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="automatic-client-registration.html">Automatic Registration of Clients Created by Terraform</a>
+  </li>
+</ul>
   </li>
 </ul>
   </li>
@@ -532,7 +535,7 @@
     <a class="nav-link" href="autoinst-reinstall.html">등록된 시스템 재설치</a>
   </li>
   <li class="nav-item" data-depth="3">
-    <a class="nav-link" href="autoinst-pxeboot.html">네트워크를 통한 설치</a>
+    <a class="nav-link" href="autoinst-pxeboot.html">Install via the Network (PXE Boot)</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="autoinst-cdrom.html">CD-ROM 또는 USB 키를 통한 설치</a>
@@ -1593,6 +1596,9 @@
     <a class="nav-link" href="../specialized-guides/salt/salt-states-and-pillars.html">Salt States and Pillars</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../specialized-guides/salt/salt-gpg-encrypted-pillars.html">GPG Encrypted Pillars</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../specialized-guides/salt/salt-custom-states.html">Custom Salt States</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -1788,7 +1794,7 @@
         <i class="fas fa-arrow-right custom-color" data-tippy="Next Page" id="nextPage"></i></a></span>
     &nbsp;
     <a href="https://github.com/uyuni-project/uyuni-docs/issues"><i class="fas fa-bug custom-color" data-tippy="Create an Issue" id="createIssue"></i>&nbsp;</a>
-  <a href="https://github.com/uyuni-project/uyuni-docs/edit/uyuni-2022.02/translations/ko/modules/client-configuration/pages/registration-webui.adoc"><i class="fas fa-edit custom-color" data-tippy="Edit this page and submit a pull request" id="submitPR"></i></a>
+  <a href="https://github.com/uyuni-project/uyuni-docs/edit/uyuni-2022.03/translations/ko/modules/client-configuration/pages/registration-webui.adoc"><i class="fas fa-edit custom-color" data-tippy="Edit this page and submit a pull request" id="submitPR"></i></a>
 </div>
 </div>
 <article class="doc"><a name="section-top"></a>
@@ -1799,13 +1805,27 @@
 <p>Uyuni Web UI로 클라이언트를 등록하는 방법은 Salt 클라이언트에만 사용할 수 있습니다.</p>
 </div>
 <div class="paragraph">
-<p>Web UI를 사용해 Salt 클라이언트를 부트스트래핑 중이라면 시작하기 전에 클라이언트 시스템에 Python이 설치되어 있는지 확인해야 합니다. SUSE Linux Enterprise Server&#160;12 또는 그 이전 버전을 실행 중인 Salt 클라이언트의 경우 <code class="package">python-xml</code> 패키지도 필요합니다.</p>
+<p>If you are bootstrapping Salt clients using the Web UI, it is using <a href="../specialized-guides/salt/salt-ssh.html" class="page">Salt SSH</a> to execute the bootstrap process on the client. Salt SSH uses the Salt Bundle and its included Python interpreter. Therefore, no other Python interpreter needs to be installed on the client.</p>
 </div>
 <div class="admonitionblock important">
 <table>
 <tr>
 <td class="icon">
 <i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>As Salt Bundle is shipped with the bootstrap repository, the repository must be created before starting the bootstrap process for the client. A shell script detects the operating system on the client and deploys the Salt Bundle from the appropriate bootstrap repository, using the same logic as the bootstrap script. For more information, see <a href="bootstrap-repository.html#_prepare_to_create_a_bootstrap_repository" class="page">Prepare to Create a Bootstrap Repository</a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
 </td>
 <td class="content">
 <div class="paragraph">
@@ -1816,7 +1836,7 @@
 </table>
 </div>
 <div class="olist arabic">
-<div class="title">절차: Web UI로 클라이언트 등록</div>
+<div class="title">프로시저: Web UI로 클라이언트 등록</div>
 <ol class="arabic">
 <li>
 <p>Uyuni Web UI에서 <span class="menuseq"><b class="menu">시스템</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">부트스트랩</b></span>으로 이동합니다.</p>
@@ -1898,7 +1918,7 @@ SSH 개인 키에 암호문이 필요한 경우 <code class="guimenu">SSH 개�
 </td>
 <td class="content">
 <div class="paragraph">
-<p>CentOS&#160;6, Oracle Linux&#160;6, Red Hat Enterprise Linux&#160;6 또는 SUSE Linux Enterprise Server with Expanded Support&#160;6 클라이언트를 등록하고 사용하려면 Uyuni 서버가 이전 형식의 SSL 암호화를 지원하도록 구성해야 합니다. 자세한 설명은 <a href="#client-configuration:tshoot-clients. adoc">[client-configuration:tshoot-clients. adoc]</a>에서 <code>기존 클라이언트 등록</code>을 참조하십시오.</p>
+<p>CentOS&#160;6, Oracle Linux&#160;6, Red Hat Enterprise Linux&#160;6 또는 SUSE Linux Enterprise Server with Expanded Support&#160;6 클라이언트를 등록하고 사용하려면 Uyuni 서버가 이전 형식의 SSL 암호화를 지원하도록 구성해야 합니다. 자세한 설명은 <a href="tshoot-clients.html" class="page">client-configuration:tshoot-clients.adoc</a>에서 <code>기존 클라이언트 등록</code>을 참조하십시오.</p>
 </div>
 </td>
 </tr>
