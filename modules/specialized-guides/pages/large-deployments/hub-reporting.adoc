@@ -18,6 +18,11 @@ In summary:
 == Setup
 The reporting database and schema are set up by default using the local PostgreSQL server.
 The reporting database is a separate database accessible via the network.
++
+[IMPORTANT]
+====
+As a requirement we expect all server certificates are signed by the same Root CA. The whole {productname} Hub ernvironment should be using just 1 Root Certificate Authority.
+====
 
 === Create a DB user for the reporting
 
@@ -57,4 +62,17 @@ On the {productname} Hub it is replaced with the real server id the managed serv
 Another common additional field is `synced_date`, which represent the time when the data were exported from the main {productname} Server database.
 
 image::reportdb_schema.png[]
+
+
+== Data Generation and Update
+
+{productname} uses taskomatic jobs to generate the data for the reporting database and to get the data from the peripheral servers to the hub.
+
+To generate and update the data on a peripheral server, the responsible schedule is called `update-reporting-default`. It is executed by default daily at midnight.
+
+On the {productname} Hub there is a second schedule which is important. To fetch the reporting data from all registered peripheral servers, the task with the name `update-reporting-hub-default`
+is executed daily at 1:30am.
+
+All times are in the local timezone of the server. If the peripheral servers are in different timezones, it makes sense to align the schedules, that all reporting data are gathered
+at a specific point in time, and `update-reporting-hub-default` is running after all peripheral servers have really finished there local jobs.
 
