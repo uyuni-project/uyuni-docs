@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2022-03-17 06:51+0000\n"
+"POT-Creation-Date: 2022-04-07 14:21+0000\n"
 "PO-Revision-Date: 2022-01-26 12:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -1168,14 +1168,22 @@ msgid ""
 "via the network."
 msgstr ""
 
-#. type: Title ===
+#. type: delimited block =
 #: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:11
+msgid ""
+"As a requirement we expect all server certificates are signed by the same "
+"Root Certificate Authority (CA).  The whole {productname} Hub environment "
+"should be using only one Root CA."
+msgstr ""
+
+#. type: Title ===
+#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:12
 #, no-wrap
 msgid "Create a DB user for the reporting"
 msgstr ""
 
 #. type: Plain text
-#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:12
+#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:13
 msgid ""
 "Before connecting an external Reporting Tools to the Database, a user with "
 "read-only permission should be created.  For doing that, it is possible to "
@@ -1183,13 +1191,13 @@ msgid ""
 msgstr ""
 
 #. type: delimited block -
-#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:13
+#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:14
 #, no-wrap
 msgid "usage: uyuni-setup-reportdb-user [options]\n"
 msgstr ""
 
 #. type: delimited block -
-#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:14
+#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:15
 #, no-wrap
 msgid ""
 "options:\n"
@@ -1210,13 +1218,13 @@ msgid ""
 msgstr ""
 
 #. type: Title ==
-#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:15
+#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:16
 #, no-wrap
 msgid "Database Schema"
 msgstr ""
 
 #. type: Plain text
-#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:16
+#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:17
 msgid ""
 "The schema exports the most important tables from the main {productname} "
 "Database as a de-normalized variant containing only data which are relevant "
@@ -1224,14 +1232,14 @@ msgid ""
 msgstr ""
 
 #. type: Plain text
-#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:17
+#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:18
 msgid ""
 "Ready-to-use reports are provided as views, aggregating data over multiple "
 "tables."
 msgstr ""
 
 #. type: Plain text
-#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:18
+#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:19
 msgid ""
 "Every table gets an extra id column (`mgm_id`) specifying the {productname} "
 "server which provided the data.  On a single {productname} Server this "
@@ -1241,16 +1249,104 @@ msgid ""
 msgstr ""
 
 #. type: Plain text
-#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:19
+#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:20
 msgid ""
 "Another common additional field is `synced_date`, which represent the time "
 "when the data were exported from the main {productname} Server database."
 msgstr ""
 
 #. type: Target for macro image
-#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:20
+#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:21
 #, no-wrap
 msgid "reportdb_schema.png"
+msgstr ""
+
+#. type: Title ==
+#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:22
+#, no-wrap
+msgid "Data Generation and Update"
+msgstr ""
+
+#. type: Plain text
+#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:23
+msgid ""
+"{productname} uses taskomatic jobs to generate the data for the reporting "
+"database and to get the data from the peripheral servers to the hub."
+msgstr ""
+
+#. type: Plain text
+#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:24
+msgid ""
+"To generate and update the data on a peripheral server, the responsible "
+"schedule is called `update-reporting-default`. It is executed by default "
+"daily at midnight."
+msgstr ""
+
+#. type: Plain text
+#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:25
+msgid ""
+"On the {productname} Hub there is a second schedule which is important. To "
+"fetch the reporting data from all registered peripheral servers, the task "
+"with the name `update-reporting-hub-default` is executed daily at 1:30 AM."
+msgstr ""
+
+#. type: Plain text
+#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:26
+msgid ""
+"All times are in the local timezone of the server.  If the peripheral "
+"servers are in different timezones, it is recommended to align all the "
+"schedules.  Make sure that all reporting data are gathered at a specific "
+"point in time, and `update-reporting-hub-default` is running when all "
+"peripheral servers have actually finished their local jobs."
+msgstr ""
+
+#. type: Title ===
+#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:27
+#, no-wrap
+msgid "Tuning Reporting Jobs"
+msgstr ""
+
+#. type: Title ===
+#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:28
+#, no-wrap
+msgid "`report_db_batch_size`"
+msgstr ""
+
+#. type: Table
+#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:29
+#, no-wrap
+msgid ""
+"| Description          | The maximum number of rows fetched and written from one database to the other in one shot.\n"
+"| Tune when            | Out of memory errors or on processing speed problems.\n"
+"| Value default        | 500\n"
+"| Value recommendation | 100 - 1000\n"
+"| Location             | [path]``/etc/rhn/rhn.conf``\n"
+"| Example              | `report_db_batch_size = 750`\n"
+"| After changing       | Check xref:memory-usage[memory usage].\n"
+"                         Monitor memory usage closely before and after the change.\n"
+msgstr ""
+
+#. type: Title ===
+#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:30
+#, no-wrap
+msgid "`report_db_hub_workers`"
+msgstr ""
+
+#. type: Table
+#: modules/specialized-guides/pages/large-deployments/hub-reporting.adoc:31
+#, no-wrap
+msgid ""
+"| Description          | The maximum number of workers requesting data from peripheral servers on a hub at the same point in time.\n"
+"| Tune when            | The number of peripheral servers increases significantly (more than 100), or a faster synchronization is required.\n"
+"| Value default        | 2\n"
+"| Value recommendation | 2 - 10\n"
+"| Location             | [path]``/etc/rhn/rhn.conf``\n"
+"| Example              | `report_db_hub_workers = 5`\n"
+"| After changing       | Check xref:memory-usage[memory usage].\n"
+"                         Monitor memory and cpu usage of the hub closely before and after the change.\n"
+"                         Also monitor the load, cpu and memory usage of the reporting database of the hub.\n"
+"| Notes                | All the data collected from the peripheral server must be written into the hub reporting database.\n"
+"                         Tuning that database could increase the performance as well.\n"
 msgstr ""
 
 #. type: Title =

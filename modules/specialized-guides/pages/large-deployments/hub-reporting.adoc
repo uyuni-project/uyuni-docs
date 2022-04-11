@@ -18,6 +18,12 @@ In summary:
 == Setup
 The reporting database and schema are set up by default using the local PostgreSQL server.
 The reporting database is a separate database accessible via the network.
++
+[IMPORTANT]
+====
+As a requirement we expect all server certificates are signed by the same Root Certificate Authority (CA).
+The whole {productname} Hub environment should be using only one Root CA.
+====
 
 === Create a DB user for the reporting
 
@@ -58,3 +64,51 @@ Another common additional field is `synced_date`, which represent the time when 
 
 image::reportdb_schema.png[]
 
+
+== Data Generation and Update
+
+{productname} uses taskomatic jobs to generate the data for the reporting database and to get the data from the peripheral servers to the hub.
+
+To generate and update the data on a peripheral server, the responsible schedule is called `update-reporting-default`. It is executed by default daily at midnight.
+
+On the {productname} Hub there is a second schedule which is important. To fetch the reporting data from all registered peripheral servers, the task with the name `update-reporting-hub-default`
+is executed daily at 1:30 AM.
+
+All times are in the local timezone of the server.
+If the peripheral servers are in different timezones, it is recommended to align all the schedules.
+Make sure that all reporting data are gathered at a specific point in time, and `update-reporting-hub-default` is running when all peripheral servers have actually finished their local jobs.
+
+=== Tuning Reporting Jobs
+
+[[reportdb-batch-size]]
+=== `report_db_batch_size`
+
+[cols="1,1"]
+|===
+| Description          | The maximum number of rows fetched and written from one database to the other in one shot.
+| Tune when            | Out of memory errors or on processing speed problems.
+| Value default        | 500
+| Value recommendation | 100 - 1000
+| Location             | [path]``/etc/rhn/rhn.conf``
+| Example              | `report_db_batch_size = 750`
+| After changing       | Check xref:memory-usage[memory usage].
+                         Monitor memory usage closely before and after the change.
+|===
+
+[[reportdb-hub-workers]]
+=== `report_db_hub_workers`
+
+[cols="1,1"]
+|===
+| Description          | The maximum number of workers requesting data from peripheral servers on a hub at the same point in time.
+| Tune when            | The number of peripheral servers increases significantly (more than 100), or a faster synchronization is required.
+| Value default        | 2
+| Value recommendation | 2 - 10
+| Location             | [path]``/etc/rhn/rhn.conf``
+| Example              | `report_db_hub_workers = 5`
+| After changing       | Check xref:memory-usage[memory usage].
+                         Monitor memory and cpu usage of the hub closely before and after the change.
+                         Also monitor the load, cpu and memory usage of the reporting database of the hub.
+| Notes                | All the data collected from the peripheral server must be written into the hub reporting database.
+                         Tuning that database could increase the performance as well.
+|===
