@@ -464,7 +464,7 @@
     <a class="nav-link" href="../../client-configuration/clients-pubcloud.html">パブリッククラウドクライアント</a>
 <ul class="nav-list">
   <li class="nav-item" data-depth="4">
-    <a class="nav-link" href="../../client-configuration/automatic-client-registration.html">Automatic Registration of Clients Created by Terraform</a>
+    <a class="nav-link" href="../../client-configuration/automatic-client-registration.html">Terraformによって作成されたクライアントの自動登録</a>
   </li>
 </ul>
   </li>
@@ -475,10 +475,10 @@
     <a class="nav-link" href="../../client-configuration/client-upgrades.html">クライアントのアップグレード</a>
 <ul class="nav-list">
   <li class="nav-item" data-depth="3">
-    <a class="nav-link" href="../../client-configuration/client-upgrades-major.html">クライアント - メジャーバージョンのアップグレード</a>
+    <a class="nav-link" href="../../client-configuration/client-upgrades-major.html">Major Version Upgrade</a>
   </li>
   <li class="nav-item" data-depth="3">
-    <a class="nav-link" href="../../client-configuration/client-upgrades-lifecycle.html">コンテンツライフサイクルマネージャを使用したアップグレード</a>
+    <a class="nav-link" href="../../client-configuration/client-upgrades-lifecycle.html">With Content Lifecycle Manager</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../client-configuration/client-upgrades-product-migration.html">製品の移行</a>
@@ -535,7 +535,7 @@
     <a class="nav-link" href="../../client-configuration/autoinst-reinstall.html">登録済みシステムを再インストールする</a>
   </li>
   <li class="nav-item" data-depth="3">
-    <a class="nav-link" href="../../client-configuration/autoinst-pxeboot.html">Install via the Network (PXE Boot)</a>
+    <a class="nav-link" href="../../client-configuration/autoinst-pxeboot.html">ネットワークを通じてインストールする(PXEブート)</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../client-configuration/autoinst-cdrom.html">CD-ROMまたはUSBメモリを使用してインストールする</a>
@@ -1794,7 +1794,7 @@
         <i class="fas fa-arrow-right custom-color" data-tippy="Next Page" id="nextPage"></i></a></span>
     &nbsp;
     <a href="https://github.com/uyuni-project/uyuni-docs/issues"><i class="fas fa-bug custom-color" data-tippy="Create an Issue" id="createIssue"></i>&nbsp;</a>
-  <a href="https://github.com/uyuni-project/uyuni-docs/edit/uyuni-2022.03/translations/ja/modules/specialized-guides/pages/large-deployments/hub-reporting.adoc"><i class="fas fa-edit custom-color" data-tippy="Edit this page and submit a pull request" id="submitPR"></i></a>
+  <a href="https://github.com/uyuni-project/uyuni-docs/edit/uyuni-2022.04/translations/ja/modules/specialized-guides/pages/large-deployments/hub-reporting.adoc"><i class="fas fa-edit custom-color" data-tippy="Edit this page and submit a pull request" id="submitPR"></i></a>
 </div>
 </div>
 <article class="doc"><a name="section-top"></a>
@@ -1809,6 +1809,13 @@
 </ul>
 </li>
 <li><a href="#_database_schema">3. Database Schema</a></li>
+<li><a href="#_data_generation_and_update">4. Data Generation and Update</a>
+<ul class="sectlevel2">
+<li><a href="#_tuning_reporting_jobs">4.1. Tuning Reporting Jobs</a></li>
+<li><a href="#reportdb-batch-size">4.2. <code>report_db_batch_size</code></a></li>
+<li><a href="#reportdb-hub-workers">4.3. <code>report_db_hub_workers</code></a></li>
+</ul>
+</li>
 </ul>
 </div>
 <div id="preamble">
@@ -1847,6 +1854,23 @@
 <div class="sectionbody">
 <div class="paragraph">
 <p>The reporting database and schema are set up by default using the local PostgreSQL server. The reporting database is a separate database accessible via the network.</p>
+</div>
+<div class="paragraph">
+<p>+</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>As a requirement we expect all server certificates are signed by the same Root Certificate Authority (CA). The whole Uyuni Hub environment should be using only one Root CA.</p>
+</div>
+</td>
+</tr>
+</table>
 </div>
 <div class="sect2">
 <h3 id="_create_a_db_user_for_the_reporting"><a class="anchor" href="#_create_a_db_user_for_the_reporting"></a><a class="link" href="#_create_a_db_user_for_the_reporting">2.1. Create a DB user for the reporting</a></h3>
@@ -1896,6 +1920,113 @@ options:
 <div class="content">
 <img src="../_images/reportdb_schema.png" alt="reportdb schema">
 </div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_data_generation_and_update"><a class="anchor" href="#_data_generation_and_update"></a><a class="link" href="#_data_generation_and_update">4. Data Generation and Update</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Uyuni uses taskomatic jobs to generate the data for the reporting database and to get the data from the peripheral servers to the hub.</p>
+</div>
+<div class="paragraph">
+<p>To generate and update the data on a peripheral server, the responsible schedule is called <code>update-reporting-default</code>. It is executed by default daily at midnight.</p>
+</div>
+<div class="paragraph">
+<p>On the Uyuni Hub there is a second schedule which is important. To fetch the reporting data from all registered peripheral servers, the task with the name <code>update-reporting-hub-default</code> is executed daily at 1:30 AM.</p>
+</div>
+<div class="paragraph">
+<p>All times are in the local timezone of the server. If the peripheral servers are in different timezones, it is recommended to align all the schedules. Make sure that all reporting data are gathered at a specific point in time, and <code>update-reporting-hub-default</code> is running when all peripheral servers have actually finished their local jobs.</p>
+</div>
+<div class="sect2">
+<h3 id="_tuning_reporting_jobs"><a class="anchor" href="#_tuning_reporting_jobs"></a><a class="link" href="#_tuning_reporting_jobs">4.1. Tuning Reporting Jobs</a></h3>
+
+</div>
+<div class="sect2">
+<h3 id="reportdb-batch-size"><a class="anchor" href="#reportdb-batch-size"></a><a class="link" href="#reportdb-batch-size">4.2. <code>report_db_batch_size</code></a></h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The maximum number of rows fetched and written from one database to the other in one shot.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Tune when</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Out of memory errors or on processing speed problems.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Value default</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">500</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Value recommendation</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100 - 1000</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Location</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code class="path">/etc/rhn/rhn.conf</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>report_db_batch_size = 750</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">After changing</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Check <a href="#memory-usage">memory usage</a>.
+                         Monitor memory usage closely before and after the change.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="reportdb-hub-workers"><a class="anchor" href="#reportdb-hub-workers"></a><a class="link" href="#reportdb-hub-workers">4.3. <code>report_db_hub_workers</code></a></h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The maximum number of workers requesting data from peripheral servers on a hub at the same point in time.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Tune when</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The number of peripheral servers increases significantly (more than 100), or a faster synchronization is required.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Value default</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Value recommendation</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2 - 10</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Location</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code class="path">/etc/rhn/rhn.conf</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Example</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>report_db_hub_workers = 5</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">After changing</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Check <a href="#memory-usage">memory usage</a>.
+                         Monitor memory and cpu usage of the hub closely before and after the change.
+                         Also monitor the load, cpu and memory usage of the reporting database of the hub.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Notes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">All the data collected from the peripheral server must be written into the hub reporting database.
+                         Tuning that database could increase the performance as well.</p></td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 </div>
