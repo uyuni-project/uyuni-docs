@@ -290,18 +290,18 @@ http://PROXY_HOSTNAME/pub
 
 == Considerations for syncing files over WAN connections
 
-Depending on what changes are executed in the WebUI or via an API call to distribution or system settings, [path]``cobbler sync`` command is required to transfer files from {productname} server to {productname} Proxy systems.
-To accomplish this, cobbler uses a list of proxies specified in [path]``/etc/cobbler/settings``.
+Depending on what changes are executed in the WebUI or via an API call to distribution or system settings, [literal]``cobbler sync`` command may be required to transfer files from {productname} server to {productname} Proxy systems.
+To accomplish this, cobbler uses a list of proxies specified in [literal]``/etc/cobbler/settings.yaml``.
 
 
 === Background
 
-Due to its design, [path]``cobbler sync`` is not able to sync only the changed or recently added files.
+Due to its design, [literal]``cobbler sync`` is not able to sync only the changed or recently added files.
 
-Instead, executing [path]``cobbler sync`` triggers a full sync of the [path]``/srv/tftpboot`` directory to all specified proxies configured in [path]``/etc/cobbler/settings``.
+Instead, executing [literal]``cobbler sync`` triggers a full sync of the [literal]``/srv/tftpboot`` directory to all specified proxies configured in [literal]``/etc/cobbler/settings.yaml``.
 It is also influenced by the latency of the WAN connection between the involved systems.
 
-The process of syncing may take a considerable amount of time to finish according to the logs in [path]`` /var/log/cobbler/``.
+The process of syncing may take a considerable amount of time to finish according to the logs in [literal]`` /var/log/cobbler/``.
 
 In one example, it started at:
 
@@ -320,11 +320,12 @@ Thu Jun  3 15:18:49 2021 - DEBUG | shell triggers finished successfully
 The transfer amount was roughly 1.8GB.
 The transfer took almost 30 minutes.
 
-By comparison, copying a single big file of the same size as [path]``/srv/tftboot`` completes  within several minutes.
+By comparison, copying a single big file of the same size as [literal]``/srv/tftboot`` completes  within several minutes.
 
 
-=== Data analysis
-Switching to an [path]``rsync``-based approach to copy files between {productname} Server and Proxy may help to reduce the transfer and wait times.
+=== Resolution and analysis
+
+Switching to an [literal]``rsync``-based approach to copy files between {productname} Server and Proxy may help to reduce the transfer and wait times.
 
 To accomplish this task, a script has been developed.
 It is available for download at <https://suse.my.salesforce.com/sfc/p/1i000000gLOd/a/1i000000ll5B/B2AmvIJN2_JsAyjTQzCVP_x5ioVgd0bYN9X9NpMugS8>.
@@ -332,28 +333,23 @@ It is available for download at <https://suse.my.salesforce.com/sfc/p/1i000000gL
 [WARNING]
 ====
 There is no support available for individual adjustments of the script.
-
 The script and the comments inside aim to provide a good overview of the process and steps to be taken into consideration.
 If further help is required, contact SUSE Consulting.
 ====
 
 
-==== Preparation tasks
-
 The proposed approach using the script is benefitial in the following environment:
 
-. SUSE Manager Proxy systems are connected via a WAN connection;
-. [path]``/srv/tftboot`` contains a high number of files for distributions and client PXE boot files, in total several thousand files;
-. Any proxy in [path]``/etc/cobbler/settings`` has been disabled, otherwise {productname} will continue to sync content to the proxies.
-
+* SUSE Manager Proxy systems are connected via a WAN connection;
+* [literal]``/srv/tftboot`` contains a high number of files for distributions and client PXE boot files, in total several thousand files;
+* Any proxy in [literal]``/etc/cobbler/settings.yaml`` has been disabled, otherwise {productname} will continue to sync content to the proxies.
++
 ----
 #proxies:
 # - "sumaproxy.sumaproxy.test"
 # - "sumaproxy2.sumaproxy.test"
 ----
 
-
-==== Analysis instructions
 Procedure: Analyze new sync speed
 
 . Take a TCPdump between SUSE Manager and the involved systems.
@@ -381,10 +377,10 @@ cobbler sync
 ----
 +
 . When cobbler is finished, stop the TCPdumps.
-. Open the TCPdumps using Wireshark, go to [path]``Statistics > Conversations`` and wait for the dump to be analyzed.
+. Open the TCPdumps using Wireshark, go to [guimenu]``Statistics > Conversations`` and wait for the dump to be analyzed.
 . Switch to the TCP tab.
   The number shown on this tab gives the total number of conversations captured between SUSE Manager and SUSE Manager Proxy.
-. Look for the column [path]``Duration``.
+. Look for the column [guimenu]``Duration``.
 * Start by sorting in ascending order to find out the minimal amount of time it took to transfer a file.
 * Continue by sorting in descending order to find out the maximum values for the big files, e.g. kernel and initrd transfers.
 +
