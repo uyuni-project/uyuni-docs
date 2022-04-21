@@ -29,3 +29,4 @@ Make sure you add the new topic to the navigation bar in alphabetical order.
 
 11. Submit the PR. 
 Add a SME angineer and at least two members of the Doc Squad as reviewers.
+If the workflow was already mentioned on the existing epic card on the Doc board, add relevant rerefence.
