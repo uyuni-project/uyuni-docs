@@ -1,0 +1,118 @@
+[[installation-proxy-containers]]
+= Prepare container host for {productname} Proxy containers
+
+[NOTE]
+====
+Only {sles} 15 SP3 and newer are supported to be used as container host for {productname} Proxy containers.
+====
+
+[[installation-proxy-containers-requirements]]
+== SLES Container Host Requirements
+
+
+[cols="1,1,1", options="header"]
+.Proxy Container Host Hardware Requirements
+|===
+
+| Hardware
+| Details
+| Recommendation
+
+| CPU
+|
+| Minimum 2 dedicated 64-bit CPU cores
+
+| RAM
+| Test Server
+| Minimum 2{nbsp}GB
+
+|
+| Production Server
+| Minimum 8{nbsp}GB
+
+| Disk Space
+|
+| Minimum 100{nbsp}GB
+
+|===
+
+
+[[installation-proxy-containers-services]]
+== Install Container Services on SLES system
+
+[NOTE]
+====
+Container host used as a base for {productname} Proxy containers needs to be first registered as a salt client to the {productname} Server.
+
+For more information how to register salt client to the {productname} Server see xref:client-configuration:registration-overview.adoc[].
+====
+
+{productname} Proxy containers are using [literal]``podman`` and [literal]``systemd`` to run and manage all proxy containers.
+
+First step is to install containers control files provided by package [literal]``uyuni-proxy-systemd-services``
+
+
+[[proc-installation-proxy-containers-services]]
+.Procedure: Installation Of Container Services For {productname} Proxy
+
+. Log in as `root` on the container host.
+
+. Install {productname} Proxy service package:
++
+
+----
+zypper install uyuni-proxy-systemd-services
+----
+
+[[installation-proxy-containers-customize-config]]
+== Customize {productname} Proxy configuration
+
+{productname} Proxy containers require some volumes to be mounted for long term storage.
+Paths on container host for those volumes are by default:
+
+- [path]`/var/lib/uyuni/proxy-squid-cache`
+- [path]`/var/lib/uyuni/proxy-rhn-cache`
+- [path]`/var/lib/uyuni/proxy-tftpboot`
+
+To modify location of those paths, please edit [path]`/etc/sysconfig/uyuni-proxy-systemd-services.config`.
+
+In this file it is possible to add custom arguments passed to podman container pod:
+
+- [literal]`EXTRA_POD_ARGS=''`
+
+In this file it is possible to modify path where proxy configuration is expected, however modifying it is strongly discouraged:
+
+- [literal]`CONFIG_DIR`=[path]`/etc/uyuni/proxy`
+
+
+
+[[installation-proxy-containers-control-plane-ssh]]
+== Set management SSH listening port on different then 22
+
+One of the containers providing {productname} Proxy services is a SSH container. This container main task is to provide bridge between {productname} Server and SSH Salt clients over isolated networks. This container however has to listen on standard SSH port 22/TCP. It is therefor required that if SSH service is used on container host its listening port must be different then 22/TCP.
+
+[IMPORTANT]
+====
+If SSH service is used on container host its listening port must be different then 22/TCP.
+====
+
+[[installation-proxy-containers-firewall-rules]]
+== Allow network access for provided services on container host firewall
+
+{productname} Proxy containers work as so called node-port service. This means proxy container pod shares container host network TCP and UDP port space. For this reason container host firewall must be configured to accept incoming traffic on ports used by {productname} Proxy containers. Those ports are:
+
+- 22/TCP
+- 69/UDP
+- 80/TCP
+- 443/TCP
+- 4505/TCP
+- 4506/TCP
+- 8080/TCP
+
+[NOTE]
+====
+Do not forget to allow access to containers host SSH port selected in previous installation step if needed.
+====
+
+
+Continue with setting up the installed {productname} Proxy as a containers at xref:proxy-container-setup.adoc[].
