@@ -1,0 +1,129 @@
+[[troubleshooting-high-sync-times-over-wan]]
+= Troubleshooting high sync times between {productname} Server and Proxy over WAN connections
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+
+
+
+Depending on what changes are executed in the WebUI or via an API call to distribution or system settings, [literal]``cobbler sync`` command may be required to transfer files from {productname} Server to {productname} Proxy systems.
+To accomplish this, cobbler uses a list of proxies specified in [literal]``/etc/cobbler/settings``.
+
+Due to its design, [literal]``cobbler sync`` is not able to sync only the changed or recently added files.
+
+Instead, executing [literal]``cobbler sync`` triggers a full sync of the [literal]``/srv/tftpboot`` directory to all specified proxies configured in [literal]``/etc/cobbler/settings``.
+It is also influenced by the latency of the WAN connection between the involved systems.
+
+The process of syncing may take a considerable amount of time to finish according to the logs in [literal]``/var/log/cobbler/``.
+
+For example, it started at:
+
+----
+Thu Jun  3 14:47:35 2021 - DEBUG | running python triggers from /var/lib/cobbler/triggers/task/sync/pre/*
+Thu Jun  3 14:47:35 2021 - DEBUG | running shell triggers from /var/lib/cobbler/triggers/task/sync/pre/*
+----
+
+and ended at:
+
+----
+Thu Jun  3 15:18:49 2021 - DEBUG | running shell triggers from /var/lib/cobbler/triggers/task/sync/post/*
+Thu Jun  3 15:18:49 2021 - DEBUG | shell triggers finished successfully
+----
+
+The transfer amount was roughly 1.8 GB.
+The transfer took almost 30 minutes.
+
+By comparison, copying a single big file of the same size as [literal]``/srv/tftboot`` completes  within several minutes.
+
+
+//== Resolution and analysis
+Switching to an [literal]``rsync``-based approach to copy files between {productname} Server and Proxy may help to reduce the transfer and wait times.
+
+A script to accomplish this task is available for download at https://suse.my.salesforce.com/sfc/p/1i000000gLOd/a/1i000000ll5B/B2AmvIJN2_JsAyjTQzCVP_x5ioVgd0bYN9X9NpMugS8.
+
+The script does not accept command line options.
+Before running the script, you need to manually edit it and set correctly [literal]``SUMAHOSTNAME``, [literal]``SUMAIP`` and [literal]``SUMAPROXY1`` variables for it to work correctly.
+
+[WARNING]
+====
+There is no support available for individual adjustments of the script.
+The script and the comments inside aim to provide an overview of the process and steps to be taken into consideration.
+If further help is required, contact SUSE Consulting.
+====
+
+
+The proposed approach using the script is beneficial in the following environment:
+
+* SUSE Manager Proxy systems are connected via a WAN connection;
+* [literal]``/srv/tftboot`` contains a high number of files for distributions and client PXE boot files, in total several thousand files;
+* Any proxy in [literal]``/etc/cobbler/settingsl`` has been disabled, otherwise {productname} will continue to sync content to the proxies.
++
+----
+#proxies:
+# - "sumaproxy.sumaproxy.test"
+# - "sumaproxy2.sumaproxy.test"
+----
+
+Procedure: Analyze new sync speed
+
+. Take a dump of the TCP traffic between {productname} and the involved systems.
+* On SUSE Manager Server:
++
+----
+tcpdump -i ethX -s 200 host <ip-address-of-susemanagerproxy> and not ssh
+----
++
+* On SUSE Manager Proxy:
++
+----
+tcpdump -i ethX -s 200 host <ip-address-of-susemanager> and not ssh
+----
++
+* This will only capture a package size of 200 which is sufficient to run an analysis.
+* Adjust ethX to the respective network interface {productname} uses to communicate with the proxy.
+* At last, ssh communication will not be captured to reduce the number of packages even further.
+. Start a cobbler sync.
+* To force a sync, delete the cobbler json cache file first and then issue cobbler sync:
++
+----
+rm /var/lib/cobbler/pxe_cache.json
+cobbler sync
+----
++
+. When cobbler is finished, stop the TCPdumps.
+. Open the TCPdumps using Wireshark, go to [guimenu]``Statistics > Conversations`` and wait for the dump to be analyzed.
+. Switch to the TCP tab.
+  The number shown on this tab gives the total number of conversations captured between SUSE Manager and SUSE Manager Proxy.
+. Look for the column [guimenu]``Duration``.
+* Start by sorting in ascending order to find out the minimal amount of time it took to transfer a file.
+* Continue by sorting in descending order to find out the maximum values for the big files, for example kernel and initrd transfers.
++
+[NOTE]
+====
+Ignore ports 4505 and 4506 as these are used for Salt communication.
+====
+
+
+//=== Conclusion 
+Analysis of the TCPdumps showed the transfer of small files with a size of approx. 1800 bytes from {productname} Server to Proxy took around 0.3 seconds.
+
+While there were not many big files, the high number of smaller files resulted high number of established connections as new TCP connection is created for every single transferred file.
+
+Therefore, knowing the minimal amount of transfer time and a number of connections needed (approx. 5000 in the example), gives an approximate estimated time for the overall transfer time: 5000 * 0.3 / 60 = 25 minutes.
+
