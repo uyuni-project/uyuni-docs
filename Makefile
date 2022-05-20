@@ -74,7 +74,7 @@ endef
 define antora-uyuni-function
 	cd $(current_dir)
 	$(call enable-uyuni-in-antorayml,$(1)) && \
-	cd $(current_dir)/$(1) && LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) antora --extension @antora/lunr-extension $(current_dir)/$(1)/uyuni-site.yml
+	cd $(current_dir)/$(1) && DOCSEARCH_ENABLED=true SITE_SEARCH_PROVIDER=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) antora --extension @antora/lunr-extension $(current_dir)/$(1)/uyuni-site.yml
 endef
 
 define clean-function
