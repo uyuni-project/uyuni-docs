@@ -59,8 +59,23 @@ To build images with {productname}, you need to create and configure a build hos
 Container build hosts are Salt clients running {sle} 12 or later.
 This section guides you through the initial configuration for a build host.
 
-From the {productname} {webui}, perform these steps to configure a build host:
 
+
+[IMPORTANT]
+====
+The operating system on the build host must match the operating system on the targeted image.
+
+For example, build {sles}{nbsp}15 based images on a build host running {sles}{nbsp}15 (SP2 or later) OS version.
+Build {sles}{nbsp}12 based images on a build host running {sles}{nbsp}12 SP4 or {sles}{nbsp}12 SP3 OS version.
+
+Cross-architecture builds are unsupported.
+////
+2022-05-12, ke: at least for now, according to feedback, this is unsupported:
+For example, you must build Raspberry Pi {sles}{nbsp}15 SP3 images on a Raspberry Pi (aarch64 architecture) build host running {sles}{nbsp}15 SP3.
+////
+====
+
+From the {productname} {webui}, perform these steps to configure a build host:
 
 . Select a Salt client to be designated as a build host from the menu:Systems[Overview] page.
 . From the [guimenu]``System Details`` page of the selected client assign the containers modules.
@@ -732,8 +747,8 @@ During the inspection phase {susemgr} collects information about the image:
 [NOTE]
 ====
 If the built image type is `PXE`, a Salt pillar is also generated.
-Image pillars are stored in the `/srv/susemanager/pillar_data/images/` directory and the Salt subsystem can access details about the generated image.
-Details include where the pillar is located and provided, image checksums, information needed for network boot, and more.
+Image pillars are stored in the database and the Salt subsystem can access details about the generated image.
+Details include where the image files are located and provided, image checksums, information needed for network boot, and more.
 
 The generated pillar is available to all connected clients.
 ====
@@ -745,7 +760,7 @@ The generated pillar is available to all connected clients.
 
 
 Building an image requires several dependent steps.
-When the build fails, investigating Salt states results can help identify the source of the failure.
+When the build fails, investigating Salt states results and build log can help identify the source of the failure.
 You can carry out these checks when the build fails:
 
 * The build host can access the build sources
@@ -768,19 +783,30 @@ The section contains some known issues when working with images.
 
 
 [[at.images.listing]]
-== List Image Profiles Available for Building
+== List of Built Images
 
 
-To list images available for building select menu:Images[Image List].
+To list available built images select menu:Images[Image List].
 A list of all images is displayed.
 
 image::images_list_images.png[scaledwidth=80%]
 
-Displayed data about images includes an image [guimenu]``Name``, its [guimenu]``Version`` and the build [guimenu]``Status``.
+Displayed data about images includes an image [guimenu]``Name``, its [guimenu]``Version``, [guimenu]``Revision``, and the build [guimenu]``Status``.
 You can also see the image update status with a listing of possible patch and package updates that are available for the image.
 
+For OS Images, the [guimenu]``Name`` and [guimenu]``Version`` fields originate from Kiwi sources and are updated at the end of successful build.
+During building or after failed build these fields show a temporary name based on profile name.
+
+[guimenu]``Revision`` is automatically increased after each successful build. For OS Images, multiple revisions can co-exist in the store.
+
+For Container Images the store holds only the latest revision.
+Information about previous revisions (packages, patches, etc.) are preserved and it is possible to list them with the [guimenu]``Show obsolete`` checkbox.
+
 Clicking the btn:[Details] button on an image provides a detailed view.
-The detailed view includes an exact list of relevant patches and a list of all packages installed within the image.
+The detailed view includes an exact list of relevant patches, list of all packages installed within the image and a build log.
+
+Clicking the btn:[Delete] button deletes the image from the list.
+It also deletes the associated pillar, files from OS Image Store and obsolete revisions.
 
 [NOTE]
 ====
