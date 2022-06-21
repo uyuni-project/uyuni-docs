@@ -215,19 +215,19 @@
   </li>
 </ul>
   </li>
-</ul>
-  </li>
-  <li class="nav-item" data-depth="2">
+  <li class="nav-item" data-depth="3">
     <button class="nav-item-toggle"></button>
-    <a class="nav-link" href="../installation-and-upgrade/client-intro.html">Upgrade the Clients</a>
-<ul class="nav-list">
-  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../installation-and-upgrade/db-intro.html">Upgrade the Database</a>
-  </li>
-  <li class="nav-item" data-depth="3">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="4">
     <a class="nav-link" href="../installation-and-upgrade/db-migration-xy.html">Database Migration to Latest Version</a>
   </li>
 </ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../installation-and-upgrade/client-intro.html">Upgrade the Clients</a>
   </li>
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../installation-and-upgrade/troubleshooting.html">Troubleshooting</a>
@@ -1848,7 +1848,7 @@
         <i class="fas fa-arrow-right custom-color" data-tippy="Next Page" id="nextPage"></i></a></span>
     &nbsp;
     <a href="https://github.com/uyuni-project/uyuni-docs/issues"><i class="fas fa-bug custom-color" data-tippy="Create an Issue" id="createIssue"></i>&nbsp;</a>
-  <a href="https://github.com/uyuni-project/uyuni-docs/edit/uyuni-2022.05/translations/en/modules/client-configuration/pages/clients-rh-rhui.adoc"><i class="fas fa-edit custom-color" data-tippy="Edit this page and submit a pull request" id="submitPR"></i></a>
+  <a href="https://github.com/uyuni-project/uyuni-docs/edit/uyuni-2022.06/translations/en/modules/client-configuration/pages/clients-rh-rhui.adoc"><i class="fas fa-edit custom-color" data-tippy="Edit this page and submit a pull request" id="submitPR"></i></a>
 </div>
 </div>
 <article class="doc"><a name="section-top"></a>
@@ -1983,11 +1983,63 @@ The key has a file extension of <code class="path">.key</code>.</p>
 <div class="title">Procedure: Copying Certificates to the Server</div>
 <ol class="arabic">
 <li>
-<p>Copy your entitlement certificate and key from the client system, to a location that the Uyuni Server can access. Amazon EC2:</p>
+<p>Copy your entitlement certificate and key from the client system, to a location that the Uyuni Server can access:</p>
+<div class="paragraph">
+<p>Amazon EC2:</p>
+</div>
 <div class="listingblock">
 <div class="content">
 <pre>cp /etc/pki/rhui/product/content-&lt;version&gt;.crt /&lt;example&gt;/entitlement/
 cp /etc/pki/rhui/content-&lt;version&gt;.key /&lt;example&gt;/entitlement/</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Azure:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Check the certificate chain using the command:</p>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>openssl s_client -connect rhui-1.microsoft.com:443 -showcerts</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>+
+A sample output will look like the following:</p>
+</div>
+<div class="paragraph">
+<p>+</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>CONNECTED(00000003)
+depth=2 C = US, O = DigiCert Inc, OU = www.digicert.com, CN = DigiCert Global Root G2
+verify return:1
+depth=1 C = US, O = Microsoft Corporation, CN = Microsoft Azure TLS Issuing CA 06
+verify return:1
+depth=0 C = US, ST = WA, L = Redmond, O = Microsoft Corporation, CN = rhui-1.microsoft.com
+verify return+</pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Check the second certificate (<code class="literal">CN = Microsoft Azure</code>), if it is the same on your VM, note the certificate name.
+Refer to the <a href="https://docs.microsoft.com/en-us/azure/active-directory/fundamentals/certificate-authorities" class="bare">https://docs.microsoft.com/en-us/azure/active-directory/fundamentals/certificate-authorities</a> to download the certificate.
+Click the AIA link to download the certificate.
+The certificate will be downloaded with the <code class="literal">.cer</code> suffix.
+Convert it to <code class="literal">.crt</code> with the command:</p>
+<div class="listingblock">
+<div class="content">
+<pre>openssl x509 -inform DER -in &lt;example.cer&gt; -out &lt;example.crt&gt;</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -1999,7 +2051,8 @@ cp /etc/pki/rhui/content-&lt;version&gt;.key /&lt;example&gt;/entitlement/</pre>
 cp /etc/pki/rhui/key.pem /&lt;example&gt;/entitlement/</pre>
 </div>
 </div>
-</li>
+<div class="olist arabic">
+<ol class="arabic">
 <li>
 <p>Copy the Red Hat CA Certificate file from the client system, to the same location as the entitlement certificate and key:</p>
 <div class="paragraph">
@@ -2011,6 +2064,12 @@ cp /etc/pki/rhui/key.pem /&lt;example&gt;/entitlement/</pre>
 </div>
 </div>
 <div class="paragraph">
+<p>Azure:</p>
+</div>
+<div class="paragraph">
+<p>Upload the converted certifcate to /&lt;example&gt;/entitlement</p>
+</div>
+<div class="paragraph">
 <p>Google Cloud Platform:</p>
 </div>
 <div class="listingblock">
@@ -2020,6 +2079,9 @@ cp /etc/pki/rhui/key.pem /&lt;example&gt;/entitlement/</pre>
 </div>
 </li>
 </ol>
+</div>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p>To manage repositories on your Red Hat client, you need to import the CA and entitlement certificates to the Uyuni Server.
