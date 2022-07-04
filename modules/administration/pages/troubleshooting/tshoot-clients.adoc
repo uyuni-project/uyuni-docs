@@ -1,0 +1,379 @@
+[[troubleshooting-clients]]
+= Troubleshooting Clients
+
+// Keep this in alphabetical order. We might also want to consider breaking these into their own topics, like we have in the admin guide. LKB 2019-04-05
+
+
+== Autoinstallation
+
+Depending on your base channel, new autoinstallation profiles might be subscribed to a channel that is missing required packages.
+
+For autoinstallation to work, these packages are required:
+
+* [package]``pyOpenSSL``
+* [package]``rhnlib``
+* [package]``libxml2-python``
+* [package]``spacewalk-koan``
+
+To resolve this issue, check these things first:
+
+* Check that the tools software channel related to the base channel in your autoinstallation profile is available to your organization and your user.
+* Check that the tools channel is available to your {productname} as a child channel.
+* Check that the required packages and any dependencies are available in the associated channels.
+
+
+
+== Bare Metal Systems
+
+If a bare metal system on the network is not automatically added to the [guilabel]``Systems`` list, check these things first:
+
+* You must have the [path]``pxe-default-image`` package installed.
+* File paths and parameters must be configured correctly. Check that the [path]``vmlinuz0`` and [path]``initrd0.img`` files, which are provided by [path]``pxe-default-image``, are in the locations specified in the [path]``rhn.conf`` configuration file.
+* Ensure the networking equipment connecting the bare metal system to the {productname} server is working correctly, and that you can reach the {productname} server IP address from the server.
+* The bare metal system to be provisioned must have PXE booting enabled in the boot sequence, and must not be attempting to boot an operating system.
+* The DHCP server must be responding to DHCP requests during boot. Check the PXE boot messages to ensure that:
+** the DHCP server is assigning the expected IP address
+** the DHCP server is assigning the the {productname} server IP address as [option]``next-server`` for booting.
+* Ensure Cobbler is running, and that the Discovery feature is enabled.
+
+If you see a blue Cobbler menu shortly after booting, discovery has started.
+If it does not complete successfully, temporarily disable automatic shutdown to help diagnose the problem. To disable automatic shutdown:
+
+. Select [option]``pxe-default-profile`` in the Cobbler menu with the arrow keys, and press the Tab key before the timer expires.
+. Add the kernel boot parameter [option]``spacewalk-finally=running`` using the integrated editor, and press Enter to continue booting.
+. Enter a shell with the username [option]``root`` and password [option]``linux`` to continue debugging.
+
+[IMPORTANT]
+.Duplicate profiles
+====
+Due to a technical limitation, it is not possible to reliably distinguish a new bare metal system from a system that has previously been discovered.
+Therefore, we recommended that you do not power on bare metal systems multiple times, as this results in duplicate profiles.
+====
+
+
+
+== Bootstrap End-of-Life {centos} 6 Clients
+
+{centos} 6 is now at end-of-life, and the images provided in the client repository for this operating system are out of date.
+Bootstrapping new {centos} 6 clients using these packages will fail.
+This failure will not happen on {centos} 6 clients that are already installed and bootstrapped.
+
+If you need to bootstrap new {centos} 6 clients you can edit the existing repositories to reflect the correct URL.
+
+
+
+.Procedure: Troubleshooting Bootstrapping a New {centos} 6 Client
+. On the {centos} 6 client, at the command prompt, open the ``CentOS-Base.repo`` file, located in the ``/etc/yum.repos.d/`` directory.
+. Locate the ``mirrorlist`` entry, pointing to ``mirrorlist.centos.org``.
+  There may be more than one entry.
+  For example:
++
+----
+mirrorlist=http://mirrorlist.centos.org/?release=6&arch=$basearch&repo=os
+----
++
+. Comment out the ``mirrorlist`` entry, to prevent the package manager looking for the URL.
+. Edit the ``baseurl`` line to point to a ``vault.centos.org`` URL, and specify the {centos} 6 repositories.
+  For example:
++
+----
+baseurl=https://vault.centos.org/centos/6/os/$basearch/
+----
+. Repeat for each repository listed in the file.
+. Bootstrap the client.
+  For more information about bootstrapping {centos} clients, see xref:client-configuration:clients-centos.adoc[].
+
+For more information about the {centos} 6 end-of-life, see  http://mirror.centos.org/centos/6/readme.
+
+
+
+== Bootstrap Repository for End-of-Life Products
+
+When supported products are synchronized, bootstrap repositories are automatically created and regenerated on the {productname} Server.
+When a product reaches end-of-life and becomes unsupported, bootstrap repositories must be created manually if you want to continue using the product.
+
+For more information about bootstrap repositories, see xref:client-configuration:bootstrap-repository.adoc[].
+
+
+
+.Procedure: Creating Bootstrap Repositories for End-Of-Life Products
+
+. At the command prompt on the {productname} Server, as root, list the available unsupported bootstrap repositories with the [option]``--force`` option, for example:
++
+----
+mgr-create-bootstrap-repo --list --force
+1. SLE-11-SP4-x86_64
+2. SLE-12-SP2-x86_64
+3. SLE-12-SP3-x86_64
+----
+. Create the bootstrap repository, using the appropriate repository name as the product label:
++
+----
+mgr-create-bootstrap-repo --create SLE-12-SP2-x86_64 --force
+----
+
+If you do not want to create bootstrap repositories manually, you can check whether LTSS is available for the product and bootstrap repository you need.
+
+
+
+== Cloned Salt Clients
+
+If you have used your hypervisor clone utility, and attempted to register the cloned Salt client, you might get this error:
+
+----
+We're sorry, but the system could not be found.
+----
+
+This is caused by the new, cloned, system having the same machine ID as an existing, registered, system.
+You can adjust this manually to correct the error and register the cloned system successfully.
+
+
+For more information and instructions, see xref:administration:tshoot-registerclones.adoc[].
+
+
+
+== Disabling the FQDNS grain
+
+The FQDNS grain returns the list of all the fully qualified DNS services in the system.
+Collecting this information is usually a fast process, but if the DNS settings have been misconfigured, it could take a much longer time.
+In some cases, the client could become unresponsive, or crash.
+
+To prevent this problem, you can disable the FQDNS grain with a Salt flag.
+If you disable the grain, you can use a network module to provide FQDNS services, without the risk of the client becoming unresponsive.
+
+[NOTE]
+====
+This only applies to older Salt clients.
+If you registered your Salt client recently, the FQDNS grain is disabled by default.
+====
+
+
+On the {productname} Server, at the command prompt, use this command to disable the FQDNS grain:
+
+----
+salt '*' state.sls util.mgr_disable_fqdns_grain
+----
+
+This command restarts each client and generate Salt events that the server needs to process.
+If you have a large number of clients, you can execute the command in batch mode instead:
+
+----
+salt --batch-size 50 '*' state.sls util.mgr_disable_fqdns_grain
+----
+
+Wait for the batch command to finish executing.
+Do not interrupt the process with kbd:[Ctrl+C].
+
+
+
+== Mounting /tmp with noexec
+
+Salt runs remote commands from [filename]``/tmp`` on the client's file system.
+Therefore you must not mount [filename]``/tmp`` with the [option]``noexec`` option.
+
+
+
+== Passing Grains to a Start Event
+
+Every time a Salt client starts, it passes the ``machine_id`` grain to {productname}. {productname} uses this grain to determine if the client is registered.
+This process requires a synchronous Salt call. Synchronous Salt calls block other processes, so if you have a lot of clients start at the same time, the process could create significant delays.
+
+To overcome this problem, a new feature has been introduced in Salt to avoid making a separate synchronous Salt call.
+
+To use this feature, you can add a configuration parameter to the client configuration, on clients that support it.
+
+To make this process easier, you can use the ``mgr_start_event_grains.sls`` helper Salt state.
+
+[NOTE]
+====
+This only applies to already registered clients.
+If you registered your Salt client recently, this config parameter is added by default.
+====
+
+
+On the {productname} Server, at the command prompt, use this command to enable the ``start_event_grains`` configuration helper:
+
+----
+salt '*' state.sls util.mgr_start_event_grains
+----
+
+This command adds the required configuration into the client's configuration file, and applies it when the client is restarted.
+If you have a large number of clients, you can execute the command in batch mode instead:
+
+----
+salt --batch-size 50 '*' state.sls mgr_start_event_grains
+----
+
+
+
+== Proxy Connections and FQDN
+
+Sometimes clients connected through a proxy appear in the {webui}, but do not show that they are connected through a proxy.
+This can occur if you are not using the fully qualified domain name (FQDN) to connect, and the proxy is not known to {productname}.
+
+To correct this behavior, specify additional FQDNs as grains in the client configuration file on the proxy:
+
+----
+grains:
+  susemanager:
+    custom_fqdns:
+      - name.one
+      - name.two
+----
+
+
+
+== Red Hat CDN Channel and Multiple Certificates
+
+The {redhat} content delivery network (CDN) channels sometimes provide multiple certificates, but the {productname} {webui} can only import a single certificate.
+If CDN presents a certificate that is different to the one the {productname} {webui} knows about, validation fails and permission to access the repository is denied, even though the certificate is accurate.
+The error message received is:
+
+----
+[error]
+Repository '<repo_name>' is invalid.
+<repo.pem> Valid metadata not found at specified URL
+History:
+ - [|] Error trying to read from '<repo.pem>'
+ - Permission to access '<repo.pem>' denied.
+Please check if the URIs defined for this repository are pointing to a valid repository.
+Skipping repository '<repo_nam' because of the above error.
+Could not refresh the repositories because of errors.
+HH:MM:SS RepoMDError: Cannot access repository. Maybe repository GPG keys are not imported
+----
+
+To resolve this issue, merge all valid certificates into a single ``.pem`` file, and rebuild the certificates for use by {productname}:
+
+
+
+.Procedure: Resolving Multiple {redhat} CDN Certificates
+. On the {redhat} client, at the command prompt, as root, gather all current certificates from ``/etc/pki/entitlement/`` in a single ``rh-cert.pem`` file:
++
+----
+cat 866705146090697087.pem 3539668047766796506.pem redhat-entitlement-authority.pem > rh-cert.pem
+----
+. Gather all current keys from ``/etc/pki/entitlement/`` in a single ``rh-key.pem`` file:
++
+----
+cat 866705146090697087-key.pem 3539668047766796506-key.pem > rh-key.pem
+----
+
+You can now import the new certificates to the {productname} Server, using the instructions in xref:client-configuration:clients-rh-cdn.adoc[].
+
+== Registration from {webui} fails and does not show any errors
+
+For the initial registration from the {webui}, all Salt clients are using Salt SSH.
+
+Because of its nature, Salt SSH clients do not report errors back to the server.
+
+However, the Salt SSH clients store a log locally at [path]``/var/log/salt-ssh.log`` that can be inspected for errors.
+
+== Registering Older Clients
+
+//
+//LKB 2020-06-03
+
+//CCFR for reference:
+
+//* Cause: To register older clients ({centos}{nbsp}6, {oracle}{nbsp}6, {rhel}{nbsp}6, or {sleses}{nbsp}6 clients), the server needs to support older types of SSL encryption, to successfully register them.
+
+//* Consequence: When trying to register on the CLI, registration fails with this error:
+//+
+//----
+//Repository '<Repository_Name>' is invalid.
+//[|] Valid metadata not found at specified URLs
+//Please check if the URIs defined for this repository are pointing to a valid repository.
+//Skipping repository '<Repository_Name>' because of the above error.
+//Download (curl) error for 'www.example.com':
+//Error code: Unrecognized error
+//Error message: error:1409442E:SSL routines:SSL3_READ_BYTES:tlsv1 alert protocol version
+//----
+//+
+//When trying to register on the {webui}, registration fails with this error:
+//+
+//----
+//Rendering SLS 'base:bootstrap' failed: Jinja error: >>> No TLS 1.2 and above for RHEL6 and SLES11. Please check your Apache config. <<< Traceback (most recent call last): File "/usr/lib/python3.6/site-packages/salt/utils/templates.py", line 392, in render_jinja_tmpl output = template.render(**decoded_context) File "/usr/lib/python3.6/site-packages/jinja2/asyncsupport.py", line 76, in render return original_render(self, *args, **kwargs) File "/usr/lib/python3.6/site-packages/jinja2/environment.py", line 1008, in render return self.environment.handle_exception(exc_info, True) File "/usr/lib/python3.6/site-packages/jinja2/environment.py", line 780, in handle_exception reraise(exc_type, exc_value, tb) File "/usr/lib/python3.6/site-packages/jinja2/_compat.py", line 37, in reraise raise value.with_traceback(tb) File "<template>", line 53, in top-level template code File "/usr/lib/python3.6/site-packages/salt/utils/jinja.py", line 211, in jinja_raise raise TemplateError(msg) salt.exceptions.TemplateError: >>> No TLS 1.2 and above for RHEL6 and SLES11. Please check your Apache config. <<< ; line 53 --- [...] {%- if not grains['os_family'] == 'Debian' %} {%- set bootstrap_repo_request = salt['http.query'](bootstrap_repo_url + 'repodata/repomd.xml', status=True, verify_ssl=False) %} {# 901 is a special status code for the TLS issue with RHEL6 and SLE11. #} {%- if bootstrap_repo_request['status'] == 901 %} {{ raise(bootstrap_repo_request['error']) }} <====================== {%- endif %} {%- set bootstrap_repo_exists = (0 < bootstrap_repo_request['status'] < 300) %} bootstrap_repo: file.managed: [...] ---
+//----
+
+//* Fix: Before registering {centos}{nbsp}6, {oracle}{nbsp}6, {rhel}{nbsp}6, or {sleses}{nbsp}6 clients, force Apache to accept a greater range of protocol versions.
+//Open the [path]``/etc/apache2/ssl-global.conf`` configuration file, locate the [systemitem]``SSLProtocol`` line, and update it to read:
+//+
+//----
+//SSLProtocol all -SSLv2 -SSLv3
+//----
+//+
+//This must be done manually on the server, and with a Salt state on the Proxy, if applicable.
+//Restart the [systemitem]``apache`` service on each system after making the changes.
+
+//* Result: the client is successfully registered
+
+To register and use {centos}{nbsp}6, {oracle}{nbsp}6, {rhel}{nbsp}6, {sleses}{nbsp}6, or {sles} 11 clients, you need to configure the {productname} Server to support older types of SSL encryption.
+
+If you are attempting to register at the command prompt, you see an error like this:
+
+----
+Repository '<Repository_Name>' is invalid.
+[|] Valid metadata not found at specified URL(s)
+Please check if the URIs defined for this repository are pointing to a valid repository.
+Skipping repository '<Repository_Name>' because of the above error.
+Download (curl) error for 'www.example.com':
+Error code: Unrecognized error
+Error message: error:1409442E:SSL routines:SSL3_READ_BYTES:tlsv1 alert protocol version
+----
+
+If you are attempting to register in the {webui}, you see an error like this:
+
+----
+Rendering SLS 'base:bootstrap' failed: Jinja error: >>> No TLS 1.2 and above for RHEL6 and SLES11. Please check your Apache config.
+...
+----
+
+This occurs because Apache requires TLS{nbsp}v1.2, but older operating systems do not support this version of the TLS protocol.
+To fix this error, you need to force Apache on the server to accept a greater range of protocol versions.
+On the {productname} Server, as root, open the [path]``/etc/apache2/ssl-global.conf`` configuration file, locate the [systemitem]``SSLProtocol`` line, and update it to read:
+
+----
+SSLProtocol all -SSLv2 -SSLv3
+----
+
+This needs to be done manually on the server, and with a Salt state on the Proxy, if applicable.
+Restart the [systemitem]``apache`` service on each system after making the changes.
+
+
+== Salt clients shown as down and DNS settings
+
+Even if the Salt client is running, actions such as package refresh or apply states can be marked as failed with the message:
+
+----
+Minion is down or could not be contacted.
+----
+
+In this case try rescheduling the action.
+If rescheduling succeeds, the cause of the problem can be a wrong DNS configuration.
+
+When the Salt client is restarted, or in case the grains are refreshed, the client calculates its FQDN grains, and it is unresponsive until the grains are proceeded.
+When a scheduled action on {productname} Server is going to be executed, {productname} Server performs a ``test.ping`` to the client before the actual action to ensure the client is actually running and the action can be triggered.
+
+By default, {productname} Server waits for 5 seconds to get the response from ``test.ping`` command.
+If the response is not received within 5 seconds, then the action is set to fail with the message that the client is down or could not be contacted.
+
+To correct this, fix the DNS resolution on the client, so the client does not get stuck for 5 seconds while solving its FQDN.
+
+If this is not possible, try to increase the value for ``java.salt_presence_ping_timeout`` in the ``/etc/rhn/rhn.conf`` file on the {productname} Server to a value higher than 4.
+
+For example:
+
+----
+java.salt_presence_ping_timeout = 6
+----
+
+After that, restart ``spacewalk-services`` with:
+
+----
+spacewalk-services restart
+----
+
+[NOTE]
+====
+Increasing this value will cause {productname} Server to take longer to check if a minion is unreachable or unresponsive, causing the {productname} Server to be slower or less responsive overall.
+====
