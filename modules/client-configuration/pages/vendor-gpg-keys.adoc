@@ -1,0 +1,84 @@
+[[vendor-client-gpg]]
+= Vendor GPG Keys
+
+{productname} server deploys the GPG keys to the local directories.
+When a channel is used on a client, the channel configuration shows which GPG key is used to sign the packages.
+
+Before GPG keys can be deployed, they must be part of the salt filesystem. 
+
+ifeval::[{suma-content} == true]
+The keys are added via the [literal]`susemanager-build-keys-web` package.
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+The keys are added via the [literal]`uyuni-build-keys-web` package. 
+endif::[]
+
+In case of SUSE family operating systems, the keys are already trusted.
+
+In case of EL like operating systems, the keys are locally installed. 
+There is no need to  deploy them. 
+File URLs can be used to point to the files instead of deploying them.
+
+In case of RES, the keys need to be deployed.
+
+[IMPORTANT]
+====
+In case of Client Tools Channels, the keys always need to be deployed on the clients.
+====
+
+In case of Debian like systems, only the metadata is signed. 
+If this is not enabled on the server, no key is needed. 
+In case it is enabled, the server automatically deploys the key to the clients.
+
+
+== Examples of repositories
+
+RPM based repositories:
+----
+[alias]
+name = name
+gpgkey = file:///etc/pki/rpm-gpg/my.key
+----
+
+For Debian, amend [literal]`sources.list` config like this:
+----
+deb [trusted-by=/usr/share/keyring/my.key]
+----
+
+
+== Additional features
+
+=== Enabling local repositories
+
+By default, all local repositories are disabled before bootstrapping. 
+They get disabled again on every channel state apply (e.g. highstate). 
+
+This can be changed by setting a pillar data for the client to [literal]`mgr_disable_local_repos = False`.
+
+=== Customer defined GPG keys
+
+Customers can define their own GPG keys to deploy to the client. 
+
+Pillar list with filenames is created, to provide the key in the GPG directory of the {salt} filesystem under this name.
+
+These keys are deployed into [path]`/etc/pki/rpm-gpg/` on RPM based operating systems and to [path]`/usr/share/keyrings/` on Debian systems:
+
+
+----
+cat /etc/pillar/mypillar.sls
+custom_gpgkeys:
+  - my_first_gpg.key
+  - my_second_gpgkey.gpg
+----
+//
+----
+ls -la /etc/salt/gpg/
+/etc/salt/gpg/my_first_gpg.key
+/etc/salt/gpg/my_second_gpgkey.gpg
+----
+
+// [NOTE]
+// ====
+// We need to adapt [literal]`spacewalk-common-channels.ini` and [literal]`sumatoolbox` to set [literal]`gpgkeyurl` for created channels correctly to the local key.
+// ====
