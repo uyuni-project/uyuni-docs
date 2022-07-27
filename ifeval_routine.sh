@@ -54,7 +54,7 @@ if [ $CHECK == 1 ]; then
 fi
 
 if [ $FIX == 1 ]; then
-    find -name "*\.adoc" -type f -print0 | xargs -0 sed -i 's/ifeval::/\nifeval::/g'
+    find -name "*\.adoc" -type f -print0 | xargs -0 sed -i 's/^$ifeval::/\nifeval::/g'
     exit 0
 fi
 
