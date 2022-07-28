@@ -47,7 +47,7 @@ shift
 done
 
 if [ $IFEVAL == 1 ]; then
-    IF_EVAL_CORRECT_COUNT=$(find -name "*\.adoc" -type f -print0 | xargs -0 grep -hrB1 'ifeval' | grep '^[[:blank:]]*$'| wc -l)
+    IF_EVAL_CORRECT_COUNT=$(find -name "*\.adoc" -type f -print0 | xargs -0 grep -hrB1 '^ifeval' | grep '^[[:blank:]]*$'| wc -l)
     IF_EVAL_COUNT=$(find -name "*\.adoc" -type f -print0 | xargs -0 grep -nr "^ifeval" | wc -l)
     IFEVAL_WITHOUT_NEWLINES_COUNT=$(($IF_EVAL_COUNT-$IF_EVAL_CORRECT_COUNT))
     echo "Total number of ifevals without a prior newline: $IFEVAL_WITHOUT_NEWLINES_COUNT"
