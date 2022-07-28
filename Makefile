@@ -259,6 +259,11 @@ all-suma: configure-suma obs-packages-suma
 .PHONY: all-uyuni
 all-uyuni: configure-uyuni obs-packages-uyuni
 
+.PHONY: checkstyle
+checkstyle: 
+	$(current_dir)/enforcing_checkstyle.sh -c
+	$(current_dir)/enforcing_checkstyle.sh -i
+
 -include Makefile.section.functions
 -include Makefile.lang
 -include Makefile.lang.target
