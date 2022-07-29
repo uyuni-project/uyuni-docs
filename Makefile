@@ -261,8 +261,15 @@ all-uyuni: configure-uyuni obs-packages-uyuni
 
 .PHONY: checkstyle
 checkstyle: 
-	$(current_dir)/enforcing_checkstyle.sh -c
-	$(current_dir)/enforcing_checkstyle.sh -i
+	cd $(current_dir)
+	find -name "*\.adoc" -type f  | xargs -I {} ./enforcing_checkstyle --filename {} --ifeval
+	find -name "nav*\.adoc" -type f  | xargs -I {} ./enforcing_checkstyle --filename {} --comment
+
+.PHONY: checkstyle-autofix
+checkstyle-autofix: 
+	cd $(current_dir)
+	find -name "*\.adoc" -type f  | xargs -I {} ./enforcing_checkstyle --filename {} --ifeval --fixmode
+	find -name "nav*\.adoc" -type f  | xargs -I {} ./enforcing_checkstyle --filename {} --comment --fixmode
 
 -include Makefile.section.functions
 -include Makefile.lang
