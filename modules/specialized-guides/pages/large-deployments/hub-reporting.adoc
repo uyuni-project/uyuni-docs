@@ -1,13 +1,15 @@
 [[lsd-hub-reporting]]
 = Hub Reporting
 
-The Hub prepares and provides content for multiple peripheral {productname} Servers. The goal of the reporting feature is to get data from these Servers back and have combined reporting data available on the Hub.
+The Hub prepares and provides content for multiple peripheral {productname} Servers.
+The goal of the reporting feature is to get data from these Servers back and have combined reporting data available on the Hub.
 The data is made available for external Reporting Tools.
 
 == Architecture
-The main database is a PostgresDB in the {productname} Hub system. 
-It stores all the information collected from all the servers, and eventually aggregates them. 
-Every peripheral Server has its own reporting database where the information is collected for that system. 
+
+The main database is a PostgresDB in the {productname} Hub system.
+It stores all the information collected from all the servers, and eventually aggregates them.
+Every peripheral Server has its own reporting database where the information is collected for that system.
 In summary:
 
 - the DB in {productname} Hub stores, collects and eventually aggregates data coming from all the DBs of the peripheral Servers,
@@ -16,14 +18,17 @@ In summary:
 - the reporting tool can be connected either to the Hub or to any {productname} Server.
 
 == Setup
+
 The reporting database and schema are set up by default using the local PostgreSQL server.
 The reporting database is a separate database accessible via the network.
-+
+
 [IMPORTANT]
 ====
 As a requirement we expect all server certificates are signed by the same Root Certificate Authority (CA).
 The whole {productname} Hub environment should be using only one Root CA.
 ====
+
+
 
 === Create a DB user for the reporting
 
@@ -34,7 +39,7 @@ For doing that, it is possible to use ``uyuni-setup-reportdb-user``.
 usage: uyuni-setup-reportdb-user [options]
 
 options:
-  --help 
+  --help
             show this help message and exit
   --non-interactive
             Switches to non-interactive mode
@@ -56,8 +61,8 @@ The schema exports the most important tables from the main {productname} Databas
 
 Ready-to-use reports are provided as views, aggregating data over multiple tables.
 
-Every table gets an extra id column (`mgm_id`) specifying the {productname} server which provided the data. 
-On a single {productname} Server this column has the standard value `1` which represent [literal]``localhost``. 
+Every table gets an extra id column (`mgm_id`) specifying the {productname} server which provided the data.
+On a single {productname} Server this column has the standard value `1` which represent [literal]``localhost``.
 On the {productname} Hub it is replaced with the real server id the managed server has in the hub database.
 
 Another common additional field is `synced_date`, which represents the time when the data were exported from the main {productname} Server database.
@@ -68,14 +73,17 @@ Schema documentation can be found on the Left Navigation Bar -> menu:Help[Report
 
 {productname} uses taskomatic jobs to generate the data for the reporting database and to get the data from the peripheral servers to the hub.
 
-To generate and update the data on a peripheral server, the responsible schedule is called `update-reporting-default`. It is executed by default daily at midnight.
+To generate and update the data on a peripheral server, the responsible schedule is called `update-reporting-default`.
+It is executed by default daily at midnight.
 
-On the {productname} Hub there is a second schedule which is important. To fetch the reporting data from all registered peripheral servers, the task with the name `update-reporting-hub-default`
-is executed daily at 1:30 AM.
+On the {productname} Hub there is a second schedule which is important.
+To fetch the reporting data from all registered peripheral servers, the task with the name `update-reporting-hub-default` is executed daily at 1:30 AM.
 
 All times are in the local timezone of the server.
 If the peripheral servers are in different timezones, it is recommended to align all the schedules.
 Make sure that all reporting data are gathered at a specific point in time, and `update-reporting-hub-default` is running when all peripheral servers have actually finished their local jobs.
+
+
 
 === Tuning Reporting Jobs
 
