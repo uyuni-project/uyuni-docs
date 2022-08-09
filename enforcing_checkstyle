@@ -1,0 +1,104 @@
+#!/usr/bin/python3
+
+import sys
+import getopt
+import os
+import re
+
+def addLineIfDef(filename, fix):
+    output = ''
+    with open(filename, encoding = 'utf-8') as f:
+        previous_line = ''
+        line_number = 0
+        error_found = False
+        for line in f.readlines():
+            line_number += 1
+            line_with_ifeval = re.findall("^ifeval", line)
+            if len(previous_line.strip()) != 0 and line_with_ifeval :
+                if fix == False :
+                    sys.stderr.write('Error in file %s: %d\n' % (filename,line_number))
+                    error_found = True
+                output += '\n'
+                output +=  line
+            else : 
+                output +=  line
+            previous_line = line
+        if error_found:
+            exit(1)
+    if fix:
+        with open(filename, 'w', encoding = 'utf-8') as f:
+            f.write(output)
+
+def removeComment(filename, fix):
+    output = ''
+    with open(filename, encoding = 'utf-8') as f:
+        #skip first line
+        output = f.readline()
+        line_number = 1
+        error_found = False
+        for line in f.readlines() :
+            line_number += 1
+            line_with_comment = re.findall("^//", line)
+            if not line_with_comment:
+                # printing those lines
+                output += line
+            else: 
+                if fix == False :
+                    sys.stderr.write('Error in file %s: %d\n' % (filename,line_number))
+                    error_found = True
+        if error_found:
+            exit(1)
+    if fix:
+        with open(filename, 'w', encoding = 'utf-8') as f:
+            f.write(output)
+
+def usage():
+    sys.stdout.write("This script is used for enforce checkstyle on *adoc files.\n\
+            -h  --help:         show this help\n\
+            -f  --filename:     file to check (mandatory)\n\
+            -i  --ifeval:       check if each ifeval has a prior blank line. Return 0 if successuful\n\
+            -c  --comment:      check for comment in nav files. Return 0 if successful\n\
+            -F  --fixmode:      with -i and -c, it provides a fixed version of the file on stdout\n \
+            \n")
+    
+def main():
+    FILENAME = ''
+    FIXMODE = False
+    IFEVAL = False
+    COMMENT = False
+
+    opts, args = getopt.getopt(sys.argv[1:], "f:hicF",
+                               ["filename=", "help", "ifeval", "comment","fixmode"])
+
+    
+    for opt, val in opts:
+        if opt == "--help" or opt == "-h":
+            usage()
+            exit(0)
+        if opt == "--filename" or opt == "-f":
+            FILENAME = val
+        if opt == "--fixmode" or opt == "-F":
+            FIXMODE = True
+        if opt == "--ifeval" or opt == "-i":
+            IFEVAL = True
+        if opt == "--comment" or opt == "-c":
+            COMMENT = True
+    
+    if FILENAME == '':
+        sys.stderr.write('--filename is missing\n')
+        exit(1)
+
+    if IFEVAL == False and COMMENT == False: 
+        sys.stderr.write('--ifeval or --comment param is missing\n')
+        exit(1)
+
+    if IFEVAL == True :
+        addLineIfDef(FILENAME, FIXMODE)
+
+    if COMMENT == True :
+        removeComment(FILENAME, FIXMODE)
+
+    exit(0)
+
+if __name__ == "__main__" :
+    main()
