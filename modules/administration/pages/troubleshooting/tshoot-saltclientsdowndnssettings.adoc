@@ -1,0 +1,38 @@
+[[troubleshooting-salt-clients-down-and-dns-settings]]
+= Troubleshooting Salt clients shown as down and DNS settings
+
+Even if the Salt client is running, actions such as package refresh or apply states can be marked as failed with the message:
+
+----
+Minion is down or could not be contacted.
+----
+
+In this case try rescheduling the action.
+If rescheduling succeeds, the cause of the problem can be a wrong DNS configuration.
+
+When the Salt client is restarted, or in case the grains are refreshed, the client calculates its FQDN grains, and it is unresponsive until the grains are proceeded.
+When a scheduled action on {productname} Server is going to be executed, {productname} Server performs a ``test.ping`` to the client before the actual action to ensure the client is actually running and the action can be triggered.
+
+By default, {productname} Server waits for 5 seconds to get the response from ``test.ping`` command.
+If the response is not received within 5 seconds, then the action is set to fail with the message that the client is down or could not be contacted.
+
+To correct this, fix the DNS resolution on the client, so the client does not get stuck for 5 seconds while solving its FQDN.
+
+If this is not possible, try to increase the value for ``java.salt_presence_ping_timeout`` in the ``/etc/rhn/rhn.conf`` file on the {productname} Server to a value higher than 4.
+
+For example:
+
+----
+java.salt_presence_ping_timeout = 6
+----
+
+After that, restart ``spacewalk-services`` with:
+
+----
+spacewalk-services restart
+----
+
+[NOTE]
+====
+Increasing this value will cause {productname} Server to take longer to check if a minion is unreachable or unresponsive, causing the {productname} Server to be slower or less responsive overall.
+====

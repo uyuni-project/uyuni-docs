@@ -1,0 +1,35 @@
+[[troubleshooting-redhat-multiple-certs]]
+= Troubleshooting Red Hat CDN Channel and Multiple Certificates
+
+The {redhat} content delivery network (CDN) channels sometimes provide multiple certificates, but the {productname} {webui} can only import a single certificate.
+If CDN presents a certificate that is different to the one the {productname} {webui} knows about, validation fails and permission to access the repository is denied, even though the certificate is accurate.
+The error message received is:
+
+----
+[error]
+Repository '<repo_name>' is invalid.
+<repo.pem> Valid metadata not found at specified URL
+History:
+ - [|] Error trying to read from '<repo.pem>'
+ - Permission to access '<repo.pem>' denied.
+Please check if the URIs defined for this repository are pointing to a valid repository.
+Skipping repository '<repo_nam' because of the above error.
+Could not refresh the repositories because of errors.
+HH:MM:SS RepoMDError: Cannot access repository. Maybe repository GPG keys are not imported
+----
+
+To resolve this issue, merge all valid certificates into a single ``.pem`` file, and rebuild the certificates for use by {productname}:
+
+.Procedure: Resolving Multiple {redhat} CDN Certificates
+. On the {redhat} client, at the command prompt, as root, gather all current certificates from ``/etc/pki/entitlement/`` in a single ``rh-cert.pem`` file:
++
+----
+cat 866705146090697087.pem 3539668047766796506.pem redhat-entitlement-authority.pem > rh-cert.pem
+----
+. Gather all current keys from ``/etc/pki/entitlement/`` in a single ``rh-key.pem`` file:
++
+----
+cat 866705146090697087-key.pem 3539668047766796506-key.pem > rh-key.pem
+----
+
+You can now import the new certificates to the {productname} Server, using the instructions in xref:client-configuration:clients-rh-cdn.adoc[].
