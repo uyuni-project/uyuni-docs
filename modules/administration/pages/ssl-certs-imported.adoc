@@ -19,9 +19,11 @@ The host name of the SSL server certificate must match the fully qualified host 
 You can set the host names in the ``X509v3 Subject Alternative Name`` section of the certificate.
 You can also list multiple host names if your environment requires it.
 
-Third-party authorities commonly use intermediate CAs to sign requested server certificates. 
+Third-party authorities commonly use intermediate CAs to sign requested server certificates.
 In this case, all CAs in the chain are required to be available.
 If there is no extra parameter or option available to specify intermediate CAs, take care that all CAs (Root CA and intermediate CAs) are stored in one file.
+
+
 
 == Import Certificates for New Installations
 
@@ -92,6 +94,7 @@ You can replace active certificates on your {productname} installation with a ne
 To replace the certificates, you can replace the installed CA certificate with the new CA, and then update the database.
 
 
+
 .Procedure: Replacing Existing Certificates
 
 . On the {productname} Server, at the command prompt, call the command `mgr-ssl-cert-setup` and provide the certificates as parameters:
@@ -108,7 +111,9 @@ This command performs a number of tests on the provided files to test if they ar
 . Restart services to pick up the changes:
 +
 ----
-spacewalk-service restart
+spacewalk-service stop
+systemctl restart postgresql.service
+spacewalk-service start
 ----
 
 . Update the database with the new CA:
@@ -118,8 +123,12 @@ spacewalk-service restart
 ----
 
 If you are using a proxy, you need to generate a server certificate RPM for each proxy, using their host names and cnames.
+You should use `mgr-ssl-cert-setup` also on a {productname} Proxy to replace the certificates.
+Because the {productname} Proxy does not have a postgreSQL database, only [command]``spacewalk-service restart`` is sufficient.
 
 If the Root CA was changed, it needs to get deployed to all the clients connected to {productname}.
+
+
 
 .Procedure: Deploying the Root CA on Salt Clients
 
@@ -128,6 +137,7 @@ If the Root CA was changed, it needs to get deployed to all the clients connecte
 . Navigate to menu:Systems[System Set Manager > Overview].
 . In the [guimenu]``States`` field, click btn:[Apply] to apply the system states.
 . In the [guimenu]``Highstate`` page, click btn:[Apply Highstate] to propagate the changes to the clients.
+
 
 
 === Extra handling of traditional Clients

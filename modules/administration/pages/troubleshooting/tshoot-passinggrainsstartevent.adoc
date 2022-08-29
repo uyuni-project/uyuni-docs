@@ -1,0 +1,30 @@
+[[troubleshooting-passing-grains-start-event]]
+= Troubleshooting Passing Grains to a Start Event
+
+Every time a Salt client starts, it passes the ``machine_id`` grain to {productname}. {productname} uses this grain to determine if the client is registered.
+This process requires a synchronous Salt call. Synchronous Salt calls block other processes, so if you have a lot of clients start at the same time, the process could create significant delays.
+
+To overcome this problem, a new feature has been introduced in Salt to avoid making a separate synchronous Salt call.
+
+To use this feature, you can add a configuration parameter to the client configuration, on clients that support it.
+
+To make this process easier, you can use the ``mgr_start_event_grains.sls`` helper Salt state.
+
+[NOTE]
+====
+This only applies to already registered clients.
+If you registered your Salt client recently, this config parameter is added by default.
+====
+
+
+On the {productname} Server, at the command prompt, use this command to enable the ``start_event_grains`` configuration helper:
+
+----
+salt '*' state.sls util.mgr_start_event_grains
+----
+
+This command adds the required configuration into the client's configuration file, and applies it when the client is restarted.
+
+----
+salt --batch-size 50 '*' state.sls mgr_start_event_grains
+----

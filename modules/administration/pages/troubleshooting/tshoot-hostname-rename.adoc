@@ -1,0 +1,77 @@
+[[tshoot-hostname-rename]]
+= Troubleshooting Renaming {productname} Server
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+////
+Showing my working. --LKB 2020-06-22
+
+Cause: Renaming the hostname
+Consequence: Changes not picked up by db, clients and proxies
+Fix: Use the [command]``spacewalk-hostname-rename`` script to update the settings in the PostgreSQL database and the internal structures of {productname}.
+Result: Renaming is successfully propagated
+////
+
+If you change the hostname of the {productname} Server locally, your {productname} installation ceases to work properly.
+This is because the changes have not been made in the database, which prevents the changes from propagating out your clients and any proxies.
+
+If you need to change the hostname of the {productname} Server, you can do so using the [command]``spacewalk-hostname-rename`` script.
+This script updates the settings in the PostgreSQL database and the internal structures of {productname}.
+
+The [command]``spacewalk-hostname-rename`` script is part of the [package]``spacewalk-utils`` package.
+
+The only mandatory parameter for the script is the newly configured IP address of the {productname} Server.
+
+
+
+.Procedure: Renaming {productname} Server
+. Change the network settings of the server on the system level locally and remotely at the DNS server.
+    You also need to provide configuration settings for reverse name resolution.
+    Changing network settings is done in the same way as with renaming any other system.
+. Reboot the {productname} Server to use the new network configuration and to ensure the hostname has changed.
+. Run the script [command]``spacewalk-hostname-rename`` script with the public IP address of the server.
+    If the server is not using the new hostname, the script fails.
+    Be aware that this script refreshes the pillar data for all Salt minion: the time it takes to run depends on the number of registered Salt systems.
+. Re-configure your clients to make your environment aware of the new hostname and IP address.
+    In the Salt minion configuration file [path]``/etc/salt/minion``, you must specify the name of the new Salt master ({productname} Server):
++
+----
+master: <new_hostname>
+----
++
+. Once this is changed, restart the [literal]``salt-minion` process:
++
+----
+systemctl restart salt-minion
+----
+
+. To fully propagate the hostname to the minion configuration apply the high state.
+  Applying the high state will update the hostname in the repository URLs.
+
+
+Traditional clients have the [path]``/etc/sysconfig/rhn/up2date`` configuration file that must be changed.
+With a re-activation key you can re-register traditional clients (if there are any).
+For more information, see xref:client-configuration:registration-cli.adoc[].
+
+[NOTE]
+====
+If you use PXE boot through a proxy, you must check the configuration settings of the proxy.
+On the proxy, run the [command]``configure-tftpsync.sh`` setup script and enter the requested information.
+For more information, see xref:installation-and-upgrade:proxy-setup.adoc[].
+====
