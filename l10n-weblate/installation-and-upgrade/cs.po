@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2022-09-20 13:18+0000\n"
+"POT-Creation-Date: 2022-09-21 06:42+0000\n"
 "PO-Revision-Date: 2022-09-15 22:13+0000\n"
 "Last-Translator: Aleš Kastner <alkas@volny.cz>\n"
 "Language-Team: Czech <https://l10n.opensuse.org/projects/uyuni/docs-"
@@ -5790,6 +5790,264 @@ msgid ""
 msgstr ""
 "Pokračujte v registraci instalovaného {productname} Proxy jako klienta: xref:"
 "proxy-registration.adoc[]."
+
+#. type: Title =
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:1
+#, fuzzy, no-wrap
+#| msgid "Install a new {productname} Proxy."
+msgid "Install Containerized {productname} Proxy on [literal]``k3s``"
+msgstr "Nainstalujte nový proxy {productname}."
+
+#. type: Title ==
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:2
+#, fuzzy, no-wrap
+#| msgid "Installing {susemgr}"
+msgid "Installing k3s"
+msgstr "Instalace {susemgr}"
+
+#. type: Plain text
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:3
+msgid ""
+"On the container host machine, install [literal]``k3s`` without the load "
+"balancer and traefik router (replace [literal]``<K3S_HOST_FQDN>`` with the "
+"FQDN of your k3s host):"
+msgstr ""
+
+#. type: delimited block -
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:4
+#, no-wrap
+msgid "curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC=\"--disable=traefik --disable=servicelb --tls-san=<K3S_HOST_FQDN>\" sh -\n"
+msgstr ""
+
+#. type: Title ==
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:5
+#, no-wrap
+msgid "Configuring cluster access"
+msgstr ""
+
+#. type: Plain text
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:6
+msgid ""
+"[literal]``helm`` needs a configuration file to connect to the target "
+"kubernetes cluster."
+msgstr ""
+
+#. type: Plain text
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:7
+msgid ""
+"On the cluster server machine run the following command to create the "
+"[path]``kubeconfig-k3s.yaml`` configuration file.  The [path]``kubeconfig-"
+"k3s.yaml`` file can be optionally transferred to a work machine:"
+msgstr ""
+
+#. type: delimited block -
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:8
+#, no-wrap
+msgid "kubectl config view --flatten=true | sed 's/127.0.0.1/<K3S_HOST_FQDN>/' >kubeconfig-k3s.yaml\n"
+msgstr ""
+
+#. type: Plain text
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:9
+msgid "Before calling [literal]``helm``, run:"
+msgstr ""
+
+#. type: delimited block -
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:10
+#, no-wrap
+msgid "export KUBECONFIG=/path/to/kubeconfig-k3s.yaml\n"
+msgstr ""
+
+#. type: Title ==
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:11
+#, fuzzy, no-wrap
+#| msgid "Installing {susemgr}"
+msgid "Installing helm"
+msgstr "Instalace {susemgr}"
+
+#. type: delimited block =
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:12
+msgid "The Containers Module is required to install [literal]``helm``."
+msgstr ""
+
+#. type: Plain text
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:13
+msgid "To install it run:"
+msgstr ""
+
+#. type: delimited block -
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:14
+#, fuzzy, no-wrap
+#| msgid "zypper ref\n"
+msgid "zypper in helm\n"
+msgstr "zypper ref\n"
+
+#. type: Title ==
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:15
+#, no-wrap
+msgid "Installing [literal]``metalLB``"
+msgstr ""
+
+#. type: Plain text
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:16
+msgid ""
+"[literal]``MetalLB`` is the load balancer that will expose the {productname} "
+"proxy pod services to the outside world.  To install it, run:"
+msgstr ""
+
+#. type: delimited block -
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:17
+#, no-wrap
+msgid ""
+"helm repo add metallb https://metallb.github.io/metallb\n"
+"helm install --create-namespace -n metallb metallb metallb/metallb \n"
+msgstr ""
+
+#. type: Plain text
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:18
+msgid ""
+"[literal]``MetalLB`` still requires a configuration to know the virtual IP "
+"address range to be used.  In this example, the virtual IP addresses will be "
+"from [literal]``192.168.122.240`` to [literal]``192.168.122.250``, but that "
+"range could be lowered to a single address if the host only exposes the "
+"{productname} proxy.  These addresses need to be a subset of the server "
+"network."
+msgstr ""
+
+#. type: Plain text
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:19
+msgid ""
+"Create a [path]``metallb-config.yaml`` configuration file with the following "
+"settings and an IP address range that aligns with the deployed network:"
+msgstr ""
+
+#. type: delimited block -
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:20
+#, no-wrap
+msgid ""
+"apiVersion: metallb.io/v1beta1\n"
+"kind: IPAddressPool\n"
+"metadata:\n"
+"  name: l2-pool\n"
+"  namespace: metallb\n"
+"spec:\n"
+"  addresses:\n"
+"  - 192.168.122.240-192.168.122.250\n"
+"---\n"
+msgstr ""
+
+#. type: delimited block -
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:21
+#, no-wrap
+msgid ""
+"apiVersion: metallb.io/v1beta1\n"
+"kind: L2Advertisement\n"
+"metadata:\n"
+"  name: l2 \n"
+"  namespace: metallb\n"
+"spec:\n"
+"  ipAddressPools:\n"
+"  - l2-pool\n"
+msgstr ""
+
+#. type: Plain text
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:22
+msgid "Apply this configuration by running:"
+msgstr ""
+
+#. type: delimited block -
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:23
+#, no-wrap
+msgid "kubectl apply -f metallb-config.yaml\n"
+msgstr ""
+
+#. type: Title ==
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:24
+#, fuzzy, no-wrap
+#| msgid "Replace the {productname} Proxy"
+msgid "Deploying the {productname} proxy helm chart"
+msgstr "Změna proxy {productname}"
+
+#. type: Plain text
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:25
+msgid ""
+"Create a configuration file forcing the IP address that [literal]``MetalLB`` "
+"will use for the {productname} Proxy services.  This IP address needs to be "
+"the one to which the proxy FQDN entered when creating the proxy "
+"configuration.  It also needs to be resolvable from both the {productname} "
+"Server and the client systems to connect to the proxy."
+msgstr ""
+
+#. type: Plain text
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:26
+msgid "This example will use [literal]``192.168.122.241``."
+msgstr ""
+
+#. type: Plain text
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:27
+msgid ""
+"Create a [path]``custom-values.yaml`` file with the following content.  If "
+"the [literal]``MetalLB`` IP address range only contains a single address, "
+"the last line can be removed."
+msgstr ""
+
+#. type: delimited block -
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:28
+#, no-wrap
+msgid ""
+"services:\n"
+"  annotations:\n"
+"    metallb.universe.tf/allow-shared-ip: key-to-share-ip\n"
+"    metallb.universe.tf/loadBalancerIPs: 192.168.122.241\n"
+msgstr ""
+
+#. type: Plain text
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:29
+msgid ""
+"To configure the storage of the volumes to be used by the {productname} "
+"Proxy pod, define persistent volumes for the following claims.  For more "
+"informationm see https://kubernetes.io/docs/concepts/storage/persistent-"
+"volumes/ (kubernetes) or https://rancher.com/docs/k3s/latest/en/storage/ "
+"(k3s) documentation.  The persistent volume claims are named:"
+msgstr ""
+
+#. type: Plain text
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:30
+msgid "[literal]``squid-cache-pv-claim``"
+msgstr ""
+
+#. type: Plain text
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:31
+msgid "[literal]``/package-cache-pv-claim``"
+msgstr ""
+
+#. type: Plain text
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:32
+msgid "[literal]``/tftp-boot-pv-claim``"
+msgstr ""
+
+#. type: Plain text
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:33
+msgid ""
+"Create the configuration for the {productname} Proxy as documented in xref:"
+"proxy-container-setup.adoc[].  Copy and extract the configuration "
+"[literal]``tar.gz`` file and then deploy the helm chart:"
+msgstr ""
+
+#. type: delimited block -
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:34
+#, no-wrap
+msgid ""
+"tar xf /path/to/config.tar.gz\n"
+"helm install uyuni-proxy oci://registry.opensuse.org/uyuni/proxy -f config.yaml -f httpd.yaml -f ssh.yaml -f custom-values.yaml\n"
+msgstr ""
+
+#. type: delimited block -
+#: modules/installation-and-upgrade/pages/proxy-container-k3s-installation.adoc:35
+#, no-wrap
+msgid ""
+"tar xf /path/to/config.tar.gz\n"
+"helm install uyuni-proxy oci://registry.suse.com/suse/manager/4.3/proxy -f config.yaml -f httpd.yaml -f ssh.yaml -f custom-values.yaml\n"
+msgstr ""
 
 #. type: Title =
 #: modules/installation-and-upgrade/pages/proxy-container-setup.adoc:1
