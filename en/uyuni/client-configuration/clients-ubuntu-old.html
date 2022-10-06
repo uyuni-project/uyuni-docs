@@ -155,6 +155,9 @@
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../installation-and-upgrade/install-pubcloud.html">Install on Public Cloud</a>
   </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../installation-and-upgrade/proxy-container-k3s-installation.html">Install on K3s</a>
+  </li>
 </ul>
   </li>
   <li class="nav-item" data-depth="2">
@@ -812,6 +815,12 @@
     <a class="nav-link" href="../administration/tshoot-logintimeout.html">Troubleshooting Login Timeout</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../administration/tshoot-mail.html">Troubleshooting Mail Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../administration/tshoot-not-enough-disk-space.html">Troubleshooting Not Enough Disk Space</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../administration/tshoot-notifications.html">Troubleshooting Notifications</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -821,7 +830,13 @@
     <a class="nav-link" href="../administration/tshoot-packages.html">Troubleshooting Packages</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#tshoot-packages-proxy.adoc">Troubleshooting Proxy Cache Repository</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../administration/tshoot-registerclones.html">Troubleshooting Registering Cloned Clients</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../administration/tshoot-register-trad-as-salt-after-deletion.html">Troubleshooting Registering traditional client as Salt minion after deleting it</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../administration/tshoot-registertradrhel.html">Troubleshooting Registering Traditional RHEL Clients</a>
@@ -830,16 +845,25 @@
     <a class="nav-link" href="../administration/tshoot-hostname-rename.html">Troubleshooting Renaming the Server</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../administration/tshoot-retrying-setup-target-system.html">Troubleshooting Retrying to Set up the Target System</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../administration/tshoot-rpctimeout.html">Troubleshooting RPC Timeouts</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../administration/tshoot-saltboot.html">Troubleshooting Saltboot</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../administration/tshoot-schema-upgrade-fails.html">Troubleshooting Schema Upgrade Fails</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../administration/tshoot-sync.html">Troubleshooting Synchronization</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../administration/tshoot-taskomatic.html">Troubleshooting Taskomatic</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../administration/tshoot-webui-fails-load.html">Troubleshooting Web UI Fails to Load</a>
   </li>
 </ul>
   </li>
@@ -1848,7 +1872,7 @@
         <i class="fas fa-arrow-right custom-color" data-tippy="Next Page" id="nextPage"></i></a></span>
     &nbsp;
     <a href="https://github.com/uyuni-project/uyuni-docs/issues"><i class="fas fa-bug custom-color" data-tippy="Create an Issue" id="createIssue"></i>&nbsp;</a>
-  <a href="https://github.com/uyuni-project/uyuni-docs/edit/uyuni-2022.08/translations/en/modules/client-configuration/pages/clients-ubuntu-old.adoc"><i class="fas fa-edit custom-color" data-tippy="Edit this page and submit a pull request" id="submitPR"></i></a>
+  <a href="https://github.com/uyuni-project/uyuni-docs/edit/uyuni-2022.10/translations/en/modules/client-configuration/pages/clients-ubuntu-old.adoc"><i class="fas fa-edit custom-color" data-tippy="Edit this page and submit a pull request" id="submitPR"></i></a>
 </div>
 </div>
 <article class="doc"><a name="section-top"></a>
@@ -1858,15 +1882,9 @@
 <ul class="sectlevel1">
 <li><a href="#_add_software_channels">1. Add Software Channels</a></li>
 <li><a href="#_check_synchronization_status">2. Check Synchronization Status</a></li>
-<li><a href="#_trust_gpg_keys_on_clients">3. Trust GPG Keys on Clients</a></li>
-<li><a href="#trust-gpg-keys-on-clients">4. Trust GPG Keys on Clients</a>
-<ul class="sectlevel2">
-<li><a href="#_user_defined_gpg_keys">4.1. User defined GPG keys</a></li>
-<li><a href="#_gpg_keys_in_bootstrap_scripts">4.2. GPG Keys in Bootstrap Scripts</a></li>
-</ul>
-</li>
-<li><a href="#_root_access">5. Root Access</a></li>
-<li><a href="#_register_clients">6. Register Clients</a></li>
+<li><a href="#_manage_gpg_keys">3. Manage GPG Keys</a></li>
+<li><a href="#_root_access">4. Root Access</a></li>
+<li><a href="#_register_clients">5. Register Clients</a></li>
 </ul>
 </div>
 <div id="preamble">
@@ -1876,6 +1894,14 @@
 </div>
 <div class="paragraph">
 <p>Uyuni supports Ubuntu 16.04 LTS and 18.04 LTS clients using Salt.</p>
+</div>
+<div class="paragraph">
+<p>Ubuntu is supported for Salt clients only.
+Traditional clients are not supported.</p>
+</div>
+<div class="paragraph">
+<p>Bootstrapping is supported for starting Ubuntu clients and performing initial state runs such as setting repositories and performing profile updates.
+However, the root user on Ubuntu is disabled by default, so to use bootstrapping, you require an existing user with <code class="command">sudo</code> privileges for Python.</p>
 </div>
 <div class="admonitionblock important">
 <table>
@@ -1890,25 +1916,6 @@
 </td>
 </tr>
 </table>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>Ubuntu is supported for Salt clients only.
-Traditional clients are not supported.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>Bootstrapping is supported for starting Ubuntu clients and performing initial state runs such as setting repositories and performing profile updates.
-However, the root user on Ubuntu is disabled by default, so to use bootstrapping, you require an existing user with <code class="command">sudo</code> privileges for Python.</p>
 </div>
 </div>
 </div>
@@ -2102,112 +2109,11 @@ Synchronization can sometimes take several hours.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_trust_gpg_keys_on_clients"><a class="anchor" href="#_trust_gpg_keys_on_clients"></a><a class="link" href="#_trust_gpg_keys_on_clients">3. Trust GPG Keys on Clients</a></h2>
-<div class="sectionbody">
-
-</div>
-</div>
-<div class="sect1">
-<h2 id="trust-gpg-keys-on-clients"><a class="anchor" href="#trust-gpg-keys-on-clients"></a><a class="link" href="#trust-gpg-keys-on-clients">4. Trust GPG Keys on Clients</a></h2>
+<h2 id="_manage_gpg_keys"><a class="anchor" href="#_manage_gpg_keys"></a><a class="link" href="#_manage_gpg_keys">3. Manage GPG Keys</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Operating systems either trust their own GPG keys directly or at least ship them installed with the minimal system.
-But third party packages signed by a different GPG key need manual handling.
-The clients can be successfully bootstrapped without the GPG key being trusted.
-However, you cannot install new client tool packages or update them until the keys are trusted.</p>
-</div>
-<div class="paragraph">
-<p>Salt clients use now GPG key information entered for a software channel to manage the trusted keys.
-When a software channel with GPG key information is assigned to a client, the key gets trusted as soon as the channel is refreshed or the first package gets installed from this channel.</p>
-</div>
-<div class="paragraph">
-<p>The GPG key URL which is set of a software channel must exist.
-In case it is a file URL, the GPG key file must be deployed on the client before the software channel is used.</p>
-</div>
-<div class="paragraph">
-<p>The GPG keys for the Client Tools Channels of Red Hat based clients are deployed on the client into <code class="path">/etc/pki/rpm-gpg/</code> and can be referenced with file URLs.
-Same is the case with the GPG keys of  Expanded Support clients.
-Only in case a software channel is assigned to the client they will be imported and trusted by the system.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>Because Debian based systems sign only metadata, there is typically no need to specify extra keys for single channels.
-If a user configures an own GPG key to sign the metadata as described in "Use Your Own GPG Key" in <a href="../administration/repo-metadata.html" class="page">administration:repo-metadata.adoc</a> the deployment and trust of that key is executed automatically.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<div class="sect2">
-<h3 id="_user_defined_gpg_keys"><a class="anchor" href="#_user_defined_gpg_keys"></a><a class="link" href="#_user_defined_gpg_keys">4.1. User defined GPG keys</a></h3>
-<div class="paragraph">
-<p>Users can define their own GPG keys to be deployed to the client.</p>
-</div>
-<div class="paragraph">
-<p>By providing some pillar data and providing the GPG key files in the Salt filesystem, they are automatically deployed to the client.</p>
-</div>
-<div class="paragraph">
-<p>These keys are deployed into <code class="path">/etc/pki/rpm-gpg/</code> on RPM based operating systems and to <code class="path">/usr/share/keyrings/</code> on Debian systems:</p>
-</div>
-<div class="paragraph">
-<p>Define the pillar key [literal<code>custom_gpgkeys</code> for the client you want to deploy the key to and list the names of the key file.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>cat /etc/pillar/mypillar.sls
-custom_gpgkeys:
-  - my_first_gpg.key
-  - my_second_gpgkey.gpg</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Additionally in the Salt filesystem create a directory named <code class="path">gpg</code> and store there the GPG key files with the name specified in the <code class="iteral">custom_gpgkeys</code> pillar data.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>ls -la /etc/salt/gpg/
-/etc/salt/gpg/my_first_gpg.key
-/etc/salt/gpg/my_second_gpgkey.gpg</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The keys are now deployed to the client at <code class="path">/etc/pki/rpm-gpg/my_first_gpg.key</code> and <code class="path">/etc/pki/rpm-gpg/my_second_gpgkey.gpg</code>.</p>
-</div>
-<div class="paragraph">
-<p>The last step is to add the URL to the GPG key URL field of the software channel.
-Navigate to <span class="menuseq"><b class="menu">Software</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="submenu">Manage</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">Channels</b></span> and select the channel you want to modify.
-Add to <code class="guimenu">GPG key URL</code> the value <code class="literal"><a href="file:///etc/pki/rpm-gpg/my_first_gpg.key" class="bare">file:///etc/pki/rpm-gpg/my_first_gpg.key</a></code>.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_gpg_keys_in_bootstrap_scripts"><a class="anchor" href="#_gpg_keys_in_bootstrap_scripts"></a><a class="link" href="#_gpg_keys_in_bootstrap_scripts">4.2. GPG Keys in Bootstrap Scripts</a></h3>
-<div class="olist arabic">
-<div class="title">Procedure: Trusting GPG Keys on Clients Using a Bootstrap Script</div>
-<ol class="arabic">
-<li>
-<p>On the Uyuni Server, at the command prompt, check the contents of the <code class="path">/srv/www/htdocs/pub/</code> directory.
-This directory contains all available public keys.
-Take a note of the key that applies to the channel assigned to the client you are registering.</p>
-</li>
-<li>
-<p>Open the relevant bootstrap script, locate the <code class="systemitem">ORG_GPG_KEY=</code> parameter and add the required key.
-For example:</p>
-<div class="listingblock">
-<div class="content">
-<pre>uyuni-gpg-pubkey-0d20833e.key</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>You do not need to delete any previously stored keys.</p>
-</div>
-</li>
-</ol>
+<p>Clients use GPG keys to check the authenticity of software packages before they are installed.
+Only trusted software can be installed on clients.</p>
 </div>
 <div class="admonitionblock important">
 <table>
@@ -2218,22 +2124,26 @@ For example:</p>
 <td class="content">
 <div class="paragraph">
 <p>Trusting a GPG key is important for security on clients.
-It is the task of the admin to decide which keys are needed and can be trusted.
+It is the task of the administrator to decide which keys are needed and can be trusted.
 Because a software channel cannot be used when the GPG key is not trusted, the decision of assigning a channel to a client depends on the decision of trusting the key.</p>
 </div>
 </td>
 </tr>
 </table>
 </div>
+<div class="paragraph">
+<p>For more information about GPG keys, see <a href="gpg-keys.html" class="page">client-configuration:gpg-keys.adoc</a>.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_root_access"><a class="anchor" href="#_root_access"></a><a class="link" href="#_root_access">5. Root Access</a></h2>
+<h2 id="_root_access"><a class="anchor" href="#_root_access"></a><a class="link" href="#_root_access">4. Root Access</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The root user on Ubuntu is disabled by default.
-You can enable it by editing the <code class="filename">sudoers</code> file.</p>
+<p>The root user on Ubuntu is disabled by default for SSH access.</p>
+</div>
+<div class="paragraph">
+<p>To be able to onboard using a regular user, you need to edit the <code class="filename">sudoers</code> file.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure: Granting Root User Access</div>
@@ -2251,7 +2161,7 @@ Replace <code class="systemitem">&lt;user&gt;</code> with the name of the user t
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>&lt;user&gt;  ALL=NOPASSWD: /usr/bin/python, /usr/bin/python2, /usr/bin/python3</pre>
+<pre>&lt;user&gt;  ALL=NOPASSWD: /usr/bin/python, /usr/bin/python2, /usr/bin/python3, /var/tmp/venv-salt-minion/bin/python</pre>
 </div>
 </div>
 </li>
@@ -2276,7 +2186,7 @@ We recommend that you remove the line from the <code class="path">sudoers</code>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_register_clients"><a class="anchor" href="#_register_clients"></a><a class="link" href="#_register_clients">6. Register Clients</a></h2>
+<h2 id="_register_clients"><a class="anchor" href="#_register_clients"></a><a class="link" href="#_register_clients">5. Register Clients</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>To register your Ubuntu clients, you need a bootstrap repository.
