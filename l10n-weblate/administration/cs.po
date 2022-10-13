@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2022-10-12 14:13+0000\n"
+"POT-Creation-Date: 2022-10-13 08:34+0000\n"
 "PO-Revision-Date: 2022-10-12 13:13+0000\n"
 "Last-Translator: anonymous <noreply@weblate.org>\n"
 "Language-Team: Czech <https://l10n.opensuse.org/projects/uyuni/docs-"
@@ -16424,6 +16424,98 @@ msgid ""
 "also accounts for open files from the router, ``c2s`` and ``sm`` processes."
 msgstr ""
 
+#. Delinking per https://github.com/SUSE/spacewalk/issues/9516 LKB 2019-09-23
+#. == jabberd Database Corruption
+#. ``SYMPTOMS``: After _a disk is full error_ or a _disk crash event_, the [systemitem]``jabberd`` database may have become corrupted.
+#. [systemitem]``jabberd`` may then fail starting Spacewalk services:
+#. ----
+#. Starting spacewalk services...
+#.    Initializing jabberd processes...
+#.        Starting router                                                                   done
+#.        Starting sm startproc:  exit status of parent of /usr/bin/sm: 2                   failed
+#.    Terminating jabberd processes...
+#. ----
+#. [path]``/var/log/messages`` shows more details:
+#. ----
+#. jabberd/sm[31445]: starting up
+#. jabberd/sm[31445]: process id is 31445, written to /var/lib/jabberd/pid/sm.pid
+#. jabberd/sm[31445]: loading 'db' storage module
+#. jabberd/sm[31445]: db: corruption detected! close all jabberd processes and run db_recover
+#. jabberd/router[31437]: shutting down
+#. ----
+#. ``CURE``: Remove the [systemitem]``jabberd`` database and restart.
+#. [systemitem]``jabberd`` automatically re-creates the database.
+#. Enter at the command prompt:
+#. ----
+#. spacewalk-service stop
+#. rm -rf /var/lib/jabberd/db/*
+#. spacewalk-service start
+#. ----
+#.    ke, 2019-08-08: not sure whether we want this here:
+#. An alternative approach would be to test another database, but SUSE Manager does not deliver drivers for this:
+#. ----
+#. rcosa-dispatcher stop
+#. rcjabberd stop
+#. cd /var/lib/jabberd/db
+#. rm *
+#. cp /usr/share/doc/packages/jabberd/db-setup.sqlite .
+#. sqlite3 sqlite.db < db-setup.sqlite
+#. chown jabber:jabber *
+#. rcjabberd start
+#. rcosa-dispatcher start
+#. ----
+#. Delinking per https://github.com/SUSE/spacewalk/issues/9516 LKB 2019-09-23
+#. == Capturing XMPP Network Data for Debugging Purposes
+#. If you are experiencing bugs regarding OSAD, it can be useful to dump network messages to help with debugging.
+#. The following procedures provide information on capturing data from both the client and server side.
+#. .Procedure: Server Side Capture
+#. . Install the [package]#tcpdump# package on the server as root:
+#. +
+#. ----
+#. zypper in tcpdump
+#. ----
+#. . Stop the OSA dispatcher and Jabber processes:
+#. +
+#. ----
+#. rcosa-dispatcher stop
+#. rcjabberd stop
+#. ----
+#. . Start data capture on port 5222:
+#. +
+#. ----
+#. tcpdump -s 0 port 5222 -w server_dump.pcap
+#. ----
+#. . Open a second terminal and start the OSA dispatcher and Jabber processes:
+#. +
+#. ----
+#. rcosa-dispatcher start
+#. rcjabberd start
+#. ----
+#. . Operate the server and clients so the bug you formerly experienced is reproduced.
+#. . When you have finished your capture re-open the first terminal and stop the data capture with kbd:[CTRL+c].
+#. .Procedure: Client Side Capture
+#. . Install the tcpdump package on your client as root:
+#. +
+#. ----
+#. zypper in tcpdump
+#. ----
+#. . Stop the OSA process:
+#. +
+#. ----
+#. rcosad stop
+#. ----
+#. . Begin data capture on port 5222:
+#. +
+#. ----
+#. tcpdump -s 0 port 5222 -w client_client_dump.pcap
+#. ----
+#. . Open a second terminal and start the OSA process:
+#. +
+#. ----
+#. rcosad start
+#. ----
+#. . Operate the server and clients so the bug you formerly experienced is reproduced.
+#. . When you have finished your capture re-open the first terminal and stop the data capture with kbd:[CTRL+c].
 #. type: Title =
 #: modules/administration/pages/tshoot-packages-proxy.adoc:1
 #, fuzzy, no-wrap
