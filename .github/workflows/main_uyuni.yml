@@ -12,20 +12,19 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    steps:
+    steps:  
     - name: '[CHECKOUT] Master'
       uses: actions/checkout@v1
 
     - name: '[TOOLCHAIN] Set up Ruby 2.6'
-      uses: actions/setup-ruby@v1
+      uses: ruby/setup-ruby@v1
       with:
-        ruby-version: 2.6.x
+        ruby-version: '2.6'
 
     - name: '[TOOLCHAIN] Set up NodeJS'
       uses: actions/setup-node@v1
       with:
-        node-version: '10.x'
-    #- run: npm install
+        node-version: '16.x'
 
     - name: '[TOOLCHAIN] po4a'
       run: |
@@ -41,7 +40,7 @@ jobs:
         sudo apt-get install -y graphicsmagick
         sudo apt-get install -y libgraphicsmagick1-dev
         gem install prawn-gmagick -v 0.0.9
-        gem install rouge
+        gem install rouge -v 3.30.0
         gem install pygments.rb
         gem install coderay
         asciidoctor --version
@@ -56,11 +55,10 @@ jobs:
     - name: '[TOOLCHAIN] Lunr/Antora Custom Docker Image'
       run: docker build -t lunr/antora:custom -f Dockerfile.custom .
 
-    - name: '[TEST] Validate Antora XREFS'
-      run: |
-        make configure-uyuni
-        NODE_PATH="$(npm ls -g --parseable @antora/site-generator-default)/node_modules" antora --generator @antora/xref-validator site.yml
-      #NODE_PATH="$(npm -g root)" antora --generator @antora/xref-validator site.yml
+    #- name: '[TEST] Validate Antora XREFS'
+    #  run: |
+    #    make configure-uyuni
+    #    NODE_PATH="$(npm ls -g --parseable @antora/site-generator-default)/node_modules" antora --generator @antora/xref-validator site.yml
 
     - name: '[BUILD] UYUNI Docs with Lunr/Antora Custom Docker Image'
       run: |
@@ -76,19 +74,3 @@ jobs:
         make configure-uyuni
         make pdf-all-uyuni
 
-   # - name: '[PACKAGE] Tarball PDF Docs'
-   #   run: |
-   #     make pdf-tar-uyuni
-   #     ls -a build/
-   #     ls -a build/pdf
-
-    #- name: '[DEPLOY] .nojekyll'
-    #  run: touch build/.nojekyll
-
-    #- name: '[DEPLOY] to GH-PAGES'
-    #  uses: JamesIves/github-pages-deploy-action@releases/v3
-    #  with:
-    #    ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-    #    BASE_BRANCH: master
-    #    BRANCH: gh-pages
-    #    FOLDER: build
