@@ -393,3 +393,59 @@ spacewalk-services restart
 ====
 Increasing this value will cause {productname} Server to take longer to check if a minion is unreachable or unresponsive, causing the {productname} Server to be slower or less responsive overall.
 ====
+
+
+== Salt 3000 to Salt Bundle Migration
+
+
+=== Switch {sles} 12 or {centos} 7 minions (Salt 3000 EOL) to Salt Bundle.
+
+.Procedure: Switching with [literal]``util.mgr_switch_to_venv_minion`` state to [package]``venv-salt-minion``
+
+. Apply [literal]``util.mgr_switch_to_venv_minion`` with no pillar specified first.
+  This will result in the switch to [package]``venv-salt-minion`` with copying configuration files in etc.
+  It will not clean up the original [package]``salt-minion`` configurations and its packages.
++
+----
+salt <minion_id> state.apply util.mgr_switch_to_venv_minion
+----
+
+. Apply [literal]``util.mgr_switch_to_venv_minion`` with [literal]``mgr_purge_non_venv_salt`` set to [literal]``True`` to remove [package]``salt-minion`` and with [literal]``mgr_purge_non_venv_salt_files`` set to [literal]``True`` to remove all the files related to [package]``salt-minion``.
+ This second step ensures the first step was processed, and then removes the old configuration files and the now obsolete [package]``salt-minion`` package.
++
+----
+salt <minion_id> state.apply util.mgr_switch_to_venv_minion pillar='{"mgr_purge_non_venv_salt_files": True, "mgr_purge_non_venv_salt": True}'
+----
+
+=== Switch {sles} 12 or {centos} 7 SSH minions (Salt 3000 EOL) to Salt Bundle.
+
+.Procedure: Enabling the Salt Bundle with Salt SSH support
+
+. Include Salt Bundle in the bootstrap repository for {sles} 12 or {centos} 7 by calling [command]``mgr-create-bootstrap-repo`` explicitly specifying [package]``venv-salt-minion`` as an additional package. 
++
+----
+mgr-create-bootstrap-repo -c DISTRIBUTION_LABEL venv-salt-minion
+----
+
++
+[NOTE]
+====
+In order to add the [package]``venv-salt-minion`` package to the bootstrap repository it has to be created first. In case it has not been created, see  xref:client-configuration:bootstrap-repository.adoc#_prepare_to_create_a_bootstrap_repository[Prepare to Create a Bootstrap Repository].
+====
+
+. Specify in [path]``/etc/rhn/rhn.conf``:
++
+----
+web.ssh_salt_pre_flight_script = /usr/share/susemanager/salt-ssh/preflight.sh
+
+web.ssh_use_salt_thin = false
+----
+
+. Create the extra drop-in configuration file for Salt Master [path]``/etc/salt/master.d/ssh-preflight.conf`` with [literal]``ssh_run_pre_flight`` set to [literal]``true``:
++
+----
+ssh_run_pre_flight: true
+----
+
+. Restart the services using [command]``spacewalk-service restart``.
+
