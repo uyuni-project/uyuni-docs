@@ -41,7 +41,126 @@ xref:administration:troubleshooting/tshoot-register-trad-as-salt-after-deletion.
 
 
 
-[[delete.clients.commandline]]
-== Delete a Client from the Commandline
+////
+API
+Deleting Clients (SUSE Manager CLI):
 
-xxx
+    spacecmd system_delete FQDN
+    salt-key -d FQDN
+
+Note: For very specific cases, the registration might still not be possible after having unregistered the minion. As a last result, a couple of salt files should be deleted in the master before trying to register again:
+
+    rm /var/cache/salt/master/thin/version
+    rm /var/cache/salt/master/thin/thin.tgz
+
+////
+
+
+
+[[delete.clients.commandline]]
+== Delete a Client from the Command Line
+
+
+=== Salt Client
+
+// Manual Registration Cleanup
+
+NOTE: This process is only for SUSE Manager clients, do not run it on the SUSE Manager itself.
+
+[NOTE]
+====
+You must not execute the following procedure on clients  running {rhel} and clones.
+====
+
+Stop the salt-minion service:
+
+SLES 12/15:
+    systemctl stop salt-minion
+
+SLES 11: 
+    rcsalt stop
+
+
+Remove the repositories and configuration files:
+
+rm /etc/zypp/repos.d/susemanager\:channels.repo
+rm -r /etc/sysconfig/rhn/
+rm -r /etc/salt/
+Remove Client Packages:
+
+      zypper rm -u salt salt-minion python*-salt sle-manager-tools-release
+
+(Alternatively, you can use rpm to remove the 4 corresponding packages.)
+
+SLES 15 (uses python3-salt):
+     rpm -e salt salt-minion python3-salt sle-manager-tools-release
+
+SLES 11/12 (uses python2-salt): 
+    rpm -e salt salt-minion python2-salt sle-manager-tools-release
+
+ 
+Salt Bundle Client - Manual Registration Cleanup
+ 
+For information about the salt bundle, see: https://documentation.suse.com/suma/4.3/en/suse-manager/client-configuration/contact-methods-saltbundle.html
+
+To unregister, you could run: 
+
+# systemctl stop venv-salt-minion; zypper rm -y venv-salt-minion; rm -rf /etc/zypp/{credentials,services,repos}.d/* /etc/venv-salt-minion/*
+
+ 
+Traditional Client - Manual Cleanup
+NOTE: This process is only for SUSE Manager clients, do not run it on the SUSE Manager itself.
+NOTE: This process should NOT be followed for clients running Red Hat OS.
+
+Stop the osad service (If it is in use):
+ 
+SLES 12: 
+    systemctl stop osad
+
+SLES 11:
+    rcosad stop
+
+In order to unregister a SUSE Manager client, several rpms must be removed. The following method should be tried first (in case there is no osad package, it should be omitted):
+
+zypper rm -u spacewalksd spacewalk-check zypp-plugin-spacewalk spacewalk-client-tools osad python2-zypp-plugin-spacewalk python2-spacewalk-check python2-spacewalk-client-setup
+ 
+  This will show the following:  
+
+Refreshing service 'spacewalk'. 
+Loading repository data...
+Reading installed packages...
+Resolving package dependencies...
+ 
+The following packages are going to be REMOVED:
+  spacewalk-check spacewalk-client-setup spacewalksd zypp
+plugin-python osad
+ 
+5 packages to remove.
+After the operation, 301.0 KiB will be freed.
+Continue? [y/n/?] (y):
+ 
+The above rpm packages are client specific, and should be removed.
+If this fails, they should be manually removed. The commands "rpm -e" should not be used unless the "zypper rm" command above failed.  
+
+rpm -e spacewalk-client-setup spacewalksd spacewalk-check zypp-plugin-spacewalk osad python2-zypp-plugin-spacewalk python2-spacewalk-check python2-spacewalk-client-setup
+ 
+
+On SLES 15 client remove below packages if installed:
+rpm -e spacewalk-client-setup mgr-daemon spacewalk-check zypp-plugin-spacewalk mgr-osad python3-zypp-plugin-spacewalk python3-spacewalk-check python3-spacewalk-client-setup
+
+After this is complete, the following file should be removed: /etc/sysconfig/rhn/systemid.
+That file only exists on a client machine and is used to register itself with SUSE Manager.
+
+rm /etc/sysconfig/rhn/systemid
+ 
+Any configured spacewalk channels should be deleted with:
+ 
+
+rm /etc/zypp/repos.d/spacewalk*
+ 
+When this is done, the repositories should be refreshed on the server (zypper ref -s), and then listed (zypper lr), in order to make sure everything looks good.
+
+If any repositories pointing to spacewalk still exist, remove them using the following:
+
+zypper repos -d
+zypper removerepo <ID of the repo in the output from previous command>
