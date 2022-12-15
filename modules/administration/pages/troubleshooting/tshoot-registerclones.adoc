@@ -42,30 +42,44 @@ This procedure does not manipulate the original client, which remains registered
 
 . On the cloned machine, change the hostname and IP addresses.
     Make sure [path]``/etc/hosts`` contains the changes you made and the correct host entries.
-. For distributions that support systemd: If your machines have the same machine ID, delete the file on each duplicated client and re-create it:
+. For distributions that support systemd: If your machines have the same machine ID, as root, delete the files on each duplicated client and re-create it:
 +
 ----
-# rm /etc/machine-id
-# rm /var/lib/dbus/machine-id
-# dbus-uuidgen --ensure
-# systemd-machine-id-setup
+rm /etc/machine-id
+rm /var/lib/dbus/machine-id
+rm /var/lib/zypp/AnonymousUniqueId
+dbus-uuidgen --ensure
+systemd-machine-id-setup
 ----
 
-. For distributions that do not support systemd: Generate a machine ID from dbus:
+. For distributions that do not support systemd: As root, generate a machine ID from dbus:
 +
 ----
-# rm /var/lib/dbus/machine-id
-# dbus-uuidgen --ensure
+rm /var/lib/dbus/machine-id
+rm /var/lib/zypp/AnonymousUniqueId
+dbus-uuidgen --ensure
 ----
-. If your clients still have the same Salt client ID, delete the [path]``minion_id`` file on each client (FQDN is used when it is regenerated on client restart):
+. If your clients still have the same Salt client ID, delete the [path]``minion_id`` file on each client (FQDN is used when it is regenerated on client restart).
+  For Salt Minion clients:
 +
+
 ----
-# rm /etc/salt/minion_id
+rm /etc/salt/minion_id
+rm -rf /etc/salt/pki
+----
++
+
+For Salt Bundle clients:
++
+
+----
+rm /etc/venv-salt-minion/minion_id
+rm -rf /etc/venv-salt-minion/pki
 ----
 . Delete accepted keys from the onboarding page and the system profile from {productname}, and restart the client with:
 +
 ----
-# service salt-minion restart
+service salt-minion restart
 ----
 . Re-register the clients.
     Each client now has a different [path]``/etc/machine-id`` and should be correctly displayed on the [guimenu]``System Overview`` page.
@@ -79,61 +93,61 @@ This procedure does not manipulate the original client, which remains registered
 . Stop the [systemitem]``rhnsd`` daemon, on {rhnminrelease6} and {sle} 11 with:
 +
 ----
-# /etc/init.d/rhnsd stop
+/etc/init.d/rhnsd stop
 ----
 +
 or, on newer systemd-based systems, with:
 +
 ----
-# service rhnsd stop
+service rhnsd stop
 ----
 . Stop [systemitem]``osad`` with:
 +
 ----
-# /etc/init.d/osad stop
+/etc/init.d/osad stop
 ----
 +
 or:
 +
 ----
-# service osad stop
+service osad stop
 ----
 +
 or:
 +
 ----
-# rcosad stop
+rcosad stop
 ----
 . Remove the [systemitem]``osad`` authentication configuration file and the system ID:
 +
 ----
-# rm -f /etc/sysconfig/rhn/{osad-auth.conf,systemid}
+rm -f /etc/sysconfig/rhn/{osad-auth.conf,systemid}
 ----
 . Delete the files containing the machine IDs:
 +
 * SLES{nbsp}12:
 +
 ----
-# rm /etc/machine-id
-# rm /var/lib/dbus/machine-id
-# dbus-uuidgen --ensure
-# systemd-machine-id-setup
+rm /etc/machine-id
+rm /var/lib/dbus/machine-id
+dbus-uuidgen --ensure
+systemd-machine-id-setup
 ----
 * SLES{nbsp}11:
 +
 ----
-# suse_register -E
+suse_register -E
 ----
 . Remove the credential files:
 * SLES clients:
 +
 ----
-# rm -f /etc/zypp/credentials.d/{SCCcredentials,NCCcredentials}
+rm -f /etc/zypp/credentials.d/{SCCcredentials,NCCcredentials}
 ----
 * {rhel} clients:
 +
 ----
-# rm  -f /etc/NCCcredentials
+rm  -f /etc/NCCcredentials
 ----
 . Re-run the bootstrap script.
     You should now see the cloned system in {productname} without overriding the system it was cloned from.
