@@ -1,12 +1,14 @@
 [[delete.clients]]
 = Client Deletion
 
+// FIXME: where do we need to add warnings (suse clients only, all clients)
+
 If you need to remove a client from your {productname} Server, you can use the {webui} to delete it.
 You can also remove a client from the command line.
 These procedures work for both traditional and Salt clients.
 
 // can also be done manually.
-// Why Manual Cleanup is necessary sometimes.
+// FIXME: Why Manual Cleanup is necessary sometimes.
 
 
 
@@ -41,19 +43,33 @@ xref:administration:troubleshooting/tshoot-register-trad-as-salt-after-deletion.
 
 
 
-////
-API
-Deleting Clients (SUSE Manager CLI):
+== Delete a Salt Client on the Command Line (with API Call)
 
-    spacecmd system_delete FQDN
-    salt-key -d FQDN
+.Procedure: Deleting a Client from the Server
 
-Note: For very specific cases, the registration might still not be possible after having unregistered the minion. As a last result, a couple of salt files should be deleted in the master before trying to register again:
+. Delete the client with the FQDN (Fully Qualified Domain Name):
++
+----
+spacecmd system_delete FQDN
+----
 
-    rm /var/cache/salt/master/thin/version
-    rm /var/cache/salt/master/thin/thin.tgz
+. Remove the Salt key with the FQDN:
++
+----
+salt-key -d FQDN
+----
 
-////
+[NOTE]
+====
+For specific cases, the new registration of a deleted (unregistered) client might not be possible.
+To solve this issue, some Salt files should be deleted on the {productname} Server (Salt master) before trying to re-register again:
+
+----
+rm /var/cache/salt/master/thin/version
+rm /var/cache/salt/master/thin/thin.tgz
+----
+====
+
 
 
 
@@ -65,49 +81,55 @@ Note: For very specific cases, the registration might still not be possible afte
 
 // Manual Registration Cleanup
 
-NOTE: This process is only for SUSE Manager clients, do not run it on the SUSE Manager itself.
+NOTE: This process is only for {productname} clients, do not run it on the {productname} Server itself.
 
 [NOTE]
 ====
 You must not execute the following procedure on clients  running {rhel} and clones.
 ====
 
-Stop the salt-minion service:
+.Procedure: Salt Client
 
+. Stop the salt-minion service:
++
 SLES 12/15:
-    systemctl stop salt-minion
++
+----
+systemctl stop salt-minion
+----
++
+SLES 11:
++
+----
+rcsalt stop
+----
 
-SLES 11: 
-    rcsalt stop
-
-
-Remove the repositories and configuration files:
-
+. Remove the repositories and configuration files:
++
+----
 rm /etc/zypp/repos.d/susemanager\:channels.repo
 rm -r /etc/sysconfig/rhn/
 rm -r /etc/salt/
-Remove Client Packages:
+----
 
-      zypper rm -u salt salt-minion python*-salt sle-manager-tools-release
+. Remove Client Packages:
++
+----
+zypper rm -u salt salt-minion python*-salt sle-manager-tools-release
+----
 
-(Alternatively, you can use rpm to remove the 4 corresponding packages.)
 
-SLES 15 (uses python3-salt):
-     rpm -e salt salt-minion python3-salt sle-manager-tools-release
-
-SLES 11/12 (uses python2-salt): 
-    rpm -e salt salt-minion python2-salt sle-manager-tools-release
-
- 
-Salt Bundle Client - Manual Registration Cleanup
- 
-For information about the salt bundle, see: https://documentation.suse.com/suma/4.3/en/suse-manager/client-configuration/contact-methods-saltbundle.html
+.Procedure: Salt Bundle Client - Manual Registration Cleanup
 
 To unregister, you could run: 
 
 # systemctl stop venv-salt-minion; zypper rm -y venv-salt-minion; rm -rf /etc/zypp/{credentials,services,repos}.d/* /etc/venv-salt-minion/*
 
- 
+For information about the salt bundle, see: https://documentation.suse.com/suma/4.3/en/suse-manager/client-configuration/contact-methods-saltbundle.html
+
+
+
+
 Traditional Client - Manual Cleanup
 NOTE: This process is only for SUSE Manager clients, do not run it on the SUSE Manager itself.
 NOTE: This process should NOT be followed for clients running Red Hat OS.
