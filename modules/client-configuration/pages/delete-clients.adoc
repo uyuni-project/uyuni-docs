@@ -59,19 +59,13 @@ spacecmd system_delete FQDN
 salt-key -d FQDN
 ----
 
-
-
-[NOTE]
-====
-For specific cases, the new registration of a deleted (unregistered) client might not be possible.
-To solve this issue, some Salt files should be deleted on the {productname} Server (Salt master) before trying to re-register again:
+Sometimes a new registration of a deleted (unregistered) client might not be possible.
+To solve this issue, some Salt cache files should be deleted on the {productname} Server (Salt master) before trying to re-register again:
 
 ----
 rm /var/cache/salt/master/thin/version
 rm /var/cache/salt/master/thin/thin.tgz
 ----
-====
-
 
 
 
@@ -142,7 +136,7 @@ This process is only for {productname} clients, do not run it on the {productnam
 You must not execute the following procedure on clients running {rhel} and clones.
 ====
 
-.Procedure: Traditional SLES 12 Clients - Manual Cleanup
+.Procedure: Traditional SLES 12 and 15 Clients - Manual Cleanup
 
 . Stop the osad service (if it is in use):
 +
@@ -153,17 +147,25 @@ systemctl stop osad
 // SLES 11:
 //    rcosad stop
 
-On a SLES 12 client remove the following  packages if installed.
-The following method should be tried first (in case there is no [package]``osad`` package, delete it from the list):
-
+. On a SLES 12 client remove the following  packages if installed.
+This should be tried first (in case the [package]``osad`` package is not installed, do not list it on the command line):
++
 ----
 zypper rm -u spacewalksd spacewalk-check zypp-plugin-spacewalk \
 spacewalk-client-tools osad python2-zypp-plugin-spacewalk \
 python2-spacewalk-check python2-spacewalk-client-setup
 ----
 
-You will see the following output:
+. On a SLES 15 client remove the following packages if installed:
++
+----
+zypper rm -u spacewalk-client-setup mgr-daemon spacewalk-check \
+zypp-plugin-spacewalk mgr-osad python3-zypp-plugin-spacewalk \
+python3-spacewalk-check python3-spacewalk-client-setup
+----
 
+. You will see the following output:
++
 ----
 Refreshing service 'spacewalk'. 
 Loading repository data...
@@ -178,19 +180,10 @@ plugin-python osad
 After the operation, 301.0 KiB will be freed.
 Continue? [y/n/?] (y):
 ----
-
++
 The above RPM packages are client specific, and should be removed.
 If this fails, they should be manually removed.
 The [command]``rpm -e`` command should not be used unless the [command]``zypper rm`` command above failed.
-
-
-On a SLES 15 client remove the following packages if installed:
-
-----
-zypper rm -u spacewalk-client-setup mgr-daemon spacewalk-check \
-zypp-plugin-spacewalk mgr-osad python3-zypp-plugin-spacewalk \
-python3-spacewalk-check python3-spacewalk-client-setup
-----
 
 . After this is complete, the /etc/sysconfig/rhn/systemid file should be removed.
   This file only exists on a client machine and is used to register itself with SUSE Manager:
@@ -205,7 +198,7 @@ rm /etc/sysconfig/rhn/systemid
 rm /etc/zypp/repos.d/spacewalk*
 ----
 
-. Finally  verify that repositories are properly configured.
+. Finally verify that repositories are properly configured.
   Refresh them on the server and then list them:
 +
 ----
