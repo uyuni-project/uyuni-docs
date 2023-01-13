@@ -1,0 +1,130 @@
+[[dedicated-with-scripts]]
+= Set Up the {productname} {smr} Environment with dedicated network for terminal using bundled scripts
+
+To set up the {productname} {smr} environment, you will need to have already installed and configured {productname} Server, have one or more {productname} {smr} branch server proxies installed and one of more OS images built.
+
+
+== Assumptions
+
+In this example we consider architecture with dedicated network for POS terminals where branch server provides all required services including DHCP and DNS.
+
+For dedicated network we assume 192.168.86.0/24 network.
+
+In this example we provide [systemitem]``salt`` and [systemitem]``ftp`` CNAMEs for saltboot service discovery.
+
+We assume to have one regular branch server with salt minion id [systemitem]``branch1.mystore.com``, which is equal to the branch server fully qualified domain name, and branch id [systemitem]``B0001``.
+
+As a terminal we assume to have one terminal with hardware manufacturer [systemitem]``TerminalOEM`` and model [systemitem]``T1000``.
+
+For POS image we assume to have one with name [systemitem]``POS_Image_JeOS7``.
+
+This example covers two configuration methods with both of them achieving same result.
+
+== Quick set up of {productname} {smr} using {smr} tools
+
+* {productname} {smr} provides command line tool [command]``retail_branch_init``
+* {productname} {smr} provides mass import command line tool [command]``retail_yaml``
+
+The branch server can be configured automatically using the [command]``retail_branch_init`` command, as shown in this section.
+
+.Procedure: Configuring Branch Server Formulas With a Helper Script
+
+. Run following command on {productname} Server:
++
+----
+retail_branch_init branch1.mystore.com --dedicated-nic eth1 \
+                                       --branch-prefix B0001 \
+                                       --server-domain branch1.mystore.com \
+                                       --branch-ip 192.168.86.1 \
+                                       --dyn-range 192.168.86.10 192.168.86.250 \
+                                       --netmask 255.255.255.0
+----
++
+You can use the [command]``retail_branch_init --help`` command for additional options.
++
+. Verify that your changes have been configured correctly by checking the {productname} {webui} branch server system formulas.
+. Apply highstate on the branch server.
+
+Similar results can be achieved by using mass import command line tool.
+
+.Procedure: Configuring Branch Server Formulas With a Mass Import Tool
+
+. Prepare branch specific YAML file:
++
+For example, create [systemitem]``branch.yaml`` file with content:
++
+----
+branches:
+  branch1.mystore.com:
+    branch_prefix: B0001
+    server_domain: branch1.mystore.com
+    nic: eth1
+    dedicated_nic: true
+    configure_firewall: true
+    branch_ip: 192.168.86.1
+    netmask: 255.255.255.0
+    dyn_range:
+        - 192.168.86.10
+        - 192.168.86.250
+----
++
+For more information about mass import tool, see xref:retail:retail-mass-config.adoc[].
+. Import branch information from YAML file to {productname}
++
+----
+retail_yaml --from-yaml branch.yaml
+----
+. Verify that your changes have been configured correctly by checking the {productname} {webui} branch server system formulas.
+. Apply highstate on the branch server.
+
+[WARNING]
+====
+Both [command]``retail_branch_init`` and [command]``retail_yaml`` commands override existing configuration settings of the specified branch server.
+====
+
+After the initial configuration done by command line tools, branch server configuration can be further adjusted in {productname} {webui} through branch server formulas.
+
+== Setup partitioning
+
+Following guide xref:reference:systems/system-groups.adoc[] create [systemitem]``HWType:TerminalOEM-T1000`` system group.
+
+Partitioning is specific to the hardware type and configured using [systemitem]``Saltboot`` formula.
+
+.Procedure: Assign Saltboot formula to hardware type group
+
+. Navigate to menu:Systems[System Groups]
+. Select group [systemitem]``HWType:TerminalOEM-T1000`, which is our hardware type group
+. Select the [guimenu]``Formulas`` tab once in group details
+. You should see list of formulas in [guimenu]``Configuration`` sub-tab
+. In displayed list select [systemitem]``Saltboot``
+. Save assigned formulas by clicking on [guimenu]``Save`` button in top right corner
+
+.Procedure: Configure Saltboot formula
+
+. Select Saltboot formula from [systemitem]``HWType:TerminalOEM-T1000`` group formula list
+. Set [systemitem]``Disk Symbolic ID`` to [systemitem]``Disk1``
+. Set [systemitem]``Device Type`` to [systemitem]``DISK``
+. Set [systemitem]``Disk Device`` to [systemitem]``*``
+. Set [systemitem]``Partition table type`` to [systemitem]``gpt``
+. Click [systemitem]``+`` to add a partition
+* Set [systemitem]``Partition Symbolic ID`` to [systemitem]``p1``
+* Set [systemitem]``Partition Size (MiB)`` to [systemitem]``512``
+* Set [systemitem]``Device Mount Point`` to [systemitem]``/boot/efi``
+* Set [systemitem]``Filesystem Format`` to [systemitem]``vfat``
+* Set [systemitem]``Partition Flags`` to [systemitem]``boot``
+. Click [systemitem]``+`` to add a partition
+* Set [systemitem]``Partition Symbolic ID`` to [systemitem]``p2``
+* Set [systemitem]``Device Mount Point`` to [systemitem]``/``
+* Set [systemitem]``OS Image to Deploy`` to [systemitem]``POS_Image_JeOS7``
+. Save the formula
+
+
+After all procedures are done, apply highstate on the branch server
+
+
+== Synchronize images
+
+After highstate is applied, we proceed with synchronizing images as usual with apply [systemitem]``image-sync`` state.
+
+
+Terminal can now be started and will be automatically provisioned, pending salt key acceptance.
