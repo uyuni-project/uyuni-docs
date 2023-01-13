@@ -7,6 +7,7 @@ This section covers {productname} Server setup, using these procedures:
 * Create the main administration account with the {productname} {webui}
 * Name your base organization and add login credentials
 * Synchronize the {sle} product channel from {scc}
+* Set up {productname} using external database
 
 [WARNING]
 ====
@@ -40,6 +41,7 @@ This section guides you through {productname} setup using {yast}.
     {productname} can sometimes send a large volume of notification emails.
     You can disable email notifications in the {webui} after setup, if you need to.
     For more information on disabling email notifications, see xref:reference:users/user-details.adoc[].
+[[proc-quickstart-certificate-information-yast]]
 . Enter your certificate information and a password.
     If you intend to use a custom SSL certificate, you need to have set this up first.
     For more information about SSL certificates, see xref:administration:ssl-certs.adoc[].
@@ -182,3 +184,81 @@ tail -f /var/log/rhn/reposync/<CHANNEL_NAME>.log
 
 When the channel synchronization process is complete, you can continue with client registration.
 For more instructions, see xref:client-configuration:registration-overview.adoc[].
+
+== Set up {productname} using external database
+
+In this example we are going to use RDS product from Amazon Web Service
+
+[WARNING]
+====
+Currently, configuring an external database is not supported by yast2 setup.
+
+When using an external database, it has to be configured using the command line mgr-setup.
+
+====
+This section guides you through {productname} setup using {mgr-setup}.
+
+.Procedure :
+
+. Create a setup_env.sh file at /root
+
+. In this file describe the server setup
+. First describe your certificate information and a password. The information are the same than <<proc-quickstart-certificate-information-yast>>.
++
+----
+CERT_O="SUSE"
+CERT_OU="SUSE"
+CERT_CITY="N"
+CERT_STATE="B"
+CERT_COUNTRY="DE"
+CERT_EMAIL="email@prov.com"
+CERT_PASS="spacewalk"
+USE_EXISTING_CERTS="N"
+----
+
+. Now describe your database. The user and password will be created during the setup. If you are using an external database, specify the host name and port.
++
+----
+MANAGER_USER="spacewalk"
+MANAGER_PASS="spacewalk"
+MANAGER_ADMIN_EMAIL="email@prov.com"
+MANAGER_DB_NAME="susemanager"
+MANAGER_DB_HOST="db hostname"
+MANAGER_DB_PORT="db port"
+MANAGER_DB_PROTOCOL="TCP"
+MANAGER_ENABLE_TFTP="Y"
+----
+
+. This part is specific to external database configuration. In this example, RDS database has been deployed and is accessible by the server. To access the database, we also need to use AWS certificate. `EXTERNALDB_ADMIN_USER` and `EXTERNALDB_ADMIN_PASS` are the user and password used during RDS deployment.
++
+----
+EXTERNALDB_ADMIN_USER="postgres"
+EXTERNALDB_ADMIN_PASS="spacewalk"
+MANAGER_DB_CA_CERT="/path_to/aws.crt"
+REPORT_DB_CA_CERT="/path_to/aws.crt"
+EXTERNALDB_PROVIDER="aws"
+----
+
+. Your report database also needs to be configured to use the external database. You need to specify again the RDS host name and port.
++
+----
+REPORT_DB_HOST="db hostname"
+REPORT_DB_PORT="db port"
+REPORT_DB_NAME="reportdb"
+REPORT_DB_USER="pythia_susemanager"
+REPORT_DB_PASS="pythia_susemanager"
+----
+
+
+[WARNING]
+====
+Don't create RDS with the same user than `MANAGER_USER`
+====
+
+
+[TIP]
+.Getting AWS certificate
+====
+The certificate is available at this address : https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html
+
+====
