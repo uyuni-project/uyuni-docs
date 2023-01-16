@@ -3,7 +3,11 @@
 
 // 2020-08-27, ke: We must settle on one term: "POS images" or "terminal images"
 
-To set up the {productname} {smr} environment, you will need to have already installed and configured {productname} Server, have one or more {productname} {smr} branch servers, and one or more {productname} build hosts.
+To set up the {productname} {smr} environment, you will need to have already installed and configured:
+
+* {productname} {smr} Server
+* one or more {productname} {smr} branch server proxies, or containerized proxy
+* one or more {productname} build hosts
 
 This section covers how to configure your {productname} {smr} environment, including:
 
@@ -47,7 +51,7 @@ You can use Salt to install a system user after the terminal has been deployed.
 
 [WARNING]
 ====
-SLES{nbsp}11 reached end of life and is no longer supported and can stop functioning at any moment.
+SLES{nbsp}11 reached end of life and is no longer supported and can stop working at any moment.
 ====
 
 POS Terminals based on {sles}{nbsp}11 SP{nbsp}3 can be deployed in much the same way as other terminals, with a few differences.
@@ -59,19 +63,21 @@ POS Terminals based on {sles}{nbsp}11 SP{nbsp}3 can be deployed in much the same
 ====
 Ensure that SLES{nbsp}11 images are built on the SLES{nbsp}11 build host.
 Building on the incorrect build host will cause your build to fail.
-====
 
-[WARNING]
-====
 If you are building images for SLES{nbsp}11 using profiles from an HTTPS git repository that uses TLS 1.0 or greater, it will fail.
 SLES{nbsp}11 does not support later versions of TLS.
 You will need to clone the repository locally to use it for building.
 ====
 
-== Required System Groups
+== Branch identification and architecture topology
 
-Before you configure the branch server, ensure you have decided on networking topology and you choose [systemitem]``branch id`` for every branch.
-For the information about the possible network topologies, see xref:retail:retail-network-arch.adoc[]. As a [systemitem]``branch id`` select any alphanumerical string.
+Before you configure the branch server, ensure you have decided on networking topology and you choose [systemitem]``branch id``.
+
+For the information about the possible network topologies, see xref:retail:retail-network-arch.adoc[].
+
+As a [systemitem]``branch id`` select any alphanumerical string.
+
+== Required System Groups
 
 {productname} {smr} requires:
 
@@ -86,7 +92,7 @@ For more information about hardware type groups, see xref:retail:retail-deploy-t
 Missing mandatory system group will cause terminal bootstrap to fail.
 ====
 
-{productname} {smr} also recognizes two optional groups for better organizations:
+{productname} {smr} also recognizes two optional groups for better overview:
 
 - [systemitem]``TERMINALS``
 - [systemitem]``SERVERS``
@@ -101,7 +107,7 @@ During terminal bootstrap terminal automatically joins:
 
 - branch system group based on received [systemitem]``branch_id``. This will make branch group formulas available to the terminal.
 - HWType group based on SMBios information received from terminal. This will make saltboot partitioning pillar available to the terminal.
-- [systemitem]``TERMINALS`` if this group exists
+- [systemitem]``TERMINALS`` if this group exists.
 
 
 [NOTE]
@@ -123,14 +129,16 @@ For more information about installing Ansible, see xref:administration:ansible-i
 
 == Configure Services for Saltboot
 
-Saltboot is mechanism which is used to deploy POS images to the terminals. Saltboot consists of saltboot enabled initrd (build as part of POS images) and saltboot salt states.
+Saltboot technology is used to deploy POS images to the terminals.
+Saltboot consists of saltboot enabled initrd (build as part of POS images) and saltboot salt states.
 
 This section covers general information about generic Saltboot requirements.
-For configuration examples, see xref:retail:example-configurations[].
+For configuration examples, see xref:retail:example-configurations.adoc[].
 
 === Enable PXE network boot in the terminal network
 
-Saltboot is usually used in network boot environment. For this to work [systemitem]``DHCP`` service for the network terminal is connected to must have [systemitem]``PXE`` or sometimes called [systemitem]``BOOTP`` support enabled.
+Saltboot is usually used in network boot environment.
+For this to work [systemitem]``DHCP`` service for the network terminal is connected to must have [systemitem]``PXE`` or sometimes called [systemitem]``BOOTP`` support enabled.
 
 .Example of ISC DHCP server configuration with PXE booting enabled
 ====
@@ -154,19 +162,22 @@ Notice two important options, [systemitem]``next-server`` which is set to the br
 
 === Saltboot service discovery
 
-Saltboot requires some information where is the salt master and where to download image from. Saltboot tries multiple discoveries to obtain this information, described below.
+Saltboot requires some information where the Salt master is and from where to download the image.
+Saltboot tries multiple discoveries to obtain this information, described below.
 
-For successful terminal deployment, both service discoveries must be successful. Depending on your architecture, choose what strategy works for you best.
+For successful terminal deployment, both service discoveries must be successful.
+Depending on your architecture, choose what strategy works for you best.
 
 ==== Salt master discovery
 
-During saltboot initrd start, integrated salt minion needs to find branch server proxy to connect to. This discovery is trying following steps:
+During saltboot initrd start, integrated Salt client needs to find branch server proxy to connect to.
+This discovery is trying following steps:
 
-- [systemitem]``MASTER`` kernel command line option is set, then this is used as salt master
-- resolve [systemitem]``salt`` CNAME, if successful then resolved value is used as salt master
-- use [systemitem]``salt`` as a salt master
+- [systemitem]``MASTER`` kernel command line option is set, then this is used as Salt master
+- resolve [systemitem]``salt`` CNAME, if successful then resolved value is used as Salt master
+- use [systemitem]``salt`` as a Salt master
 
-Once salt master is determined, salt minion configuration is generated and started.
+Once Salt master is determined, Salt client configuration is generated and started.
 
 [IMPORTANT]
 ====
@@ -187,11 +198,12 @@ Value obtained by download server discovery is then used together with POS image
 
 === Terminal partitioning and image selection
 
-Last piece for Saltboot is to provide partitioning for terminal. This is done individually for each hardware type of terminals.
-For more information about hardware types, see xref:retail:retail-deploy-terminals[]
+Last piece for Saltboot is to provide partitioning for terminal.
+This is done individually for each hardware type of terminals.
+For more information about hardware types, see xref:retail:retail-deploy-terminals.adoc[]
 
 Above mentioned steps are mandatory minimum for successful Saltboot deployment.
-For configuration examples, see xref:retail:example-configurations[].
+For configuration examples, see xref:retail:example-configurations.adoc[].
 
 == Synchronize Images to the Branch Server
 
