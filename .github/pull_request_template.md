@@ -1,6 +1,6 @@
 # Description
 
-Short summary of why you created this PR
+Short summary of why you created this PR (if you added documentation, please add any relevant diagram)
 
 # Target branches
 
