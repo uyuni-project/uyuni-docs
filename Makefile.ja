@@ -1,0 +1,86 @@
+# Clean up build artifacts
+.PHONY: clean-ja
+clean-ja: clean-branding-ja ## Remove build artifacts from output directory (Antora and PDF)
+	$(call clean-function,translations/ja,ja)
+
+.PHONY: clean-branding-ja
+clean-branding-ja:
+	$(call clean-branding,ja)
+
+.PHONY: copy-branding-ja
+copy-branding-ja: copy-branding
+	$(call copy-branding,ja)
+
+.PHONY: validate-suma-ja
+validate-suma-ja:
+	$(call validate-product,translations/ja,suma-site.yml)
+
+.PHONY: pdf-tar-suma-ja
+pdf-tar-suma-ja:
+	$(call pdf-tar-product,ja,susemanager-docs_ja-pdf,$(current_dir)/build/ja/pdf)
+
+.PHONY: set-html-language-selector-suma-ja
+set-html-language-selector-suma-ja: set-html-language-selector-suma
+	mkdir -p $(shell dirname translations/ja/$(SUPPLEMENTAL_FILES_SUMA))
+	cp -a translations/$(SUPPLEMENTAL_FILES_SUMA) translations/ja/$(SUPPLEMENTAL_FILES_SUMA)
+
+.PHONY: prepare-antora-suma-ja
+prepare-antora-suma-ja: copy-branding-ja set-html-language-selector-suma-ja
+	cd $(current_dir)
+	mkdir -p $(current_dir)/translations/ja && \
+	cp -a antora.yml translations/ja/antora.yml && \
+	sed "s/\(url\:\ https\:\/\/documentation\.suse\.com\/suma\/4\.3\/\)/\1ja\//;\
+	s/\-\ url\:\ \./\-\ url\:\ \.\.\/\.\.\//;\
+	s/start_path\:\ \./\start_path\:\ translations\/ja/;\
+	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/ja/;" site.yml > translations/ja/suma-site.yml && \
+	cp -a $(current_dir)/modules $(current_dir)/translations/en/
+	find modules/ -maxdepth 1 -name "*" -type d -exec mkdir -p $(current_dir)/translations/ja/{} \; && \
+	mkdir -p $(current_dir)/translations/ja/modules/ROOT/pages/
+	cp -a $(current_dir)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(current_dir)/translations/ja/modules/ROOT/pages/	
+	cd $(current_dir)
+
+.PHONY: antora-suma-ja
+antora-suma-ja: prepare-antora-suma-ja pdf-all-suma-ja pdf-tar-suma-ja
+	$(call antora-suma-function,translations/ja,ja)
+
+.PHONY: obs-packages-suma-ja
+obs-packages-suma-ja: pdf-all-suma-ja antora-suma-ja ## Generate SUMA OBS tar files
+	$(call obs-packages-product,ja,ja/pdf,susemanager-docs_ja,susemanager-docs_ja-pdf)
+
+# UYUNI
+
+.PHONY: validate-uyuni-ja
+validate-uyuni-ja:
+	$(call validate-product,translations/ja,uyuni-site.yml)
+
+.PHONY: pdf-tar-uyuni-ja
+pdf-tar-uyuni-ja:
+	$(call pdf-tar-product,ja,uyuni-docs_ja-pdf,$(current_dir)/build/ja/pdf)
+
+.PHONY: set-html-language-selector-uyuni-ja
+set-html-language-selector-uyuni-ja: set-html-language-selector-uyuni
+	mkdir -p $(shell dirname translations/ja/$(SUPPLEMENTAL_FILES_UYUNI))
+	cp -a translations/$(SUPPLEMENTAL_FILES_UYUNI) translations/ja/$(SUPPLEMENTAL_FILES_UYUNI)
+
+.PHONY: prepare-antora-uyuni-ja
+prepare-antora-uyuni-ja: copy-branding-ja set-html-language-selector-uyuni-ja
+	cd $(current_dir)
+	mkdir -p $(current_dir)/translations/ja && \
+	cp antora.yml translations/ja/antora.yml && \
+	sed "s/\(url\:\ https\:\/\/www\.uyuni-project\.org\/uyuni-docs\/\)/\1ja\//;\
+	s/\-\ url\:\ \./\-\ url\:\ \.\.\/\.\.\//;\
+	s/start_path\:\ \./\start_path\:\ translations\/ja/;\
+	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/ja/;" site.yml > translations/ja/uyuni-site.yml && \
+	cp -a $(current_dir)/modules $(current_dir)/translations/en/
+	find modules/ -maxdepth 1 -name "*" -type d -exec mkdir -p $(current_dir)/translations/ja/{} \; && \
+	mkdir -p $(current_dir)/translations/ja/modules/ROOT/pages/	
+	cp -a $(current_dir)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(current_dir)/translations/ja/modules/ROOT/pages/	
+	cd $(current_dir)
+
+.PHONY: antora-uyuni-ja
+antora-uyuni-ja: prepare-antora-uyuni-ja pdf-all-uyuni-ja pdf-tar-uyuni-ja
+	$(call antora-uyuni-function,translations/ja,ja)
+
+.PHONY: obs-packages-uyuni-ja
+obs-packages-uyuni-ja: pdf-all-uyuni-ja antora-uyuni-ja ## Generate UYUNI OBS tar files
+	$(call obs-packages-product,ja,ja/pdf,uyuni-docs_ja,uyuni-docs_ja-pdf)
