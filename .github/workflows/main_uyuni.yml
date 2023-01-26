@@ -14,19 +14,17 @@ jobs:
 
     steps:  
     - name: '[CHECKOUT] Master'
-      uses: actions/checkout@v1
+      uses: actions/checkout@v3
 
-    - name: '[TOOLCHAIN] Set up Ruby 2.6'
+    - name: '[TOOLCHAIN] Set up Ruby 3.0'
       uses: ruby/setup-ruby@v1
       with:
-        ruby-version: '2.6'
+        ruby-version: '3.0'
 
     - name: '[TOOLCHAIN] Set up NodeJS'
       uses: actions/setup-node@v3
       with:
-        node-version: 12
-      env:
-        NODE_OPTIONS: "--max_old_space_size=4096"
+        node-version: 16
 
     - name: '[TOOLCHAIN] po4a'
       run: |
@@ -48,24 +46,13 @@ jobs:
         asciidoctor --version
         asciidoctor-pdf --version
 
-    - name: '[TOOLCHAIN] Install Antora XREF Validator'
-      run: |
-        npm i -g @antora/cli@2.2   
-        npm i -g @antora/site-generator-default@2.2   
-        npm i -g gitlab:antora/xref-validator#v1.0.0-alpha.12    
-
     - name: '[TOOLCHAIN] Lunr/Antora Custom Docker Image'
       run: docker build -t lunr/antora:custom -f Dockerfile.custom .
-
-    #- name: '[TEST] Validate Antora XREFS'
-    #  run: |
-    #    make configure-uyuni
-    #    NODE_PATH="$(npm ls -g --parseable @antora/site-generator-default)/node_modules" antora --generator @antora/xref-validator site.yml
 
     - name: '[BUILD] UYUNI Docs with Lunr/Antora Custom Docker Image'
       run: |
         make configure-uyuni
-        docker run -u $UID --privileged -e DOCSEARCH_ENABLED=true -e DOCSEARCH_ENGINE=lunr -v $GITHUB_WORKSPACE:/antora/ --rm -t lunr/antora:custom site.yml --generator antora-site-generator-lunr
+        docker run -u $UID --privileged -e DOCSEARCH_ENABLED=true -e DOCSEARCH_ENGINE=lunr -v $GITHUB_WORKSPACE:/antora/ --rm -t lunr/antora:custom site.yml
         #cd build/
         ls -a
 
