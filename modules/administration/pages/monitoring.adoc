@@ -24,7 +24,8 @@ ifeval::[{uyuni-content} == true]
 endif::[]
 
 You need to install Prometheus and Grafana on a machine separate from the {productname} Server.
-We recommend to use a managed Salt client as your monitoring server.
+We recommend to use a managed Salt {suse} client as your monitoring server.
+Other clients are not supported as a monitoring server.
 
 Prometheus fetches metrics using a pull mechanism, so the server must be able to establish TCP connections to monitored clients.
 Clients must have corresponding open ports and be reachable over the network.
@@ -151,9 +152,34 @@ scrape_configs:
 # Managed systems metrics:
 - job_name: 'mgr-clients'
   uyuni_sd_configs:
-   - host: "http://server.url"
+   - server: "http://server.url"
      username: "admin"
      password: "admin"
+  relabel_configs:
+   - source_labels: [__meta_uyuni_exporter]
+     target_label: exporter
+   - source_labels: [__address__]
+     replacement: "No group"
+     target_label: groups
+   - source_labels: [__meta_uyuni_groups]
+     regex: (.+)
+     target_label: groups
+   - source_labels: [__meta_uyuni_minion_hostname]
+     target_label: hostname
+   - source_labels: [__meta_uyuni_primary_fqdn]
+     regex: (.+)
+     target_label: hostname
+   - source_labels: [hostname, __address__]
+     regex: (.*);.*:(.*)
+     replacement: ${1}:${2}
+     target_label: __address__
+   - source_labels: [__meta_uyuni_metrics_path]
+     regex: (.+)
+     target_label: __metrics_path__
+   - source_labels: [__meta_uyuni_proxy_module]
+     target_label: __param_module
+   - source_labels: [__meta_uyuni_scheme]
+     target_label: __scheme__
 ----
 . Save the configuration file.
 . Restart the Prometheus service:
@@ -208,9 +234,24 @@ zypper in grafana
 ----
 systemctl enable --now grafana-server
 ----
-. Check that the Grafana interface is loading correctly.
-    In your browser, navigate to the URL of the server where Grafana is installed, on port 3000 (for example, [literal]``http://example.com:3000``).
+. In your browser, navigate to the URL of the server where Grafana is installed, on port 3000 (for example, [literal]``http://example.com:3000``).
+. On the login page, enter ``admin`` for username and password.
+. Click btn:[Log in]. 
+    If login is successful, then you will see a prompt to change the password.
+. Click btn:[OK] on the prompt, then change your password.
+. Move your cursor to the cog icon on the side menu which will show the configuration options.
++
+image::grafana_sidemenu_datasource.png[scaledwidth=40%]
 
+. Click btn:[Data sources].
+. Click btn:[Add data source] to see a list of all supported data sources.
+. Choose the Prometheus data source.
+. Make sure to specify the correct URL of the Prometheus server.
+. Click btn:[Save & test].
+. To import a dashboard click the btn:[+] icon in the side menu, and then click btn:[Import].
+. For {productname} server overview load the dashboard ID: ``17569``.
+. For {productname} clients overview load the dashboard ID: ``17570``.
++
 image::monitoring_grafana_example.png[scaledwidth=80%]
 
 For more information on how to manually install and configure Grafana, see https://grafana.com/docs.
@@ -270,6 +311,99 @@ Metrics for a proxy are not automatically collected by Prometheus.
 To enable self-health monitoring on a proxy, you need to manually install exporters and enable them.
 ====
 
+Following relevant metrics are collected on the {productname} Server.
+
+.PostgreSQL exporter (port 9187)
+[cols="45,10,45"]
+|===
+|Metric |Type | Description
+
+|pg_stat_database_tup_fetched
+|counter
+|Number of rows fetched by queries
+
+|pg_stat_database_tup_inserted
+|counter
+|Number of rows inserted by queries
+
+|pg_stat_database_tup_updated
+|counter
+|Number of rows updated by queries
+
+|pg_stat_database_tup_deleted
+|counter
+|Number of rows deleted by queries
+
+|mgr_serveractions_completed
+|gauge
+|Number of completed actions
+
+|mgr_serveractions_failed
+|gauge
+|Number of failed actions
+
+|mgr_serveractions_picked_up
+|gauge
+|Number of picked-up actions
+
+|mgr_serveractions_queued
+|gauge
+|Number of queued actions
+|===
+
+.JMX exporter (Tomcat port 5556, Taskomatic port 5557)
+[cols="45,10,45"]
+|===
+|Metric |Type | Description
+
+|java_lang_Threading_ThreadCount
+|gauge
+|Number of active threads
+
+|java_lang_Memory_HeapMemoryUsage_used
+|gauge
+|Current heap memory usage
+|===
+
+.Server Message Queue (port 80)
+[cols="45,10,45"]
+|===
+|Metric |Type | Description
+
+|message_queue_thread_pool_threads
+|counter
+|Number of message queue threads ever created
+
+|message_queue_thread_pool_threads_active
+|gauge
+|Number of currently active message queue threads
+
+|message_queue_thread_pool_task_count
+|counter
+|Number of tasks ever submitted
+
+|message_queue_thread_pool_completed_task_count
+|counter
+|Number of tasks ever completed
+|===
+
+.Taskomatic Scheduler (port 9800)
+[cols="45,10,45"]
+|===
+|Metric |Type | Description
+
+|taskomatic_scheduler_threads
+|counter
+|Number of scheduler threads ever created
+
+|taskomatic_scheduler_threads_active
+|gauge
+|Number of currently active scheduler threads
+
+|taskomatic_scheduler_completed_task_count
+|counter
+|Number of tasks ever completed
+|===
 
 
 === Monitoring Managed Systems
@@ -313,6 +447,17 @@ Monitoring formulas can also be configured for System Groups, by applying the sa
 
 For more information about the monitoring formulas, see xref:specialized-guides:salt/salt-formula-monitoring.adoc[].
 
+
+=== Change Grafana Password
+
+To change the Grafana password follow the steps described in the Grafana documentation:
+
+* https://grafana.com/docs/grafana/latest/administration/user-management/user-preferences/#change-your-grafana-password
+
+In case you have lost the Grafana administrator password you can reset it as [literal]``root`` with the following command:
+----
+grafana-cli --configOverrides cfg:default.paths.data=/var/lib/grafana --homepath /usr/share/grafana admin reset-admin-password <new_password>
+----
 
 
 == Network Boundaries
