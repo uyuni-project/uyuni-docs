@@ -7,6 +7,7 @@ This section covers {productname} Server setup, using these procedures:
 * Create the main administration account with the {productname} {webui}
 * Name your base organization and add login credentials
 * Synchronize the {sle} product channel from {scc}
+* Set up {productname} with external database
 
 [WARNING]
 ====
@@ -32,7 +33,7 @@ For more information about using multiple servers, see xref:specialized-guides:l
 This section guides you through {productname} setup using {yast}.
 
 
-
+[[proc-quickstart-certificate-information-yast]]
 .Procedure: {productname} Setup
 . On the {productname} Server, at the command line, use the [command]``yast2 susemanager_setup`` command to begin setup.
 . From the introduction screen select menu:SUSE Manager Setup[Setup SUSE Manager from scratch] and click btn:[Next] to continue.
@@ -168,7 +169,7 @@ To disable _Transparant Huge Pages_ set the [option]``transparent_hugepage`` ker
 This has to be changed in [path]``/etc/default/grub`` and added to the line [option]``GRUB_CMDLINE_LINUX_DEFAULT``, for example:
 
 ----
-GRUB_CMDLINE_LINUX_DEFAULT="resume=/dev/sda1 splash=silent quiet showopts elevator=noop transparent_hugepage=never"
+GRUB_CMDLINE_LINUX_DEFAULT="resume=/dev/sda1 splash=silent quiet showopts elevator=none transparent_hugepage=never"
 ----
 
 To write the new configuration run [command]``grub2-mkconfig -o /boot/grub2/grub.cfg``.
@@ -182,3 +183,89 @@ tail -f /var/log/rhn/reposync/<CHANNEL_NAME>.log
 
 When the channel synchronization process is complete, you can continue with client registration.
 For more instructions, see xref:client-configuration:registration-overview.adoc[].
+
+== Set up {productname} with external database
+
+In this example, we use RDS product from Amazon Web Service.
+
+[WARNING]
+====
+Currently, configuring an external database is not supported by yast2 setup.
+
+You can configure an external database using the [command]``mgr-setup`` command line tool.
+
+====
+This section guides you through {productname} setup using [command]``mgr-setup``.
+
+.Procedure : Configuring server with external database
+
+. First create a [path]``setup_env.sh`` file in the [path]``/root`` directory defining the server setup.
+  The details are explained in the following steps.
+
+
+. Set the variables defining your certificate information and password.
+The information is the same as explained at <<proc-quickstart-certificate-information-yast>>.
++
+----
+CERT_O="SUSE"
+CERT_OU="SUSE"
+CERT_CITY="N"
+CERT_STATE="B"
+CERT_COUNTRY="DE"
+CERT_EMAIL="email@prov.com"
+CERT_PASS="spacewalk"
+USE_EXISTING_CERTS="N"
+----
+
+. Define your database.
+The user and password will be created during the setup.
+If you are using an external database, specify the hostname and port.
++
+----
+MANAGER_USER="spacewalk"
+MANAGER_PASS="spacewalk"
+MANAGER_ADMIN_EMAIL="email@prov.com"
+MANAGER_DB_NAME="susemanager"
+MANAGER_DB_HOST="db hostname"
+MANAGER_DB_PORT="db port"
+MANAGER_DB_PROTOCOL="TCP"
+MANAGER_ENABLE_TFTP="Y"
+----
+
+. Set the variables defining the specific configuration for the external database.
+  In this scenario, an RDS database has been deployed and is accessible by the server.
+  To establish a connection, an AWS certificate is also required.
+  [literal]``EXTERNALDB_ADMIN_USER`` and [literal]``EXTERNALDB_ADMIN_PASS`` are the credentials set during the RDS deployment:
++
+----
+EXTERNALDB_ADMIN_USER="postgres"
+EXTERNALDB_ADMIN_PASS="spacewalk"
+MANAGER_DB_CA_CERT="/path_to/aws.crt"
+REPORT_DB_CA_CERT="/path_to/aws.crt"
+EXTERNALDB_PROVIDER="aws"
+----
+
+. To connect to the external database, configure the report database with the RDS hostname and port.
+[literal]``REPORT_DB_USER`` and [literal]``REPORT_DB_PASS`` will be created by the script:
++
+----
+REPORT_DB_HOST="db hostname"
+REPORT_DB_PORT="db port"
+REPORT_DB_NAME="reportdb"
+REPORT_DB_USER="pythia_susemanager"
+REPORT_DB_PASS="pythia_susemanager"
+----
+
+
+[WARNING]
+====
+Do not use [literal]``MANAGER_USER`` as the user when deploying RDS.
+====
+
+
+[NOTE]
+.Getting AWS certificate
+====
+The certificate can be found at https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html.
+
+====
