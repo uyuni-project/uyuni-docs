@@ -1,0 +1,69 @@
+[[containerized-proxy-deployment]]
+= Containerized proxy deployment
+
+It is possible to deploy containerized images in an environment without an internet connection.
+In such case, the images are copied from {suse} registry to an internal registry, or saved to a [literal]``tar`` file.
+
+You should first register Salt minion to {productname} server, and then re-use the same FQDN in a generation.
+
+//When changing the base channel to have the {productname} client tools, this may lead to package conflicts and port conflicts.
+
+
+[[image.from.suse.to.internal.registry]]
+== Image copying from {suse} registry to internal registry 
+
+[IMPORTANT]
+====
+This procedure illustrates deployment of {salt} proxies only.
+====
+
+. Install [literal]``skopeo`` on a machine with access to [literal]``registry.suse.com``:
++
+----
+zypper in skopeo (can be {productname} server)
+----
++
+. Copy images between registries:
++
+----
+for image in httpd proxy-salt-broker squid ssh tftpd; do
+    skopeo copy --dest-tls-verify=false docker://registry.suse.com/suse/manager/4.3/proxy-$image:latest docker://(your_server)/proxy-$image
+done
+----
++
+. If the registry is unsecured, i.e. not configured with SSL, add the regitry domain to the section [literal]``insecure list`` on the containerized proxy virtual machine by editing:
++
+----
+/etc/containers/registries.conf
+----
+
+[NOTE]
+====
+If you want to copy the images to a registry with SSL, remove the property [literal]`--dest-tls-verify=false`.
+====
+
+[[air-gapped-solution-for-podman]]
+== Air gapped solution for Podman
+
+. Before starting the pod, on a machine with internet access run:
++
+----
+for image in httpd salt-broker squid ssh tftpd; do
+    podman pull registry.suse.com/suse/manager/4.3/proxy-$image
+done
+podman pull k8s.gcr.io/pause
+
+podman save -m -o proxy-images.tar \
+    k8s.gcr.io/pause \
+    registry.suse.com/suse/manager/4.3/proxy-httpd \
+    registry.suse.com/suse/manager/4.3/proxy-salt-broker \
+    registry.suse.com/suse/manager/4.3/proxy-squid registry.suse.com/suse/manager/4.3/proxy-ssh \
+    registry.suse.com/suse/manager/4.3/proxy-tftpd
+----
++
+. Transfer the [literal]`proxy-images.tar` to the air gapped proxy.
+. Run this command to start the pod:
++
+----
+podman load -i proxy-images.tar
+----
