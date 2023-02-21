@@ -29,12 +29,34 @@ Without using DHCP formula, make sure your DHCP server has correct PXE booting s
 See below for example.
 ====
 
+== Assumptions
+
+In this example we are going to use branch id [systemitem]``B0001``.
+
+As a terminal we assume to have one terminal with hardware manufacturer [systemitem]``TerminalOEM`` and model [systemitem]``T1000``.
+
+For POS image we assume to have one with name [systemitem]``POS_Image_JeOS7``.
+
+
+== Create required system groups
+
+Follow guide xref:reference:systems/system-groups.adoc[] to create the system groups:
+
+- [systemitem]``TERMINALS``
+- [systemitem]``HWType:TerminalOEM-T1000``
+- [systemitem]``B0001``
+
+First group is generic optional group for collecting all POS terminals. Second group is hardware type group for our POS terminal. Third group is mandatory branch group.
+
+For more information about saltboot groups, see xref:retail:retail-install-setup.adoc[].
+
+We assign [systemitem]``Saltboot Group`` formula to group [systemitem]``B0001`` we just created. With this, our branch group is converted to [systemitem]``Saltboot Group``.
+
 == Saltboot group
 
 Containerized {productname} {smr} is configured in [systemitem]``Saltboot Group``.
-Saltboot Groups are regular server groups with [systemitem]``Saltboot Group`` formula enabled.
 
-Saltboot Groups acts as a branch groups.
+Saltboot Groups are branch groups, system group with branch id as its name, with [systemitem]``Saltboot Group`` formula enabled.
 
 image::saltboot_group.png[scaledwidth=80%]
 
@@ -46,7 +68,7 @@ All [systemitem]``saltboot`` deployed machines though containerized proxy will a
 
 To connect [systemitem]``Saltboot group`` with containerized proxy fill [systemitem]``Image Download Server`` entry with Fully Qualified Domain Name ([literal]``FQDN``) of the containerized proxy.
 
-The rest of configuration is optional.
+With this, mandatory configuration is finished. The rest of configuration is optional.
 
 === Default boot image
 
@@ -70,15 +92,17 @@ See xref:retail-terminal-names.adoc[] for explanation of possible configurations
 
 External DHCP service must be used with containerized Saltboot.
 
+For more information about how to enable PXE booting in DHCP service, see xref:retail:retail-install-setup.adoc[].
+
 Containerized workflow relies on updated image building in {productname} Server 4.3 where PXE images are no longer collected as bundle, but kernel, initrd and filesystem image are collected individually.
 
-Containerized workflow uses new TFTP container which instead of providing files present on the proxy, routes specific TFTP requests as HTTP requests through local squid proxy to {productname} Server.
+Containerized workflow uses new TFTP container which instead of providing files present on the proxy, routes TFTP requests as HTTP requests through local proxy to {productname} Server.
 
 Containerized proxy is not a Salt client, it is not possible to call [systemitem]``image-sync`` state.
 
 [IMPORTANT]
 ====
-Once POS image is build and made available on {productname} Server, it is immediately available to the Saltboot clients as well.
+Once POS image is build and made available on {productname} Server, it is immediately available to the Saltboot clients as well. Image synchronization is not needed, nor available.
 This may have implications on how images are deployed to production.
 ====
 
@@ -127,7 +151,7 @@ These entries are however not yet available for PXE booting.
 Only when [systemitem]``Saltboot group`` is created, new cobbler profile is created for this [systemitem]``Saltboot group`` which points to [systemitem]``cobbler distro`` based on default boot image configuration.
 
 
-For example, when system group [literal]``MySaltbootGroup`` is created and [systemitem]``Saltboot group formula`` is assigned and configured for this group, new cobbler profile is created.
+For example, when system group [literal]``B0001`` is created and [systemitem]``Saltboot group formula`` is assigned and configured for this group, new cobbler profile is created.
 
 ----
 # cobbler list
@@ -137,18 +161,18 @@ distros:
 
 profiles:
    1-POS_Image_JeOS7-7.0.0-1
-   1-MySaltbootGroup
+   1-B0001
 ----
 
-When inspecting this new group using command [command]``cobbler profile report --name 1-MySaltbootGroup`` details of this profile reveal configuration of this saltboot group.
+When inspecting this new group using command [command]``cobbler profile report --name 1-B0001`` details of this profile reveal configuration of this saltboot group.
 
 ----
-# cobbler profile report --name 1-MySaltbootGroup
+# cobbler profile report --name 1-B0001
 
-Name                           : 1-MySaltbootGroup
-Comment                        : Saltboot group MySaltbootGroup of organization SUSE default profile
+Name                           : 1-B0001
+Comment                        : Saltboot group B0001 of organization SUSE default profile
 Distribution                   : 1-POS_Image_JeOS7-7.0.0-1
-Kernel Options                 : {'MASTER': ['downloadserver.example.org'], 'MINION_ID_PREFIX': ['MySaltbootGroup']}
+Kernel Options                 : {'MASTER': ['downloadserver.example.org'], 'MINION_ID_PREFIX': ['B0001']}
 ----
 
 Kernel options in example are always present and are internal for saltboot functionality.
