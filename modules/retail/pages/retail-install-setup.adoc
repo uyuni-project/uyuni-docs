@@ -3,14 +3,20 @@
 
 // 2020-08-27, ke: We must settle on one term: "POS images" or "terminal images"
 
-To set up the {productname} {smr} environment, you will need to have already installed and configured {productname} Server, have one or more {productname} {smr} branch server, and one or more {productname} build host.
+To set up the {productname} {smr} environment, you will need to have already installed and configured:
+
+* {productname} {smr} Server
+* one or more {productname} {smr} branch server proxies, or containerized proxy
+* one or more {productname} build hosts
 
 This section covers how to configure your {productname} {smr} environment, including:
+
 * Prepare POS images
-* Configure services on the branch server
+* Prepare system groups
+* Configure services for Saltboot
 * Synchronize POS images to the branch servers
 
-The very first time you set up the {productname} {smr} environment, you will need to perform all three steps.
+The very first time you set up the {productname} {smr} environment, you will need to perform all configuration steps.
 You will need to revisit some of these steps later on as you are working with {productname} {smr}.
 
 For example, the first time you configure the branch server, you will need to have images prepared for synchronization.
@@ -28,7 +34,6 @@ For information about {productname} image building, see xref:administration:imag
 {productname} {smr} POS images are images specifically tailored for {productname} {smr} environment and designed to be deployed using PXE booting mechanism.
 
 
-
 === POS Image Templates
 
 As starting point, {suse} provides basic templates at https://github.com/SUSE/manager-build-profiles/tree/master/OSImage[].
@@ -44,6 +49,11 @@ You can use Salt to install a system user after the terminal has been deployed.
 
 === SLES{nbsp}11 SP{nbsp}3 Terminals
 
+[WARNING]
+====
+SLES{nbsp}11 reached end of life and is no longer supported and can stop working at any moment.
+====
+
 POS Terminals based on {sles}{nbsp}11 SP{nbsp}3 can be deployed in much the same way as other terminals, with a few differences.
 
 * You must use the SLES{nbsp}11 template
@@ -53,21 +63,57 @@ POS Terminals based on {sles}{nbsp}11 SP{nbsp}3 can be deployed in much the same
 ====
 Ensure that SLES{nbsp}11 images are built on the SLES{nbsp}11 build host.
 Building on the incorrect build host will cause your build to fail.
-====
 
-[WARNING]
-====
 If you are building images for SLES{nbsp}11 using profiles from an HTTPS git repository that uses TLS 1.0 or greater, it will fail.
 SLES{nbsp}11 does not support later versions of TLS.
 You will need to clone the repository locally to use it for building.
 ====
 
+== Branch identification and architecture topology
+
+Before you configure the branch server, ensure you have decided on networking topology and you choose [systemitem]``branch id``.
+
+For information about the possible network topologies, see xref:retail:retail-network-arch.adoc[].
+
+As a [systemitem]``branch id`` select any alphanumerical string.
+
+== Required System Groups
+
+{productname} {smr} requires:
+
+- branch system group for every branch server proxy, using [systemitem]``branch id`` as its name
+- hardware type system group for every used hardware type, using [systemitem]``HWTYPE:`` prefix in its name
+
+For more information about hardware type groups, see xref:retail:retail-deploy-terminals.adoc[].
 
 
-== Configure Services on the Branch Server
+[WARNING]
+====
+Missing mandatory system group will cause terminal bootstrap to fail.
+====
 
-Before you configure the branch server, ensure you have decided on networking topology, and know the minion ID of the branch server.
-For the information about the possible network topologies, see xref:retail:retail-network-arch.adoc[].
+{productname} {smr} also recognizes two optional groups for better overview:
+
+- [systemitem]``TERMINALS``
+- [systemitem]``SERVERS``
+
+
+You can create system groups using the {productname} {webui}.
+Navigate to menu:Systems[System Groups] and click btn:[Create System Group].
+
+For more information about system groups, see xref:reference:systems/system-groups.adoc[].
+
+During terminal bootstrap terminal automatically joins:
+
+- branch system group based on received [systemitem]``branch_id``. This will make branch group formulas available to the terminal.
+- HWType group based on SMBios information received from terminal. This will make saltboot partitioning pillar available to the terminal.
+- [systemitem]``TERMINALS`` if this group exists.
+
+
+[NOTE]
+====
+{productname} {smr} command line tools create required system groups and branch group automatically.
+====
 
 [NOTE]
 ====
@@ -81,118 +127,90 @@ In case you plan to use the branch server with Ansible software, be aware that A
 For more information about installing Ansible, see xref:administration:ansible-integration.adoc[].
 ====
 
-Configure branch server services from the {productname} Server.
-The configuration is then applied to the selected branch server using Salt states.
-{productname} Formulas with Forms functionality is used to configure branch server services.
-However, there are multiple ways to configure these services:
+== Configure Services for Saltboot
 
-* {productname} {smr} provided command line tool [command]``retail_branch_init``
-* {productname} {smr} provided mass import command line tool [command]``retail_yaml``
-* {productname} web UI and configuring formulas manually (for advanced users)
+Saltboot technology is used to deploy POS images to the terminals.
+Saltboot consists of saltboot enabled initrd (build as part of POS images) and saltboot Salt states.
 
+This section covers general information about generic Saltboot requirements.
+For configuration examples, see xref:retail:example-configurations.adoc[].
 
-The branch server can be configured automatically using the [command]``retail_branch_init`` command, as shown in this section.
-If you prefer to manually configure the branch server, you can do so using formulas.
-For more information about formulas, see xref:retail:retail-formulas-intro.adoc[].
+=== Enable PXE network boot in the terminal network
 
-.Procedure: Configuring Branch Server Formulas With a Helper Script
+Saltboot is usually used in network boot environment.
+For this to work [systemitem]``DHCP`` service for the network terminal is connected to must have [systemitem]``PXE`` or sometimes called [systemitem]``BOOTP`` support enabled.
 
-. Branch server configuration is performed using the [command]``retail_branch_init`` command:
-+
-----
-retail_branch_init <branch_server_minion_id>
-----
-+
-This command will configure branch server formulas with default values and for shared networking topology.
-For dedicated network topology run this command:
-+
-----
-retail_branch_init <branch_server_minion_id> --dedicated-nic <network_device>
-----
-+
-You can customize network information as well, together with custom [systemitem]``branch prefix``. For example:
-+
-----
-retail_branch_init <branch_server_minion_id> --dedicated-nic eth1 \
-                                             --branch-prefix B001 \
-                                             --server-domain <branch_server_subdomain> \
-                                             --branch-ip 192.168.86.1 \
-                                             --netmask 255.255.255.0
-----
-+
-You can use the [command]``retail_branch_init --help`` command for additional options.
-
-. Verify that your changes have been configured correctly by checking the {productname} {webui} branch server system formulas.
-. Apply highstate on the branch server.
-    You can do this through the {webui}, or by running this command:
-+
-----
-salt <branch_server_minion_id> state.apply
-----
-
-Similar results can be achieved by using mass import command line tool.
-
-.Procedure: Configuring Branch Server Formulas With a Mass Import Tool
-
-. Prepare branch specific YAML file:
-+
-For example, create branch.yaml file with content:
-+
-----
-branches:
-  <branch_server_minion_id>:
-    branch_prefix: branch1
-    server_name: branchserver1
-    server_domain: example.com
-    nic: eth1
-    dedicated_nic: true
-    configure_firewall: true
-    branch_ip: 192.168.2.1
-    netmask: 255.255.255.0
-    dyn_range:
-        - 192.168.2.10
-        - 192.168.2.250
-----
-+
-For more information about mass import tool, see xref:retail:retail-mass-config.adoc[].
-. Import branch information from YAML file to {productname}
-+
-----
-retail_yaml --from-yaml branch.yaml
-----
-. Verify that your changes have been configured correctly by checking the {productname} {webui} branch server system formulas.
-. Apply highstate on the branch server.
-
-[WARNING]
+.Example of ISC DHCP server configuration with PXE booting enabled
 ====
-Both [command]``retail_branch_init`` and [command]``retail_yaml`` commands override existing configuration settings of the specified branch server.
+  if substring (option vendor-class-identifier, 0, 10) = "HTTPClient" {
+    option vendor-class-identifier "HTTPClient";
+    filename "<FQDN of branch server proxy>/saltboot/shim.efi";
+  }
+  else {
+    if option arch = 00:07 {
+       filename "boot/shim.efi";
+       next-server <IP address of branch server proxy>;
+    }
+    else {
+      filename "boot/pxelinux.0";
+      next-server <IP address of branch server proxy>;
+    }
+  }
 ====
 
-After the initial configuration done by command line tools, branch server configuration can be further adjusted in {productname} {webui} through branch server formulas.
+Notice two important options, [systemitem]``next-server`` which is set to the branch server IP address and [systemitem]``filename`` set to the [systemitem]``boot/pxelinux.0`` for BIOS based system and [systemitem]``boot/shim.efi`` for UEFI systems with SecureBoot support.
 
-=== Required System Groups
-
-{productname} {smr} requires system groups for terminals and servers.
-Manually create these system groups during installation:
-
-* [systemitem]``TERMINALS``
-* [systemitem]``SERVERS``
-
-Additionally, you will need to create a system group for each branch server, and each terminal hardware type in your environment.
-For more information about hardware type groups, see xref:retail:retail-deploy-terminals.adoc[].
-
-Branch server groups are named after branch server prefixes, for example group name [systemitem]``B0001`` for branch server prefix [systemitem]``BOO1``.
-
-You can create system groups using the {productname} {webui}.
-Navigate to menu:Systems[System Groups] and click btn:[Create System Group].
-
-For more information about system groups, see xref:reference:systems/system-groups.adoc[].
-
-[NOTE]
+[IMPORTANT]
 ====
-{productname} {smr} command line tools create required system groups and branch group automatically.
+Containerized branch proxy uses different [systemitem]``filename`` then regular branch server.
+
+For containerized branch proxy set [systemitem]``filename`` to the [systemitem]``pxelinux.0`` for BIOS based system and [systemitem]``grub/shim.efi`` for UEFI systems with SecureBoot.
 ====
 
+=== Saltboot service discovery
+
+Saltboot requires some information where the Salt master is and from where to download the image.
+Saltboot tries multiple discoveries to obtain this information, described below.
+
+For successful terminal deployment, both service discoveries must be successful.
+Depending on your architecture, choose what strategy works for you best.
+
+==== Salt master discovery
+
+During saltboot initrd start, integrated Salt client needs to find branch server proxy to connect to.
+This discovery is trying following steps:
+
+- [systemitem]``MASTER`` kernel command line option is set, then this is used as Salt master
+- resolve [systemitem]``salt`` CNAME, if successful then resolved value is used as Salt master
+- use [systemitem]``salt`` as a Salt master
+
+Once Salt master is determined, Salt client configuration is generated and started.
+
+[IMPORTANT]
+====
+Using fully qualified domain name in [systemitem]``MASTER`` or [systemitem]``salt`` CNAME is important.
+
+If used fully qualified domain name is different from fully qualified domain name of branch server proxy known to {productname}, saltboot may work correctly, however proxy detection of terminal will not work.
+====
+
+==== Download server discovery
+
+Before POS image is downloaded to the terminal, download server discovery is done to find where to download image from:
+
+- [systemitem]``saltboot_download_server`` pillar is set for terminal, then its value is used
+- [systemitem]``saltboot:download_server`` pillar is set for terminal, then its value is used
+- resolve [systemitem]``ftp`` hostname
+
+Value obtained by download server discovery is then used together with POS image pillar to fetch correct image from correct location.
+
+=== Terminal partitioning and image selection
+
+Last piece for Saltboot is to provide partitioning for terminal.
+This is done individually for each hardware type of terminals.
+For more information about hardware types, see xref:retail:retail-deploy-terminals.adoc[].
+
+Above mentioned steps are mandatory minimum for successful Saltboot deployment.
+For configuration examples, see xref:retail:example-configurations.adoc[].
 
 == Synchronize Images to the Branch Server
 
