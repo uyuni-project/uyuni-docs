@@ -1,0 +1,138 @@
+[[shared-central-dns]]
+= Set Up the {productname} {smr} Environment with shared network between terminals, branch servers and {productname}
+
+To set up the {productname} {smr} environment, you will need to have already installed and configured:
+
+* {productname} {smr} Server
+* one or more {productname} {smr} branch server proxies
+* one or more POS images built
+
+== Assumptions
+
+In this example we consider architecture with shared network between POS terminals, branch server and {productname} where branch server provides only PXE configuration and images.
+
+In this example we provide [systemitem]``salt`` on kernel command line option and [systemitem]``ftp`` in pillar for saltboot service discovery.
+
+We assume to have one regular branch server with salt minion id [systemitem]``branch1.mystore.com``, which is equal to the branch server fully qualified domain name, and branch id [systemitem]``B0001``.
+
+As a terminal we assume to have one terminal with hardware manufacturer [systemitem]``TerminalOEM`` and model [systemitem]``T1000``.
+
+For POS image we assume to have one with name [systemitem]``POS_Image_JeOS7``.
+
+There is already existing external DHCP and DNS service.
+DHCP service is correctly configured to PXE boot from branch server.
+
+== Create required system groups
+
+Follow guide xref:reference:systems/system-groups.adoc[] to create the system groups:
+
+- [systemitem]``TERMINALS``
+- [systemitem]``HWType:TerminalOEM-T1000``
+- [systemitem]``B0001``
+
+First group is generic optional group for collecting all POS terminals. Second group is hardware type group for our POS terminal. Third group is mandatory branch group.
+
+For more information about saltboot groups, see xref:retail:retail-install-setup.adoc[].
+
+
+== Assign and configure formulas
+
+We assign following formulas to the branch server:
+
+- Branch Network
+- Pxe
+- Tftpd
+
+.Procedure: Assign formulas to the branch server
+
+. Select the [guimenu]``Formulas`` tab for the system [systemitem]``branch1.mystore.com``
+. You should see list of formulas in [guimenu]``Configuration`` sub-tab
+. In displayed list select [systemitem]``Branch Network``
+. In displayed list select [systemitem]``Pxe``
+. In displayed list select [systemitem]``Tftpd``
+. Save assigned formulas by clicking btn:[Save] in top right corner
+
+.Procedure: Configure Branch Network formula
+
+. Select Branch Network formula from branch server formula list
+. Unselect [systemitem]``Dedicated Nic`` check-box because we are not using dedicated network
+. Keep the rest with default values
+. In [systemitem]``Terminal Naming and Identification`` section edit [systemitem]``Branch Identification`` and set it to our branch id [systemitem]``B0001``
+. Save the formula
+
+.Procedure: Configure Pxe formula
+
+. Select Pxe formula from branch server formula list
+. At the end of [systemitem]``Kernel Command Line Parameters`` append [literal]``MASTER=branch1.mystore.com``
+. Keep the rest with default values
+. Save the formula
+
+.Procedure: Configure Tftpd formula
+
+. Select Tftpd formula from branch server formula list
+. Set [systemitem]``Internal Network Address`` to [literal]``0.0.0.0``, this way tftp will be listening on any IPv4
+. Set [systemitem]``TFTP base directory`` to [literal]``/srv/saltboot``
+. Save the formula
+
+[NOTE]
+====
+Next two formulas are group formulas.
+Make sure you are editing those formulas in their respective groups.
+
+Group formulas are visible as assigned also on system level, but editing them will create system specific setting instead of group setting.
+====
+
+Assign [systemitem]``Saltboot Group`` formula to the [systemitem]``B0001`` group and [systemitem]``Saltboot`` formula to the [systemitem]``HWType:TerminalOEM-T1000`` group.
+
+.Procedure: Assign Saltboot Group formula to Branch group
+
+. Navigate to menu:Systems[System Groups]
+. Select group [systemitem]``B0001`, which is our branch group
+. Select the [guimenu]``Formulas`` tab once in group details
+. You should see list of formulas in [guimenu]``Configuration`` sub-tab
+. In displayed list select [systemitem]``Saltboot Group``
+. Save assigned formulas by clicking btn:[Save] in the top right corner
+
+.Procedure: Configure Saltboot Group formula
+
+. Select Saltboot Group formula from [systemitem]``B0001`` group formula list
+. Set [systemitem]``Image download server`` to [systemitem]``branch1.mystore.com``
+. Unselect [systemitem]``Branch server is containerized proxy`` because this is not containerized proxy
+. Save the formula
+
+.Procedure: Assign Saltboot formula to hardware type group
+
+. Navigate to menu:Systems[System Groups]
+. Select group [systemitem]``HWType:TerminalOEM-T1000``, which is our hardware type group
+. Select the [guimenu]``Formulas`` tab once in group details
+. You should see list of formulas in [guimenu]``Configuration`` sub-tab
+. In displayed list select [systemitem]``Saltboot``
+. Save assigned formulas by clicking btn:[Save] in top right corner
+
+.Procedure: Configure Saltboot formula
+
+. Select Saltboot formula from [systemitem]``HWType:TerminalOEM-T1000`` group formula list
+. Set [systemitem]``Disk Symbolic ID`` to [systemitem]``Disk1``
+. Set [systemitem]``Device Type`` to [systemitem]``DISK``
+. Set [systemitem]``Disk Device`` to [systemitem]``*``
+. Set [systemitem]``Partition table type`` to [systemitem]``gpt``
+. Click btn:[+] to add a partition
+* Set [systemitem]``Partition Symbolic ID`` to [systemitem]``p1``
+* Set [systemitem]``Partition Size (MiB)`` to [systemitem]``512``
+* Set [systemitem]``Device Mount Point`` to [systemitem]``/boot/efi``
+* Set [systemitem]``Filesystem Format`` to [systemitem]``vfat``
+* Set [systemitem]``Partition Flags`` to [systemitem]``boot``
+. Click btn:[+] to add a partition
+* Set [systemitem]``Partition Symbolic ID`` to [systemitem]``p2``
+* Set [systemitem]``Device Mount Point`` to [systemitem]``/``
+* Set [systemitem]``OS Image to Deploy`` to [systemitem]``POS_Image_JeOS7``
+. Save the formula
+
+After all procedures are done, apply highstate on the branch server.
+
+== Synchronize images
+
+After highstate is applied, we proceed with synchronizing images as usual with apply [systemitem]``image-sync`` state.
+
+
+Terminal can now be started and will be automatically provisioned, pending salt key acceptance.
