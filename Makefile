@@ -122,8 +122,8 @@ define pdf-book-create
 	cd $(current_dir)/$(1) && LANG=$(9) LC_ALL=$(9) LC_TYPE=$(9) asciidoctor-pdf \
 		-r $(current_dir)/extensions/xref-converter.rb \
 		-a lang=$(8) \
-		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
-		-a pdf-style=$(2) \
+		-a pdf-themesdir=$(PDF_THEME_DIR)/ \
+		-a pdf-theme=$(2) \
 		-a pdf-fontsdir=$(PDF_FONTS_DIR) \
 		-a productname=$(3) \
 		-a suma-content=$(4) \
@@ -140,8 +140,8 @@ define pdf-book-create-uyuni
 	cd $(current_dir)/$(1) && LANG=$(9) LC_ALL=$(9) LC_TYPE=$(9) asciidoctor-pdf \
 		-r $(current_dir)/extensions/xref-converter.rb \
 		-a lang=$(8) \
-		-a pdf-stylesdir=$(PDF_THEME_DIR)/ \
-		-a pdf-style=$(2) \
+		-a pdf-themesdir=$(PDF_THEME_DIR)/ \
+		-a pdf-theme=$(2) \
 		-a pdf-fontsdir=$(PDF_FONTS_DIR) \
 		-a productname=$(3) \
 		-a uyuni-content=$(4) \
