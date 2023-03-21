@@ -1,0 +1,115 @@
+[[ptfs]]
+= Using PTFs in {productname}
+
+SUSE provides temporary fixes for all currently supported solutions shipped directly to its customers.
+These PTFs (Program Temporary Fixes) are now available as repositories, which can be synced in {productname}.
+
+
+== Understanding PTF packages
+
+PTF packages are installed via a proxy package and are named `ptf-xxxxxx`, where xxxxxx is a number and part of the name of the package, not its version.
+
+They will depend on the correct version of the package that is known to include the correction in the software. This type of package:
+
+* cannot be installed accidentally (i.e. zypper update will never suggest installing them),
+* cannot be removed accidentally (i.e. a newer package version will not replace the PTF one, unless the user makes it explicitly on the zypper command line),
+* is only updated when the newer version is known to address the specific issue previously solved by the PTF,
+* updates only packages already installed on the system (i.e. if a software is split into multiple packages, the PTF will replace only those currently installed on the system).
+
+The correct ID of the package will be provided by SUSE Support during the course of the support case investigation, along with instruction on how to deploy/restart the affected services.
+
+
+== Installing PTF packages
+
+
+[NOTE]
+====
+PTF packages are currently only supported for SLE 12 and SLE 15 based systems.
+Other versions or Operating Systems do not have this feature yet and the pages are not visible for them.
+====
+
+
+.Procedure: Enable and Synchronize PTF repositories using the command line
+
+. On the console enter [command]``mgr-sync refresh``.
+. Enter [command]``mgr-sync list channel`` and look for channels starting with your SCC account name and `ptfs` in its name.
+  E.g. `a123456-sles-15.3-ptfs-x86_64`.
+. Enable the PTF channel with [command]``mgr-sync add channel <label>``.
+
+Now this channel is available and can be added to every system which is using the same base channel.
+
+PTF packages need to be installed explicitly, since they are not automatically picked up when updating a system.
+The SUSE Customer Support will provide the PTF number to fix a specific problem. With the number the proxy package can be identified in the PTF list.
+In {productname} {webui} every system with PTFs available for installation has a page which lists them.
+
+.Procedure: Enable and Synchronize PTF repositories via the {productname} {webui}
+
+. In the {productname} {webui}, navigate to menu:Admin[Setup Wizard > Products] and look for the product you want to enable the PTF repository for.
+. Click btn:[Show product's channels] next to the products sync status.
+. You should see a popup listing mandatory and optional channels for the product.
+. In the optional channels list look for channels starting with your SCC account name and `ptfs` in its name.
+  E.g. `a123456-sles-15.3-ptfs-x86_64`.
+. Select the channel using the checkbox next to its name and click btn:[Confirm] to schedule the sync.
+
+Note that the product has to be installed to be able to add optional channels to it.
+
+.Procedure: Installation of PTF packages
+
+. In the {productname} {webui}, navigate to menu:Systems[Systems List] and select the client where you want to install a PTF.
+. Navigate to the menu:Systems[Software > Packages > Software Channels] and select the [systemitem]``PTF channel``.
+. Click btn:[Next], and [guimenu]``Confirm Software Channel Change`` with btn:[Confirm].
+. To check if the channel assignment is finished, navigate to menu:Systems[Events > History] to see the results.
+. Navigate to the menu:Systems[Software > PTFs > Install] sub tab.
+. Select the ptf package you want to install.
+. Click btn:[Install PTF], and [guimenu]``Confirm Program Temporary Fixes (PTFs) Installation`` with btn:[Confirm].
+. To see PTF installation results, navigate to menu:Systems[Events > History].
+
+
+In case a PTF should be installed using the API, the normal [systemitem]``system.schedulePackageInstall`` API can be used with the proxy package name.
+
+
+== After PTF installation
+
+Once a PTF is confirmed to address the reported issue, the updated package will be tracked for inclusion
+into a future maintenance update before being widely distributed as an regular maintenance update in the update repositories.
+
+When this regular update with the fix is released, an updated version of the PTF will also be released into
+the account-specific PTF repository. The updated PTF will remove the strict dependencies and allow updates to be installed again.
+
+The replacement of the PTF with the maintenance update which includes the fix happens automatically via
+a standard package update or patch installation.
+
+
+== Removing the patched version of a package
+
+In cases where a PTF needs to be uninstalled and the non-patched version of the packages need to be installed on the system,
+a simple package remove cannot be used. The ptf package is not selectable in the standard package list page.
+
+. In the {productname} {webui}, navigate to menu:Systems[Systems List] and select the client you want to remove a PTF from.
+. Navigate to the menu:Systems[Software > PTFs > List/Remove] sub tab.
+. Select the ptf package you want to remove.
+. Click btn:[Remove PTFs], and on the [guimenu]``Confirm Program Temporary Fixes (PTFs) Removal`` page click btn:[Confirm].
+. To see the results, navigate to menu:Systems[Events > History].
+
+
+[NOTE]
+====
+Removing PTFs requires a special version of [literal]``libzypp`` and [literal]``zypper`` to be installed on the client system.
+Check [command]``zypper --help`` whether [command]``removeptf`` is supported.
+The ``List/Remove`` tab is only visible if this condition is met.
+====
+
+In case the PTF should be removed using the API, the normal [systemitem]``system.schedulePackageRemove`` api can be used with the proxy package name.
+
+
+== Removing the patched version of a package on the client
+
+In case a PTF should be removed directly on the client using the console, it is required to use a special command ``zypper removeptf ...``.
+All other ways result either in an error or can lead to unwanted behavior like removing important packages from the system and make the system unusable.
+
+For the command line usage see also: https://www.suse.com/de-de/support/kb/doc/?id=000020596
+
+
+
+
+
