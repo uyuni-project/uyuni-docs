@@ -1,0 +1,182 @@
+[[retail-install-setup-containerized]]
+= Set Up the {productname} {smr} Environment using containerized proxy
+
+To set up the {productname} {smr} environment, you will need to have already installed and configured:
+
+* {productname} {smr} Server 4.3 or newer
+* one or more {productname} {smr} containerized proxies
+* one or more {productname} build host
+
+This section covers how to configure your  environment using containerized {productname} Proxy for [systemitem]``Saltboot`` deployment.
+
+[NOTE]
+====
+Containerized {productname} {smr} environment does not use {productname} {smr} Branch Servers.
+====
+
+[IMPORTANT]
+====
+Containerized workflow requires POS images build using {productname} Server 4.3 or newer.
+Older images will not work.
+====
+
+[IMPORTANT]
+====
+Containerized workflow not longer implicitly configure DHCP for PXE booting.
+See xref:specialized-guides:salt/salt-formula-dhcpd.adoc[] how to use DHCP formula to configure DHCP server.
+
+Without using DHCP formula, make sure your DHCP server has correct PXE booting setting pointing to containerized proxy.
+See below for example.
+====
+
+== Assumptions
+
+In this example we are going to use branch id [systemitem]``B0001``.
+
+As a terminal we assume to have one terminal with hardware manufacturer [systemitem]``TerminalOEM`` and model [systemitem]``T1000``.
+
+For POS image we assume to have one with name [systemitem]``POS_Image_JeOS7``.
+
+
+== Create required system groups
+
+Follow guide xref:reference:systems/system-groups.adoc[] to create the system groups:
+
+- [systemitem]``TERMINALS``
+- [systemitem]``HWType:TerminalOEM-T1000``
+- [systemitem]``B0001``
+
+First group is generic optional group for collecting all POS terminals. Second group is hardware type group for our POS terminal. Third group is mandatory branch group.
+
+For more information about saltboot groups, see xref:retail:retail-install-setup.adoc[].
+
+We assign [systemitem]``Saltboot Group`` formula to group [systemitem]``B0001`` we just created. With this, our branch group is converted to [systemitem]``Saltboot Group``.
+
+== Saltboot group
+
+Containerized {productname} {smr} is configured in [systemitem]``Saltboot Group``.
+
+Saltboot Groups are branch groups, system group with branch id as its name, with [systemitem]``Saltboot Group`` formula enabled.
+
+image::saltboot_group.png[scaledwidth=80%]
+
+[systemitem]``Saltboot Group`` formula is a successor of [systemitem]``Branch Network formula``, [systemitem]``PXE formula`` and [systemitem]``TFTP formula`` used in regular {productname} {smr} setups.
+
+Name of the [systemitem]``Saltboot group`` is automatically used as a [systemitem]``branch id``, an identifier for group of machines booted through particular containerized {productname} Proxy.
+
+All [systemitem]``saltboot`` deployed machines though containerized proxy will automatically became members of its [systemitem]``Saltboot group``.
+
+To connect [systemitem]``Saltboot group`` with containerized proxy fill [systemitem]``Image Download Server`` entry with Fully Qualified Domain Name ([literal]``FQDN``) of the containerized proxy.
+
+With this, mandatory configuration is finished. The rest of configuration is optional.
+
+=== Default boot image
+
+Configure [systemitem]``Default boot image for new registrations`` to specify what boot image should be booted by not yet registered POS terminal.
+This is useful when stable boot image is wanted for initial deployments.
+Without this setting, newest built boot image is used as default boot image.
+
+If [systemitem]``Default boot image for new registrations`` is set, option to set its version appears under name [systemitem]``Default boot image version`` where specific image version can be set.
+
+=== Kernel option for the saltboot group
+
+Option [systemitem]``Kernel parameters for the group`` can be used to pass extra kernel options to all POS terminals registered withing this saltboot group.
+
+=== Naming scheme for new registrations
+
+Last three options are related to how will be newly registered machine visible in {productname} Server.
+
+See xref:retail-terminal-names.adoc[] for explanation of possible configurations.
+
+== Comparing containerized and non-containerized workflows
+
+External DHCP service must be used with containerized Saltboot.
+
+For more information about how to enable PXE booting in DHCP service, see xref:retail:retail-install-setup.adoc[].
+
+Containerized workflow relies on updated image building in {productname} Server 4.3 where PXE images are no longer collected as bundle, but kernel, initrd and filesystem image are collected individually.
+
+Containerized workflow uses new TFTP container which instead of providing files present on the proxy, routes TFTP requests as HTTP requests through local proxy to {productname} Server.
+
+Containerized proxy is not a Salt client, it is not possible to call [systemitem]``image-sync`` state.
+
+[IMPORTANT]
+====
+Once POS image is build and made available on {productname} Server, it is immediately available to the Saltboot clients as well. Image synchronization is not needed, nor available.
+This may have implications on how images are deployed to production.
+====
+
+The following sections differentiate between containerized and regular workflow.
+Both are assuming proxy (containerized or in form of {productname} {smr} Branch Server) are available.
+
+Containerized workflow:
+
+. Build POS image
+. Configure DHCP server for PXE booting for given network
+. Create [systemitem]``Saltboot group`` and configure it for existing containerized proxy
+. Boot system to be deployed
+
+
+Non-Containerized workflow:
+
+. Build POS image
+. Configure and apply Retail formulas on {productname} {smr} Branch server
+. Apply [systemitem]``highstate`` state on the Branch server
+. Create [systemitem]``branch group`` with the name of Branch ID as set in retail formulas
+. Apply [systemitem]``image-sync`` state on configured {productname} {smr} Branch server
+. Boot system to be deployed
+
+== Validating saltboot group configuration
+
+[systemitem]``Containerized Saltboot`` utilizes [systemitem]``Cobbler`` system underneath for managing PXE and UEFI configuration.
+
+
+When new PXE image is built (such as {productname} {smr} POS_Image_JeOS images) [systemitem]``cobbler distro`` and [systemitem]``cobbler profile`` are automatically generated for this image.
+
+For example when first image [literal]``POS_Image_JeOS`` version [literal]``7.0.0`` is build under organization with number 1 cobbler list will show:
+
+----
+# cobbler list
+
+distros:
+   1-POS_Image_JeOS7-7.0.0-1
+
+profiles:
+   1-POS_Image_JeOS7-7.0.0-1
+----
+
+These entries contain information about kernel and initrd.
+These entries are however not yet available for PXE booting.
+
+Only when [systemitem]``Saltboot group`` is created, new cobbler profile is created for this [systemitem]``Saltboot group`` which points to [systemitem]``cobbler distro`` based on default boot image configuration.
+
+
+For example, when system group [literal]``B0001`` is created and [systemitem]``Saltboot group formula`` is assigned and configured for this group, new cobbler profile is created.
+
+----
+# cobbler list
+
+distros:
+   1-POS_Image_JeOS7-7.0.0-1
+
+profiles:
+   1-POS_Image_JeOS7-7.0.0-1
+   1-B0001
+----
+
+When inspecting this new group using command [command]``cobbler profile report --name 1-B0001`` details of this profile reveal configuration of this saltboot group.
+
+----
+# cobbler profile report --name 1-B0001
+
+Name                           : 1-B0001
+Comment                        : Saltboot group B0001 of organization SUSE default profile
+Distribution                   : 1-POS_Image_JeOS7-7.0.0-1
+Kernel Options                 : {'MASTER': ['downloadserver.example.org'], 'MINION_ID_PREFIX': ['B0001']}
+----
+
+Kernel options in example are always present and are internal for saltboot functionality.
+
+With this information [systemitem]``Cobbler`` is able to generate required PXE and UEFI Grub configurations which can be checked in [path]``/srv/tftpboot/pxelinux.cfg/default`` and [path]``/srv/tftpboot/grub/x86_64_menu_items.cfg``.
+
+These files contain the end result which will be used by PXE client when determining what to boot and with what parameters.
