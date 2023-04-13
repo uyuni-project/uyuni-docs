@@ -1,10 +1,10 @@
 [[auth-methods-sso-example]]
 = Example SSO Implementation
 
-In this example, SSO is implemented by exposing three endpoints with {productname}, and using Keycloak 9.0.2 or later as the identity service provider (IdP).
+In this example, SSO is implemented by exposing three endpoints with {productname}, and using Keycloak 21.0.1 or later as the identity service provider (IdP).
 
-Start by setting up the {productname} Server, and the Keycloak IdP.
-Then you can add the endpoints as clients, and create users.
+Start by installing the Keycloak IdP, then setting up the {productname} Server.
+Then you can add the endpoints as Keycloak clients, and create users.
 
 
 [WARNING]
@@ -15,29 +15,50 @@ For Keycloak support, see https://www.keycloak.org/.
 ====
 
 
+You can install Keycloak directly on your machine, or run it in a container.
+In this example, we run Keycloak in a Podman container.
+For more information about installing Keycloak, see the Keycloak documentation at https://www.keycloak.org/guides#getting-started.
+
+.Procedure: Setting Up the Identity Service Provider
+. Install Keycloak in a Podman container, according to the Keycloak documentation.
+. Run the container using the ``-td`` argument to ensure the process remains running:
++
+----
+podman run -td --name keycloak -p 8080:8080 -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin quay.io/keycloak/keycloak:21.0.1
+----
+. Sign in the Keycloak {webui} as the ``admin`` user, and create an authentication realm using these details:
++
+* In the ``Name`` field, enter a name for the realm.
+    For example, ``SUMA``.
+* In the ``Endpoints`` field, click the ``SAML 2.0 Identity Provider Metadata`` link.
+    This will lead you to a page where you will see the endpoints and certificate to copy into the {productname} configuration file.
+
+
+When you have installed Keycloak and created the realm, you can prepare the {productname} Server.
 
 .Procedure: Setting Up the {productname} Server
 . On the {productname} Server, open the [path]``/etc/rhn/rhn.conf`` configuration file and edit these parameters.
-    Replace ``<FQDN>`` with the fully qualified domain name of your {productname} installation:
+    Replace ``<FQDN_SUMA>`` with the fully qualified domain name of your {productname} installation:
 +
 ----
-java.sso.onelogin.saml2.sp.entityid = https://<FQDN>/rhn/manager/sso/metadata
-java.sso.onelogin.saml2.sp.assertion_consumer_service.url = https://<FQDN>/rhn/manager/sso/acs
-java.sso.onelogin.saml2.sp.single_logout_service.url = https://<FQDN>/rhn/manager/sso/sls
+java.sso.onelogin.saml2.sp.entityid                       = https://<FQDN_SUMA>/rhn/manager/sso/metadata
+java.sso.onelogin.saml2.sp.assertion_consumer_service.url = https://<FQDN_SUMA>/rhn/manager/sso/acs
+java.sso.onelogin.saml2.sp.single_logout_service.url      = https://<FQDN_SUMA>/rhn/manager/sso/sls
 ----
-. In the configuration file, determine the three endpoints to expose:
+. In the configuration file, replace ``<FQDN_IDP>`` with the fully qualified domain name of your Keycloak server.
+    Replace ``<REALM>`` with your authentication realm, for example ``SUMA``:
 +
 ----
-java.sso.onelogin.saml2.idp.entityid
-java.sso.onelogin.saml2.idp.single_sign_on_service.url
-java.sso.onelogin.saml2.idp.single_logout_service.url
+java.sso.onelogin.saml2.idp.entityid                   = http://<FQDN_IDP>:8080/realms/<REALM>
+java.sso.onelogin.saml2.idp.single_sign_on_service.url = http://<FQDN_IDP>:8080/realms/<REALM>/protocol/saml
+java.sso.onelogin.saml2.idp.single_logout_service.url  = http://<FQDN_IDP>:8080/realms/<REALM>/protocol/saml
 ----
 . In the IdP metadata, locate the public x509 certificate.
-    It uses this format: ``<IdP_URL>/auth/realms/<Your_Realm>/protocol/saml/descriptor``.
+    It uses this format: ``http://<FQDN_IDP>:8080/realms/<REALM>/protocol/saml/descriptor``.
     In the configuration file, specify the public x509 certificate of the IdP:
 +
 ----
-java.sso.onelogin.saml2.idp.x509cert
+java.sso.onelogin.saml2.idp.x509cert = -----BEGIN CERTIFICATE----- <CERTIFICATE>  -----END CERTIFICATE-----
 ----
 
 Here is an example of [path]``rhn.conf`` on {productname} after enabling SSO:
@@ -80,15 +101,15 @@ java.sso.onelogin.saml2.sp.assertion_consumer_service.url = https://sumaserver.e
 java.sso.onelogin.saml2.sp.single_logout_service.url = https://sumaserver.example.org/rhn/manager/sso/sls
 
 # Identifier of the IdP entity (must be a URI)
-java.sso.onelogin.saml2.idp.entityid = http://idp.example.org/auth/realms/SUMA
+java.sso.onelogin.saml2.idp.entityid = http://idp.example.org:8080/realms/SUMA
 
 # SSO endpoint info of the IdP. (Authentication Request protocol)
 # URL Target of the IdP where the SP will send the Authentication Request Message
-java.sso.onelogin.saml2.idp.single_sign_on_service.url = http://idp.example.org/auth/realms/SUMA/protocol/saml
+java.sso.onelogin.saml2.idp.single_sign_on_service.url = http://idp.example.org:8080/realms/SUMA/protocol/saml
 
 # SLO endpoint info of the IdP.
 # URL Location of the IdP where the SP will send the SLO Request
-java.sso.onelogin.saml2.idp.single_logout_service.url = http://idp.example.org/auth/realms/SUMA/protocol/saml
+java.sso.onelogin.saml2.idp.single_logout_service.url = http://idp.example.org:8080/realms/SUMA/protocol/saml
 
 # Public x509 certificate of the IdP
 java.sso.onelogin.saml2.idp.x509cert = -----BEGIN CERTIFICATE----- MIIClzCCAX8CBgGC+tPbVjANBgkqhkiG9w0BAQsFADAPMQ0wCwYDVQQDDARTVU1BMB4XDTIyMDkwMTIwNTEwNFoXDTMyMDkwMTIwNTI0NFowDzENMAsG
@@ -111,69 +132,46 @@ java.sso.onelogin.saml2.contacts.support.given_name = SUSE Manager admin
 java.sso.onelogin.saml2.contacts.support.email_address = suma@example.org
 ----
 
-When you have prepared the {productname} Server, you can install Keycloak.
-You can install Keycloak directly on your machine, or run it in a container.
-In this example, we run Keycloak in a Docker container.
-For more information about installing Keycloak, see the Keycloak documentation at https://www.keycloak.org/getting-started/getting-started-docker.
 
-
-
-.Procedure: Setting Up the Identity Service Provider
-. Install Keycloak in a Docker container, according to the Keycloak documentation.
-. Run the container using the ``-td`` argument to ensure the process remains running:
-+
-----
-docker run -td --name=idp -p 8080:8080 -e KEYCLOAK_USER=<user> -e KEYCLOAK_PASSWORD=<password> quay.io/keycloak/keycloak:9.0.2
-----
-. Sign in the Keycloak {webui} as a privileged user, and create a realm using these details:
-+
-* In the ``Name`` field, enter a name for the realm.
-    For example, ``SUMA``.
-* Toggle the ``Enabled`` switch to ``On``.
-* In the ``Endpoints`` field, click the ``SAML 2.0 Identity Provider Metadata`` link.
-  This will lead you to ``<IdP_URL>/auth/realms/<Realm_Name>/protocol/saml/descriptor``, where you will see the endpoints and certificate to copy into the {productname} configuration file.
-
-
-
-When you have Keycloak running and set up, you can add the endpoints.
+You can add the {productname} endpoints to Keycloak.
 Keycloak refers to endpoints as clients.
-
-
 
 .Procedure: Adding Endpoints as Clients
 . In the Keycloak {webui}, create a new client using these details:
 +
+* In the ``Client type`` field, select ``SAML``.
 * In the ``Client ID`` field, enter the endpoint specified in the server configuration file as ``java.sso.onelogin.saml2.idp.entityid``.
-    For example, ``https://<FQDN>/rhn/manager/sso/metadata``.
-* In the ``Client Protocol`` field, select ``SAML``.
-* Toggle the ``Include AuthnStatement`` switch to ``On``.
-* Toggle the ``Sign Assertions`` switch to ``On``.
-* In the ``Signature Algorithm`` field, select ``RSA_SHA1``.
+    For example, ``https://<FQDN_SUMA>/rhn/manager/sso/metadata``.
+. In the ``Settings`` tab, fine-tune the client using these details:
++
+* Toggle the ``Sign assertions`` switch to ``On``.
+* In the ``Signature algorithm`` field, select ``RSA_SHA1``.
 * In the ``SAML Signature Key Name`` field, select ``Key ID``.
-* In the ``Canonicalization Method`` field, select ``Exclusive``.
-. In the ``Fine Grain SAML Endpoint Configuration`` section, add the two endpoints using these details:
+. In the ``Keys`` tab:
++
+* Set ``Client signature required`` to ``Off``.
+. In the ``Advanced`` tab, in the ``Fine Grain SAML Endpoint Configuration`` section, add the two endpoints using these details:
 +
 * In both the ``Assertion Consumer Service`` fields, enter the endpoint specified in the server configuration file as ``java.sso.onelogin.saml2.sp.assertion_consumer_service.url``.
-    For example, ``https://<FQDN>/rhn/manager/sso/acs``.
+    For example, ``https://<FQDN_SUMA>/rhn/manager/sso/acs``.
 * In both the ``Logout Service`` fields, enter the endpoint specified in the server configuration file as ``java.sso.onelogin.saml2.sp.single_logout_service.url``.
-    For example, ``https://<FQDN>/rhn/manager/sso/sls``.
+    For example, ``https://<FQDN_SUMA>/rhn/manager/sso/sls``.
+
 
 When you have added the endpoints as clients, you can configure the client scope, and map the users between Keycloak and {productname}.
 
-
-
 .Procedure: Configuring Client Scope and Mappers
-. In the Keycloak {webui}, navigate to the menu:Clients[Client Scopes] tab and assign ``role_list`` as the default client scope.
-. Navigate to the menu:Clients[Mappers] tab and add a mapper for user attribute ``uid``, using the default values.
+. In the Keycloak {webui}, navigate to the menu:Clients[Client scopes] tab and assign ``role_list`` as the default client scope.
+. Navigate to the menu:Client_scopes[Mappers] tab and add a mapper for user attribute ``uid``, using the default values.
     This SAML attribute is expected by {productname}.
+. Navigate to the menu:Client_scopes[Mappers] and click on ``role_list`` mapper. Set ``Single Role Attribute`` to ``On``.
 . Navigate to the menu:Users[Admin] section and create an administrative user.
     This user does not need to match the {productname} administrative user.
-. Navigate to the menu:Users[Role Mappings] tab, add an attribute named ``uid`` with a value that matches the username of the {productname} administrative user.
+. Navigate to the menu:Users[Role mappings] tab, add an attribute named ``uid`` with a value that matches the username of the {productname} administrative user.
 . Navigate to the menu:Users[Credentials] tab, and set the same password as used by the {productname} administrative user.
 . Save your changes.
 
 
-
-When you have completed configuration, you can test that the installation is working as expected.
+When you have completed the configuration, you can test that the installation is working as expected.
 Restart the {productname} Server to pick up your changes, and navigate to the {productname} {webui}.
 If your installation is working correctly, you are redirected to the Keycloak SSO page, where you can authenticate successfully.
