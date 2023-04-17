@@ -1,0 +1,156 @@
+[[installation-server-containers]]
+= Install Containerized {productname} Server
+
+[NOTE]
+====
+
+ifeval::[{uyuni-content} == true]
+Only {opensuse} Leap 15.3 and newer are supported to be used as container host for {productname} Server containers.
+endif::[]
+
+ifeval::[{suma-content} == true]
+Only {sles} 15 SP3 and newer are supported to be used as container host for {productname} Server containers.
+endif::[]
+====
+
+[[installation-server-containers-requirements]]
+== Container Host Requirements
+
+
+[cols="1,1,1", options="header"]
+.Server Container Host Hardware Requirements
+|===
+
+| Hardware
+| Details
+| Recommendation
+
+| CPU
+|
+| Minimum 2 dedicated 64-bit CPU cores
+
+| RAM
+| Test Server
+| Minimum 8{nbsp}GB
+
+|
+| Production Server
+| Minimum 16{nbsp}GB
+
+| Disk Space
+|
+| Minimum 100{nbsp}GB
+
+|===
+
+[IMPORTANT]
+====
+To ensure that the {productname} domain name can be resolved by its clients, both container server and host machines must be connected to a working DNS server.
+You also need to ensure that reverse lookups are correctly configured.
+====
+
+
+
+[[installation-server-containers-services]]
+== Install Container Services on the host system
+
+{productname} Server containers are using [literal]``podman`` and [literal]``systemd`` to run and manage all server containers.
+
+First step is to install a base system with the container control files provided by the [package]``uyuni-server-systemd-services`` package.
+
+
+[[proc-installation-server-containers-services]]
+.Procedure: Installation Of Container Services For {productname} Server
+
+. As the base system, install openSUSE Leap with all available service packs and package updates applied.
+. Configure a resolvable fully qualified domain name (FQDN) with menu:yast[System > Network Settings > Hostname/DNS].
+. Set variables to use to create repository as [systemitem]``root``:
++
+----
+repo=repositories/systemsmanagement:/Uyuni:/Master:/ServerContainer/openSUSE_Leap_15.4/
+----
+. Add the repository for installing the {productname} Server software as [systemitem]``root``:
++
+----
+zypper ar https://download.opensuse.org/$repo systemsmanagement_Uyuni_Master_ServerContainer
+----
+. Refresh metadata from the repositories as [systemitem]``root``:
++
+----
+zypper ref
+----
+. Install the pattern for the {productname} Server as [systemitem]``root``:
++
+----
+zypper install uyuni-server-systemd-services
+----
+
+
+
+[[installation-server-containers-customize-config]]
+== Customize {productname} Server configuration
+
+{productname} Server containers require some volumes to be mounted for long term storage.
+Those volumes are automatically created by podman and can be listed using the [literal]``podman volume ls`` command.
+By default, [literal]``podman`` stores the files of the volumes in [path]``/var/lib/containers/storage/volumes``.
+The needed volumes are named:
+
+- [path]``cgroup``
+- [path]``pgsql``
+- [path]``var-cache``
+- [path]``var-spacewalk``
+- [path]``srv-salt``
+- [path]``srv-www-pub``
+- [path]``srv-www-cobbler``
+- [path]``srv-www-osimages``
+- [path]``tftpboot``
+- [path]``formulametadata``
+- [path]``pillar``
+- [path]``srv-susemanager``
+- [path]``srv-susemanager-salt``
+- [path]``srv-spacewalk``
+- [path]``etc-rhn``
+- [path]``etc-systemd``
+- [path]``var-log-rhn``
+- [path]``etc-salt``
+- [path]``apache2``
+- [path]``tomcat``
+- [path]``etc-tls``
+- [path]``ca-cert``
+- [path]``tls-key``
+- [path]``uyuni-config``
+- [path]``tomcat-monitoring``
+- [path]``taskomatic-monitoring``
+- [path]``etc-cobbler``
+- [path]``var-lib-cobbler``
+- [path]``etc-sysconfig``
+
+To override the default volume settings, create the volumes prior to the first start of the pod using the [literal]``podman volume create`` command.
+
+In the [path]``/etc/sysconfig/uyuni-server-systemd-services.config`` file it is possible to add custom arguments passed to podman container pod:
+
+- [literal]``EXTRA_POD_ARGS=''``
+
+In this file it is possible to modify the tag to use for the container images:
+
+- [literal]``TAG``=[path]``latest``
+
+
+[[installation-server-containers-firewall-rules]]
+== Allow network access for provided services on container host firewall
+
+{productname} Server containers work as so called node-port service. This means server container pod shares container host network TCP and UDP port space. For this reason container host firewall must be configured to accept incoming traffic on ports used by {productname} Server containers. Those ports are:
+
+- 69/UDP - TFTP
+- 80/TCP - HTTP
+- 443/TCP - HTTPS
+- 4505/TCP - Salt
+- 4506/TCP - Salt
+- 5432/TCP - PostgreSQL
+- 8022/TCP - SSH
+- 9100/TCP - Prometheus node exporter
+- 9187/TCP - Prometheus PostgreSQL exporter
+- 9800/TCP - Promethues Metrics Exporter
+- 25151/TCP - Cobbler
+
+Continue with setting up the installed {productname} server as a container at xref:server-container-setup.adoc[].

@@ -1,0 +1,109 @@
+[[server-container-setup]]
+= Containerized {productname} Server Setup
+
+== Setup
+=== Setup a new container with ``uyuni-tools``
+. Start the container, see xref:reference:cli-container.adoc[Start a container]
+
+
+=== Setup a new container with ``uyuni-server-systemd-services``
+When the container host for {productname} Server container is prepared, setup of the container requires a few additional steps to finish the configuration.
+
+[[proc-server-containers-setup]]
+==== Set {productname} Server parameters
+
+. In the host system, ``/etc/sysconfig/uyuni-server-systemd-services`` set 
++
+----
+MANAGER_USER
+MANAGER_PASS
+MANAGER_ADMIN_EMAIL
+CERT_O
+CERT_OU
+CERT_CITY
+CERT_STATE
+CERT_COUNTRY
+CERT_EMAIL
+CERT_PASS
+USE_EXISTING_CERTS
+MANAGER_DB_NAME
+MANAGER_DB_HOST
+MANAGER_DB_PORT
+MANAGER_DB_PROTOCOL
+MANAGER_ENABLE_TFTP
+SCC_USER
+SCC_PASS
+REPORT_DB_HOST
+REPORT_DB_PASS
+UYUNI_FQDN
+----
+
+. In the host system
++
+----
+systemctl start uyuni-server.service 
+----
+
+[IMPORTANT]
+====
+{productname} Server setup takes time. You can see the logs with [command]``journalctl -xeu uyuni-server.service``.
+You can also use `podman logs` using the same name.
+====
+
+[[migrate-server-uyuni]]
+== Migrate {productname} server to container
+
+Migrate a {productname} server installation means transfer all the functionality from a source server to a destination server that will host a productname} server container. 
+
+Prerequisites are:
+
+* ``UYUNI_FQDN`` in ``/etc/sysconfig/uyuni-server-systemd-services`` should be the same of the source address.
+* The destination server user should be able to `rsync` the source server without password. 
+* The destination server should provide a ssh-agent and the `SSH_AUTH_SOCK` should be set for the desired user.
+
+.Procedure: Enable passwordless `rsync` 
+[role=procedure]
+
+. In the destination server, add to `~/.ssh/config` :
++
+```
+Host host
+    Hostname $SOURCE_HOSTNAME
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+    Port 22
+    User $SOURCE_USER
+    IdentitiesOnly yes
+```
+If you already have a key, run:
++
+
+```
+ssh-copy-id host
+```
+If not, run `ssh-keygen` to generate it.
+If the source server user is not root,it should be able to run `rsync`. It can be done by adding to `/etc/sudoers`:
++
+```
+add to sudoers file
+$SOURCE_USER ALL=(ALL) NOPASSWD:/usr/bin/rsync
+```
+
+.Procedure: Provide an ssh agent and add key
+[role=procedure]
+
+. It can be done running in the destination server:
++
+```
+eval `ssh-agent`
+```
+. Then
++
+```
+ssh-add $KEY_PATH
+```
+
+=== Steps
+. Run migration, see xref:reference:cli-container.adoc[Migrate a container]
+. Start the container, see xref:reference:cli-container.adoc[Start a container]
+
