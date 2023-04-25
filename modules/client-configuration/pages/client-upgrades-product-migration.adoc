@@ -4,51 +4,45 @@
 Product migration allows you to upgrade SLE-based client systems from an Service Pack (SP) level to a later one.
 For example, you can migrate {sles}{nbsp}15{nbsp}SP1 to {sles}{nbsp}15{nbsp}SP2.
 
+Product migration is for upgrading within the same major version.
+You cannot use product migration to migrate from {sles}{nbsp}12 to {sles}{nbsp}15.
+For more information about major upgrades, see xref:client-configuration:client-upgrades-major.adoc[].
+
 You can also migrate openSUSE Leap to a later minor version or to the corresponding {sles} SP level, for example:
 
-* openSUSE Leap 15.1 to 15.2
-* openSUSE Leap 15.1 to {sles} 15 SP1
-* openSUSE Leap 15.4 to {sles} 15 SP4
+* openSUSE Leap 15.1 to 15.2, or
+* openSUSE Leap 15.1 to {sles} 15 SP1, or
 * openSUSE Leap 15.5 to {sles} 15 SP5
 
-[WARNING]
+
+In {sles}{nbsp}12 and later, {suse} supports service pack skipping if {scc} provides it.
+For example, you can upgrade from {sles}{nbsp}15 to SP2, without installing SP1.
+
+For supported {sles} upgrade paths, see https://documentation.suse.com/sles/15-SP4/html/SLES-all/cha-upgrade-paths.html#sec-upgrade-paths-supported.
+
+
+[NOTE]
 ====
 During migration, {productname} automatically accepts any required licenses (EULAs) before installation.
 ====
 
-In {sles}{nbsp}12 and later, {suse} supports service pack skipping if {scc} provides it.
-For example, you can upgrade from {sles}{nbsp}15 to SP2, without installing SP1.
-For supported {sles} upgrade paths, see https://documentation.suse.com/sles/15-SP3/html/SLES-all/cha-upgrade-paths.html#sec-upgrade-paths-supported.
 
 
-[IMPORTANT]
-====
-Product migration is for upgrading within the same major version.
-You cannot use product migration to migrate from {sles}{nbsp}12 to {sles}{nbsp}15.
-For more information about major upgrades, see xref:client-configuration:client-upgrades-major.adoc[].
-====
-
-
-[WARNING]
-====
-Product migration does not have a rollback feature.
-When the migration procedure has begun, rolling back is not possible.
-Ensure you have a working system backup available, in case of an emergency.
-====
-
-
-
-== Perform a Migration
+== Single System Migration
 
 Before starting the product migration:
+
 * Ensure there are no pending updates or patches.
   Check the [guimenu]``System Status`` on the client system's menu:Details[Overview] page, and install all offered updates or patches.
   If your client system is not up to date, product migration may fail.
 * Make sure all the channels of the target product are fully synchronized.
   To check the synchronization status in the {webui}, navigate to the menu:Admin[Setup Wizard > Products] page.
+* Ensure you have a working system backup available, in case of an emergency.
+  Product migration does not have a rollback feature.
+  When the migration procedure has begun, rolling back is not possible.
 
 
-.Procedure: Performing a Migration
+.Procedure: Performing a Single System Migration
 . From the menu:Systems[Overview] page, select a client.
 . From the system details page of the client, navigate to the menu:Software[Product Migration] tab.
 . Select the target migration path and click btn:[Select Channels].
@@ -68,26 +62,19 @@ To migrate openSUSE Leap to {sles}, you must check the [guimenu]``Allow Vendor C
 
 If you want to migrate a large number of clients to the next SP version, you can use {productname} API calls.
 
-
-[WARNING]
-====
-The product mass migration operation is dangerous.
-Be careful not to upgrade systems unintentionally.
-The process should be tested thoroughly.
-At least, do a dry-run first.
-====
-
 The [command]``spacecmd`` commandline tool provides a [systemitem]``system_scheduleproductmigration`` sub command, which can be used to schedule a migration for a large number of clients to the next minor version.
-
-To see syntax usage and options for [systemitem]``system_scheduleproductmigration``, run:
-
-----
-spacecmd system_scheduleproductmigration help
-----
 
 
 
 === Perform a Product Mass Migration
+
+[WARNING]
+====
+The product mass migration operation is dangerous and the process should be tested thoroughly.
+At least, do a dry-run first.
+
+Be careful not to upgrade systems unintentionally.
+====
 
 .Procedure: Performing a Product Mass Migration
 . List available migration targets, and take note of the system IDs you want to migrate:
@@ -99,9 +86,9 @@ spacecmd api -- system.listMigrationTargets -A 1000010001
 +
 * If the system ID has an available target, call [systemitem]``system.scheduleProductMigration``.
 * If the desired target is not available, skip the system.
-
-Adapt this template for your environment:
-
++
+. Adapt this template for your environment:
++
 ----
 target = '[....]'
 basechannel = 'channel-label'
@@ -118,61 +105,53 @@ endfor
 ----
 
 
-
-
-=== Product Mass Migration Example: SLES 15 SP2 to SLES 15 SP3
-
-////
-Adjust the following draft text
-////
+=== Example: SLES 15 SP2 to SLES 15 SP3
 
 For this example, a group will be created temporarily to facilitate the mass migration.
 
 .Procedure: Creating a Mass Product Migration Group
-
 . In the {productname} {webui}, navigate to menu:Systems[System Groups], and click btn:[Create Group].
 . Name the group [literal]``mpm-target-sles15sp3``.
-
-
-Only systems subscribed to the same base channel should be added to the created group.
-In the example, only systems subscribed to [literal]``SLE-Product-SLES15-SP2-Pool for x86_64`` were added to the group.
-
-
-[NOTE]
-====
-Any systems that you are not intending to upgrade at this time, should be removed from the group.
-====
-
-
-.Procedure: Adding Systems to the Group
-
-. For more information about adding clients to groups, see xref:client-configuration:system-groups.adoc#_add_clients_to_groups[].
++
+* Only systems subscribed to the same base channel should be added to the created group.
+  In the example, only systems subscribed to [literal]``SLE-Product-SLES15-SP2-Pool for x86_64`` should be added to the group.
++
+For more information about adding clients to groups, see xref:client-configuration:system-groups.adoc#_add_clients_to_groups[].
 
 ////
 Note or warning about taking normal precautions (backups, make sure fully patched, etc)
 ////
 
-[IMPORTANT]
-====
-The [command]``spacecmd`` sub-commands [literal]``system_scheduleproductmigration`` and [command]``system_listmigrationtargets`` are looping over all systems that are part of the group.
-If there are 100 systems in the group, you will see 100 actions scheduled.
-It is important that all systems in the group support the same "migration target."
-
-You will get the targets for all the systems in the group, when you run:
-
+.Procedure: Adding Systems to the Group
+. Get the targets for all the systems in the group by running:
++
 ----
 spacecmd -- system_listmigrationtargets group:mpm-target-sles15sp3
 ----
++
+. The command output a string of "IDs."
+  * Only select a target, which is reported for *all* systems.
+  * The string is the identifier for the [literal]``MIGRATIONTARGET`` of the other command.
++
+[IMPORTANT]
+====
+The [command]``spacecmd`` sub-commands [literal]``system_scheduleproductmigration`` and [command]``system_listmigrationtargets`` are looping over all systems that are part of the group.
 
-Only select a target, which is reported for *all* systems.
-This command output a string of "IDs."
-The string is the identifier for the [literal]``MIGRATIONTARGET`` of the other command.
+If there are 100 systems in the group, you will see 100 actions scheduled.
+
+All systems in the group must support the same migration target.
 ====
 
 
 
 .Procedure: Running the Mass Migration Command
 
+. The syntax for the [command]``system_scheduleproductmigration`` command is as follows:
++
+----
+spacecmd -- system_scheduleproductmigration <SYSTEM> <BASE_CHANNEL_LABEL> \
+    <MIGRATION_TARGET> [options]
+----
 . For this example to upgrade all systems in the group [literal]``mpm-target-sles15sp3`` from SLES 12 SP2 to SLES 15 SP, enter on the command line:
 +
 ----
@@ -180,17 +159,14 @@ spacecmd -- system_scheduleproductmigration group:mpm-target-sles15sp3 \
     sle-product-sles15-sp3-pool-x86_64 "[190,203,195,1242]" -d
 ----
 
-The syntax for the [command]``system_scheduleproductmigration`` command is as follows:
+
+==== Mandatory Syntax Explained
+
+To see syntax usage and options for [command]``system_scheduleproductmigration``, run:
+
 ----
-spacecmd -- system_scheduleproductmigration <SYSTEM> <BASE_CHANNEL_LABEL> \
-    <MIGRATION_TARGET> [options]
+spacecmd system_scheduleproductmigration help
 ----
-
-For more information, see [command]``spacecmd -- system_scheduleproductmigration help``.
-
-
-
-=== Mandatory Syntax
 
 <SYSTEM>::
 For this example we will use the group we created to select all of the systems from that group:
@@ -225,22 +201,25 @@ The [literal]``MIGRATION_TARGET`` parameter must be passed in the following form
 ----
 
 Options::
-+
-. -s START_TIME
-. -d pass this flag, if you want to do a dry run (it is recommended to run a dry run before the actual migration)
-. -c CHILD_CHANNELS (comma-separated child channels labels (with no spaces))
+
+* [literal]``-s`` START_TIME
+* [literal]``-d`` pass this flag, if you want to do a dry run (it is recommended to run a dry run before the actual migration)
+* [literal]``-c`` CHILD_CHANNELS (comma-separated child channels labels with no spaces)
 +
 In this case we included the [literal]``-d`` option, which can be removed after a successful dry run.
 
-If successful, you will see the command output with the following for each scheduled system:
+If successful, the command output for each scheduled system will look like this:
 
-. Scheduling Product migration for system mpm-sles152-1
-. Scheduled action ID: 66
+----
+Scheduling Product migration for system mpm-sles152-1
+Scheduled action ID: 66
+----
 
 You can also track the action, in this case the dry run, in the {webui} for a given system in the group.
 From the system details page of the client, Navigate to menu:Events[History].
 If there are any failures during the dry run, the system should be investigated.
 
 If all is well, the [literal]``-d`` option can be removed from the command to run the real migration.
+
 After the migration is complete, you can reboot the system from the {productname} {webui}.
 
