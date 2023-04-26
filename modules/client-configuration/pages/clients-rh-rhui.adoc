@@ -64,7 +64,7 @@ Clients using Satellite certificates are not supported with {productname} Server
 ====
 
 
-The entitlement certificates and keys need to be copied from the client system to a location that the {productname} Server can access.
+The entitlement certificates and keys need to be copied from the client system to a location that your web browser can access.
 
 The keys and certificates might have slightly different names to those shown here.
 Your entitlement certificate and the {redhat} CA Certificate file have file extensions of [path]``.crt``.
@@ -73,24 +73,24 @@ The key has a file extension of [path]``.key``.
 
 
 .Procedure: Copying Certificates to the Server
-. Copy your entitlement certificate and key from the client system, to a location that the {productname} Server can access:
+. Copy your entitlement certificate and key from the client system, to your workstation:
 +
-Amazon EC2:
+Amazon EC2::
 +
 ----
 cp /etc/pki/rhui/product/content-<version>.crt /<example>/entitlement/
 cp /etc/pki/rhui/content-<version>.key /<example>/entitlement/
 ----
 +
-Azure:
+Azure::
 +
-* Check the certificate chain using the command:
+. Check the certificate chain using the command:
 +
 ----
 openssl s_client -connect rhui-1.microsoft.com:443 -showcerts
 ----
 +
-* A sample output will look like the following:
+A sample output will look like the following:
 +
 ----
 CONNECTED(00000003)
@@ -101,17 +101,20 @@ verify return:1
 depth=0 C = US, ST = WA, L = Redmond, O = Microsoft Corporation, CN = rhui-1.microsoft.com
 verify return+
 ----
-* Check the second certificate ([literal]``CN = Microsoft Azure``), if it is the same on your VM, note the certificate name.
++
+. Check the second certificate ([literal]``CN = Microsoft Azure``), if it is the same on your VM, note the certificate name.
 Refer to the https://docs.microsoft.com/en-us/azure/active-directory/fundamentals/certificate-authorities to download the certificate.
-Click the AIA link to download the certificate.
-The certificate will be downloaded with the [literal]``.cer`` suffix.
-Convert it to [literal]``.crt`` with the command:
++
+. Click the AIA link to download the certificate.
+  The certificate will be downloaded with the [literal]``.cer`` suffix.
++
+. Convert it to [literal]``.crt`` with the command:
 +
 ----
 openssl x509 -inform DER -in <example.cer> -out <example.crt>
 ----
 +
-Google Cloud Platform:
+Google Cloud Platform::
 +
 ----
 cp /etc/pki/rhui/product/content.crt /<example>/entitlement/
@@ -120,17 +123,17 @@ cp /etc/pki/rhui/key.pem /<example>/entitlement/
 +
 . Copy the {redhat} CA Certificate file from the client system, to the same location as the entitlement certificate and key:
 +
-Amazon EC2:
+Amazon EC2::
 +
 ----
 cp /etc/pki/rhui/cdn.redhat.com-chain.crt /<example>/entitlement
 ----
 +
-Azure:
+Azure::
 +
 * Upload the converted certifcate to /<example>/entitlement
 +
-Google Cloud Platform:
+Google Cloud Platform::
 +
 ----
 cp /etc/pki/rhui/ca.crt /<example>/entitlement
@@ -138,7 +141,8 @@ cp /etc/pki/rhui/ca.crt /<example>/entitlement
 
 
 To manage repositories on your {redhat} client, you need to import the CA and entitlement certificates to the {productname} Server.
-This requires that you perform the import procedure three times, to create three entries: one each for the entitlement certificate, the entitlement key, and the {redhat} certificate.
+
+This requires that you perform the import procedure three times, to create three entries, one of each for the entitlement certificate, the entitlement key, and the {redhat} certificate.
 
 
 
@@ -188,21 +192,11 @@ The products you need for this procedure are:
 .Red Hat Products - WebUI
 |===
 
+// SUSE Liberty Linux not available at Uyuni for now
 | OS Version | Product Name
-| {redhat} 7 | RHEL7 Base x86_64
-// SUSE Liberty Linux not available at Uyuni for now
-
-ifeval::[{suma-content} == true]
-| {redhat} 8 | RHEL or SLES ES or CentOS 8 Base
 | {redhat} 9 | RHEL and Liberty 9 Base
-endif::[]
-
-// SUSE Liberty Linux not available at Uyuni for now
-
-ifeval::[{uyuni-content} == true]
-| {redhat} 8 | RHEL or CentOS 8 Base
-| {redhat} 9 | RHEL
-endif::[]
+| {redhat} 8 | RHEL or SLES ES or CentOS 8 Base
+| {redhat} 7 | RHEL7 Base x86_64
 
 |===
 
@@ -226,20 +220,20 @@ The channels you need for this procedure are:
 | Client Channel
 | Tools Channel
 
-| {redhat} 7
-| rhel-x86_64-server-7
+| {redhat} 9
+| el9-pool-x86_64
 | -
-| res7-suse-manager-tools-x86_64
+| el9-manager-tools-pool-x86_64, el9-manager-tools-updates-x86_64
 
 | {redhat} 8
 | rhel8-pool-x86_64
 | -
 | res8-manager-tools-pool-x86_64
 
-| {redhat} 9
-| el9-pool-x86_64
+| {redhat} 7
+| rhel-x86_64-server-7
 | -
-| el9-manager-tools-pool-x86_64, el9-manager-tools-updates-x86_64
+| res7-suse-manager-tools-x86_64
 
 |===
 
@@ -283,14 +277,19 @@ X-RHUI-ID=<value>
 X-RHUI-SIGNATURE=<value>
 ----
 +
-  Replace [literal]``<channel_label_X>`` above with channel names such as [literal]``rhel8-baseos-repo``:
+. Replace [literal]``<channel_label_X>`` above with the names of the custom channels you are planning to create (see next section):
 +
 ----
 [rhel8-baseos-repo]
 X-RHUI-ID=...
 X-RHUI-SIGNATURE=...
 ----
-
++
+[NOTE]
+====
+{rhel} may renew these headers at any point in time. 
+In such a case, repeat the procedure to get the new HTTP headers in place.
+====
 
 
 == Prepare Custom Repositories and Channels
@@ -339,20 +338,22 @@ The channels you need for this procedure are:
 .Red Hat Custom Channels
 |===
 
+// SUSE Liberty Linux not available at Uyuni for now
 | OS Version | Base Product          | Base Channel
-| {redhat} 7 | RHEL7 Base x86_64 | rhel7-pool-x86_64
-// SUSE Liberty Linux not available at Uyuni for now
-
 ifeval::[{suma-content} == true]
-| {redhat} 8 | RHEL or SLES ES or CentOS 8 Base | rhel8-pool-x86_64
 | {redhat} 9 | RHEL and Liberty 9 Base | el9-pool-x86_64
+| {redhat} 8 | RHEL or SLES ES or CentOS 8 Base | rhel8-pool-x86_64
 endif::[]
-// SUSE Liberty Linux not available at Uyuni for now
 
+// SUSE Liberty Linux not available at Uyuni for now
 ifeval::[{uyuni-content} == true]
-| {redhat} 8 | RHEL or CentOS 8 Base | rhel8-pool-x86_64
 | {redhat} 9 | RHEL | el9-pool-x86_64
+| {redhat} 8 | RHEL or CentOS 8 Base | rhel8-pool-x86_64
 endif::[]
+
+// SUSE Liberty Linux not available at Uyuni for now
+| {redhat} 7 | RHEL7 Base x86_64 | rhel7-pool-x86_64
+
 |===
 
 
