@@ -11,7 +11,8 @@ The goal of the connection is to extract authentication data so {productname} se
 
 Before using {payg} feature make sure that: 
 
-* {productname} server is deployed in the same region as the {payg} instance
+* the {payg} instance is launched from the correct SUSE product image (e.g. SLES, SLES for SAP, SLE HPC) to allow access to the desired repositories
+* {productname} server has connectivity to the {payg} instance (ideally in the same region) either directly or via a bastion
 * valid {scc} credentials are entered in menu:Admin[Setup Wizard > Organization Credentials], even they provide only limited access to products
 
 
@@ -101,7 +102,7 @@ The following procedure describes how to delete SSH connection data of the insta
 {productname} server uses credentails collected from the instance to connect to the RMT server and to download the packages using reposync.
 These credentials are refreshed every 10 minutes by taskomatic using the defined SSH connection data. Connection to RMT server always uses the last known authentication credentials collected from the {payg} instance.
 
-Up-to date status of the {payg} instance credentials collect is shown in the column Status or on the instance details page.
+The status of the {payg} instance credentials collect is shown in the column [literal]``Status`` or on the instance details page.
 When the instance is not reachable, the credential update process will fail.
 
 {payg} instance remains connected to {productname} server unless SSH connection data is explicitly deleted.
@@ -110,10 +111,10 @@ To delete the SSH connection data to the instance, use <<proc-deleting-connectio
 
 {payg} instance may not be accessible from the {productname} server at all times.
 
-. If the instance exists, but is stopped, the last known credentials will be used to try to connect to the instance. 
+* If the instance exists, but is stopped, the last known credentials will be used to try to connect to the instance. 
     How long the credentials remain valid depends on the cloud provider.
 
-. If the instance no longer exists, but is still registered with SUMA, its credentials are no longer valid and the authentication will fail.
+* If the instance no longer exists, but is still registered with SUMA, its credentials are no longer valid and the authentication will fail.
     The error message is shown in the column Status. 
 +
 [WARNING]
@@ -121,3 +122,36 @@ To delete the SSH connection data to the instance, use <<proc-deleting-connectio
 The error message only indicates that the instance is not available. 
 Further diagnostics about the status of the instance needs to be done on the cloud provider. 
 ====
+
+
+== Registering {payg} system as a client
+
+You can register a {payg} instance from where you harvest the credentials as a {salt} client.
+The instance needs to have a valid cloud connection registered, otherwise it will not have access to channels.
+If the user removes the cloud packages, the credentials harvesting may stop working.
+
+First set up the {payg} instance to collect authentication data, so it can synchronize the channels.
+
+The rest of the process is the same as for any non-public-cloud client and consists of synchronizing channels, automatic bootstrap script creation, activation key creation and starting the registration.
+
+For more about registering clients, see xref:client-configuration:registration-overview.adoc[].
+
+
+[IMPORTANT]
+====
+Any of the following actions or changes in the {payg} instance will lead to credentials stopping to work:
+* removing zypper credentials files
+* removing the imported certificates
+* removing cloud-specific entries from [path]``/etc/hosts``
+====
+
+
+== Troubleshooting 
+
+Checking the credentials::
+* If the script fails to collect the credentials, it should provide a proper error message in the logs and in the {webui}.
+* If the credentials are not working, [literal]``reposync`` should show the proper error.
+
+Using [literal]``registercloudguest``::
+* Refreshing or changing the [literal]``registercloudguest`` connection to the public cloud update infrastructure should not interfere with the credentials usage.
+* Running [literal]```registercloudguest --clean`` will cause problems if no new cloud connection is registered with the cloud guest command.
