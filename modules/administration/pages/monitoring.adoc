@@ -99,7 +99,7 @@ The Prometheus software is also available for {productname} Proxy and {productna
 ====
 Prometheus expects POSIX filesystem for storing data.
 Non-POSIX compliant filesystems are not supported.
-NFS filesystems are explicitly not supported.
+NFS filesystems are not supported.
 ====
 
 .Procedure: Installing Prometheus Using the {webui}
@@ -152,9 +152,34 @@ scrape_configs:
 # Managed systems metrics:
 - job_name: 'mgr-clients'
   uyuni_sd_configs:
-   - host: "http://server.url"
+   - server: "http://server.url"
      username: "admin"
      password: "admin"
+  relabel_configs:
+   - source_labels: [__meta_uyuni_exporter]
+     target_label: exporter
+   - source_labels: [__address__]
+     replacement: "No group"
+     target_label: groups
+   - source_labels: [__meta_uyuni_groups]
+     regex: (.+)
+     target_label: groups
+   - source_labels: [__meta_uyuni_minion_hostname]
+     target_label: hostname
+   - source_labels: [__meta_uyuni_primary_fqdn]
+     regex: (.+)
+     target_label: hostname
+   - source_labels: [hostname, __address__]
+     regex: (.*);.*:(.*)
+     replacement: ${1}:${2}
+     target_label: __address__
+   - source_labels: [__meta_uyuni_metrics_path]
+     regex: (.+)
+     target_label: __metrics_path__
+   - source_labels: [__meta_uyuni_proxy_module]
+     target_label: __param_module
+   - source_labels: [__meta_uyuni_scheme]
+     target_label: __scheme__
 ----
 . Save the configuration file.
 . Restart the Prometheus service:
@@ -163,7 +188,7 @@ scrape_configs:
 systemctl restart prometheus
 ----
 
-For more information about the Prometheus configuration options, see the official Prometheus documentation at https://prometheus.io/docs/prometheus/latest/configuration/configuration/
+For more information about the Prometheus configuration options, see the official Prometheus documentation at https://prometheus.io/docs/prometheus/latest/configuration/configuration/.
 
 
 
@@ -194,8 +219,6 @@ Grafana is not available on {productname} Proxy.
 You can choose which dashboards to provision in the formula configuration page.
 ====
 
-For more information about the monitoring formulas, see xref:specialized-guides:salt/salt-formula-monitoring.adoc[].
-
 
 .Procedure: Manually Installing Grafana
 
@@ -209,16 +232,31 @@ zypper in grafana
 ----
 systemctl enable --now grafana-server
 ----
-. Check that the Grafana interface is loading correctly.
-    In your browser, navigate to the URL of the server where Grafana is installed, on port 3000 (for example, [literal]``http://example.com:3000``).
+. In your browser, navigate to the URL of the server where Grafana is installed, on port 3000 (for example, [literal]``http://example.com:3000``).
+. On the login page, enter ``admin`` for username and password.
+. Click btn:[Log in]. 
+    If login is successful, then you will see a prompt to change the password.
+. Click btn:[OK] on the prompt, then change your password.
+. Move your cursor to the cog icon on the side menu which will show the configuration options.
++
+image::grafana_sidemenu_datasource.png[scaledwidth=40%]
 
+. Click btn:[Data sources].
+. Click btn:[Add data source] to see a list of all supported data sources.
+. Choose the Prometheus data source.
+. Make sure to specify the correct URL of the Prometheus server.
+. Click btn:[Save & test].
+. To import a dashboard click the btn:[+] icon in the side menu, and then click btn:[Import].
+. For {productname} server overview load the dashboard ID: ``17569``.
+. For {productname} clients overview load the dashboard ID: ``17570``.
++
 image::monitoring_grafana_example.png[scaledwidth=80%]
 
-For more information on how to manually install and configure Grafana, see https://grafana.com/docs.
-
-For more information about the monitoring formulas with forms, see xref:specialized-guides:salt/salt-formula-monitoring.adoc[].
-
-
+[NOTE]
+====
+. For more information about the monitoring formulas, see xref:specialized-guides:salt/salt-formula-monitoring.adoc[].
+. For more information on how to manually install and configure Grafana, see https://grafana.com/docs.
+====
 
 == Configure {productname} Monitoring
 
@@ -271,7 +309,29 @@ Metrics for a proxy are not automatically collected by Prometheus.
 To enable self-health monitoring on a proxy, you need to manually install exporters and enable them.
 ====
 
-Following relevant metrics are collected on the {productname} Server.
+The following relevant metrics are collected on the {productname} Server.
+
+.Server statistics (port 80)
+[cols="45,10,45"]
+|===
+|Metric |Type | Description
+
+|uyuni_all_systems
+|gauge
+|Number of all systems
+
+|uyuni_virtual_systems
+|gauge
+|Number of virtual systems
+
+|uyuni_inactive_systems
+|gauge
+|Number of inactive systems
+
+|uyuni_outdated_systems
+|gauge
+|Number of systems with outdated packages
+|===
 
 .PostgreSQL exporter (port 9187)
 [cols="45,10,45"]

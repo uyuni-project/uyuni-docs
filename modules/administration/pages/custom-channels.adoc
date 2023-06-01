@@ -69,7 +69,16 @@ Disabling the GPG check is a security risk if packages are from an untrusted sou
 
 [NOTE]
 ====
+
+// SUSE Liberty Linux not available at Uyuni for now
+ifeval::[{suma-content} == true]
 If you are registering traditional {rhel}{nbsp}7 or SLES {es}{nbsp}7 clients you might notice errors with unsigned packages.
+endif::[]
+
+// SUSE Liberty Linux not available at Uyuni for now
+ifeval::[{uyuni-content} == true]
+If you are registering traditional {rhel}{nbsp}7 clients you might notice errors with unsigned packages.
+endif::[]
 For more information, see xref:administration:troubleshooting/tshoot-registertradrhel.adoc[].
 ====
 
@@ -179,15 +188,39 @@ For each pair of ``suite`` and ``component`` the spezification defines a distinc
 .Procedure: Assigning the Repository to a Channel
 . Assign your new repository to your custom channel by navigating to menu:Software[Manage > Channels], clicking the name of your newly created custom channel, and navigating to the [guimenu]``Repositories`` tab.
 . Ensure the repository you want to assign to the channel is checked, and click btn:[Update Repositories].
-. Navigate to the [guimenu]``Sync`` tab and click btn:[Sync Now] to synchronize immediately.
+. By default, the synchronization process starts immediately. For more information about channel synchronization, see below.
 
-[NOTE]
-====
-You can also set an automated synchronization schedule on this [guimenu]``Repositories`` tab.
-To avoid missing important updates {suse} recommends to configure a [guimenu]``Schedule`` to synchronize regularly.
-====
 
-There are several ways to check if a channel has finished synchronizing:
+
+.Procedure: Adding Custom Channels to an Activation Key
+. In the {productname} {webui}, navigate to menu:Systems[Activation Keys], and select the key you want to add the custom channel to.
+. On the [guiemnu]``Details`` tab, in the [guimenu]``Child Channels`` listing, select the channel to associate.
+    You can select multiple channels, if you need to.
+. Click btn:[Update Activation Key].
+
+
+
+== Custom channel synchronization
+
+To avoid missing important updates, {suse} recommends to keep your custom channels up to date with the remote repositories changes.
+
+By default, a synchronization will happen automatically for all custom channels you create. In particular, it will happen:
+
+* after adding a repository to a channel from the UI or by using [command]``spacewalk-common-channels``
+* as part of the daily task ``mgr-sync-refresh-default``, which will synchronize all your custom and vendor channels.
+
+To disable this default behaviour, set in [path]``/etc/rhn/rhn.conf``:
+
+----
+java.unify_custom_channel_management = 0
+----
+
+With this property turned off, no synchronization is performed automatically and, in order to keep a custom channel up to date, you need to:
+
+* synchronize it manually by navigating to the [guimenu]``Sync`` tab and click btn:[Sync Now],
+* set up an automated synchronization schedule from the [guimenu]``Repositories`` tab.
+
+When the process is started, there are several ways to check if a channel has finished synchronizing:
 
 * In the {productname} {webui}, navigate to menu:Admin[Setup Wizard] and select the [guimenu]``Products`` tab.
     This dialog displays a completion bar for each product when they are being synchronized.
@@ -202,14 +235,6 @@ tail -f /var/log/rhn/reposync/<channel-label>.log
 +
 Each child channel generates its own log during the synchronization progress.
 You need to check all the base and child channel log files to be sure that the synchronization is complete.
-
-
-
-.Procedure: Adding Custom Channels to an Activation Key
-. In the {productname} {webui}, navigate to menu:Systems[Activation Keys], and select the key you want to add the custom channel to.
-. On the [guiemnu]``Details`` tab, in the [guimenu]``Child Channels`` listing, select the channel to associate.
-    You can select multiple channels, if you need to.
-. Click btn:[Update Activation Key].
 
 
 

@@ -23,18 +23,8 @@ Transactional updates are atomic (all updates are applied only if all updates su
 They do not affect a running system as no changes are activated until after the system is rebooted.
 This information is displayed in the menu:Systems[Details > Overview] subtab.
 
-For more information on transactional updates, see https://documentation.suse.com/sles/15-SP3/html/SLES-all/cha-transactional-updates.html
-
-[WARNING]
-====
-When you install from a DVD or ISO image, [package]``salt-transactional-update`` and the dependencies such as Salt and [package]``python3`` are not installed.
-These packages are required to register a {micro} client to {productname}.
-On the client, before registering it, run as [literal]``root``:
-
-----
-transactional-update pkg install salt-transactional-update
-----
-====
+For more information on transactional updates and rebooting, see
+https://documentation.suse.com/sles/html/SLES-all/cha-transactional-updates.html.
 
 
 
@@ -44,7 +34,6 @@ Before you register {micro} clients to your {productname} Server, you need to ad
 
 include::snippets/arch-other-note.adoc[]
 
-ifeval::[{suma-content} == true]
 The products you need for this procedure are:
 
 [[slemicro-channels-wizard]]
@@ -105,8 +94,8 @@ The channels you need for this procedure are:
 | suse-microos-5.1-updates-x86_64
 
 | {micro} 5.1 {arm64}
-| suse-microos-5.1-pool-arm64
-| suse-microos-5.1-updates-arm64
+| suse-microos-5.1-pool-aarch64
+| suse-microos-5.1-updates-aarch64
 
 | {micro} 5.1 {zsystems} ({s390x})
 | suse-microos-5.1-pool-s390x
@@ -140,6 +129,33 @@ The channels you need for this procedure are:
 
 include::snippets/addchannels_vendor_cli.adoc[]
 
+ifeval::[{uyuni-content} == true]
+
+To add the client tools, add these channels from the command prompt:
+
+[[sle-micro-tools-channels-cli]]
+[cols="1,1", options="header"]
+.SLE Micro Channels - CLI
+|===
+
+| OS Version
+| Client Channel
+
+| {micro} 5.1
+| suse-microos-5.1-uyuni-client
+
+| {micro} 5.2
+| suse-microos-5.2-uyuni-client
+
+| {micro} 5.3
+| sle-micro-5.3-uyuni-client
+
+|===
+
+
+include::snippets/addchannels_novendor_cli.adoc[]
+
+
 endif::[]
 
 
@@ -164,4 +180,55 @@ include::snippets/check_sync_cli.adoc[]
 
 == Register Clients
 
+[WARNING]
+====
+SLE Micro clients require reboot after registering.
+Reboot is automatically scheduled after registration is completed, but it is respecting the default reboot manager maintenance window.
+This window may be several hours after the client is registered.
+To speed up {micro} registration, manually reboot the client after the registration script finishes.
+====
+
+To register your {micro} clients, you need a bootstrap repository.
+By default, bootstrap repositories are automatically created, and regenerated daily for all synchronized products.
+You can manually create the bootstrap repository from the command prompt, using this command:
+
+----
+mgr-create-bootstrap-repo
+----
+
 For more information on registering your clients, see xref:client-configuration:registration-overview.adoc[].
+
+
+
+[[clients-slemicro-reboot]]
+== Reboot {micro}
+
+{micro} is a transactional system.
+Transactional updates in general support several reboot methods.
+It is recommended to use [systemitem]``systemd`` for rebooting in systems managed by {productname}.
+Using other methods can lead to undesired behavior.
+
+When bootstrapping a transactional system on {productname}, [systemitem]``systemd`` will be configured as the reboot method ([literal]``REBOOT_METHOD``), if the system is in its default configuration.
+Such a configuration allows {productname} to control the reboot action, and rebooting can be performed immediately or scheduled with {productname} as wanted.
+
+
+=== Background Information
+
+By default, the reboot method during client installation is set to [option]``auto``.
+With the [option]``auto`` boot method, [command]``rebootmgrd`` will be used to reboot the system according to the configured policies if the service is running.
+Policies can be to reboot instantly or during a maintenance window.
+For more information, see the [command]``rebootmgrd``(8) man page.
+Otherwise if [command]``rebootmgrd`` is not running, {productname} will call [command]``systemctl reboot``.
+
+[[NOTE]]
+====
+Using any method different from [command]``systemd`` may cause undesired behavior.
+====
+
+// 2023-05-23, ke: The rest is commented and the user will not see the
+//                 following remarks/background info:
+////
+Otherwise, the only thing Suma will be able to do is to ask for a reboot and it will be managed in the peculiarities of each reboot method. Not having control of when the reboot should happen, also takes away from Suma the ability to perform the reboot on its own maintenance windows, which is not the ideal configuration.
+
+The user must be able to change reboot method at any time and SUSE Manager will keep it. But in this case we should alert in the documentation that using any method different from systemd may cause undesired behavior.
+////

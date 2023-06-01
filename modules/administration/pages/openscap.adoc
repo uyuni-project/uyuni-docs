@@ -127,7 +127,7 @@ dpkg -L <scap-security-guide-package-name-from-table>
 When you have identified one SCAP content file that suits your needs, list profiles available on the client:
 
 ----
-oscap info ./usr/share/xml/scap/ssg/content/ssg-sle15-ds-1.2.xml
+oscap info /usr/share/xml/scap/ssg/content/ssg-sle15-ds-1.2.xml
 Document type: Source Data Stream
 Imported: 2021-03-24T18:14:45
 
@@ -177,16 +177,23 @@ You can also use the {productname} API to schedule regular scans.
 . Navigate to the [guimenu]``Audit`` tab, and the [guimenu]``Schedule`` subtab.
 . In the [guimenu]``Path to XCCDF Document`` field, enter the parameters for the SCAP template and profile you want to use on the client.
   For example:
++
 ----
   Command: /usr/bin/oscap xccdf eval
-  Command-line arguments: --profile xccdf_org.ssgproject.content_profile_standard
+  Command-line arguments: --profile xccdf_org.ssgproject.content_profile_stig
   Path to XCCDF document: /usr/share/xml/scap/ssg/content/ssg-sle15-ds-1.2.xml
 ----
-
++
+[NOTE]
+====
+If you use [literal]``--fetch-remote-resources`` parameter a lot of RAM is required.
+In addition, you may need to increase the value of [literal]``file_recv_max_size``.
+====
++
 . The scan runs at the client's next scheduled synchronization.
 
 
-[[IMPORTANT]]
+[IMPORTANT]
 ====
 The XCCDF content file is validated before it is run on the remote system.
 If the content file includes invalid arguments, the test fails.
@@ -199,8 +206,8 @@ If the content file includes invalid arguments, the test fails.
   For example:
 +
 ----
-#!/usr/bin/python
-client = xmlrpclib.Server('https://server.example.com/rpc/api')
+#!/usr/bin/python3
+client = xmlrpc.client.ServerProxy('https://server.example.com/rpc/api')
 key = client.auth.login('username', 'password')
 client.system.scap.scheduleXccdfScan(key, <1000010001>,
     '<path_to_xccdf_file.xml>',
@@ -247,7 +254,7 @@ spacewalk-report scap-scan-results
 You can also use the {productname} API to view results, with the ``system.scap`` handler.
 
 
-
+[[remediation]]
 == Remediation
 
 Remediation bash scripts and Ansible playbooks are provided in the same SCAP Security Guide packages to harden the client systems. For example:
@@ -267,3 +274,238 @@ Remediation bash scripts and Ansible playbooks are provided in the same SCAP Sec
 ----
 
 You can run them using remote commands or with Ansible, after enabling Ansible in the client system.
+
+
+=== Run remediation using a Bash script
+
+Install the [package]``scap-security-guide`` package on all your target systems.
+For more information, see xref:ansible-setup-control-node.adoc[].
+
+Packages, channels and scripts are different for each operating system and distribution.
+Examples are listed in the <<scripts-for-os-types>> section.
+
+==== Run the Bash script on single systems as a remote command
+
+Run the Bash script as a remote command on single systems.
+
+. From menu:System[Overview] tab, select your instance.
+  Then in menu:Details[Remote Commands], write a Bash script such as:
++
+----
+#!/bin/bash
+chmod +x -R /usr/share/scap-security-guide/bash
+/usr/share/scap-security-guide/bash/sle15-script-stig.sh
+----
+
+. Click btn:[Schedule].
+
+[NOTE]
+====
+Folder and script names change between distribution and version.
+Examples are listed in the <<scripts-for-os-types>> section.
+====
+
+
+==== Run the bash script using System Set Manager on multiple systems
+
+Run the Bash script as a remote command on multiple systems at once.
+
+. When a system group has been created click [guimenu]``System Groups``, select [guimenu]``Use in SSM`` from the table.
+
+. From the [guimenu]``System Set Manager``, under menu:Misc[Remote Command], write a Bash script such as:
++
+
+----
+#!/bin/bash
+chmod +x -R /usr/share/scap-security-guide/bash
+/usr/share/scap-security-guide/bash/sle15-script-stig.sh
+----
+
+. Click btn:[Schedule].
+
+
+
+[[scripts-for-os-types]]
+=== Example remediation Bash scripts
+
+==== {sle} {opensuse} and variants
+
+Example {sle} and {opensuse} script data.
+
+.{sle} {opensuse}
+[col="1h,4*"]
+|===
+
+| Package | scap-security-guide
+| Channels | SLE12: SLES12 Updates +
+             SLE15: SLES15 Module Basesystem Updates
+| Bash script folder | `/usr/share/scap-security-guide/bash/`
+| Bash scripts |
+opensuse-script-standard.sh +
+sle12-script-standard.sh +
+sle12-script-stig.sh +
+sle15-script-cis.sh +
+sle15-script-standard.sh +
+sle15-script-stig.sh
+|===
+
+
+==== {rhel} and {centos} Bash script data
+
+Example {rhel} and {centos} script data.
+
+[NOTE]
+====
+[package]``scap-security-guide`` in centos7-updates only contains the {rhel} script.
+====
+
+.{rhel} {centos} and variants
+[col="1h,4*"]
+|===
+
+| Package |
+scap-security-guide-redhat
+
+| Channel |
+SUSE Manager Tools +
+
+| Bash script folder |
+`/usr/share/scap-security-guide/bash/`
+
+| Bash scripts |
+centos7-script-pci-dss.sh +
+centos7-script-standard.sh +
+centos8-script-pci-dss.sh +
+centos8-script-standard.sh +
+fedora-script-ospp.sh +
+fedora-script-pci-dss.sh +
+fedora-script-standard.sh +
+ol7-script-anssi_nt28_enhanced.sh +
+ol7-script-anssi_nt28_high.sh +
+ol7-script-anssi_nt28_intermediary.sh +
+ol7-script-anssi_nt28_minimal.sh +
+ol7-script-cjis.sh +
+ol7-script-cui.sh +
+ol7-script-e8.sh +
+ol7-script-hipaa.sh +
+ol7-script-ospp.sh +
+ol7-script-pci-dss.sh +
+ol7-script-sap.sh +
+ol7-script-standard.sh +
+ol7-script-stig.sh +
+ol8-script-anssi_bp28_enhanced.sh +
+ol8-script-anssi_bp28_high.sh +
+ol8-script-anssi_bp28_intermediary.sh +
+ol8-script-anssi_bp28_minimal.sh +
+ol8-script-cjis.sh +
+ol8-script-cui.sh +
+ol8-script-e8.sh +
+ol8-script-hipaa.sh +
+ol8-script-ospp.sh +
+ol8-script-pci-dss.sh +
+ol8-script-standard.sh +
+rhel7-script-anssi_nt28_enhanced.sh +
+rhel7-script-anssi_nt28_high.sh +
+rhel7-script-anssi_nt28_intermediary.sh +
+rhel7-script-anssi_nt28_minimal.sh +
+rhel7-script-C2S.sh +
+rhel7-script-cis.sh +
+rhel7-script-cjis.sh +
+rhel7-script-cui.sh +
+rhel7-script-e8.sh +
+rhel7-script-hipaa.sh +
+rhel7-script-ncp.sh +
+rhel7-script-ospp.sh +
+rhel7-script-pci-dss.sh +
+rhel7-script-rhelh-stig.sh +
+rhel7-script-rhelh-vpp.sh +
+rhel7-script-rht-ccp.sh +
+rhel7-script-standard.sh +
+rhel7-script-stig_gui.sh +
+rhel7-script-stig.sh +
+rhel8-script-anssi_bp28_enhanced.sh +
+rhel8-script-anssi_bp28_high.sh +
+rhel8-script-anssi_bp28_intermediary.sh +
+rhel8-script-anssi_bp28_minimal.sh +
+rhel8-script-cis.sh +
+rhel8-script-cjis.sh +
+rhel8-script-cui.sh +
+rhel8-script-e8.sh +
+rhel8-script-hipaa.sh +
+rhel8-script-ism_o.sh +
+rhel8-script-ospp.sh +
+rhel8-script-pci-dss.sh +
+rhel8-script-rhelh-stig.sh +
+rhel8-script-rhelh-vpp.sh +
+rhel8-script-rht-ccp.sh +
+rhel8-script-standard.sh +
+rhel8-script-stig_gui.sh +
+rhel8-script-stig.sh +
+rhel9-script-pci-dss.sh +
+rhosp10-script-cui.sh +
+rhosp10-script-stig.sh +
+rhosp13-script-stig.sh +
+rhv4-script-pci-dss.sh +
+rhv4-script-rhvh-stig.sh +
+rhv4-script-rhvh-vpp.sh +
+sl7-script-pci-dss.sh +
+sl7-script-standard.sh +
+|===
+
+
+==== {ubuntu} Bash script data
+
+Example {ubuntu} script data.
+
+.{ubuntu}
+[col="1h,4*"]
+|===
+
+|Package |
+scap-security-guide-ubuntu
+
+| Channel |
+SUSE Manager Tools
+
+| Bash Script Folder |
+`/usr/share/scap-security-guide/`
+
+| Bash Script |
+ubuntu1804-script-anssi_np_nt28_average.sh +
+ubuntu1804-script-anssi_np_nt28_high.sh +
+ubuntu1804-script-anssi_np_nt28_minimal.sh +
+ubuntu1804-script-anssi_np_nt28_restrictive.sh +
+ubuntu1804-script-cis.sh +
+ubuntu1804-script-standard.sh +
+ubuntu2004-script-standard.sh +
+|===
+
+
+==== {debian} Bash script data
+
+Example {debian} script data.
+
+.{debian}
+[col="1h,4*"]
+|===
+| Package |
+scap-security-guide-debian
+
+| Channel |
+SUSE Manager Tools
+
+| Bash Script Folder |
+`/usr/share/scap-security-guide/bash`
+
+| Bash Scripts |
+debian10-script-anssi_np_nt28_average.sh +
+debian10-script-anssi_np_nt28_high.sh +
+debian10-script-anssi_np_nt28_minimal.sh +
+debian10-script-anssi_np_nt28_restrictive.sh +
+debian10-script-standard.sh +
+debian11-script-anssi_np_nt28_average.sh +
+debian11-script-anssi_np_nt28_high.sh +
+debian11-script-anssi_np_nt28_minimal.sh +
+debian11-script-anssi_np_nt28_restrictive.sh +
+debian11-script-standard.sh +
+|===

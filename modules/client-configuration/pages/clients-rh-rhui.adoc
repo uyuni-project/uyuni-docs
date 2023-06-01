@@ -1,7 +1,12 @@
 [[clients-rh-rhui]]
 = Registering {rhel} Clients with RHUI
 
+// SUSE Liberty Linux not available at Uyuni for now
+
+ifeval::[{suma-content} == true]
 If you are running {rhel} clients directly, rather than using {sleses}, you need to use Red Hat sources to retrieve and update packages.
+endif::[]
+
 This section contains information about using {redhat} update infrastructure (RHUI) to register traditional and Salt clients running {rhel} operating systems.
 
 Traditional clients are available on {rhel}{nbsp}7 only.
@@ -14,7 +19,13 @@ For information about using {redhat} CDN, see xref:client-configuration:clients-
 
 [IMPORTANT]
 ====
+
+// SUSE Liberty Linux not available at Uyuni for now
+
+ifeval::[{suma-content} == true]
 {rhel} clients are based on {redhat} and are unrelated to {sleses}, RES, or {sles}.
+endif::[]
+
 You are responsible for connecting {productname} Server to the {redhat} update infrastructure.
 All clients that get updates using this RHUI certificate need to be correctly licensed, please check with your cloud provider and the {redhat} terms of service for more information.
 ====
@@ -53,7 +64,7 @@ Clients using Satellite certificates are not supported with {productname} Server
 ====
 
 
-The entitlement certificates and keys need to be copied from the client system to a location that the {productname} Server can access.
+The entitlement certificates and keys need to be copied from the client system to a location that your web browser can access.
 
 The keys and certificates might have slightly different names to those shown here.
 Your entitlement certificate and the {redhat} CA Certificate file have file extensions of [path]``.crt``.
@@ -62,25 +73,32 @@ The key has a file extension of [path]``.key``.
 
 
 .Procedure: Copying Certificates to the Server
-. Copy your entitlement certificate and key from the client system, to a location that the {productname} Server can access:
+. Copy your entitlement certificate and key from the client system, to your workstation:
 +
-Amazon EC2:
+
+Amazon EC2::
 +
+
 ----
 cp /etc/pki/rhui/product/content-<version>.crt /<example>/entitlement/
 cp /etc/pki/rhui/content-<version>.key /<example>/entitlement/
 ----
 +
-Azure:
+
+Azure::
 +
-* Check the certificate chain using the command:
+
+. Check the certificate chain using the command:
 +
+
 ----
 openssl s_client -connect rhui-1.microsoft.com:443 -showcerts
 ----
 +
-* A sample output will look like the following:
+
+A sample output will look like the following:
 +
+
 ----
 CONNECTED(00000003)
 depth=2 C = US, O = DigiCert Inc, OU = www.digicert.com, CN = DigiCert Global Root G2
@@ -90,44 +108,61 @@ verify return:1
 depth=0 C = US, ST = WA, L = Redmond, O = Microsoft Corporation, CN = rhui-1.microsoft.com
 verify return+
 ----
-* Check the second certificate ([literal]``CN = Microsoft Azure``), if it is the same on your VM, note the certificate name.
-Refer to the https://docs.microsoft.com/en-us/azure/active-directory/fundamentals/certificate-authorities to download the certificate.
-Click the AIA link to download the certificate.
-The certificate will be downloaded with the [literal]``.cer`` suffix.
-Convert it to [literal]``.crt`` with the command:
 +
+
+. Check the second certificate ([literal]``CN = Microsoft Azure``), if it is the same on your VM, note the certificate name.
+Refer to the https://docs.microsoft.com/en-us/azure/active-directory/fundamentals/certificate-authorities to download the certificate.
++
+
+. Click the AIA link to download the certificate.
+The certificate will be downloaded with the [literal]``.cer`` suffix.
++
+
+. Convert it to [literal]``.crt`` with the command:
++
+
 ----
 openssl x509 -inform DER -in <example.cer> -out <example.crt>
 ----
 +
-Google Cloud Platform:
+
+Google Cloud Platform::
 +
+
 ----
 cp /etc/pki/rhui/product/content.crt /<example>/entitlement/
 cp /etc/pki/rhui/key.pem /<example>/entitlement/
 ----
 +
+
 . Copy the {redhat} CA Certificate file from the client system, to the same location as the entitlement certificate and key:
 +
-Amazon EC2:
+
+Amazon EC2::
 +
+
 ----
 cp /etc/pki/rhui/cdn.redhat.com-chain.crt /<example>/entitlement
 ----
 +
-Azure:
+
+Azure::
 +
+
 * Upload the converted certifcate to /<example>/entitlement
 +
-Google Cloud Platform:
+
+Google Cloud Platform::
 +
+
 ----
 cp /etc/pki/rhui/ca.crt /<example>/entitlement
 ----
 
 
 To manage repositories on your {redhat} client, you need to import the CA and entitlement certificates to the {productname} Server.
-This requires that you perform the import procedure three times, to create three entries: one each for the entitlement certificate, the entitlement key, and the {redhat} certificate.
+
+This requires that you perform the import procedure three times, to create three entries, one of each for the entitlement certificate, the entitlement key, and the {redhat} certificate.
 
 
 
@@ -177,18 +212,14 @@ The products you need for this procedure are:
 .Red Hat Products - WebUI
 |===
 
+// SUSE Liberty Linux not available at Uyuni for now
 | OS Version | Product Name
-| {redhat} 7 | RHEL7 Base x86_64
+| {redhat} 9 | RHEL and Liberty 9 Base
 | {redhat} 8 | RHEL or SLES ES or CentOS 8 Base
-| {redhat} 9 | RHEL 9 Base
+| {redhat} 7 | RHEL7 Base x86_64
+
 |===
 
-//[NOTE]
-//====
-//{redhat} 6 is now at end-of-life, and the ISO images provided in the repository are out of date.
-//Bootstrapping new {redhat} 6 clients using these packages will fail.
-//If you need to bootstrap new {redhat} 6 clients, follow the troubleshooting procedure in xref:administration:troubleshooting/tshoot-intro.adoc[Troubleshooting].
-//====
 
 include::snippets/addchannels_vendor_webui.adoc[]
 
@@ -209,29 +240,23 @@ The channels you need for this procedure are:
 | Client Channel
 | Tools Channel
 
-| {redhat} 7
-| rhel-x86_64-server-7
+| {redhat} 9
+| el9-pool-x86_64
 | -
-| res7-suse-manager-tools-x86_64
+| el9-manager-tools-pool-x86_64, el9-manager-tools-updates-x86_64
 
 | {redhat} 8
 | rhel8-pool-x86_64
 | -
 | res8-manager-tools-pool-x86_64
 
-| {redhat} 9
-| rhel9-pool-x86_64
+| {redhat} 7
+| rhel-x86_64-server-7
 | -
-| res9-suse-manager-tools-x86_64
+| res7-suse-manager-tools-x86_64
 
 |===
 
-//[NOTE]
-//====
-//{redhat} 6 is now at end-of-life, and the ISO images provided in the repository are out of date.
-//Bootstrapping new {redhat} 6 clients using these packages will fail.
-//If you need to bootstrap new {redhat} 6 clients, follow the troubleshooting procedure in xref:administration:troubleshooting/tshoot-intro.adoc[Troubleshooting].
-//====
 
 include::snippets/addchannels_novendor_cli.adoc[]
 
@@ -272,14 +297,19 @@ X-RHUI-ID=<value>
 X-RHUI-SIGNATURE=<value>
 ----
 +
-  Replace [literal]``<channel_label_X>`` above with channel names such as [literal]``rhel8-baseos-repo``:
+. Replace [literal]``<channel_label_X>`` above with the names of the custom channels you are planning to create (see next section):
 +
 ----
 [rhel8-baseos-repo]
 X-RHUI-ID=...
 X-RHUI-SIGNATURE=...
 ----
-
++
+[NOTE]
+====
+{rhel} may renew these headers at any point in time. 
+In such a case, repeat the procedure to get the new HTTP headers in place.
+====
 
 
 == Prepare Custom Repositories and Channels
@@ -328,18 +358,24 @@ The channels you need for this procedure are:
 .Red Hat Custom Channels
 |===
 
+// SUSE Liberty Linux not available at Uyuni for now
 | OS Version | Base Product          | Base Channel
-| {redhat} 7 | RHEL7 Base x86_64 | rhel7-pool-x86_64
+ifeval::[{suma-content} == true]
+| {redhat} 9 | RHEL and Liberty 9 Base | el9-pool-x86_64
 | {redhat} 8 | RHEL or SLES ES or CentOS 8 Base | rhel8-pool-x86_64
-| {redhat} 9 | RHEL 9 Base           | rhel9-pool-x86_64
+endif::[]
+
+// SUSE Liberty Linux not available at Uyuni for now
+ifeval::[{uyuni-content} == true]
+| {redhat} 9 | RHEL | el9-pool-x86_64
+| {redhat} 8 | RHEL or CentOS 8 Base | rhel8-pool-x86_64
+endif::[]
+
+// SUSE Liberty Linux not available at Uyuni for now
+| {redhat} 7 | RHEL7 Base x86_64 | rhel7-pool-x86_64
+
 |===
 
-//[NOTE]
-//====
-//{redhat} 6 is now at end-of-life, and the ISO images provided in the repository are out of date.
-//Bootstrapping new {redhat} 6 clients using these packages will fail.
-//If you need to bootstrap new {redhat} 6 clients, follow the troubleshooting procedure in xref:administration:troubleshooting/tshoot-intro.adoc[Troubleshooting].
-//====
 
 include::snippets/manual_channels.adoc[]
 
@@ -410,10 +446,3 @@ mgr-create-bootstrap-repo
 ----
 
 For more information on registering your clients, see xref:client-configuration:registration-overview.adoc[].
-
-
-//[WARNING]
-//====
-//To register and use {rhel}{nbsp}6 clients, you need to configure the {productname} Server to support older types of SSL encryption.
-//For more information, see ``Registering Older Clients`` at xref:administration:troubleshooting/tshoot-intro.adoc[Troubleshooting].
-//====

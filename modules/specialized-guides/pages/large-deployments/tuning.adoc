@@ -226,7 +226,7 @@ This section contains information about the available parameters.
 
 [cols="1,1"]
 |===
-| Description          | The maximum number of threads in Tomcat dedicated to asynchronous operations, including handling of incoming Salt events
+| Description          | The maximum number of threads in Tomcat dedicated to asynchronous operations
 | Tune when            | xref:client-count[Client count] increases significantly
 | Value default        | 5
 | Value recommendation | 50 - 150
@@ -235,6 +235,7 @@ This section contains information about the available parameters.
 | After changing       | Check xref:hibernate-c3p0-max-size[`hibernate.c3p0.max_size`], as each thread consumes a PostgreSQL connection, starvation might happen if the allocated connection pool is insufficient.
                          Check xref:thread-pool[`thread_pool`], as each thread might perform Salt API calls, starvation might happen if the allocated Salt thread pool is insufficient.
                          Check xref:tomcat-xmx[Tomcat's `-Xmx`], as each thread consumes memory, `OutOfMemoryException` might be raised if insufficient.
+| Notes                | Incoming Salt events are handled in separate thread pool, see xref:java-salt-event-thread-pool-size[`java.salt_event_thread_pool_size`]
 | More information     | `man rhn.conf`
 |===
 
@@ -258,6 +259,28 @@ This section contains information about the available parameters.
 
 
 
+[[java-salt-event-thread-pool-size]]
+=== `java.salt_event_thread_pool_size`
+
+[cols="1,1"]
+|===
+| Description          | The maximum number of threads in Tomcat dedicated to handling of incoming Salt events.
+| Tune when            | The number of queued Salt events grows. Typically, this can happen during onboarding of large number of minions with higher value of
+                         xref:java-salt-presence-ping-timeout[`java.salt_presence_ping_timeout`].
+                         The number of events can be queried by [command]``echo "select count(*) from susesaltevent;" \| spacewalk-sql --select-mode-direct - ``
+| Value default        | 8
+| Value recommendation | 20-100
+| Location             | [path]``/etc/rhn/rhn.conf``
+| Example              | `java.salt_event_thread_pool_size = 50`
+| After changing       | Check the length of Salt event queue.
+                         Check xref:hibernate-c3p0-max-size[`hibernate.c3p0.max_size`], as each thread consumes a PostgreSQL connection, starvation might happen if the allocated connection pool is insufficient.
+                         Check xref:thread-pool[`thread_pool`], as each thread might perform Salt API calls, starvation might happen if the allocated Salt thread pool is insufficient.
+                         Check xref:tomcat-xmx[Tomcat's `-Xmx`], as each thread consumes memory, `OutOfMemoryException` might be raised if insufficient.
+| More information     | `man rhn.conf`
+|===
+
+
+
 [[java-salt-presence-ping-timeout]]
 === `java.salt_presence_ping_timeout`
 
@@ -272,6 +295,8 @@ This section contains information about the available parameters.
 | Value recommendation | 4-400 seconds
 | Location             | [path]``/etc/rhn/rhn.conf``
 | Example              | `java.salt_presence_ping_timeout = 40`
+| After changing       | Large `java.salt_presence_ping_timeout` value can reduce overall throughput.
+                         This can be compensated by increasing xref:java-salt-event-thread-pool-size[`java.salt_event_thread_pool_size`]
 | More information     | xref:specialized-guides:salt/salt-timeouts.adoc[Salt Timeouts]
 |===
 
@@ -459,7 +484,7 @@ This section contains information about the available parameters.
                          However, each connection consumes resources, in particular xref:work-mem[`work_mem`] megabytes per sort operation per connection.
 | Tune when            | xref:hibernate-c3p0-max-size[`hibernate.c3p0.max_size`] changes significantly, as that parameter determines the maximum number of connections available to Tomcat and Taskomatic
 | Value default        | 400
-| Value recommendation | 2 * xref:hibernate-c3p0-max-size[hibernate.c3p0.max_size] + 50, if less than 1000
+| Value recommendation | 2 * xref:hibernate-c3p0-max-size[hibernate.c3p0.max_size] + apache xref:server-limit[`MaxClients`] + 70, if less than 1000
 | Location             | [path]``/var/lib/pgsql/data/postgresql.conf``
 | Example              | `max_connections = 250`
 | After changing       | Check xref:memory-usage[memory usage].
