@@ -40,16 +40,8 @@ In this case, you need to turn the client on again, or get a new RHUI certificat
 
 == Import Entitlements and Certificates
 
-{redhat} clients require a {redhat} certificate authority (CA) and entitlement certificate, and an entitlement key.
-
-{redhat} clients use a URL to replicate repositories.
-The URL changes depending on where the {redhat} client is registered.
-
-{redhat} clients can be registered in three different ways:
-
-* {redhat} content delivery network (CDN) at redhat.com
-* {redhat} Satellite Server
-* {redhat} update infrastructure (RHUI) in the cloud
+In the past it was required to import the certificates and entitlement data manual into {productname} Server.
+We automated this task now by using the same mechanism as for SUSE {payg} instances. See also xref:installation-and-upgrade:connect-payg.adoc[].
 
 This guide covers clients registered to {redhat} update infrastructure (RHUI).
 You must have at least one system registered to RHUI, with an authorized subscription for repository content.
@@ -64,121 +56,69 @@ Clients using Satellite certificates are not supported with {productname} Server
 ====
 
 
-The entitlement certificates and keys need to be copied from the client system to a location that your web browser can access.
+== Connecting to {redhat} update infrastructure
 
-The keys and certificates might have slightly different names to those shown here.
-Your entitlement certificate and the {redhat} CA Certificate file have file extensions of [path]``.crt``.
-The key has a file extension of [path]``.key``.
+[[proc-connecting-new-rhui]]
+.Procedure: Connecting new {redhat} instance
+[role=procedure]
+. In the {productname} {webui}, navigate to menu:Admin[Setup Wizard > {payg}], and click btn:[Add {payg}].
+. Start with the page section [guimenu]``{payg} connection Description``.
+. In the [guimenu]``Description`` field, add the description.
+. Move to the page section [guimenu]``Instance SSH connection data``.
+. In the [guimenu]``Host`` field, enter the instance DNS or IP address to connect from {productname}.
+. In the [guimenu]``SSH Port`` field, enter the port number or use default value 22.
+. In the [guimenu]``User`` field, enter the username as specified in the cloud.
+. In the [guimenu]``Password`` field, enter the password.
+. In the [guimenu]``SSH Private Key`` field, enter the instance key.
+. In the [guimenu]``SSH Private Key Passphrase`` field, enter the key passphrase.
 
+[IMPORTANT]
+====
+Authentication keys must always be in PEM format.
+====
 
+If you are not connecting directly to the instance, but via SSH bastion, proceed with <<proc-adding-ssh-bastion-connection-data>>.
 
-.Procedure: Copying Certificates to the Server
-. Copy your entitlement certificate and key from the client system, to your workstation:
-+
+Otherwise, continue with <<proc-finishing-rhui-connecting>>.
 
-Amazon EC2::
-+
+[[proc-adding-ssh-bastion-connection-data]]
+.Procedure: Adding SSH bastion connection data
+[role=procedure]
+. Navigate to the page section [guimenu]``Bastion SSH connection data``.
+. In the [guimenu]``Host`` field, enter the bastion hostname.
+. In the [guimenu]``SSH Port`` field, enter the bastion port number.
+. In the [guimenu]``User`` field, enter the bastion username.
+. In the [guimenu]``Password`` field, enter the bastion password.
+. In the [guimenu]``SSH Private Key`` field, enter the bastion key.
+. In the [guimenu]``SSH Private Key Passphrase`` field, enter the bastion key passphrase.
 
-----
-cp /etc/pki/rhui/product/content-<version>.crt /<example>/entitlement/
-cp /etc/pki/rhui/content-<version>.key /<example>/entitlement/
-----
-+
+Complete the setup process with with <<proc-finishing-rhui-connecting>>.
 
-Azure::
-+
+[[proc-finishing-rhui-connecting]]
+.Procedure: Finishing {redhat} connecting
+[role=procedure]
+. To complete adding new {redhat} connection data, click btn:[Create].
+. Return to {payg} connection data [guimenu]``Details`` page.
+    The updated connection status is displayed on the top section named [guimenu]``Information``.
+. Connection status is shown in [guimenu]``Admin > Setup Wizard > Pay-as-you-go`` screen too.
+. If the authentication data for the instance are correct, the column [guimenu]``Status`` shows "Credentials successfully updated."
 
-* Check the certificate chain using the command:
-+
-
-----
-openssl s_client -connect rhui-1.microsoft.com:443 -showcerts
-----
-+
-
-A sample output will look like the following:
-+
-
-----
-CONNECTED(00000003)
-depth=2 C = US, O = DigiCert Inc, OU = www.digicert.com, CN = DigiCert Global Root G2
-verify return:1
-depth=1 C = US, O = Microsoft Corporation, CN = Microsoft Azure TLS Issuing CA 06
-verify return:1
-depth=0 C = US, ST = WA, L = Redmond, O = Microsoft Corporation, CN = rhui-1.microsoft.com
-verify return+
-----
-+
-
-* Check the second certificate ([literal]``CN = Microsoft Azure``), if it is the same on your VM, note the certificate name.
-Refer to the https://docs.microsoft.com/en-us/azure/active-directory/fundamentals/certificate-authorities to download the certificate.
-Click the AIA link to download the certificate.
-The certificate will be downloaded with the [literal]``.cer`` suffix.
-Convert it to [literal]``.crt`` with the command:
-+
-
-----
-openssl x509 -inform DER -in <example.cer> -out <example.crt>
-----
-+
-
-Google Cloud Platform::
-+
-
-----
-cp /etc/pki/rhui/product/content.crt /<example>/entitlement/
-cp /etc/pki/rhui/key.pem /<example>/entitlement/
-----
-+
-
-. Copy the {redhat} CA Certificate file from the client system, to the same location as the entitlement certificate and key:
-+
-
-Amazon EC2::
-+
-
-----
-cp /etc/pki/rhui/cdn.redhat.com-chain.crt /<example>/entitlement
-----
-+
-
-Azure::
-+
-
-* Upload the converted certifcate to /<example>/entitlement
-+
-
-Google Cloud Platform::
-+
-
-----
-cp /etc/pki/rhui/ca.crt /<example>/entitlement
-----
+[IMPORTANT]
+====
+If the invalid data are entered at any point, the newly created instance is shown in [guimenu]``Admin > Setup Wizard > {payg}``, with column [guimenu]``Status`` displaying error message.
+====
 
 
-To manage repositories on your {redhat} client, you need to import the CA and entitlement certificates to the {productname} Server.
-This requires that you perform the import procedure three times, to create three entries: one each for the entitlement certificate, the entitlement key, and the {redhat} certificate.
+As soon as the authentication data is available on the server, repositories were added for all available repositories on the connected instance.
+The repositories can be seen in [guimenu]``Software > Manage > Repositories``
 
+[IMPORTANT]
+====
+A {redhat} connection will create custom repositories which are owned by organization 1 by default.
+If a different organization should own the autogenerated repositories, configure [systemitem]``java.rhui_default_org_id`` in ``/etc/rhn/rhn.conf``
+====
 
-.Procedure: Importing Certificates to the Server
-
-. On the {productname} Server {webui}, navigate to menu:Systems[Autoinstallation > GPG and SSL Keys].
-. Click btn:[Create Stored Key/Cert] and set these parameters for the entitlement certificate:
-* In the [guimenu]``Description`` field, type [systemitem]``Entitlement-Cert-Date``.
-* In the [guimenu]``Type`` field, select [systemitem]``SSL``.
-* In the [guimenu]``Select file to upload`` field, browse to the location where you saved the entitlement certificate, and select the [path]``.crt`` certificate file.
-. Click btn:[Create Key].
-. Click btn:[Create Stored Key/Cert] and set these parameters for the entitlement key:
-* In the [guimenu]``Description`` field, type [systemitem]``Entitlement-Key-Date``.
-* In the [guimenu]``Type`` field, select [systemitem]``SSL``.
-* In the [guimenu]``Select file to upload`` field, browse to the location where you saved the entitlement key, and select the [path]``.key`` key file.
-. Click btn:[Create Key].
-. Click btn:[Create Stored Key/Cert] and set these parameters for the {redhat} certificate:
-* In the [guimenu]``Description`` field, type [systemitem]``redhat-cert``.
-* In the [guimenu]``Type`` field, select [systemitem]``SSL``.
-* In the [guimenu]``Select file to upload`` field, browse to the location where you saved the {redhat} certificate, and select the certificate file.
-. Click btn:[Create Key].
-
+This only defines and updates the repositories. If you want to use a repository for a managed client, you need to specify a Software Channel and connect the repositories to it.
 
 
 == Add Software Channels
@@ -266,84 +206,10 @@ endif::[]
 include::snippets/appstream_admon.adoc[]
 
 
-To use RHUI, you need to manually add the required HTTP headers to the configuration file.
-Without them, you cannot successfully perform a client synchronization.
 
+== Prepare Custom Channels
 
-
-.Procedure: Adding HTTP Headers to the Configuration File
-. Locate the [systemitem]``X-RHUI-ID`` and [systemitem]``X-RHUI-SIGNATURE`` HTTP headers from your RHUI instance.
-    You can use these commands on the {redhat} client to get the values from the cloud instance metadata API at [systemitem]``169.254.169.254``:
-+
-----
-echo "X-RHUI-ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document|base64|tr -d '\n')"
-echo "X-RHUI-SIGNATURE=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/signature|base64|tr -d '\n')"
-----
-. Open the [path]``/etc/rhn/spacewalk-repo-sync/extra_headers.conf`` configuration file, and add or edit these lines with the correct information:
-+
-----
-[<channel_label_1>]
-X-RHUI-ID=<value>
-X-RHUI-SIGNATURE=<value>
-
-[<channel_label_2>]
-X-RHUI-ID=<value>
-X-RHUI-SIGNATURE=<value>
-----
-+
-. Replace [literal]``<channel_label_X>`` above with the names of the custom channels you are planning to create (see next section):
-+
-----
-[rhel8-baseos-repo]
-X-RHUI-ID=...
-X-RHUI-SIGNATURE=...
-----
-+
-[NOTE]
-====
-{rhel} may renew these headers at any point in time. 
-In such a case, repeat the procedure to get the new HTTP headers in place.
-====
-
-
-== Prepare Custom Repositories and Channels
-
-To mirror the software from RHUI, you need to create custom channels and repositories in {productname} that are linked to RHUI by a URL.
-You must have entitlements to these products in your Red Hat Portal for this to work correctly.
-You can use the yum utility to get the URLs of the repositories you want to mirror:
-
-----
-yum repolist -v | grep baseurl
-----
-
-You can use these repository URLs to create custom repositories.
-This allows you to mirror only the content you need to manage your clients.
-
-[IMPORTANT]
-====
-You can only create custom versions of {redhat} repositories if you have the correct entitlements in your {redhat} Portal.
-====
-
-
-The details you need for this procedure are:
-
-[[redhat-rhui-repos-manual]]
-[cols="1,1", options="header"]
-.Red Hat Custom Repository Settings
-|===
-
-| Option                 | Setting
-| Repository URL         | The content URL provided by RHUI
-| Has Signed Metadata?   | Uncheck all {redhat} Enterprise repositories
-| SSL CA Certificate     | [systemitem]``redhat-cert``
-| SSL Client Certificate | [systemitem]``Entitlement-Cert-Date``
-| SSL Client Key         | [systemitem]``Entitlement-Key-Date``
-|===
-
-
-include::snippets/manual_repos.adoc[]
-
-
+To mirror the software from RHUI, you need to create custom channels in {productname} that are linked to autogenerated repositories.
 
 The channels you need for this procedure are:
 
