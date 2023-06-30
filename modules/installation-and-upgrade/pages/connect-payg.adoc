@@ -7,13 +7,13 @@ In the three major public cloud providers (AWS, GCP and Azure), SUSE:
 * operates per-region RMT Servers mirroring repositories for products available as {payg}
 
 This document describes how to connect existing {payg} instance to {productname} server, and gives basic information about credentials collection from the instance.
-The goal of the connection is to extract authentication data so {productname} server is able to connect to cloud RMT host.
+The goal of the connection is to extract authentication data so {productname} server is able to connect to cloud RMT host. That will give the {productname} server access to products that are on the RMT host and that are not already available via the {scc} organization credentials.
 
 Before using {payg} feature make sure that: 
 
 * the {payg} instance is launched from the correct SUSE product image (e.g. SLES, SLES for SAP, SLE HPC) to allow access to the desired repositories
 * {productname} server has connectivity to the {payg} instance (ideally in the same region) either directly or via a bastion
-* valid {scc} credentials are entered in menu:Admin[Setup Wizard > Organization Credentials], even they provide only limited access to products
+* valid {scc} credentials are entered in menu:Admin[Setup Wizard > Organization Credentials], even they provide only limited access to products - your subscription should at least offer access to the {productname} client tools.
 
 
 == Connecting {payg} instance
@@ -80,6 +80,13 @@ After the success message you can verify the newly added channels in the {webui}
 
 To monitor the syncing progress of each channel, check the log files in the [path]``/var/log/rhn/reposync`` directory on the {productname} Server.
 
+[IMPORTANT]
+====
+If a product is provided by both the {payg} instance and by the {scc} subscription, it will appear only once in the products list.
+
+When the channels belonging to that product are synced, the data might still come from the SCC subscription, and not from the Pay-As-You-Go instance.
+====
+
 
 === Deleting the instance connection data
 
@@ -123,6 +130,14 @@ The error message only indicates that the instance is not available.
 Further diagnostics about the status of the instance needs to be done on the cloud provider. 
 ====
 
+[IMPORTANT]
+====
+Any of the following actions or changes in the {payg} instance will lead to credentials stopping to work:
+* removing zypper credentials files
+* removing the imported certificates
+* removing cloud-specific entries from [path]``/etc/hosts``
+====
+
 
 == Registering {payg} system as a client
 
@@ -135,15 +150,6 @@ First set up the {payg} instance to collect authentication data, so it can synch
 The rest of the process is the same as for any non-public-cloud client and consists of synchronizing channels, automatic bootstrap script creation, activation key creation and starting the registration.
 
 For more about registering clients, see xref:client-configuration:registration-overview.adoc[].
-
-
-[IMPORTANT]
-====
-Any of the following actions or changes in the {payg} instance will lead to credentials stopping to work:
-* removing zypper credentials files
-* removing the imported certificates
-* removing cloud-specific entries from [path]``/etc/hosts``
-====
 
 
 == Troubleshooting 
