@@ -1,0 +1,137 @@
+[[workflow-removing-channel]]
+= Removing channel
+
+
+== Use case / Situation
+
+This workflow shows how to manually remove SUSE provided channels from {productname} and to clean up end-of-life products, in order to reclaim space or for other purposes.
+
+[IMPORTANT]
+====
+Be careful not to remove channels that systems are currently subscribed to, or that you are planning on subscribing a system to.
+====
+
+
+
+== Step-by-step instructions
+
+Manual channel removal consists of the following phases:
+
+. Preparing to remove a channel
+. Removing channels
+. Cleaning up channel packages
+
+
+=== Preparing to remove a channel
+
+Before removing a channel, you must identify the label for the channel to be removed.
+It can be done via {webui} or the command line.
+
+==== Identifying Channel Labels
+
+.Procedure: Identifying Channel Labels using {webui}
+[role=procedure]
+. Within the SUSE Manager webUI, in the sidebar navigate to Software > Channel List > All
+. Identify the channel, and child channels, to be removed.
+. This page displays the "Channel Name". If you select the blue link for a channel name, you will see the field for "Channel Label".
+
+.Procedure: Identifying Channel Labels using the command line
+[role=procedure]
+
+. You can get a quick list by running the following command:
++
+----
+spacewalk-remove-channel -l
+----
+
+
+====  Verify Channel System Subscriptions
+
+.Procedure: Verify Channel System Subscriptions using {webui}
+
+. Within the SUSE Manager webUI, in the sidebar navigate to Software > Channel List > All
+. There is a "Systems" column on the far right.
+. Check the "Systems" column for the channel, or any child channels, that you want to remove.
+. If there are systems that are currently subscribed to a channel that you want to delete, you should not remove the channel until those systems are upgraded or unsubscribed.`
+
+
+.Procedure: Verify Channel System Subscriptions using the command line
+
+. Run the following command:
++
+----
+spacecmd -- softwarechannel_listsystems <Channel Label>
+---- 
+
+
+
+=== Removing Channels
+
+A channel, with its metadata, can be removed in the SUMA CLI by using the "spacewalk-remove-channel" command. Keep in mind that this doesn't directly remove the packages themselves from the filesystem. We'll address that process below as well.
+
+
+==== Removing an Individual Channel
+.Procedure: Removing an Individual Channel
+. Remove an individual channel:
++
+----
+spacewalk-remove-channel -c channel-label
+----
++
+. You can also remove multiple channels at the same time, by simply putting a "-c" flag for each channel, followed by the "channel label". For example:
++
+----
+spacewalk-remove-channel -c channel-label1 -c channel-label2
+----
+
+
+==== Removing a Parent and all its Children
+.Procedure: Removing a Parent and all its Children
+. It's also possible to remove a parent channel with all of its children, like this:
++
+----
+spacewalk-remove-channel -a sles12-sp5-pool-x86_64
+----
+
+
+
+=== Cleaning up Channel Packages
+
+==== Running the sync
+
+.Procedure: Running the sync
+. After removing a channel, you should run a spacewalk-repo-sync on all remaining channels, or wait a day for this to complete automatically.
+. This can also be done for all currently added channels, by running the following command:
++
+----
+mgr-sync refresh --refresh-channels
+----
+
+
+==== Remove Packages from the database via the webUI
+
+.Procedure: Remove Packages from the database via the webUI
+. After removing the channel, you'll want to delete the packages from the database via the webUI.
+. In the SUSE Manager webUI navigate to SUSEManager>Software>Manage>Packages.
+. Select "Package in no channels", and delete the packages
+
+
+
+==== Clean the Packages From the Filesystem
+
+.Procedure: Clean the Packages From the Filesystem
+. The follow command, checks for anything that is showing in the filesystem, but not in the SUMA database and removes it.
++
+----
+# spacewalk-data-fsck -r -S -C -O
+----
+
+[WARNING]
+====
+The final cleanup command can take several minutes, or even hours to complete.
+====
+
+
+
+== Related topics
+* For more information about deleting channels, see see xref:administration: administration/channel-management.html#_delete_channels[OM: Delete channels].
