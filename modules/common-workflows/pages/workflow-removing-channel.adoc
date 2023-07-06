@@ -2,14 +2,9 @@
 = Removing channel
 
 
-== Use case / Situation
+== Use case
 
 This workflow shows how to manually remove SUSE provided channels from {productname} and to clean up end-of-life products, in order to reclaim space or for other purposes.
-
-[IMPORTANT]
-====
-Be careful not to remove channels that systems are currently subscribed to, or that you are planning on subscribing a system to.
-====
 
 
 
@@ -17,42 +12,50 @@ Be careful not to remove channels that systems are currently subscribed to, or t
 
 Manual channel removal consists of the following phases:
 
-. Preparing to remove a channel
-. Removing channels
-. Cleaning up channel packages
+. <<preparing-to-remove-channel>>
+. <<removing-channels>>
+. <<cleaning-up-channel-packages>>
 
 
+[[preparing-to-remove-channel]]
 === Preparing to remove a channel
 
 Before removing a channel, you must identify the label for the channel to be removed.
 It can be done via {webui} or the command line.
 
-==== Identifying Channel Labels
+[IMPORTANT]
+====
+* Be careful not to remove channels that systems are currently subscribed to, or that you are planning on subscribing a system to.
+* If there are systems that are currently subscribed to a channel that you want to delete, do not remove the channel until those systems are upgraded or unsubscribed.
+====
 
-.Procedure: Identifying Channel Labels using {webui}
+
+==== Identifying Channel labels
+
+.Procedure: Identifying channel labels using {webui}
 [role=procedure]
-. Within the SUSE Manager webUI, in the sidebar navigate to Software > Channel List > All
+. In the SUSE Manager {webui}, in the sidebar navigate to menu:Software[Channel List > All]
+. This page displays the [label]``Channel Name``. If you select the blue link for a channel name, you will see the field for [literal]``Channel Label``.
 . Identify the channel, and child channels, to be removed.
-. This page displays the "Channel Name". If you select the blue link for a channel name, you will see the field for "Channel Label".
 
-.Procedure: Identifying Channel Labels using the command line
+
+.Procedure: Identifying channel labels using the command line
 [role=procedure]
 
-. You can get a quick list by running the following command:
+. You can get a quick list of channels by running the following command:
 +
 ----
 spacewalk-remove-channel -l
 ----
 
 
-====  Verify Channel System Subscriptions
+====  Verify channel system subscriptions
 
-.Procedure: Verify Channel System Subscriptions using {webui}
+.Procedure: Verifying channel system subscriptions using {webui}
 
-. Within the SUSE Manager webUI, in the sidebar navigate to Software > Channel List > All
-. There is a "Systems" column on the far right.
-. Check the "Systems" column for the channel, or any child channels, that you want to remove.
-. If there are systems that are currently subscribed to a channel that you want to delete, you should not remove the channel until those systems are upgraded or unsubscribed.`
+. In the {productname} {webui}, in the sidebar navigate to menu:Software[Channel List > All].
+. Locate [literal]``Systems`` column on the right.
+. Check the [literal]``Systems`` column for the channel, or any child channels, that you want to remove.
 
 
 .Procedure: Verify Channel System Subscriptions using the command line
@@ -64,21 +67,28 @@ spacecmd -- softwarechannel_listsystems <Channel Label>
 ---- 
 
 
+[[removing-channel]]
+=== Removing channel
 
-=== Removing Channels
+A channel, with its metadata, can be removed in the SUMA command line by using the [literal]``spacewalk-remove-channel`` command. 
+Keep in mind that this command does not remove the packages themselves from the filesystem. 
 
-A channel, with its metadata, can be removed in the SUMA CLI by using the "spacewalk-remove-channel" command. Keep in mind that this doesn't directly remove the packages themselves from the filesystem. We'll address that process below as well.
+Removing packages from the filesystem is described in <<cleaning-up-channel-packages>>.
 
 
-==== Removing an Individual Channel
-.Procedure: Removing an Individual Channel
-. Remove an individual channel:
+
+==== Removing an individual channel
+
+.Procedure: Removing an individual channel using the command line
+
+. To remove an individual channel run the following command:
 +
 ----
 spacewalk-remove-channel -c channel-label
 ----
 +
-. You can also remove multiple channels at the same time, by simply putting a "-c" flag for each channel, followed by the "channel label". For example:
+. To remove multiple channels at the same time, use [literal]``-c`` flag for each channel, followed by the [literal]``channel-label``. 
+  For example:
 +
 ----
 spacewalk-remove-channel -c channel-label1 -c channel-label2
@@ -86,6 +96,7 @@ spacewalk-remove-channel -c channel-label1 -c channel-label2
 
 
 ==== Removing a Parent and all its Children
+
 .Procedure: Removing a Parent and all its Children
 . It's also possible to remove a parent channel with all of its children, like this:
 +
@@ -94,38 +105,38 @@ spacewalk-remove-channel -a sles12-sp5-pool-x86_64
 ----
 
 
-
-=== Cleaning up Channel Packages
+[[cleaning-up-channel-packages]]
+=== Cleaning up channel packages
 
 ==== Running the sync
 
 .Procedure: Running the sync
-. After removing a channel, you should run a spacewalk-repo-sync on all remaining channels, or wait a day for this to complete automatically.
-. This can also be done for all currently added channels, by running the following command:
+. After removing a channel, run the command ``spacewalk-repo-sync`` on all remaining channels, or wait for the operation to complete automatically.
+. Alternatively, for all currently added channels running the following command:
 +
 ----
 mgr-sync refresh --refresh-channels
 ----
 
 
-==== Remove Packages from the database via the webUI
+==== Remove packages from the database via the {webui}
 
-.Procedure: Remove Packages from the database via the webUI
-. After removing the channel, you'll want to delete the packages from the database via the webUI.
-. In the SUSE Manager webUI navigate to SUSEManager>Software>Manage>Packages.
-. Select "Package in no channels", and delete the packages
+.Procedure: Remove Packages from the database via the {webui}
+. After removing the channel, you need to delete the packages from the database via the {webui}.
+. In the {productname} {webui} navigate to menu:SUSEManager[Software > Manage > Packages].
+. Select [literal]``Package in no channel``, and delete the packages.
 
 
 
-==== Clean the Packages From the Filesystem
+==== Clean the packages From the filesystem
 
-.Procedure: Clean the Packages From the Filesystem
-. The follow command, checks for anything that is showing in the filesystem, but not in the SUMA database and removes it.
+.Procedure: Clean the packages from the filesystem
+. The following command checks for anything that is still showing in the filesystem, but not in the SUMA database and then removes it.
 +
 ----
 # spacewalk-data-fsck -r -S -C -O
 ----
-
++
 [WARNING]
 ====
 The final cleanup command can take several minutes, or even hours to complete.
@@ -134,4 +145,5 @@ The final cleanup command can take several minutes, or even hours to complete.
 
 
 == Related topics
-* For more information about deleting channels, see see xref:administration: administration/channel-management.html#_delete_channels[OM: Delete channels].
+
+* For more information about deleting channels, see see xref:administration:channel-management.adoc#delete_channels[Delete channels].
