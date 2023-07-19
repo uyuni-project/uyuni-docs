@@ -13,8 +13,10 @@ Only {sles} 15 SP3 and newer are supported to be used as container host for {pro
 endif::[]
 ====
 
-The container host must be connected to the manager as a Salt client.
+The container host must be connected to {productname} as a {salt} client.
 Connecting the container host as a traditional client will not work because required packages will not be available.
+
+
 
 [[installation-proxy-containers-requirements]]
 == Container Host Requirements
@@ -55,7 +57,7 @@ Connecting the container host as a traditional client will not work because requ
 | Details
 | Remark
 
-| Connection method
+| Connection Method
 | Salt
 | Host must be configured as a Salt client
 
@@ -63,8 +65,9 @@ Connecting the container host as a traditional client will not work because requ
 
 [IMPORTANT]
 ====
-To ensure that the {productname} domain name can be resolved by its clients, both container proxy and client machines must be connected to a working DNS server.
-You also need to ensure that reverse lookups are correctly configured.
+To ensure that the domain name of the {productname} Server can be resolved by the clients:
+* Both container proxy and client machines must be connected to a DNS server
+* Reverse lookup must work
 ====
 
 
@@ -90,10 +93,9 @@ First step is to install container control files provided by package [literal]``
 
 
 [[proc-installation-proxy-containers-services]]
-.Procedure: Installation Of Container Services For {productname} Proxy
+.Procedure: Installation of Container Services for {productname} Proxy
 
 . Assign [literal]``Containers Module`` software channel to the container host in the {productname}.
-+
 For more information about assigning software channels to the system, see xref:administration:channel-management.adoc[].
 
 . Log in as `root` on the container host.
@@ -105,38 +107,46 @@ For more information about assigning software channels to the system, see xref:a
 zypper install uyuni-proxy-systemd-services
 ----
 
+
+
 [[installation-proxy-containers-customize-config]]
 == Customize {productname} Proxy configuration
 
 {productname} Proxy containers require some volumes to be mounted for long term storage.
-Those volumes are automatically created by podman and can be listed using the [literal]``podman volume ls`` command.
+Those volumes are automatically created by [literal]``podman`` and can be listed using the [command]``podman volume ls`` command.
 By default, [literal]``podman`` stores the files of the volumes in [path]``/var/lib/containers/storage/volumes``.
-The needed volume are named:
+The volumes are named:
 
 - [path]``uyuni-proxy-squid-cache``
 - [path]``uyuni-proxy-rhn-cache``
 - [path]``uyuni-proxy-tftpboot``
 
-To override the default volume settings, create the volumes prior to the first start of the pod using the [literal]``podman volume create`` command.
+To override default volume settings, create the volumes prior to the first start of the pod using the  [command]``podman volume create`` command.
 
-In the [path]``/etc/sysconfig/uyuni-proxy-systemd-services.config`` file it is possible to add custom arguments passed to podman container pod:
+It is possible to add custom arguments passed to podman container pod to [path]``/etc/sysconfig/uyuni-proxy-systemd-services.config``:
 
-- [literal]``EXTRA_POD_ARGS=''``
+----
+EXTRA_POD_ARGS=''
+----
 
-In this file it is possible to modify the tag to use for the container images:
+In this file it is possible to modify tag to use for container images:
 
-- [literal]``TAG``=[path]``latest``
+----
+TAG=latest
+----
 
 [IMPORTANT]
 ====
-Do not change the [literal]``TAG`` value without knowing what you are doing or having been instructed to do it.
+Changing the [path]``uyuni-proxy-systemd-services.config`` file and especially the [literal]``TAG`` setting is dangerous and can cause a non-functional system.
 ====
+
+
 
 === Using a custom container image for a service
 
 By default, the {productname} Proxy suite is set to use the same image version and registry path for each of its services.
 However, it is possible to override the default values for a specific service.
-The [literal]``uyuni-proxy`` CLI bundled with the package, has an [literal]``update image`` command  with the following parameters:
+The [literal]``uyuni-proxy`` CLI bundled with the package, runs [command]``update image`` with the following parameters:
 
 - [literal]``-s`` for the service name
 - [literal]``-t`` for the version tag
@@ -147,23 +157,28 @@ For example, use it like this:
 ----
 uyuni-proxy update image -s httpd -t 0.1.0 -r registry.opensuse.org/uyuni
 ----
-It would adjust a configuration file for the httpd service, taking [path]``registry.opensuse.org/uyuni`` as the registry and [literal]``0.1.0`` as the version tag and then restart it.
 
-To reset the values to defaults, run the proxy reset command, specifying the service with the [literal]``-s`` parameter.
-For example, use it like this:
+It adjusts the configuration file for the httpd service, where [path]``registry.opensuse.org/uyuni`` is the registry and [literal]``0.1.0`` is the version tag, before restarting it.
+
+To reset the values to defaults, run the proxy reset command, specifying the service with the [literal]``-s`` parameter:
 
 ----
 uyuni-proxy reset -s httpd
 ----
 
-This command would reset the configuration of the [literal]``httpd`` service to the global defaults and then restart it.
+This command first resets the configuration of the [literal]``httpd`` service to the global defaults and then reloads it.
 
-For more information, see the [literal]``uyuni-proxy --help``.
+For more information, see [command]``uyuni-proxy --help``.
+
+
 
 [[installation-proxy-containers-firewall-rules]]
 == Allow network access for provided services on container host firewall
 
-{productname} Proxy containers work as so called node-port service. This means proxy container pod shares container host network TCP and UDP port space. For this reason container host firewall must be configured to accept incoming traffic on ports used by {productname} Proxy containers. Those ports are:
+{productname} Proxy containers work as so called node-port service.
+This means proxy container pod shares container host network TCP and UDP port space.
+For this reason container host firewall must be configured to accept incoming traffic on ports used by {productname} Proxy containers.
+Those ports are:
 
 - 69/UDP - TFTP
 - 80/TCP - HTTP
