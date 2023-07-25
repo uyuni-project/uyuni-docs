@@ -242,14 +242,14 @@ antora-uyuni-for-publication: for-publication antora-uyuni
 .PHONY: set-html-language-selector-suma
 set-html-language-selector-suma:
 	cd $(current_dir)
-	$(call enable-suma-html-language-selector,zh_CN,china,china,中国人)
+	$(call enable-suma-html-language-selector,zh_CN,china,china,中文)
 	$(call enable-suma-html-language-selector,ja,jaFlag,japan,日本語)
 	$(call enable-suma-html-language-selector,ko,koFlag,korea,한국어)
 
 .PHONY: set-html-language-selector-uyuni
 set-html-language-selector-uyuni:
 	cd $(current_dir)
-	$(call enable-uyuni-html-language-selector,zh_CN,china,china,中国人)
+	$(call enable-uyuni-html-language-selector,zh_CN,china,china,中文)
 	$(call enable-uyuni-html-language-selector,ja,jaFlag,japan,日本語)
 	$(call enable-uyuni-html-language-selector,ko,koFlag,korea,한국어)
 
