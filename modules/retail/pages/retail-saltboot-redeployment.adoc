@@ -8,7 +8,8 @@ For these situations, {saltboot} offers three ways to force redeployment or repa
 
 * <<force.redeployment.using.grains>>
 * <<force.redeployment.using.custom.info>>
-* <<force.redeployment.using.formula>>
+* <<force.redeployment.using.api>>
+* <<force.redeployment.using.pillar>>
 
 [WARNING]
 ====
@@ -99,39 +100,90 @@ Once created, it is available for repeated use.
 . Reboot the terminal to pick up the changes.
 
 
-[[force.redeployment.using.formula]]
-== Force {saltboot} redeployment using {saltboot} formula
-
-{saltboot} redeployment formula data has a significant side effect in terms of using {saltboot} formula on the system level. 
-This will probably mask further changes of {saltboot} formula on group level unless formula is manually unassigned from the terminal.
-
-[WARNING]
-====
-{saltboot} formula is usually assigned to the hardware type group. 
-Data visible on system level are inherited from this group.
-
-Saving group formula on system level will cause data from group to be copied to the system.
-
-This has the side effect that changes on group level, like hardware type group formula, will not be visible on system level unless system level formula is unassigned from the system.
-====
+[[force.redeployment.using.api]]
+== Force {saltboot} redeployment using {saltboot} API call
 
 [NOTE]
 ====
-After terminal finishes booting, {saltboot} redeployment formula setting is automatically reset to prevent repeated redeployment.
+After terminal finishes booting, {saltboot} redeployment setting is automatically reset to prevent repeated redeployment.
 ====
 
-.Procedure: Forcing a {saltboot} to redeploy image using {saltboot} formula
-. Select the [guimenu]``Formulas`` tab for the system you want to redeploy.
-. Select {saltboot} formula.
-. At the bottom check [guimenu]``Force image redeployment`` checkbox.
-. Save the formula.
+An API call [systemitem]``system.setPillar`` can be used to set specific {saltboot} options through {salt} pillar data. 
+{productname} {saltboot} integration is using [systemitem]``tuning-saltboot`` pillar category to manage {saltboot} tuning, including forced redeployment or disk repartition. 
+Using this pillar category allows {productname} to reset {saltboot} flag once the terminal is booted up.
+
+.Procedure: Forcing {saltboot} to redeploy image using API call using spacecmd command
+. In the console run following the command, and replace [systemitem]``$terminal_minion_id`` with the actual terminal minion id:
++
+----
+spacecmd api -- -A '$terminal_minion_id,tuning-saltboot,{"saltboot": {"force_redeployment": "True"}}' system.setPillar
+----
+
+.Procedure: Forcing {saltboot} to repartition disk using API call using spacecmd command
+. In the console run the following command, replace [systemitem]``$terminal_minion_id`` with the actual terminal minion id:
++
+----
+spacecmd api -- -A '$terminal_minion_id,tuning-saltboot,{"saltboot": {"force_repartition": "True"}}' system.setPillar
+----
+
+.Procedure: Check {saltboot} tuning options
+. In the console run the following command, and replace [systemitem]``$terminal_minion_id`` with the actual terminal minion id:
++
+----
+spacecmd api -- -A '$terminal_minion_id,tuning-saltboot' system.getPillar
+----
+
+[IMPORTANT]
+====
+Make sure to use [systemitem]``tuning-saltboot`` as pillar category in the API call.
+====
+
+
+[[force.redeployment.using.pillar]]
+== Force {saltboot} redeployment by custom pillar
+
+[WARNING]
+====
+Pillars specified outside of {productname} database cannot be reset automatically. 
+Without manual intervention, the terminal will download a new image on each reboot.
+====
+
+.Procedure: Force a {saltboot} to redeploy image using {saltboot} pillar
+. Create new file [filename]``/srv/salt/pillar/force_redeploy.sls`` with content:
++
+----
+saltboot:
+  force_redeploy: True
+----
++
+. Create new file or update existing file named ``/srv/salt/pillar/top.sls`` with content:
++
+----
+base:
+  '$terminal_minion_id':
+    - force_redeploy
+----
++
 . Reboot the terminal to pick up the changes.
+. After the terminal finishes booting, remove modifications made in [filename]``/srv/salt/pillar/top.sls`` file.
 
 If your terminal encounters a problem with the file system or the partition table, you might need to remove the partition table and reformat the terminal.
 
-.Procedure: Forcing a {saltboot} to remove the partition table
-. Select the [guimenu]``Formulas`` tab for the system you want to redeploy.
-. Select {saltboot} formula.
-. At the bottom check [guimenu]``Force disk repartition`` checkbox.
-. Save the formula.
+.Procedure: Force {saltboot} to repartition disk using {saltboot} pillar
+. Create new file [filename]``/srv/salt/pillar/force_repartition.sls`` with content:
++
+----
+saltboot:
+  force_repartition: True
+----
++
+. Create new file or update existing file named ``/srv/salt/pillar/top.sls`` with content:
++
+----
+base:
+  '$terminal_minion_id':
+    - force_repartition
+----
++
 . Reboot the terminal to pick up the changes.
+. After the terminal finishes booting, remove modifications made in [filename]``/srv/salt/pillar/top.sls`` file.
