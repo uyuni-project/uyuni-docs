@@ -1,0 +1,94 @@
+[[retail-image-pillars]]
+= Image Pillars
+
+If the built image type is [literal]``PXE``, a {salt} pillar is also generated.
+
+Image pillars are stored in the database and {salt} subsystem can access details about the generated image.
+Details include where the image files are located and provided, image checksums, information needed for network boot, and more.
+
+The generated pillar is available to all connected clients.
+
+This is an example of image pillar:
+----
+{
+  "images": {
+    "POS_Image_JeOS7": {
+      "7.1.0-1": {
+        "url": "https://ftp/saltboot/image/POS_Image_JeOS7.x86_64-7.1.0-1/POS_Image_JeOS7.x86_64-7.1.0",
+        "arch": "x86_64",
+        "hash": "7368c101e96826053c6efde0588cf365",
+        "size": 1548746752,
+        "sync": {
+          "url": "https://manager.example.com/os-images/1/POS_Image_JeOS7-7.1.0-1/POS_Image_JeOS7.x86_64-7.1.0",
+          "hash": "7368c101e96826053c6efde0588cf365",
+          "local_path": "image/POS_Image_JeOS7.x86_64-7.1.0-1"
+        },
+        "type": "pxe",
+        "fstype": "ext3",
+        "filename": "POS_Image_JeOS7.x86_64-7.1.0",
+        "inactive": false,
+        "boot_image": "POS_Image_JeOS7-7.1.0-1"
+      }
+    }
+  },
+  "boot_images": {
+    "POS_Image_JeOS7-7.1.0-1": {
+      "arch": "x86_64",
+      "name": "POS_Image_JeOS7",
+      "sync": {
+        "initrd_url": "https://manager.example.com/os-images/1/POS_Image_JeOS7-7.1.0-1/POS_Image_JeOS7.x86_64-7.1.0.initrd",
+        "kernel_url": "https://manager.example.com/os-images/1/POS_Image_JeOS7-7.1.0-1/POS_Image_JeOS7.x86_64-7.1.0-5.14.21-150400.24.55-default.kernel",
+        "local_path": "POS_Image_JeOS7.x86_64-7.1.0-1"
+      },
+      "initrd": {
+        "url": "https://ftp/saltboot/boot/POS_Image_JeOS7.x86_64-7.1.0-1/POS_Image_JeOS7.x86_64-7.1.0.initrd",
+        "hash": "d38b74a373bc6c9def1f069a8533d99f",
+        "size": 118252253,
+        "version": "7.1.0",
+        "filename": "POS_Image_JeOS7.x86_64-7.1.0.initrd"
+      },
+      "kernel": {
+        "url": "https://ftp/saltboot/boot/POS_Image_JeOS7.x86_64-7.1.0-1/POS_Image_JeOS7.x86_64-7.1.0-5.14.21-150400.24.55-default.kernel",
+        "hash": "946dac0a19125d78e282afe0e3ebf0b6",
+        "size": 11444416,
+        "version": "5.14.21-150400.24.55-default",
+        "filename": "POS_Image_JeOS7.x86_64-7.1.0-5.14.21-150400.24.55-default.kernel"
+      },
+      "basename": "POS_Image_JeOS7.x86_64-7.1.0"
+    }
+  }
+}
+----
+
+Under the [literal]``Images`` section, there is a specific image called [literal]``POS_Image_JeOS7`` with a version [literal]``7.1.0-1.`` 
+It provides various details such as the image URL for download, architecture, hash, size, synchronization information, image type (in this case, [literal]``PXE``), file system type, file name, and an inactive flag to exclude it from auto-selection. 
+Additionally, it references the corresponding boot image named [literal]``POS_Image_JeOS7-7.1.0-1.``
+
+The [literal]``boot_images`` section contains information about the boot image [literal]``POS_Image_JeOS7-7.1.0-1.`` 
+It specifies the details about kernel and [path]``initrd``.
+
+Image pillar can be modified via API. 
+This example retrieves the image pillar for a given image ID, and changes the [literal]``Inactive`` flag to [literal]``True`` and writes it back.
+
+----
+#!/usr/bin/env python3
+from xmlrpc.client import ServerProxy
+
+MANAGER_URL = "http://manager.example.com/rpc/api"
+
+MANAGER_LOGIN = "admin"
+MANAGER_PASSWORD = "adminpass"
+
+IMAGE_ID=15
+
+client = ServerProxy(MANAGER_URL)
+key = client.auth.login(MANAGER_LOGIN, MANAGER_PASSWORD)
+
+pillar = client.image.getPillar(key, IMAGE_ID)
+[(name, version_dict)] = pillar['images'].items()
+[(version, image_data)] = version_dict.items()
+image_data['inactive'] = True
+client.image.setPillar(key, IMAGE_ID, pillar)
+
+client.auth.logout(key)
+----
