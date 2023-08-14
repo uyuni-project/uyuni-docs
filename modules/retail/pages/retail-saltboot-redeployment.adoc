@@ -1,0 +1,189 @@
+[[retail.forced.saltboot.redeployment]]
+= Forced {saltboot} image redeployment
+
+Systems provisioned by {saltboot} are usually redeployed or repartitioned automatically when a new image is available, or {saltboot} partitioning changes.
+
+Occasionally, however, it is needed to force {saltboot} to redeploy an image or repartition disk, even when automation would not do so.
+For these situations, {saltboot} offers three ways to force redeployment or repartitioning:
+
+* <<force.redeployment.using.grains>>
+* <<force.redeployment.using.custom.info>>
+* <<force.redeployment.using.api>>
+* <<force.redeployment.using.pillar>>
+
+[WARNING]
+====
+Repartitioning of a terminal removes all data stored on the terminal hard disk, including any persistent partitions.
+====
+
+
+[[force.redeployment.using.grains]]
+== Force {saltboot} redeployment using {salt} grains
+
+{saltboot} redeployment grains have no side effects, and do not require any further configuration.
+The limitation is that terminal must be accessible by [systeminfo]``salt``.
+
+.Procedure: Forcing {saltboot} to redeploy image
+. On the {productname} Server, as root, apply this {salt} state at the command prompt:
++
+----
+salt $terminal_minion_id state.apply saltboot.force_redeploy
+----
++
+. Restart the terminal to pick up the changes.
+
+
+.Procedure: Forcing a {saltboot} to repartition the hard disk
+. On the {productname} Server, as root, apply this Salt state at the command prompt:
++
+----
+salt $terminal_minion_id state.apply saltboot.force_repartition
+----
+. Restart the terminal to pick up the changes.
+
+
+[[force.redeployment.using.custom.info]]
+== Force {saltboot} redeployment using custom info values
+
+{saltboot} custom values remove the limitation on terminal being reachable by [systemitem]``salt``, however there are configuration steps.
+
+Custom info keys and values can be also managed using API or [systemitem]``spacecmd`` command.
+For more information, see xref:reference:spacecmd/custominfo.adoc[].
+
+.Procedure: Create custom info key for image redeployment
+. In the {productname} {webui}, navigate to menu:Systems[Custom System Info].
+. Click [guimenu]``Create Key`` to create new [systemitem]``Custom Info Key``.
+. As [guimenu]``Key Label`` fill in [systemitem]``saltboot_force_redeploy``.
+. As [guimenu]``Description`` fill in [systemitem]``Force redeploy {saltboot} image``.
+. Click [guimenu]``Create Key``.
++
+[NOTE]
+====
+Creating [systemitem]``saltboot_force_redeploy`` custom key is a one time operation.
+When created, it is available for repeated use.
+====
+
+.Procedure: Assign custom value for image redeployment
+. Navigate to the [guimenu]``Overview`` page of the system you want to redeploy.
+. Select tab [guimenu]``Custom Info``.
+. Click on [guimenu]``Create Value``.
+. From the list of available keys click [guimenu]``saltboot_force_redeploy``.
+. As [guimenu]``Value`` type [systemitem]``True``.
+. Click [guimenu]``Update Key``.
+. Reboot the terminal to pick up the changes.
+
+[NOTE]
+====
+After terminal finishes booting, {saltboot} redeployment custom info setting is automatically reset to prevent repeated redeployment.
+====
+
+.Procedure: Create custom info key for disk repartitioning
+. Navigate to menu::Systems[Custom System Info] page.
+. Click [guimenu]``Create Key`` to create new [systemitem]``Custom Info Key``.
+. As [guimenu]``Key Label`` fill in [systemitem]``saltboot_force_repartition``.
+. As [guimenu]``Description`` fill in `Force terminal disk repartition`.
+. Click [guimenu]``Create Key``.
++
+[NOTE]
+====
+Creating [systemitem]``saltboot_force_repartition`` custom key is one time operation. 
+Once created, it is available for repeated use.
+====
+
+.Procedure: Assign custom value for disk repartitioning
+. Navigate to the [guimenu]``Overview`` page of the system you want to redeploy.
+. Select tab [guimenu]``Custom Info``.
+. Click on [guimenu]``Create Value``.
+. From the list of available keys click [guimenu]``saltboot_force_repartition``.
+. As [guimenu]``Value`` type [systemitem]``True``.
+. Click [guimenu]``Update Key``.
+. Reboot the terminal to pick up the changes.
+
+
+[[force.redeployment.using.api]]
+== Force {saltboot} redeployment using {saltboot} API call
+
+[NOTE]
+====
+After terminal finishes booting, {saltboot} redeployment setting is automatically reset to prevent repeated redeployment.
+====
+
+An API call [systemitem]``system.setPillar`` can be used to set specific {saltboot} options through {salt} pillar data. 
+{productname} {saltboot} integration is using [systemitem]``tuning-saltboot`` pillar category to manage {saltboot} tuning, including forced redeployment or disk repartition. 
+Using this pillar category allows {productname} to reset {saltboot} flag once the terminal is booted up.
+
+.Procedure: Forcing {saltboot} to redeploy image using API call using spacecmd command
+. In the console run following the command, and replace [systemitem]``$terminal_minion_id`` with the actual terminal minion id:
++
+----
+spacecmd api -- -A '$terminal_minion_id,tuning-saltboot,{"saltboot": {"force_redeployment": "True"}}' system.setPillar
+----
+
+.Procedure: Forcing {saltboot} to repartition disk using API call using spacecmd command
+. In the console run the following command, replace [systemitem]``$terminal_minion_id`` with the actual terminal minion id:
++
+----
+spacecmd api -- -A '$terminal_minion_id,tuning-saltboot,{"saltboot": {"force_repartition": "True"}}' system.setPillar
+----
+
+.Procedure: Check {saltboot} tuning options
+. In the console run the following command, and replace [systemitem]``$terminal_minion_id`` with the actual terminal minion id:
++
+----
+spacecmd api -- -A '$terminal_minion_id,tuning-saltboot' system.getPillar
+----
+
+[IMPORTANT]
+====
+Make sure to use [systemitem]``tuning-saltboot`` as pillar category in the API call.
+====
+
+
+[[force.redeployment.using.pillar]]
+== Force {saltboot} redeployment by custom pillar
+
+[WARNING]
+====
+Pillars specified outside of {productname} database cannot be reset automatically. 
+Without manual intervention, the terminal will download a new image on each reboot.
+====
+
+.Procedure: Force a {saltboot} to redeploy image using {saltboot} pillar
+. Create new file [filename]``/srv/salt/pillar/force_redeploy.sls`` with content:
++
+----
+saltboot:
+  force_redeploy: True
+----
++
+. Create new file or update existing file named ``/srv/salt/pillar/top.sls`` with content:
++
+----
+base:
+  '$terminal_minion_id':
+    - force_redeploy
+----
++
+. Reboot the terminal to pick up the changes.
+. After the terminal finishes booting, remove modifications made in [filename]``/srv/salt/pillar/top.sls`` file.
+
+If your terminal encounters a problem with the file system or the partition table, you might need to remove the partition table and reformat the terminal.
+
+.Procedure: Force {saltboot} to repartition disk using {saltboot} pillar
+. Create new file [filename]``/srv/salt/pillar/force_repartition.sls`` with content:
++
+----
+saltboot:
+  force_repartition: True
+----
++
+. Create new file or update existing file named ``/srv/salt/pillar/top.sls`` with content:
++
+----
+base:
+  '$terminal_minion_id':
+    - force_repartition
+----
++
+. Reboot the terminal to pick up the changes.
+. After the terminal finishes booting, remove modifications made in [filename]``/srv/salt/pillar/top.sls`` file.
