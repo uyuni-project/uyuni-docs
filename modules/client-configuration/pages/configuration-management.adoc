@@ -3,6 +3,12 @@
 
 You can use configuration files and channels to manage configuration for your clients, rather than configuring each client manually.
 
+[NOTE]
+====
+Some of the following features are available for traditional clients only.
+For features supported on {salt} clients, see the table below.
+====
+
 Configuration parameters are scripted and stored in configuration files.
 You can write configuration files directly using the {productname} {webui}, or you can upload or link to files that exist in other locations.
 
@@ -60,6 +66,10 @@ This table shows the supported features on different client types:
 | File Import from a Client
 | {cross}
 | {check}
+
+| Jinja Templating
+| {check}
+| {cross}
 
 | Configuration Macros
 | {cross}
@@ -166,13 +176,13 @@ If the client's configuration priorities are going to be reordered by an action,
 
 
 
-== Compare Configuration Files
+== Compare Configuration Files
 
 You can also use the system set manager (SSM) to compare the configuration file deployed on clients with the configuration file stored on the {productname} Server.
 
 
 
-.Procedure: Comparing Configuration Files
+.Procedure: Comparing Configuration Files
 . In the {productname} {webui}, navigate to menu:Systems[Systems List] and select the clients subscribed to the configuration files you want to compare.
 . Navigate to menu:Systems[System Set Manager], and go to the menu:Configuration[Compare Files] subtab to the list of available configuration files.
 . OPTIONAL: Click the number in the [guimenu]``Systems`` column to see which clients are currently subscribed to the configuration file.
@@ -180,7 +190,31 @@ You can also use the system set manager (SSM) to compare the configuration file 
 
 
 
-== Configuration File Macros on Traditional Clients
+== Jinja templating on {salt} clients
+
+Jinja templating is possible on {salt} clients.
+Jinja provides variables from pillars or grains.
+They can be used in configuration files or {salt} states.
+
+For more information, see https://docs.saltproject.io/salt/user-guide/en/latest/topics/jinja.html with this example:
+
+----
+{% if grains.os_family == 'RedHat' %}
+  {% set dns_cfg = '/etc/named.conf' %}
+{% elif grains.os_family == 'Debian' %}
+  {% set dns_cfg = '/etc/bind/named.conf' %}
+{% else %}
+  {% set dns_cfg = '/etc/named.conf' %}
+{% endif %}
+dns_conf:
+  file.managed:
+    - name: {{ dns_cfg }}
+    - source: salt://dns/files/named.conf
+----
+
+
+
+== Configuration file macros on traditional clients
 
 Being able to store one file and share identical configurations is useful, but in some cases you might need many variations of the same configuration file, or configuration files that differ only in system-specific details, such as host name and MAC address.
 In this case, you can use macros or variables within the configuration files.
