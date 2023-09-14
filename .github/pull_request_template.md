@@ -5,11 +5,9 @@ Short summary of why you created this PR (if you added documentation, please add
 # Target branches
 
 Which documentation version does this PR apply to?
-- [ ] Master (Default)
-- [ ] Manager-4.3
-
+- [ ] master (Default)
+- [ ] manager-4.3
 
 # Links
-
 - Related development PR #<insert PR link, if any>
 - Fixes #<insert spacewalk issue, if any>
