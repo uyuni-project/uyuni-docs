@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Virtualization with Xen and KVM
+     | SUSE Manager 4.3 Documentation</title>    <link rel="canonical" href="https://documentation.suse.com/suma/4.3/en/suse-manager/client-configuration/virt-xenkvm.html">
+    <meta name="generator" content="Antora 3.1.2">
+    <link rel="stylesheet" href="../../_/css/site.css">
+<link rel="stylesheet" href="../../_/css/search.css">
+<link rel="icon" href="../../_/img/favicon.ico" type="image/x-icon">
+<link rel="stylesheet" href="../../_/css/font-styles.css">
+<link rel="stylesheet" href="../../_/fonts/css/all.css">
+<link rel="stylesheet" href="../../_/css/site-extra.css">
+<!-- <link rel="preconnect" href="https://fonts.gstatic.com"> -->
+<link href="https://documentation.suse.com/docserv/res/fonts/poppins/poppins.css" rel="stylesheet">
+<!-- <link href="https://fonts.googleapis.com/css?family=Montserrat|Roboto&display=swap" rel="stylesheet"> -->
+<link rel="stylesheet" href="../../_/css/vendor/light.css">
+<script src="/docserv/res/lightheaded/analytics.js"
+        type="text/javascript"></script>
+    <script>var uiRootPath = '../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+   <div class="navbar-brand">
+            <div class="navbar-item">
+                <a class=" navbar-logo" href="https://documentation.suse.com/suma/"><img
+                        class="logo" src="../../_/img/logo.svg"/></a>
+            </div>
+      <div class="navbar-item search hide-for-print">
+        <div id="search-field" class="field">
+          <input id="search-input" type="text" placeholder="Search the docs">
+        </div>
+      </div>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+     <div id="topbar-nav" class="navbar-menu">
+          <div class="navbar-end">
+              <div class="navbar-item has-dropdown is-hoverable">
+                  <div class="navbar-link"><img src="../../_/img/resources.png" class="langIcon Resurces" alt="Resources" title="Resources"></div>
+                  <div class="navbar-dropdown">
+                      <!--  <div class="navbar-item"><strong>Resources</strong></div> -->
+                      <a class="navbar-item" href="https://github.com/uyuni-project/uyuni-docs"><i
+                              class="fab fa-github"></i>&nbsp;uyuni-docs</a>
+                      <a class="navbar-item" href="https://github.com/uyuni-project/uyuni-docs/issues"><i
+                              class="fab fa-github"></i>&nbsp;Report Issue</a>
+                      <a class="navbar-item"
+                         href="https://github.com/uyuni-project/uyuni-docs/wiki"><i
+                              class="fas fa-user-edit"></i>&nbsp;Contribute</a>
+                  </div>
+              </div>
+                           <div class="navbar-item has-dropdown is-hoverable">
+                 <div class="navbar-link"><img src="../../_/img/language.png" class="langIcon Language" alt="Language" title="Language"></div>
+                 <div class="navbar-dropdown">
+                     <!--  </div><div>Icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div> -->
+                     <a role="button" class="navbar-item" id="en" onclick="selectLanguage(this.id)"><img src="../../_/img/engFlag.svg" class="langIcon english">&nbsp;English</a>
+                     <!-- LANGUAGESELECTOR -->
+                     <a role="button" class="navbar-item" id="ko" onclick="selectLanguage(this.id)"><img src="../../_/img/koFlag.svg" class="langIcon korea">&nbsp;한국어</a>
+                     <a role="button" class="navbar-item" id="ja" onclick="selectLanguage(this.id)"><img src="../../_/img/jaFlag.svg" class="langIcon japan">&nbsp;日本語</a>
+                     <a role="button" class="navbar-item" id="zh_CN" onclick="selectLanguage(this.id)"><img src="../../_/img/china.svg" class="langIcon china">&nbsp;中文</a>
+                 </div>
+             </div>
+                
+          </div>
+      </div>
+      <a id="twitter-link" class="navbar-item" href="https://twitter.com/susemanager">
+          <span class="icon">
+            <svg aria-hidden="true" data-icon="twitter" role="img" xmlns="http://www.w3.org/2000/svg"
+                 viewBox="0 0 512 512">
+              <path fill="#57aaee"
+                    d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"></path>
+            </svg>
+          </span>
+      </a>
+   <!--   <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+
+        </div>
+        <div class="navbar-item">
+          <span class="control">
+          </span>
+        </div>
+        <div class="navbar-item">
+          <span class="control">
+          </span>
+        </div>
+        <div class="navbar-item">
+          <span class="control">
+          </span>
+        </div>
+        <div class="navbar-item">
+          <span class="control">
+          </span>
+        </div>
+      </div> -->
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="suse-manager" data-version="">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">SUSE Manager 4.3 Documentation</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../common_gfdl1.2_i.html">License</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../specialized-guides/specialized-guides-overview.html">Specialized Guides</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../specialized-guides/public-cloud-guide/overview.html">Public Cloud Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <button class="nav-item-toggle"></button>
+    <span class="nav-text">Generic Public Cloud</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../specialized-guides/public-cloud-guide/setup.html">Initial Setup</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../specialized-guides/public-cloud-guide/clients.html">Client Configuration</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <button class="nav-item-toggle"></button>
+    <span class="nav-text">PAYG Guide</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../specialized-guides/public-cloud-guide/payg/payg-overview.html">Pay-as-you-go Overview</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../specialized-guides/public-cloud-guide/payg/payg-benefits.html">Benefits of PAYG</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <button class="nav-item-toggle"></button>
+    <span class="nav-text">PAYG on AWS</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="5">
+    <a class="nav-link" href="../specialized-guides/public-cloud-guide/payg/payg-faq.html">PAYG FAQ on AWS</a>
+  </li>
+  <li class="nav-item" data-depth="5">
+    <a class="nav-link" href="../specialized-guides/public-cloud-guide/payg/payg-country-listing.html">Supported Country List</a>
+  </li>
+  <li class="nav-item" data-depth="5">
+    <a class="nav-link" href="../specialized-guides/public-cloud-guide/payg/payg-aws-requirements.html">SUSE Manager AWS requirements</a>
+  </li>
+  <li class="nav-item" data-depth="5">
+    <a class="nav-link" href="../specialized-guides/public-cloud-guide/payg/payg-find-the-aws-image.html">Find the Image</a>
+  </li>
+  <li class="nav-item" data-depth="5">
+    <a class="nav-link" href="../specialized-guides/public-cloud-guide/payg/payg-configure-the-image.html">Configure the Image on EC2</a>
+  </li>
+  <li class="nav-item" data-depth="5">
+    <a class="nav-link" href="../specialized-guides/public-cloud-guide/payg/payg-start-the-image.html">Start the Instance</a>
+  </li>
+  <li class="nav-item" data-depth="5">
+    <a class="nav-link" href="../specialized-guides/public-cloud-guide/payg/payg-initial-setup.html">Initial Setup</a>
+  </li>
+  <li class="nav-item" data-depth="5">
+    <a class="nav-link" href="../specialized-guides/public-cloud-guide/payg/payg-start-the-server.html">Start the Server</a>
+  </li>
+  <li class="nav-item" data-depth="5">
+    <a class="nav-link" href="../specialized-guides/public-cloud-guide/payg/payg-webui-configuration.html">WebUI Configuration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../specialized-guides/salt/salt-overview.html">Salt Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../specialized-guides/salt/salt-terminology.html">Terminology</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../specialized-guides/salt/salt-command.html">Salt Command</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../specialized-guides/salt/salt-useful-commands.html">Common Salt Commands</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../specialized-guides/salt/salt-states-and-pillars.html">Salt States and Pillars</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../specialized-guides/salt/salt-gpg-encrypted-pillars.html">GPG Encrypted Pillars</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../specialized-guides/salt/salt-custom-states.html">Custom Salt States</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../specialized-guides/salt/salt-file-locations.html">File Locations</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../specialized-guides/salt/salt-gitfs.html">GitFS Fileserver Backend</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../specialized-guides/salt/salt-yomi.html">Install Using Yomi</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../specialized-guides/salt/salt-config-modules.html">Configuration Modules</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../specialized-guides/salt/salt-formulas-intro.html">Salt Formulas</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../specialized-guides/salt/salt-formulas-by-product.html">Formulas provided by SUSE Manager</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../specialized-guides/salt/salt-formula-bind.html">Bind Formula</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../specialized-guides/salt/salt-formula-branchnetwork.html">Branch Network Formula</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../specialized-guides/salt/salt-formula-dhcpd.html">DHCPd Formula</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../specialized-guides/salt/salt-formula-imagesync.html">Image Sync Formula</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../specialized-guides/salt/salt-formula-monitoring.html">Monitoring Formulas</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../specialized-guides/salt/salt-formula-pxe.html">PXE Formula</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../specialized-guides/salt/salt-formula-saltboot.html">Saltboot Formula</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../specialized-guides/salt/salt-formula-tftpd.html">TFTPd Formula</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../specialized-guides/salt/salt-formula-vsftpd.html">VsFTPd Formula</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../specialized-guides/salt/salt-formula-yomi.html">Yomi Formula</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../specialized-guides/salt/salt-formulas-custom.html">Custom Salt Formulas</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../specialized-guides/salt/salt-ssh.html">Salt SSH</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../specialized-guides/salt/salt-rate-limiting.html">Rate Limiting</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../specialized-guides/salt/salt-scaling-minions.html">Scaling Minions</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../specialized-guides/large-deployments/overview.html">Large Deployments Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../specialized-guides/large-deployments/hardware-reqs.html">Hardware Requirements</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../specialized-guides/large-deployments/single-server.html">Single Server</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../specialized-guides/large-deployments/operation-reqs.html">Operation Requirements</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../specialized-guides/large-deployments/multi-server.html">Multiple Servers with Hub</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../specialized-guides/large-deployments/hub-reqs.html">Hub Operation Requirements</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../specialized-guides/large-deployments/hub-install.html">Hub Installation</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../specialized-guides/large-deployments/hub-api.html">Hub API</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../specialized-guides/large-deployments/hub-namespaces.html">Hub Namespaces</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../specialized-guides/large-deployments/hub-auth.html">Hub Authentication</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../specialized-guides/large-deployments/hub-reporting.html">Hub Reporting</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../specialized-guides/large-deployments/retail-large-scale.html">Large Retail Environments</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../specialized-guides/large-deployments/tuning.html">Tuning Large Installations</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <span class="nav-text">xref:large-deployments/monitoring.adoc[Monitoring Large Scale Deployments</span>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../specialized-guides/qs-sap/overview.html">Quick Start: SAP</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../specialized-guides/qs-sap/prepare-server.html">Prepare Server</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../specialized-guides/qs-sap/prepare-clients.html">Prepare Clients</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../specialized-guides/qs-sap/configure.html">Configuration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">SUSE Manager 4.3 Documentation</span>
+    <span class="version">default</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">SUSE Manager 4.3 Documentation</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">default</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">SUSE Manager 4.3 Documentation</a></li>
+    <li><a href="virt-xenkvm.html">Virtualization with Xen and KVM</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="On this page" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Virtualization with Xen and KVM</h1>
+<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_host_setup">1. Host Setup</a></li>
+<li><a href="#_autoinstallation">2. Autoinstallation</a>
+<ul class="sectlevel2">
+<li><a href="#_create_an_autoinstallable_distribution">2.1. Create an Autoinstallable Distribution</a></li>
+<li><a href="#_create_and_upload_an_autoinstallation_profile">2.2. Create and Upload an Autoinstallation Profile</a></li>
+<li><a href="#_automatically_register_guests">2.3. Automatically Register Guests</a></li>
+<li><a href="#_autoinstall_vm_guests">2.4. Autoinstall VM Guests</a></li>
+</ul>
+</li>
+<li><a href="#_manage_vm_guests">3. Manage VM Guests</a></li>
+</ul>
+</div>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Xen and KVM virtualized clients can be managed directly in SUSE Manager.</p>
+</div>
+<div class="paragraph">
+<p>To begin, you need to set up a virtual host on your SUSE Manager Server.
+You can then set up autoinstallation using AutoYaST or Kickstart for additional virtual hosts and for virtual guests.</p>
+</div>
+<div class="paragraph">
+<p>This section also includes information about administering virtual guests after they have been installed.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_host_setup"><a class="anchor" href="#_host_setup"></a><a class="link" href="#_host_setup">1. Host Setup</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The way that you set up Xen or KVM on a VM host depends on operating system you want to use on its associated guests:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>For SUSE operating systems, see the SLES Virtualization Guide available from <a href="https://documentation.suse.com/sles/15-SP3/html/SLES-all/book-virtualization.html" class="bare">https://documentation.suse.com/sles/15-SP3/html/SLES-all/book-virtualization.html</a>.</p>
+</li>
+<li>
+<p>For Red Hat Enterprise Linux operating systems, refer to the Red Hat documentation for your version.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>SUSE Manager uses <code class="systemitem">libvirt</code> to install and manage guests.
+You must have the <code class="package">libvirtd</code> package installed on your host.
+In most cases, the default settings are sufficient and you do not need to adjust them.
+However, if you want to access the VNC console on your guests as a non-root user, you need to perform some configuration changes.
+For more information about how to set up the VNC console, see the documentation for your operating system.</p>
+</div>
+<div class="paragraph">
+<p>You need a bootstrap script on the SUSE Manager Server.
+The bootstrap script must include the activation key for your host.
+We also recommend that you include your GPG key for additional security.
+For more on creating a bootstrap script, see <a href="registration-bootstrap.html" class="xref page">Register Clients with a Bootstrap Script</a>.</p>
+</div>
+<div class="paragraph">
+<p>When the bootstrap script is ready, use it to register the host with the SUSE Manager Server.
+For more information about client registration, see <a href="registration-overview.html" class="xref page">Client Registration</a>.</p>
+</div>
+<div class="paragraph">
+<p>For Salt clients, you need to enable the <code class="systemitem">Virtualization Host</code> entitlement.
+This allows you to see VM changes instantly.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure:</div>
+<ol class="arabic">
+<li>
+<p>In the SUSE Manager Web UI, navigate to the <code class="guimenu">System Details</code> page for the host, and click the <code class="guimenu">Properties</code> tab.
+Alternatively, the <code class="systemitem">Virtualization Host</code> entitlement can be added at the registration key level.</p>
+</li>
+<li>
+<p>In the <code class="guimenu">Add-On System Types</code> section, check <code class="guimenu">Virtualization Host</code>, and click <b class="button">Update Properties</b> to save the changes.</p>
+</li>
+<li>
+<p>Restart the <code class="systemitem">salt-minion</code> service to activate the new configuration:</p>
+<div class="listingblock">
+<div class="content">
+<pre>systemctl restart salt-minion</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_autoinstallation"><a class="anchor" href="#_autoinstallation"></a><a class="link" href="#_autoinstallation">2. Autoinstallation</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You can use AutoYaST or Kickstart to automatically install and register Xen and KVM guests.</p>
+</div>
+<div class="paragraph">
+<p>You need an activation key for the VM host you want to register the guests to, and for each guest.
+The activation key must have the <code class="systemitem">provisioning</code> and <code class="systemitem">Virtualization Platform</code> entitlements.
+For more information about creating activation keys, see <a href="activation-keys.html" class="xref page">Activation Keys</a>.</p>
+</div>
+<div class="paragraph">
+<p>If you want to automatically register the guests with SUSE Manager after installation, you need to create a bootstrap script.
+For more information about creating a bootstrap script, see <a href="registration-bootstrap.html" class="xref page">Register Clients with a Bootstrap Script</a>.</p>
+</div>
+<div class="sect2">
+<h3 id="_create_an_autoinstallable_distribution"><a class="anchor" href="#_create_an_autoinstallable_distribution"></a><a class="link" href="#_create_an_autoinstallable_distribution">2.1. Create an Autoinstallable Distribution</a></h3>
+<div class="paragraph">
+<p>You need to create an autoinstallable distribution on the VM host to be able to autoinstall clients from SUSE Manager.
+The distribution can be made available from a mounted local or remote directory, or on a loop-mounted ISO image.</p>
+</div>
+<div class="paragraph">
+<p>The configuration of the autoinstallable distribution differs depending on whether you are using a Red Hat Enterprise Linux or SUSE operating system on your guests.
+The packages for a Red Hat Enterprise Linux installation are fetched from the associated base channel.
+Packages for installing SUSE systems are fetched from the autoinstallable distribution.
+Therefore, for SUSE systems, the autoinstallable distribution must be a complete installation source.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. Paths for autoinstallable distributions</caption>
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Operating System Type</th>
+<th class="tableblock halign-left valign-top">Kernel Location</th>
+<th class="tableblock halign-left valign-top">initrd Location</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Red Hat Enterprise Linux</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code class="path">images/pxeboot/vmlinuz</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code class="path">images/pxeboot/initrd.img</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SUSE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code class="path">boot/&lt;arch&gt;/loader/initrd</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code class="path">boot/&lt;arch&gt;/loader/linux</code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>In all cases, ensure that the base channel matches the autoinstallable distribution.</p>
+</div>
+<div class="paragraph">
+<p>Before you begin, ensure you have a installation media available to your VM Host.
+It can be on a remote resource, a local directory, or a loop-mounted ISO image.
+Additionally, ensure that all files and directories are world-readable.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure: Creating an Autoinstallable Distribution</div>
+<ol class="arabic">
+<li>
+<p>In the SUSE Manager Web UI, navigate to <span class="menuseq"><b class="menu">Systems</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="submenu">Autoinstallation</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">Distributions</b></span> and click <b class="button">Create Distribution</b>.</p>
+</li>
+<li>
+<p>In the <code class="guimenu">Create Autoinstallable Distribution</code> section, use these parameters:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>In the <code class="guimenu">Distribution Label</code> section, type a unique name for the distribution.
+Use only letters, numbers, hyphens (<code>-</code>), periods  (<code>.</code>), and underscores (<code>_</code>), and ensure the name is longer than four characters.</p>
+</li>
+<li>
+<p>In the <code class="guimenu">Tree Path</code> field, type an absolute path to the installation source.</p>
+</li>
+<li>
+<p>In the <code class="guimenu">Base Channel</code> field, select the channel that matches the installation source.
+This channel is used as the package source for non-SUSE installations.</p>
+</li>
+<li>
+<p>In the <code class="guimenu">Installer Generation</code> field, select the operating system version that matches the installation source.</p>
+</li>
+<li>
+<p>In the <code class="guimenu">Kernel Options</code> field, type any options to be passed to the kernel when booting for the installation.
+The <code class="option">install=</code> parameter and the <code class="option">self_update=0 pt.options=self_update</code> parameter are added by default.</p>
+</li>
+<li>
+<p>In the <code class="guimenu">Post Kernel Options</code> section, type any options to  be passed to the kernel when booting the installed system for the first time.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Click <b class="button">Create Autoinstallable Distribution</b> to save.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>When you have created an autoinstallable distribution, you can edit it by navigating to  <span class="menuseq"><b class="menu">Systems</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="submenu">Autoinstallation</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">Distributions</b></span> and selecting the distribution you want to edit.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_create_and_upload_an_autoinstallation_profile"><a class="anchor" href="#_create_and_upload_an_autoinstallation_profile"></a><a class="link" href="#_create_and_upload_an_autoinstallation_profile">2.2. Create and Upload an Autoinstallation Profile</a></h3>
+<div class="paragraph">
+<p>Autoinstallation profiles contain all the installation and configuration data needed to install a system.
+They can also contain scripts to be executed after the installation is complete.</p>
+</div>
+<div class="paragraph">
+<p>Kickstart profiles can be created using the SUSE Manager Web UI, by navigating to <span class="menuseq"><b class="menu">Systems</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="submenu">Autoinstallation</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">Profiles</b></span>, clicking <b class="button">Create New Kickstart File</b>, and following the prompts.</p>
+</div>
+<div class="paragraph">
+<p>You can also create AutoYaST or Kickstart autoinstallation profiles by hand.
+SUSE provides templates of AutoYaST installation files that you can use as a starting point for your own custom files.
+You will find them at <a href="https://github.com/SUSE/manager-build-profiles" class="bare">https://github.com/SUSE/manager-build-profiles</a>.</p>
+</div>
+<div class="paragraph">
+<p>If you are using AutoYaST to install SLES, you also need to include this snippet:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>&lt;products config:type="list"&gt;
+  &lt;listentry&gt;SLES&lt;/listentry&gt;
+&lt;/products&gt;</pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>For more on AutoYaST, see <a href="autoinst-profiles.html#autoyast" class="xref page">client-configuration:autoinst-profiles.adoc#autoyast</a>.</p>
+</li>
+<li>
+<p>For more on Kickstart, see <a href="autoinst-profiles.html#kickstart" class="xref page">client-configuration:autoinst-profiles.adoc#kickstart</a>, or refer to the Red Hat documentation for your installation.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure: Uploading an Autoinstallation Profile</div>
+<ol class="arabic">
+<li>
+<p>In the SUSE Manager Web UI, navigate to <span class="menuseq"><b class="menu">Systems</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="submenu">Autoinstallation</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">Profiles</b></span> and click <b class="button">Upload Kickstart/AutoYaST File</b>.</p>
+</li>
+<li>
+<p>In the <code class="guimenu">Create Autoinstallation Profile</code> section, use these parameters:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>In the <code class="guimenu">Label</code> field, type a unique name for the profile.
+Use only letters, numbers, hyphens (<code>-</code>), periods  (<code>.</code>), and underscores (<code>_</code>), and ensure the name is longer than six characters.</p>
+</li>
+<li>
+<p>In the <code class="guimenu">Autoinstall Tree</code> field, select the autoinstallable distribution you created earlier.</p>
+</li>
+<li>
+<p>In the <code class="guimenu">Virtualization Type</code> field, select the relevant Guest type (for example, <code class="parameter">KVM Virtualized Guest</code>.
+Do not choose <code class="guimenu">Xen Virtualized Host</code> here.</p>
+</li>
+<li>
+<p>OPTIONAL: If you want to manually create your autoinstallation profile, you can type it directly into the <code class="guimenu">File Contents</code> field.
+If you have a file already created, leave the <code class="guimenu">File Contents</code> field blank.</p>
+</li>
+<li>
+<p>In the <code class="guimenu">File to Upload</code> field, click <b class="button">Choose File</b>, and use the system dialog to select the file to upload.
+If the file is successfully uploaded, the filename is shown in the <code class="guimenu">File to Upload</code> field.</p>
+</li>
+<li>
+<p>The contents of the uploaded file is shown in the <code class="guimenu">File Contents</code> field.
+If you need to make edits, you can do so directly.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Click <b class="button">Create</b> to save your changes and store the profile.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>When you have created an autoinstallation profile, you can edit it by navigating to  <span class="menuseq"><b class="menu">Systems</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="submenu">Autoinstallation</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">Profiles</b></span> and selecting the profile you want to edit.
+Make the desired changes and save your settings by clicking <b class="button">Create</b>.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you change the <code class="guimenu">Virtualization Type</code> of an existing Kickstart profile, it might also modify the bootloader and partition options, potentially overwriting any custom settings.
+Carefully review the <code class="guimenu">Partitioning</code> tab to verify these settings before making changes.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_automatically_register_guests"><a class="anchor" href="#_automatically_register_guests"></a><a class="link" href="#_automatically_register_guests">2.3. Automatically Register Guests</a></h3>
+<div class="paragraph">
+<p>When you install VM guests automatically, they are not registered to SUSE Manager.
+If you want your guests to be automatically registered as soon as they are installed, you can add a section to the autoinstallation profile that invokes a bootstrap script, and registers the guests.</p>
+</div>
+<div class="paragraph">
+<p>This section gives instructions for adding a bootstrap script to an existing AutoYaST profile.</p>
+</div>
+<div class="paragraph">
+<p>For more information about creating a bootstrap script, see <a href="registration-bootstrap.html" class="xref page">Register Clients with a Bootstrap Script</a>.
+For instructions on how to do this for {kickstart], refer to the Red Hat documentation for your installation.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure: Adding a Bootstrap Script to an AutoYaST Profile</div>
+<ol class="arabic">
+<li>
+<p>Ensure your bootstrap script contains the activation key for the VM guests you want to register with it, and that is located on the host at <code class="path">/srv/www/htdocs/pub/bootstrap_vm_guests.sh</code>.</p>
+</li>
+<li>
+<p>In the SUSE Manager Web UI, navigate to <span class="menuseq"><b class="menu">Systems</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="submenu">Autoinstallation</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">Profiles</b></span>, and select the AutoYaST profile to associate this script with.</p>
+</li>
+<li>
+<p>In the <code class="guimenu">File Contents</code> field, add this snippet at the end of the file, immediately before the closing <code>&lt;/profile&gt;</code> tag.
+Ensure you replace the example IP address in the snippet with the correct IP address for your SUSE Manager Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre>&lt;scripts&gt;
+  &lt;init-scripts config:type="list"&gt;
+    &lt;script&gt;
+      &lt;interpreter&gt;shell &lt;/interpreter&gt;
+      &lt;location&gt;
+        http://`192.168.1.1`/pub/bootstrap/bootstrap_vm_guests.sh
+      &lt;/location&gt;
+    &lt;/script&gt;
+  &lt;/init-scripts&gt;
+&lt;/scripts&gt;</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Click <b class="menuref">Update</b> to save your changes.</p>
+</li>
+</ol>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If your AutoYaST profile already contains a <code>&lt;scripts&gt;</code> section, do not add a second one.
+Place the bootstrap snippet inside the existing <code>&lt;scripts&gt;</code> section.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_autoinstall_vm_guests"><a class="anchor" href="#_autoinstall_vm_guests"></a><a class="link" href="#_autoinstall_vm_guests">2.4. Autoinstall VM Guests</a></h3>
+<div class="paragraph">
+<p>When you have everything set up, you can start to autoinstall your VM guests.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Each VM host can only install one guest at a time.
+If you are scheduling more than one autoinstallation, make sure you time them so that the next installation does not begin before the previous one has completed.
+If a guest installation starts while another one is still running, the running installation is canceled.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>In the SUSE Manager Web UI, navigate to <span class="menuseq"><b class="menu">Systems</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">Overview</b></span>, and select the VM host you want to install guests on.</p>
+</li>
+<li>
+<p>Navigate to the <code class="guimenu">Virtualization</code> tab, and the <code class="guimenu">Provisioning</code> subtab.</p>
+</li>
+<li>
+<p>Select the autoinstallation profile you want to use, and specify a unique name for the guest.</p>
+</li>
+<li>
+<p>Choose a proxy if applicable and enter a schedule.</p>
+</li>
+<li>
+<p>To change the guest&#8217;s hardware profile and configuration options, click <b class="button">Advanced Options</b>.</p>
+</li>
+<li>
+<p>Click <b class="button">Schedule Autoinstallation and Finish</b> to complete.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_manage_vm_guests"><a class="anchor" href="#_manage_vm_guests"></a><a class="link" href="#_manage_vm_guests">3. Manage VM Guests</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You can use the SUSE Manager Web UI to manage your VM Guests, including actions like shutting down, restarting, and adjusting CPU and memory allocations.</p>
+</div>
+<div class="paragraph">
+<p>To do this, you need your Xen or KVM VM host registered to the SUSE Manager Server, and have the <code class="daemon">libvirtd</code> service running on the host.</p>
+</div>
+<div class="paragraph">
+<p>In the SUSE Manager Web UI, navigate to <span class="menuseq"><b class="menu">Systems</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">System List</b></span>, and click on the VM host for the guests you want to manage.
+Navigate to the <code class="guimenu">Virtualization</code> tab to see all guests registered to this host, and access the management functions.</p>
+</div>
+<div class="paragraph">
+<p>For more information about managing VM guests using the Web UI, see <a href="../reference/systems/system-details/sd-virtualization.html" class="xref page">Virtualization</a>.</p>
+</div>
+</div>
+</div>
+</article>
+  </div>
+</main>
+</div>
+<script src="../../_/js/site.js"></script>
+<script async src="../../_/js/vendor/highlight.js"></script>
+<script src="../../_/js/vendor/lunr.js"></script>
+<script src="../../_/js/search-ui.js" id="search-ui-script" data-site-root-path="../.." data-snippet-length="100" data-stylesheet="../../_/css/search.css"></script>
+<script async src="../../search-index.js"></script>
+<script src="../../_/js/vendor/langSelection.js"></script>
+
+  </body>
+</html>
