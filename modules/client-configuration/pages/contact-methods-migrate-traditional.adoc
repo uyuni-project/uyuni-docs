@@ -1,3 +1,116 @@
 [[contact-methods-migrate-trad]]
 = Migrate Traditional Clients to Salt Clients
 
+To migrate a system from a traditional client to a {salt}, the use can create the {salt} bootstrap script and re-register the system with it.
+FIXME: Create, edit, run.
+
+First you create a bootstrap script with the {webui} as a template.
+
+.Procedure: Creating a Bootstrap Script
+. In the {productname} {webui}, navigate to menu:Admin[Manager Configuration > Bootstrap Script].
+. In the [guimenu]``SUSE Manager Configuration - Bootstrap`` dialog, verify that the [guimenu]``Bootstrap using Salt`` checkbox is checked.
+. The required fields are pre-populated with values derived from previous installation steps.
+  For details on each setting, see xref:reference:admin/bootstrap-script.adoc[].
+. Click btn:[Update] to create the script.
+. The bootstrap script is generated and stored on the server in the [path]``/srv/www/htdocs/pub/bootstrap`` directory.
+  Alternatively, you can access the bootstrap script over HTTPS.
+  Replace [literal]``<example.com>`` with the host name of your {productname} Server:
+----
+https://<example.com>/pub/bootstrap/bootstrap.sh
+----
+
+In the next step, you modify the bootstrap script according as needed.
+It is important that you set your activation key.
+Navigate to menu:Home[Overview] and, in the [guimenu]``Tasks`` box, click [guimenu]``Manage Activation Keys``.
+All keys created for channels are listed on this page.
+You must enter the full name of the key you wish to use in the bootstrap script exactly as presented in the key field.
+For more information about activation keys, see xref:client-configuration:activation-keys.adoc[].
+
+.Procedure: Modifying a Bootstrap Script
+. On your {productname} Server, as root at the command line change to the bootstrap directory with:
++
+----
+cd /srv/www/htdocs/pub/bootstrap/
+----
+. Create a copy of the template bootstrap script for use with each of your clients.
++
+----
+cp bootstrap.sh bootstrap-migrate-to-salt.sh
+----
+. Open [path]``bootstrap-migrate-to-salt.sh`` for modification.
+  Scroll down until you can see the text shown below.
+  If ``exit 1`` exists in the file, comment it out by typing a hash or pound sign (&#35;) at the beginning of the line.
+  This activates the script.
+  Enter the name of the key for this script in the ``ACTIVATION_KEYS=`` field:
++
+----
+echo "Enable this script: comment (with #'s) this block (or, at least just"
+echo "the exit below)"
+echo
+#exit 1
+
+# can be edited, but probably correct (unless created during initial install):
+# NOTE: ACTIVATION_KEYS *must* be used to bootstrap a client machine.
+ACTIVATION_KEYS=1-migrate-salt
+ORG_GPG_KEY=
+----
+
+. When you have finished, save the file.
+
+[NOTE]
+====
+By default, the bootstrap script will try to install [package]``venv-salt-minion`` for Salt clients if it's available in the bootstrap repository and [package]``salt-minion`` if there is no Salt bundle in the bootstrap repository.
+It is posible to avoid installing Salt bundle and keep using [package]``salt-minion`` if you need it for some reason.
+
+For more information, see xref:client-configuration:contact-methods-saltbundle.adoc[Salt Bundle].
+====
+
+
+
+As the final step, you use the bootstrap script to register clients.
+
+
+.Procedure: Running the Bootstrap Script
+
+. On the {productname} Server, log in as root.
+  At the command prompt, and change to the bootstrap directory:
++
+
+----
+cd /srv/www/htdocs/pub/bootstrap/
+----
++
+
+. Run this command to execute the bootstrap script on the client; replace [systemitem]``EXAMPLE.COM`` with the host name of your client:
++
+
+----
+cat bootstrap-migrate-to-salt.sh | ssh root@EXAMPLE.COM /bin/bash
+----
++
+
+. Alternatively, on the client, run this command:
++
+
+----
+curl -Sks https://server_hostname/pub/bootstrap/bootstrap-migrate-to-salt.sh | /bin/bash
+----
++
+
+The script downloads the required dependencies.
++
+
+. When the script has finished running, you can check that your client is registered correctly by opening the {productname} {webui} and navigating to menu:Systems[Overview] to ensure the new client is listed.
+
+. In case of trouble with registering the new Salt client, open the {productname} {webui} and navigate to menu:Salt[Keys] to accept the client key.
+
+[WARNING]
+====
+When new packages or updates are installed on the client using {productname}, any end user license agreements (EULAs) are automatically accepted.
+To review a package EULA, open the package detail page in the {webui}.
+====
+
+
+
+For more information about using bootstrap scripts, see
+xref:client-configuration:registration-bootstrap.adoc[].
