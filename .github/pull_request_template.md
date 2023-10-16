@@ -4,8 +4,12 @@ Short summary of why you created this PR (if you added documentation, please add
 
 # Target branches
 
-Which documentation version does this PR apply to?
-Does this content need to be backported? If this is the case, create an issue for tracking it and add the link to this PR.
+* Which documentation version does this PR apply to?
+* Does this content need to be backported? If this is the case, create an issue for tracking it and add the link to this PR.
+* Whenever possible, cross-reference each backport PR here, so that all backports can be easily accessed from the description.
+
+- [ ] master
+- [ ] manager-4.3
 
 # Links
 - Related development PR #<insert PR link, if any>
