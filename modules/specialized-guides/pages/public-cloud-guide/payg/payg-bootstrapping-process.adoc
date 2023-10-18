@@ -3,7 +3,7 @@
 == Managing and bootstrapping PAYG and BYOS images
 
 PAYG (Pay-As-You-Go) Images::
-Bootstrapping PAYG images is supported and can be done without additional prerequisites.
+Connecting and bootstrapping PAYG images is supported and can be done without additional prerequisites.
 
 
 BYOS (Bring Your Own Subscription) Images::
@@ -55,10 +55,50 @@ For more information on using {suse} products in the public cloud see: link:http
 
 . Proceed to menu:Admin[Setup Wizard > Products] to access your {payg} SUSE Linux Enterprise products.
 
+== Billing Services and Troubleshooting
 
+billing-data-service::
+Serves billing data from {productname} for the **CSP-billing-adapter**
+The service is reachable at: 
 
+- http://localhost:18888/
+- http://localhost:18888/metering
 
+This service is maintained by the {productname} team
+The service only logs in the **systemd journal**.
 
+**Billing services** must be running or the spacewalk will refuse to start.
 
+csp-billing-adapter-service::
+This service reports the billing data to the cloud provider (AWS, AZURE, GCP).
+These logs are stored in `/var/log/csp_billing_aadapter.log`.
+Additional status information can be located in `/var/lib/csp-billing-adapter/csp-config.json`
+This service is maintained by public cloud team.
 
+mgr-check-payg.service::
+This service checks if **billing-data-service** is installed and running.
+It also checks if the **csp-billing-adapter-service** is installed and running.
+If these services are not running or installed it will attempt to install and start the service.
+
+Consequences:: 
+If one of the previous billing services is not running and cannot be installed or started **spacewalk** will refuse to start
+
+Check `journalctl -u mgr-check-payg.service` for additional issues.
+
+Continuous Compliance checks::
+* The **payg-dimension-computation** taskomatic task must be active.
+
+* Is the billing server running at http://localhost:18888/?
+
+* Is the **csp-billing-adapter.service** running?
+
+* What is the status of the **csp-billing-aadapter** located in `/var/lib/csp-billing-adapter/csp-config.json`.
+
+The following files and packages are checked for tampering::
+* Billing-data-service
+* Csp-billing-adapter-service
+* Python3-csp-billing-adapter
+* Python3-csp-billing-adapter-local
+* Python3-csp-billing-adapter-amazon
+* python3-csp-billing-adapter-azure
 
