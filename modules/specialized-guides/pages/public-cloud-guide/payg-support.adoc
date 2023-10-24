@@ -1,0 +1,133 @@
+= Public cloud support
+:toc:
+
+== BYOS and PAYG support
+
+Regardless of the public cloud service you use or the plan you choose, SUSE has you covered with support. Where you get support is dependent on whether you **bring your own subscription** (BYOS) or you use SUSE products **on-demand** (PAYG). 
+
+BYOS::
+BYOS instances are supported by SUSE under the terms of your SUSE subscription. For an overview of SUSE's support subscriptions, refer to https://www.suse.com/support/.
+
+PAYG::
+{productname} PAYG instances include support by SUSE.
+
+To open a ticket for {payg} see: link:https://scc.suse.com/cloudsupport
+
+Public Cloud Guide::
+For more information on cloud products and support see the {suse} public cloud guide:
+
+link:https://documentation.suse.com/sle-public-cloud/all/html/public-cloud/pre-example.html[SUSE Public Cloud Guide]
+
+Public Cloud Information Tracker (Pint)::
+The Public Cloud Information Tracker (PINT) provides information about the images SUSE publishes and servers that are part of the SUSE operated update infrastructure. PINT is available at link:https://pint.suse.com/[pint.suse.com]  and provided as an API and command-line tool with the **python3-susepubliccloudinfo** package from the Public Cloud Module repository.
+
+== Collecting system information with supportconfig
+  
+To create a TAR archive with detailed system information that you can hand over to Global Technical Support, use the command `supportconfig`. The command-line tool is provided by the package `supportutils` which is installed by default.
+
+Depending on which packages are installed on your system, some of these packages integrate `supportconfig` plug-ins. When `supportconfig` is executed, all plug-ins are executed as well, creating one or more result files for the archive. This has the benefit that the only topics checked are those that contain a specific plug-in for them. `supportconfig` plug-ins are stored in the directory `/usr/lib/supportconfig/plugins/`.
+
+The following procedure shows how to create a Supportconfig archive, but without submitting it to support directly.
+
+.Procedure: Creating a supportconfig archive
+
+. Run supportconfig as root. Usually, it is enough to run this tool without any options. Some options are very common and are displayed in the following list:
++
+
+.Options:
+----
+-E MAIL, -N NAME, -O COMPANY, -P PHONE
+
+Sets your contact data: e-mail address (-E)
+Company name (-O)
+Your name (-N)
+Your phone number (-P)
+
+-i KEYWORDS, -F
+Limits the features to check. 
+The placeholder KEYWORDS is a comma-separated list of case-sensitive keywords. 
+Get a list of all keywords with supportconfig -F.
+----
+
+. Wait for the tool to complete the operation.
+
+. The default archive location is `/var/log`, with the file name format being **scc_HOST_DATE_TIME.txz**
+
+== Opening a new support case
+
+To open a new support case for your cloud pay-as-you-go instance, you need to generate a **supportconfig** file and then follow the steps listed on:
+
+link:https://scc.suse.com/cloudsupport[SUSE Customer Center Cloudsupport]
+
+
+== Billing services and troubleshooting
+
+
+=== billing-data-service
+
+Serves billing data from {productname} for the **CSP-billing-adapter**.
+The service is reachable at: 
+
+- http://localhost:18888/
+- http://localhost:18888/metering
+
+This service is maintained by the {productname} team.
+This service only logs to **systemd journal**.
+
+**Billing services** must be running or **spacewalk** will refuse to start.
+
+
+
+=== csp-billing-adapter-service
+
+This service reports the billing data to the cloud provider (AWS, AZURE, GCP).
+These logs are stored in:
+
+*  `/var/log/csp_billing_adapter.log`
+
+Additional status information can be located in:
+
+*  `/var/lib/csp-billing-adapter/csp-config.json`
+
+This service is maintained by public cloud team.
+
+
+
+=== mgr-check-payg.service
+
+This service checks if **billing-data-service** is installed and running.
+It also checks if the **csp-billing-adapter-service** is installed and running.
+If these services are not running or installed it will attempt to install and start the service.
+
+Consequences:: 
+If one of the previous billing services is not running and cannot be installed or started **spacewalk** will refuse to start.
+
+Check `journalctl -u mgr-check-payg.service` for additional issues.
+
+=== Continuous Compliance checks
+
+. The **payg-dimension-computation** taskomatic task must be active.
+
+. Is the billing server running at http://localhost:18888/ ?
+
+. Is the **csp-billing-adapter.service** running?
+
+. What is the status of the **csp-billing-adapter** located in `/var/lib/csp-billing-adapter/csp-config.json`?
+
+The following files and packages are checked for tampering::
+* Billing-data-service
+* Csp-billing-adapter-service
+* Python3-csp-billing-adapter
+* Python3-csp-billing-adapter-local
+* Python3-csp-billing-adapter-amazon
+* python3-csp-billing-adapter-azure
+
+Failed Checks::
+Failed checks are logged in:
+
+* `/var/log/rhn/rhn_web_ui.log`
+* `/var/log/hrn/rhn_taskomatic_daemon.log`
+
+Consequences::
+. No more actions will be executed.
+. **Reposync** will stop syncing channels.
