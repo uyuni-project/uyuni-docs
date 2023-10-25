@@ -1,3 +1,5 @@
+*Before you submit this PR make sure you have added an entry to **.changelog** file.*
+
 # Description
 
 Short summary of why you created this PR (if you added documentation, please add any relevant diagram).
