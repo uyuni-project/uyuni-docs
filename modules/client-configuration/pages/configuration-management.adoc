@@ -3,19 +3,17 @@
 
 You can use configuration files and channels to manage configuration for your clients, rather than configuring each client manually.
 
-[NOTE]
-====
-Some of the following features are available for traditional clients only.
-For features supported on {salt} clients, see the table below.
-====
-
 Configuration parameters are scripted and stored in configuration files.
 You can write configuration files directly using the {productname} {webui}, or you can upload or link to files that exist in other locations.
 
-Configuration files can be centrally managed, or locally managed.
+Configuration files can be centrally managed.
 Centrally managed configuration files are provided by global configuration channels and can be applied to any client subscribed to the {productname} Server.
+
+////
+// 2023-10, julio:
 Locally managed configuration files are used to override centrally managed configuration settings.
 They are especially useful for {productname} users who do not have configuration administration privileges, but need to make changes to the clients that they manage.
+////
 
 Configuration channels are used to organize configuration files.
 You can subscribe clients to configuration channels, and deploy configuration files as required.
@@ -25,7 +23,6 @@ When you have created your configuration channels, you can also perform comparis
 
 Configuration files can be centrally managed.
 Centrally managed configuration files are provided by global configuration channels.
-// Locally managed configuration files are created or uploaded to {productname} directly.
 
 The available configuration management features are different for Salt and traditional clients.
 This table shows the supported features on different client types:
@@ -52,7 +49,7 @@ This table shows the supported features on different client types:
 | {check}
 
 | Locally Managed Files
-| {cross}
+| {check} (with {salt} features)
 | {check}
 
 | Sandbox Files
@@ -72,7 +69,7 @@ This table shows the supported features on different client types:
 | {cross}
 
 | Configuration Macros
-| {cross}
+| {check} with {salt} features (grains, pillar data, etc.)
 | {check}
 
 |===
@@ -80,6 +77,8 @@ This table shows the supported features on different client types:
 
 
 == Create Configuration Channels
+
+=== Central Configuration Channel
 
 To create a new central configuration channel:
 
@@ -92,7 +91,10 @@ To create a new central configuration channel:
 . Click btn:[Create Config Channel] to create the new channel.
 
 
-You can also use a configuration channel to manage Salt states on Salt clients.
+
+=== Salt State Channel
+
+You can also use a configuration channel to manage Salt states on Salt clients:
 
 
 
@@ -192,12 +194,8 @@ dns_conf:
 ----
 
 
-
-== Configuration file macros on traditional clients
-
-Being able to store one file and share identical configurations is useful, but in some cases you might need many variations of the same configuration file, or configuration files that differ only in system-specific details, such as host name and MAC address.
-In this case, you can use macros or variables within the configuration files.
-This allows you to upload and distribute a single file, with hundreds or even thousands of variations.
+////
+// FIXME: how to use these vars with Salt?
 In addition to variables for custom system information, the following standard macros are supported:
 
 ----
@@ -213,51 +211,4 @@ rhn.system.net_interface.broadcast(eth_device)
 rhn.system.net_interface.hardware_address(eth_device)
 rhn.system.net_interface.driver_module(eth_device)
 ----
-
-To use this feature, either upload or create a configuration file via the [guimenu]``Configuration Channel Details`` page.
-Then open its [guimenu]``Configuration File Details`` page and include the supported macros of your choice.
-Ensure that the delimiters used to offset your variables match those set in the [guimenu]``Macro Start Delimiter`` and [guimenu]``Macro End Delimiter`` fields and do not conflict with other characters in the file.
-We recommend that the delimiters be two characters in length and do not contain the percent (``%``) symbol.
-
-For example, you may have a file applicable to all of your servers that differs only in IP address and host name.
-Rather than manage a separate configuration file for each server, you can create a single file, such as [path]``server.conf``, with the IP address and host name macros included.
-
-----
-hostname={| rhn.system.hostname |}
-ip_address={| rhn.system.net_interface.ip_address(eth0) |}
-----
-
-When the file is delivered to individual systems, whether through a scheduled action in the {productname} {webui} or at the command line with the {productname} Configuration Client ([command]``mgrcfg-client``), the variables will be replaced with the host name and IP address of the system as recorded in {productname}'s system profile.
-In this example, the deployed version will look similar to this:
-
-----
-hostname=test.example.domain.com
-ip_address=177.18.54.7
-----
-
-To capture custom system information, insert the key label into the custom information macro (``rhn.system.custom_info``).
-For example, if you developed a key labeled "asset" you can add it to the custom information macro in a configuration file to have the value substituted on any system containing it.
-The macro would look like this:
-
-----
-asset={@ rhn.system.custom_info(asset) @}
-----
-
-When the file is deployed to a system containing a value for that key, the macro gets translated, resulting in a string similar to this:
-
-----
-asset=Example#456
-----
-
-To include a default value (for example, if one is required to prevent errors), you can append it to the custom information macro, like this:
-
-----
-asset={@ rhn.system.custom_info(asset) = 'Asset #' @}
-----
-
-This default is overridden by the value on any system containing it.
-
-The {productname} Configuration Manager ([command]``mgrcfg-manager``) is available on {productname} client machines to assist with system management.
-It will not translate or alter files, as the tool is system agnostic.
-The [command]``mgrcfg-manager`` command does not depend on system settings.
-Binary files cannot be interpolated.
+////
