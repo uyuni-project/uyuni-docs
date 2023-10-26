@@ -14,5 +14,5 @@ Short summary of why you created this PR (if you added documentation, please add
 - [ ] manager-4.3
 
 # Links
+- This PR tracks issue #<insert spacewalk issue, if any>
 - Related development PR #<insert PR link, if any>
-- Fixes #<insert spacewalk issue, if any>
