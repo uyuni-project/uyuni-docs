@@ -1,0 +1,247 @@
+[[clients-raspbian]]
+= Registering {raspbian} Clients
+
+This section contains information about registering clients running {raspbian} operating systems.
+
+Bootstrapping can be used with {raspbian} clients for performing initial state runs, and for profile updates.
+
+ifeval::[{suma-content} == true]
+// Use list format: repository URLs / packages and metadata / version info
+[IMPORTANT]
+====
+* {raspbian} repository URLs are available from {scc}
+* Packages and metadata are provided by Raspbian OS, not by {suse}
+* For supported products, see the support table and the release notes
+====
+endif::[]
+
+== Prepare to Register
+
+Some preparation is required before you can register {raspbian} clients to the {productname} Server:
+
+* Ensure DNS is correctly configured and provides an entry for the client.
+  Alternatively, you can configure the ``/etc/hosts`` files on both the {productname} Server and the client with the appropriate entries.
+* The client must have the date and time synchronized with the {productname} Server before registration.
+
+
+
+== Add Software Channels
+
+Before you register {raspbian} clients to your {productname} Server, you need to add the required software channels, and synchronize them.
+
+The architectures currently supported are: `arm64` and `armhf`.
+For full list of supported products and architectures, see xref:client-configuration:supported-features.adoc[].
+
+ifeval::[{suma-content} == true]
+
+//The products you need for this procedure are:
+For example, when working with `arm64` architecture, you need this product:
+
+[[raspbian-channels-wizard]]
+[cols="1,1", options="header"]
+.Raspbian OS Products - WebUI
+|===
+
+| OS Version | Product Name
+| {raspbian} 12 | Raspbian OS 12 (bookworm) main for arm64
+|===
+
+include::snippets/addchannels_vendor_webui.adoc[]
+
+Alternatively, you can add channels at the command prompt.
+The channels you need for this procedure are:
+
+[[raspbian-channels-suma-cli]]
+[cols="1,1", options="header"]
+.Raspbian OS Channels - CLI
+|===
+
+| OS Version | Base Channel
+| {raspbian} 12 arm64 | raspbian-12-pool-arm64
+| {raspbian} 12 armhf | raspbian-12-pool-armhf
+|===
+
+include::snippets/addchannels_vendor_cli.adoc[]
+
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+
+The channels you need for this procedure are:
+
+[[raspbian-channels-uyuni-cli]]
+[cols="1,1,1,1,1,1,1,1", options="header"]
+.Raspbian OS Channels - CLI
+|===
+
+| OS Version
+| Base Channel
+| Client Channel
+| Updates Channel
+| Contributions Channel
+| Non Free Channel
+| Non Free Firmware Channel
+| Raspberry Channel
+
+| {raspbian} 12 arm64
+| raspbian-12-pool-arm64-uyuni
+| raspbian-12-arm64-uyuni-client
+| raspbian-12-arm64-main-updates-uyuni
+| raspbian-12-arm64-contrib-uyuni
+| raspbian-12-arm64-non-free-uyuni
+| raspbian-12-arm64-non-free-firmware-uyuni
+| raspbian-12-arm64-raspberry-uyuni
+
+| {raspbian} 12 armhf
+| raspbian-12-pool-armhf-uyuni
+| raspbian-12-armhf-uyuni-client
+| -
+| raspbian-12-armhf-contrib-uyuni
+| raspbian-12-armhf-non-free-uyuni
+| -
+| raspbian-12-armhf-raspberry-uyuni
+
+|===
+
+Version arm64 also requires the following channels:
+
+[[raspbian-arm64-other-channels-cli-uyuni]]
+[cols="1,1", options="header"]
+.Raspbian OS 12 arm64 other channels - CLI
+|===
+
+| {raspbian} arm64           | {nbsp}
+| Contribution Updates         | raspbian-12-arm64-contrib-updates-uyuni
+| Non Free Updates | raspbian-12-arm64-non-free-updates-uyuni
+| Non Free Firmware Updates | raspbian-12-arm64-non-free-firmware-updates-uyuni
+| Security Main Channel | raspbian-12-arm64-main-security-uyuni
+| Security Contribution Channel | raspbian-12-arm64-contrib-security-uyuni
+| Security Non Free Channel | raspbian-12-arm64-non-free-security-uyuni
+| Security Non Free Firmware Channel | raspbian-12-arm64-non-free-firmware-security-uyuni
+
+|===
+
+Version armhf also requires the following channels:
+
+[[raspbian-armhf-other-channels-cli-uyuni]]
+[cols="1,1", options="header"]
+.Raspbian OS 12 armhf other channels - CLI
+|===
+
+| {raspbian} armhf           | {nbsp}
+| RPI Channel         | raspbian-12-armhf-rpi-uyuni
+
+|===
+
+include::snippets/addchannels_novendor_cli.adoc[]
+
+[NOTE]
+====
+The client tools channel provided by [command]``spacewalk-common-channels`` is sourced from {uyuni} and not from {suse}.
+====
+
+[IMPORTANT]
+====
+You need all the new channels fully synchronized before bootstrapping any {raspbian} client.
+====
+
+endif::[]
+
+== Check Synchronization Status
+
+ifeval::[{suma-content} == true]
+
+include::snippets/check_sync_webui_suma.adoc[]
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+include::snippets/check_sync_webui_uyuni.adoc[]
+
+endif::[]
+
+include::snippets/check_sync_cli.adoc[]
+
+
+[NOTE]
+====
+{raspbian} channels can be very large.
+Synchronization can sometimes take several hours.
+====
+
+
+== Create an Activation Key
+
+You need to create an activation key that is associated with your {raspbian} channels.
+
+For more information on activation keys, see xref:client-configuration:activation-keys.adoc[].
+
+
+
+
+== Manage GPG Keys
+
+Clients use GPG keys to check the authenticity of software packages before they are installed.
+Only trusted software can be installed on clients.
+
+[IMPORTANT]
+====
+Trusting a GPG key is important for security on clients.
+It is the task of the administrator to decide which keys are needed and can be trusted.
+Because a software channel cannot be used when the GPG key is not trusted, the decision of assigning a channel to a client depends on the decision of trusting the key.
+====
+
+For more information about GPG keys, see xref:client-configuration:gpg-keys.adoc[].
+
+[NOTE]
+====
+{raspbian} clients can require multiple GPG keys to be installed.
+====
+
+When synchronizing third-party {raspbian} repositories, you will need to import the appropriate GPG key on the server.
+If the GPG key is missing, synchronization will fail.
+
+For {raspbian} repositories, only the metadata is signed. Therefore importing a GPG key for the software channel is not needed.
+Packages will not be re-signed by Uyuni.
+
+To see which GPG keys are already imported to {productname} Server, run the following command:
+
+----
+sudo gpg --homedir /var/lib/spacewalk/gpgdir --list-keys
+----
+
+To import a new GPG key, use the `--import` parameter:
+
+----
+sudo gpg --homedir /var/lib/spacewalk/gpgdir --import <filename>.gpg
+----
+
+
+
+== Root Access
+
+The root user on {raspbian} is disabled by default for SSH access.
+
+To be able to onboard using a regular user, you need to edit the [filename]``sudoers`` file.
+
+.Procedure: Granting Root User Access
+
+. On the client, edit the [filename]``sudoers`` file:
++
+----
+sudo visudo
+----
++
+Grant [command]``sudo`` access to the user by adding this line at the end of the [filename]``sudoers`` file.
+Replace [systemitem]``<user>`` with the name of the user that is bootstrapping the client in the {webui}:
++
+----
+<user>  ALL=NOPASSWD: /usr/bin/python, /usr/bin/python2, /usr/bin/python3, /var/tmp/venv-salt-minion/bin/python
+
+
+
+== Register Clients
+
+include::snippets/create_bootstrap_repo_register.adoc[]
