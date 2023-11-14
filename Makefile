@@ -206,9 +206,12 @@ configure-suma:
 configure-uyuni:
 	./configure uyuni
 
-.PHONY: pot
-pot:
+.PHONY: update-cfg-files
+update-cfg-files:
 	(cd $(current_dir)/l10n-weblate && ./update-cfg-files)
+
+.PHONY: pot
+pot: update-cfg-files
 	$(current_dir)/make_pot.sh
 
 .PHONY: translations
