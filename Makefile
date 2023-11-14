@@ -29,7 +29,7 @@ PDF_THEME_UYUNI_CJK ?= uyuni-cjk
 
 SUPPLEMENTAL_FILES_SUMA=$(shell grep supplemental_files site.yml | cut -d ':' -f 2 | sed "s, ,,g")/partials/header-content.hbs
 SUPPLEMENTAL_FILES_UYUNI=$(shell grep supplemental_files site.yml | cut -d ':' -f 2 | sed "s, ,,g")/partials/header-content.hbs
-	
+
 #REVDATE ?= "$(shell date +'%B %d, %Y')"
 CURDIR ?= .
 
@@ -59,7 +59,7 @@ endef
 define antora-suma-function
 	cd $(current_dir)
 	$(call enable-suma-in-antorayml,$(1)) && \
-	cd ./$(1) && DOCSEARCH_ENABLED=true SITE_SEARCH_PROVIDER=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) npx antora --extension @antora/lunr-extension $(current_dir)/$(1)/suma-site.yml 
+	cd ./$(1) && DOCSEARCH_ENABLED=true SITE_SEARCH_PROVIDER=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) npx antora --extension @antora/lunr-extension $(current_dir)/$(1)/suma-site.yml
 endef
 
 define enable-uyuni-in-antorayml
@@ -158,13 +158,13 @@ define clean-branding
 	cd $(current_dir)
         rm -rf $(current_dir)/translations/$(1)/branding
 endef
-	
+
 define copy-branding
 	cd $(current_dir)
         mkdir -p $(current_dir)/translations/$(1)
         cp -a $(current_dir)/branding $(current_dir)/translations/$(1)/
 endef
-	
+
 # Create an Index
 define pdf-book-create-index
 	cd $(current_dir)
@@ -260,13 +260,13 @@ all-suma: configure-suma obs-packages-suma
 all-uyuni: configure-uyuni obs-packages-uyuni
 
 .PHONY: checkstyle
-checkstyle: 
+checkstyle:
 	cd $(current_dir)
 	find -name "*\.adoc" -type f  | xargs -I {} ./enforcing_checkstyle --filename {} --ifeval
 	find -name "nav*\.adoc" -type f  | xargs -I {} ./enforcing_checkstyle --filename {} --comment
 
 .PHONY: checkstyle-autofix
-checkstyle-autofix: 
+checkstyle-autofix:
 	cd $(current_dir)
 	find -name "*\.adoc" -type f  | xargs -I {} ./enforcing_checkstyle --filename {} --ifeval --fixmode
 	find -name "nav*\.adoc" -type f  | xargs -I {} ./enforcing_checkstyle --filename {} --comment --fixmode
