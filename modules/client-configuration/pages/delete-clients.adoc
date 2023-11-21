@@ -5,7 +5,6 @@
 
 If you need to remove a client from your {productname} Server, you can use the {webui} to delete it.
 You can also remove a client from the command line.
-These procedures work for both traditional and Salt clients.
 
 // can also be done manually.
 // FIXME: Why Manual Cleanup is necessary sometimes.
@@ -28,17 +27,8 @@ For more information about the system set manager, see xref:client-configuration
 
 [IMPORTANT]
 ====
-It is not possible to automatically clean up a traditional client after deleting it.
-You have to take care of this yourself.
-Furthermore, cleaning up a Salt client does only disable salt and stop the service if possible. It does not uninstall the package.
-====
-
-[NOTE]
-====
-Normally you migrate a traditional client to a Salt client without deleting the client.
-Salt automatically detects that you have a traditional client and does the necessary changes itself.
-But if you already deleted the traditional client and want to register it as a Salt client again, see
-xref:administration:troubleshooting/tshoot-register-trad-as-salt-after-deletion.adoc[].
+Cleaning up a {salt} client only disables {salt} and stops the service if possible.
+It does not uninstall the package.
 ====
 
 
@@ -138,82 +128,4 @@ For information about the Salt bundle, see xref:client-configuration:contact-met
 
 This process is only for {productname} clients, do not run it on the {productname} Server itself.
 
-[NOTE]
-====
-You must not execute the following procedure literally on clients running {rhel}, {debian}, or clones.
-Instead of [command]``zypper`` use equivalent packager commands such as [command]``yum``, [command]``dnf``, or [command]``apt``.
-====
 
-.Procedure: Traditional SLES 12 and 15 Clients - Manual Cleanup
-
-. Stop the osad service (if it is in use):
-+
-----
-systemctl stop osad
-----
-
-. On a SLES 12 client remove the following  packages if installed.
-This should be tried first (in case the [package]``osad`` package is not installed, do not list it on the command line):
-+
-----
-zypper rm spacewalksd spacewalk-check zypp-plugin-spacewalk \
-spacewalk-client-tools osad python2-zypp-plugin-spacewalk \
-python2-spacewalk-check python2-spacewalk-client-setup
-----
-
-. On a SLES 15 client remove the following packages if installed:
-+
-----
-zypper rm spacewalk-client-setup mgr-daemon spacewalk-check \
-zypp-plugin-spacewalk mgr-osad python3-zypp-plugin-spacewalk \
-python3-spacewalk-check python3-spacewalk-client-setup
-----
-
-. You will see the following output:
-+
-----
-Refreshing service 'spacewalk'. 
-Loading repository data...
-Reading installed packages...
-Resolving package dependencies...
- 
-The following packages are going to be REMOVED:
-  spacewalk-check spacewalk-client-setup spacewalksd zypp
-plugin-python osad
- 
-5 packages to remove.
-After the operation, 301.0 KiB will be freed.
-Continue? [y/n/?] (y):
-----
-+
-The above RPM packages are client specific, and should be removed.
-If this fails, they should be manually removed.
-The [command]``rpm -e`` command should not be used unless the [command]``zypper rm`` command above failed.
-
-. After this is complete, the /etc/sysconfig/rhn/systemid file should be removed.
-  This file only exists on a client machine and is used to register itself with {productname}:
-+
-----
-rm /etc/sysconfig/rhn/systemid
-----
-
-. Any configured spacewalk channels should be deleted with:
-+
-----
-rm /etc/zypp/repos.d/spacewalk*
-----
-
-. Finally verify that repositories are properly configured.
-  Refresh them on the server and then list them:
-+
-----
-zypper ref -s
-zypper lr
-----
-
-If any repositories pointing to spacewalk still exist, remove them with:
-
-----
-zypper repos -d
-zypper removerepo <ID of the repo in the output from previous command>
-----
