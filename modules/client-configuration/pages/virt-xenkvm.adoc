@@ -10,18 +10,22 @@ This section also includes information about administering virtual guests after 
 
 
 
-== Host Setup
+[[virt-xenkvm-host]]
+== Host setup
 
 The way that you set up Xen or KVM on a VM host depends on operating system you want to use on its associated guests:
 
 * For {suse} operating systems, see the SLES Virtualization Guide available from {sles-base-os-documentation}/book-virtualization.html.
 * For {rhel} operating systems, refer to the Red Hat documentation for your version.
 
-// FIXME
-// 2023-10-31, ke: better installing one of these patterns (kvm or xen)?
-//                 package name now libvirt-daemon something?
+The [systemitem]``Virtualization Host`` formula will help you with initializing the host.
+For more information, see xref:client-configuration:virt-xenkvm.adoc#virt-xenkvm-host-formula[].
+
+
+=== Background information
+
 {productname} uses [systemitem]``libvirt`` to install and manage guests.
-You must have the [package]``libvirtd`` package installed on your host.
+You must have the [package]``libvirt-daemon`` package installed on your host.
 In most cases, the default settings are sufficient and you do not need to adjust them.
 However, if you want to access the VNC console on your guests as a non-root user, you need to perform some configuration changes.
 For more information about how to set up the VNC console, see the documentation for your operating system.
@@ -34,16 +38,21 @@ For more on creating a bootstrap script, see xref:client-configuration:registrat
 When the bootstrap script is ready, use it to register the host with the {productname} Server.
 For more information about client registration, see xref:client-configuration:registration-overview.adoc[].
 
-// 2023-10-31, ke: still the case?  if yes, what are the requirements?
-//                 Maybe, we now should recommend to use the Virtualization Host formular?
-For Salt clients, you need to enable the [systemitem]``Virtualization Host`` entitlement.
-This allows you to see VM changes instantly.
 
-.Procedure:
 
-. In the {productname} {webui}, navigate to the [guimenu]``System Details`` page for the host, and click the [guimenu]``Properties`` tab.
-  Alternatively, the [systemitem]``Virtualization Host`` entitlement can be added at the registration key level.
-. In the [guimenu]``Add-On System Types`` section, check [guimenu]``Virtualization Host``, and click btn:[Update Properties] to save the changes.
+[[virt-xenkvm-host-formula]]
+=== Initialize [systemitem]``Virtualization Host``
+
+With the [systemitem]``Virtualization Host`` formula, initialize the host:
+
+// CHECKIT: is the last step still needed?
+.Procedure: Initializing [systemitem]``Virtualization Host``
+
+. In the {productname} {webui}, navigate to the [guimenu]``System Details`` page for the host, and click the [guimenu]``Formulas`` tab.
+. Select the [systemitem]``Virtualization Host`` formula, and click btn:[Save].
+. Click the [systemitem]``Virtualization Host`` subtab.
+. Check the settings, and click btn:[Save Formula].
+. Apply the Highstate for the changes to take effect.
 . Restart the [systemitem]``salt-minion`` service to activate the new configuration:
 
 +
@@ -53,14 +62,15 @@ systemctl restart salt-minion
 
 
 
-== Autoinstallation
+
+[[virt-xenkvm-autoinst]]
+== Autoinstall VM Guests
 
 You can use {ay} or {kickstart} to automatically install and register Xen and KVM guests.
 
 You need an activation key for the VM host you want to register the guests to, and for each guest.
 The activation key must have the [systemitem]``provisioning`` and [systemitem]``Virtualization Platform`` entitlements.
 // FIXME: Does Salt require sth special?
-// The activation key must also have access to the [package]``mgr-virtualization-host`` and  [package]``mgr-osad`` packages.
 For more information about creating activation keys, see xref:client-configuration:activation-keys.adoc[].
 
 If you want to automatically register the guests with {productname} after installation, you need to create a bootstrap script.
@@ -185,22 +195,22 @@ If you want your guests to be automatically registered as soon as they are insta
 This section gives instructions for adding a bootstrap script to an existing {ay} profile.
 
 For more information about creating a bootstrap script, see xref:client-configuration:registration-bootstrap.adoc[].
-For instructions on how to do this for {kickstart], refer to the Red Hat documentation for your installation.
+For instructions on how to do this for {kickstart}, refer to the Red Hat documentation for your installation.
 
 .Procedure: Adding a Bootstrap Script to an {ay} Profile
 
 . Ensure your bootstrap script contains the activation key for the VM guests you want to register with it, and that is located on the host at [path]``/srv/www/htdocs/pub/bootstrap_vm_guests.sh``.
 . In the {productname} {webui}, navigate to menu:Systems[Autoinstallation > Profiles], and select the {ay} profile to associate this script with.
 . In the [guimenu]``File Contents`` field, add this snippet at the end of the file, immediately before the closing ``</profile>`` tag.
-    Ensure you replace the example IP address in the snippet with the correct IP address for your {productname} Server:
+    Ensure you replace the example IP address [literal]``192.168.1.1`` in the snippet with the correct IP address for your {productname} Server:
 +
 ----
 <scripts>
   <init-scripts config:type="list">
     <script>
-      <interpreter>shell </interpreter>
+      <interpreter>shell</interpreter>
       <location>
-        http://`192.168.1.1`/pub/bootstrap/bootstrap_vm_guests.sh
+        http://192.168.1.1/pub/bootstrap/bootstrap_vm_guests.sh
       </location>
     </script>
   </init-scripts>
@@ -240,8 +250,7 @@ If a guest installation starts while another one is still running, the running i
 
 == Manage VM Guests
 
-
-You can use the {productname} {webui} to manage your VM Guests, including actions like shutting down, restarting, and adjusting CPU and memory allocations.
+You can use the {productname} {webui} to manage your VM Guests, including actions like shutting down, restarting, and adjusting CPU, and memory allocations.
 
 To do this, you need your Xen or KVM VM host registered to the {productname} Server, and have the [daemon]``libvirtd`` service running on the host.
 
