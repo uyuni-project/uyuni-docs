@@ -58,8 +58,37 @@ The password is used only for bootstrapping, it is not saved anywhere.
 All future SSH sessions are authorized via a key/certificate pair.
 These parameters are configured in menu:Systems[Bootstrapping].
 
-You can also configure persistent parameters that are used system-wide, including the sudo user.
-For more information on configuring the sudo user, see xref:client-configuration:contact-methods-pushssh.adoc[].
+You can also configure persistent parameters that are used system-wide, including the sudo user to access the system as an unprivileged user instead of as root.
+
+
+
+.Procedure: Configuring Unprivileged SSH Access
+. Ensure you have the latest [path]``spacewalk-taskomatic`` and [path]``spacewalk-certs-tools`` packages installed on the {productname} Server.
+. On each client system, create an appropriate unprivileged user.
+. On each client system, open the [path]``/etc/sudoers`` file and comment out these lines:
++
+----
+#Defaults targetpw   # ask for the password of the target user i.e. root
+#ALL    ALL=(ALL) ALL   # WARNING! Only use this together with 'Defaults targetpw'!
+----
+. On each client system, in the `User privilege specification` section, add these lines:
++
+----
+<user> ALL=(ALL) NOPASSWD:/usr/sbin/mgr_check
+<user> ALL=(ALL) NOPASSWD:/home/<user>/enable.sh
+<user> ALL=(ALL) NOPASSWD:/home/<user>/bootstrap.sh
+----
+. On each client system, in the [path]``/home/<user>/.bashrc`` file, add these lines:
++
+----
+PATH=$PATH:/usr/sbin
+export PATH
+----
+. On the {productname} Server, in the [path]``/etc/rhn/rhn.conf`` configuration file, add or amend this line to include the unprivileged username:
++
+----
+ssh_push_sudo_user = <user>
+----
 
 
 
