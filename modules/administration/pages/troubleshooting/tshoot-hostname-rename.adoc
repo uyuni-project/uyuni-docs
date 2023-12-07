@@ -47,25 +47,35 @@ The only mandatory parameter for the script is the newly configured IP address o
 . Reboot the {productname} Server to use the new network configuration and to ensure the hostname has changed.
 . Run the script [command]``spacewalk-hostname-rename`` script with the public IP address of the server.
     If the server is not using the new hostname, the script fails.
-    Be aware that this script refreshes the pillar data for all Salt minion: the time it takes to run depends on the number of registered Salt systems.
-. Re-configure your clients to make your environment aware of the new hostname and IP address.
-    In the Salt minion configuration file [path]``/etc/salt/minion``, you must specify the name of the new Salt master ({productname} Server):
+    Be aware that this script refreshes the pillar data for all Salt clients: the time it takes to run depends on the number of registered clients.
+
+. Re-configure the clients not managed via a proxy to make them aware of the new hostname and IP address.
+    In the Salt client configuration file [path]``/etc/salt/minion``, you must specify the name of the new Salt master ({productname} Server):
 +
 ----
 master: <new_hostname>
 ----
 +
-. Once this is changed, restart the [literal]``salt-minion` process:
+. When this is changed, restart the [literal]``salt-minion` process:
 +
 ----
 systemctl restart salt-minion
 ----
 
-. To fully propagate the hostname to the minion configuration apply the high state.
+. To fully propagate the hostname to the Salt client configuration apply the high state.
   Applying the high state will update the hostname in the repository URLs.
 
 
-Traditional clients have the [path]``/etc/sysconfig/rhn/up2date`` configuration file that must be changed.
+
+[IMPORTANT]
+====
+Any proxy must be reconfigured.
+The new server certificate and key must be copied to the proxy and the
+[command]``configure-proxy.sh`` script must be run.
+For more information about configuring a proxy, see xref:installation-and-upgrade:proxy-setup.adoc[].
+====
+
+Directly connected traditional clients have the [path]``/etc/sysconfig/rhn/up2date`` configuration file that must be changed.
 With a re-activation key you can re-register traditional clients (if there are any).
 For more information, see xref:client-configuration:registration-cli.adoc[].
 
