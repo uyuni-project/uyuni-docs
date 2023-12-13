@@ -5,12 +5,9 @@ FILE_PATH=".changelog"
 
 # Function to extract release notes
 extract_release_notes() {
-    # Use awk to extract the text between two dashed lines
+    # Use awk to extract the text between two sets of dashed lines
     awk '/^---+$/{flag=!flag;next} flag' "$FILE_PATH"
 }
 
-# Call the function and store the result
-RELEASE_NOTES=$(extract_release_notes)
-
-# Output the result
-echo "$RELEASE_NOTES"
+# Call the function and output the result
+extract_release_notes
