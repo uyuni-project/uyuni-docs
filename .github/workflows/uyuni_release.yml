@@ -53,19 +53,23 @@ jobs:
       run: |
         make configure-uyuni
         docker run -u $UID --privileged -e DOCSEARCH_ENABLED=true -e DOCSEARCH_ENGINE=lunr -v $GITHUB_WORKSPACE:/antora/ --rm -t lunr/antora:custom site.yml
-        #cd build/
-        ls -a
 
     - name: '[BUILD] Uyuni PDF Documents with Asciidoctor-pdf'
       run: |
         sudo locale-gen zh_CN.UTF-8 ja_JP.UTF-8 es_ES.UTF-8 ko_KR.UTF-8 cs_CZ.UTF-8 en_US.UTF-8
         sudo update-locale LANG=zh_CN.UTF-8
         make configure-uyuni
-        make pdf-all-uyuni
+        make pdf-all-uyuni-en
   
     - name: Archive Documentation
       run: |
         zip -r documentation.zip build/
+
+    - name: Extract Changelog Entries
+      id: changelog
+      run: |
+        chmod +x ./extract-changelog.sh
+        echo "CHANGELOG=$(./extract-changelog.sh)" >> $GITHUB_ENV
 
     - name: Create Release
       id: create_release
@@ -76,7 +80,8 @@ jobs:
         tag_name: ${{ github.ref }}
         release_name: Release ${{ github.ref }}
         body: |
-          New release of documentation
+          Uyuni Documentation Release
+          body: ${{ env.CHANGELOG }}
         draft: false
         prerelease: false
 
