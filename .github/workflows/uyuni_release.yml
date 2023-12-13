@@ -3,7 +3,7 @@ name: uyuni_release
 on: 
   push:
     tags:
-    - '*'
+    - 'v*'
 
 env:
   LANG: "en_US.UTF-8"
@@ -68,10 +68,11 @@ jobs:
     - name: Extract Release Notes
       id: release_notes
       run: |
-        echo "::set-output name=notes::$(./extract-release-notes.sh)"
+        chmod +x ./extract-release-notes.sh
+        TAG_VERSION=${GITHUB_REF#refs/tags/}
+        echo "::set-output name=notes::$(./extract-release-notes.sh $TAG_VERSION)"
 
     - name: Create Release
-      id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -81,7 +82,6 @@ jobs:
         body: ${{ steps.release_notes.outputs.notes }}
         draft: false
         prerelease: false
-
     - name: Upload Release Asset
       uses: actions/upload-release-asset@v1
       env:
