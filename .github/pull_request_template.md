@@ -13,7 +13,7 @@ Short summary of why you created this PR (if you added documentation, please add
 
 # Target branches
 
-* Which product version this PR applies to (Uyuni YYYY.MM, SUMA 4.3, SUMA MU X.Y.Z, or development version) 
+* Which product version this PR applies to (Uyuni, SUMA 4.3, SUMA MU X.Y.Z, or SUMA development version).  This information can be helpful if `ifeval` statements are needed to publish it for certain products only.
 * Does this PR need to be backported? If yes, create an issue for tracking it and add the link to this PR.
 * Whenever possible, cross-reference each backport PR here, so that all backports can be easily accessed from the description.
 
