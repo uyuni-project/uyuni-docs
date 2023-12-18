@@ -1,3 +1,4 @@
+- Remove mentioning that CVE number for CVE auditing is optional (bsc#1218019)
 - Fix xrefs for internal book references
 - Corrected channel names for CentOS 7 Updates & Extras in CentOS Client
   Configuration Guide
