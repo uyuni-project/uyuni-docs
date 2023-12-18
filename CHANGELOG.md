@@ -1,3 +1,5 @@
+- Added openSUSE Leap to Supported Features navigation list in Client
+  Configuration Guide (bsc#1218094)
 - Remove mentioning that CVE number for CVE auditing is optional (bsc#1218019)
 - Fix xrefs for internal book references
 - Corrected channel names for CentOS 7 Updates & Extras in CentOS Client
