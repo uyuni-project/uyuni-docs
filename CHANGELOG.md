@@ -1,5 +1,20 @@
 - Inserted sudo configuration into the Salt SSH section taken from
   traditional client documentation in the Client Configuration Guide
+- Added openSUSE Leap to Supported Features navigation list in Client
+  Configuration Guide (bsc#1218094)
+- Described new monitoring metrics for Salt queue in Administration Guide
+- Remove mentioning that CVE number for CVE auditing is optional (bsc#1218019)
+- Fix xrefs for internal book references
+- Corrected channel names for CentOS 7 Updates & Extras in CentOS Client
+  Configuration Guide
+- Documented bootstrap settings for SUSE Linux Enterprise Micro in
+  Client Configuration Guide (bsc#1216394)
+- Fixed RHEL channel names for bootstrapping in Client Configuration Guide
+- Removed traditional client stack documentation such as command line
+  tools in Reference Guide
+- Documented Raspbian OS 12 as supported by Uyuni in Client
+  Configuration Guide
+- Corrected command mgr-push to mgrpush in Administration Guide (bsc#1215810)
 - Added Pay-as-you-go for Azure documentation to the Specialized Guides
   book
 - Removed traditional client stack documentation such as rhnsd in
@@ -19,6 +34,7 @@
 - Updated Twitter handle reference in documentation UI
 - Started with removing traditional client documentation in Client
   Configuration Guide and removed cross references to other Guides
+
 - Changed installation of Uyuni Proxy with openSUSE Leap instructions to
   refer to Leap 15.5
 - Fixed parser error with ifeval or url tag in Image management section
