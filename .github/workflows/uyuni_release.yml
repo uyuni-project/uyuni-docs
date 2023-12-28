@@ -1,9 +1,9 @@
-name: build_test_deploy_uyuni
+name: uyuni_release
 
-on:
+on: 
   push:
-    branches:
-      - master
+    tags:
+    - 'v*'
 
 env:
   LANG: "en_US.UTF-8"
@@ -12,7 +12,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    steps:  
+    steps:
     - name: '[CHECKOUT] Checkout branch that triggered this workflow'
       uses: actions/checkout@v3
 
@@ -49,17 +49,60 @@ jobs:
     - name: '[TOOLCHAIN] Lunr/Antora Custom Docker Image'
       run: docker build -t lunr/antora:custom -f Dockerfile.custom .
 
-    - name: '[BUILD] UYUNI Docs with Lunr/Antora Custom Docker Image'
+    - name: '[BUILD] Uyuni Docs with Lunr/Antora Custom Docker Image'
       run: |
         make configure-uyuni
         docker run -u $UID --privileged -e DOCSEARCH_ENABLED=true -e DOCSEARCH_ENGINE=lunr -v $GITHUB_WORKSPACE:/antora/ --rm -t lunr/antora:custom site.yml
-        #cd build/
-        ls -a
 
-    - name: '[BUILD] UYUNI PDF Documents with Asciidoctor-pdf'
+    - name: '[BUILD] Uyuni PDF Documents with Asciidoctor-pdf'
       run: |
         sudo locale-gen zh_CN.UTF-8 ja_JP.UTF-8 es_ES.UTF-8 ko_KR.UTF-8 cs_CZ.UTF-8 en_US.UTF-8
         sudo update-locale LANG=zh_CN.UTF-8
         make configure-uyuni
-        make pdf-all-uyuni
+        make pdf-all-uyuni-en
+  
+    - name: Archive Documentation
+      run: |
+        zip -r documentation.zip build/
+
+    - name: Extract Release Notes
+      id: release_notes
+      run: |
+        chmod +x ./extract-release-notes.sh
+        TAG_VERSION=${GITHUB_REF#refs/tags/}
+        echo "::set-output name=notes::$(./extract-release-notes.sh $TAG_VERSION)"
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: ${{ steps.release_notes.outputs.notes }}
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+       upload_url: ${{ steps.create_release.outputs.upload_url }} 
+       asset_path: ./documentation.zip
+       asset_name: documentation.zip
+       asset_content_type: application/zip
+
+
+
+    #- name: Upload Release Asset
+    #  uses: actions/upload-release-asset@v1
+    #  env:
+    #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #  with:
+    #    upload_url: ${{ steps.create_release.outputs.upload_url }}
+    #    asset_path: ./documentation.zip
+    #    asset_name: documentation.zip
+    #    asset_content_type: application/zip
 
