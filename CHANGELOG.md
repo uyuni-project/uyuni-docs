@@ -1,3 +1,4 @@
+- Added note about refreshing pillar data in Salt Guide (bsc#1189047)
 - Added openSUSE Leap to Supported Features navigation list in Client
   Configuration Guide (bsc#1218094)
 - Described new monitoring metrics for Salt queue in Administration Guide
