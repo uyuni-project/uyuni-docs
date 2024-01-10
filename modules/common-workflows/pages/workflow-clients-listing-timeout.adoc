@@ -1,0 +1,49 @@
+[[workflow-clients-listing-timeout]]
+
+
+= Clients listing timeout workaround
+
+The request to list registered clients in {productname} may occasionally result with no clients listed.
+
+When menu:Systems[] is selected within the {productname} {webui} or when the menu is expanded, the user may see the message [literal]``Request has timed out, please reload the page``.  
+
+Several different workflows offer ideas to try out before opening a new support case.
+
+
+= Step-by-step instructions
+
+.Procedure 1: Changing `maxmemory` parameter
+[role=procedure]
+. Edit file [path]``/etc/rhn/rhn.conf`` 
+. Search for parameter [literal]``rhn-search.java.maxmemory``
+. Change the default value is 512MB by increasing it up to 4096MB.
+. Check the list of all clients again.
+
+.Procedure 2: Adapting `tomcat` parameters
+[role=procedure]
+. Edit file [path]``/etc/sysconfig/tomcat``
+. Try to increase the [literal]``-Xmx`` parameter up to 8G may also help.
+. Restart `tomcat`
+. Check the list of all clients again
+
+.Procedure 3: Checking database
+[role=procedure]
+. Perform a vacuum analyze of the database
+. Re-index the tables that are likely to be impacted the most.
+  Look for the tables to re-index by running:
+
++
+----
+
+date && time spacewalk-sql --select-mode - <<< "vacuum ANALYZE;"
+date && time spacewalk-sql --select-mode - <<< "REINDEX table rhnPackage;"
+date && time spacewalk-sql --select-mode - <<< "REINDEX table rhnServerNeededCache;"
+
+----
+
++
+
+[IMPORTANT]
+====
+Please note that the vacuum analyze could take some time to complete
+====
