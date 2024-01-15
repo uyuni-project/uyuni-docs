@@ -577,3 +577,4 @@
   client operating systems.
 - Documented upgrading to version 4.2 in Upgrade Guide (bsc#1185711).
 - Fixed URL of API documentation
+- Added a troubleshooting Document under the troubleshooting page showing how to troubleshoot setup issues in public cloud setup (BYOS)
