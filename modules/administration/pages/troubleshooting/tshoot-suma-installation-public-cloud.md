@@ -1,0 +1,103 @@
+#### **Troubleshooting Issues while setting up SUSE Manager with separate disk for data in Public Cloud**
+
+**Issue:** 
+
+SUSE Manager setup errors out while restarting services step during setup. 
+
+The set up gets failed on restarting Tomcat.
+
+<img src="../../assets/images/error-1.png">
+
+
+
+**Reason:**
+
+When SUSE Manager is setup using separate disks for cache, pgsql and spacewalk. The already present data within these partitions are covered under the new mount point.
+
+ <img src="../../assets/images/partitions.png">
+
+Because of which data for certain services like tomcat goes missing due to broken symlink.
+
+<img src="../../assets/images/broken-symlink.png"> 
+
+As SUSE Manager instance of cloud already have some services setup these data when not available during setup causes the service to not restart as expected and the setup to fail in turn.
+
+ <img src="../../assets/images/incomplete-files.png"> 
+
+Actual Data which should be present:
+
+ <img src="../../assets/images/actual-files.png"> 
+
+
+
+**How to Recreate:**
+
+1. SUSE Manager Server Provisioned in AWS using relevant AMI for BYOS
+
+2. Separate Storage for Spacewalk, PostgreSQL and Cache. (Size of the partition depends on the repository to be synced.)
+
+3. Setup SUSE Manager using `yast2 susemanager_setup`
+
+   
+
+**Resolution:**
+
+To resolve or avoid the issue simply copy the data of the underlying partition into the new partition by following the steps below:
+
+1. Create a backup partition
+
+   ```bash
+   mkdir /bkp
+   ```
+
+2. Unmount the affected partition for example /var/cache. 
+
+   ```bash
+   umount /var/cache
+   ```
+
+3. Check for underlying data in the partition: This should list the actual data present in the directory.
+
+   ```bash
+   ll /var/cache
+   ```
+
+4. Copy the data onto the backup partition created in step 1.
+
+   ```bash
+   cp -prav /var/cache/* /bkp/
+   ```
+
+5. Mount the partition again
+
+   ```bash
+   /dev/nvme0nxx /var/cache
+   
+   OR
+   
+   mount -a (if you have the entries under /etc/fstab)
+   ```
+
+6. Copy the backed up data in step 4 to the mounted partition
+
+   ```bash
+   cp -prav /bkp/* /var/cache/
+   ```
+
+7. Verify the data is present
+
+   ```bash
+   ll /var/cache/
+   ```
+
+8. Re-run the SUSE Manager setup
+
+   ```bash
+   yast2 susemanager_setup
+   ```
+
+   
+
+**Conclusion**:
+
+When using SUSE Manager in a public cloud setup with separate data partitions, make sure that the already present data in those directories are copied onto the new partition.
