@@ -1,7 +1,6 @@
 # Some hints
 
-Consider adding an entry to the `.changelog` file in the toplevel directory.
-It is a hidden file with a dot at the beginning.
+Consider adding an entry to the `CHANGELOG.md` file in the toplevel directory.
 
 Add Description, Target branches, and related Links below the following section titles.
 
