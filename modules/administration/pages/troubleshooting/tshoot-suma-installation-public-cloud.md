@@ -1,4 +1,4 @@
-#### **Troubleshooting Issues while setting up SUSE Manager with separate disk for data in Public Cloud**
+#### **Troubleshooting Issues while setting up SUSE Manager with separate disk for data in Public Cloud (BYOS)**
 
 **Issue:** 
 
