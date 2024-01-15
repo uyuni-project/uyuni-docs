@@ -1,3 +1,4 @@
+- Added note about refreshing pillar data in Salt Guide (bsc#1189047)
 - Added and fixed configuration details in Troubleshooting Renaming
   Server in Administration Guide
 - Added openSUSE Leap to Supported Features navigation list in Client
