@@ -1,3 +1,4 @@
+- Updated max-connections tuning recommendation in Large Deployment Guide
 - Added section about migrating Enterprise Linux (EL) clients to SUSE Liberty
   Linux to Client Configuration Guide
 - Inserted sudo configuration into the Salt SSH section taken from
