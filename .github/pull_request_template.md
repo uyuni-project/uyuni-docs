@@ -17,6 +17,11 @@ Short summary of why you created this PR (if you added documentation, please add
 * Does this PR need to be backported? If yes, create an issue for tracking it and add the link to this PR.
 * Whenever possible, cross-reference each backport PR here, so that all backports can be easily accessed from the description.
 
+Backport targets (edit as needed):
+
+- master
+- 4.3
+
 # Links
 - This PR tracks issue #<insert spacewalk issue, if any>
 - Related development PR #<insert PR link, if any>
