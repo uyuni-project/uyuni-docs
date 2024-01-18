@@ -39,7 +39,9 @@ Actual data which should be present:
 1. {productname} Server provisioned in {aws} uses relevant AMI for {byos}
 
 
-2. Separate Storage for Spacewalk, PostgreSQL and Cache. (Size of the partition depends on the repository to be synced.)
+2. Separate storage for spacewalk, {postgresql} and cache. 
+  The size of the partition depends on the repository to be synchronized.
+
 
 3. Set up {productname} using [command]``yast2 susemanager_setup``.
 
