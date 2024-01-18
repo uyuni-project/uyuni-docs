@@ -6,7 +6,8 @@
 {productname} setup results with an error while restarting services during setup. 
 
 
-The set up gets failed on restarting Tomcat.
+The set up fails on restarting Tomcat.
+
 
 <img src="../../assets/images/error-1.png">
 
