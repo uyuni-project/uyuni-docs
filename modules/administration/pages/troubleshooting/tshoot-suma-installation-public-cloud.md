@@ -50,11 +50,12 @@ Actual data which should be present:
 To resolve or avoid the issue, copy the data of the underlying partition into the new partition by following the steps below:
 
 
-1. Create a backup partition
+. Create a backup partition
++
+----
+mkdir /bkp
+----
 
-   ```bash
-   mkdir /bkp
-   ```
 
 2. Unmount the affected partition for example /var/cache. 
 
