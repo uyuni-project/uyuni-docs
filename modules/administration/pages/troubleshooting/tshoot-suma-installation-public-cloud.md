@@ -14,7 +14,8 @@ The set up gets failed on restarting Tomcat.
 
 **Reason:**
 
-When SUSE Manager is setup using separate disks for cache, pgsql and spacewalk. The already present data within these partitions are covered under the new mount point.
+When {productname} is set up using separate disks for cache, pgsql and spacewalk, the already present data within these partitions are covered under the new mount point.
+
 
  <img src="../../assets/images/partitions.png">
 
