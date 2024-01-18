@@ -23,7 +23,9 @@ Because of which data for certain services like tomcat goes missing due to broke
 
 <img src="../../assets/images/broken-symlink.png"> 
 
-As SUSE Manager instance of cloud already have some services setup these data when not available during setup causes the service to not restart as expected and the setup to fail in turn.
+As {productname} instance of cloud already has some services set up, when the data is not available during set up it causes the service to not restart as expected.
+Therefore the setup fails.
+
 
  <img src="../../assets/images/incomplete-files.png"> 
 
