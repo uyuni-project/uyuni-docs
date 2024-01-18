@@ -86,11 +86,11 @@ To resolve or avoid the issue simply copy the data of the underlying partition i
 cp -prav /bkp/* /var/cache/
 ----
 
-7. Verify the data is present
-
-   ```bash
-   ll /var/cache/
-   ```
+. Verify the data is present
++
+----
+ll /var/cache/
+----
 
 . Repeat the {productname} setup
 +
