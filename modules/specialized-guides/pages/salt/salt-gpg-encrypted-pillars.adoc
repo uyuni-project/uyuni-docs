@@ -20,6 +20,7 @@ Always create a separate keyring for the {salt} Master.
 mkdir /etc/salt/gpgkeys
 chmod 700 /etc/salt/gpgkeys
 ----
+
 . Generate a key pair interactively. 
 +
 [IMPORTANT]
@@ -27,16 +28,21 @@ chmod 700 /etc/salt/gpgkeys
 The password must be empty.
 ====
 +
+
 ----
 gpg --gen-key --homedir /etc/salt/gpgkeys
 ----
+
 . {salt} does not run with root permissions on SUSE Linux Enterprise and openSUSE distributions.
 +
+
 ----
 chown -R salt:salt /etc/salt/gpgkeys
 ----
+
 . Configure {salt} Master to use the new GPG home directory
 +
+
 ----
 echo 'gpg_keydir: /etc/salt/gpgkeys' >/etc/salt/master.d/gpg-pillar.conf
 systemctl reload-or-restart salt-master
@@ -50,7 +56,9 @@ To use the GPG renderer in a Pillar YAML file, change
 ----
 #!yaml
 ----
+
 to 
+
 ----
 #!yaml|gpg
 ----
@@ -58,18 +66,21 @@ to
 Encrypting pillar secrets can be done anywhere as long as the GPG and the public key generated in <<proc-key-pair-generation>> are available. 
 
 In this example, "SUMA Salt Master" is the GPG key’s UID created earlier.
+
 ----
 echo 't0ps3cr3t' | gpg --armor --batch --encrypt --recipient "SUMA Salt Master"
 ----
 
 
 When the GPG encrytped contents are created and available as ASCII-armored output, this output can be used as a multi-line string in a pillar YAML file:
-----
+
+[literal]
+....
 #!yaml|gpg
 
 secret:
   my-secret: |
-    -----BEGIN PGP MESSAGE-----
+    ----BEGIN PGP MESSAGE----
 
     hQEMA3OrmRaWrqgqAQf/ej8xV+nO3HVbQRCeJgCmt5ZjnogT++HHeFzXymfr1SgT
     XySyAqpIZB2N6MjZXtupO2sCmG6fzqtmnW+vRsZhQG8PAqzRtAekFuVbXzgkigBk
@@ -80,8 +91,8 @@ secret:
     DOAmzdRuIJwiLC9R2BKu3x+avReQb6xoz7eF7WthC0H0dz4mYakwPlVZ5yqYa/+G
     83i951rqAGI=
     =g+ji
-    -----END PGP MESSAGE-----
-----
+    ----END PGP MESSAGE----
+....
 
 
 When the pillar is assigned to a system with [path]``top.sls``, the GPG encrypted pillar data is available in a decrypted format. 
@@ -92,20 +103,24 @@ When the pillar is assigned to a system with [path]``top.sls``, the GPG encrypte
 The client's in-memory cache is only updated on startup or when running execution module functions that trigger a cache refresh such as [literal]``saltutil.refresh_pillar``, [litaral]``pillar.items``, or [literal]``state.apply``.
 ====
 
-----
+[literal]
+....
 suma-sles15sp1.tf.local:
-    ----------
+  ----------
     my-secret:
         t0p s3cr3t!
-----
+....
+
 
 
 == Export the GPG key
 
 To export the GPG key, use the command:
+
 ----
 gpg --export 'SUMA Salt Master' --homedir /etc/salt/gpgkeys --output suma-salt-master.gpg
 ----
+
 Here 'SUMA Salt Master' is the name used during key generation.
 
 The [literal]```suma-salt-master.gpg``` public key can be freely shared.
