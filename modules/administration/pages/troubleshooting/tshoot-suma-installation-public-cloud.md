@@ -3,7 +3,8 @@
 
 **Issue:** 
 
-SUSE Manager setup errors out while restarting services step during setup. 
+{productname} setup results with an error while restarting services during setup. 
+
 
 The set up gets failed on restarting Tomcat.
 
