@@ -19,7 +19,8 @@ When {productname} is set up using separate disks for cache, pgsql and spacewalk
 
  <img src="../../assets/images/partitions.png">
 
-Because of which data for certain services like tomcat goes missing due to broken symlink.
+Because of this, data for certain services like tomcat go missing due to a broken symbolic link.
+
 
 <img src="../../assets/images/broken-symlink.png"> 
 
