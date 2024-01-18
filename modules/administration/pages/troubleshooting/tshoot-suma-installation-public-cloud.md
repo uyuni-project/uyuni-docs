@@ -41,7 +41,8 @@ Actual data which should be present:
 
 2. Separate Storage for Spacewalk, PostgreSQL and Cache. (Size of the partition depends on the repository to be synced.)
 
-3. Setup SUSE Manager using `yast2 susemanager_setup`
+3. Set up {productname} using [command]``yast2 susemanager_setup``.
+
 
    
 
