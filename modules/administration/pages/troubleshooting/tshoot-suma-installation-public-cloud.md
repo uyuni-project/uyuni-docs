@@ -101,4 +101,5 @@ To resolve or avoid the issue simply copy the data of the underlying partition i
 
 **Conclusion**:
 
-When using SUSE Manager in a public cloud setup with separate data partitions, make sure that the already present data in those directories are copied onto the new partition.
+When using {procustname} in public cloud with separate data partitions, make sure that the already present data in those directories are copied onto the new partition.
+
