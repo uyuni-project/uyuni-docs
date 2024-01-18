@@ -36,7 +36,8 @@ Actual data which should be present:
 
 **How to Recreate:**
 
-1. SUSE Manager Server Provisioned in AWS using relevant AMI for BYOS
+1. {productname} Server provisioned in {aws} uses relevant AMI for {byos}
+
 
 2. Separate Storage for Spacewalk, PostgreSQL and Cache. (Size of the partition depends on the repository to be synced.)
 
