@@ -57,11 +57,12 @@ mkdir /bkp
 ----
 
 
-2. Unmount the affected partition for example /var/cache. 
+. Unmount the affected partition for example /var/cache. 
++
+----
+umount /var/cache
+----
 
-   ```bash
-   umount /var/cache
-   ```
 
 3. Check for underlying data in the partition: This should list the actual data present in the directory.
 
