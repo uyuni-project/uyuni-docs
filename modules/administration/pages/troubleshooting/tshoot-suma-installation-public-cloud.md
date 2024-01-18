@@ -80,11 +80,11 @@ To resolve or avoid the issue simply copy the data of the underlying partition i
 ----
 
 
-6. Copy the backed up data in step 4 to the mounted partition
-
-   ```bash
-   cp -prav /bkp/* /var/cache/
-   ```
+. Copy the backed up data from step 4 to the mounted partition
++
+----
+cp -prav /bkp/* /var/cache/
+----
 
 7. Verify the data is present
 
