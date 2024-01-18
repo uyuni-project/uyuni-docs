@@ -71,11 +71,12 @@ umount /var/cache
 ll /var/cache
 ----
 
-4. Copy the data onto the backup partition created in step 1.
+. Copy the data onto the backup partition created in step 1.
++
+----
+cp -prav /var/cache/* /bkp/
+----
 
-   ```bash
-   cp -prav /var/cache/* /bkp/
-   ```
 
 . Mount the partition again using option 1 or 2:
 +
