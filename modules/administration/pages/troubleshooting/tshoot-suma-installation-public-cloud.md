@@ -27,7 +27,8 @@ As SUSE Manager instance of cloud already have some services setup these data wh
 
  <img src="../../assets/images/incomplete-files.png"> 
 
-Actual Data which should be present:
+Actual data which should be present:
+
 
  <img src="../../assets/images/actual-files.png"> 
 
