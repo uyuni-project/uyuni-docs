@@ -72,15 +72,13 @@ To resolve or avoid the issue simply copy the data of the underlying partition i
    cp -prav /var/cache/* /bkp/
    ```
 
-5. Mount the partition again
+. Mount the partition again using option 1 or 2:
++
+----
+(option 1)   /dev/nvme0nxx /var/cache
+(option 2)   mount -a (if you have the entries under /etc/fstab)
+----
 
-   ```bash
-   /dev/nvme0nxx /var/cache
-   
-   OR
-   
-   mount -a (if you have the entries under /etc/fstab)
-   ```
 
 6. Copy the backed up data in step 4 to the mounted partition
 
