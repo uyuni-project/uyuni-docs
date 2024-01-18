@@ -92,11 +92,11 @@ cp -prav /bkp/* /var/cache/
    ll /var/cache/
    ```
 
-8. Re-run the SUSE Manager setup
-
-   ```bash
-   yast2 susemanager_setup
-   ```
+. Repeat the {productname} setup
++
+----
+yast2 susemanager_setup
+----
 
    
 
