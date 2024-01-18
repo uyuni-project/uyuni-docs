@@ -47,7 +47,8 @@ Actual data which should be present:
 
 **Resolution:**
 
-To resolve or avoid the issue simply copy the data of the underlying partition into the new partition by following the steps below:
+To resolve or avoid the issue, copy the data of the underlying partition into the new partition by following the steps below:
+
 
 1. Create a backup partition
 
