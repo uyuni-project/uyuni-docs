@@ -64,11 +64,12 @@ umount /var/cache
 ----
 
 
-3. Check for underlying data in the partition: This should list the actual data present in the directory.
-
-   ```bash
-   ll /var/cache
-   ```
+. Check the underlying data in the partition. 
+  This should list the actual data present in the directory.
++
+----
+ll /var/cache
+----
 
 4. Copy the data onto the backup partition created in step 1.
 
