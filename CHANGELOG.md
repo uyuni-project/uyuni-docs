@@ -1,4 +1,4 @@
-- PAYG also on Azure supported
+- Pay-as-you-go also on Azure supported
 - Updated the proxy installation in Installation and Upgrade Guide to use
   the mgrpxy tool
 - Added note about refreshing pillar data in Salt Guide (bsc#1189047)
