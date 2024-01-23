@@ -1,42 +1,40 @@
 [[contact-methods-saltssh]]
-= Push via Salt SSH
+= SSH Push contact method
 
 
-Push via Salt SSH is used in environments where Salt clients cannot reach the {productname} Server directly.
+SSH Push ([literal]``ssh-push``) is used in environments where Salt clients cannot reach the {productname} Server directly.
 In this environment, clients are located in a firewall-protected zone called a DMZ.
 No system within the DMZ is authorized to open a connection to the internal network  where the {productname} Server is located.
 
-Push via Salt SSH is also to use if installing a daemon agent on clients is not possible.
+SSH Push is also to use if installing a daemon agent on clients is not possible.
 
 [WARNING]
 ====
-The Push via Salt SSH method has serious limitations.
-It does not scale well, and consumes more Server resources and network bandwidth than the plain Salt method.
+The SSH Push method has serious limitations.
+It does not scale well, and consumes more Server resources and network bandwidth than the plain Salt method ([literal]``default``).
 The Push via Salt SSH method is not at all supported with large setups (1000 clients and more).
 ====
 
-The Push via Salt SSH method creates an encrypted tunnel from the {productname} Server on the internal network to the clients located in the DMZ.
-After all actions such as updates and events are pushed and executed, the tunnel is closed.
+The server uses the SSH Push to contact the clients at regular intervals, checking in and performing scheduled actions and events.
 
-The server uses the Salt SSH to contact the clients at regular intervals, checking in and performing scheduled actions and events.
-
-This image demonstrates the Push via Salt SSH process path.
+This image demonstrates the Push via SSH Push process path.
 All items left of the [systemitem]``Taskomatic`` block represent processes running on the {productname} client.
 
 image::salt-ssh-contact-taigon.png[scaledwidth=80%]
 
 
-To use Push via Salt SSH, you must have the SSH daemon running on the client, and reachable by the [systemitem]``salt-api`` daemon running on the {productname} Server.
-Additionally, the required Python version will be installed with the salt-bundle on the remote system.
+To use SSH Push, you must have the SSH daemon running on the client, and reachable by the [systemitem]``salt-api`` daemon running on the {productname} Server.
+Additionally, the required Python version will be installed with the {salt} Bundle on the client system.
 
-Before beginning with the following registering procedure, define an activation key with the Push via SSH contact method configured.
+Before beginning with the following registering procedure, define an activation key with the SSH Push contact method configured.
 This method expects that there is a direct connection with HTTPS to the Server.
 
+You need to use the {webui} or API to register these clients with the {productname} Server.
+See the following procedure or example.
 
-
-.Procedure: Registering clients with Push via Salt SSH
+.Procedure: Registering clients with SSH Push
 . In the {productname} {webui}, navigate to menu:Systems[Bootstrapping] and complete the appropriate fields.
-. Select an activation key with the Push via SSH contact method configured.
+. Select an activation key with the SSH Push contact method configured.
   For more information about activation keys, see xref:client-configuration:activation-keys.adoc[].
 . Check the [systemitem]``Manage system completely via SSH`` checkbox.
 . Click btn:[Bootstrap] to begin registration.
@@ -44,9 +42,27 @@ This method expects that there is a direct connection with HTTPS to the Server.
 
 
 
+.Example: API Access to Push via SSH
+
+You can use the API to manage which contact method to use.
+This example Python code sets the contact method to ``ssh-push``.
+
+Valid values are:
+
+* `default` (pull)
+* `ssh-push`
+* `ssh-push-tunnel`
+
+----
+client = xmlrpclib.Server(SUMA_HOST + "/rpc/api", verbose=0)
+key = client.auth.login(SUMA_LOGIN, SUMA_PASSWORD)
+client.system.setDetails(key, 1000012345, {'contact_method' : 'ssh-push'})
+----
+
+
 == Available parameters
 
-When you are configuring Push via Salt SSH, you can modify parameters that are used when a system is registered, including the host, activation key, and password.
+When you are configuring SSH Push, you can modify parameters that are used when a system is registered, including the host, activation key, and password.
 The password is used only for bootstrapping, it is not saved anywhere.
 All future SSH sessions are authorized via a key/certificate pair.
 These parameters are configured in menu:Systems[Bootstrapping].
@@ -77,12 +93,6 @@ When the client is successfully installed it runs with root privileges, so the a
 We recommend that you remove the line from the [path]``sudoers`` file after the client has been successfully installed.
 ====
 
-. On each client system, in the [path]``/home/<user>/.bashrc`` file, add these lines:
-+
-----
-PATH=$PATH:/usr/sbin
-export PATH
-----
 . On the {productname} Server, in the [path]``/etc/rhn/rhn.conf`` configuration file, add or amend this line to include the unprivileged username:
 +
 ----
@@ -93,9 +103,9 @@ ssh_push_sudo_user = <user>
 
 == Action Execution
 
-The Push via Salt SSH feature uses taskomatic to execute scheduled actions using [command]``salt-ssh``.
+The SSH Push feature uses taskomatic to execute scheduled actions using [command]``salt-ssh``.
 The taskomatic job periodically checks for scheduled actions and executes them.
-The Push via Salt SSH feature executes a complete [command]``salt-ssh`` call based on the scheduled action.
+The SSH Push feature executes a complete [command]``salt-ssh`` call based on the scheduled action.
 
 By default, twenty Salt SSH actions can be executed at a time.
 You can increase the number of actions that can be executed in parallel, by adding these lines to your configuration file, and adjusting the value of ``parallel_threads`` upwards.
@@ -114,9 +124,10 @@ In this case, set the number of parallel connections to be three times the total
 
 
 
+// FIXME: 2024-01-23, ke: to be deleted?
 == Future features
 
-There are some features that are not yet supported on Push via Salt SSH.
+There are some features that are not yet supported on SSH Push.
 These features do not work on Salt SSH clients:
 
 * OpenSCAP auditing
