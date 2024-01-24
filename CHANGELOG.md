@@ -1,5 +1,6 @@
 - Inserted sudo configuration into the Salt SSH section taken from
   traditional client documentation in the Client Configuration Guide
+- Documented openEuler 22.03 as a supported client system
 - Pay-as-you-go also on Azure supported
 - Updated the proxy installation in Installation and Upgrade Guide to use
   the mgrpxy tool
