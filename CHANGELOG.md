@@ -1,3 +1,4 @@
+- Documented openEuler 22.03 as a supported client system
 - Pay-as-you-go also on Azure supported
 - Updated the proxy installation in Installation and Upgrade Guide to use
   the mgrpxy tool
