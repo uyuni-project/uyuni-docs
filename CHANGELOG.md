@@ -1,5 +1,5 @@
 - Documented openEuler 22.03 as a supported client system
-- Pay-as-you-go also on Azure supported
+- Added Pay-as-you-go as supported service on Azure to the Public Cloud Guide
 - Updated the proxy installation in Installation and Upgrade Guide to use
   the mgrpxy tool
 - Added note about refreshing pillar data in Salt Guide (bsc#1189047)
