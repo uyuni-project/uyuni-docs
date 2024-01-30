@@ -6,7 +6,8 @@
 {productname} setup results with an error while restarting services during setup. 
 
 
-The set up fails on restarting Tomcat.
+The setup fails on restarting Tomcat.
+
 
 
 <img src="../../assets/images/error-1.png">
@@ -15,7 +16,7 @@ The set up fails on restarting Tomcat.
 
 **Reason:**
 
-When {productname} is set up using separate disks for cache, pgsql and spacewalk, the already present data within these partitions are covered under the new mount point.
+When {productname} is set up using separate disks for cache, pgsql and spacewalk, the existing data within these partitions are covered under the new mount point.
 
 
  <img src="../../assets/images/partitions.png">
@@ -115,5 +116,5 @@ yast2 susemanager_setup
 
 **Conclusion**:
 
-When using {procustname} in public cloud with separate data partitions, make sure that the already present data in those directories are copied onto the new partition.
+When using {procustname} in public cloud with separate data partitions, make sure that the existing data in those directories are copied onto the new partition.
 
