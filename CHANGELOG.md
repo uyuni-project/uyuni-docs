@@ -1,4 +1,4 @@
-- Added section about migrating EL clients to SUSE Liberty Linux to
+- Added section about migrating extended life clients to SUSE Liberty Linux to
   Client Configuration Guide
 - Inserted sudo configuration into the Salt SSH section taken from
   traditional client documentation in the Client Configuration Guide
