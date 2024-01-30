@@ -1,5 +1,7 @@
 - Added section about migrating EL clients to SUSE Liberty Linux to
   Client Configuration Guide
+- Inserted sudo configuration into the Salt SSH section taken from
+  traditional client documentation in the Client Configuration Guide
 - Documented openEuler 22.03 as a supported client system
 - Added Pay-as-you-go as supported service on Azure to the Public Cloud Guide
 - Updated the proxy installation in Installation and Upgrade Guide to use
