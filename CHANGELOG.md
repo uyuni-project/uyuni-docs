@@ -1,4 +1,6 @@
 - Added details information about the messages produced by subscription matcher 
+- Added section about migrating Enterprise Linux (EL) clients to SUSE Liberty
+  Linux to Client Configuration Guide
 - Inserted sudo configuration into the Salt SSH section taken from
   traditional client documentation in the Client Configuration Guide
 - Documented openEuler 22.03 as a supported client system
@@ -585,3 +587,4 @@
   client operating systems.
 - Documented upgrading to version 4.2 in Upgrade Guide (bsc#1185711).
 - Fixed URL of API documentation
+- Added troubleshooting instructions for the setting up in public cloud ({byos}) to Administration Guide
