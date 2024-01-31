@@ -1,3 +1,4 @@
+- Update max-connections tuning recommendation
 - Inserted sudo configuration into the Salt SSH section taken from
   traditional client documentation in the Client Configuration Guide
 - Documented openEuler 22.03 as a supported client system
@@ -41,7 +42,6 @@
 - Updated Twitter handle reference in documentation UI
 - Started with removing traditional client documentation in Client
   Configuration Guide and removed cross references to other Guides
-
 - Changed installation of Uyuni Proxy with openSUSE Leap instructions to
   refer to Leap 15.5
 - Fixed parser error with ifeval or url tag in Image management section
@@ -87,6 +87,8 @@
   buildiso command in the context of Cobbler
 - Removed end-of-life openSUSE Leap clients from the support matrix in
   the Client Configuration Guide
+=======
+>>>>>>> f9850e3285d30d63556d236524878ac348181d18:.changelog
 - Explained that version numbers in SP upgrade in common-workflows are
   just examples.
 - Changed PostgreSQL documentation links to currently used version 15
