@@ -1,5 +1,5 @@
-- Added section about migrating extended life clients to SUSE Liberty Linux to
-  Client Configuration Guide
+- Added section about migrating Enterprise Linux (EL) clients to SUSE Liberty
+  Linux to Client Configuration Guide
 - Inserted sudo configuration into the Salt SSH section taken from
   traditional client documentation in the Client Configuration Guide
 - Documented openEuler 22.03 as a supported client system
