@@ -1,4 +1,4 @@
-- Added details information about the messages produced by subscription matcher 
+- Added detailed information about the messages produced by subscription matcher 
 - Added section about migrating Enterprise Linux (EL) clients to SUSE Liberty
   Linux to Client Configuration Guide
 - Inserted sudo configuration into the Salt SSH section taken from
