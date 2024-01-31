@@ -5,13 +5,21 @@ The process of installing {productname} server was changed in version {productnu
 {productname} is now deployed as a container.
 
 
-== Installing Podman on openSUSE Leap 15.5
 
-To install Podman on openSUSE Leap 15.5, follow these steps:
+== Requirements
 
-1. Open a terminal window.
+* Podman
+* Uyuni container utilities
 
-2. Update the package manager's repository information to ensure you have the latest package information:
+
+
+== Installing Podman on openSUSE Leap 15.5 and Tumbleweed
+
+To install Podman on either {opensuse} {opensuse-version}, follow these steps:
+
+. Open a terminal window.
+
+. Update the package manager's repository information to ensure you have the latest package information:
 +
 
 [source,shell]
@@ -19,26 +27,119 @@ To install Podman on openSUSE Leap 15.5, follow these steps:
 sudo zypper refresh
 ----
 
-3. Install Podman by running the following command:
+. Install Podman by running the following command:
 +
 
 [source,shell]
 ----
-sudo zypper install podman
+sudo zypper -y install podman
 ----
 
-4. Confirm the installation by typing 'y' when prompted.
+. Zypper will download and install Podman along with its dependencies.
 
-5. Zypper will download and install Podman along with its dependencies.
-
-6. Once the installation is complete, verify that Podman is installed by running:
+. Once the installation is complete, verify that Podman is installed by running:
 
 [source,shell]
 ----
 podman --version
 ----
 
-This command should display the isntalled version of Podman.
-
+This command should display the installed version of Podman.
 You should now have Podman successfully installed on your openSUSE Leap 15.5 system, and you can start using it to manage containers on your system.
 
+
+
+== Installing Uyuni tools for use with containers
+
+
+
+=== {opensuse} {opensuse-version}
+
+. Add the following repository to your {opensuse} {opensuse-version} server and accept the key.
++
+
+----
+sudo zypper ar https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Master:/ContainerUtils/openSUSE_Leap_15.5/systemsmanagement:Uyuni:Master:ContainerUtils.repo
+----
+
+. Install tools:
++
+
+----
+sudo zypper in mgradm mgrctl mgradm-bash-completion mgrctl-bash-completion netavark
+----
+
+
+
+=== {opensuse} {tumbleweed}
+
+. Add the following repository to your {opensuse} {tumbleweed} server and accept the key..
++
+
+----
+sudo zypper ar https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Master:/ContainerUtils/openSUSE_Tumbleweed/systemsmanagement:Uyuni:Master:ContainerUtils.repo
+----
+
+. Install tools:
++
+
+----
+sudo zypper in mgradm mgrctl mgradm-bash-completion mgrctl-bash-completion netavark
+----
+
+
+== Installing Uyuni
+
+
+
+
+sudo mgradm
+add this zypper repository which contains the tools
+
+
+setup vm first with leap 15.5
+follow: https://github.com/uyuni-project/uyuni/wiki/Libvirt-DNS-and-DHCP-without-Avahi
+
+mgrctl tool for using the container
+
+
+== List of peristent storage volumes 
+
+
+
+Changes in a container are probably not consistent.
+containers can be stopped no problem
+changes outside volumes will be lost
+
+[source, yaml]
+----
+// This map should match the volumes mapping from the container definition in both
+// the helm chart and the systemctl services definitions
+var VOLUMES = map[string]string{
+	"var-cobbler":         "/var/lib/cobbler",
+	"var-salt":            "/var/lib/salt",
+	"var-pgsql":           "/var/lib/pgsql",
+	"var-cache":           "/var/cache",
+	"var-spacewalk":       "/var/spacewalk",
+	"var-log":             "/var/log",
+	"srv-salt":            "/srv/salt",
+	"srv-www":             "/srv/www/",
+	"srv-tftpboot":        "/srv/tftpboot",
+	"srv-formulametadata": "/srv/formula_metadata",
+	"srv-pillar":          "/srv/pillar",
+	"srv-susemanager":     "/srv/susemanager",
+	"srv-spacewalk":       "/srv/spacewalk",
+	"root":                "/root",
+	"etc-apache2":         "/etc/apache2",
+	"etc-rhn":             "/etc/rhn",
+	"etc-systemd-multi":   "/etc/systemd/system/multi-user.target.wants",
+	"etc-systemd-sockets": "/etc/systemd/system/sockets.target.wants",
+	"etc-salt":            "/etc/salt",
+	"etc-tomcat":          "/etc/tomcat",
+	"etc-cobbler":         "/etc/cobbler",
+	"etc-sysconfig":       "/etc/sysconfig",
+	"etc-tls":             "/etc/pki/tls",
+	"etc-postfix":         "/etc/postfix",
+	"ca-cert":             "/etc/pki/trust/anchors",
+}
+----
