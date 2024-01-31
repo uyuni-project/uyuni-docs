@@ -1,3 +1,4 @@
+- Added details information about the messages produced by subscription matcher 
 - Inserted sudo configuration into the Salt SSH section taken from
   traditional client documentation in the Client Configuration Guide
 - Documented openEuler 22.03 as a supported client system
