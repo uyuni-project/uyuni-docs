@@ -296,7 +296,7 @@
     <a class="nav-link" href="../../client-configuration/supported-features.html">Supported Clients and Features</a>
 <ul class="nav-list">
   <li class="nav-item" data-depth="3">
-    <a class="nav-link" href="../../client-configuration/supported-features-sles.html">SLES Supported Features</a>
+    <a class="nav-link" href="../../client-configuration/supported-features-sles.html">SLES and openSUSE Leap Supported Features</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../client-configuration/supported-features-sle-micro.html">SLE Micro Supported Features</a>
@@ -318,6 +318,9 @@
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../client-configuration/supported-features-debian.html">Debian Supported Features</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../client-configuration/supported-features-openeuler.html">OpenEuler Supported Features</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../client-configuration/supported-features-oracle.html">Oracle Supported Features</a>
@@ -466,6 +469,15 @@
 <ul class="nav-list">
   <li class="nav-item" data-depth="4">
     <a class="nav-link" href="../../client-configuration/clients-debian.html">Debian Clients</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../../client-configuration/registration-overview-openeuler.html">OpenEuler Client Registration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../../client-configuration/clients-openeuler.html">OpenEuler Clients</a>
   </li>
 </ul>
   </li>
@@ -1840,6 +1852,36 @@
 </ul>
   </li>
   <li class="nav-item" data-depth="3">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../../specialized-guides/public-cloud-guide/public-cloud-faq.html">Public Cloud FAQ</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../../specialized-guides/public-cloud-guide/faq/faq-listings.html">Public Cloud Listings</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <button class="nav-item-toggle"></button>
+    <span class="nav-text">Billing</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="5">
+    <a class="nav-link" href="../../specialized-guides/public-cloud-guide/faq/faq-billing-general.html">General</a>
+  </li>
+  <li class="nav-item" data-depth="5">
+    <a class="nav-link" href="../../specialized-guides/public-cloud-guide/faq/faq-billing-technical.html">Technical</a>
+  </li>
+  <li class="nav-item" data-depth="5">
+    <a class="nav-link" href="../../specialized-guides/public-cloud-guide/faq/faq-billing-products.html">Products</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../../specialized-guides/public-cloud-guide/faq/faq-miscellaneous.html">Miscellaneous</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../../specialized-guides/public-cloud-guide/faq/faq-appendix.html">Appendix</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../specialized-guides/public-cloud-guide/payg-support.html">Public Cloud Support</a>
   </li>
 </ul>
@@ -2072,11 +2114,12 @@ Changing network settings is done in the same way as with renaming any other sys
 <li>
 <p>Run the script <code class="command">spacewalk-hostname-rename</code> script with the public IP address of the server.
 If the server is not using the new hostname, the script fails.
-Be aware that this script refreshes the pillar data for all Salt minion: the time it takes to run depends on the number of registered Salt systems.</p>
+Be aware that this script refreshes the pillar data for all Salt clients: the time it takes to run depends on the number of registered clients.</p>
 </li>
 <li>
-<p>Re-configure your clients to make your environment aware of the new hostname and IP address.
-In the Salt minion configuration file <code class="path">/etc/salt/minion</code>, you must specify the name of the new Salt master (Uyuni Server):</p>
+<p><strong>Skip this step if the clients are managed via a Uyuni proxy.</strong>
+Re-configure the clients directly managed to make them aware of the new hostname and IP address.
+In the Salt client configuration file, you must specify the name of the new Salt master (Uyuni Server) (the filename is <code class="path">/etc/venv-salt-bundle/minion</code>or, if you do not use the Salt bundle, <code class="path">/etc/salt/minion</code>):</p>
 <div class="listingblock">
 <div class="content">
 <pre>master: &lt;new_hostname&gt;</pre>
@@ -2084,7 +2127,15 @@ In the Salt minion configuration file <code class="path">/etc/salt/minion</code>
 </div>
 </li>
 <li>
-<p>Once this is changed, restart the <code class="literal">`salt-minion</code> process:</p>
+<p>Restart the <code class="systemitem">venv-salt-minion</code> service (if using the Salt bundle):</p>
+<div class="listingblock">
+<div class="content">
+<pre>systemctl restart venv-salt-minion</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Or  the <code class="systemitem">salt-minion</code>  service (if not using the Salt bundle):</p>
+</div>
 <div class="listingblock">
 <div class="content">
 <pre>systemctl restart salt-minion</pre>
@@ -2092,13 +2143,30 @@ In the Salt minion configuration file <code class="path">/etc/salt/minion</code>
 </div>
 </li>
 <li>
-<p>To fully propagate the hostname to the minion configuration apply the high state.
+<p>To fully propagate the hostname to the Salt client configuration apply the high state.
 Applying the high state will update the hostname in the repository URLs.</p>
 </li>
 </ol>
 </div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
 <div class="paragraph">
-<p>Traditional clients have the <code class="path">/etc/sysconfig/rhn/up2date</code> configuration file that must be changed.
+<p>Any proxy must be reconfigured.
+The new server certificate and key must be copied to the proxy and the
+<code class="command">configure-proxy.sh</code> script must be run.
+For more information about configuring a proxy, see <a href="../../installation-and-upgrade/proxy-setup.html" class="xref page">SUSE Manager Proxy Setup</a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Directly connected traditional clients have the <code class="path">/etc/sysconfig/rhn/up2date</code> configuration file that must be changed.
 With a re-activation key you can re-register traditional clients (if there are any).
 For more information, see <a href="../../client-configuration/registration-cli.html" class="xref page">Register on the Command Line</a>.</p>
 </div>
