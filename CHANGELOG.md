@@ -1,3 +1,4 @@
+- Updated max-connections tuning recommendation in Large Deployment Guide
 - Added troubleshooting instructions for setting up in public cloud
   (BYOS) to Administration Guide
 - Added detailed information about the messages produced by subscription
