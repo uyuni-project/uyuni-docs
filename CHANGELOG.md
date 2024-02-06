@@ -1,3 +1,5 @@
+- Fixed incorrect references to SUSE Linux Enterprise Server 15 SP4
+  as base product for SUSE Manager
 - Update the repository needed to install mgrpxy
 - Added Pay-as-you-go on the Cloud: FAQ document to SUSE Manager
   documentation
