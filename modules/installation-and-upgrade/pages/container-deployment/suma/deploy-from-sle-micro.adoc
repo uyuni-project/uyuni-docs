@@ -1,1 +1,177 @@
-= Deployment from {micro}
+= Deploy {productname} as a container using {micro}
+
+== Deployment preparations
+
+In this section, you will gain expertise in setting up and deploying a {productname} {productnumber} Server.
+This process encompasses the installation of {micro}, and then initiating interaction with the container through the [command]``mgradm`` and [command]``mgrctl`` commands.
+
+
+== Requirements
+// Add requirements here or insert snippet
+
+
+== {micro} {microversion} Installation
+
+Get a copy of the {micro} {microversion} install media. You can begin installation on either a virtual machine or on a physical server. 
+
+
+.Procedure: {micro} {microversion} installation
+. Begin installation from media
+
+. Adjust Keyboard and language. Click the [systemitem]``checkbox`` to accept the License Agreement.
+
+. Click [systemitem]``Next`` to continue.
+
+. Select your registration method. For this example we will register the sever with {scc}.
+
+. Enter your {scc} Email address. 
+
+. Enter your registration code for {micro} {microversion}.
+
+. Click [systemitem]``Next`` to continue.
+
+. Select the {productname} {productnumber} Server extension [systemitem]``Checkbox``.
+
+. Click [systemitem]``Next`` to continue.
+
+. Enter your {productname} {productnumber} Server extension registration code.
+
+. Click [systemitem]``Next`` to continue.
+
+. Enter or accept default [systemitem]``NTP Server``.
+
+. Click [systemitem]``Next`` to continue.
+
+. Add the [systemitem]``root user`` password twice to confirm.
+
+. Click [systemitem]``Next`` to continue.
+
+. Adjust [systemitem]``Installation Settings`` as required.
+
+. Click [systemitem]``Next`` to continue.
+
+This concludes installation of {micro} {microversion}.
+
+
+
+== Deploy {productname} {productnumber} as container on {micro} {microversion}
+
+
+=== Basic and advanced deployment with mgradm
+
+.Procedure: Basic deployment of a {productname} {productnumber} container with Podman
+. from the terminal run the following command as the root user.
++
+
+[source, shell]
+----
+sudo mgradm install podman
+----
++
+
+[IMPORTANT]
+====
+You must deploy the container as sudo or root. The following error will be displayed at the terminal if you miss this step.
+
+[source, shell]
+----
+INF Setting up uyuni network
+9:58AM INF Enabling system service
+9:58AM FTL Failed to open /etc/systemd/system/uyuni-server.service for writing error="open /etc/systemd/system/uyuni-server.service: permission denied"
+----
+====
++
+
+. Enter your servers FQDN.
+
+. Enter a database and certificate password when prompted.
+
+. Wait for deployment to complete.
+
+. Open a browser and proceed to your servers FQDN.
+
+In this section you learned the basic method for deploying a {productname} {productnumber} Server container.
+
+
+.Procedure: Advanced - Deploy {productname} {productnumber} using a custom configuration file
+. Prepare an mgradm.yaml file similar to the following example:
++
+
+[source, yaml]
+----
+# Database password
+db:
+  password: MySuperSecretDBPass
+# Certifcate password
+cert:
+  password: MySuperSecretCAPass
+# SSL password
+ssl:
+  password: MySuperSecretSllPassword
+
+# If you have these you can provide them to setup your oganization credentials
+scc: 
+  user: ccUsername
+  password: ccPassword
+
+# Adminstrators email
+email: email@example.com
+----
++
+[IMPORTANT]
+====
+For security, **using command line parameters to specify passwords should be avoided**: use a configuration file with proper permissions instead.
+====
++
+
+. from the terminal run the following command a the sudo user. Replace `uyuni.example.com` with your FQDN.
++
+
+[source, shell]
+----
+sudo mgradm -c mgradm.yaml install podman <FQDN>
+----
++
+
+[IMPORTANT]
+====
+You must deploy the container as sudo or root. The following error will be displayed at the terminal if you miss this step.
+
+[source, shell]
+----
+INF Setting up uyuni network
+9:58AM INF Enabling system service
+9:58AM FTL Failed to open /etc/systemd/system/uyuni-server.service for writing error="open /etc/systemd/system/uyuni-server.service: permission denied"
+----
+====
+
+. Wait for deployment to complete.
+
+. Open a browser and proceed to your servers FQDN.
+
+In this section you learned how to deploy an {productname} Server container.
+
+=== Persistent volumes
+
+Many users will want to specify locations for their persistent volumes.
+
+[NOTE]
+====
+If you are just testing out {productname} you do not need to specify these volumes. [command]``mgradm`` will setup the correct volumes by default.
+
+Specifiying volume locations will generally be used for larger production deployments.
+====
+
+By default [command]``Podman`` stores its volumes in [path]``/var/lib/containers/storage/volumes/``. 
+
+You can provide custom storage for the volumes by mounting disks on this path or the expected volume path inside it such as: [path]``/var/lib/containers/storage/volumes/var-spacewalk``.
+This is especially important for the database and package mirrors. 
+
+For a list of all persistent volumes in the container see,  xref:installation-and-upgrade:container-deployment/persistent-container-volumes.adoc[Persistent container volumes]
+
+
+
+
+== Managing containers with the mgrctl tool
+
+mgrctl tool for using the container
