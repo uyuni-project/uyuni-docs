@@ -1,3 +1,4 @@
+- Fixed a changed configuration parameter for salt-ssh
 - Update the repository needed to install mgrpxy
 - Added Pay-as-you-go on the Cloud: FAQ document to SUSE Manager
   documentation
