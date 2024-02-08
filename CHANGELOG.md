@@ -1,3 +1,4 @@
+- Update the repository needed to install mgrpxy
 - Added Pay-as-you-go on the Cloud: FAQ document to SUSE Manager
   documentation
 - Updated max-connections tuning recommendation in Large Deployment Guide
