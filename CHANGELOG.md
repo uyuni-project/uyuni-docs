@@ -1,4 +1,10 @@
-- Added detailed information about the messages produced by subscription matcher 
+- Added Pay-as-you-go on the Cloud: FAQ document to SUSE Manager
+  documentation
+- Updated max-connections tuning recommendation in Large Deployment Guide
+- Added troubleshooting instructions for setting up in public cloud
+  (BYOS) to Administration Guide
+- Added detailed information about the messages produced by subscription
+  matcher
 - Added section about migrating Enterprise Linux (EL) clients to SUSE Liberty
   Linux to Client Configuration Guide
 - Inserted sudo configuration into the Salt SSH section taken from
@@ -36,7 +42,7 @@
 - Fixed file location in Custom Salt Formulas section of Salt Guide
 - Documented using Virtualization Host formula in Client Configuration Guide
 - Document Amazon Linux 2023
-- Added support for SUSE Linux Enterprise Micro 5.5 and openSUSE 
+- Added support for SUSE Linux Enterprise Micro 5.5 and openSUSE
   Leap Micro 5.5 clients to Installation and Upgrade Guide, and to
   Configuration Guide
 - Added Liberty Linux versions 7 and 8 to the supported features matrix in
@@ -587,4 +593,4 @@
   client operating systems.
 - Documented upgrading to version 4.2 in Upgrade Guide (bsc#1185711).
 - Fixed URL of API documentation
-- Added troubleshooting instructions for the setting up in public cloud ({byos}) to Administration Guide
+
