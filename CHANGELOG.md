@@ -1,3 +1,4 @@
+- Fixed a changed configuration parameter for salt-ssh
 - Fixed incorrect references to SUSE Linux Enterprise Server 15 SP4
   as base product for SUSE Manager
 - Update the repository needed to install mgrpxy
