@@ -1,0 +1,62 @@
+name: Build and archive documentation from branches
+
+on:
+  push:
+    branches:
+      - master  # Only master will build both Uyuni and SUSE Manager documentations
+      - manager-4.3 # Other branches will only build SUSE Manager documentation
+  workflow_run:
+    workflows: ["Update translation files"] # This workflow creates commits, so we need to run after a successful run
+    types:
+      - completed
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout this repository
+      uses: actions/checkout@v4
+      with:
+        path: uyuni-docs
+
+    - name: Checkout uyuni-docs-helper repository
+      uses: actions/checkout@v4
+      with:
+        path: uyuni-docs-helper
+        repository: uyuni-project/uyuni-docs-helper
+
+    - name: Configure environment
+      run: |
+        alias docker='podman'
+        mkdir outputs
+
+    - name: Build the Uyuni documentation
+      run: |
+        cd uyuni-docs-helper
+        ./uyuni-docs-helper -r ${{ github.ref_name }} -o /tmp -c antora-uyuni-en -p uyuni
+        cd ..
+        mkdir ./uyuni # Required so the folder name is included later in the archive
+        cp -r /tmp/build ./uyuni/uyuni
+      if: github.ref_name == 'master'
+
+    - name: Archive Uyuni Documentation
+      uses: actions/upload-artifact@v4
+      with:
+        name: documentation-uyuni-${{ github.ref_name }}
+        path: uyuni/
+      if: github.ref_name == 'master'
+
+    - name: Build the SUSE Manager documentation
+      run: |
+        cd uyuni-docs-helper
+        ./uyuni-docs-helper -r ${{ github.ref_name }} -o /tmp -c antora-suma-en -p suma
+        cd ..
+        mkdir ./susemanager # Required so the folder name is included later in the archive
+        cp -r /tmp/build ./susemanager/susemanager
+
+    - name: Archive SUSE Manager Documentation
+      uses: actions/upload-artifact@v4
+      with:
+        name: documentation-susemanager-${{ github.ref_name }}
+        path: susemanager/
