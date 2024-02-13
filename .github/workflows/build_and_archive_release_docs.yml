@@ -1,0 +1,97 @@
+name: Build and archive documentation from release branches
+
+on:
+  push:
+    branches:
+      - 'uyuni-20[0-9][0-9].[0-9][0-9]' # Only master will build both Uyuni and SUSE Manager documentations
+      - 'manager-4.3-MU-4.3.[0-9][0-9]?' # Other branches will only build SUSE Manager documentation
+      - 'manager-5.0-[alpha|beta|rc|gmc|gm]*' # Other branches will only build SUSE Manager documentation
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout this repository
+      uses: actions/checkout@v4
+      with:
+        path: uyuni-docs
+
+    - name: Checkout uyuni-docs-helper repository
+      uses: actions/checkout@v4
+      with:
+        path: uyuni-docs-helper
+        repository: uyuni-project/uyuni-docs-helper
+
+    - name: Configure environment
+      run: |
+        alias docker='podman'
+        mkdir outputs
+
+    - name: Build the Uyuni site documentation
+      run: |
+        rm -rf ./uyuni # Always clean before building
+        cd uyuni-docs-helper
+        ./uyuni-docs-helper -r ${{ github.ref_name }} -o /tmp -c antora-uyuni -p uyuni
+        cd ..
+        mkdir ./uyuni # Required so the folder name is included later in the archive
+        cp -r /tmp/build ./uyuni/uyuni-site
+      if: startsWith(github.ref_name, 'uyuni-')
+
+    - name: Archive Uyuni site Documentation
+      uses: actions/upload-artifact@v4
+      with:
+        name: documentation-uyuni-site-${{ github.ref_name }}
+        path: uyuni/
+      if: startsWith(github.ref_name, 'uyuni-')
+
+    - name: Build the Uyuni package documentation
+      run: |
+        rm -rf ./uyuni # Always clean before building
+        cd uyuni-docs-helper
+        ./uyuni-docs-helper -r ${{ github.ref_name }} -o /tmp -c obs-packages-uyuni -p uyuni
+        cd ..
+        mkdir ./uyuni # Required so the folder name is included later in the archive
+        cp -r /tmp/build/packages ./uyuni/uyuni-package
+      if: startsWith(github.ref_name, 'uyuni-')
+
+    - name: Archive Uyuni package Documentation
+      uses: actions/upload-artifact@v4
+      with:
+        name: documentation-uyuni-package-${{ github.ref_name }}
+        path: uyuni/
+      if: startsWith(github.ref_name, 'uyuni-')
+
+    - name: Build the SUSE Manager site documentation
+      run: |
+        rm -rf ./susemanager # Always clean before building
+        cd uyuni-docs-helper
+        ./uyuni-docs-helper -r ${{ github.ref_name }} -o /tmp -c antora-suma -p suma
+        cd ..
+        mkdir ./susemanager # Required so the folder name is included later in the archive
+        cp -r /tmp/build ./susemanager/susemanager-site
+      if: startsWith(github.ref_name, 'manager-')
+
+    - name: Archive SUSE Manager site Documentation
+      uses: actions/upload-artifact@v4
+      with:
+        name: documentation-susemanager-site-${{ github.ref_name }}
+        path: susemanager/
+      if: startsWith(github.ref_name, 'manager-')
+
+    - name: Build the SUSE Manager package documentation (only english)
+      run: |
+        rm -rf ./susemanager # Always clean before building
+        cd uyuni-docs-helper
+        ./uyuni-docs-helper -r ${{ github.ref_name }} -o /tmp -c obs-packages-suma-en -p suma
+        cd ..
+        mkdir ./susemanager # Required so the folder name is included later in the archive
+        cp -r /tmp/build/packages/ ./susemanager/susemanager-package
+      if: startsWith(github.ref_name, 'manager-')
+
+    - name: Archive SUSE Manager package Documentation (only english)
+      uses: actions/upload-artifact@v4
+      with:
+        name: documentation-susemanager-package-${{ github.ref_name }}
+        path: susemanager/
+      if: startsWith(github.ref_name, 'manager-')
