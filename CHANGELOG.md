@@ -1,4 +1,6 @@
 - Fixed a changed configuration parameter for salt-ssh
+- Added container deployment documentation to the Installation and
+  Upgrade Guide
 - Fixed incorrect references to SUSE Linux Enterprise Server 15 SP4
   as base product for SUSE Manager
 - Update the repository needed to install mgrpxy
@@ -32,8 +34,6 @@
 - Fixed RHEL channel names for bootstrapping in Client Configuration Guide
 - Removed traditional client stack documentation such as command line
   tools in Reference Guide
-- Documented Raspbian OS 12 as supported by Uyuni in Client
-  Configuration Guide
 - Corrected command mgr-push to mgrpush in Administration Guide (bsc#1215810)
 - Added Pay-as-you-go for Azure documentation to the Specialized Guides
   book
@@ -54,9 +54,6 @@
 - Updated Twitter handle reference in documentation UI
 - Started with removing traditional client documentation in Client
   Configuration Guide and removed cross references to other Guides
-
-- Changed installation of Uyuni Proxy with openSUSE Leap instructions to
-  refer to Leap 15.5
 - Fixed parser error with ifeval or url tag in Image management section
   of Administration Guide
 - Replaced "Quick Start: Public Cloud" with "Public Cloud Guide" in
@@ -64,8 +61,6 @@
 - Added Debian 12 as supported client in Client Configuration Guide
 - Added legend to table in Configuration Management section of Client
   Configuration Guide
-- Corrected the Uyuni version in the migration instructions in Installation
-  and Upgrade Guide
 - Fixed delete channel procedure in Channel management section in
   Administration Guide
 - Corrected the client tools channel name in Client Configuration Guide
@@ -93,8 +88,6 @@
 - The configure-proxy.sh script no longer generates configuration channels
 - Fixed broken links and references in the Image building file in
   Administration Guide
-- Exclude database migration description for Uyuni, because it does not
-  apply currently
 - Fixed navigation bar of Administration Guide
 - Updated autoinstallation chapter in Client Configuration Guide about
   buildiso command in the context of Cobbler
@@ -135,7 +128,7 @@
 - File renamed to follow standardized format
 - Changed filename for configuring Tomcat memory usage in Specialized Guides
   (bsc#1212814)
-- Minimal memory requirement is 16 GB for Uyuni or SUSE Manager Server
+- Minimal memory requirement is 16 GB for SUSE Manager Server
   installation, also for test installation
 - Added a note about Oracle Unbreakable Linux Network mirroring requirements
   in Client Configuration Guide (bsc#1212032)
@@ -147,9 +140,8 @@
   Guide (bsc#1210103)
 - Update Red Hat channel names to reflect the new custom channels for easier
   onboarding
-- In the Installation and Upgrade Guide, unified SUSE Manager and
-  Uyuni Proxy registration; mentioned registering Uyuni Proxy with the
-  Web UI.
+- In the Installation and Upgrade Guide, unified SUSE Manager Proxy 
+  registration
 - Warned about the impossibility of moving chained proxies in the
   Client Configuration Guide.
 - Update the different OS support tables to the current technical support state
@@ -309,6 +301,9 @@
 - Reverted single snippet change for two separate books
 - Added Extend Salt Bundle functionality with Python packages using pip
 - Salt Configuration Modules are no longer Technology Preview in Salt Guide.
+
+# Last packaged: 2023.10.19
+
 - Described disabling local repositories in Client Configuration Guide
 - Documented Ubuntu 22.04 LTS as a supported client OS in Client Configuration Guide
 - Remove misleading installation screen shots in the Installation and Upgrade
