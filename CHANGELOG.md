@@ -15,7 +15,6 @@
   Linux to Client Configuration Guide
 - Inserted sudo configuration into the Salt SSH section taken from
   traditional client documentation in the Client Configuration Guide
-- Documented openEuler 22.03 as a supported client system
 - Added Pay-as-you-go as supported service on Azure to the Public Cloud Guide
 - Updated the proxy installation in Installation and Upgrade Guide to use
   the mgrpxy tool
@@ -198,10 +197,7 @@
 - Enhanced deleting clients in Client Configuration Guide
 - Added instructions about contanerized proxy deployment to Installation and 
   Upgrade Guide
-- Explained using PTFs in SUSE Manager and Uyuni in Administration Guide
-- Added Uyuni Client Tools channels for Enterprise Linux / SUSE Liberty
-  Linux and provide dedicated table for SUSE Manager in Client
-  Configuration Guide (bsc#1205719)
+- Explained how to use PTFs in SUSE Manager in the Administration Guide
 - Warned about installing containerized proxy on traditional container host in
   Installation and Upgrade Guide
 - Added openSUSE Leap 15.5 as a supported client
@@ -271,17 +267,15 @@
 - Fix description of default notification settings (bsc#1203422)
 - Added missing Debian 11 references
 - Removed references to Debian 9 as it approached EOL and support
-- Document helm deployment of the proxy on k3s and MetalLB in Installation
+- Document Helm deployment of the proxy on K3s and MetalLB in Installation
   and Upgrade Guide
 - Added secure mail communication settings in Administration Guide
-- fix path to state and pillar files
+- Fix path to state and pillar files
 - Documented how pxeboot works with Secure Boot enabled in Client
   Configuration Guide.
 - Add repository via proxy issues troubleshooting page
 - Added SLE Micro 5.2 and 5.3 as available as a technology preview in Client
   Configuration Guide, and the IBM Z architecture for 5.1, 5.2, and 5.3
-- Added command to remove the obsolete Python module on SUSE Manager Server 4.1
-  in the Installation and Upgrade Guide (bsc#1203026)
 - Improve instructions for setting up SSO with keycloak 9.0.2 in Administration
   Guide
 - Mention CA certificate directory in the proxy setup description in the
