@@ -1,3 +1,5 @@
+- Fixed Prepare on-demand images section in Client Configuration Guide
+  (bsc#1219130)
 - Fixed a changed configuration parameter for salt-ssh
 - Added container deployment documentation to the Installation and
   Upgrade Guide
