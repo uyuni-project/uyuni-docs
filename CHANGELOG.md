@@ -1,3 +1,4 @@
+- Documented liberate formula in Salt Guide
 - Fixed Prepare on-demand images section in Client Configuration Guide
   (bsc#1219130)
 - Fixed a changed configuration parameter for salt-ssh
