@@ -1,3 +1,4 @@
+- Add documentation about SMTP timeout configuration
 - Documented liberate formula in Salt Guide
 - Fixed Prepare on-demand images section in Client Configuration Guide
   (bsc#1219130)
