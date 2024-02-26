@@ -322,3 +322,87 @@ If the public key does not exist because ``salt-ssh`` has not been invoked yet, 
 Salt SSH generates a keypair the first time it is invoked with ``/srv/susemanager/salt/salt_ssh/mgr_ssh_id``.
 The sequence in this section is needed if a proxy is configured before Salt SSH was invoked for the first time.
 ====
+
+
+
+[[salt.ssh.key_rotation]]
+== Rotate SSH keys
+
+The SSH key is used on [literal]``salt-ssh`` managed systems.
+Additionally, it is used on {productname} Proxies for the user [systemitem]``mgrsshtunnel``.
+Normal systems managed with the {salt} [literal]``default`` method are not affected and do not have this key configured.
+
+[NOTE]
+====
+Environments without SSH managed systems may not have the key at all.
+Traditionally managed systems with SSH push are not affected and the key cannot be rotated by this mechanism.
+====
+
+
+.Procedure: Rotating SSH keys
+
+. On the {productname} Server, as user [systemitem]``root``, change to user [systemitem]``salt``:
++
+
+----
+su -s /bin/bash - salt
+----
+
+. Create a new SSH key:
++
+
+----
+ssh-keygen -N "" -t rsa -q -f /var/lib/salt/.ssh/new_mgr_ssh_id
+----
+
+. Copy the public key into the {salt} filesystem to make it usable in a {salt} state:
++
+
+----
+cp /var/lib/salt/.ssh/new_mgr_ssh_id.pub /srv/susemanager/salt/salt_ssh/
+----
+
+. Change back to user [systemitem]``root`` again:
++
+
+----
+exit
+----
+
+. Rollout the new key to all systems that need it.
+  Applying the [literal]``util.mgr_rotate_saltssh_key`` state will limit  the changes to [literal]``salt-ssh`` managed systems and proxies:
++
+
+----
+salt '*' state.apply util.mgr_rotate_saltssh_key
+mgr-salt-ssh '*' state.apply util.mgr_rotate_saltssh_key
+----
+
+. Move the old key away and make the new key the standard key.
+  Rename [literal]``mgr_ssh_id`` key to [literal]``disabled_mgr_ssh_id`` and [literal]``new_mgr_ssh_id`` key to [literal]``mgr_ssh_id`` in the SSH keystore of the user [systemitem]``salt`` as well as in the {salt} filesystem for the public keys:
++
+
+----
+su -s /bin/bash - salt
+cd .ssh
+mv mgr_ssh_id disabled_mgr_ssh_id
+mv mgr_ssh_id.pub disabled_mgr_ssh_id.pub
+mv new_mgr_ssh_id mgr_ssh_id
+mv new_mgr_ssh_id.pub mgr_ssh_id.pub
+cd /srv/susemanager/salt/salt_ssh/
+mv mgr_ssh_id.pub disabled_mgr_ssh_id.pub
+mv new_mgr_ssh_id.pub mgr_ssh_id.pub
+----
+
+. OPTIONAL: When containerized proxies exist, re-create the configuration to get the new SSH key into the proxy configuration.
+  Restart the containers with the new configuration.
+  It is also possible to change the existing configuration on the podman host ([literal]``ssh.yaml``).
+  Change the value of [literal]``server_ssh_key_pub`` with the content of the current [literal]``mgr_ssh_id.pub``.
+
+. To remove the disabled keys from the [path]``authorized_keys` files of the [literal]``salt-ssh`` managed systems and the proxies, apply the state a second time:
++
+
+----
+salt '*' state.apply util.mgr_rotate_saltssh_key
+mgr-salt-ssh '*' state.apply util.mgr_rotate_saltssh_key
+----
