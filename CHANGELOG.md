@@ -1,3 +1,4 @@
+- Add documentation about SMTP timeout configuration
 - Documented SSH key rotation in Salt Guide (bsc#1170848)
 - Documented liberate formula in Salt Guide
 - Fixed Prepare on-demand images section in Client Configuration Guide
