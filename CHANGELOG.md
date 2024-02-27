@@ -1,5 +1,6 @@
 - Reformatted Supported Clients tables in Client Configuration Guide
   and Installation and Upgrade Guide
+- Documented SSH key rotation in Salt Guide (bsc#1170848)
 - Documented liberate formula in Salt Guide
 - Fixed Prepare on-demand images section in Client Configuration Guide
   (bsc#1219130)
