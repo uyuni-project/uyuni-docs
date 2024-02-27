@@ -12,7 +12,8 @@ KVM combined with Virtual Machine Manager (_virt-manager_) will be used as a san
 // This section needs revision its still ugly (LKB, KE), but now updated (KE)
 // - 2019-06-19.
 
-Download {productname} image from the https://download.suse.com/.
+You will find the VM images for {productname} {productnumber} in various formats. It includes the underlying OS bits ({sles}_{sles-version} {sp-base}) and the {productname} software current at the time of build.
+Download the appropriate {productname} image for your environment from https://download.suse.com/.
 
 [NOTE]
 ====
@@ -20,6 +21,9 @@ This table specifies the minimum requirements.
 These are suitable for a quick test installation, such as a server with one client.
 If you want to use a production environment, review the requirements listed in xref:installation-and-upgrade:hardware-requirements.adoc[].
 ====
+
+// FIXME, Don: 15 GB root volume storage (default for the image)
+// FIXME, Don: Additional storage 300GB (minimum)
 
 [cols="1,1", options="header"]
 |===
@@ -50,6 +54,8 @@ User or [systemitem]``root`` authentications need to be set up during first boot
 This can be done using [systemitem]``Ignition`` or [systemitem]``Cloud-Init`` methods.
 ====
 
+
+
 [[sumavm.ignition]]
 == {productname} basic configuration using [systemitem]``Ignition``
 
@@ -62,9 +68,10 @@ The file is called [path]``config.ign``.
 The [path]``config.ign`` is a JSON configuration file that provides prescriptions for Ignition.
 You can either create the file manually in JSON, or you can use the Fuel Ignition tool to generate a basic set of prescriptions.
 The Fuel Ignition tool does not provide a full set of options, so you might have to modify the file manually.
-For more information, see https://ignite.opensuse.org/. 
+For more information, see https://ignite.opensuse.org/.
 
-When installing, the configuration file [path]``config.ign`` must reside in the [path]``ignition`` subdirectory on the configuration media labeled [systemitem]``ignition``. The directory structure must look as follows:
+When installing, the configuration file [path]``config.ign`` must reside in the [path]``ignition`` subdirectory on the configuration media labeled [systemitem]``ignition``.
+The directory structure must look as follows:
 
 ----
 <root directory>
@@ -83,17 +90,22 @@ The [path]``config.ign`` file contains various data types: objects, strings, int
 For the complete specification, see https://coreos.github.io/ignition/configuration-v3_3/.
 
 
-=== Set up root password using Ignition
 
-The [systemitem]``passwd`` attribute is used to add users. If you intend to log in to your system, create root and set the root's password and/or add the SSH key to the [systemitem]``Ignition`` configuration. You need to hash the root password, for example, by using the openssl command:
+=== Set root password using Ignition
+
+The {productname} VM image does not set up root or any other user account.
+User or [systemitem]``root`` authentications need to be set up during first boot.
+The [systemitem]``passwd`` attribute is used to add users.
+If you intend to log in the system, create root and set the root's password and/or add the SSH key to the [systemitem]``Ignition`` configuration.
+You need to hash the root password, for example, by using the openssl command:
 
 ----
 openssl passwd -6
 ----
 
-The command creates a hash of the password you chose. Use this hash as the value of the [systemitem]``password_hash`` attribute.
+The command creates a hash of the password you chose. Use this hash as the value of the [systemitem]``passwordHash`` attribute.
 
-The users attribute must contain at least one [systemitem]``name`` attribute. [systemitem]``ssh_authorized_keys`` is a list of ssh keys for the user. 
+The users attribute must contain at least one [systemitem]``name`` attribute. [systemitem]``ssh_authorized_keys`` is a list of ssh keys for the user.
 
 Create the [path]``root/ignition/config.ign`` file with the following content:
 
@@ -119,7 +131,8 @@ Prepare the [systemitem]``Ignition`` ISO file using the command:
 mkisofs -full-iso9660-filenames -o suma_ignition.iso -V ignition root
 ----
 
-Attach the created [path]``suma_ignition.iso`` file as a volume to the creating virtual machine. This particular example is setting [systemitem]``root`` password to `linux`.
+Attach the created [path]``suma_ignition.iso`` file as a volume to the virtual machine at first boot.
+This particular example is setting the [systemitem]``root`` password to `linux`.
 
 For more information about [systemitem]``Ignition``, see https://documentation.suse.com/sle-micro/5.4/single-html/SLE-Micro-deployment/#cha-images-ignition.
 
