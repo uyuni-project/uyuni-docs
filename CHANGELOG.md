@@ -1,3 +1,5 @@
+- Reformatted Supported Clients tables in Client Configuration Guide
+  and Installation and Upgrade Guide
 - Documented liberate formula in Salt Guide
 - Fixed Prepare on-demand images section in Client Configuration Guide
   (bsc#1219130)
