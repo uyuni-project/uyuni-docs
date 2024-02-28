@@ -1,3 +1,5 @@
+- Reformatted Supported Clients tables in Client Configuration Guide
+  and Installation and Upgrade Guide
 - Add documentation about SMTP timeout configuration
 - Documented SSH key rotation in Salt Guide (bsc#1170848)
 - Documented liberate formula in Salt Guide
