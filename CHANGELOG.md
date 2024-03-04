@@ -1,3 +1,4 @@
+- Documented Virtualization Guest and Virtualization Host Formula
 - Add documentation about SMTP timeout configuration
 - Documented SSH key rotation in Salt Guide (bsc#1170848)
 - Documented liberate formula in Salt Guide
