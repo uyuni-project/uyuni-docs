@@ -1,6 +1,7 @@
 # Some hints
 
 Consider adding an entry to the `CHANGELOG.md` file in the toplevel directory.
+Cosmetic changes such as fixing typos do not need log entries (nevertheless it is important to fix typos, etc.)!
 In the `manager-4.3`, the hidden `.changelog` file with a leading dot is still in use.
 
 Add Description, Target branches, and related Links below the following section titles.
