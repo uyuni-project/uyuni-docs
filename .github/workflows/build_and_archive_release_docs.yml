@@ -7,8 +7,8 @@ on:
       - 'manager-4.3-MU-4.3.[0-9][0-9]?' # Other branches will only build SUSE Manager documentation
       - 'manager-5.0-alpha[0-9]' # Other branches will only build SUSE Manager documentation
       - 'manager-5.0-beta[0-9]' # Other branches will only build SUSE Manager documentation
-      - 'manager-5.0-rc[0-9]?' # Other branches will only build SUSE Manager documentation
-      - 'manager-5.0-gmc[0-9]?' # Other branches will only build SUSE Manager documentation
+      - 'manager-5.0-rc[0-9]' # Other branches will only build SUSE Manager documentation
+      - 'manager-5.0-gmc[0-9]' # Other branches will only build SUSE Manager documentation
       - 'manager-5.0-gm' # Other branches will only build SUSE Manager documentation
 
 jobs:
@@ -34,12 +34,12 @@ jobs:
 
     - name: Build the Uyuni site documentation
       run: |
-        rm -rf ./uyuni # Always clean before building
+        rm -rf ./uyuni; rm -rf uyuni-docs/build # Always clean before building
         cd uyuni-docs-helper
-        ./uyuni-docs-helper -r ${{ github.ref_name }} -o /tmp -c antora-uyuni -p uyuni
+        ./uyuni-docs-helper ../uyuni-docs -c antora-uyuni -p uyuni
         cd ..
         mkdir ./uyuni # Required so the folder name is included later in the archive
-        cp -r /tmp/build ./uyuni/uyuni-site
+        cp -r uyuni-docs/build/ ./uyuni/uyuni-site
       if: startsWith(github.ref_name, 'uyuni-')
 
     - name: Archive Uyuni site Documentation
@@ -51,12 +51,12 @@ jobs:
 
     - name: Build the Uyuni package documentation
       run: |
-        rm -rf ./uyuni # Always clean before building
+        rm -rf ./uyuni; rm -rf uyuni-docs/build # Always clean before building
         cd uyuni-docs-helper
-        ./uyuni-docs-helper -r ${{ github.ref_name }} -o /tmp -c obs-packages-uyuni -p uyuni
+        ./uyuni-docs-helper ../uyuni-docs -c obs-packages-uyuni -p uyuni
         cd ..
         mkdir ./uyuni # Required so the folder name is included later in the archive
-        cp -r /tmp/build/packages ./uyuni/uyuni-package
+        cp -r uyuni-docs/build/ ./uyuni/uyuni-package
       if: startsWith(github.ref_name, 'uyuni-')
 
     - name: Archive Uyuni package Documentation
@@ -68,12 +68,13 @@ jobs:
 
     - name: Build the SUSE Manager site documentation
       run: |
-        rm -rf ./susemanager # Always clean before building
+        rm -rf ./uyuni; rm -rf uyuni-docs/build # Always clean before building
+        sed -i -e 's|supplemental_files: ./branding/supplemental-ui/suma/.*|supplemental_files: ./branding/supplemental-ui/suma/webui-2023|' uyuni-docs/parameters.yml
         cd uyuni-docs-helper
-        ./uyuni-docs-helper -r ${{ github.ref_name }} -o /tmp -c antora-suma -p suma
+        ./uyuni-docs-helper ../uyuni-docs -c antora-suma -p suma
         cd ..
         mkdir ./susemanager # Required so the folder name is included later in the archive
-        cp -r /tmp/build ./susemanager/susemanager-site
+        cp -r uyuni-docs/build/ ./susemanager/susemanager-site
       if: startsWith(github.ref_name, 'manager-')
 
     - name: Archive SUSE Manager site Documentation
@@ -85,12 +86,13 @@ jobs:
 
     - name: Build the SUSE Manager package documentation (only english)
       run: |
-        rm -rf ./susemanager # Always clean before building
+        rm -rf ./uyuni; rm -rf uyuni-docs/build # Always clean before building
+        sed -i -e 's|supplemental_files: ./branding/supplemental-ui/suma/.*|supplemental_files: ./branding/supplemental-ui/suma/susecom-2023|' uyuni-docs/parameters.yml
         cd uyuni-docs-helper
-        ./uyuni-docs-helper -r ${{ github.ref_name }} -o /tmp -c obs-packages-suma-en -p suma
+        ./uyuni-docs-helper ../uyuni-docs -o /tmp -c obs-packages-suma-en -p suma
         cd ..
         mkdir ./susemanager # Required so the folder name is included later in the archive
-        cp -r /tmp/build/packages/ ./susemanager/susemanager-package
+        cp -r uyuni-docs/build/ ./susemanager/susemanager-package
       if: startsWith(github.ref_name, 'manager-')
 
     - name: Archive SUSE Manager package Documentation (only english)
