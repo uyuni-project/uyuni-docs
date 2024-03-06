@@ -224,13 +224,13 @@ copy-branding:
 	mkdir -p $(current_dir)/translations
 	cp -a $(current_dir)/branding $(current_dir)/translations/
 
-.PHONY: configure-suma-branding-webui
-configure-suma-branding-webui:
+.PHONY: configure-suma-branding-dsc
+configure-suma-branding-dsc:
 	sed -i -e 's|supplemental_files: ./branding/supplemental-ui/suma/.*|supplemental_files: ./branding/supplemental-ui/suma/susecom-2023|' site.yml
 	cat site.yml
 
-.PHONY: configure-suma-branding-package
-configure-suma-branding-package:
+.PHONY: configure-suma-branding-webui
+configure-suma-branding-webui:
 	sed -i -e 's|supplemental_files: ./branding/supplemental-ui/suma/.*|supplemental_files: ./branding/supplemental-ui/suma/webui-2023|' site.yml
 	cat site.yml
 
