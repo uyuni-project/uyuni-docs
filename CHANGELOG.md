@@ -1,3 +1,4 @@
+- Documented Virtualization Guest and Virtualization Host Formula
 - Reformatted Supported Clients tables in Client Configuration Guide
   and Installation and Upgrade Guide
 - Add documentation about SMTP timeout configuration
