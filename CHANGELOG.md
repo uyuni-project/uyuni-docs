@@ -1,3 +1,5 @@
+- Moved client onboarding instructions from Common Workflows to 
+  Client Configuration Guide
 - Moved detailed description of client deletion from Common
   Workflows to Administration Guide 
 - Documented Virtualization Guest and Virtualization Host Formula
