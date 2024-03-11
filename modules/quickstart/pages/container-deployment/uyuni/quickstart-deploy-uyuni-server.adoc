@@ -1,26 +1,93 @@
 [[quickstart-uyuni-deploy-container]]
 = Deploy {productname} {productnumber} Server as a container
-:uyuni-content: false
-ifeval::[{uyuni-content} == false]
-:noindex:
-enif::[]
 
 In this quickstart, you will embark on deploying {productname} {productnumber} Server. 
 There are several methods to accomplish this task. 
 You may opt to deploy it in the cloud, or deploy it on either {leapmicro} or {slemicro}. 
-However, for the purpose of this guide, we've chosen to focus on setting up a KVM environment, installed on either {opensuse} {leap} or {opensuse} {tumbleweed}, as the initial step.
+However, for the purpose of this quickstart guide, we've chosen to focus on setting up a KVM environment, installed on {opensuse} {leap}, as the initial step.
 
 This guide will lead you through the following steps:
 
-. Installing {opensuse} {leap} (optionally, you can also use {opensuse} {tumbleweed}) on a physical machine.
+. Installing {opensuse} {leap} on a physical machine.
 . Setting up KVM tools and using it to configure a **uyuni.lab** network.
 . Create a new KVM host machine using {leapmicro} as the **container host**.
+. Update the {leapmicro} virtual machine
+. Install podman, and container utilities
+. Deploy the {productname} container
 
 
 == Prepare the physical machine
 
 Install {opensuse} {leap} or {opensuse} {tumbleweed} on a physical machine, or continue using an existing installation.
 See: link:https://doc.opensuse.org/documentation/leap/startup/html/book-startup/art-opensuse-installquick.html#sec-opensuse-installquick-install[Installating {opensuse} {leap}]
+
+Update the system:
+----
+sudo zypper ref && zypper up
+----
+
+
+== Install KVM tools
+
+
+. Install KVM server and kvm tools:
++
+----
+sudo zypper in -t pattern kvm_server kvm_tools
+----
++
+
+. Reboot.
+
+== Setup KVM network
+
+[NOTE]
+====
+This XML configuration builds a KVM subnet using the domain name of container.lab to setup a FQDN for your test server.
+
+In a production environment your company's administration services should provide you with a FQDN.
+====
+
+.Procedure: Setup the KVM Network
+. Open the virt-manager GUI.
+
+. Select menu:edit[Preferences].
+
+. In the [literal]``Preferences`` under the [literal]``General`` tab select the checkbox [systemitem]``Enable XML editing``. Click the close button when complete.
+
+.  Double click **QEMU/KVM** text in the main window or select menu:Edit[Connection Details] to open the [systemitem]``Connection Details`` window.
+
+. Select the [systemitem]``Virtual Networks`` tab then the [systemitem]``XML`` tab.
+
+. If the default network is running, stop it using the [systemitem]``X`` button in the lower left.
+
+. Copy and paste the following XML snippet beneath your [systemitem]``<uuid>`` block:
++
+
+[source, xml]
+----
+<forward mode="nat">
+    <nat>
+      <port start="1024" end="65535"/>
+    </nat>
+  </forward>
+  <bridge name="virbr0" stp="on" delay="0"/>
+  <mac address="52:54:00:9f:d0:0b"/>
+  <domain name="container.lab" localOnly="yes"/>
+  <ip address="192.168.122.1" netmask="255.255.255.0">
+    <dhcp>
+      <range start="192.168.122.2" end="192.168.122.254"/>
+      <host mac="52:54:00:0A:CC:B8" name="uyuni-leapmicro" ip="192.168.122.10"/>
+      <host mac="52:54:00:EE:88:85" name="minion-one" ip="192.168.122.11"/>
+      <host mac="52:54:00:F2:B0:DF" name="minion-two" ip="192.168.122.12"/>
+     
+     
+    </dhcp>
+  </ip>
+</network>
+----
+
+
 
 == Software and Hardware Requirements for {productname}
 
