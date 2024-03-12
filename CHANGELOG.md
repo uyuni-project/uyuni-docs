@@ -1,7 +1,7 @@
 - Added information about requirements for the PostgreSQL database
   in the Installation and Upgrade Guide (bsc#1220376)
 - Moved detailed description of client deletion from Common
-  Workflows to Administration Guide 
+  Workflows to Administration Guide
 - Documented Virtualization Guest and Virtualization Host Formula
 - Reformatted Supported Clients tables in Client Configuration Guide
   and Installation and Upgrade Guide
