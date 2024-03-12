@@ -1,5 +1,5 @@
 - Added information about requirements for the PostgreSQL database
-  in the Installation and Upgrade Guide
+  in the Installation and Upgrade Guide (bsc#1220376)
 - Reformatted Supported Clients tables in Client Configuration Guide
   and Installation and Upgrade Guide
 - Add documentation about SMTP timeout configuration
