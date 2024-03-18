@@ -1,8 +1,7 @@
-[[quickstart-suma-deploy-container]]
-= Deploy {productname} {productnumber} Server as a container
-ifeval::[{uyuni-content} == true]
-:noindex:
-enif::[]
+= Deploy {productname} {productnumber} Server
+//ifeval::[{uyuni-content} == true]
+//:noindex:
+//endif::[]
 
 This quick start guide shows you how to install and configure a {productname} {productnumber} container for x86-64 architecture on {micro} {microversion}.
 
@@ -11,12 +10,12 @@ For this topic we assume that you already have valid organization credentials wi
 In this quickstart, you will embark on deploying {productname} {productnumber} Server. 
 There are several methods to accomplish this task. 
 You may opt to deploy it in the cloud, or deploy it on {micro}. 
-However, for the purpose of this quickstart guide, we've chosen to focus on setting up a simple KVM environment, installed on {leap}, as the initial step.
+However, for the purpose of this quickstart guide, we've chosen to focus on setting up a simple KVM environment, installed on {leap}, as the lab host.
 
 This guide will lead you through the following steps:
 
-. Installing {opensuse} {leap} (optionally, you can also use {opensuse} {tumbleweed}) on a physical machine.
-. Setting up KVM tools and using it to configure a **uyuni.lab** network.
+. Installing {opensuse} {leap} on a physical machine.
+. Installating KVM tools and using it to configure a **suse.lab** network.
 . Create a new KVM host machine using {micro} as the **container host**.
 
 
@@ -47,7 +46,7 @@ For the purposes of this guide expect to deploy on a virtual machine with 16GB o
 .Supported operating system for the Container Host
 [NOTE]
 ====
-The supported host operating system for your containers is  {micro} {microversion}.
+The supported host operating system for the container host is {micro} {microversion}.
 ====
 
 .Base operating system for the Container Image
@@ -55,20 +54,16 @@ The supported host operating system for your containers is  {micro} {microversio
 ====
 {productname} {productnumber} uses {sle} {bci-suma} as the base operating system of the container image or **BCI**.
 ====
-// Remove this checklist when done
-* Deploy KVM and tools on opensuse leap host system
-* setup KVM network for SUSE Manager
-* Install sle micro 5.5 as kvm virtual machine
-* update system
-* Install tools
-* deploy container
-* setup administration account
-// remove this checklist when done
+
 
 
 == Deploying {micro} {microversion}
 
 This section provides references for deploying {micro} {microversion}.
+
+
+
+== Requirements
 
 
 
@@ -83,41 +78,130 @@ To guarantee that clients can resolve the {productname} {productnumber} domain n
 
 
 
-[[installation-server-containers-requirements]]
 === Container Host Requirements
 
 For CPU, RAM and storage requirements see, xref:installation-and-upgrade:hardware-requirements.adoc[Hardware requirements]
 
 
 
-=== {micro} {microversion} Installation
+== Prepare the Physical Machine
+
+Install {leap} {opensuse-version} on a bare metal physical machine, or continue using your existing installation.
+See: link:https://doc.opensuse.org/documentation/leap/startup/html/book-startup/art-opensuse-installquick.html#sec-opensuse-installquick-install[Installating {leap}]
+
+
+Update the system:
+
+----
+sudo zypper ref && zypper up
+----
+
+
+
+== Install KVM Tools
+
+
+. Install KVM server and kvm tools:
++
+----
+sudo zypper in -t pattern kvm_server kvm_tools
+----
++
+
+. Reboot.
+
+
+
+== Setup the KVM Network
+
+[NOTE]
+====
+This XML configuration builds a KVM subnet using the domain name of suma.lab to setup the required FQDN for your test server.
+
+In a production environment your company's administration services should provide you with a FQDN.
+====
+
+
+
+.Procedure: Setup the KVM Network
+. Open the [systemitem]``Virt Machine Manager`` GUI. In Gnome you can click the windows button on your keyboard and type in [systemitem]``virt-manager``. Alternatively you can open a command prompt and type: `virt-manager` and click the btn:[Enter].
+
+. Select menu:edit[Preferences].
+
+. In [literal]``Preferences`` under the [literal]``General`` tab select the checkbox [systemitem]``Enable XML editing``. Click the close button when complete.
+
+.  Double click **QEMU/KVM** text in the main window or select menu:Edit[Connection Details] to open the [systemitem]``Connection Details`` window.
+
+. Select the [systemitem]``Virtual Networks`` tab then the [systemitem]``XML`` tab.
+
+. If the default network is running, stop it using the [systemitem]``X`` button in the lower left.
+
+. Copy and paste the following XML snippet **beneath** your [systemitem]``<uuid>`` block:
++
+
+[source, xml]
+----
+<forward mode="nat">
+    <nat>
+      <port start="1024" end="65535"/>
+    </nat>
+  </forward>
+  <bridge name="virbr0" stp="on" delay="0"/>
+  <mac address="52:54:00:9f:d0:0b"/>
+  <domain name="suse.lab" localOnly="yes"/>
+  <ip address="192.168.122.1" netmask="255.255.255.0">
+    <dhcp>
+      <range start="192.168.122.2" end="192.168.122.254"/>
+      <host mac="52:54:00:0A:CC:B8" name="suma-server" ip="192.168.122.10"/>
+      <host mac="52:54:00:EE:88:85" name="suma-proxy" ip="192.168.122.11"/>
+      <host mac="52:54:00:F2:B0:DF" name="minion-one" ip="192.168.122.12"/>
+      <host mac="52:54:00:F2:B0:DG" name="minion-one" ip="192.168.122.13"/>
+    </dhcp>
+  </ip>
+</network>
+----
+
+
+== {micro} {microversion} Installation
 
 Get a copy of the {micro} {microversion} install media. You can begin installation on either a virtual machine or on a physical server. 
 
 For detailed documentation on preparing your machines OS (Virutal or physical) See, link:https://documentation.suse.com/sle-micro/5.5/html/SLE-Micro-all/book-deployment-slemicro.html[{micro} {microversion} Deployment Guide]
 
 
-.Procedure: {micro} {microversion} installation
-. Begin installation from media
 
+== Container Host Preparation
+
+.Procedure: Setup the Image in Virtual Machine Manager (Step 1)
+. Open the **Virtual Machine Manager** and select menu:File[New virtual machine].
+
+. In the New VM window select **Local install media(ISO image or CDROM)** and click btn:[Forward].
+
+. Click the btn:[Browse] Button. In the Volumes field select the {leapmicro} image you downloaded. Click btn:[Choose Volume].
+
+. Uncheck the **Automatically detect from the installation media/source** and type **micro** in the **Choose operating system you are installing** field. Select **{micro} {microversion}**. Click btn:[Forward].
+
+. Set Memory to 16 GB and cpus to two. Click btn:[Forward].
+
+. Click in the disk image size field and enter 200 GB. The default is 60.0 GB. Click btn:[Forward]. 
+
+. Name the system **suma-server**. Next check the box **Customize configuration before install**. Click btn:[Finish].
+
+. In the settings windows select the [systemitem]``NIC`` device. In the **Virtual Machine Manager** primary window double click **QEMU/KVM**. Select the **Virtual Networks** tab. Select **XML**. Copy the **mac** address for the **suma-server** machine. 
+
+. Open the virtual machine settings page and paste the mac address into the [systemitem]``MAC address:`` field. Click btn:[Apply]. Then select btn:[Begin Installation] in the upper left corner. 
+
+. Procedure: {slemicro} {microversion} Installation 
+. Use the arrow keys to select [systemitem]``Installation``.
+
+
+
+.Procedure: {micro} {microversion} Installation
 . Adjust Keyboard and language. Click the [systemitem]``checkbox`` to accept the License Agreement.
 
 . Click [systemitem]``Next`` to continue.
 
 . Select your registration method. For this example we will register the sever with {scc}.
-
-. Enter your {scc} Email address. 
-
-. Enter your registration code for {micro} {microversion}.
-
-. Click [systemitem]``Next`` to continue.
-
-. Select the {productname} {productnumber} Server extension [systemitem]``Checkbox``.
-
-. Click [systemitem]``Next`` to continue.
-
-. Enter your {productname} {productnumber} Server extension registration code.
-+
 
 .{productname} as an extension
 [NOTE]
@@ -131,21 +215,54 @@ The {productname} {productnumber} container is installed as an extension. Theref
 ====
 +
 
-. Click [systemitem]``Next`` to continue.
+. Enter your {scc} Email address. 
 
-. Enter or accept default [systemitem]``NTP Server``.
-
-. Click [systemitem]``Next`` to continue.
-
-. Add the [systemitem]``root user`` password twice to confirm.
+. Enter your registration code for {micro} {microversion}.
 
 . Click [systemitem]``Next`` to continue.
 
-. Adjust [systemitem]``Installation Settings`` as required.
+. On the [systemitem]``Extension and Module Selection`` page uncheck the **Hide Development Versions** checkbox. 
+
+. Select the {productname} {productnumber} Server extension [systemitem]``Checkbox``.
 
 . Click [systemitem]``Next`` to continue.
+
+. Enter your {productname} {productnumber} Server extension registration code.
+
+. Click btn:[Next] to continue.
+
+. On the [systemitem]``NTP Configuration`` page click btn:[Next].
+
+. On the [systemitem]``Authentication for the System`` page enter a password for the root user. Click btn:[Next].
+
+. On the [systemitem]``Installation Settings`` page click btn:[Install].
 
 This concludes installation of {micro} {microversion}.
+
+
+
+== Update the system
+. Login at the prompt as *root*.
+
+. Run **transactional-update**:
++
+
+[source, shell]
+----
+transactional-update
+----
+
+. Reboot the system.
+
+. Login as root.
+
+. Enter the transactional shell:
++
+
+[source, shell]
+----
+transactional-update shell
+----
 
 
 
