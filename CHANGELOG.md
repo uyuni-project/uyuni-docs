@@ -1,3 +1,4 @@
+- Fixed the instructions for SSL Certificates (bsc#1219061)
 - Bare-Metal System discovery feature disabled or dropped and thus, as
   it is part of the traditional stack, no longer documented
 - Moved detailed description of client deletion from Common
