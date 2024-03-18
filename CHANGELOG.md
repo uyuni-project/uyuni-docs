@@ -1,5 +1,7 @@
+- Bare-Metal System discovery feature disabled or dropped and thus, as
+  it is part of the traditional stack, no longer documented
 - Moved detailed description of client deletion from Common
-  Workflows to Administration Guide 
+  Workflows to Administration Guide
 - Documented Virtualization Guest and Virtualization Host Formula
 - Reformatted Supported Clients tables in Client Configuration Guide
   and Installation and Upgrade Guide
