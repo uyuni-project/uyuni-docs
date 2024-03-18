@@ -1,5 +1,7 @@
 - Added information about requirements for the PostgreSQL database
   in the Installation and Upgrade Guide (bsc#1220376)
+- Bare-Metal System discovery feature disabled or dropped and thus, as
+  it is part of the traditional stack, no longer documented
 - Moved detailed description of client deletion from Common
   Workflows to Administration Guide
 - Documented Virtualization Guest and Virtualization Host Formula
