@@ -1,5 +1,5 @@
 - Remove package sync paragraph in package-management doc since
-  it's not available for salt clients and traditional is no
+  it is not available for Salt clients and traditional clients are no
   longer supported (bsc#1221279)
 - Added reference from Hub documentation to Inter-Server
   Synchronization in Large Deployment Guide
