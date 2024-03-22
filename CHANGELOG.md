@@ -1,3 +1,4 @@
+- Fixed the instructions for SSL Certificates (bsc#1219061)
 - Remove package sync paragraph in package-management doc since
   it is not available for Salt clients and traditional clients are no
   longer supported (bsc#1221279)
