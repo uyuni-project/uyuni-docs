@@ -9,39 +9,48 @@ To migrate a regular Uyuni server to a container, a new machine is required.
 It is not possible to perform an in-place migration. 
 ====
 
-The old server is designated as the source server and the new machine is the destination one.
+The original server is referred to as the **source server,** while the newly set-up machine is designated as the **destination server.**
 
-The migration procedure does not perform any hostname rename. The fully qualified domain name will be the same on the new server than on the source one. This means the DNS records need to be adjusted after the migration to use the new server.
+The migration procedure currently does not include any hostname renaming functionality. Consequently, the fully qualified domain name (FQDN) on the new server will remain identical to that on the source server. Therefore, following migration, it will be necessary to manually adjust the DNS records to point to the new server.
 
-== Initial preparation
+.Procedure: Initial preparation
 
 . Stop the source server:
 +
+
 ----
 spacewalk-service stop
 ----
 
 . Stop the source services:
 +
+
 ----
 systemctl stop postgresql
 ----
 
 
 
-== Preparing the SSH connection
+.Procedure: Preparing the SSH connection
 
-The SSH configuration and agent should be ready on the host for a passwordless connection to the source server. The migration script only uses the source server fully qualified domain name in the SSH command. This means that every other configuration required to connect needs to be defined in the ~/.ssh/config file.
+. The SSH configuration and agent should be ready on the host for a passwordless connection to the source server.
++
 
-For a passwordless connection, the migration script will use an SSH agent on the server. If none is running yet, run eval $(ssh-agent). Add the SSH key to the running agent using ssh-add /path/to/the/private/key. The private key password will be prompted.
+[NOTE]
+====
+To establish a passwordless connection, the migration script relies on an SSH agent running on the server. If one isn't active yet, initiate it by running `eval $(ssh-agent)`. Then, add the SSH key to the running agent with `ssh-add /path/to/the/private/key`. You'll be prompted to enter the password for the private key during this process.
+==== 
 
+. The migration script only uses the source server fully qualified domain name in the SSH command. 
+
+. This means that every other configuration required to connect needs to be defined in the [systemfile]``~/.ssh/config`` file.
 
 
 == Is SELinux enabled?
 
 Verify that SELinux is enabled on the new host by running `getenforce`. If the output is `Enforcing`, SELinux is enabled. In such case, we temporarily provide this xref:installation-and-upgrade:container-management/custom-policy.adoc[Custom policy] to allow the migration script to run. 
 
-This file needs to be copied to `/root/uyuni-selinux-policy.cil`` on the **new host**. 
+This file needs to be copied to `/root/uyuni-selinux-policy.cil` on the **new host**. 
 The migration script will load the policy into the new host and pass it as podman argument to run the migration script.
 
 // In the future, we plan to ship this custom policy packaged in a RPM and this step will not be required anymore.
@@ -59,14 +68,14 @@ See: xref:installation-and-upgrade:container-management/persistent-container-vol
 == Migrating
 
 
-Run the following command to install a new Uyuni server from the source one after replacing the uyuni.source.fqdn by the proper source server FQDN: This command will synchronize all the data from the source server to the new one: this can take time!
+Execute the following command to install a new Uyuni server, replacing **<uyuni.source.fqdn>** with the appropriate FQDN of the source server:
 
 ----
-mgradm migrate podman uyuni.source.fqdn
+mgradm migrate podman <uyuni.source.fqdn>
 ----
 
 or
 
 ----
-mgradm migrate kubernetes uyuni.source.fqdn
+mgradm migrate kubernetes <uyuni.source.fqdn>
 ----
