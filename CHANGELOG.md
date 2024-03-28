@@ -1,3 +1,4 @@
+- Deprecated client proxy script
 - Added information about requirements for the PostgreSQL database
   in the Installation and Upgrade Guide (bsc#1220376)
 - Fixed the instructions for SSL Certificates (bsc#1219061)
