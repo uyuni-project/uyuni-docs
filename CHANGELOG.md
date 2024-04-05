@@ -1,3 +1,4 @@
+- Fixed nav style issue in branding theme
 - Cleaned up navlists for containerization
 - Fix self_update kernel option description (bsc#1221819)
 - Deprecated client proxy script
