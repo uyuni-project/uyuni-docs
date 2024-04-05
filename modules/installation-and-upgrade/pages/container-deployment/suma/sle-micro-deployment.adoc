@@ -4,12 +4,13 @@ ifeval::[{uyuni-content} == true]
 endif::[]
 
 In this section, you will gain expertise in setting up and deploying a containerized {productname} {productnumber} Server.
-This process encompasses the installation of {micro}, and then initiating interaction with the container through the [command]``mgradm`` and [command]``mgrctl`` commands.
+This process installs {micro}, and then interacts with the container through the
+container utilities [command]``mgradm`` and [command]``mgrctl``.
 
 
 == Container Host general Requirements
 
-For general requirements see, xref:installation-and-upgrade:general-requirements.adoc[General requirements]
+For general requirements, see xref:installation-and-upgrade:general-requirements.adoc[].
 
 A {micro} or {sles} server should be installed from installation media.
 This procedure is described below.
@@ -17,7 +18,7 @@ This procedure is described below.
 [[installation-server-containers-requirements]]
 == Container Host Requirements
 
-For CPU, RAM and storage requirements see, xref:installation-and-upgrade:hardware-requirements.adoc[Hardware requirements]
+For CPU, RAM, and storage requirements, see xref:installation-and-upgrade:hardware-requirements.adoc[].
 
 
 [IMPORTANT]
@@ -28,19 +29,22 @@ To guarantee that clients can resolve the {productname} {productnumber} domain n
 
 == {micro} {microversion} Installation
 
-Get a copy of the {micro} {microversion} install media. You can begin installation on either a virtual machine or on a physical server. 
+Get a copy of the {micro} {microversion} installation media.
+You can begin the installation on either a virtual machine or on a physical server.
 
 
 .Procedure: {micro} {microversion} installation
-. Begin installation from media
+. Begin the installation from the installation media.
 
-. Adjust Keyboard and language. Click the [systemitem]``checkbox`` to accept the License Agreement.
+. Adjust keyboard and language.
+  Click the [systemitem]``checkbox`` to accept the license agreement.
 
-. Click [systemitem]``Next`` to continue.
+. Click btn:[Next] to continue.
 
-. Select your registration method. For this example we will register the sever with {scc}.
+. Select your registration method.
+  For this example, we will register the sever with the {scc}.
 
-. Enter your {scc} Email address. 
+. Enter your {scc} email address.
 
 . Enter your registration code for {micro} {microversion}.
 +
@@ -48,11 +52,13 @@ Get a copy of the {micro} {microversion} install media. You can begin installati
 .Base operating system for {productname} {productnumber} containerized Server
 [NOTE]
 ====
-For SUSE Manager 5.0, the base operating system of the container is {sles} {bci-suma}
-You can find these keys from your {scc} account.
+For SUSE Manager 5.0, the base operating system of the container is {sles} {bci-suma}.
+You can find these keys in your {scc} account.
 ====
 
-. Click [systemitem]``Next`` to continue.
+. Decide if you would like to activate online repositories or not.
+
+. Click btn:[Next] to continue.
 
 . Select the {productname} {productnumber} Server extension [systemitem]``Checkbox``.
 
@@ -87,23 +93,40 @@ You can find these keys from your {scc} account.
 
 . Click [systemitem]``Next`` to continue.
 
-This concludes installation of {micro} {microversion}.
+This concludes the installation of {micro} {microversion}.
 
 
 
-== Update the host
+== Update the Container Host
 
-Once installation completes update the host system.
+When the installation completes, update the container host system.
 
-.Procedure: Update the host
+.Procedure: Update the container host and install the container utilities
 
-. Login to your host.
+. Log in at the prompt as *root*.
 
-. Run the following command"
+. Run **transactional-update**:
 +
+
+[source, shell]
 ----
 transactional-update
 ----
+
+. Reboot the system.
+
+. Log in as root.
+
+. Install the container utilities:
++
+
+[source, shell]
+----
+transactional-update pkg install mgradm mgrctl mgradm-bash-completion mgrctl-bash-completion
+----
++
+
+. Reboot the system.
 
 
 == Deploy {productname} {productnumber} as container on {micro} {microversion}
@@ -112,18 +135,20 @@ transactional-update
 === Basic and advanced deployment with mgradm
 
 .Procedure: Basic deployment of a {productname} {productnumber} container with Podman
-. from the terminal run the following command as the root user.
+. From the terminal of the container host, run the following command as the root user.
+  Entering your server's FQDN is optional.
+  Leave blank for a default setup.
 +
 
 [source, shell]
 ----
-mgradm install podman
+mgradm install podman <FQDN>
 ----
 +
 
 [IMPORTANT]
 ====
-You must deploy the container as sudo or root. The following error will be displayed at the terminal if you miss this step.
+You must deploy the container as sudo or root. The following error will be displayed on the terminal if you miss this step.
 
 [source, shell]
 ----
@@ -134,40 +159,59 @@ INF Setting up uyuni network
 ====
 +
 
-. Enter your servers FQDN.
+. Enter a database and certificate password when prompted. Press btn:[Enter].
 
-. Enter a database and certificate password when prompted.
+. Enter a certificate and administrator account password when prompted.
++
+
+[NOTE]
+====
+The administrator account password must be at least 5 characters and less
+than 48 characters in length.
+====
++
+
+. Press btn:[Enter].
 
 . Wait for deployment to complete.
 
-. Open a browser and proceed to your servers FQDN.
+. Open a browser and proceed to your servers FQDN, or IP address.
 
 In this section you learned the basic method for deploying a {productname} {productnumber} Server container.
 
 
-.Procedure: Advanced - Deploy {productname} {productnumber} using a custom configuration file
-. Prepare an mgradm.yaml file similar to the following example:
+.Procedure: Advanced deployment of a {productname} {productnumber} container using a custom configuration file
+. Prepare a configuration file named [filename]``mgradm.yaml`` similar to the following example:
 +
 
 [source, yaml]
 ----
-# Database password
+# Database password. Randomly generated by default
 db:
   password: MySuperSecretDBPass
-# Certifcate password
-cert:
-  password: MySuperSecretCAPass
-# SSL password
-ssl:
-  password: MySuperSecretSllPassword
 
-# If you have these you can provide them to setup your oganization credentials
+# Password for the CA certificate
+ssl:
+  password: MySuperSecretSSLPassword
+
+# Your SUSE Customer Center credentials
 scc: 
   user: ccUsername
   password: ccPassword
 
-# Adminstrators email
-email: email@example.com
+# Organization name
+organization: YourOrganization
+
+# Email address sending the notifications
+emailFrom: notifications@example.com
+
+# Administrators account details
+admin:
+  password: MySuperSecretAdminPass
+  login: LoginName
+  firstName: Admin
+  lastName: Admin
+  email: email@example.com
 ----
 +
 [IMPORTANT]
@@ -176,12 +220,13 @@ For security, **using command line parameters to specify passwords should be avo
 ====
 +
 
-. from the terminal run the following command a the sudo user. Replace `uyuni.example.com` with your FQDN.
+. From the terminal, run the following command as the root user.
+  Entering your server's FQDN is optional.
 +
 
 [source, shell]
 ----
-sudo mgradm -c mgradm.yaml install podman <FQDN>
+mgradm -c mgradm.yaml install podman <FQDN>
 ----
 +
 
@@ -199,9 +244,9 @@ INF Setting up uyuni network
 
 . Wait for deployment to complete.
 
-. Open a browser and proceed to your servers FQDN.
+. Open a browser and proceed to your server's FQDN or IP address.
 
-In this section you learned how to deploy an {productname} Server container.
+In this section you learned how to deploy the {productname} Server container.
 
 === Persistent volumes
 
@@ -209,20 +254,20 @@ In this section you learned how to deploy an {productname} Server container.
 ====
 If you are just testing out {productname} you do not need to specify these volumes. [command]``mgradm`` will setup the correct volumes by default.
 
-Specifiying volume locations will generally be used for larger production deployments.
+Specifying volume locations will generally be used for larger production deployments.
 ====
 
 Many users will want to specify locations for their persistent volumes.
 
 
 
-By default [command]``Podman`` stores its volumes in [path]``/var/lib/containers/storage/volumes/``. 
+By default, [command]``Podman`` stores its volumes in [path]``/var/lib/containers/storage/volumes/``. 
 
 You can provide custom storage for the volumes by mounting disks on this path or the expected volume path inside it such as: [path]``/var/lib/containers/storage/volumes/var-spacewalk``.
 This is especially important for the database and package mirrors. 
 
-For a list of all persistent volumes in the container see,  xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[Persistent container volumes]
+For a list of all persistent volumes in the container see, xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[Persistent container volumes].
 
 
-== Container managment
-To begin managing your containers see, xref:installation-and-upgrade:container-management/container-management.adoc[Container management]
+== Container Management
+To begin managing your containers, see xref:installation-and-upgrade:container-management/container-management.adoc[Container management].
