@@ -1,3 +1,5 @@
+- Update navlists for containerization and unified installer 
+  deprecation
 - Fix self_update kernel option description (bsc#1221819)
 - Deprecated client proxy script
 - Added information about requirements for the PostgreSQL database
