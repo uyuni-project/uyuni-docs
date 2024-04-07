@@ -1,0 +1,88 @@
+[[workflow-client-update]]
+
+= Update Clients
+
+This workflow show how to automate update clients registered at {productname} using recurring actions.
+
+The workflow is applicable for Salt clients.
+
+
+== Use case / Situation
+
+Automated update of clients is benefitial when:
+
+- update of a large number of clients is wanted
+- the workflow should not be re-done every execution
+- a fix maintenance window exists
+
+== Outcome / Resolution
+
+Successful completion of this workflow results in consistent, supportable outcomes.
+
+
+== Preparation
+
+Before you start, you should have a number of salt clients onboarded.
+It may make sense to have them sorted into groups you want to update together.
+In this workflow we use a system group named "infra-services".
+
+
+== Step-by-step workflow instructions
+
+To update a salt client 2 steps are required. A third step is optional but is highly recommended to finalize the update process.
+
+Procedure 1: Create a recurring action to update salt itself:
+[role=procedure]
+. As an example we create the action to update salt itself as a recurring action for all systems in the organization.
+In the {productname} Web UI go to Home > My Organization > Recurring Actions and click `Create`.
+. Select `Action Type` "Custom State" and enter a `Schedule Name` like "update-salt"
+. Select a Schedule. E.g. `Weekly`: Wednesday, 9:00 am
+. Assign the `update-salt` state by selecting the checkbox
+. Save the action by clicking on `Save Changes`
+. You can edit the execution order of the states if needed. Click on `Confirm` to agree on the order.
+. To save the action, click on `Create Schedule`.
+
+Procedure 2: Create a recurring action to apply all available updates to the systems:
+[role=procedure]
+. As an example we create the action to apply all updates as a recurring action for a system group called "infra-services".
+In the {productname} Web UI go to Systems > System Groups and click on "infra-services".
+. Now go to `Recurring Actions` and click on `Create`.
+. Select `Action Type` "Custom State" and enter a `Schedule Name` like "full-system-update"
+. Select a Schedule. E.g. `Weekly`: Wednesday, 9:30 am .
+Keep enough time between this action and the "update-salt" action.
+The "update-salt" actions must be finished on all systems before this action should be executed.
+. Assign the states `util.syncall`, `certs`, `channels` and `uptodate` by selecting the checkboxes.
+. Save the action by clicking on `Save Changes`
+. You can edit the execution order of the states. The order should be `util.syncall`, `certs`, `channels` and finally `uptodate`.
+Click on `Confirm` to store the order.
+. To save the action, click on `Create Schedule`.
+
+The `uptodate` state perform also a reboot, if an update request this. This can be prevented if wanted. For example at systems which use live patching.
+
+Procedure 3: Configure systems to not reboot when apply the `uptodate` state:
+[role=procedure]
+. In the {productname} Web UI go to Systems > Custom System Info and click `Create Key`.
+. Enter "mgr_reboot_if_needed" as `Key Label` and set as `Description` 
+'Define if the up2date state should perform a reboot if needed. Set to "false" if this is not wanted'
+. Click on `Create Key` to store the new key.
+. To assign values to multiple systems, go in the {productname} Web UI to Systems > Overview and select the checkbox for all systems you want to modify.
+These system are not in the System Set Manager (SSM)
+. Select in the left menu System Set Manager and select `Misc > Custom Values` in the tab bar.
+. Click on `mgr_reboot_if_needed` and enter "false" as `Value`.
+. Click on `Set Values` to save.
+
+Procedure 4: Create a recurring action to run a highstate after the update:
+. As an example we create the action to apply the highstate for the same group which was fully updated before.
+In the {productname} Web UI go to Systems > System Groups and click on "infra-services".
+. Now go to `Recurring Actions` and click on `Create`.
+. Select `Action Type` "Highstate" and enter a `Schedule Name` like "highstate"
+. Select a Schedule. E.g. `Weekly`: Wednesday, 10:30 am.
+Again keep enough time between this action and the "full-system-update" action.
+. To save the action, click on `Create Schedule`.
+
+
+== Related topics
+
+* For more information about recurring actions, see xref:administration/actions.adoc#_recurring_actions[].
+* For more information about custom info values, see xref:client-configuration/custom-info.adoc[].
+
