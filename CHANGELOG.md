@@ -319,6 +319,7 @@
 - Reverted single snippet change for two separate books
 - Added Extend Salt Bundle functionality with Python packages using pip
 - Salt Configuration Modules are no longer Technology Preview in Salt Guide.
+- Removed Ubuntu 18.04 registration documentation
 
 # Last packaged: 2023.10.19
 
