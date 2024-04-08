@@ -1,3 +1,4 @@
+- Add PostgreSQL version on Uyuni 2024.03
 - Fixed nav style issue in branding theme
 - Cleaned up navlists for containerization
 - Fix self_update kernel option description (bsc#1221819)
