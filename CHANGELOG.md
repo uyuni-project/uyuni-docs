@@ -1,3 +1,5 @@
+- Added new workflow describing updating of clients using recurring actions
+  to Commown Workflows
 - Add PostgreSQL version on Uyuni 2024.03
 - Fixed nav style issue in branding theme
 - Cleaned up navlists for containerization
