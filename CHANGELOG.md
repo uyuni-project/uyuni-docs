@@ -1,4 +1,7 @@
 - Document channel synchronization options in Administration Guide
+- Added new workflow describing updating of clients using recurring actions
+  to Commown Workflows
+- Add PostgreSQL version on Uyuni 2024.03
 - Fixed nav style issue in branding theme
 - Cleaned up navlists for containerization
 - Fix self_update kernel option description (bsc#1221819)
@@ -320,6 +323,7 @@
 - Reverted single snippet change for two separate books
 - Added Extend Salt Bundle functionality with Python packages using pip
 - Salt Configuration Modules are no longer Technology Preview in Salt Guide.
+- Removed Ubuntu 18.04 registration documentation
 
 # Last packaged: 2023.10.19
 
