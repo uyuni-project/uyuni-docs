@@ -1,3 +1,4 @@
+- PAM Authentication in Uyuni Container
 - Document channel synchronization options in Administration Guide
 - Added new workflow describing updating of clients using recurring actions
   to Commown Workflows
