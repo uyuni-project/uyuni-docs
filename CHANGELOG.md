@@ -1,3 +1,4 @@
+- Update containerized server monitoring documentation
 - Document channel synchronization options in Administration Guide
 - Added new workflow describing updating of clients using recurring actions
   to Commown Workflows
