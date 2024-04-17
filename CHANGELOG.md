@@ -1,3 +1,5 @@
+- Added Comfidential Computing as technology preview (CHECK!)
+  to Administration Guide
 - Document channel synchronization options in Administration Guide
 - Added new workflow describing updating of clients using recurring actions
   to Commown Workflows
