@@ -1,4 +1,6 @@
 - Update database migration sections in Installation and Upgrade Guide
+- Added PAM Authentication in Uyuni Container to Administration Guide
+- Remove visualization feature
 - Document channel synchronization options in Administration Guide
 - Added new workflow describing updating of clients using recurring actions
   to Commown Workflows
