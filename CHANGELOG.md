@@ -1,3 +1,4 @@
+- Use mgradm for Hub Server deployment in Large Deployment Guide
 - Added PAM Authentication in Uyuni Container to Administration Guide
 - Remove visualization feature
 - Document channel synchronization options in Administration Guide
