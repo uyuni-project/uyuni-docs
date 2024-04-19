@@ -20,9 +20,9 @@ For {productname} {smr} hardware requirements, see xref:retail:retail-requiremen
 [[server-hardware-requirements]]
 == Server Hardware Requirements
 
-By default the {productname} Server container stores packages in the [path]``/var/spacewalk/`` directory.
+By default the {productname} Server container stores packages in the [path]``/var/lib/containers/storage/volumes/var-spacewalk/`` directory.
 Repository synchronization fails if this directory runs out of disk space.
-You can estimate how much space the [path]``/var/spacewalk/`` directory requires based on the clients and repositories you plan to mirror.
+You can estimate how much space the [path]``/var/lib/containers/storage/volumes/var-spacewalk/`` directory requires based on the clients and repositories you plan to mirror.
 
 
 
@@ -51,11 +51,11 @@ You can estimate how much space the [path]``/var/spacewalk/`` directory requires
 | Minimum 40{nbsp}GB
 
 |
-| [path]``/var/lib/pgsql``
+| [path]``/var/lib/containers/storage/volumes/var-pgsql``
 | Minimum 50{nbsp}GB
 
 |
-| [path]``/var/spacewalk``
+| [path]``/var/lib/containers/storage/volumes/var-spacewalk``
 | Minimum storage required: 100{nbsp}GB (this will be verified by the implemented check)
 
 * 50{nbsp}GB for each {suse} product and Package Hub
@@ -63,7 +63,7 @@ You can estimate how much space the [path]``/var/spacewalk/`` directory requires
 * 360{nbsp}GB for each {redhat} product
 
 |
-| [path]``/var/cache``
+| [path]``/var/lib/containers/storage/volumes/var-cache``
 | Minimum 10{nbsp}GB.
 Add 100{nbsp}MB per {suse} product, 1{nbsp}GB per {redhat} or other product.
 Double the space if the server is an ISS Master.
@@ -101,11 +101,11 @@ ifeval::[{suma-content} == true]
 | Minimum 100{nbsp}GB
 
 |
-| [path]``/var/lib/pgsql``
+| [path]``/var/lib/containers/storage/volumes/var-pgsql``
 | Minimum 50{nbsp}GB
 
 |
-| [path]``/var/spacewalk``
+| [path]``/var/lib/containers/storage/volumes/var-spacewalk``
 | Minimum storage required: 100{nbsp}GB (this will be verified by the implemented check)
 
 * 50{nbsp}GB for each {suse} product and Package Hub
@@ -113,7 +113,7 @@ ifeval::[{suma-content} == true]
 * 360{nbsp}GB for each {redhat} product
 
 |
-| [path]``/var/cache``
+| [path]``/var/lib/containers/storage/volumes/var-cache``
 | Minimum 10{nbsp}GB.
 Add 100{nbsp}MB per {suse} product, 1{nbsp}GB per {redhat} or other product.
 Double the space if the server is an ISS Master.
@@ -165,39 +165,41 @@ For more information about managing a large number of clients, see xref:speciali
 | Minimum 40{nbsp}GB
 
 |
-| [path]``/srv``
+| [path]``/var/lib/containers/storage/volumes/srv-www``
 | Minimum 100{nbsp}GB
 
 |
-| [path]``/var/cache`` (Squid)
+| [path]``/var/lib/containers/storage/volumes/var-cache`` (Squid)
 | Minimum 100{nbsp}GB
 
 |===
 
 
-By default the {productname} Proxy container caches packages in the [path]``/var/cache/`` directory.
-If there is not enough space available in [path]``/var/cache/``, the proxy will remove old, unused packages and replace them with newer packages.
+By default the {productname} Proxy container caches packages in the [path]``/var/lib/containers/storage/volumes/var-cache/`` directory.
+If there is not enough space available in [path]``/var/lib/containers/storage/volumes/var-cache/``, the proxy will remove old, unused packages and replace them with newer packages.
 
 As a result of this behavior:
 
-* The larger [path]``/var/cache/`` directory is on the proxy, the less traffic there will be between it and the {productname} Server.
-* By making the [path]``/var/cache/`` directory on the proxy the same size as [path]``/var/spacewalk/`` on the {productname} Server, you avoid a large amount of traffic after the first synchronization.
-* The [path]``/var/cache/`` directory can be small on the {productname} Server compared to the proxy.
+* The larger [path]``/var/lib/containers/storage/volumes/var-cache/`` directory is on the proxy, the less traffic there will be between it and the {productname} Server.
+* By making the [path]``/var/lib/containers/storage/volumes/var-cache/`` directory on the proxy the same size as [path]``/var/lib/containers/storage/volumes/var-spacewalk/`` on the {productname} Server, you avoid a large amount of traffic after the first synchronization.
+* The [path]``/var/lib/containers/storage/volumes/var-cache/`` directory can be small on the {productname} Server compared to the proxy.
     For a guide to size estimation, see the <<server-hardware-requirements>> section.
 
 
 
 == Storage Devices and Permissions
 
-We recommend that the repositories and the database for {productname} are stored on separate storage devices.
+Persistent volumes are created by default when deploying the container. 
+However it is recommended that the repositories and the database for {productname} are stored on separate storage devices.
 This will help to avoid data loss.
-You must set up the storage devices before you run the YaST {productname} setup procedure.
+You must set up the storage devices prior to deploying the container.
+For more details see: xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[Persistent Container Volumes]
 
 {productname} requires three different volumes:
 
-* Database volume: [path]``/var/lib/pgsql``
-* Channel volume: [path]``/var/spacewalk``
-* Cache: [path]``/var/cache``
+* Database volume: [path]``/var/lib/containers/storage/volumes/var-pgsql``
+* Channel volume: [path]``/var/lib/containers/storage/volumes/var-spacewalk``
+* Cache: [path]``/var/lib/containers/storage/volumes/var-cache``
 
 We recommend you use XFS as the filesystem type for all volumes.
 Additionally, for on-premise installations, consider using logical volume management (LVM) to manage the disks.
@@ -229,13 +231,13 @@ If you are installing a proxy, the [command]``suma-storage`` command only takes 
 
 When you create disk partitions for the {productname} Server and Proxy, ensure you set the permissions correctly.
 
-For [path]``/var/lib/pgsql``:
+For [path]``/var/lib/containers/storage/volumes/var-pgsql``:
 
 * Owner: Read, Write, Execute
 * Group: Read, Execute
 * User: None
 
-For [path]``/var/spacewalk``:
+For [path]``/var/lib/containers/storage/volumes/var-spacewalk``:
 
 * Owner: Read, Write, Execute
 * Group: Read, Write, Execute
@@ -244,26 +246,32 @@ For [path]``/var/spacewalk``:
 Check the permissions with this command:
 
 ----
-ls -l /var/lib/pgsql /var/spacewalk
+ls -l /var/lib/containers/storage/volumes/var-pgsql /var/lib/containers/storage/volumes/var-spacewalk
 ----
 
 The output should look like this:
 
 ----
-drwxr-x--- 1 postgres postgres /var/lib/pgsql
-drwxrwxr-x 1 wwwrun   www      /var/spacewalk
+/var/lib/containers/storage/volumes/var-pgsql:
+total 0
+drwxr-x--- 1 10556 10556 48 Apr 19 14:33 _data
+
+/var/lib/containers/storage/volumes/var-spacewalk:
+total 0
+drwxr-xr-x 1 10552 root 30 Apr 19 14:34 _data
+
 ----
 
 If required, change the permissions with these commands:
 
 ----
-chmod 750 /var/lib/pgsql
-chmod 775 /var/spacewalk
+chmod 750 /var/lib/containers/storage/volumes/var-pgsql
+chmod 775 /var/lib/containers/storage/volumes/var-spacewalk
 ----
 
 And owners with:
 
 ----
-chown postgres:postgres /var/lib/pgsql
-chown wwwrun:www /var/spacewalk
+chown postgres:postgres /var/lib/containers/storage/volumes/var-pgsql
+chown wwwrun:www /var/lib/containers/storage/volumes/var-spacewalk
 ----
