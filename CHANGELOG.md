@@ -1,4 +1,4 @@
-
+- Updated default storage volume locations in documentation
 - Removed Unified Installer documentation from Requirements
 - Removed Unified Installer documentation from General Requirements
 - Updated ports documentation for containerization
