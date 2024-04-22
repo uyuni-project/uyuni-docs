@@ -1,44 +1,32 @@
 [[auth-methods-pam]]
 = Authentication With PAM
 
-{productname} supports network-based authentication systems using pluggable authentication modules (PAM).
+{productname} supports network-based authentication systems using pluggable authentication modules (PAM) using SSSD.
 PAM is a suite of libraries that allows you to integrate {productname} with a centralized authentication mechanism, eliminating the need to remember multiple passwords.
-{productname} supports LDAP, Kerberos, and other network-based authentication systems using PAM.
+{productname} supports LDAP, Kerberos, and other network-based authentication.
 
 
 
-.Procedure: Enabling PAM
-. Create a PAM service file at [path]``/etc/pam.d/susemanager``.
-  Filename must be in lower case and readable by ``tomcat`` user.
-  This file is used by {productname} to load the correct PAM configuration files:
-+
-----
-#%PAM-1.0
-auth     include        common-auth
-account  include        common-account
-password include        common-password
-session  include        common-session
-----
-. On the {productname} Server, at the command prompt, as root, add the ``sss`` PAM module:
-+
-----
-pam-config -a --sss
-----
-+
-This command adds the module to the ``/etc/pam.d/common-auth`` configuration file.
-We do not recommend editing this file directly.
-. Enforce the use of the service file by adding this line to [path]``/etc/rhn/rhn.conf``:
-+
-----
-pam_auth_service = susemanager
-----
-+
-In this example, the PAM service file is called [systemitem]``susemanager``.
-+
-. Restart the {productname} services after a configuration change.
+.Procedure: Configure SSSD
 . In the {productname} {webui}, navigate to menu:Users[Create User] and enable a new or existing user to authenticate with PAM.
 . Check the [guimenu]``Pluggable Authentication Modules (PAM)`` checkbox.
   It is below the password and password confirmation fields.
+. Configure SSSD in the container. Connect inside the container using:
++
+----
+mgrctl term
+----
+Then change the file
++
+----
+/etc/sssd/sssd.conf
+----
+. Restart {productname} using:
++
+----
+mgradm restart
+----
+
 
 
 [IMPORTANT]
@@ -48,10 +36,6 @@ If PAM is enabled for that user, the local password might not be used at all.
 In the above example, for instance, the Kerberos password is not changed.
 Use the password change mechanism of your network service to change the password for these users.
 ====
-
-
-To configure system-wide authentication you can use YaST.
-You need to install the [package]``yast2-auth-client`` package.
 
 
 For more information about configuring PAM, the SUSE Linux Enterprise Server Security Guide contains a generic example that also works for other network-based authentication methods.
