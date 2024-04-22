@@ -1,3 +1,5 @@
+- Reogranized documentation navigation for clarity
+- Improved document names and removed legacy content
 - Updated default storage volume locations in documentation
 - Removed Unified Installer documentation from Requirements
 - Removed Unified Installer documentation from General Requirements
