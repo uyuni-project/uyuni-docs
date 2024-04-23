@@ -1,3 +1,5 @@
+- Document channel management CLI tools in Reference Guide
+- Use mgradm for Hub Server deployment in Large Deployment Guide
 - Reogranized documentation navigation for clarity
 - Improved document names and removed legacy content
 - Updated default storage volume locations in documentation
