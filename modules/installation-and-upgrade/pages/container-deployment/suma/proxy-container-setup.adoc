@@ -1,14 +1,12 @@
 [[proxy-setup-containers]]
 = {productname} {productnumber} Proxy Deployment
 
-== Prepare the Container Host for the Proxy
-
-This quick start guide shows you how to install and configure a {productname} {productnumber} Proxy container for x86-64 architecture on {micro} {microversion}.
+This quick start guide shows you how to prepare, configure and deploy a {productname} {productnumber} Proxy container on {micro} {microversion}.
 
 
-== Software and Hardware Requirements for {productname} {productnumber} Proxy
+== Hardware Requirements for the Proxy
 
-This table shows the software and hardware requirements for deploying {productname} Proxy on your machine.
+This table shows the hardware requirements for deploying {productname} Proxy.
 
 [cols="1,3,2", options="header"]
 .Proxy Hardware Requirements
@@ -44,11 +42,14 @@ This table shows the software and hardware requirements for deploying {productna
 
 |===
 
+
 .Supported operating system for the Proxy Container Host
 [NOTE]
 ====
 The supported operating system for the Proxy container host is {micro} {microversion}.
 ====
+
+
 
 == {micro} {microversion} Installation
 
@@ -57,29 +58,21 @@ The supported operating system for the Proxy container host is {micro} {microver
 . You will need an account with {scc} and must be logged in to download the ISO.
 . Download the following file: [filename]``SLE-Micro-5.5-DVD-x86_64-GM-Media1.iso`` 
 . Prepare the installation media for use. For this guide a USB flash disk was used.
-. For detailed documentation on installation on bare metal or in a virtual machine, see link:https://documentation.suse.com/sle-micro/5.5/html/SLE-Micro-all/book-deployment-slemicro.html[{micro} {microversion} Deployment Guide].
-
+. For detailed documentation covering installation on bare metal or in a virtual machine, see link:https://documentation.suse.com/sle-micro/5.5/html/SLE-Micro-all/book-deployment-slemicro.html[{micro} {microversion} Deployment Guide].
 
 
 .Procedure: {micro} {microversion} Installation 
 . Use the arrow keys to select [systemitem]``Installation``.
-
 . Adjust Keyboard and language. Click the [systemitem]``checkbox`` to accept the License Agreement.
-
 . Click [systemitem]``Next`` to continue.
-
 . Skip Registration.
-
 . On the [systemitem]``NTP Configuration`` page click btn:[Next].
-
 . On the [systemitem]``Authentication for the System`` page enter a password for the root user. Click btn:[Next].
-
 . On the [systemitem]``Installation Settings`` page click btn:[Install].
 
 This concludes installation of {micro} {microversion}.
 
-Once the container host for {productname} {productnumber} Proxy is prepared, containers setup requires a few steps to complete configuration.
-
+Once the container host is prepared, the Proxy requires the following steps to complete configuration.
 
 
 
@@ -88,6 +81,13 @@ Once the container host for {productname} {productnumber} Proxy is prepared, con
 Before proceeding with configuration of the proxy you need to sync the correct channels, create a {salt} activation key and register the proxy host as a {salt} minion with {productname} {productnumber} Server.
 
 [NOTE]
+====
+The container host for the {productname} Proxy must be registered as a salt minion to the {productname} Server.
+
+For more information about registering a client to the {productname} Server, see xref:client-configuration:registration-overview.adoc[].
+====
+
+[IMPORTANT]
 ====
 The following procedure assumes you have added your Organization Credentials to the menu:Admin[Setup Wizard -> Organization Credentials] page on the {productname} {productnumber} Server.
 ====
@@ -114,6 +114,8 @@ The following procedure assumes you have added your Organization Credentials to 
 
 
 == Proxy Container Configuration and Deployment
+
+
 
 [[proxy-setup-containers-generate-config]]
 === Create and generate the {productname} Proxy Configuration Files
@@ -179,14 +181,33 @@ This new entry will be shown under previously entered [literal]``Proxy FQDN`` va
 
 
 [[proxy-setup-containers-transfer-config]]
-== Transfer {productname} Proxy configuration
+== Transfer the Proxy Configuration
 
-Both [command]``spacecmd`` command  and {webui} ways generate a configuration archive.
+Both [command]``spacecmd`` command  and {webui} methods generate a configuration archive.
 This archive needs to be made available on container host.
 
-Transfer this generated archive to the container host.
 
-For installation instructions to use the archive to get the proxy containers, see xref:installation-and-upgrade:container-deployment/proxy-container-installation.adoc[].
+. Copy the files from the container to the host:
++
+----
+mgrctl cp server:/root/config.tar.gz .
+----
+
+. Next copy the files from the server host OS to the proxy host: 
++
+----
+scp config.tar.gz <proxy-FQDN>:/root
+----
+
+. Install the Proxy with:
++ 
+// We need to update this image location for beta2
+----
+
+mgrpxy install podman --imagesLocation registry.suse.com/suse/sle-15-sp6/update/products/manager50/containerfile/suse/manager/5.0/x86_64 config.tar.gz config.tar.gz
+----
+
+For installation instructions to use the archive to get the proxy containers, see xref:installation-and-upgrade:container-deployment/suma/proxy-container-installation.adoc[].
 
 
 
