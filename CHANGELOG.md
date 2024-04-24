@@ -1,3 +1,5 @@
+- Added Comfidential Computing as technology preview
+  to Administration Guide
 - Updated containerized server monitoring documentation
 - Document channel management CLI tools in Reference Guide
 - Use mgradm for Hub Server deployment in Large Deployment Guide
