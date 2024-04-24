@@ -1,5 +1,15 @@
 - Added Comfidential Computing as technology preview (CHECK!)
   to Administration Guide
+- Updated containerized server monitoring documentation
+- Document channel management CLI tools in Reference Guide
+- Use mgradm for Hub Server deployment in Large Deployment Guide
+- Reogranized documentation navigation for clarity
+- Improved document names and removed legacy content
+- Updated default storage volume locations in documentation
+- Removed Unified Installer documentation from Requirements
+- Removed Unified Installer documentation from General Requirements
+- Updated ports documentation for containerization
+- Update database migration sections in Installation and Upgrade Guide
 - Added PAM Authentication in Uyuni Container to Administration Guide
 - Remove visualization feature
 - Document channel synchronization options in Administration Guide
