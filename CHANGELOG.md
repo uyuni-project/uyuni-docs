@@ -1,3 +1,4 @@
+- Added details on image management in Administration Guide (bsc#1222574)
 - Updated containerized server monitoring documentation
 - Document channel management CLI tools in Reference Guide
 - Use mgradm for Hub Server deployment in Large Deployment Guide
