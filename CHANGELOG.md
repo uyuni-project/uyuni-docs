@@ -3,21 +3,21 @@
 - Updated containerized server monitoring documentation
 - Document channel management CLI tools in Reference Guide
 - Use mgradm for Hub Server deployment in Large Deployment Guide
-- Reogranized documentation navigation for clarity
+- Reogranized Installation and Upgrade navigation for clarity
 - Improved document names and removed legacy content
-- Updated default storage volume locations in documentation
+- Updated default storage volume locations in documentation for
+  containers
 - Removed Unified Installer documentation from Requirements
 - Removed Unified Installer documentation from General Requirements
-- Updated ports documentation for containerization
-- Update database migration sections in Installation and Upgrade Guide
-- Added PAM Authentication in Uyuni Container to Administration Guide
-- Remove visualization feature
-- Document channel synchronization options in Administration Guide
-- Added new workflow describing updating of clients using recurring actions
-  to Commown Workflows
-- Add PostgreSQL version on Uyuni 2024.03
-- Fixed nav style issue in branding theme
-- Cleaned up navlists for containerization
+- Updated ports documentation for containers
+- Updated database migration sections in the Installation and Upgrade
+  Guide
+- Removed visualization feature
+- Documented channel synchronization options in Administration Guide
+- Added a new workflow describing how to update clients using recurring  
+  actions to Commown Workflows
+- Improved navigation list font styles in the branding theme
+- Cleaned up navlists for containers
 - Fix self_update kernel option description (bsc#1221819)
 - Deprecated client proxy script
 - Added information about requirements for the PostgreSQL database
