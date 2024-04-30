@@ -1,5 +1,5 @@
 - Added information about mirroring Ubuntu ESM packages
-- Added Comfidential Computing as technology preview
+- Added Confidential Computing as technology preview
   to Administration Guide
 - Updated containerized server monitoring documentation
 - Document channel management CLI tools in Reference Guide
