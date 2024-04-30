@@ -1,3 +1,4 @@
+- Added AppStream section to client configuration guide
 - Added reference guide for Systems > Software > AppStreams
 - Removed warning about limited AppStream support
 - Added Confidential Computing as technology preview
