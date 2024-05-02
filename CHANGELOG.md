@@ -1,3 +1,4 @@
+- Update adding custom GPG key for repositories synchronization
 - Added Confidential Computing as technology preview
   to Administration Guide
 - Updated containerized server monitoring documentation
