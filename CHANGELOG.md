@@ -1,3 +1,5 @@
+- Added deprecation warning for virtualization management feature
+ in Client Configuration Guide
 - Added AppStream section to client configuration guide
 - Added reference guide for Systems > Software > AppStreams
 - Removed warning about limited AppStream support
