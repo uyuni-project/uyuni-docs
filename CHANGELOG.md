@@ -1,3 +1,5 @@
+- Removed Inter Server Synchronization (Version 1) from Administration
+  Guide
 - Update adding custom GPG key for repositories synchronization
 - Added AppStream section to client configuration guide
 - Added reference guide for Systems > Software > AppStreams
