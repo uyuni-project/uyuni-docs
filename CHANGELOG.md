@@ -1,3 +1,5 @@
+- Added deprecation warning for virtualization management feature
+ in Client Configuration Guide
 - Added Proxy Quickstart Guide for deploying containerized Proxies
 - Update adding custom GPG key for repositories synchronization
 - Added AppStream section to client configuration guide
