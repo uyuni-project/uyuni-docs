@@ -1,4 +1,5 @@
-- Added Comfidential Computing as technology preview
+- Started with referecing 5.0 API documentation
+- Added Confidential Computing as technology preview
   to Administration Guide
 - Updated containerized server monitoring documentation
 - Document channel management CLI tools in Reference Guide
@@ -14,7 +15,7 @@
   Guide
 - Removed visualization feature
 - Documented channel synchronization options in Administration Guide
-- Added a new workflow describing how to update clients using recurring  
+- Added a new workflow describing how to update clients using recurring
   actions to Commown Workflows
 - Improved navigation list font styles in the branding theme
 - Cleaned up navlists for containers
