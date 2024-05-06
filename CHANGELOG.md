@@ -1,4 +1,7 @@
 - Update adding custom GPG key for repositories synchronization
+- Added AppStream section to client configuration guide
+- Added reference guide for Systems > Software > AppStreams
+- Removed warning about limited AppStream support
 - Added Confidential Computing as technology preview
   to Administration Guide
 - Updated containerized server monitoring documentation
@@ -15,7 +18,7 @@
   Guide
 - Removed visualization feature
 - Documented channel synchronization options in Administration Guide
-- Added a new workflow describing how to update clients using recurring  
+- Added a new workflow describing how to update clients using recurring
   actions to Commown Workflows
 - Improved navigation list font styles in the branding theme
 - Cleaned up navlists for containers
