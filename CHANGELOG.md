@@ -1,4 +1,11 @@
 - Started with referecing 5.0 API documentation
+- Added deprecation warning for virtualization management feature
+ in Client Configuration Guide
+- Added Proxy Quickstart Guide for deploying containerized Proxies
+- Update adding custom GPG key for repositories synchronization
+- Added AppStream section to client configuration guide
+- Added reference guide for Systems > Software > AppStreams
+- Removed warning about limited AppStream support
 - Added Confidential Computing as technology preview
   to Administration Guide
 - Updated containerized server monitoring documentation
