@@ -1,5 +1,5 @@
 - Added deprecation warning for Inter-Server Synchronization (Version 1) 
-feature Adminustration Guide
+  feature in Adminustration Guide
 - Update adding custom GPG key for repositories synchronization
 - Added AppStream section to client configuration guide
 - Added reference guide for Systems > Software > AppStreams
