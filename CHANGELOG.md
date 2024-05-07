@@ -1,3 +1,4 @@
+- Started with referencing 5.0 API documentation
 - Added deprecation warning for Inter-Server Synchronization (Version 1) 
   feature in Administration Guide
 - Added deprecation warning for virtualization management feature
