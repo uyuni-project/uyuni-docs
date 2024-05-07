@@ -1,5 +1,8 @@
 - Added deprecation warning for Inter-Server Synchronization (Version 1) 
   feature in Administration Guide
+- Added deprecation warning for virtualization management feature
+ in Client Configuration Guide
+- Added Proxy Quickstart Guide for deploying containerized Proxies
 - Update adding custom GPG key for repositories synchronization
 - Added AppStream section to client configuration guide
 - Added reference guide for Systems > Software > AppStreams
