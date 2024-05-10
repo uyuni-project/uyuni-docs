@@ -1,4 +1,6 @@
 - Remove spacecmd function that are not longer available
+- Cleaned up Installation and Upgrade Guide navigation, 
+  additional legacy content removed 
 - Added information about mirroring Ubuntu ESM packages
 - Started with referencing 5.0 API documentation
 - Added deprecation warning for Inter-Server Synchronization (Version 1) 
