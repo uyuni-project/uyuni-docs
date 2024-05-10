@@ -1,3 +1,4 @@
+- Remove spacecmd function that are not longer available
 - Cleaned up Installation and Upgrade Guide navigation, 
   additional legacy content removed 
 - Added information about mirroring Ubuntu ESM packages
