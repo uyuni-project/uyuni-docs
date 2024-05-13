@@ -1,5 +1,5 @@
-[[quickstart-suma-install-proxy]]
-= Quick Start: Deploy a {productname} {productnumber} Proxy
+[[installation-proxy-containers]]
+= Deploy a {productname} {productnumber} Proxy
 ifeval::[{uyuni-content} == true]
 :noindex:
 endif::[]
@@ -93,8 +93,6 @@ image::setup-wizard.png[scaledwidth=80%]
 
 == {micro} {microversion} Installation
 
-
-
 .Task: Download the Installation Media
 . Locate the {micro} {microversion} installation media at https://www.suse.com/download/sle-micro/.
 . You will need an account with {scc} and must be logged in to download the ISO.
@@ -105,7 +103,6 @@ image::setup-wizard.png[scaledwidth=80%]
 +
 
 For detailed documentation on preparing your machines OS (virtual or physical), see link:https://documentation.suse.com/sle-micro/5.5/html/SLE-Micro-all/book-deployment-slemicro.html[{micro} {microversion} Deployment Guide].
-
 
 
 .Task: {micro} {microversion} Installation 
@@ -141,6 +138,7 @@ This concludes installation of {micro} {microversion} and {productname} {product
 
 === Update the system
 
+
 .Task: Update the System
 . Login as *root*.
 . Run **transactional-update**:
@@ -174,8 +172,6 @@ transactional-update pkg install mgrpxy mgrpxy-bash-completion
 
 == Create an Activation Key for the Proxy
 
-
-
 .Task: Create an Activation Key
 . Select menu:Systems[Activation Keys] then click btn:[+ Create key].
 . Create an activation key for the proxy host with {micro} {microversion} as the parent channel. This key should include all recommended channels and the Proxy as an extension child channel.
@@ -184,7 +180,6 @@ transactional-update pkg install mgrpxy mgrpxy-bash-completion
 
 
 == Bootstrap the Proxy Host as a Minion
-
 
 .Task: Bootstrap the Proxy Host
 . Select menu:Systems[Bootstrapping].
@@ -200,9 +195,6 @@ transactional-update pkg install mgrpxy mgrpxy-bash-completion
 .Task: Update the Proxy Host
 . Select the host from the menu:Systems[] list and apply all patches to update it.
 . Reboot the Proxy host.
-
-
-
 
 
 
@@ -308,3 +300,77 @@ Five {productname} Proxy containers should be present:
 - proxy-ssh
 
 And should be part of the [literal]``proxy-pod`` container pod.
+
+
+////
+[[installation-proxy-containers-services]]
+== Install container services on the host system
+ifeval::[{suma-content} == true]
+
+[NOTE]
+====
+[literal]``Containers Module`` is required to be available for container host on a {sles} machine.
+====
+endif::[]
+
+{productname} Proxy containers are using [literal]``podman`` and [literal]``systemd`` to run and manage all proxy containers.
+
+First step is to install the [literal]``mgrpxy`` utility provided by the package of the same name.
+
+ifeval::[{suma-content} == true]
+The [literal]``mgrpxy`` package is available in the {productname} Proxy product repositories.
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+The [literal]``mgrpxy`` package is available in the container utils repository: pick the one matching the distribution in: https://download.opensuse.org/repositories/systemsmanagement:Uyuni:/Stable:/ContainerUtils/.
+endif::[]
+
+To install them run:
+
+----
+zypper in helm mgrpxy
+---- 
+////
+
+
+=== Using a custom container image for a service
+
+By default, the {productname} Proxy suite is set to use the same image version and registry path for each of its services.
+However, it is possible to override the default values for a specific service using the install parameters ending with [literal]``-tag`` and [literal]``-image``.
+
+For example, use it like this:
+
+----
+mgrpxy install podman --httpd-tag 0.1.0 --httpd-image registry.opensuse.org/uyuni/proxy-httpd /path/to/config.tar.gz
+----
+
+It adjusts the configuration file for the httpd service, where [path]``registry.opensuse.org/uyuni/proxy-httpds`` is the image to use and [literal]``0.1.0`` is the version tag, before restarting it.
+
+To reset the values to defaults, run the install command again without those parameters:
+
+----
+mgrpxy install podman /path/to/config.tar.gz
+----
+
+This command first resets the configuration of all services to the global defaults and then reloads it.
+
+
+////
+[[installation-proxy-containers-firewall-rules]]
+== Allow network access for provided services on container host firewall
+
+
+{productname} Proxy containers work as so called node-port service.
+This means proxy container pod shares container host network TCP and UDP port space.
+For this reason container host firewall must be configured to accept incoming traffic on ports used by {productname} Proxy containers.
+Those ports are:
+
+- 69/UDP - TFTP
+- 80/TCP - HTTP
+- 443/TCP - HTTPS
+- 4505/TCP - Salt
+- 4506/TCP - Salt
+- 8022/TCP - SSH
+
+Continue with setting up the installed {productname} Proxy as a containers at xref:installation-and-upgrade:container-deployment/suma/proxy-container-setup.adoc[].
+////
