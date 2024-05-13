@@ -1,3 +1,4 @@
+- Added Proxy migration documentation for SUSE Manager 5.0
 - Remove spacecmd function that are not longer available
 - Cleaned up Installation and Upgrade Guide navigation, 
   additional legacy content removed 

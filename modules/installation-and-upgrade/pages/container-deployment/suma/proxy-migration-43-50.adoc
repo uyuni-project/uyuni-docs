@@ -1,0 +1,71 @@
+= Proxy Migration
+
+In {productname} 4.3, the containerized proxy is managed by a set of systemd services.
+
+In {productname} {productnumber} management of the containerized proxy was re-designed and made simpler with the [command]``mgrpxy`` tool.
+
+This section will help you migrate from the legacy [systemitem]``systemd`` proxy using the new [command]``mgrpxy`` tool.
+
+[IMPORTANT]
+====
+An in-place migration from {productname} 4.3 to 5.0 will remain unsupported due to the HostOS change from {sles} 15 SP4 to {micro} {microversion}
+====
+
+
+
+== Migrate from a Legacy Proxy to a Containerized Proxy with Systemd
+
+.Task: Migration Legacy Proxy to Containerized Proxy
+. Log in to the {productname} Server {webui}.
+. Select menu:Systems[Proxy Configuration] from the left navigation.
+. Enter your Proxy FQDN. Use the same FQDN as the original proxy host.
+. Enter your Server FQDN.
+. Enter the Proxy port number. __We recommend using the default port of 8022__
+. Certificate and private key are located on the Server container host in `/var/lib/containers/storage/volumes/root/_data/ssl-build/`.
+  * RHN-ORG-TRUSTED-SSL-CERT
+  * RHN-ORG-PRIVATE-SSL-KEY
+. Copy the certificate and key to your machine with: 
++
+
+----
+scp root@suma43-example.com:/root/ssl-build/RHN-ORG-PRIVATE-SSL-KEY .
+scp root@suma43-example.com:/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT .
+----
+
+. Select btn:[Choose File] and browse your local machine for the certificate.
+. Select btn:[Choose File] and brose your local machine for the private key.
+. Enter the CA password.
+. Click btn:[Generate].
+. Transfer the generated tar.gz file containing the proxy configuration to the new Proxy host and extract it to /etc/uyuni/proxy
+. Disable the legacy proxy prior to executing the next step with:
++
+
+----
+spacewalk-proxy stop
+----
+
+. Start the proxy containers:
++
+----
+systemctl start uyuni-proxy-pod
+----
+
+. Enable the service:
++
+----
+systemctl enable --now uyuni-proxy-pod
+----
+
+. Run `podman ps` to verify all the containers are present and running:
++
+
+----
+proxy-salt-broker
+proxy-httpd
+proxy-tftpd
+proxy-squid
+proxy-ssh
+----
+
+
+
