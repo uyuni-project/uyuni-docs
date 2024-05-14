@@ -116,6 +116,63 @@ The [package]``mgrpxy`` and [package]``mgrpxy-bash-completion`` packages can als
 . Install the packages [package]``mgrpxy`` and [package]``mgrpxy-bash-completion``.
 . Reboot the system.
 
+== Generate a Proxy Configuration using spacecmd and the Self Signed Certificate
 
+You can also generate a Proxy configuration using spacecmd.
+
+. SSH into your container host.
+
+. Execute the following command replacing the Server and Proxy FQDN:
++
+----
+mgrctl exec -ti 'spacecmd proxy_container_config_generate_cert -- dev-pxy.example.com dev-srv.example.com 2048 email@example.com' -o /tmp/config.tar.gz
+----
+
+. Copy the generated config to the Proxy:
++
+----
+mgrctl cp server:/tmp/config.tar.gz .
+----
+
+. Deploy the Proxy with:
++ 
+
+----
+mgrpxy install podman config.tar.gz
+----
+
+== Generate a Proxy Configuration using spacecmd and a Custom Certificate
+
+You can generate a Proxy configuration using spacecmd for a custom certificates rather than the default self signed certificates.
+
+[NOTE]
+====
+2 GB represents the default proxy squid cache size. This will need to be adjusted for your environment.
+====
+
+. SSH into your Server container host.
+. Execute the following command replacing the Server and Proxy FQDN:
++
+
+----
+for f in ca.crt proxy.crt proxy.key; do
+  mgrctl cp $f server:/tmp/$f
+done
+mgrctl exec -ti 'spacecmd proxy_container_config -- -p 8022 pxy.example.com srv.example.com 2048 email@example.com /tmp/ca.crt /tmp/proxy.crt /tmp/proxy.key -o /tmp/config.tar.gz'
+----
+
+. Copy the generated config to the Proxy:
++
+
+----
+mgrctl cp server:/tmp/config.tar.gz .
+----
+
+. Deploy the Proxy with:
++ 
+
+----
+mgrpxy install podman config.tar.gz
+----
 
 
