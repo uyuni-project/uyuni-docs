@@ -1,4 +1,5 @@
-
+- Removed additional legacy content in the Installation and 
+  Upgrade guide
 - Added Proxy migration documentation for SUSE Manager 5.0
 - Documented availibility of package lock on RedHat-like clients
 - Remove spacecmd function that are not longer available
