@@ -158,8 +158,14 @@ include::snippets/create_bootstrap_repo_register.adoc[]
 
 
 
+ifeval::[{uyuni-content} == true]
 
 == Manage Errata
+
+[NOTE]
+====
+This section is only applicable to non-containerized Uyuni and it will be removed after {centos} 7 will go end-of-life.
+====
 
 When you update {centos} clients, the packages do not include metadata about the updates.
 You can use a third-party errata service to obtain this information.
@@ -167,12 +173,12 @@ You can use a third-party errata service to obtain this information.
 [WARNING]
 ====
 
-ifeval::[{suma-content} == true]
-
-The third-party errata service described here, CEFS, is provided and maintained by the community.
-It is not supported by {suse}.
-
-endif::[]
+// ifeval::[{suma-content} == true]
+//
+// The third-party errata service described here, CEFS, is provided and maintained by the community.
+// It is not supported by {suse}.
+//
+// endif::[]
 
 The authors of CEFS provide patches or errata on a best-effort basis, in the hope they are useful but with no guarantees of correctness or currency.
 This could mean that the patch dates could be incorrect, and in at least one case, the published data was shown to be more than a month old.
@@ -185,40 +191,36 @@ Please consider alternatives to using this service, such as independently verify
 
 
 
-ifeval::[{uyuni-content} == true]
 
 .Procedure: Installing an Errata Service
 
-// FIXME Check whether this actually works
-. On the {productname} Server host, from the command prompt, as root, add the [systemitem]``sle-module-development-tools`` module:
+. On the {productname} Server, from the command prompt, as root, add the ``sle-module-development-tools`` module:
 +
 ----
-transactional-update register --product sle-module-development-tools/15.5/x86_64
+SUSEConnect --product sle-module-development-tools/15.2/x86_64
 ----
-. On the container host, install the errata service dependencies:
+. Install errata service dependencies:
 +
 ----
-zypper in perl-Text-Unidecode
+zypper in  perl-Text-Unidecode
 ----
 . Add or edit this line in [path]``/etc/rhn/rhn.conf``:
 +
 ----
 java.allow_adding_patches_via_api = centos7-x86_64-updates,centos7-x86_64,centos7-x86_64-extras
 ----
-+
-with:
-+
-----
-mgrctl exec -- vi /etc/rhn/rhn.conf
-----
 . Restart Tomcat:
 +
-// FIXME: Or better restarting the server with 'mgradm restart'?
+----
+systemctl restart tomcat
+----
+. Create a file for your errata script:
 +
 ----
-mgrctl exec -- systemctl restart tomcat
+touch /usr/local/bin/cent-errata.sh
 ----
-. On the container host or a separate machine, save the following shell code as your errata script with the name [path]``/usr/local/bin/cent-errata.sh``, and edit the repository details as required:
+. Edit the new file to include this script, editing the repository details as required.
+    This script fetches the errata details from an external errata service, unpacks it, and publishes the details:
 +
 ----
 #!/bin/bash
@@ -237,10 +239,7 @@ export SPACEWALK_USER='<adminname>';export SPACEWALK_PASS='<password>'
 --include-channels=centos7-x86_64-updates,centos7-x86_64,centos7-x86_64-extras \
 --publish --rhsa-oval /usr/local/centos/rhel-7.oval.xml
 ----
-+
-  This script fetches the errata details from an external errata service, unpacks it, and publishes the details.
-
-. On the machine with the [path]``cent-errata.sh`` script, set up a cron job to run the script daily:
+. Set up a cron job to run the script daily:
 +
 ----
 ln -s /usr/local/bin/cent-errata.sh /etc/cron.daily

@@ -1,6 +1,8 @@
 - Excluded detailed information about creating and running a CentOS
   errata checking script from SUSE Manager documentation in Client
   Configuration Guide
+- Added note about CentOS 7 errata checking script applicable to
+  non-containerized Uyuni installation in Client Configuration Guide
 - Removed additional legacy content in the Installation and 
   Upgrade guide
 - Added Proxy migration documentation for SUSE Manager 5.0
