@@ -1,3 +1,5 @@
+- Add image-sync latest boot image details (bsc#1206055)
+- Update retail workflow for SUMA5 containerized proxies
 - Excluded detailed information about creating and running a CentOS
   errata checking script from SUSE Manager documentation in Client
   Configuration Guide
