@@ -1,3 +1,5 @@
+- Updated autoinstallation usage with containerized server
+  (bsc#1222692)
 - Excluded detailed information about creating and running a CentOS
   errata checking script from SUSE Manager documentation in Client
   Configuration Guide
