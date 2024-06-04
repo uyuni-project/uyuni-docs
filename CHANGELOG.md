@@ -7,7 +7,7 @@
   Upgrade guide
 - Added Proxy migration documentation for SUSE Manager 5.0
 - Documented availibility of package lock on RedHat-like clients
-- Removed spacecmd function that are not longer available
+- Removed spacecmd functions that are not longer available
 - Cleaned up Installation and Upgrade Guide navigation,
   additional legacy content removed
 - Added information about mirroring Ubuntu ESM packages
