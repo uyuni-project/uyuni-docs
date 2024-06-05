@@ -26,40 +26,45 @@ There are three different ways you can configure auto-signed grains:
 When you have configured {saltboot} using one of these methods, you need to configure the {productname} Server to accept them. For more information, see xref:retail:retail-deploy-terminals-auto.adoc#retail.deployterminals.auto.server[].
 
 
+[[retail.deployterminals.auto.server]]
+== Configure the Server to Auto-Accept
+
+When you have configured {saltboot} using one of these methods, you need to configure the server to accept them.
+The server stores the autosign keys in a file within the [path]``/etc/salt/master.d/`` directory, which is preserved in [systemitem]``etc-salt`` volume.
+You can enable auto-signing by creating an auto-sign file that contains the key you created when you configured {saltboot}.
 
 
-[[retail.deployterminals.auto.once]]
-== Configure {saltboot} to Send Auto-Signed Grain Once
 
-
-
-.Procedure: Configuring {saltboot} to Send Auto-Signed Grain Once
-. On the branch server, create a configuration file called [path]``/etc/salt/minion.d/autosign-grains-onetime.conf``.
-. Edit the new configuration file with these details.
-  You can use any value you like as the auto-sign key:
+.Procedure: Configuring the Server to Auto-Accept
+. On the {productname} Server, create file [path]``autosign_grains.conf`` and add this line:
 +
 ----
-# create the grain
-grains:
-    autosign_key: <AUTOSIGN_KEY>
-
-# send the grain as part of auth request
-autosign_grains:
-    - autosign_key
+autosign_grains_dir: /etc/salt/autosign_grains
 ----
-. At the command prompt, add the new configuration file to the existing ``initrd``:
+. Create a file at [path]``/etc/salt/autosign_grains/autosign_key``, that contains the auto-sign key you specified with {saltboot}:
 +
 ----
-echo ./etc/salt/minion.d/autosign-grains-onetime.conf | /
-cpio -H newc -o | gzip >> /srv/saltboot/boot/initrd.gz
+<AUTOSIGN_KEY>
 ----
++
+For multiple keys, put each one on a new line.
+. Push new files using [systemitem]``mgrclt cp`` command:
++
+----
+mgrctl exec mkdir /etc/salt/autosign_grains
+mgrctl cp autosign_grains.conf server:/etc/salt/master.d/
+mgrctl cp autosign_key server:/etc/salt/autosign_grains/
+----
+
+
+For more information about configuring the server to automatically accept grains, see https://docs.saltstack.com/en/latest/topics/tutorials/autoaccept_grains.html.
 
 
 
 [[retail.deployterminals.auto.keep]]
 == Configure {saltboot} to Keep Auto-Signed Grains
 
-Use different procedure for SLE 15 and SLE 11/12.
+Use different procedure for SLE 15 and SLE 12.
 
 
 
@@ -82,7 +87,7 @@ autosign_grains:
 
 
 // For SLE12 and SLE11 templates, the procedure is the following:
-.Procedure: Configuring {saltboot} to Keep Auto-Signed Grains (SLE 11 and SLE 12)
+.Procedure: Configuring {saltboot} to Keep Auto-Signed Grains (SLE 12)
 . In the location where the image source is built, such as a build host or source repository, create a configuration file called [path]``etc/salt/minion.d/autosign-grains.conf``.
   This must be outside of the [path]``root`` directory provided by the template.
   This way you prevent the inclusion of unwanted files in the ``initrd``.
@@ -130,29 +135,3 @@ SALT_AUTOSIGN_GRAINS=autosign_key:<AUTOSIGN_KEY>
 . PXE boot the Salt client.
   The formula creates the [path]``./etc/salt/minion.d/autosign-grains-onetime.conf`` configuration file and passes it to ``initrd``.
 
-
-
-[[retail.deployterminals.auto.server]]
-== Configure the Server to Auto-Accept
-
-When you have configured {saltboot} using one of these methods, you need to configure the server to accept them.
-The server stores the autosign keys in a file within the [path]``/etc/salt/master.d/`` directory.
-You can enable auto-signing by creating an auto-sign file that contains the key you created when you configured {saltboot}.
-
-
-
-.Procedure: Configuring the Server to Auto-Accept
-. On the {productname} Server, open the master configuration file in the [path]``/etc/salt/master.d/`` directory, and add or edit this line:
-+
-----
-autosign_grains_dir: /etc/salt/autosign_grains
-----
-. Create a file at [path]``/etc/salt/autosign_grains/autosign_key``, that contains the auto-sign key you specified with {saltboot}:
-+
-----
-<AUTOSIGN_KEY>
-----
-  For multiple keys, put each one on a new line.
-
-
-For more information about configuring the server to automatically accept grains, see https://docs.saltstack.com/en/latest/topics/tutorials/autoaccept_grains.html.
