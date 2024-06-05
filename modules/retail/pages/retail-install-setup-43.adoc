@@ -1,0 +1,218 @@
+[[retail-install-setup-43]]
+= Set Up the {productname} {smr} Environment with non-containerized 4.3 branch server
+
+// 2020-08-27, ke: We must settle on one term: "POS images" or "terminal images"
+
+To set up the {productname} {smr} environment, you will need to have already installed and configured:
+
+* {productname} {smr} Server
+* one or more {productname} {smr} branch server proxies, or containerized proxy
+* one or more {productname} build hosts
+
+This section covers how to configure your {productname} {smr} environment, including:
+
+* Prepare POS images
+* Prepare system groups
+* Configure services for {saltboot}
+* Synchronize POS images to the branch servers
+
+The very first time you set up the {productname} {smr} environment, you will need to perform all configuration steps.
+You will need to revisit some of these steps later on as you are working with {productname} {smr}.
+
+For example, the first time you configure the branch server, you will need to have images prepared for synchronization.
+If you are configuring more than one branch server, you can use the same images across different branch servers.
+
+If you have an existing environment, and need to build new images, you do not need to re-initialize the branches.
+You will need to synchronize the images, and can skip setting up the services on the branch server.
+
+Usually, POS images are rebuild when updated packages are available, and synchronized to the branch servers before the update window opens.
+
+
+== Prepare and Build Terminal Images
+
+For information about {productname} image building, see xref:administration:image-management.adoc[].
+
+{productname} {smr} POS images are images specifically tailored for {productname} {smr} environment and designed to be deployed using PXE booting mechanism.
+
+
+=== POS Image Templates
+
+As starting point, {suse} provides basic templates at https://github.com/SUSE/manager-build-profiles/tree/master/OSImage[].
+These templates need to be adapted for specific usecases, for example by including specific applications, configuration settings, and users.
+
+[IMPORTANT]
+====
+By default, POS templates do not include a system user.
+You will not be able to login as a user to a system that has been installed with a {suse} provided template.
+However you can use Salt to manage clients without a system user.
+You can use Salt to install a system user after the terminal has been deployed.
+====
+
+
+== Branch Identification and Architecture Topology
+
+Before you configure the branch server, ensure you have decided on networking topology and you choose [systemitem]``branch id``.
+
+For information about the possible network topologies, see xref:retail:retail-network-arch.adoc[].
+
+As a [systemitem]``branch id`` select any alphanumerical string with up to 64 characters.
+
+
+== Required System Groups
+
+{productname} {smr} requires:
+
+- branch system group for every branch server proxy, using [systemitem]``branch id`` as its name
+- hardware type system group for every used hardware type, using [systemitem]``HWTYPE:`` prefix in its name
+
+For more information about hardware type groups, see xref:retail:retail-deploy-terminals.adoc[].
+
+
+[WARNING]
+====
+Missing mandatory system group will cause terminal bootstrap to fail.
+====
+
+{productname} {smr} also recognizes two optional groups for better overview:
+
+- [systemitem]``TERMINALS``
+- [systemitem]``SERVERS``
+
+
+You can create system groups using the {productname} {webui}.
+Navigate to menu:Systems[System Groups] and click btn:[Create System Group].
+
+For more information about system groups, see xref:reference:systems/system-groups.adoc[].
+
+During terminal bootstrap terminal automatically joins:
+
+- branch system group based on received [systemitem]``branch_id``. This will make branch group formulas available to the terminal.
+- HWType group based on SMBios information received from terminal. This will make {saltboot} partitioning pillar available to the terminal.
+- [systemitem]``TERMINALS`` if this group exists.
+
+
+[NOTE]
+====
+{productname} {smr} command line tools create required system groups and branch group automatically.
+====
+
+[NOTE]
+====
+In case you plan to use the branch server as a monitoring server with Prometheus, be aware that Prometheus demands additional hardware resources.
+For more information about installing Prometheus, see xref:administration:monitoring.adoc[].
+====
+
+[NOTE]
+====
+In case you plan to use the branch server with Ansible software, be aware that Ansible demands additional hardware resources.
+For more information about installing Ansible, see xref:administration:ansible-integration.adoc[].
+====
+
+
+== Configure Services for {saltboot}
+
+{saltboot} technology is used to deploy POS images to the terminals.
+{saltboot} consists of saltboot enabled initrd (build as part of POS images) and saltboot {salt} states.
+
+This section covers general information about generic {saltboot} requirements.
+For configuration examples, see xref:retail:example-configurations.adoc[].
+
+
+=== Enable PXE Network Boot in the Terminal Network
+
+{saltboot} is usually used in network boot environment.
+For this to work [systemitem]``DHCP`` service for the network terminal is connected to must have [systemitem]``PXE`` or sometimes called [systemitem]``BOOTP`` support enabled.
+
+.Example of ISC DHCP server configuration with PXE booting enabled
+====
+  if substring (option vendor-class-identifier, 0, 10) = "HTTPClient" {
+    option vendor-class-identifier "HTTPClient";
+    filename "<FQDN of branch server proxy>/saltboot/shim.efi";
+  }
+  else {
+    if option arch = 00:07 {
+       filename "boot/shim.efi";
+       next-server <IP address of branch server proxy>;
+    }
+    else {
+      filename "boot/pxelinux.0";
+      next-server <IP address of branch server proxy>;
+    }
+  }
+====
+
+Notice two important options, [systemitem]``next-server`` which is set to the branch server IP address and [systemitem]``filename`` set to the [systemitem]``boot/pxelinux.0`` for BIOS based system and [systemitem]``boot/shim.efi`` for UEFI systems with SecureBoot support.
+
+[IMPORTANT]
+====
+Containerized branch proxy uses different [systemitem]``filename`` then regular branch server.
+
+For containerized branch proxy set [systemitem]``filename`` to the [systemitem]``pxelinux.0`` for BIOS based system and [systemitem]``grub/shim.efi`` for UEFI systems with SecureBoot.
+====
+
+
+=== {saltboot} Service Discovery
+
+{saltboot} requires some information where the Salt master is and from where to download the image.
+{saltboot} tries multiple discoveries to obtain this information, described below.
+
+For successful terminal deployment, both service discoveries must be successful.
+Depending on your architecture, choose what strategy works for you best.
+
+
+==== Salt Master Discovery
+
+During {saltboot} initrd start, integrated {salt} client needs to find branch server proxy to connect to.
+This discovery is trying following steps:
+
+- [systemitem]``MASTER`` kernel command line option is set, then this is used as Salt master
+- resolve [systemitem]``salt`` CNAME, if successful then resolved value is used as Salt master
+- use [systemitem]``salt`` as a Salt master
+
+Once Salt master is determined, Salt client configuration is generated and started.
+
+[IMPORTANT]
+====
+Using fully qualified domain name in [systemitem]``MASTER`` or [systemitem]``salt`` CNAME is important.
+
+If used fully qualified domain name is different from fully qualified domain name of branch server proxy known to {productname}, {saltboot} may work correctly, however proxy detection of terminal will not work.
+====
+
+==== Download Server Discovery
+
+Before POS image is downloaded to the terminal, download server discovery is done to find where to download image from:
+
+- [systemitem]``saltboot_download_server`` pillar is set for terminal, then its value is used
+- [systemitem]``saltboot:download_server`` pillar is set for terminal, then its value is used
+- resolve [systemitem]``ftp`` hostname
+
+Value obtained by download server discovery is then used together with POS image pillar to fetch correct image from correct location.
+
+
+=== Terminal Partitioning and Image Selection
+
+Last piece for {saltboot} is to provide partitioning for terminal.
+This is done individually for each hardware type of terminals.
+For more information about hardware types, see xref:retail:retail-deploy-terminals.adoc[].
+
+Above mentioned steps are mandatory minimum for successful {saltboot} deployment.
+For configuration examples, see xref:retail:example-configurations.adoc[].
+
+
+== Synchronize Images to the Branch Server
+
+The OS image you use on the {productname} server must be synchronized for use to the branch server.
+You can do this with the Salt [command]``image-sync`` state, part of the [systemitem]``Image Synchronization Formula``.
+
+.Procedure: Synchronizing Images to the Branch Server
+
+. On the {productname} server, run this command:
++
+----
+salt <branch_server_minion_id> state.apply image-sync
+----
+. The image details will be transferred to [path]``/srv/saltboot`` on the branch server.
+
+You can also set synchronization to run automatically on the branch server.
+Configure the image synchronization formula to apply the highstate regularly.
+For more information about [systemitem]``Image Synchronization Formula``, see xref:specialized-guides:salt/salt-formula-imagesync.adoc[].
