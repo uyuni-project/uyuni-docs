@@ -1,3 +1,5 @@
+- Updated autoinstallation usage with containerized server
+  (bsc#1222692)
 - Added image-sync boot image details (bsc#1206055)
 - Updated retail workflow for SUSE Manager 5.0 containerized proxies
 - Excluded detailed information about creating and running a CentOS
