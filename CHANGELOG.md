@@ -1,3 +1,5 @@
+- Removed Apache exporter from monitoring chapter in the Administration
+  Guide
 - Updated autoinstallation usage with containerized server
   (bsc#1222692)
 - Added image-sync boot image details (bsc#1206055)
