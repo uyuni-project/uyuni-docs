@@ -1,27 +1,29 @@
 - Updated autoinstallation usage with containerized server
   (bsc#1222692)
+- Added image-sync boot image details (bsc#1206055)
+- Updated retail workflow for SUSE Manager 5.0 containerized proxies
 - Excluded detailed information about creating and running a CentOS
   errata checking script from SUSE Manager documentation in Client
   Configuration Guide
 - Added note about CentOS 7 errata checking script applicable to
   non-containerized Uyuni installation in Client Configuration Guide
-- Removed additional legacy content in the Installation and 
+- Removed additional legacy content in the Installation and
   Upgrade guide
 - Added Proxy migration documentation for SUSE Manager 5.0
 - Documented availibility of package lock on RedHat-like clients
-- Remove spacecmd function that are not longer available
-- Cleaned up Installation and Upgrade Guide navigation, 
-  additional legacy content removed 
+- Removed spacecmd functions that are not longer available
+- Cleaned up Installation and Upgrade Guide navigation,
+  additional legacy content removed
 - Added information about mirroring Ubuntu ESM packages
 - Started with referencing 5.0 API documentation
 - Added deprecation warning for Inter-Server Synchronization (Version 1)
   feature in Administration Guide
 - Added deprecation warning for virtualization management feature
- in Client Configuration Guide
+  in Client Configuration Guide
 - Added Proxy Quickstart Guide for deploying containerized Proxies
-- Update adding custom GPG key for repositories synchronization
-- Added AppStream section to client configuration guide
-- Added reference guide for Systems > Software > AppStreams
+- Updated adding custom GPG key for repositories synchronization
+- Added AppStream section to Client Configuration Guide
+- Added Systems > Software > AppStreams documentation to Reference Guide
 - Removed warning about limited AppStream support
 - Added Confidential Computing as technology preview
   to Administration Guide
