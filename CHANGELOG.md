@@ -1,3 +1,4 @@
+- Adding SL Micro 6.0 as supported client
 - Removed Apache exporter from monitoring chapter in the Administration
   Guide
 - Updated autoinstallation usage with containerized server
