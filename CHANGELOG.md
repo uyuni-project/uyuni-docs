@@ -1,5 +1,6 @@
 - Added SLE15 SP6 as supported client
 - Added openSUSE Leap SP6 as supported client
+- Adding SL Micro 6.0 as supported client
 - Removed Apache exporter from monitoring chapter in the Administration
   Guide
 - Updated autoinstallation usage with containerized server
