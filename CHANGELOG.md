@@ -1,5 +1,8 @@
-- Documented mgradm distribution command to prepare installation
+- Documented 'mgradm distribution' command to prepare installation
   source in Upgrade chapter of Client Configuration Guide
+- Added VM image deployment documentation for Proxy and Server in the 
+  Installation and Upgrade Guide
+- Removed legacy content from the Installation and Upgrade Guide
 - Added SLE15 SP6 as supported client
 - Added openSUSE Leap SP6 as supported client
 - Adding SL Micro 6.0 as supported client
