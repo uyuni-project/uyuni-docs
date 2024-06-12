@@ -4,24 +4,23 @@
 To set up the {productname} {smr} environment, you will need to have already installed and configured:
 
 * {productname} {smr} Server
-* one or more {productname} {smr} branch server proxies
+* one or more {productname} {smr} branch server containerized proxies
+* one additional salt client for network management
 * one or more POS images built
+
 
 == Assumptions
 
-In this example we consider architecture with dedicated network for POS terminals where branch server provides all required services including DHCP and DNS.
+In this example we consider architecture with dedicated network for POS terminals where branch server provides retail services TFTP, PXE, HTTP and required network services DHCP and DNS is provided by additional salt client host.
 
-For dedicated network we assume 192.168.86.0/24 network.
+For dedicated network we assume 192.168.86.0/24 network and [systemitem]``eth1`` as network interface.
 
-In this example we provide [systemitem]``salt`` and [systemitem]``ftp`` CNAMEs for {saltboot} service discovery.
-
-We assume to have one regular branch server with salt minion id [systemitem]``branch1.mystore.com``, which is equal to the branch server fully qualified domain name, and branch id [systemitem]``B0001``.
+We assume to have one containerized branch server running on registered containerized host with salt minion id [systemitem]``branch1.mystore.com``, which is equal to the branch server fully qualified domain name, and branch id [systemitem]``B0001``.
 
 As a terminal we assume to have one terminal with hardware manufacturer [systemitem]``TerminalOEM`` and model [systemitem]``T1000``.
 
 For POS image we assume to have one with name [systemitem]``POS_Image_JeOS7``.
 
-This example covers two configuration methods with both of them achieving same result.
 
 == Create required system groups
 
@@ -36,45 +35,40 @@ First group is generic optional group for collecting all POS terminals. Second g
 
 For more information about {saltboot} groups, see xref:retail:retail-install-setup.adoc[].
 
+== Configure dedicated network on container host
+
+If dedicated network is not yet set up on the container host, use following command to create new network with static IP address.
+
+```
+nmcli connection add con-name "Terminal Network" \
+  ipv4.addresses 192.168.86.1                    \
+  ipv4.gateway 192.168.86.1                      \
+  ipv4.dns 192.168.86.1                          \
+  ipv4.dns-search branch1.mystore.com            \
+  ipv4.method auto                               \
+  ifname eth1 type ethernet
+```
+
+
 == Assign and configure branch server formulas
 
 We assign following formulas to the branch server:
 
-- Branch Network
 - Dhcpd
 - Bind
-- Pxe
-- Tftpd
 
 .Procedure: Assign formulas to the branch server
 
 . Select the [guimenu]``Formulas`` tab for the system [systemitem]``branch1.mystore.com``
 . You should see list of formulas in [guimenu]``Configuration`` sub-tab
-. In displayed list select [systemitem]``Branch Network``
-. In displayed list select [systemitem]``Pxe``
 . In displayed list select [systemitem]``Dhcpd``
-. In displayed list select [systemitem]``Tftpd``
 . In displayed list select [systemitem]``Bind``
 . Save assigned formulas by clicking btn:[Save] in top right corner
 
-.Procedure: Configure Branch Network formula
-
-. Select Branch Network formula from branch server formula list
-. Keep [systemitem]``Dedicated Nic`` check-box selected, because we are using dedicated network for terminals
-. Keep the rest with default values
-. In the [guimenu]``Terminal Naming and Identification`` section edit [systemitem]``Branch Identification`` and set it to our branch id [systemitem]``B0001``
-. Save the formula
-
-.Procedure: Configure Pxe formula
-
-. Select Pxe formula from branch server formula list
-. At the end of [systemitem]``Kernel Command Line Parameters`` append [systemitem]``MASTER=branch1.mystore.com``
-. Keep the rest with default values
-. Save the formula
 
 .Procedure: Configure Dhcpd formula
 
-. Select Dhcpd formula from branch server formula list
+. Select [systemitem]``Dhcpd`` formula from branch server formula list
 * Set the [guimenu]``Domain Name`` to the [systemitem]``branch1.mystore.com``
 * Set the [guimenu]``Domain Name Server`` to the IP address of branch server [systemitem]``192.168.86.1``)
 * Set the [guimenu]``Listen Interfaces`` to the [systemitem]``eth1``, which is network interface of branch server connected to dedicated terminal network
@@ -88,21 +82,15 @@ We assign following formulas to the branch server:
 . In the [guimenu]``Broadcast Address`` field, enter the broadcast IP address for the terminal network [systemitem]``192.168.86.255``
 . In the [guimenu]``Routers`` field, enter the IP address to be used as default route in the terminal network [systemitem]``192.168.86.1``
 . In the [guimenu]``Next Server`` field, enter the IP address of the branch server for PXE booting [systemitem]``192.168.86.1``
-. Set the [guimenu]``Filename`` to the [systemitem]``/boot/pxelinux.0``
-. Set the [guimenu]``Filename Efi`` to the [systemitem]``/boot/shim.efi``
-. Set the [guimenu]``Filename Http`` to the [systemitem]``http://192.168.86.1/saltboot/boot/shim.efi``
+. Set the [guimenu]``Filename`` to the [systemitem]``/pxelinux.0``
+. Set the [guimenu]``Filename Efi`` to the [systemitem]``/grub/shim.efi``
+. Set the [guimenu]``Filename Http`` to the [systemitem]``http://192.168.86.1/saltboot/grub/shim.efi``
 . Save the formula
 
-.Procedure: Configure Tftpd formula
-
-. Select Tftpd formula from branch server formula list
-. Set the [systemitem]``Internal Network Address`` to [systemitem]``192.168.86.1``, this way tftp will be listening on any IPv4
-. Set the [systemitem]``TFTP base directory`` to [systemitem]``/srv/saltboot``
-. Save the formula
 
 .Procedure: Configuring Bind with reverse name resolution
 
-. Select Bind formula from branch server formula list
+. Select [systemitem]``Bind`` formula from branch server formula list
 . In the [guimenu]``Config`` section, select [systemitem]``Include Forwarders`` so DNS server can forward queries to next DNS server
 . In the [guimenu]``Options`` section clieck [systemitem]``+`` to add an option
 . Set the [guimenu]``Option`` to [systemitem]``empty-zones-enable``
@@ -117,18 +105,14 @@ We assign following formulas to the branch server:
 * In the [guimenu]``Name`` field, enter the domain name [systemitem]``branch1.mystore.com``
 * In the [guimenu]``File`` field, type the name of your configuration file [systemitem]``branch1.mystore.com.txt``
 . In the [guimenu]``Start of Authority (SOA)`` section, use these parameters for Zone 1:
-* In the [guimenu]``Nameserver (NS)`` field, use the FQDN of the  branch server [systemitem]``branch1.mystore.com``
+* In the [guimenu]``Nameserver (NS)`` field, use the FQDN of the  branch server [systemitem]``bs.branch1.mystore.com``
 * In the [guimenu]``Contact`` field, use the email address for the domain administrator
 * Keep all other fields as their default values
 . In the [guimenu]``Records`` section, in subsection [guimenu]``A``, use these parameters to set up an A record for Zone 1:
-* In the [guimenu]``Hostname`` field, use the hostname of the branch server [systemitem]``branch1.mystore.com.``, notice trailing [systemitem]``.`` which are required here
+* In the [guimenu]``Hostname`` field, use the hostname of the branch server [systemitem]``bs.branch1.mystore.com.``, notice trailing [systemitem]``.`` which are required here
 * In the [guimenu]``IP`` field, use the IP address of the branch server [systemitem]``192.168.86.1``
 . In the [guimenu]``Records`` section, subsection [guimenu]``NS``, use these parameters to set up an NS record for Zone 1:
 * In the input box, use the branch server [systemitem]``branch1.mystore.com.``
-. In the [guimenu]``Records`` section, subsection [guimenu]``CNAME``, use these parameters to set up CNAME records for Zone 1:
-* In the [guimenu]``Key`` field, enter [systemitem]``salt``, and in the [guimenu]``Value`` field, type the branch server [systemitem]``branch1.mystore.com.``
-* Click btn:[Add item] to add another entry.
-* In the [guimenu]``Key`` field, enter [systemitem]``ftp``, and in the [guimenu]``Value`` field, type the branch server [systemitem]``branch1.mystore.com.``
 . Set up Zone 2 using the same parameters as for Zone 1, but ensure you use the reverse details:
 * The same SOA section as Zone 1.
 * Empty A and CNAME records.
@@ -136,9 +120,41 @@ We assign following formulas to the branch server:
 ** Set [guimenu]``Generate Reverse`` to the network IP address [systemitem]``192.168.86.0/24``
 ** Set [guimenu]``For Zones`` to the domain name of your branch network [systemitem]``branch1.mystore.com``
 . Click btn:[Save Formula] to save your configuration.
-. Apply the highstate.
 
-== Setup partitioning
+.Procedure: Apply Configured Services
+. Apply the highstate.
+. Reboot container host to switch to new snapshot.
+
+
+== Prepare {saltboot} Group
+
+We assign [systemitem]``Saltboot Group`` formula to the branch group [systemitem]``B0001`` which was created before.
+
+.Procedure: Assign {saltboot} Group formula to Branch Group
+
+. Navigate to menu:Systems[System Groups]
+. Select group [systemitem]``B0001``, which is our branch group
+. Select the [guimenu]``Formulas`` tab once in group details
+. You should see list of formulas in [guimenu]``Configuration`` sub-tab
+. In displayed list select [systemitem]``Saltboot Group``
+. Save assigned formulas by clicking btn:[Save] in top right corner
+
+.Procedure: Configure Saltboot Group for Branch
+
+. Select [systemitem]``Saltboot Group`` formula from [systemitem]``B0001`` group formula list
+. Check [systemitem]``Containerized Proxy`` checkbox
+. Set [systemitem]``Image Download Server`` to [systemitem]``bs.branch1.mystore.com``
+. Save the formula
+
+[IMPORTANT]
+====
+[systemitem]``Saltboot Group`` is a group formula to be assigned to the branch group.
+
+Assigning [systemitem]``Saltboot Group`` to the branch server directly will not have any effect.
+====
+
+
+== Set Up POS Terminal Partitioning
 
 Partitioning is specific to the hardware type and configured using [systemitem]``Saltboot`` formula.
 
@@ -169,14 +185,6 @@ Partitioning is specific to the hardware type and configured using [systemitem]`
 * Set [systemitem]``Device Mount Point`` to [systemitem]``/``
 * Set [systemitem]``OS Image to Deploy`` to [systemitem]``POS_Image_JeOS7``
 . Save the formula
-
-
-After all procedures are done, apply highstate on the branch server.
-
-
-== Synchronize images
-
-After highstate is applied, we proceed with synchronizing images as usual with apply [systemitem]``image-sync`` state.
 
 
 Terminal can now be started and will be automatically provisioned, pending salt key acceptance.

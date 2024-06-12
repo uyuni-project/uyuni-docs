@@ -4,6 +4,8 @@
 The autoinstallation process relies on an several files to initiate the installation.
 These files include the Linux kernel, an initial RAM disk, and other files required to boot the operating system in installation mode.
 
+{productname} uses the [systemitem]``mgradm`` tool to copy the installation file from the source to the server container.
+
 You can extract the needed files from a DVD image.
 For information, see xref:client-configuration:autoinst-distributions.adoc#based-on-iso-image[Distribution Based on an ISO Image].
 
@@ -28,21 +30,28 @@ This is usually a DVD [path]``.iso`` image that contains the Linux kernel, an [p
 
 
 .Procedure: Importing Files from Installation Media
-. Copy the installation media to your {productname} Server.
-  For {suse} operating systems, you can download installation media from https://www.suse.com/download/.
-. Loop-mount the ISO image, and copy its contents somewhere:
+. Use [command]``mgradm`` to import installation data from the ISO image:
 +
 ----
-# mount -o loop,ro <image_name>.iso /mnt
-# mkdir -p /srv/www/distributions
-# cp -a /mnt /srv/www/distributions/<image_name>
-# umount /mnt
+# mgradm distribution copy <image_name>.iso <image_name>
 ----
 +
+. Take a note of the distribution path reported by [command]``mgradm``.
+  You will need it when you declare the distribution to {productname}.
+  
+  
 
-. Take a note of the file path.
-You will need it when you declare the distribution to {productname}.
+=== Distribution autodetection and registration
 
+[systemitem]``mgradm`` is able to automatically detect distribution name and register it to the server.
+Provided ISO image needs to contain a [path]``.treeinfo`` file.
+
+.Procedure: Import distribution file with autodetection and registration
+. Use [command]``mgradm``:
++
+----
+# mgradm distribution copy --api-user <username> --api-password <password> <image_name>.iso
+----
 
 
 [[based-on-rpm-package]]
@@ -56,9 +65,21 @@ It is simpler than importing contents from an installation media, because it use
 .Procedure: Extracting Files from an Installation Package
 . On the {productname} Server, install the package whose name starts with [package]``tftpboot-installation``.
   You can determine its exact name with the command [command]``zypper se tftpboot-installation``
-. Determine where the installation files went with the command [command]``ls -d /usr/share/tftpboot-installation/*``.
-  Take a note of the file path.
+. You can install the package to different root to avoid need for restart using following command:
++
+----
+# mkdir /opt/tftpinstall
+# zypper --installroot /opt/tftpinstall install tftpboot-installation-SLE-Micro-5.5-x86_64
+----
+. Find the installation files with the command [command]``ls -d /opt/tftpinstall/usr/share/tftpboot-installation/*``.
+. Copy installation files using [command]``mgradm``:
++
+----
+# mgradm distribution copy /opt/tftpinstall/usr/share/tftpboot-installation/SLE-Micro-5.5-x86_64 SLE-Micro-5.5-x86_64
+----
+. Take a note of the distribution path reported by [systemitem]``mgradm`` tool.
   You will need it when you declare the distribution to {productname}.
+. After [systemitem]``mgradm`` tool finishes, you can remove [path]``/opt/tftpinstall`` directory.
 
 This procedure prepares the installation of the same operating system version as the one that powers your {productname} Server.
 If you want to install a different operating system or version on the client, you need to manually get the package [package]``tftpboot-installation-*`` from the distribution it belongs to.
@@ -102,7 +123,7 @@ Navigate to menu:Systems[Autoinstallation > Distributions] to manage your autoin
 ifeval::[{suma-content} == true]
 [NOTE]
 ====
-You can autoinstall {productname} Proxies in the same way as {sle} clients.
-Make sure you use the {sle} installation media, and choose the [guimenu]``SLE-Product-SUSE-Manager-Proxy-4.2-Pool for x86_64`` base channel.
+You can autoinstall {productname} Proxy 4.3 in the same way as {sle} clients.
+Make sure you use the {sle} installation media, and choose the [guimenu]``SLE-Product-SUSE-Manager-Proxy-4.3-Pool for x86_64`` base channel.
 ====
 endif::[]
