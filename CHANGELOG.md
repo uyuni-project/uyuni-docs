@@ -1,3 +1,4 @@
+- Remove duplicate instructions from the Liberate Formula page
 - Fixed Liberate Formula instructions
 - Documented 'mgradm distribution' command to prepare installation
   source in Upgrade chapter of Client Configuration Guide
