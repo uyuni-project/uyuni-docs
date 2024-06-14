@@ -1,6 +1,8 @@
+- Remove duplicate instructions from the Liberate Formula page
+- Fixed Liberate Formula instructions
 - Documented 'mgradm distribution' command to prepare installation
   source in Upgrade chapter of Client Configuration Guide
-- Added VM image deployment documentation for Proxy and Server in the 
+- Added VM image deployment documentation for Proxy and Server in the
   Installation and Upgrade Guide
 - Removed legacy content from the Installation and Upgrade Guide
 - Added SLE15 SP6 as supported client
@@ -218,7 +220,7 @@
   Guide (bsc#1210103)
 - Update Red Hat channel names to reflect the new custom channels for easier
   onboarding
-- In the Installation and Upgrade Guide, unified SUSE Manager Proxy 
+- In the Installation and Upgrade Guide, unified SUSE Manager Proxy
   registration
 - Warned about the impossibility of moving chained proxies in the
   Client Configuration Guide.
@@ -261,7 +263,7 @@
   (bsc#1209508)
 - Added instruction for Cobbler to use the correct label in Client Config Guide
   distro label (bsc#1205600)
-- Adjusted python version and OpenSUSE Leap version in public cloud 
+- Adjusted python version and OpenSUSE Leap version in public cloud
   document (bsc#1209938)
 - Fixed calculation of DB max-connections and align it with the supportconfig
   checking tool in the Tuning Guide
@@ -274,7 +276,7 @@
 - Enhanced the note about the remove PTF capability in Administration Guide
 - Added information about evaluation command parameter for OpenSCAP (bsc#1207931)
 - Enhanced deleting clients in Client Configuration Guide
-- Added instructions about contanerized proxy deployment to Installation and 
+- Added instructions about contanerized proxy deployment to Installation and
   Upgrade Guide
 - Explained how to use PTFs in SUSE Manager in the Administration Guide
 - Warned about installing containerized proxy on traditional container host in
@@ -296,11 +298,11 @@
 - Added SUSE Liberty Linux 9 clients as supported and use SUSE Liberty Linux
   name more consistently
 - Added information about GPG key usuage in the Debian section of the Client
-  Configuration Guide 
+  Configuration Guide
 - Add Grafana configuration instructions in Administration Guide.
-- Clarified monitoring components support matrix in Client Configuration 
+- Clarified monitoring components support matrix in Client Configuration
   Guide
-- Added information to use Hub when managing more than 10,000 clients 
+- Added information to use Hub when managing more than 10,000 clients
   to the Hardware Requirements in the Installation and Upgrade Guide
 - Added Red Hat Enterprise Linux 9 clients as supported (bsc#1205896)
 - Updated default number of changelog entries in Administration Guide
