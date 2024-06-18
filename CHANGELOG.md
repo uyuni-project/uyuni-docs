@@ -1,3 +1,5 @@
+- Fixed Adding Base Media to Custom Channels for SUSE Liberty Linux
+  in Client Configuration guide
 - Remove duplicate instructions from the Liberate Formula page
 - Fixed Liberate Formula instructions
 - Documented 'mgradm distribution' command to prepare installation
