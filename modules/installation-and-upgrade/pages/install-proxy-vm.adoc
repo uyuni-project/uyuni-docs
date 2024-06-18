@@ -11,7 +11,7 @@ KVM combined with Virtual Machine Manager (_virt-manager_) will be used as a san
 
 
 You will find the VM images for {productname} {productnumber} Proxy in various formats.
-It includes {sles} {sles-version} {sp-base} as the underlying operating system and the {productname} Proxy software current at the time of build.
+It includes {sles} {sles-version} {sp-base} as the underlying operating system and the {productname} Proxy software current at the time of build.
 Download the appropriate {productname} Proxy image for your environment from https://download.suse.com/.
 
 [NOTE]
@@ -31,8 +31,8 @@ If you want to use a production environment, review the requirements listed in x
 | CPU's:              | 2
 | Virtual Disks:      |
 | VirtIO Disk 1       | SUSE-Manager-Proxy.x86_64-4.3.13-KVM.qcow2
-| VirtIO Disk 2       | 101 GB for [path]``/srv/``
-| VirtIO Disk 3       | 100 GB for [path]``/var/cache/``
+| VirtIO Disk 2       | 100 GB for [path]``/var/cache/``
+| VirtIO Disk 3       | 101 GB for [path]``/srv/``
 | Name:               | suse-manager-proxy-setup
 | Network             | Bridge _br0_
 |===
@@ -44,28 +44,36 @@ For more information on {sle} Virtualization, see https://documentation.suse.com
 
 
 
-== {productname} Proxy Virtual Machine Settings
+[[proxyvm.kvm.install]]
+== Install {productname} Proxy Virtual Machine
 
 
-Create three additional virtual disks required for the {productname} storage partitions.
+Create virtual machine with three additional virtual disks required for the {productname} Proxy storage partitions.
 
-.Procedure: Creating the Required Partitions with KVM
-. Create a new virtual machine using the downloaded {productname} KVM image and select [guimenu]``Import existing disk image``.
+// FIXME: add details on networking (bridge).
+
+.Procedure: Creating the VM and Additional Partitions with KVM
+. Create a new virtual machine using the downloaded {productname} Proxy KVM image and select [guimenu]``Import existing disk image``.
 . Set [literal]``SUSE Linux Enterprise 15 SP4`` as the installed operating system.
 . Configure RAM and number of CPUs (at least 8 GB RAM and 2 CPUs).
+. Configure networking (bridge).
 . Name your KVM machine and select the [guimenu]``Customize configuration before install`` check box.
-. Click btn:[Add Hardware] to create three new virtual disks with these specifications.
+. Click btn:[Add Hardware] to create additional virtual disks.
   These disks will be partitioned and mounted later.
 +
 
-// FIXME: enter proxy related storage devs instead
+[NOTE]
+====
+Storage size values are the absolute minimum—only suitable for a small test or demo installation.
+Also consider to create a separate partition for [path]``/srv/tftpboot/`` where images on Retail Branchservers are stored.
+====
++
 
 [cols="1,1,1", options="header"]
 |===
-| VirtIO Storage Disks | Name      | Sizing
-| VirtIO Disk 2        | spacewalk | 500{nbsp}GB
-| VirtIO Disk 3        | pgsql     | 100{nbsp}GB
-| VirtIO Disk 4        | swap      | 4{nbsp}GB
+| VirtIO Storage Disks | Name       | Sizing
+| VirtIO Disk 2        | squidcache | 101{nbsp}GB
+| VirtIO Disk 3        | tftpboot   | 100{nbsp}GB
 |===
 
 
@@ -87,25 +95,38 @@ Create three additional virtual disks required for the {productname} storage par
 
 
 [[minimmal.susemgr.prep]]
-== Preparing virtual machine for {productname}
+== Preparing virtual machine for {productname} Proxy
 
-Before starting obtain your Registration Code for this image from SUSE Customer Center - https://scc.suse.com.
+Before starting obtain a registration code for this image from SUSE Customer Center - https://scc.suse.com.
 
 
-[[proc.minimmal.susemgr.prep]]
-.Procedure: Preparing for {productname} run
+[[proc.minimal.susemgrproxy.prep]]
+.Procedure: Preparing for {productname} Proxy run
 
 . Log in as `root`.
 
-. Register {productname} with SCC:
-
+. Register {productname} Proxy with SCC:
 +
 
 ----
 SUSEConnect -e <EMAIL_ADDRESS> -r <SUSE_MANAGER_PROXY_CODE>
 ----
++
 
-. The virtual machine is now ready for {productname} to be set up.
+// FIXME (just taken over from server image installation
+
+. Prepare {productname} Proxy storage:
+  [path]``suma-storage`` command automatically prepares and configures previously created external storage for use with the proxy.
+  In the following command the first parameter is the device for {productname} Proxy Squid cache, the second parameter is the device for Retail images.
++
+
+----
+suma-storage /dev/vdb /dev/vdc
+----
++
+// FIXME info about network configuration and applying update in readme
+
+. The virtual machine is now ready for {productname} Proxy to be set up.
 
 
 Continue with registering the installed {productname} Proxy as a client: xref:installation-and-upgrade:proxy-registration.adoc[].
