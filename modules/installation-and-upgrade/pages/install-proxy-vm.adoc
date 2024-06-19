@@ -1,0 +1,136 @@
+[[install-proxy-vm]]
+= Install {productname} Proxy in a Virtual Machine Environment Using {productname} Proxy VM Image
+
+
+
+== Virtual Machine Manager Settings
+
+This chapter provides the required Kernel Virtual Machine (KVM) settings for {productname} Proxy.
+KVM combined with Virtual Machine Manager (_virt-manager_) will be used as a sandbox for this installation.
+
+
+
+You will find the VM images for {productname} {productnumber} Proxy in various formats.
+It includes {sles} {sles-version} {sp-base} as the underlying operating system and the {productname} Proxy software current at the time of build.
+Download the appropriate {productname} Proxy image for your environment from https://download.suse.com/.
+
+[NOTE]
+====
+This table specifies the minimum requirements.
+These are suitable for a quick test installation, such as a server with one client.
+If you want to use a production environment, review the requirements listed in xref:installation-and-upgrade:hardware-requirements.adoc[].
+====
+
+
+[cols="1,1", options="header"]
+|===
+2+<| Virtual machine settings overview
+| Installation Method | Import Existing Disk Image
+| OS:                 | SUSE Linux Enterprise 15 SP4
+| Memory:             | 8 GB
+| CPU's:              | 2
+| Virtual Disks:      |
+| VirtIO Disk 1       | SUSE-Manager-Proxy.x86_64-4.3.13-KVM.qcow2
+| VirtIO Disk 2       | 100 GB for [path]``/var/cache/``
+| VirtIO Disk 3       | 101 GB for [path]``/srv/``
+| Name:               | suse-manager-proxy-setup
+| Network             | Bridge _br0_
+|===
+
+[NOTE]
+====
+For more information on {sle} Virtualization, see https://documentation.suse.com/sles/15-SP4/html/SLES-all/book-virtualization.html.
+====
+
+
+
+[[proxyvm.kvm.install]]
+== Install {productname} Proxy Virtual Machine
+
+
+Create virtual machine with additional virtual disks required for the {productname} Proxy storage partitions.
+
+// FIXME: add details on networking (bridge).
+
+.Procedure: Creating the VM and Additional Partitions with [command]``virt-manager``
+. In [command]``virt-manager``, open menu:File[New Virtual Machine].
+. In the [guimenu]``Create a new virtual machine`` dialog, select [guimenu]``Import existing disk image`` and confirm with btn:[Forward].
+. Enter the filename of the downloaded {productname} Proxy KVM image and set [literal]``SUSE Linux Enterprise 15 SP4`` as the operating system.
+  Confirm with btn:[Forward].
+. Configure RAM and number of CPUs (at least 8 GB RAM and 2 CPUs).
+  Confirm with btn:[Forward].
+. Set the name of your VM and select the [guimenu]``Customize configuration before install`` check box.
+. With the [guimenu]``Network selection`` drop-down menu select the configured bridge device.
+. Confirm with btn:[Finish].
+. In the overview dashboard, at the bottom of the left navigation bar, click btn:[Add Hardware] to create additional virtual disks.
+  These disks will be partitioned and mounted later.
++
+
+[NOTE]
+====
+Storage size values are the absolute minimum—only suitable for a small test or demo installation.
+Also consider to create a separate partition for [path]``/srv/tftpboot/`` where images on Retail Branchservers are stored.
+====
++
+
+[cols="1,1,1", options="header"]
+|===
+| VirtIO Storage Disks | Name       | Sizing
+| VirtIO Disk 2        | squidcache | 101{nbsp}GB
+| VirtIO Disk 3        | tftpboot   | 100{nbsp}GB
+|===
+
+
+. Above the left navigation bar, click btn:[Begin Installation] to boot the new VM from the {productname} Proxy image.
+  Wait until the [guimenu]``JeOS Firstboot`` start option is presented.
+
+
+
+== Run JeOS Firstboot Setup
+
+. Confirm to start the [guimenu]``JeOS Firstboot`` setup.
+. Select system locale such as [literal]``en_US``.
+. Select keyboard layout such as [literal]``us``.
+. Check end user license agreement.
+. Select time zone such as [literal]``UTC``.
+. Enter and confirm root password.
+  Keep note of the root password.
+. Wait until the login prompt is presented.
+
+
+
+
+[[minimal.susemgrproxy.prep]]
+== Preparing virtual machine for {productname} Proxy
+
+Before starting, obtain a registration code for this image from SUSE Customer Center - https://scc.suse.com.
+
+
+[[proc.minimal.susemgrproxy.prep]]
+.Procedure: Preparing for {productname} Proxy run
+
+. Log in as `root`.
+
+. Register {productname} Proxy with SCC:
++
+
+----
+SUSEConnect -e <EMAIL_ADDRESS> -r <SUSE_MANAGER_PROXY_CODE>
+----
+
+. Prepare {productname} Proxy storage:
+  [command]``suma-storage`` command automatically prepares and configures previously created external storage for use with the proxy.
+  In the following command, the first parameter is the device for {productname} Proxy Squid cache that [command]``suma-storage`` can handle:
++
+
+----
+suma-storage /dev/vdb
+----
++
+// FIXME info about network configuration and applying update in readme
+
+. The virtual machine is now ready for {productname} Proxy to be set up.
+
+
+Continue with registering the installed {productname} Proxy as a client: xref:installation-and-upgrade:proxy-registration.adoc[].
+
