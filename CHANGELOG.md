@@ -1,3 +1,4 @@
+- Fixed reposync path for SUSE Liberty Linux Base Media
 - Fixed Adding Base Media to Custom Channels for SUSE Liberty Linux
   in Client Configuration guide
 - Remove duplicate instructions from the Liberate Formula page
