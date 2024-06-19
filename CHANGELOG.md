@@ -1,3 +1,4 @@
+- Fixed Activation Key link in SUSE Liberty Linux Clients page
 - Fixed reposync path for SUSE Liberty Linux Base Media
 - Fixed Adding Base Media to Custom Channels for SUSE Liberty Linux
   in Client Configuration guide
