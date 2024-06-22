@@ -8,14 +8,11 @@ With this formula the conversion will take place during the client onboarding on
 
 
 
-== Install the formula
+[NOTE]
+====
 
-Install the formula with:
-
-----
-zypper in liberate-formula`
-----
-
+The Liberate Formula comes preinstalled within the server container.
+====
 
 
 == Configure {productname}
@@ -151,145 +148,34 @@ When you register a system with this key it will perform the migration automatic
 
 There are two ways to onboard (or register) a new client with the Activation Key:
 
-With the {webui} and selecting the activation key::
+xref:client-configuration:registration-webui.adoc[]::
 This is intended for a one-off registration or for testing purposes.
 
-With a bootstrap script with an assigned activation key::
+xref:client-configuration:registration-bootstrap.adoc[]::
 This is intended to be used for mass registration.
-
-
-
-=== Register with the {webui}
-
-Technically, this will start an SSH connection to the client and run the bootstrap script to register it.
-
-.Procedure: Registering with the {webui} and selecting the activation key
-
-. In the {productname} {webui}, navigate to menu:Systems[Bootstraping].
-
-. In the `Bootstrap Minions` dialog, fill the entries:
-+
-
-Host::
-Hostname of the client to register
-SSH Port::
-Leave blank to use default, which is [literal]``22``
-User::
-Enter user or leave blank for {rootuser}
-Authentication Method::
-Select if you want to use [guimenu]``password`` or provide a [guimenu]``SSH Private Key``
-+
-  * [guimenu]``Password``:  password to access the system
-  * [guimenu]``SSH Private Key``: file with the private key
-  * [guimenu]``SSH Private Key Passphrase``: In case a private key was provided that requires a passphrase to unlock, provide it here
-Activation Key::
-Select from the menu the activation key to be used, for example [literal]``sll9-default``
-Reactivation Key::
-Leave blank, it will not be used here
-Proxy::
-Leave as [literal]``None`` if you are not using a proxy
-
-. Click the btn:[Bootstrap] button to start the registration.
-
-A notification will show on top of the page stating that the client is being registered.
-
-
-
-=== Register with a bootstrap script
-
-
-.Procedure: Creating bootstrap script
-
-. In the {productname} {webui}, navigate to menu:Admin[Manager Configuration > Bootstrap Script].
-
-. Fill the fields of the bootstrap script configuration dialog:
-+
-Uyuni/SUSE Manager server hostname::
-This should be set to the hostname that the client will use to reach the server, as well as the hostname
-Note: a Certificate will be used associated to this name for the client systems, as it was configured in the initial setup. If it's changed, a new certificate shall be created
-SSL cert location::
-Path, in the server, to the filename provided as a certificate to register it. Keep it as it is.
-Bootstrap using Salt::
-Select this checkbox to apply salt states, like the one we added via configuration channel. It is required to perform the migration.
-Enable Client GPG checking::
-Select this checkbox to ensure all packages installed come from the proper sources, in this case, {sll} signed packages.
-Enable Remote Configuration::
-Leave unchecked.
-Enable Remote Commands::
-Leave unchecked.
-Client HTTP Proxy::
-Leave blank. This is in case the client requires a proxy to access the server.
-Client HTTP Proxy username::
-Leave blank.
-Client HTTP Proxy password::
-Leave blank.
-
-. Click the btn:[Update] button to refresh the [path]``bootstrap.sh`` script.
-
-
-The bootstrap script generated is reachable via HTTP.
-For example, for a server named [literal]``example.org`` it will be at [literal]``https://example.org/pub/bootstrap/``.
-Accessing the server via SSH, the bootstrap script is available in [path]``/srv/www/htdocs/pub/bootstrap/``.
-
-
-.Procedure: Modifying and running the bootstrap script
-
-. Make a copy of the bootstrap script generated on the server in [path]``/srv/www/htdocs/pub/bootstrap/``.
-  For example:
-+
-
-----
-cd /srv/www/htdocs/pub/bootstrap/
-cp bootstrap.sh bootstrap-sll9.sh
-----
-
-. Edit [path]``bootstrap-sll9.sh``, and add the activation key created earlier.
-  For example, [literal]``sll9-default``:
-+
-
-----
-ACTIVATION_KEYS=sll9-default
-----
-
-. Run the modified [path]``bootstrap-sll9.sh`` script.
-  On the client, as root, run:
-+
-
-----
-curl -Sks https://example.org/pub/bootstrap/bootstrap-sll9.sh | /bin/bash
-----
-+
-
-  For more information about running bootstrap scripts, see xref:client-configuration:registration-bootstrap.adoc#registering.clients.bootstrap.register[].
-+
-
-// Configuration channel and software channels will be assigned automatically by the Activation Key
-
-. Apply highstate to migrate the client to {sll}.
-
-// The high state apply will both apply the configuration channel and migrate the machine to Liberty Linux
-
 
 
 == For already registered clients
 
 Software channels, system group membership, and formulas can be assigned to any already registered client.
-This method makes use of the bootstrap script created above for onboarding new systems.
+This method makes use of the bootstrap script mentioned above.
+
+.Procedure: Creating an Reactivation key
 
 . In the {productname} {webui}, open the System Details page of any registered client you want to migrate to {sll}.
 
-. Click the [guimenu]`Reactivation`` tab.
+. Click the [guimenu]`Reactivation` tab.
   If there is already a key listed, you can use it.
   If not, click btn:[Generate New Key], and copy the entire key.
   The key will start with [literal]``re-``.
 
-. SSH into this client and set the environmant variable to be the key that you copied:
-
+. SSH into this client and set the environment variable to be the key that you copied:
++
 ----
 export REACTIVATION_KEY=re-xxxxxxxxxxxxxx
 ----
 
-. Run the bootstrap script you created above, and the system will re-register using the same profile as before, but with the newly assigned {sll} context.
+. Run the bootstrap script from xref:client-configuration:registration-bootstrap.adoc[], and the system will re-register using the same profile as before, but with the newly assigned {sll} context.
 
 ////
 ## Version testing status

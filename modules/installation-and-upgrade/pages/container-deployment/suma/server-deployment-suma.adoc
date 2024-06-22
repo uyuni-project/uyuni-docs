@@ -1,0 +1,300 @@
+[[deploy-suma-server]]
+= Deploy {productname} {productnumber} Server
+ifeval::[{uyuni-content} == true]
+:noindex:
+endif::[]
+
+This guide shows you how to install and configure a {productname} {productnumber} container on {micro} {microversion}.
+
+// Link to hardware requirements do not show them here. We list them on other pages.
+
+== Hardware Requirements for {productname}
+
+This table shows the software and hardware requirements for deploying {productname} Server on your bare metal machine.
+For the purposes of this guide your machine should have 16 GB of RAM, and at least 200 GB of disk space.
+
+[cols="1,1", options="header"]
+.Software and Hardware Requirements
+|===
+| Software and Hardware  | Recommended
+| Operating System:      | {micro} {microversion}
+| Architecture           | {x86_64}, {arm}, {s390x}, {ppc64le}
+| Processor: (CPU)       | Minimum of four (4) 64-bit CPU cores
+| RAM:                   | 16 GB
+|                        |
+|                        |
+| Disk Space:            | 200 GB
+| Channel Requirements   | 50 GB per SUSE or openSUSE product
+                          
+                           360 GB per Red Hat product
+| Swap space:            | 3 GB
+|===
+
+.Supported operating system for the Server Container Host
+[NOTE]
+====
+The supported operating system for the container host is {micro} {microversion}.
+
+Container host::
+A container host is a server equipped with a container engine like Podman, which lets it manage and deploy containers.
+These containers hold applications and their essential parts, such as libraries, but not a full operating system, making them lightweight.
+This setup ensures applications run the same way in different environments.
+The container host supplies the necessary resources such as CPU, memory, and storage for these containers.
+====
+
+[IMPORTANT]
+====
+Server deployment mandates the use of a fully qualified domain name (FQDN).
+In the absence of automatic DNS provision of an FQDN by your router or network, the deployment process will not proceed successfully.
+An FQDN typically follows the format <host>.<domain>.com.
+
+For instance:
+
+* [literal]``suma.example.com``
+* [literal]``suma.container.lab``
+
+For more information, see the section on network requirements in xref:installation-and-upgrade:network-requirements.adoc[].
+====
+
+== Persistent Volumes
+
+// This sections needs to be run by devs. How would a customer use custom storage? How do we set this up with mgradm?
+
+{productname} {productnumber} defines the required persistent storage volumes by default.
+These are created during installation by the [command]``mgradm`` tool if they do not already exist.
+
+These volumes are created in [path]``/var/lib/containers/storage/volumes/``, where [systemitem]``Podman`` stores its volumes by default.
+
+.Recommendations
+[NOTE]
+====
+You can leverage the simplicity of storage by mounting an external storage device to this directory.
+Since it will store the {postgresql} database, binary packages for repositories, caches, operating system images, autoinstallation distributions, and configuration files, we have three recommendations:
+
+Fast Storage::
+This mount point should ideally be NVMe or SSD-class devices.
+Slower storage will adversely affect {productname} performance.
+
+Large Capacity::
+Recommended minimum size for this is at least 300 GB, and larger if there will be multiple Linux distributions or architectures to manage.
+
+Recommended Filesystem::
+XFS (though any supported filesystem for {micro} {microversion} could work).
+
+====
+
+Optional::
+You can provide custom storage for the volumes by mounting disks on the expected volume path inside it such as [path]``/var/lib/containers/storage/volumes/var-spacewalk``.
+This adds to the complexity of a {productname} deployment, and may affect the resilience the default storage recommendation provides.
+
+
+For a list of all persistent volumes in the container, see xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[].
+
+// To set up custom persistent volumes see:
+
+
+
+== {micro} {microversion} Installation
+
+.Procedure: Download the Installation Media
+. Locate the {micro} {microversion} installation media at https://www.suse.com/download/sle-micro/.
+. You will need an account with {scc} and must be logged in to download the ISO image.
+. Download [filename]``SLE-Micro-5.5-DVD-x86_64-GM-Media1.iso``.
+. Prepare a DVD or USB flash drive for installation.
+. Insert the DVD or USB flash drive (USB disk or key) containing the installation image for {micro} {microversion}.
+. Boot or reboot your system.
++
+
+For more information about preparing your machines (virtual or physical), see link:https://documentation.suse.com/sle-micro/5.5/html/SLE-Micro-all/book-deployment-slemicro.html[{micro} {microversion} Deployment Guide].
+
+
+.Procedure: {micro} {microversion} Installation
+. Use the arrow keys to select [systemitem]``Installation``.
+. Adjust keyboard and language.
+. Click the [systemitem]``checkbox`` to accept the license agreement.
+. Click [systemitem]``Next`` to continue.
+. Select the registration method.
+  For this example, we will register the server with {scc}.
++
+
+.Registering {productname} as an Extension during Installation
+[NOTE]
+====
+The {productname} {productnumber} container is installed as an extension. Therefore, in addition to acquiring {scc} registration codes for {micro} {microversion}, you will also need {scc} registration codes for the following extensions:
+
+* {productname} {productnumber} Server
+* {productname} {productnumber} Proxy
+* Retail Branch Server
+
+The following section uses a registration code for the {x86_64} architecture. To register {arm} or {s390x} architectures replace with the correct registration code.
+====
+
+. Enter your {scc} email address.
+. Enter your registration code for {micro} {microversion}.
+. Click [systemitem]``Next`` to continue.
+. On the [systemitem]``Extension and Module Selection`` page, uncheck the **Hide Development Versions** checkbox. 
+. Select the {productname} {productnumber} Server extension [systemitem]``Checkbox``.
+. Click [systemitem]``Next`` to continue.
+. Enter your {productname} {productnumber} Server extension registration code.
+. Click btn:[Next] to continue.
+. On the [systemitem]``NTP Configuration`` page click btn:[Next].
+. On the [systemitem]``Authentication for the System`` page enter a password for the root user.
+  Click btn:[Next].
+. On the [systemitem]``Installation Settings`` page click btn:[Install].
+
+This concludes installation of {micro} {microversion} and {productname} {productnumber} as an extension.
+
+
+
+=== Registration from the Command Line (Optional)
+
+If you added {productname} {productnumber} as an extension during {micro} {microversion} installation then you can skip this step. However, optionally you may skip registration during {micro} {microversion} installation by selecting the btn:[Skip Registration] button.
+This section provides steps on registering your products after {micro} {microversion} installation.
+
+.Procedure: Post Installation Product Registration
+. Register {micro} {microversion} to {scc} from the command line run the following commands on the container host:
++
+----
+transactional-update register -r <reg_code> -e <your_email>
+----
+
+. Use the registration code you obtained from your {scc} account for {micro} {microversion}.
++
+[NOTE]
+====
+The following section uses a registration code for the {x86_64} architecture. To register {arm} or {s390x} architectures replace it with the correct registration code.
+====
+
+. Next add the **SUSE Manager Server Extension 5.0 x86_64 (Beta)** Extension. List available extensions with the following command:
++
+----
+transactional-update --quiet register --list-extensions
+----
+
+. Use your **SUSE Manager Server Extension 5.0 x86_64** registration code with the following command:
++
+----
+transactional-update register -p SUSE-Manager-Server/5.0/x86_64 -r <reg_code>
+----
+. Reboot.
+
+
+=== Update the system
+
+
+. Log in as *root*.
+. Run **transactional-update**:
++
+
+[source, shell]
+----
+transactional-update
+----
+
+. Reboot.
+
+
+== Deploy with mgradm
+
+.Procedure: Deploy {productname} {productnumber} Using mgradm
+. Log in as root.
+. Execute the following command, replacing `<suma.example.com>` with your fully qualified domain name:
++
+[source,shell]
+----
+mgradm install podman <suma.example.com>
+----
++
+
+[IMPORTANT]
+====
+If the above command fails ensure that you have registered {productname} {productnumber}.
+If you skipped registration during installation and now need to register from the command line, follow the steps below to log in to the registry:
+
+[source,shell]
+----
+podman login -u <EMAIL> -p <REGISTRATION-CODE> registry.suse.com
+----
+
+Use the {productname} {productnumber} registration key when prompted.
+====
+
+. Enter a certificate and administrator account password when prompted.
++
+
+[NOTE]
+====
+The administrator account password must be at least 5 characters and less
+than 48 characters in length.
+====
++
+
+. Press btn:[Enter].
+. Enter the email address of the administration account.
+  Press btn:[Enter].
+. Wait for deployment to complete.
+. Open a browser and proceed to your servers FQDN.
+. Enter your username (default is [literal]``admin``) and the password you set during the deployment process.
+
+In this guide you deployed {productname} {productnumber} Server as a container.
+Proceed to the next section to add your organization credentials for syncing with {scc}.
+
+
+
+== Connect {productname} {productnumber} to {scc}
+
+This section covers synchronizing with SCC from the {webui} and adding your first client channel.
+
+[[proc-admin-organization-credentials]]
+.Procedure: Entering Organization Credentials
+. Open a browser and proceed to your servers FQDN.
+. Enter your username (default is [literal]``admin``) and the password you set during the deployment process.
+. In the {productname} {webui}, select menu:Admin[Setup Wizard].
+. From the [guimenu]``Setup Wizard`` page select the btn:[Organization Credentials] tab.
+. Click btn:[Add a new credential].
+. Point your browser to the {scc}.
+. Select your organization from the left navigation.
+. Select the users tab from the top of the page then btn:[Organization Credentials].
+. Make a note of your **Mirroring credentials**.
+. Back in the {productname} {webui} enter your [guimenu]``Username`` and [guimenu]``Password``, and confirm with btn:[Save].
+
+When the credentials are confirmed with a green check-mark icon, proceed with <<proc-quickstart-first-channel-sync>>.
+
+
+[[proc-quickstart-first-channel-sync]]
+.Procedure: Synchronizing with {scc}
+. In the {webui}, navigate to menu:Admin[Setup Wizard].
+. From the [guimenu]``Setup Wizard`` page select the [guimenu]``SUSE Products`` tab.
+  If you recently registered with {scc} a list of products will begin populating the table.
+  This operation could take up to a few minutes.
+  You can monitor the progress of the operation in section on the right ``Refresh the product catalog from SUSE Customer Center``.
+  The table of products lists architecture, channels, and status information.
+  For more information, see xref:reference:admin/setup-wizard.adoc[Wizard].
++
+image::admin_suse_products.png[scaledwidth=80%]
+. Use the ``Filter by product description`` and ``Filter by architecture`` to filter the list of displayed products.
+  The channels listed on the btn:[Products] page provide repositories for clients.
++
+
+* Add channels to {productname} by selecting the check box to the left of each channel.
+  Click the arrow symbol to the left of the description to unfold a product and list available modules.
+* Click btn:[Add Products] at the top of the page to start product synchronization.
+
+After adding the channel, {productname} will schedule the channel to be synchronized.
+This can take a long time as {productname} will copy channel software sources from the {suse} repositories located at {scc} to the local [path]``/var/lib/containers/storage/volumes/var-spacewalk/`` directory of your server.
+
+When the channel is fully synchronized, a bootstrap repository for it will be automatically generated.
+This step is crucial for successfully bootstrapping clients, ensuring that the channel synchronization and distribution are operational on the client side. This completes the installation and configuration of {productname}, along with preparing the channels necessary for bootstrapping clients.
+
+When the channel synchronization process is complete, you can proceed with registering the {productname} {productnumber} Proxy or additional clients.
+
+For more instructions, see xref:client-configuration:registration-overview.adoc[].
+
+
+
+== Entering the container for management
+
+To get to a shell inside the container, run on the container host:
+----
+mgrctl term
+----

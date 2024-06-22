@@ -1,0 +1,100 @@
+[[workflow-clients-update-rec-actions]]
+= Clients Update Using Recurring Actions
+
+This workflow shows how to automate updating the clients registered at {productname} using recurring actions.
+
+
+== Use Case / Situation
+
+Automated update of clients is benefitial when:
+
+* update of a large number of clients is wanted
+* the workflow should not be re-done every execution
+* a dedicated maintenance window exists.
+
+
+== Outcome / Resolution
+
+Successful completion of this workflow results in consistent and supportable state.
+
+
+== Preparation
+
+Before you start, you should have a number of clients onboarded.
+It may make sense to have them sorted into groups you want to update together.
+In this workflow we use a system group named [literal]``infra-services``.
+
+
+== Step-by-Step Workflow Instructions
+
+To update a client two steps are required.
+A third step is optional but highly recommended to finalize the update process.
+
+
+.Procedure 1: Creating a Recurring Action to Update {salt} Itself
+[role=procedure]
+. As an example, we create the action to update {salt} itself as a recurring action for all systems in the organization.
+  In the {productname} {webui}, navigate to menu:Home[My Organization > Recurring Actions] and click btn:[Create].
+. Select [literal]``Action Type`` **Custom State** and enter a [literal]``Schedule Name`` like [literal]``update-salt``.
+. Select a schedule.
+  For example, ** Weekly: Wednesday, 9:00 am **.
+. Assign the [literal]``update-salt`` state by selecting the checkbox.
+. Click btn:[Save Changes] to save the action.
+. You can edit the execution order of the states if needed.
+  Click btn:[Confirm] to confirm the order.
+. Click btn:[Create Schedule] to save the action.
+
+
+.Procedure 2: Creating a Recurring Action to Apply All Available Updates to the Systems
+[role=procedure]
+. As an example we create the action to apply all updates as a recurring action for a system group called **infra-services**.
+  In the {productname} {webui} go to menu:Systems[System Groups] and click on [literal]``infra-services``.
+. Now go to [literal]``Recurring Actions`` and click btn:[Create].
+. Select [literal]``Action Type`` **Custom State** and enter a [literal]``Schedule Name`` like [literal]``full-system-update``.
+. Select a Schedule.
+  For example, ** Weekly: Wednesday, 9:30 am **.
+  Keep enough time between this action and the [literal]``update-salt`` action.
+  The [literal]``update-salt`` actions must be finished on all systems before this action should be executed.
+. Assign the states [literal]``util.syncall``, [literal]``certs``, [literal]``channels`` and [literal]``uptodate`` by selecting the checkboxes.
+. Save the action by clicking btn:[Save Changes].
+. You can edit the execution order of the states.
+  The order should be [literal]``util.syncall``, [literal]``certs``, [literal]``channels``, and finally [literal]``uptodate``.
+  Click btn:[Confirm] to store the order.
+. Click btn:[Create Schedule] to save the action.
+
+[WARNING]
+====
+The [literal]``uptodate`` state also performs a reboot, if an update requests it.
+This reboot be prevented if needed.
+For example, the systems which use live patching need to prevent the rebooting following the update.
+====
+
+
+.Procedure 3: Configuring Systems to Not Reboot After the [literal]``uptodate`` State is Applied
+[role=procedure]
+. In the {productname} {webui} go to menu:Systems[Custom System Info] and click btn:[Create Key].
+. Enter **mgr_reboot_if_needed** as `Key Label` and set a `Description`.
+. Click btn:[Create Key] to store the new key.
+. To assign values to multiple systems, navigate in the {productname} {webui} to menu:Systems[Overview] and select the checkbox for all systems you want to modify.
+  These system are not in the System Set Manager (SSM).
+. Select in the left menu System Set Manager and select menu:Misc[Custom Values] in the tab bar.
+. Click on the [literal]``mgr_reboot_if_needed`` key label and enter **False** as [literal]``Value``.
+. Click btn:[Set Values] to save.
+
+
+.Procedure 4: Creating a Recurring Action to Run a Highstate After the Update
+[role=procedure]
+. As an example, we create the action to apply the highstate for the same group which was fully updated before.
+  In the {productname} {webui}, navigate to menu:Systems[System Groups] and click [literal]``infra-services``.
+. Go to `Recurring Actions` and click btn:[Create].
+. Select [literal]``Action Type`` **Highstate** and enter a [literal]``Schedule Name`` like [literal]``highstate``.
+. Select a Schedule.
+  For example, ** Weekly: Wednesday, 10:30 am **.
+  Again, keep enough time between this action and the [literal]``full-system-update`` action.
+. Click btn:[Create Schedule] to save the action.
+
+
+== Related Topics
+
+* For more information about recurring actions, see xref:administration:actions.adoc#recurring_actions[Recurring Actions].
+* For more information about custom info values, see xref:client-configuration:custom-info.adoc[].

@@ -1,182 +1,86 @@
 = Deploy {productname} {productnumber} Server
-//ifeval::[{uyuni-content} == true]
-//:noindex:
-//endif::[]
+ifeval::[{uyuni-content} == true]
+:noindex:
+endif::[]
 
-This quick start guide shows you how to install and configure a {productname} {productnumber} container for x86-64 architecture on {micro} {microversion}.
+This guide outlines the deployment process for the {productname} {productnumber} Server. 
+To successfully deploy, you will:
 
-For this topic we assume that you already have valid organization credentials with {scc} and have obtained a registration code for both the host system and the containerized server, for example from a "SUSE Manager Lifecycle Management+" subscription.
-
-In this quickstart, you will embark on deploying {productname} {productnumber} Server. 
-There are several methods to accomplish this task. 
-You may opt to deploy it in the cloud, or deploy it on {micro}. 
-However, for the purpose of this quickstart guide, we've chosen to focus on setting up a simple KVM environment, installed on {leap}, as the lab host.
-
-This guide will lead you through the following steps:
-
-. Installing {opensuse} {leap} on a physical machine.
-. Installing KVM tools and using it to configure a **suse.lab** network.
-. Create a new KVM host machine using {micro} as the **container host**.
+.Task: Server Deployment
+. Download installation media
+. Install {micro} {microversion} on a bare-metal machine.
+. Register {micro} {microversion} during installation
+. Register {productname} {productnumber} Server as an extension during installation
+. Update the system
+. Deploy the server with [systemitem]``mgradm``
+. Access the webui and sync your first channel
 
 
 
+== Hardware Requirements for {productname}
 
-== Software and Hardware Requirements for {productname}
-
-This table shows the software and hardware requirements for deploying {productname} Server on KVM.
-For the purposes of this guide expect to deploy on a virtual machine with 16GB of RAM, and at least 200 GB of disk space.
+This table shows the software and hardware requirements for deploying {productname} Server on your bare metal machine.
+For the purposes of this guide your machine should have 16GB of RAM, and at least 200 GB of disk space.
 
 [cols="1,1", options="header"]
 .Software and Hardware Requirements
 |===
 | Software and Hardware  | Recommended
-| Operating System:      | openSUSE Leap 15.5: Clean installation, up-to-date
-| CPU:                   | Minimum 4 dedicated 64-bit {x86_64}{nbsp}CPU cores
-| RAM:                   |  _Development server_ Minimum 16{nbsp}GB
-|                        | _Production server_ Minimum 32{nbsp}GB
+| Operating System:      | {micro} {microversion}
+| CPU:                   | 4 64-bit CPU cores
+| RAM:                   | 16 GB
+|                        |
 |                        | 
-| Disk Space:            | Disk space depends on your channel requirements, at least 100{nbsp}GB
-|                        | 50{nbsp}GB per SUSE or openSUSE product and 360{nbsp}GB per Red Hat product
-| Swap space:            | 3{nbsp}GB
+| Disk Space:            | 200 GB
+| Channel Requirements   | 50 GB per SUSE or openSUSE product
+                          
+                           360 GB per Red Hat product
 |===
 
-.Supported operating system for the Container Host
+.Supported operating system for the Server Container Host
 [NOTE]
 ====
-The supported host operating system for the container host is {micro} {microversion}.
+The supported operating system for the container host is {micro} {microversion}.
+
+Container host:: A container host is a server equipped with a container engine like Podman, which lets it manage and deploy containers. These containers hold applications and their essential parts, such as libraries, but not a full operating system, making them lightweight. This setup ensures applications run the same way in different environments. The container host supplies the necessary resources such as CPU, memory, and storage for these containers.
 ====
 
-.Base operating system for the Container Image
-[NOTE]
+[IMPORTANT]
 ====
-{productname} {productnumber} uses {sle} {bci-suma} as the base operating system of the container image or **BCI**.
+Server deployment mandates the use of a fully qualified domain name (FQDN). In the absence of automatic DNS provision of an FQDN by your router or network, the deployment process will not proceed successfully. An FQDN typically follows the format <host>.<domain>.com.
+
+For instance:
+
+* suma.example.com
+* suma.fritz.box
+* suma.container.lab
+
+For additional details, refer to the section on network requirements in the Installation and Upgrade Guide, available at xref:installation-and-upgrade:network-requirements.adoc[].
 ====
 
 
+== {productname} {productnumber} Installation
 
-== Prepare the Physical Machine
-
-=== Install {leap} {opensuse-version}
-
-Install {leap} {opensuse-version} on a bare metal physical machine, or continue using your existing installation.
-See: link:https://doc.opensuse.org/documentation/leap/startup/html/book-startup/art-opensuse-installquick.html#sec-opensuse-installquick-install[Installing {leap}]
-
-
-
-=== Update the system
-
-Update the system:
-
-----
-sudo zypper ref && zypper up
-----
-
-
-
-=== Install KVM Tools
-
-
-. Install KVM server and kvm tools:
+.Procedure: Download the Installation Media
+. Locate the {productname} {productnumber} Server installation media at https://www.suse.com/download/suse-manager/.
+. You will need an account with {scc} and must be logged in to download the ISO.
+. Download the following file: [filename]``SUSE-Manager-Server.x86_64-SelfInstall.raw.xz`` 
+. Prepare a USB fash disk or DVD for installation.
+. Insert a DVD or a bootable USB stick containing the installation image for {productname} {productnumber}.
+. Boot or reboot your system.
 +
-----
-sudo zypper in -t pattern kvm_server kvm_tools
-----
-+
-
-. Reboot.
-
-
-
-=== Setup the KVM Network
-
-[NOTE]
-====
-This XML configuration builds a KVM subnet using the domain name of **suse.lab** to setup the required FQDN for your test server.
-
-In a production environment your company's administration services should provide you with a FQDN.
-====
-
-
-
-.Procedure: Setup the KVM Network
-. Open the [systemitem]``Virt Machine Manager`` GUI. In Gnome you can click the windows button on your keyboard and type in [systemitem]``virt-manager``. Alternatively you can open a command prompt and type: `virt-manager` and click the btn:[Enter].
-
-. Select menu:edit[Preferences].
-
-. In [literal]``Preferences`` under the [literal]``General`` tab select the checkbox [systemitem]``Enable XML editing``. Click the close button when complete.
-
-.  Double click **QEMU/KVM** text in the main window or select menu:Edit[Connection Details] to open the [systemitem]``Connection Details`` window.
-
-. Select the [systemitem]``Virtual Networks`` tab then the [systemitem]``XML`` tab.
-
-. If the default network is running, stop it using the [systemitem]``X`` button in the lower left.
-
-. Copy and paste the following XML snippet **beneath** your [systemitem]``<uuid>`` block:
-+
-
-[source, xml]
-----
-<forward mode="nat">
-    <nat>
-      <port start="1024" end="65535"/>
-    </nat>
-  </forward>
-  <bridge name="virbr0" stp="on" delay="0"/>
-  <mac address="52:54:00:9f:d0:0b"/>
-  <domain name="suse.lab" localOnly="yes"/>
-  <ip address="192.168.122.1" netmask="255.255.255.0">
-    <dhcp>
-      <range start="192.168.122.2" end="192.168.122.254"/>
-      <host mac="52:54:00:0A:CC:B8" name="suma-server" ip="192.168.122.10"/>
-      <host mac="52:54:00:EE:88:85" name="suma-proxy" ip="192.168.122.11"/>
-      <host mac="52:54:00:F2:B0:DF" name="minion-one" ip="192.168.122.12"/>
-      <host mac="52:54:00:F2:B0:DG" name="minion-one" ip="192.168.122.13"/>
-    </dhcp>
-  </ip>
-</network>
-----
-
-
-== {micro} {microversion} Installation
-
-Get a copy of the {micro} {microversion} install media. You can begin installation on either a virtual machine or on a physical server. 
 
 For detailed documentation on preparing your machines OS (virtual or physical), see link:https://documentation.suse.com/sle-micro/5.5/html/SLE-Micro-all/book-deployment-slemicro.html[{micro} {microversion} Deployment Guide].
 
 
 
-=== Container Host Preparation
-
-.Procedure: Setup the Image in Virtual Machine Manager
-. Open the **Virtual Machine Manager** and select menu:File[New virtual machine].
-
-. In the New VM window select **Local install media (ISO image or CDROM)** and click btn:[Forward].
-
-. Click the btn:[Browse] Button. In the Volumes field select the {leapmicro} image you downloaded. Click btn:[Choose Volume].
-
-. Uncheck the **Automatically detect from the installation media/source** and type **micro** in the **Choose operating system you are installing** field. Select **{micro} {microversion}**. Click btn:[Forward].
-
-. Set Memory to 16 GB and CPUs to 2. Click btn:[Forward].
-
-. Click in the disk image size field and enter 200 GB. The default is 60.0 GB. Click btn:[Forward]. 
-
-. Name the system **suma-server**. Next check the box **Customize configuration before install**. Click btn:[Finish].
-
-. In the settings windows select the [systemitem]``NIC`` device. In the **Virtual Machine Manager** primary window double click **QEMU/KVM**. Select the **Virtual Networks** tab. Select **XML**. Copy the **mac** address for the **suma-server** machine. 
-
-. Open the virtual machine settings page and paste the mac address into the [systemitem]``MAC address:`` field. Click btn:[Apply]. Then select btn:[Begin Installation] in the upper left corner. 
-
-. Procedure: {micro} {microversion} Installation 
-. Use the arrow keys to select [systemitem]``Installation``.
-
-
-
-.Procedure: {micro} {microversion} Installation
-. Adjust Keyboard and language. Click the [systemitem]``checkbox`` to accept the License Agreement.
-
-. Click [systemitem]``Next`` to continue.
-
-. Select your registration method. For this example we will register the server with {scc}.
+.Procedure: {productname} {productnumber} Installation 
+. On the the configuration welcome screen select [btn]``Confirm``.
+. Select your keyboard layout and confirm your selection.
+. Read the license agreement and click [btn]``Accept` to continue.
+. Select your time zone.
+. Enter and confirm a password for root user.
+. Read the statement about SLE Micro registration and click [btn]``Accept`` to continue.
 +
 
 .{productname} as an extension
@@ -186,38 +90,27 @@ The {productname} {productnumber} container is installed as an extension. Theref
 
 * {productname} {productnumber} Server
 * {productname} {productnumber} Proxy
-* Retail Branch Server
-
+* {productname} {productnumber} Retail Branch Server
 ====
 
 . Enter your {scc} Email address. 
-
 . Enter your registration code for {micro} {microversion}.
-
 . Click [systemitem]``Next`` to continue.
-
 . On the [systemitem]``Extension and Module Selection`` page uncheck the **Hide Development Versions** checkbox. 
-
 . Select the {productname} {productnumber} Server extension [systemitem]``Checkbox``.
-
 . Click [systemitem]``Next`` to continue.
-
 . Enter your {productname} {productnumber} Server extension registration code.
-
 . Click btn:[Next] to continue.
-
 . On the [systemitem]``NTP Configuration`` page click btn:[Next].
-
 . On the [systemitem]``Authentication for the System`` page enter a password for the root user. Click btn:[Next].
-
 . On the [systemitem]``Installation Settings`` page click btn:[Install].
 
-This concludes installation of {micro} {microversion}.
+This concludes installation of {micro} {microversion} and {productname} {productnumber} Server as an extension.
 
 
 
 === Update the system
-. Login at the prompt as *root*.
+. Login as *root*.
 
 . Run **transactional-update**:
 +
@@ -231,40 +124,17 @@ transactional-update
 
 . Login as root.
 
-. Enter the transactional shell:
-+
-
-[source, shell]
-----
-transactional-update shell
-----
-
-. Install the container utilities:
-+
-
-[source, shell]
-----
-transactional-update pkg install mgradm mgrctl mgradm-bash-completion mgrctl-bash-completion
-----
-+
-
-. Reboot the system.
 
 
-
-== Deploy {productname} {productnumber} on {micro} {microversion}
-
-
-
-=== Deploy with mgradm
+== Deploy with mgradm
 
 .Procedure: Deploy {productname} {productnumber} with mgradm
-. From the terminal run the following command. Entering your servers FQDN is optional. Leave blank for a default setup.
+. From the terminal run the following command replacing <suma.example.com> with your fully qualified domain name.
 +
 
 [source, shell]
 ----
-mgradm install podman <FQDN>
+mgradm install podman <suma.example.com>
 ----
 
 . Enter a certificate and administrator account password when prompted. 
@@ -282,22 +152,10 @@ than 48 characters in length.
 . Enter the email address of the administration account. Press btn:[Enter].
 
 . Wait for deployment to complete.
-  On your local machine, add the new server to your hosts file:
-+
-
-----
-sudo vi /etc/hosts
-----
-
-. Add the following snippet your your [systemitem]``hosts`` file:
-+
-----
-192.168.122.119 suma-server.suse.lab
-----
 
 . Open a browser and proceed to your servers FQDN, or IP address.
 
-In this section you learned the basic method for deploying a {productname} {productnumber} Server container.
+In this guide you learned how to deploy {productname} {productnumber} Server as a container.
 
 
 
@@ -334,7 +192,7 @@ image::admin_suse_products.png[scaledwidth=80%]
 * Click btn:[Add Products] at the top of the page to start product synchronization.
 
 After adding the channel, {productname} will schedule the channel to be synchronized.
-This can take a long time as {productname} will copy channel software sources from the {suse} repositories located at {scc} to the local [path]``/var/spacewalk/`` directory of your server.
+This can take a long time as {productname} will copy channel software sources from the {suse} repositories located at {scc} to the local [path]``/var/lib/containers/storage/volumes/var-spacewalk/`` directory of your server.
 
 When the channel is fully synchronized, the bootstrap repository for it will be automatically created.
 This is necessary for the successful bootstrapping of a client. This completes the {productname} installation and configuration, with channel preparations for bootstrapping clients.
@@ -348,5 +206,5 @@ For more instructions, see xref:client-configuration:registration-overview.adoc[
 
 To get to a shell inside the container, run the following on the host:
 ----
-sudo mgrctl term
+mgrctl term
 ----

@@ -1,132 +1,310 @@
 [[quickstart-suma-install-proxy]]
-= Quick Start SUMA Proxy
+= Quick Start: Deploy a {productname} {productnumber} Proxy
 ifeval::[{uyuni-content} == true]
 :noindex:
 endif::[]
 
-This guide shows you how to install and configure a single {susemgr} Proxy for x86-64 architecture from the SUSE Linux Enterprise installation media with the {unifiedinstaller}.
 
-For this topic we assume that you already have valid organization credentials with {scc} and have obtained a registration code for your {susemgr} Proxy, for example from a "SUSE Manager Lifecycle Management+" subscription.
-
-
-//== Software and Hardware Requirements
-
-//The following table specifies the minimum requirements for installing SUMA Proxy.
+This guide outlines the deployment process for the {productname} {productnumber} Proxy.
+This guide presumes you have already successfully deployed a {productname} {productnumber} Server. 
+To successfully deploy, you will perform the following actions:
 
 
-// HW and SW Requirements from the snippet
-//include::snippets/sw_hw_requirements.adoc[]
+// Add certificate tasks item
+.Task: Proxy Deployment
+. Review hardware requirements.
+. Synchronize the {micro} {microversion} parent channel and the Proxy extension child channel on the server.
+. Install {micro} {microversion} on a bare-metal machine.
+. During the installation, register {micro} {microversion} along with the {productname} {productnumber} Proxy extension.
+. Create a {salt} activation key.
+. Bootstrap the Proxy as a {salt} minion.
+. Generate a Proxy configuration.
+. Transfer the Proxy configuration from Server to Proxy
+. Use the Proxy configuration to register the {salt} minion as a Proxy with {productname}.
 
 
-== Install {susemgr} Proxy
+.Supported operating system for the Proxy Container Host
+[NOTE]
+====
+The supported operating system for the container host is {micro} {microversion}.
 
-This guide shows you how to install and configure a single {susemgr} Proxy for x86-64 architecture from the SUSE Linux Enterprise installation media with the {unifiedinstaller}.
+Container host:: A container host is a server equipped with a container engine like Podman, which lets it manage and deploy containers. These containers hold applications and their essential parts, such as libraries, but not a full operating system, making them lightweight. This setup ensures applications run the same way in different environments. The container host supplies the necessary resources such as CPU, memory, and storage for these containers.
+====
 
-.Procedure: Installing {susemgr} Proxy with the {unifiedinstaller}
 
-. To boot the {unifiedinstaller} from the installation image, you might need to adjust the boot order in the BIOS.
-. When prompted, select [guimenu]``Installation``.
-// +
-// image::unifiedinstaller-install.png[scaledwidth=80%] (this image is with server selected.
-. In the [guimenu]``Language, Keyboard and Product Selection`` screen, check the [guimenu]``SUSE Manager Proxy`` checkbox, and click btn:[Next].
+== Hardware Requirements for the Proxy
+
+This table shows the hardware requirements for deploying {productname} Proxy.
+
+[cols="1,3,2", options="header"]
+.Proxy Hardware Requirements
+|===
+
+| Hardware
+| Details
+| Recommendation
+
+| CPU
+| {x86_64}, {arm}
+| Minimum 2 dedicated 64-bit CPU cores
+
+| RAM
+| Minimum
+| 2 GB
+
+|
+| Recommended
+| 8 GB
+
+| Disk Space
+| [path]``/`` (root directory)
+| Minimum 40 GB
+
+|
+| [path]``/var/lib/containers/storage/volumes/srv-www``
+| Minimum 100 GB, Storage requirements should be calculated for the number of ISO distribution images, containers, and bootstrap repositories you will use.
+
+|
+| [path]``/var/lib/containers/storage/volumes/var-cache`` (Squid)
+| Minimum 100 GB
+
+|===
+
+
+
+== Sync the Parent and Proxy Extension Child channels
+
+This section presumes that you have already entered your organization credentials under the menu:Admin[Setup Wizard -> Organization Credentials] in the Servers {webui}. 
+Products are listed on the menu:Admin[Setup Wizard -> Products] page. 
+This channel must be fully synchronized on the server, with the child channel [systemitem]Proxy as an extension option selected.
+
+.{productname} {productnumber} Channel Sync for Proxy
+image::setup-wizard.png[scaledwidth=80%]
+
+.Task: Sync the Proxy Parent Channel and Proxy Extension
+. In the {productname} {webui} select menu:Admin[Products].
+. From the products page enter {micro} in the filter field.
+. Next use the dropdown to select the required architecture. For this example {x86_64}.
+. In the [systemitem]``Product Description`` field select the {micro} {microversion} checkbox then use the dropdown to select the [systemitem]``SUSE Manager Proxy Extension 5.0 x86_64 BETA`` extension.
+. Click the btn:[+ Add products] button.
+. Wait for the sync to complete.
+
+
+
+== {micro} {microversion} Installation
+
+
+
+.Task: Download the Installation Media
+. Locate the {micro} {microversion} installation media at https://www.suse.com/download/sle-micro/.
+. You will need an account with {scc} and must be logged in to download the ISO.
+. Download the following file: [filename]``SLE-Micro-5.5-DVD-x86_64-GM-Media1.iso`` 
+. Prepare a USB fash disk or DVD for installation.
+. Insert a DVD or a bootable USB stick containing the installation image for {micro} {microversion}.
+. Boot or reboot your system.
 +
-// image::unifiedinstaller-proxy.png[scaledwidth=80%]
-. Read and agree to the End User Licence Agreement, and click btn:[Next].
-. In the [guimenu]``Registration`` screen, check the [guimenu]``Register System via scc.suse.com`` checkbox, enter your {scc} credentials, and click btn:[Next].
-. In the [guimenu]``Available Extensions and Modules`` screen, select any extensions or modules you require, and click btn:[Next].
-    [systemitem]``Basesystem``, [systemitem]``SUSE Manager Proxy``, and [systemitem]``Server Applications`` are pre-selected and mandatory for the {productname} Proxy installation.
-    OPTIONAL: In the following [guimenu]``Add On Product`` screen, select any additional or add-on products you require, and click btn:[Next].
-. In the [guimenu]``System Role`` screen, check the [guimenu]``SUSE Manager Proxy`` checkbox, and click btn:[Next].
-. In the [guimenu]``Suggested Partitioning`` screen, accept the default values, or use the btn:[Guided Setup] or btn:[Expert Partitioner] options to customize your partitioning model, and click btn:[Next].
-. In the [guimenu]``Clock and Time Zone`` screen, enter your region and timezone, and click btn:[Next].
-. In the [guimenu]``Local Users`` screen, create a new user, and click btn:[Next].
-// . System Administrator "root" follows
-. Review the settings on the [guimenu]``Installation Settings`` screen, and then click btn:[Install].
+
+For detailed documentation on preparing your machines OS (virtual or physical), see link:https://documentation.suse.com/sle-micro/5.5/html/SLE-Micro-all/book-deployment-slemicro.html[{micro} {microversion} Deployment Guide].
 
 
 
-== Register {susemgr} Proxy
+.Task: {micro} {microversion} Installation 
+. Use the arrow keys to select [systemitem]``Installation``.
+. Adjust Keyboard and language. Click the [systemitem]``checkbox`` to accept the License Agreement.
+. Click [systemitem]``Next`` to continue.
+. Select your registration method. For this example we will register the server with {scc}.
++
+
+.{productname} {productnumber} Proxy as an extension
+[NOTE]
+====
+The {productname} {productnumber} Proxy is registered as an extension. Therefore, in addition to acquiring an {scc} registration key for {micro} {microversion}, you will also need an {scc} registration code for the following extension:
+
+* {productname} {productnumber} Proxy
+====
+
+. Enter your {scc} Email address. 
+. Enter your registration code for {micro} {microversion}.
+. Click [systemitem]``Next`` to continue.
+. On the [systemitem]``Extension and Module Selection`` page uncheck the **Hide Development Versions** checkbox. 
+. Select the {productname} {productnumber} Proxy extension [systemitem]``Checkbox``.
+. Click [systemitem]``Next`` to continue.
+. Enter your {productname} {productnumber} Proxy extension registration code.
+. Click btn:[Next] to continue.
+. On the [systemitem]``NTP Configuration`` page click btn:[Next].
+. On the [systemitem]``Authentication for the System`` page enter a password for the root user. Click btn:[Next].
+. On the [systemitem]``Installation Settings`` page click btn:[Install].
+
+This concludes installation of {micro} {microversion} and {productname} {productnumber} Proxy as an extension.
+
+
+
+=== Update the system
+
+.Task: Update the System
+. Login as *root*.
+. Run **transactional-update**:
++
+
+[source, shell]
+----
+transactional-update
+----
+
+. Reboot the system.
+. Login as root.
+. Install the container utilities:
++
+
+[NOTE]
+====
+Alternatively you may install [systemitem]``mgrpxy-zsh-completion`` or [systemitem]``mgrpxy-fish-completion``.
+====
++
+
+[source, shell]
+----
+transactional-update pkg install mgrpxy mgrpxy-bash-completion
+----
++
+
+. Reboot the system.
+
+
+
+== Create an Activation Key for the Proxy
+
+
+
+.Task: Create an Activation Key
+. Select menu:Systems[Activation Keys] then click btn:[+ Create key].
+. Create an activation key for the proxy host with {micro} {microversion} as the parent channel. This key should include all recommended channels and the Proxy as an extension child channel.
+. Proceed to boostrapping the proxy host as a minion.
+
+
+
+== Bootstrap the Proxy Host as a Minion
+
+
+.Task: Bootstrap the Proxy Host
+. Select menu:Systems[Bootstrapping].
+. Fill in the fields for your Proxy host.
+. Select the Activation key created in the previous step from the dropdown.
+. Click btn:[+ Bootstrap].
+. Wait for the Bootstrap process to complete successfully.
+  Check the menu:Salt[] menu and confirm the {salt} minion key is listed and accepted.
+. Reboot the Proxy host.
+. Select the host from the menu:System[] list and trigger a second reboot after all events are finished to conclude the onboarding.
+
+
+.Task: Update the Proxy Host
+. Select the host from the menu:Systems[] list and apply all patches to update it.
+. Reboot the Proxy host.
+
+
+
+
+
+
+[[proxy-setup-containers-generate-config]]
+== Generate the Proxy Configuration
+
+The configuration archive of the {productname} Proxy is generated by the {productname} Server. 
+Each additional Proxy requires its own configuration archive.
 
 [IMPORTANT]
 ====
-Before you can select the correct child channels while creating the activation key, ensure you have completely downloaded the {productname} Proxy {productnumber} channel and all the recommended and mandatory {sle} {sles-version} {sp-base} channels.
+The container host for the {productname} Proxy must be registered as a salt minion to the {productname} Server prior to generating this Proxy configuration.
 ====
 
-[[proxy-register-procedure]]
-.Procedure: Registering the Proxy
-. Create an activation key based on the [systemitem]``SLE-Product-SUSE-Manager-Proxy-4.3-Pool`` base channel.
-    For more information about activation keys, see xref:client-configuration:activation-keys.adoc[].
+
+You will perform the following tasks:
+
+1. Generate a Proxy configuration file.
+2. Transfer the configuration to the Proxy.
+3. Start the Proxy with the [literal]``mgrpxy`` command.
+
+[[proc-proxy-containers-setup-webui]]
+.Task: Generating a Proxy Container Configuration using Web UI
+
+. In the {webui}, navigate to menu:Systems[Proxy Configuration] and fill the required data:
+. In the [guimenu]``Proxy FQDN`` field type fully qualified domain name for the proxy.
+. In the [guimenu]``Parent FQDN`` field type fully qualified domain name for the {productname} Server or another {productname} Proxy.
+. In the [guimenu]``Proxy SSH port`` field type SSH port on which SSH service is listening on {productname} Proxy. Recommended is to keep default 8022.
+. In the [guimenu]``Max Squid cache size [MB]`` field type maximal allowed size for Squid cache. Typically this should be at most 60% of available storage for the containers.
+. In the [guimenu]``SSL certificate`` selection list choose if new server certificate should be generated for {productname} Proxy or an existing one should be used.
+You can consider generated certificates as {productname} builtin (self signed) certificates.
 +
-
-.Proxy activation key
-// image::proxy-key.png[]
-
-. From the [guimenu]``Child Channels`` listing select the recommended channels by clicking the ``include recommended`` icon:
+Depending on the choice then provide either path to signing CA certificate to generate a new certificate or path to an existing certificate and its key to be used as proxy certificate.
 +
-* SLE-Module-Basesystem15-{sp-base}-Pool
-* SLE-Module-Basesystem15-{sp-base}-Updates
-* SLE-Module-Server-Applications15-{sp-base}-Pool
-* SLE-Module-Server-Applications15-{sp-base}-Updates
-* SLE-Module-SUSE-Manager-Proxy-4.3-Pool
-* SLE-Module-SUSE-Manager-Proxy-4.3-Updates
+The CA certificates generated on the server are stored in the [path]``/var/lib/containers/storage/volumes/root/ssl-build`` directory.
 +
-The [systemitem]``SLE-Product-SUSE-Manager-Proxy-4.3-Updates`` channel is mandatory.
-+
-.Base and Child Proxy Channel
-// image::proxy-child.png[]
-+
-. To bootstrap a proxy, use the bootstrap script.
-    For more information about bootstrap scripts, see xref:client-configuration:registration-bootstrap.adoc[].
-+
-.Modifying bootstrap script
-// image::proxy-bootstrap.png[]
-+
-. Alternatively, in the SUSE Manager Web UI, navigate to menu:System[Bootstrapping].
-+
-.Bootstrapping a proxy from GUI
-// image::proxy-bootstrapGUI.png[]
-. Navigate to menu:System Details[Software > Software Channels], and check that the four proxy channels ([systemitem]``Pool`` and [systemitem]``Updates`` for [systemitem]``SLE-PRODUCT`` and [systemitem]``SLE-MODULE``) plus the recommended channels are selected.
-    [systemitem]``SLE-PRODUCT-Pool`` must be the base channel and the others are child channels.
-+
-.Proxy Channels
-// image::sles15-proxy-channels.png[]
+For more information about existing or custom certificates and the concept of corporate and intermediate certificates, see  xref:administration:ssl-certs-imported.adoc[].
+
+. Click btn:[Generate] to register new proxy FQDN in {productname} Server and generate configuration archive with details for container host.
+. After a few moments you are presented with file to download. Save this file locally.
+
+image::suma_proxy_containerized_webui.png[scaledwidth=80%]
+
+[[proxy-setup-containers-transfer-config]]
+== Transfer the Proxy Configuration
+
+The {webui} generates a configuration archive.
+This archive needs to be made available on the Proxy container host.
 
 
-// /installation/proxy-setup.html
-
-== Set up {susemgr} Proxy
-
-Make sure the TCP ports `4505` and `4506` are open on the proxy.
-The proxy must be able to reach the {productname} Server or a parent proxy on these ports.
-
-
-
-[[at.manager.proxy.run.copycert]]
-.Procedure: Copy Server Certificate and Key
-//== Copy Server Certificate and Key
-
-. The proxy will share some SSL information with the {productname} Server.
-. Copy the certificate and its key from the {productname} Server or the parent proxy.
-
-. As root, enter the following commands on the proxy using your {productname} Server or parent Proxy (named [replaceable]``PARENT``):
+.Task: Copy the Proxy configuration
+. Copy the files from the Server container to the Server host OS:
 +
 ----
-mkdir -m 700 /root/ssl-build
-cd /root/ssl-build
-scp root@PARENT:/root/ssl-build/RHN-ORG-PRIVATE-SSL-KEY .
-scp root@PARENT:/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT .
-scp root@PARENT:/root/ssl-build/rhn-ca-openssl.cnf .
+mgrctl cp server:/root/config.tar.gz .
 ----
-//[[at.manager.proxy.run.confproxy]]
-//== Run [command]``configure-proxy.sh``
-. Run [command]``configure-proxy.sh``
-    The [command]``configure-proxy.sh`` script finalizes the setup of your {productname} Proxy.
 
-. Execute the interactive [command]``configure-proxy.sh`` script.
-    Pressing kbd:[Enter] without further input will make the script use the default values provided between brackets ``[]``.
-//OM: Shall we keep this to round things up.
-    Otherwise, use the values specific for your environment.
+. Next copy the files from the Server host OS to the Proxy host: 
++
+----
+scp config.tar.gz <proxy-FQDN>:/root
+----
+
+. Install the Proxy with:
++ 
+
+----
+
+mgrpxy install podman config.tar.gz
+----
 
 
-When the proxy configuration process is complete, you can continue with client registration.
-For more instructions, see xref:client-configuration:client-proxy.adoc[].
+
+[[proxy-setup-containers-transfer-start]]
+== Start the {productname} {productnumber} Proxy
+
+Container can now be started with the [literal]`mgrpxy` command:
+
+[[proc-setup-containers-setup-start]]
+.Task: Start and Check Proxy Status
+
+. Start the Proxy by calling:
++
+
+----
+mgrpxy start
+----
+
+. Check container status by calling:
++
+
+----
+mgrpxy status
+----
++
+
+Five {productname} Proxy containers should be present:
+
+- proxy-salt-broker
+- proxy-httpd
+- proxy-tftpd
+- proxy-squid
+- proxy-ssh
+
+And should be part of the [literal]``proxy-pod`` container pod.

@@ -5,15 +5,13 @@ When you have the {productname} Server and Branch Server set up, you are ready t
 
 . Create hardware type groups
 . Assign and configure the {saltboot} formula for each hardware type group
-. Synchronize images to the branch server
 . Deploy images to the terminals
 
 Each procedure is detailed in this section.
 
 For other methods of booting terminals, including using a USB device, or booting over a wireless network, see xref:retail:retail-deploy-terminals-other.adoc[].
 
-For {productname} 4.2 and later, terminals can be either {x86_64} or {arm64} architecture.
-For earlier versions, terminals must be {x86} architecture only.
+Terminals can be either {x86_64} or {arm64} architecture.
 
 If you have many terminals, you can handle them with a script.
 For more information, see xref:retail:retail-mass-config.adoc[].
@@ -80,6 +78,18 @@ Each hardware type group must have the {saltboot} formula applied.
 
 == Synchronize Images to the Branch Server
 
+[IMPORTANT]
+====
+Manual synchronization of images is needed only when using non-containerized {productname} {smr} 4.3 branch server.
+====
+
+Image synchronization downloads system and boot images from the {productname} Server to the {productname} {smr} branch server.
+This may involve updating default boot image for not yet registered terminals.
+
+Default boot image can be set in the [systemitem]``Image Synchronize formula``.
+If default boot image is not set, boot image with highest version is used as default boot image.
+This behaviour can be disabled by unchecking [systemitem]``Use Latest Boot Image`` checkbox in the [systemitem]``Image Synchronize formula``.
+
 .Procedure: Synchronizing Images to the Branch Server
 
 . On the {productname} server, run this command:
@@ -87,44 +97,6 @@ Each hardware type group must have the {saltboot} formula applied.
 ----
 salt <branch_server_salt_id> state.apply image-sync
 ----
-
-
-
-=== Using a {sles}11 SP3 32-bit based images
-
-If you have 32-bit machines included in your branch, then you must use a 32-bit boot image as a default boot image.
-
-[WARNING]
-====
-If a 32-bit boot image is not used as a default boot image, 32-bit terminals will be unable to boot and operate properly.
-====
-
-Check the available boot images and their architecture from the command line:
-
-----
-salt <branch_server_salt_id> pillar.item boot_images
-----
-
-Output:
-
-----
-POS_Image_JeOS6-6.0.0:
-      ----------
-      arch:
-          x86_64
-      ...
-legacy-6.0.0:
-      ----------
-      arch:
-          i686
-----
-
-In this example, the [systemitem]``legacy-6.0.0`` boot image is 32-bit.
-
-You can set the default boot image in the menu:Formula[Image Synchronize] on the branch server, by adding the chosen boot image name to the [guimenu]``Default boot image`` field.
-
-For more information about ``Image Synchronization`` formula, see xref:specialized-guides:salt/salt-formula-imagesync.adoc[].
-
 
 
 == Deploy Images to the Terminals
@@ -151,47 +123,56 @@ Two Salt pillars allow you to change the protocol and server used to download th
   This overrides the default hostname specified in the image pillar.
 
 
+[IMPORTANT]
+====
+In this example, the download server must be prepared by the ``image_sync`` state before you begin.
+====
+
 
 .Example: Changing the {saltboot} Image Download Protocol
 This example changes the protocol used for all terminals.
 
-Edit the ``/srv/pillar/top.sls`` file:
-
+. Create the ``top.sls`` file with content:
++
 ----
 base:
   '*':
     - saltboot_proto
 ----
-
-Edit the ``/srv/pillar/saltboot_proto.sls`` file:
-
+. Create the ``saltboot_proto.sls`` file with content:
++
 ----
 saltboot_download_protocol: http
 # can be http, https, ftp, tftp
 ----
-
+. Move these files to the container:
++
+----
+mgrctl cp top.sls server:/srv/pillar/
+mgrctl cp saltboot_proto.sls server:/srv/pillar/
+----
 
 
 .Example: Changing the {saltboot} Image Download Location
 This example changes the download location for all terminals on a specified branch server.
 
-Edit the ``/srv/pillar/top.sls`` file:
-
+. Create the ``top.sls`` file with content:
++
 ----
 base:
   'minion_id_prefix:$branch_prefix':
      - match: grain
      - $branch_prefix
 ----
-
-Edit the ``/srv/pillar/$branch_prefix.sls`` file:
-
+. Create the ``$branch_prefix.sls`` file with content:
++
 ----
 saltboot_download_server: $download_server_fqdn
 ----
+. Move these files to the container:
++
+----
+mgrctl cp top.sls server:/srv/pillar/
+mgrctl cp $branch_prefix.sls server:/srv/pillar/
+----
 
-
-[NOTE]
-====
-In this example, the download server must be prepared by the ``image_sync`` state before you begin.
-====

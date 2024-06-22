@@ -1,0 +1,88 @@
+= Migrating the {productname} Server to a Containerized Environment
+ifeval::[{uyuni-content} == true]
+:noindex:
+endif::[]
+
+// We need to figure out which SUMA versions prior to the container release can or should be migrated. Something like any version prior to yyyy.mm and later than.
+
+To migrate a {productname} {productnumber} Server to a container, a new machine is required.
+
+
+[IMPORTANT]
+====
+An in-place migration from {productname} 4.3 to 5.0 will remain unsupported due to the HostOS change from {sles} 15 SP4 to {micro} {microversion}
+
+The traditional contact protocol is no longer supported in {productname} 5.0 and later.
+Before migrating from {productname} 4.3 to {productnumber}, any existing traditional clients including the traditional proxies must be migrated to {salt}.
+
+For more information about migrating traditional {productname} 4.3 clients to {salt} clients, see https://documentation.suse.com/suma/4.3/en/suse-manager/client-configuration/contact-methods-migrate-traditional.html
+====
+
+
+The original server is referred to as the **source server,** while the newly set-up machine is designated as the **destination server.**
+
+The migration procedure currently does not include any hostname renaming functionality.
+The fully qualified domain name (FQDN) of the destination server will remain identical to the one of the source server.
+Therefore, after the migration, it will be necessary to manually adjust the DNS records to point to the new server.
+
+
+== Initial Preparation on the Source Server
+
+.Procedure: Initial preparation on the source server
+. Stop the {productname} services:
++
+
+----
+spacewalk-service stop
+----
+
+. Stop the PostgreSQL service:
++
+
+----
+systemctl stop postgresql
+----
+
+
+== Prepare the SSH Connection
+
+.Procedure: Preparing the SSH connection
+. The SSH configuration and agent should be ready on the destination server for a passwordless connection to the source server.
++
+
+[NOTE]
+====
+To establish a passwordless connection, the migration script relies on an SSH agent running on the destination server.
+If the agent is not active yet, initiate it by running `eval $(ssh-agent)`.
+Then, add the SSH key to the running agent with `ssh-add /path/to/the/private/key`.
+You will be prompted to enter the password for the private key during this process.
+====
+
+. The migration script only uses the source server's FQDN in the SSH command.
+
+. This means that every other configuration required to connect, needs to be defined in the [path]``~/.ssh/config`` file.
+
+
+== Perform the Migration
+
+[IMPORTANT]
+====
+When planning your migration from {productname} 4.3 to {productname} 5.0, please ensure that your target instance meets or exceeds the specifications of your current setup.
+This includes, but is not limited to, [literal]``Memory (RAM)``, [literal]``CPU Cores``, [literal]``Storage``, [literal]``Network Bandwidth`` etc.
+
+By matching or exceeding these specifications, you can help ensure a smooth and efficient migration process, maintaining the performance and reliability of your SUSE Manager environment.
+
+====
+
+.Procedure: Performing the Migration
+. Execute the following command to install a new {productname} server, replacing **<source.fqdn>** with the appropriate FQDN of the source server:
++
+
+----
+mgradm migrate podman <source.fqdn>
+----
+
+// uncomment when kubernetes support is added
+//----
+//mgradm migrate kubernetes <source.fqdn>
+//----

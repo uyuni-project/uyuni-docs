@@ -1,0 +1,339 @@
+[[install-vm]]
+= Deploy {productname} {productnumber} Proxy as a Virtual Machine
+
+This chapter provides the Virtual Machine settings for deployment of {productname} {productnumber} as an image.
+KVM will be combined with Virtual Machine Manager (_virt-manager_) as a sandbox for this installation.
+
+[IMPORTANT]
+====
+The preferred method for deploying {productname} {productnumber} Proxy is to use one of the following available images. All tools are included in these images greatly simplifying deployment.
+====
+
+== Available Images
+
+Images for {productname} {productnumber} are available at link:https://www.suse.com/download/suse-manager/[{productname} {productnumber} VM images].
+
+
+.Available Proxy Images
+[cols="3, 3", options="header"]
+|===
+| Architecture | Image Format
+
+| aarch64| qcow2, vmdk, raw
+
+| x86_64  | qcow2, vmdk, raw, Self Installer
+
+|===
+
+[NOTE]
+====
+For more information on preparing raw images see:
+
+* link:https://documentation.suse.com/en-us/sle-micro/5.5/single-html/SLE-Micro-deployment/#sec-raw-preparation[] 
+* link:https://documentation.suse.com/en-us/sle-micro/5.5/single-html/SLE-Micro-deployment/#cha-images-procedure[]
+ 
+For additional information on the self install images see:
+
+* link:https://documentation.suse.com/en-us/sle-micro/5.5/single-html/SLE-Micro-deployment/#cha-selfinstal-procedure[]
+====
+
+[[quickstart.sect.kvm.settings]]
+== Virtual Machine Manager (virt-manager) Settings
+
+Enter the following settings when creating a new virtual machine using *virt-manager*.
+
+[NOTE]
+====
+This table specifies the minimum requirements.
+These are suitable for a quick test installation, such as a server with one client.
+If you want to use a production environment, review the requirements listed in xref:installation-and-upgrade:hardware-requirements.adoc[].
+====
+
+== Hardware Requirements for the Proxy
+
+This table shows the hardware requirements for deploying {productname} Proxy.
+
+[cols="1,1", options="header"]
+|===
+2+<| KVM Settings
+| Installation Method | Import Existing Disk Image
+| OS:                 | Linux
+| Version:            | {productname}-Proxy.x86_64-5.0.0-Build16.12.qcow2
+| Memory:             | 2 GB
+| CPU's:              | 2
+| Storage Format:     | _.qcow2_ 40 GB (Default) Root Partition
+| Name:               | test-setup
+| Network             | Bridge _br0_
+|===
+
+
+[NOTE]
+====
+[path]``/var/lib/containers/storage/volumes/srv-www`` 
+Minimum 100 GB, Storage requirements should be calculated for the number of ISO distribution images, containers, and bootstrap repositories you will use.
+
+[path]``/var/lib/containers/storage/volumes/var-cache`` (Squid)
+Minimum 100 GB
+====
+
+
+
+[[minimmal.kvm.setup]]
+== Initial KVM Setup
+
+.Procedure: Creating Initial Setup
+. Create a new virtual machine using the downloaded {minimal} KVM image and select [guimenu]``Import existing disk image``.
+. Configure RAM and number of CPUs (at least 16 GB RAM and 4 CPUs).
+. Name your KVM machine and select the [guimenu]``Customize configuration before install`` check box.
+. Click btn:[Begin Installation] to boot from the image.
+. At the JeOS Firstboot screen select start to continue.
++
+
+image::jeos-firstboot.png[]
+
+. Select keyboard layout.
++
+
+image::select-keyboard.png[]
+
+.  Accept the license agreement.
++
+
+image::accept-license-agreement.png[]
+
+. Select your time zone.
++
+
+image::enter-timezone.png[]
+
+. Enter a password for root.
++
+
+image::root-password.png[]
+
+. Once installation completes login as root.
+
+. Proceed to the next section.
+
+
+
+== Register {sl-micro} and {productname} {productnumber}
+
+
+.Procedure: Registering {sl-micro} and {productname} {productnumber} Proxy
+. Boot the virtual machine.
+. Log in as `root`.
+. Register {sl-micro} with SCC.
++
+
+----
+transactional-update register -r <REGCODE> -e <your_email>
+----
+
+. Reboot.
+
+. Register {productname} {productnumber} with {scc}.
++
+
+----
+transactional-update register -p SUSE-Manager-Proxy/5.0/x86_64 -r <REGCODE>
+----
+
+. Reboot.
+
+. Update the system:
++
+
+----
+transactional-update
+----
+
+. If updates were applied reboot.
+
+
+
+== Create an Activation Key for the Proxy
+
+On the {productname} server, create an activation key for the Proxy. 
+
+.Task: Create an Activation Key
+. Navigate to menu:Systems[Activation Keys], and click btn:[Create key].
+. Create an activation key for the proxy host with {sl-micro} {microversion} as the parent channel.
+  This key should include all recommended channels and the Proxy as an extension child channel.
+. Proceed to boostrapping the proxy host as a minion.
+
+
+
+== Bootstrap the Proxy Host
+
+.Task: Bootstrap the Proxy Host
+. Select menu:Systems[Bootstrapping].
+. Fill in the fields for your proxy host.
+. Select the Activation key created in the previous step from the dropdown.
+. Click btn:[Bootstrap].
+. Wait for the Bootstrap process to complete successfully.
+  Check the menu:Salt[] menu and confirm the {salt} key is listed and accepted.
+. Reboot the proxy host.
+. Select the host from the menu:System[] list and trigger a second reboot after all events are finished to conclude the onboarding.
+
+
+.Task: Update the Proxy Host
+. Select the host from the menu:Systems[] list and apply all patches to update it.
+. Reboot the proxy host.
+
+
+
+[[proxy-setup-containers-generate-config]]
+== Generate the Proxy Configuration
+
+The configuration archive of the {productname} Proxy is generated by the {productname} Server. 
+Each additional proxy requires its own configuration archive.
+
+[IMPORTANT]
+====
+The container host for the {productname} Proxy must be registered as client to the {productname} Server prior to generating this proxy configuration.
+====
+
+
+You will perform the following tasks:
+
+1. Generate a Proxy configuration file.
+2. Transfer the configuration to the Proxy.
+3. Start the Proxy with the [literal]``mgrpxy`` command.
+
+[[proc-proxy-containers-setup-webui]]
+.Procedure: Generating a Proxy Container Configuration using {webui}
+
+. In the {webui}, navigate to menu:Systems[Proxy Configuration] and fill the required data:
+. In the [guimenu]``Proxy FQDN`` field type fully qualified domain name for the proxy.
+. In the [guimenu]``Parent FQDN`` field type fully qualified domain name for the {productname} Server or another {productname} Proxy.
+. In the [guimenu]``Proxy SSH port`` field type SSH port on which SSH service is listening on {productname} Proxy. Recommended is to keep default 8022.
+. In the [guimenu]``Max Squid cache size [MB]`` field type maximal allowed size for Squid cache. Typically this should be at most 60% of available storage for the containers.
+. In the [guimenu]``SSL certificate`` selection list choose if new server certificate should be generated for {productname} Proxy or an existing one should be used.
+You can consider generated certificates as {productname} builtin (self signed) certificates.
++
+Depending on the choice then provide either path to signing CA certificate to generate a new certificate or path to an existing certificate and its key to be used as proxy certificate.
++
+The CA certificates generated on the server are stored in the [path]``/var/lib/containers/storage/volumes/root/ssl-build`` directory.
++
+For more information about existing or custom certificates and the concept of corporate and intermediate certificates, see  xref:administration:ssl-certs-imported.adoc[].
+
+. Click btn:[Generate] to register new proxy FQDN in {productname} Server and generate configuration archive with details for container host.
+. After a few moments you are presented with file to download. Save this file locally.
+
+image::suma_proxy_containerized_webui.png[scaledwidth=80%]
+
+[[proxy-setup-containers-transfer-config]]
+== Transfer the Proxy Configuration
+
+The {webui} generates a configuration archive.
+This archive needs to be made available on the proxy container host.
+
+
+.Procedure: Copying the Proxy Configuration
+. Copy the files from the Server container to the Server host OS:
++
+----
+mgrctl cp server:/root/config.tar.gz .
+----
+
+. Next copy the files from the Server host OS to the Proxy host: 
++
+----
+scp config.tar.gz <proxy-FQDN>:/root
+----
+
+. Install the Proxy with:
++ 
+
+----
+mgrpxy install podman config.tar.gz
+----
+
+
+
+[[proxy-setup-containers-transfer-start]]
+== Start the {productname} {productnumber} Proxy
+
+Container can now be started with the [literal]`mgrpxy` command:
+
+[[proc-setup-containers-setup-start]]
+.Procedure: Start and Check Proxy Status
+
+. Start the Proxy by calling:
++
+
+----
+mgrpxy start
+----
+
+. Check container status by calling:
++
+
+----
+mgrpxy status
+----
++
+
+Five {productname} Proxy containers should be present:
+
+- proxy-salt-broker
+- proxy-httpd
+- proxy-tftpd
+- proxy-squid
+- proxy-ssh
+
+And should be part of the [literal]``proxy-pod`` container pod.
+
+
+////
+[[installation-proxy-containers-services]]
+== Install container services on the host system
+ifeval::[{suma-content} == true]
+
+[NOTE]
+====
+[literal]``Containers Module`` is required to be available for container host on a {sles} machine.
+====
+endif::[]
+
+{productname} Proxy containers are using [literal]``podman`` and [literal]``systemd`` to run and manage all proxy containers.
+
+First step is to install the [literal]``mgrpxy`` utility provided by the package of the same name.
+
+ifeval::[{suma-content} == true]
+The [literal]``mgrpxy`` package is available in the {productname} Proxy product repositories.
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+The [literal]``mgrpxy`` package is available in the container utils repository: pick the one matching the distribution in: https://download.opensuse.org/repositories/systemsmanagement:Uyuni:/Stable:/ContainerUtils/.
+endif::[]
+
+To install them run:
+
+----
+zypper in helm mgrpxy
+---- 
+////
+
+
+=== Using a Custom Container Image for a Service
+
+By default, the {productname} Proxy suite is set to use the same image version and registry path for each of its services.
+However, it is possible to override the default values for a specific service using the install parameters ending with [literal]``-tag`` and [literal]``-image``.
+
+For example, use it like this:
+
+----
+mgrpxy install podman --httpd-tag 0.1.0 --httpd-image registry.opensuse.org/uyuni/proxy-httpd /path/to/config.tar.gz
+----
+
+It adjusts the configuration file for the httpd service, where [path]``registry.opensuse.org/uyuni/proxy-httpds`` is the image to use and [literal]``0.1.0`` is the version tag, before restarting it.
+
+To reset the values to defaults, run the install command again without those parameters:
+
+----
+mgrpxy install podman /path/to/config.tar.gz
+----
+
+This command first resets the configuration of all services to the global defaults and then reloads it.

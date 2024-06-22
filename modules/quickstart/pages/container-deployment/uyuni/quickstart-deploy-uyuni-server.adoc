@@ -1,22 +1,20 @@
 [[quickstart-uyuni-deploy-container]]
 = Deploy {productname} {productnumber} Server
+ifeval::[{suma-content} == true]
+:noindex:
+endif::[]
 
-In this quickstart, you will embark on deploying {productname} {productnumber} Server. 
-There are several methods to accomplish this task. 
-
-You may opt to deploy it in the **cloud**, or deploy it on a local host running **{leapmicro}** or **{leap} {opensuse-version}**. 
-However, for the purpose of this quickstart guide, we've chosen to focus on setting up a **KVM environment**, installed on **{leap}** with Gnome Desktop, as the initial step. Installation on **{leapmicro}** is done via the command line and is outside the scope of this quickstart. 
+This quick start guide shows you how to install and configure a {productname} {productnumber} container for x86-64 architecture on {leapmicro} {microversion}.
 
 == Software and Hardware Requirements for {productname}
 
-This table shows the software and hardware requirements for deploying {productname} Server on KVM.
-For the purposes of this guide expect to deploy on a virtual machine with 16GB of RAM, and at least 200 GB of disk space.
+This table shows the software and hardware requirements for deploying {productname} Server.
 
 [cols="1,1", options="header"]
-.Bare metal VM Host Software and Hardware Requirements
+.Bare metal Host Software and Hardware Requirements
 |===
 | Software and Hardware  | Recommended
-| Operating System:      | {leap} {opensuse-version}: Clean installation, up-to-date
+| Operating System:      | {leapmicro} {microversion}:
 | CPU:                   | Minimum 4 dedicated 64-bit {x86_64}CPU cores
 | RAM:                   |  _Development server_ Minimum 16{nbsp}GB
 |                        | _Production server_ Minimum 32{nbsp}GB
@@ -26,120 +24,42 @@ For the purposes of this guide expect to deploy on a virtual machine with 16GB o
 | Swap space:            | 3{nbsp}GB
 |===
 
-== Prepare the Physical Machine
-
-Install {leap} on a bare metal physical machine, or continue using your existing installation.
-See: link:https://doc.opensuse.org/documentation/leap/startup/html/book-startup/art-opensuse-installquick.html#sec-opensuse-installquick-install[Installating {leap}]
-
+.Official operating system for the Server Container Host
 [NOTE]
 ====
-For this guide you can also use {tumbleweed} as the KVM host. However, keep in mind that {leap} {opensuse-version} is officially supported.
+The supported operating system for the container host is {leapmicro} {microversion}.
+
+Container host:: A container host is a server equipped with a container engine like Podman, which lets it manage and deploy containers. These containers hold applications and their essential parts, such as libraries, but not a full operating system, making them lightweight. This setup ensures applications run the same way in different environments. The container host supplies the necessary resources such as CPU, memory, and storage for these containers.
 ====
 
-Update the system:
-
-----
-sudo zypper ref && zypper up
-----
-
-
-
-== Install KVM Tools
-
-
-. Install KVM server and kvm tools:
-+
-----
-sudo zypper in -t pattern kvm_server kvm_tools
-----
-+
-
-. Reboot.
-
-
-
-== Setup KVM Network
-
-[NOTE]
+[IMPORTANT]
 ====
-This XML configuration builds a KVM subnet using the domain name of container.lab to setup a FQDN for your test server.
+Server deployment mandates the use of a fully qualified domain name (FQDN). In the absence of automatic DNS provision of an FQDN by your router or network, the deployment process will not proceed successfully. An FQDN typically follows the format <host>.<domain>.com.
 
-In a production environment your company's administration services should provide you with a FQDN.
+For instance:
+
+* uyuni.example.com
+* uyuni.fritz.box
+* uyuni.container.lab
+
+For additional details, refer to the section on network requirements in the Installation and Upgrade Guide, available at xref:installation-and-upgrade:network-requirements.adoc[].
 ====
 
-.Procedure: Setup the KVM Network
-. Open the [systemitem]``Virt Machine Manager`` GUI. In Gnome you can click the windows button on your keyboard and type in [systemitem]``virt-manager``. Alternatively you can open a command prompt and type: `virt-manager` and click the btn:[Enter].
+== Aquire the {leapmicro} {microversion} Image
 
-. Select menu:edit[Preferences].
-
-. In [literal]``Preferences`` under the [literal]``General`` tab select the checkbox [systemitem]``Enable XML editing``. Click the close button when complete.
-
-.  Double click **QEMU/KVM** text in the main window or select menu:Edit[Connection Details] to open the [systemitem]``Connection Details`` window.
-
-. Select the [systemitem]``Virtual Networks`` tab then the [systemitem]``XML`` tab.
-
-. If the default network is running, stop it using the [systemitem]``X`` button in the lower left.
-
-. Copy and paste the following XML snippet **beneath** your [systemitem]``<uuid>`` block:
-+
-
-[source, xml]
-----
-<forward mode="nat">
-    <nat>
-      <port start="1024" end="65535"/>
-    </nat>
-  </forward>
-  <bridge name="virbr0" stp="on" delay="0"/>
-  <mac address="52:54:00:9f:d0:0b"/>
-  <domain name="uyuni.lab" localOnly="yes"/>
-  <ip address="192.168.122.1" netmask="255.255.255.0">
-    <dhcp>
-      <range start="192.168.122.2" end="192.168.122.254"/>
-      <host mac="52:54:00:0A:CC:B8" name="uyuni-server" ip="192.168.122.10"/>
-      <host mac="52:54:00:EE:88:85" name="minion-one" ip="192.168.122.11"/>
-      <host mac="52:54:00:F2:B0:DF" name="minion-two" ip="192.168.122.12"/>
-    </dhcp>
-  </ip>
-</network>
-----
-
-
-== Aquire the {leapmicro} Image
-
-Proceed to: link:https://get.opensuse.org/leapmicro/5.5/#download[Download {leapmicro} {microversion}]
-
-Select and download the **Offline Image**, then move it to the default KVM image store:
-
-----
-cd Downloads/
-sudo mv openSUSE-Leap-Micro-5.5-DVD-x86_64-Media.iso /var/lib/libvirt/images/
-----
+. Proceed to: link:https://get.opensuse.org/leapmicro/5.5/#download[Download {leapmicro} {microversion}]
+. Select and download the **Offline Image**.
+. Prepare a USB fash disk or DVD for installation.
+. Insert a DVD or a bootable USB stick containing the installation image for openSUSE Leap.
+. Boot or reboot your system.
 
 
 
-== Container Host Preparation and Installation
+== Container Host Installation
 
-.Procedure: Setup the Image in Virtual Machine Manager (Step 1)
-. Open the **Virtual Machine Manager** and select menu:File[New virtual machine].
+For detailed documentation on preparing your machines OS (virtual or physical), see link:https://documentation.suse.com/sle-micro/5.5/html/SLE-Micro-all/book-deployment-slemicro.html[{micro} {microversion} Deployment Guide].
 
-. In the New VM window select **Local install media(ISO image or CDROM)** and click btn:[Forward].
-
-. Click the btn:[Browse] Button. In the Volumes field select the {leapmicro} image you downloaded. Click btn:[Choose Volume].
-
-. Uncheck the **Automatically detect from the installation media/source** and type **micro** in the **Choose operating system you are installing** field. Select **{micro} {microversion}**. Click btn:[Forward].
-
-. Set Memory to 16 GB and cpus to two. Click btn:[Forward].
-
-. Click in the disk image size field and enter 200 GB. The default is 60.0 GB. Click btn:[Forward]. 
-
-. Name the system **uyuni-server**. Next check the box **Customize configuration before install**. Click btn:[Finish].
-
-. In the settings windows select the [systemitem]``NIC`` device. In the **Virtual Machine Manager** primary window double click **QEMU/KVM**. Select the **Virtual Networks** tab. Select **XML**. Copy the **mac** address for the leapmicro machine. 
-
-. Open the virtual machine settings page again and paste the mac address into the [systemitem]``MAC address:`` field. Click btn:[Apply]. Then select btn:[Begin Installation] in the upper left corner. 
-
-. Procedure: {leapmicro} {microversion} Installation 
+.Procedure: {leapmicro} {microversion} Installation 
 . Use the arrow keys to select [systemitem]``Installation``.
 
 . On the [systemitem]``Language, Keyboard and license Agreement`` page click btn:[Next].
@@ -175,13 +95,12 @@ transactional-update
 transactional-update shell
 ----
 
-
 . Add the continer utility repository:
 +
 
 [source, shell]
 ----
-zypper ar https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Master:/ContainerUtils/openSUSE_Leap_Micro_5.5/systemsmanagement:Uyuni:Master:ContainerUtils.repo
+zypper ar https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable:/ContainerUtils/openSUSE_Leap_Micro_5.5/systemsmanagement:Uyuni:Stable:ContainerUtils.repo
 ----
 
 . Refresh the repository list and accept the key:
@@ -197,7 +116,7 @@ zypper ref
 
 [source, shell]
 ----
-zypper in mgradm mgrctl mgradm-bash-completion mgrctl-bash-completion netavark
+zypper in mgradm mgrctl mgradm-bash-completion mgrctl-bash-completion 
 ----
 +
 
@@ -225,22 +144,8 @@ mgradm install podman
 ....
 +
 
-[IMPORTANT]
-====
-You must deploy the container as root. The following error will be displayed at the terminal if you miss this step. {leapmicro} by default uses the root account.
-
-[source, shell]
-----
-INF Setting up uyuni network
-9:58AM INF Enabling system service
-9:58AM FTL Failed to open /etc/systemd/system/uyuni-server.service for writing error="open /etc/systemd/system/uyuni-server.service: permission denied"
-----
-====
-+
-
 . Input a password for the CA certificate, an administrative account password and your email for notifications:
 +
-
 
 ----
 leapmicro:~ # mgradm install podman
@@ -250,10 +155,11 @@ Password for the CA certificate to generate:
 Administrator password: 
 Administrator's email: admin@example.com
 ----
++
 
 . The container will take some minutes to deploy. 
 
-. Once complete open a browser and visit link:https://leapmicro.container.lab[] to begin working with {productname}.
+. Once complete open a browser and visit link:https://leapmicro.uyuni.lab[] to begin working with {productname}.
 
 
 
