@@ -1,4 +1,5 @@
-- Use proper --mirrorPath parameter in disconnected setup guide
+- Documented proper --mirrorPath parameter in disconnected setup chapter of
+  the Administration Guide
 - Fixed Activation Key link in SUSE Liberty Linux Clients page
 - Fixed reposync path for SUSE Liberty Linux Base Media
 - Fixed Adding Base Media to Custom Channels for SUSE Liberty Linux
