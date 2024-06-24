@@ -1,17 +1,18 @@
 [[install-vm]]
-= Install {productname} in a Virtual Machine Environment using {productname} image
+= Install {productname} in a Virtual Machine Environment Using {productname} VM Image
 
 
 
 [[quickstart.sect.kvm.settings]]
-== Virtual Machine Manager (virt-manager) Settings
+== Virtual Machine Manager Settings
 
 This chapter provides the required Kernel Virtual Machine (KVM) settings for {productname}.
 KVM combined with Virtual Machine Manager (_virt-manager_) will be used as a sandbox for this installation.
 
 
 
-You will find the VM images for {productname} {productnumber} in various formats. It includes the underlying OS bits ({sles}_{sles-version} {sp-base}) and the {productname} software current at the time of build.
+You will find the VM images for {productname} {productnumber} in various formats.
+They include {sles} {sles-version} {sp-base} as the underlying operating system and the {productname} software current at the time of build.
 Download the appropriate {productname} image for your environment from https://download.suse.com/.
 
 [NOTE]
@@ -41,7 +42,7 @@ If you want to use a production environment, review the requirements listed in x
 
 [NOTE]
 ====
-For more information on {sle} Virtualization Guide, see https://documentation.suse.com/sles/15-SP4/html/SLES-all/book-virtualization.html.
+For more information on {sle} Virtualization, see https://documentation.suse.com/sles/15-SP4/html/SLES-all/book-virtualization.html.
 ====
 
 [IMPORTANT]
@@ -88,22 +89,23 @@ For the complete specification, see https://coreos.github.io/ignition/configurat
 
 
 
-=== Set root password using Ignition
+=== Set Root Password Using [systemitem]``Ignition``
 
 The {productname} VM image does not set up root or any other user account.
 User or [systemitem]``root`` authentications need to be set up during first boot.
-The [systemitem]``passwd`` attribute is used to add users.
+The [literal]``passwd`` attribute is used to add users.
 If you intend to log in the system, create root and set the root's password and/or add the SSH key to the [systemitem]``Ignition`` configuration.
-You need to hash the root password, for example, by using the openssl command:
+You need to hash the root password, for example, by using the [command]``openssl`` command:
 
 ----
 openssl passwd -6
 ----
 
 The command creates a hash of the password you chose.
-Use this hash as the value of the [systemitem]``passwordHash`` attribute.
+Use this hash as the value of the [literal]``passwordHash`` attribute.
 
-The users attribute must contain at least one [systemitem]``name`` attribute. [systemitem]``ssh_authorized_keys`` is a list of ssh keys for the user.
+The users attribute must contain at least one [literal]``name`` attribute.
+[literal]``ssh_authorized_keys`` is a list of ssh keys for the user.
 
 Create the [path]``root/ignition/config.ign`` file with the following content:
 
@@ -145,7 +147,9 @@ When the system is booted for the first time, [systemitem]``Cloud Init service``
 
 [systemitem]``Cloud Init`` uses few configuration files in the YAML format. Used files are named [path]``meta-data``, [path]``network-config`` and [path]``user-data``.
 
-[systemitem]``Cloud Init`` allows numerous sources where to store configuration data. In this guide we use local iso image with volume id [systemitem]``cidata`` as a source. The directory structure must look as follows:
+[systemitem]``Cloud Init`` allows numerous sources where to store configuration data. 
+In this guide we use local iso image with volume id [literal]``cidata`` as a source. 
+The directory structure must look as follows:
 
 ----
 <root directory>
@@ -154,7 +158,8 @@ When the system is booted for the first time, [systemitem]``Cloud Init service``
 └── user-data
 ----
 
-If you intend to configure a QEMU/KVM virtual machine, provide the path to the [path]``config.ign`` as an attribute of the qemu command. For example:
+If you intend to configure a QEMU/KVM virtual machine, provide the path to the [path]``config.ign`` as an attribute of the qemu command.
+For example:
 
 ----
 -fw_cfg name=opt/com.coreos/config,file=PATH_TO_config.ign
@@ -162,15 +167,16 @@ If you intend to configure a QEMU/KVM virtual machine, provide the path to the [
 
 The [systemitem]``Cloud Init`` allows many management options. For a complete specification, refer to Cloud Init specification (https://cloudinit.readthedocs.io/en/latest/index.html).
 
-=== Set up root password using Cloud Init
+=== Set Up Root Password Using Cloud Init
 
-You need to hash the root password, for example, by using the openssl command:
+You need to hash the root password, for example, by using the [command]``openssl`` command:
 
 ----
 openssl passwd -6
 ----
 
-The command creates a hash of the password you chose. Use this hash as the value of the [systemitem]``password`` attribute.
+The command creates a hash of the password you chose.
+Use this hash as the value of the [literal]``password`` attribute.
 
 Prepare the needed configuration files using the following commands:
 
@@ -205,14 +211,19 @@ Substitute your password hash for the one in this example
 [[sumavm.kvm.settings]]
 == {productname} Virtual Machine Settings
 
-Create three additional virtual disks required for the {productname} storage partitions.
+Create a virtual machine with three additional virtual disks required for the {productname} storage partitions.
 
-.Procedure: Creating the Required Partitions with KVM
-. Create a new virtual machine using the downloaded {productname} KVM image and select [guimenu]``Import existing disk image``.
-. Set [literal]``SUSE Linux Enterprise 15 SP4`` as the installed operating system.
+.Procedure: Creating the VM and Additional Partitions with  [command]``virt-manager``
+. In [command]``virt-manager``, open menu:File[New Virtual Machine].
+. In the [guimenu]``Create a new virtual machine`` dialog, select [guimenu]``Import existing disk image`` and confirm with btn:[Forward].
+. Enter the filename of the downloaded {productname} KVM image and set [literal]``SUSE Linux Enterprise 15 SP4`` as the operating system.
+  Confirm with btn:[Forward].
 . Configure RAM and number of CPUs (at least 16 GB RAM and 4 CPUs).
-. Name your KVM machine and select the [guimenu]``Customize configuration before install`` check box.
-. Click btn:[Add Hardware] to create three new virtual disks with these specifications.
+  Confirm with btn:[Forward].
+. Set the name of your VM and select the [guimenu]``Customize configuration before install`` check box.
+. With the [guimenu]``Network selection`` drop-down menu select the configured bridge device.
+. Confirm with btn:[Finish].
+. In the overview dashboard, at the bottom of the left navigation bar, click btn:[Add Hardware] to create additional virtual disks with the following specifications.
   These disks will be partitioned and mounted in <<proc.sumavm.susemgr.prep>>.
 +
 
@@ -233,13 +244,14 @@ Also consider to create a separate partition for [path]``/srv`` where Kiwi image
 |===
 
 . Click btn:[Add Hardware] to attach a virtual CDROM device with the prepared [systemitem]``Ignition`` or [systemitem]``Cloud Init`` disk.
-. Click btn:[Begin Installation] to boot the new VM from the {productname} image. Wait until the login prompt is presented.
+. Click btn:[Begin Installation] to boot the new VM from the {productname} image.
+  Wait until the login prompt is presented.
   Log in using credentials set by configuration disk.
 
 
 == {productname} Virtual Machine Settings - VMWare
 
-This segment furnishes VMWare configurations, focusing on the creation of an extra virtual disk essential for the {productname} storage partition within VMWare environments.
+This sections describes VMWare configurations, focusing on the creation of an extra virtual disk essential for the {productname} storage partition within VMWare environments.
 
 .Procedure: Creating the VMware Virtual Machine
 
@@ -264,14 +276,14 @@ This drive must be present when you power on the machine initially.
 . Power on the VM, and log in using credentials set by configuration disk.
 
 
-[[minimmal.susemgr.prep]]
-== Preparing virtual machine for {productname}
+[[minimal.susemgr.prep]]
+== Preparing Virtual Machine for {productname}
 
 Before starting obtain your SUSE Manager Registration Code from SUSE Customer Center - https://scc.suse.com.
 
 
 
-[[proc.minimmal.susemgr.prep]]
+[[proc.minimal.susemgr.prep]]
 .Procedure: Preparing for {productname} run
 
 . Log in as `root`.
