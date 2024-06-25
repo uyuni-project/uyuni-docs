@@ -1,22 +1,71 @@
 - Added details on image management in Administration Guide (bsc#1222574)
+- Removed outdated disclaimer in CLM examples regarding AppStreams
+  (bsc#1226687)
+- Documented proper --mirrorPath parameter in disconnected setup chapter of
+  the Administration Guide
+- Fixed Activation Key link in SUSE Liberty Linux Clients page
+- Fixed reposync path for SUSE Liberty Linux Base Media
+- Fixed Adding Base Media to Custom Channels for SUSE Liberty Linux
+  in Client Configuration guide
+- Remove duplicate instructions from the Liberate Formula page
+- Fixed Liberate Formula instructions
+- Documented 'mgradm distribution' command to prepare installation
+  source in Upgrade chapter of Client Configuration Guide
+- Added VM image deployment documentation for Proxy and Server in the
+  Installation and Upgrade Guide
+- Removed legacy content from the Installation and Upgrade Guide
+- Added SLE15 SP6 as supported client
+- Added openSUSE Leap SP6 as supported client
+- Adding SL Micro 6.0 as supported client
+- Removed Apache exporter from monitoring chapter in the Administration
+  Guide
+- Updated autoinstallation usage with containerized server
+  (bsc#1222692)
+- Added image-sync boot image details (bsc#1206055)
+- Updated retail workflow for SUSE Manager 5.0 containerized proxies
+- Excluded detailed information about creating and running a CentOS
+  errata checking script from SUSE Manager documentation in Client
+  Configuration Guide
+- Added note about CentOS 7 errata checking script applicable to
+  non-containerized Uyuni installation in Client Configuration Guide
+- Removed additional legacy content in the Installation and
+  Upgrade guide
+- Added Proxy migration documentation for SUSE Manager 5.0
+- Documented availibility of package lock on RedHat-like clients
+- Removed spacecmd functions that are not longer available
+- Cleaned up Installation and Upgrade Guide navigation,
+  additional legacy content removed
+- Added information about mirroring Ubuntu ESM packages
+- Started with referencing 5.0 API documentation
+- Added deprecation warning for Inter-Server Synchronization (Version 1)
+  feature in Administration Guide
+- Added deprecation warning for virtualization management feature
+  in Client Configuration Guide
+- Added Proxy Quickstart Guide for deploying containerized Proxies
+- Updated adding custom GPG key for repositories synchronization
+- Added AppStream section to Client Configuration Guide
+- Added Systems > Software > AppStreams documentation to Reference Guide
+- Removed warning about limited AppStream support
+- Added Confidential Computing as technology preview
+  to Administration Guide
 - Updated containerized server monitoring documentation
 - Document channel management CLI tools in Reference Guide
 - Use mgradm for Hub Server deployment in Large Deployment Guide
-- Reogranized documentation navigation for clarity
+- Reogranized Installation and Upgrade navigation for clarity
 - Improved document names and removed legacy content
-- Updated default storage volume locations in documentation
+- Updated default storage volume locations in documentation for
+  containers
 - Removed Unified Installer documentation from Requirements
 - Removed Unified Installer documentation from General Requirements
-- Updated ports documentation for containerization
-- Update database migration sections in Installation and Upgrade Guide
-- Added PAM Authentication in Uyuni Container to Administration Guide
-- Remove visualization feature
-- Document channel synchronization options in Administration Guide
-- Added new workflow describing updating of clients using recurring actions
-  to Commown Workflows
-- Add PostgreSQL version on Uyuni 2024.03
-- Fixed nav style issue in branding theme
-- Cleaned up navlists for containerization
+- Updated ports documentation for containers
+- Updated database migration sections in the Installation and Upgrade
+  Guide
+- Removed visualization feature
+- Documented channel synchronization options in Administration Guide
+- Added a new workflow describing how to update clients using recurring
+  actions to Commown Workflows
+- Improved navigation list font styles in the branding theme
+- Cleaned up navlists for containers
 - Fix self_update kernel option description (bsc#1221819)
 - Deprecated client proxy script
 - Added information about requirements for the PostgreSQL database
@@ -180,7 +229,7 @@
   Guide (bsc#1210103)
 - Update Red Hat channel names to reflect the new custom channels for easier
   onboarding
-- In the Installation and Upgrade Guide, unified SUSE Manager Proxy 
+- In the Installation and Upgrade Guide, unified SUSE Manager Proxy
   registration
 - Warned about the impossibility of moving chained proxies in the
   Client Configuration Guide.
@@ -223,7 +272,7 @@
   (bsc#1209508)
 - Added instruction for Cobbler to use the correct label in Client Config Guide
   distro label (bsc#1205600)
-- Adjusted python version and OpenSUSE Leap version in public cloud 
+- Adjusted python version and OpenSUSE Leap version in public cloud
   document (bsc#1209938)
 - Fixed calculation of DB max-connections and align it with the supportconfig
   checking tool in the Tuning Guide
@@ -236,7 +285,7 @@
 - Enhanced the note about the remove PTF capability in Administration Guide
 - Added information about evaluation command parameter for OpenSCAP (bsc#1207931)
 - Enhanced deleting clients in Client Configuration Guide
-- Added instructions about contanerized proxy deployment to Installation and 
+- Added instructions about contanerized proxy deployment to Installation and
   Upgrade Guide
 - Explained how to use PTFs in SUSE Manager in the Administration Guide
 - Warned about installing containerized proxy on traditional container host in
@@ -258,11 +307,11 @@
 - Added SUSE Liberty Linux 9 clients as supported and use SUSE Liberty Linux
   name more consistently
 - Added information about GPG key usuage in the Debian section of the Client
-  Configuration Guide 
+  Configuration Guide
 - Add Grafana configuration instructions in Administration Guide.
-- Clarified monitoring components support matrix in Client Configuration 
+- Clarified monitoring components support matrix in Client Configuration
   Guide
-- Added information to use Hub when managing more than 10,000 clients 
+- Added information to use Hub when managing more than 10,000 clients
   to the Hardware Requirements in the Installation and Upgrade Guide
 - Added Red Hat Enterprise Linux 9 clients as supported (bsc#1205896)
 - Updated default number of changelog entries in Administration Guide

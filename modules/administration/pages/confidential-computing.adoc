@@ -1,0 +1,146 @@
+[[confidential_computing]]
+= Confidential Computing
+
+{CoCo} is a technology which allows protection of data in use by using hardware-based Trusted Execution Environment (TEE), the type of environments that provide increased level of security for data integrity, data confidentiality, and code integrity.
+
+
+== {CoCo} with {productname}
+
+The trustworthiness of the TEE is checked with the attestation process.
+{productname} can be used as an attestation server for the systems registered to it.
+It generates a report page for the systems which run in this mode.
+These systems need to be attested and checked on regular base.
+The history of the past checks is also stored and available per request.
+
+{CoCo} Attestation depends on the used hardware and environment where the attested systems are running on.
+
+[IMPORTANT]
+====
+{CoCo} Attestation is only available on x86_64 architecture.
+====
+
+
+
+== Requirements
+
+{CoCo} can be set up in an environment with the following characteristics:
+
+* Attested system (virtual machine) is SLES15 SP6 and bootstrapped to {productname}
+* Hardware must have [literal]``AMD EPYC Milan CPU`` or [literal]``AMD EPYC Genoa CPU``
+* BIOS must be configured to allow {CoCo} attestation
+* Host OS and the virtualization software (KVM and libvirt) must support {CoCo}.
+
+
+== Limitations
+
+* SLES15 SP6 has {CoCo} attestation as technology preview.
+* {productname} has {CoCo} attestation as technology preview.
+* Secure boot is attested. 
+  However, currently KVM secure boot and SNP Guest are not working together. 
+
+
+== Use {CoCo} in {productname}
+
+[IMPORTANT]
+====
+For the exact steps for setting up and configuring {CoCo} on your host, refer to the OS Vendor documentation.
+====
+
+.Procedure: Enabling Attestation Container During the {productname} Installation
+[role=procedure]
+. The attestation container is enabled during the installation of {productname} with [literal]``mgradm install podman``.
+. Add the following to file [literal]``mgradm.yaml``.
+//I need full path to this file.
++
+----
+coco:
+    replicas: 1
+----
+
+
+.Procedure: Enabling Attestation Container After the {productname} Installation
+[role=procedure]
+. To enable the attestation container after the installation, use the command line parameter [literal]``mgradm``.
+. Run the command
++
+----
+mgradm scale --coco-replicas 1
+----
+// (PLACEHOLDER): In the future instead of number 1, it should be possible to allow more then one container replica.
+
+
+.Procedure: Enabling Attestation Container After the {productname} Installation
+[role=procedure]
+. To disable the already enabled attestation container, run the command:
++
+----
+mgradm scale --coco-replicas 0
+----
+
+
+.Procedure: Enabling Attestation
+[role=procedure]
+. For the selected system, go to tab menu:Audit[Confidential Computing > Settings].
+. Enable the attestation by selecting the toggle button.
+. In the field [literal]``Environment Type`` select the correct option from the drop-down list.
+//. (PLACEHOLDER) Enable the automatic attestaion at reboot by selecting the toggle button [literal]``Execution``.
+. Click button btn:[Save] to save the changes.
++
+image::attestation1.jpg[]
+//TODO: ALL images will be converted to PNG format when the latest versions are captured
+
+.Procedure: Scheduling New Attestation
+[role=procedure]
+. For the selected system, go to tab menu:Audit[Confidential Computing > List Attestations].
+. Click btn:[Schedule Attestation].
+  The new form opens.
+. In the field [literal]``Earliest`` select the time of running the attestation.
+. If needed, add the newly created attestation to the action chain by selecting [literal]``Add to`` option.
+. Click button btn:[Schedule] to save and schedule the new attestation execution.
++
+image::attestation2.jpg[]
++
+
+
+.Procedure: Viewing Attestation Reports
+[role=procedure]
+. For the selected system, go to tab menu:Audit[Confidential Computing > List Attestations].
+. Select the report you want to view.
++
+image::attestation3.jpg[]
++
+. In the column [literal]``Actions`` click the icon to open the report.
+  Tab [literal]``Overview`` will open.
++
+image::attestation4.jpg[]
++
+. Move to the next tab [literal]``SEV-SNP``.
+// This tab does or does not (NOTE: confirm dependance on the actual environment types) is available depending on the Environment Type selected at the time of scheduling.
++
+image::attestation5.jpg[]
++
+//. (PLACEHOLDER) To check the details about secure booting, open tab [literal]``Secure Boot``.
+//+
+//image::attestation6.jpg[]
+
+
+=== Report Statuses
+
+Attestation reports can have one of the following statuses:
+
+Pending::
+This is the default status of the scheduled attestation.
+The report is still not available, either because the process has not yet started or completed.
+
+Successful::
+When the scheduled attestation creates a report which can be viewed, the status of the process is [literal]``Successful``.
+
+Failed::
+When the scheduled fails and does not create a report as a result, the status of the process is [literal]``Failed``.
+
+
+
+== Related Topics
+
+// * For more information about {CoCo}, see [link]``https://www.fortanix.com/platform/confidential-computing-manager/what-is-confidential-computing`` (external link).
+* For more information about {CoCo}, see [link]``https://confidentialcomputing.io`` (external link).

@@ -1,0 +1,72 @@
+= Migrating  the {productname} server to a containerized environment
+ifeval::[{suma-content} == true]
+:noindex:
+endif::[]
+
+To migrate a regular {productname} server to a container, a new machine is required.
+
+[NOTE]
+====
+It is not possible to perform an in-place migration. 
+====
+
+The original server is referred to as the **source server,** while the newly set-up machine is designated as the **destination server.**
+
+The migration procedure currently does not include any hostname renaming functionality. Consequently, the fully qualified domain name (FQDN) on the new server will remain identical to that on the source server. Therefore, following migration, it will be necessary to manually adjust the DNS records to point to the new server.
+
+.Procedure: Initial preparation
+
+. Stop the source server:
++
+
+----
+spacewalk-service stop
+----
+
+. Stop the source services:
++
+
+----
+systemctl stop postgresql
+----
+
+
+
+.Procedure: Preparing the SSH connection
+
+. The SSH configuration and agent should be ready on the host for a passwordless connection to the source server.
++
+
+[NOTE]
+====
+To establish a passwordless connection, the migration script relies on an SSH agent running on the server. If one isn't active yet, initiate it by running `eval $(ssh-agent)`. Then, add the SSH key to the running agent with `ssh-add /path/to/the/private/key`. You'll be prompted to enter the password for the private key during this process.
+==== 
+
+. The migration script only uses the source server fully qualified domain name in the SSH command. 
+
+. This means that every other configuration required to connect needs to be defined in the [systemfile]``~/.ssh/config`` file.
+
+
+
+== Prepare for Kubernetes
+
+Before executing the migration command with mgradm migrate, it's essential to predefine **Persistent Volumes**, especially considering that the migration job initiates the container from scratch. Please consult the installation section for comprehensive guidance on preparing these volumes.
+
+See: xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[Persistent container volumes]
+
+
+
+== Migrating
+
+
+Execute the following command to install a new {productname} server, replacing **<{productname}.source.fqdn>** with the appropriate FQDN of the source server:
+
+----
+mgradm migrate podman <{productname}.source.fqdn>
+----
+
+or
+
+----
+mgradm migrate kubernetes <{productname}.source.fqdn>
+----

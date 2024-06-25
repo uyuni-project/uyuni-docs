@@ -35,29 +35,17 @@ After you have completed the initial setup, you can replace the default certific
 
 .Procedure: Import Certificates on a New {productname} Server
 
-. Install the {productname} Server according to the instructions in xref:installation-and-upgrade:install-intro.adoc[].
-. Complete the initial setup according to xref:installation-and-upgrade:server-setup.adoc[].
-. At the command prompt, point the SSL environment variables to the certificate file locations:
+. Deploy the {productname} Server according to the instructions in xref:installation-and-upgrade:container-deployment/suma/server-deployment-suma.adoc[].
+  Make sure to pass the correct files as parameters to [literal]``mgradm install podman``. 
+  The parameters are:
 +
 ----
-export CA_CERT=<path_to_CA_certificates_file>
-export SERVER_KEY=<path_to_web_server_key>
-export SERVER_CERT=<path_to_web_server_certificate>
+3rd Party SSL Certificate Flags:
+      --ssl-ca-intermediate strings   Intermediate CA certificate path
+      --ssl-ca-root string            Root CA certificate path
+      --ssl-server-cert string        Server certificate path
+      --ssl-server-key string         Server key path
 ----
-. Complete {productname} setup:
-+
-----
-yast susemanager_setup
-----
-+
-When you are prompted for certificate details during setup, fill in random values.
-The values are overridden by the values you specified at the command prompt.
-
-[NOTE]
-====
-Execute the [command]``yast susemanager_setup`` command from the same shell you exported the environment variables from.
-====
-
 
 
 == Import Certificates for New Proxy Installations
@@ -66,18 +54,9 @@ By default, {productname} Proxy uses a self-signed certificate.
 After you have completed the initial setup, you can replace the default certificate with an imported certificate.
 
 
-
-
 .Procedure: Import Certificates on a New {productname} Proxy
 
-. Install the {productname} Proxy according to the instructions in xref:installation-and-upgrade:install-intro.adoc[].
-. Complete the initial setup according to xref:installation-and-upgrade:proxy-setup.adoc[].
-. At the command prompt, run:
-+
-----
-configure-proxy.sh
-----
-. At the ``Do you want to import existing certificates?`` prompt, type kbd:[y].
+. Install the {productname} Proxy according to the instructions in xref:installation-and-upgrade:container-deployment/suma/proxy-deployment-suma.adoc[].
 . Follow the prompts to complete setup.
 
 
@@ -95,13 +74,12 @@ You can replace active certificates on your {productname} installation with a ne
 To replace the certificates, you can replace the installed CA certificate with the new CA, and then update the database.
 
 
-
 .Procedure: Replacing Existing Certificates
 
 . On the {productname} Server, at the command prompt, call the command `mgr-ssl-cert-setup` and provide the certificates as parameters:
 +
 ----
-mgr-ssl-cert-setup --root-ca-file=<Path_to_Root_CA_Certificate> --server-cert-file=<Server_Cert_File> --server-key-file=<Server_Key_File>
+mgrctl exec -- mgr-ssl-cert-setup --root-ca-file=<Path_to_Root_CA_Certificate> --server-cert-file=<Server_Cert_File> --server-key-file=<Server_Key_File>
 ----
 
 
@@ -112,9 +90,9 @@ This command performs a number of tests on the provided files to test if they ar
 . Restart services to pick up the changes:
 +
 ----
-spacewalk-service stop
-systemctl restart postgresql.service
-spacewalk-service start
+mgrctl exec -- spacewalk-service stop
+mgrctl exec -- systemctl restart postgresql.service
+mgrctl exec -- spacewalk-service start
 ----
 
 

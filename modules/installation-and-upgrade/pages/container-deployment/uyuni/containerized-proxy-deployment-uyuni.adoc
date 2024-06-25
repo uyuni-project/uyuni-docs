@@ -1,0 +1,113 @@
+[[containerized-proxy-deployment-uyuni]]
+= Containerized Proxy Deployment Using Internal Registry
+ifeval::[{suma-content} == true]
+:noindex:
+endif::[]
+
+It is possible to deploy containerized images in an environment without an internet connection.
+In such case, the images can be copied from {suse} registry to an internal registry, or saved to a [literal]``tar`` file.
+
+
+
+[[image.from.suse.to.internal.registry]]
+== Image Copying from {suse} Registry to Internal Registry 
+
+
+Machines must have access to [literal]``registry.suse.com``.
+
+.Procedure: Deploying Proxy from an Internal Image Registry
+[role=procedure]
+
+. On a machine with access to [literal]``registry.suse.com`` install [literal]``skopeo``:
++
+----
+zypper in skopeo
+----
++
+[NOTE]
+====
+This can be {productname} Server.
+====
++
+. Copy images between registries:
++
+----
+for image in httpd salt-broker squid ssh tftpd; do
+    skopeo copy docker://registry.suse.com/suse/manager/5.0/proxy-$image:latest docker://<your_server>/registry.suse.com/suse/manager/5.0/proxy-$image
+done
+skopeo copy docker://k8s.gcr.io/pause:latest docker://<your_server>/k8s.gcr.io/pause:latest
+----
++
+[NOTE]
+====
+For every [literal]``skopeo`` command add [literal]``--dest-tls-verify=false`` if the registry is not secured.
+====
++
+. If the registry is unsecured, for example not configured with SSL, add the registry domain to the section [literal]``registries.insecure`` on the containerized proxy virtual machine by editing:
++
+----
+/etc/containers/registries.conf
+----
++
+. Before starting the pod, point the Podman where to get the [literal]``pause`` image from on the internal registry:
++
+----
+echo -e '[engine]\ninfra_image = "<your_server>/pause:latest"'>>/etc/containers/containers.conf
+----
++
+. To start using the images from the internal registry please adapt the [literal]``NAMESPACE`` value in file `/etc/sysconfig/uyuni-proxy-systemd-services.config`.
++
+[NOTE]
+====
+For the k3s deployment, add [literal]``--set repository=<your_server>`` to the helm install command line.
+====
+
+
+[[air-gapped-solution-for-podman]]
+== Air-gapped Solution for Podman
+
+This example illustrates deployment of containerized image on a machine with no access to internet.
+
+
+.Procedure: Deploying Air-gapped Proxy
+[role=procedure]
+
+. Before starting the pod, point the Podman where to get the [literal]``pause`` image from on the internal registry:
++
+----
+echo -e '[engine]\ninfra_image = "<your_server>/pause:latest"'>>/etc/containers/containers.conf
+----
++
+[WARNING]
+====
+This command does not work on SLE 15 SP3 and earlier container hosts.
+====
++
+. On a machine with internet access run:
++
+----
+for image in httpd salt-broker squid ssh tftpd; do
+    podman pull registry.suse.com/suse/manager/5.0/proxy-$image
+done
+podman pull k8s.gcr.io/pause
+
+podman save -m -o proxy-images.tar \
+    k8s.gcr.io/pause \
+    registry.suse.com/suse/manager/5.0/proxy-httpd \
+    registry.suse.com/suse/manager/5.0/proxy-salt-broker \
+    registry.suse.com/suse/manager/5.0/proxy-squid \
+    registry.suse.com/suse/manager/5.0/proxy-ssh \
+    registry.suse.com/suse/manager/5.0/proxy-tftpd
+----
++
+[NOTE]
+====
+For the k3s deployment, add [literal]``--set repository=<your_server>`` to the helm install command line.
+====
++
+. Transfer the [literal]``proxy-images.tar`` to the air-gapped proxy.
+. To make images available to be started when needed, run the command:
++
+----
+podman load -i proxy-images.tar
+----

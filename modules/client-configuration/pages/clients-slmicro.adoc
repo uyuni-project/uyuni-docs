@@ -1,0 +1,146 @@
+[[clients-slmicro]]
+= Registering {sl-micro} Clients
+
+This section contains information about registering clients running {nbsp}{sl-micro} operating system 6.0 {x86_64}, {arm64}, and {zsystems} (s390x).
+
+The {sl-micro} is an ultra-reliable, lightweight operating system purpose built for edge computing.
+It leverages the enterprise hardened security and compliance components of SUSE Linux Enterprise and merges them with a modern, immutable, developer-friendly OS platform.
+
+The {sl-micro} uses transactional updates.
+Transactional updates are atomic (all updates are applied only if all updates succeed) and support rollbacks.
+They do not affect a running system as no changes are activated until after the system is rebooted.
+This information is displayed in the menu:Systems[Details > Overview] subtab.
+
+For more information on transactional updates and rebooting, see
+https://documentation.suse.com/sles/html/SLES-all/cha-transactional-updates.html.
+
+
+
+== Add Software Channels
+
+Before you register {sl-micro} clients to your {productname} Server, you need to add the required software channels, and synchronize them.
+
+include::snippets/arch-other-note.adoc[]
+
+The products you need for this procedure are:
+
+[[slmicro-channels-wizard]]
+[cols="1,1", options="header"]
+.SL Micro Products - WebUI
+|===
+
+| OS Version
+| Product Name
+
+| {sl-micro} 6.0 {x86_64}
+| SUSE Linux Micro 6.0 x86_64
+
+| {sl-micro} 6.0 {arm64}
+| SUSE Linux Micro 6.0 arch64
+
+| {sl-micro} 6.0 {s390x}
+| SUSE Linux Micro 6.0 s390x
+
+|===
+
+include::snippets/addchannels_vendor_webui.adoc[]
+
+
+Alternatively, you can add channels at the command prompt.
+The channels you need for this procedure are:
+
+[[slmicro-channels-cli]]
+[cols="1,1", options="header"]
+.SL Micro Products - CLI
+|===
+
+| OS Version
+| Base Channel
+
+| {sl-micro} 6.0 {x86_64}
+| sl-micro-6.0-pool-x86_64
+
+|===
+
+include::snippets/addchannels_vendor_cli.adoc[]
+
+
+
+== Check Synchronization Status
+
+ifeval::[{suma-content} == true]
+
+include::snippets/check_sync_webui_suma.adoc[]
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+include::snippets/check_sync_webui_uyuni.adoc[]
+
+endif::[]
+
+include::snippets/check_sync_cli.adoc[]
+
+
+
+== Register Clients
+
+[WARNING]
+====
+{sl-micro} clients require a reboot after registering.
+Although a reboot is automatically scheduled after registration is completed, it is respecting the default reboot manager maintenance window.
+This window may be several hours after the client is registered.
+It is advisable to manually reboot the client after the registration script finishes, to speed up the registration and to see the system appear in the system list.
+====
+
+include::snippets/create_bootstrap_repo_register.adoc[]
+
+When using a bootstrap script with {sl-micro} systems, ensure that the certificate section of the script has this content:
+
+----
+ORG_CA_CERT=RHN-ORG-TRUSTED-SSL-CERT
+ORG_CA_CERT_IS_RPM_YN=0
+----
+
+Either edit the bootstrap script directly and add the settings, or create the bootstrap script with these parameters:
+
+----
+mgr-bootstrap --script=bootstrap-sl-micro.sh \
+    --ssl-cert=/srv/www/htdocs/pub/RHN-ORG-TRUSTED-SSL-CERT
+----
+
+
+
+[[clients-slmicro-reboot]]
+== Reboot {sl-micro}
+
+{sl-micro} is a transactional system.
+Transactional updates in general support several reboot methods.
+It is recommended to use [systemitem]``systemd`` for rebooting in systems managed by {productname}.
+Using other methods can lead to undesired behavior.
+
+When bootstrapping a transactional system on {productname}, [systemitem]``systemd`` will be configured as the reboot method ([literal]``REBOOT_METHOD``), if the system is in its default configuration.
+Such a configuration allows {productname} to control the reboot action, and rebooting can be performed immediately or scheduled with {productname} as wanted.
+
+
+=== Background Information
+
+By default, the reboot method during client installation is set to [option]``auto``.
+With the [option]``auto`` boot method, [command]``rebootmgrd`` will be used to reboot the system according to the configured policies if the service is running.
+Policies can be to reboot instantly or during a maintenance window.
+For more information, see the [command]``rebootmgrd``(8) man page.
+Otherwise if [command]``rebootmgrd`` is not running, {productname} will call [command]``systemctl reboot``.
+
+[NOTE]
+====
+Using any method different from [command]``systemd`` may cause undesired behavior.
+====
+
+// 2023-05-23, ke: The rest is commented and the user will not see the
+//                 following remarks/background info:
+////
+Otherwise, the only thing Suma will be able to do is to ask for a reboot and it will be managed in the peculiarities of each reboot method. Not having control of when the reboot should happen, also takes away from Suma the ability to perform the reboot on its own maintenance windows, which is not the ideal configuration.
+
+The user must be able to change reboot method at any time and SUSE Manager will keep it. But in this case we should alert in the documentation that using any method different from systemd may cause undesired behavior.
+////

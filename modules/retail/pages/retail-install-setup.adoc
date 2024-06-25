@@ -5,27 +5,25 @@
 
 To set up the {productname} {smr} environment, you will need to have already installed and configured:
 
-* {productname} {smr} Server
-* one or more {productname} {smr} branch server proxies, or containerized proxy
+* {productname} Server
+* one or more {productname} {smr} branch server containerized proxy
 * one or more {productname} build hosts
+* network stack depending on selected network architecture, see xref:retail:retail-network-arch.adoc[]
 
 This section covers how to configure your {productname} {smr} environment, including:
 
 * Prepare POS images
-* Prepare system groups
+* Prepare system groups for {saltboot}
 * Configure services for {saltboot}
-* Synchronize POS images to the branch servers
 
-The very first time you set up the {productname} {smr} environment, you will need to perform all configuration steps.
+The very first time you set up the {productname} {smr} environment, you will need to perform all configuration steps in order.
 You will need to revisit some of these steps later on as you are working with {productname} {smr}.
 
-For example, the first time you configure the branch server, you will need to have images prepared for synchronization.
-If you are configuring more than one branch server, you can use the same images across different branch servers.
+For example, the first time you configure the branch server group, you will need to have images prepared already.
+If you are configuring more than one branch server, the same images are reused across different branch server groups.
 
 If you have an existing environment, and need to build new images, you do not need to re-initialize the branches.
-You will need to synchronize the images, and can skip setting up the services on the branch server.
 
-Usually, POS images are rebuild when updated packages are available, and synchronized to the branch servers before the update window opens.
 
 == Prepare and Build Terminal Images
 
@@ -41,41 +39,31 @@ These templates need to be adapted for specific usecases, for example by includi
 
 [IMPORTANT]
 ====
-By default, POS templates do not include a system user.
-You will not be able to login as a user to a system that has been installed with a {suse} provided template.
-However you can use Salt to manage clients without a system user.
-You can use Salt to install a system user after the terminal has been deployed.
+POS image templates and resulting images do not set a system user password.
+You will not be able to login as a system user to a system that has been installed with a {suse} provided template without customization.
+However you can use Salt to manage clients without a system user password.
+You can use {salt} to set up a system user password after the terminal has been deployed.
 ====
 
-=== SLES{nbsp}11 SP{nbsp}3 Terminals
+=== Validate POS Image Registration
 
-[WARNING]
-====
-SLES{nbsp}11 reached end of life and is no longer supported and can stop working at any moment.
-====
+After POS image is successfully built and inspected by {productname}, you can validate that POS boot image was correctly registered by following procedure.
 
-POS Terminals based on {sles}{nbsp}11 SP{nbsp}3 can be deployed in much the same way as other terminals, with a few differences.
+.Procedure Validate POS boot image
 
-* You must use the SLES{nbsp}11 template
-* SLES{nbsp}11 images need to be activated with the [systemitem]``SLES11 SP3 i586`` and [systemitem]``SLEPOS 11 SP3 i586`` channels
+. On {productname} command line execute following command:
++
+----
+mgrctl exec cobbler distro list
+----
+. Your POS image should be listed with organization number before image name
 
-[IMPORTANT]
-====
-Ensure that SLES{nbsp}11 images are built on the SLES{nbsp}11 build host.
-Building on the incorrect build host will cause your build to fail.
+== Branch Identification
 
-If you are building images for SLES{nbsp}11 using profiles from an HTTPS git repository that uses TLS 1.0 or greater, it will fail.
-SLES{nbsp}11 does not support later versions of TLS.
-You will need to clone the repository locally to use it for building.
-====
+For every branch server choose [systemitem]``branch id``.
 
-== Branch identification and architecture topology
+As a [systemitem]``branch id`` select any alphanumerical string with up to 64 characters.
 
-Before you configure the branch server, ensure you have decided on networking topology and you choose [systemitem]``branch id``.
-
-For information about the possible network topologies, see xref:retail:retail-network-arch.adoc[].
-
-As a [systemitem]``branch id`` select any alphanumerical string.
 
 == Required System Groups
 
@@ -112,22 +100,35 @@ During terminal bootstrap terminal automatically joins:
 
 [NOTE]
 ====
-{productname} {smr} command line tools create required system groups and branch group automatically.
-====
-
-[NOTE]
-====
-In case you plan to use the branch server as a monitoring server with Prometheus, be aware that Prometheus demands additional hardware resources.
+In case you plan to use the branch server container host as a monitoring server with Prometheus, be aware that Prometheus demands additional hardware resources.
 For more information about installing Prometheus, see xref:administration:monitoring.adoc[].
 ====
 
 [NOTE]
 ====
-In case you plan to use the branch server with Ansible software, be aware that Ansible demands additional hardware resources.
+In case you plan to use the branch server container host with Ansible software, be aware that Ansible demands additional hardware resources.
 For more information about installing Ansible, see xref:administration:ansible-integration.adoc[].
 ====
 
-== Configure Services for {saltboot}
+=== {saltboot} group
+
+[IMPORTANT]
+====
+Before configuring {saltboot} group, make sure you already have at least one POS image available.
+====
+
+Containerized {productname} {smr} is configured using so called [systemitem]``Saltboot Group``.
+
+{saltboot} Group is a branch groups, system group with branch id as its name created in previous step, with [systemitem]``Saltboot Group`` formula enabled.
+
+image::saltboot_group.png[scaledwidth=80%]
+
+[systemitem]``Saltboot Group`` formula is a successor of [systemitem]``Branch Network formula``, [systemitem]``PXE formula`` and [systemitem]``TFTP formula`` previously used in {productname} {smr} setups.
+
+To connect [systemitem]``Saltboot group`` with containerized proxy fill [systemitem]``Image Download Server`` entry with Fully Qualified Domain Name ([literal]``FQDN``) of the containerized proxy.
+
+
+== Configure Network Services for {saltboot}
 
 {saltboot} technology is used to deploy POS images to the terminals.
 {saltboot} consists of saltboot enabled initrd (build as part of POS images) and saltboot {salt} states.
@@ -136,7 +137,7 @@ This section covers general information about generic {saltboot} requirements.
 For configuration examples, see xref:retail:example-configurations.adoc[].
 
 
-=== Enable PXE network boot in the terminal network
+=== Enable PXE Network Boot in the Terminal Network
 
 {saltboot} is usually used in network boot environment.
 For this to work [systemitem]``DHCP`` service for the network terminal is connected to must have [systemitem]``PXE`` or sometimes called [systemitem]``BOOTP`` support enabled.
@@ -149,85 +150,39 @@ For this to work [systemitem]``DHCP`` service for the network terminal is connec
   }
   else {
     if option arch = 00:07 {
-       filename "boot/shim.efi";
+       filename "grub/shim.efi";
        next-server <IP address of branch server proxy>;
     }
     else {
-      filename "boot/pxelinux.0";
+      filename "pxelinux.0";
       next-server <IP address of branch server proxy>;
     }
   }
 ====
 
-Notice two important options, [systemitem]``next-server`` which is set to the branch server IP address and [systemitem]``filename`` set to the [systemitem]``boot/pxelinux.0`` for BIOS based system and [systemitem]``boot/shim.efi`` for UEFI systems with SecureBoot support.
+Notice two important options, [systemitem]``next-server`` which is set to the branch server IP address and [systemitem]``filename`` set to the [systemitem]``pxelinux.0`` for BIOS based system and [systemitem]``grub/shim.efi`` for UEFI systems with SecureBoot support.
 
 [IMPORTANT]
 ====
-Containerized branch proxy uses different [systemitem]``filename`` then regular branch server.
+{productname} {smr} branch proxy uses different [systemitem]``filename`` then previous non-containerized branch server.
 
 For containerized branch proxy set [systemitem]``filename`` to the [systemitem]``pxelinux.0`` for BIOS based system and [systemitem]``grub/shim.efi`` for UEFI systems with SecureBoot.
 ====
 
-=== {saltboot} service discovery
 
-{saltboot} requires some information where the Salt master is and from where to download the image.
-{saltboot} tries multiple discoveries to obtain this information, described below.
+== Terminal Partitioning and Image Selection
 
-For successful terminal deployment, both service discoveries must be successful.
-Depending on your architecture, choose what strategy works for you best.
-
-
-==== Salt master discovery
-
-During {saltboot} initrd start, integrated {salt} client needs to find branch server proxy to connect to.
-This discovery is trying following steps:
-
-- [systemitem]``MASTER`` kernel command line option is set, then this is used as Salt master
-- resolve [systemitem]``salt`` CNAME, if successful then resolved value is used as Salt master
-- use [systemitem]``salt`` as a Salt master
-
-Once Salt master is determined, Salt client configuration is generated and started.
-
-[IMPORTANT]
-====
-Using fully qualified domain name in [systemitem]``MASTER`` or [systemitem]``salt`` CNAME is important.
-
-If used fully qualified domain name is different from fully qualified domain name of branch server proxy known to {productname}, {saltboot} may work correctly, however proxy detection of terminal will not work.
-====
-
-==== Download server discovery
-
-Before POS image is downloaded to the terminal, download server discovery is done to find where to download image from:
-
-- [systemitem]``saltboot_download_server`` pillar is set for terminal, then its value is used
-- [systemitem]``saltboot:download_server`` pillar is set for terminal, then its value is used
-- resolve [systemitem]``ftp`` hostname
-
-Value obtained by download server discovery is then used together with POS image pillar to fetch correct image from correct location.
-
-=== Terminal partitioning and image selection
-
-Last piece for {saltboot} is to provide partitioning for terminal.
+{saltboot} requires instructions how to partitioning terminal harddisk and what image to deploy.
 This is done individually for each hardware type of terminals.
-For more information about hardware types, see xref:retail:retail-deploy-terminals.adoc[].
+For more information about hardware types and partitioning, see xref:retail:retail-deploy-terminals.adoc[].
 
 Above mentioned steps are mandatory minimum for successful {saltboot} deployment.
 For configuration examples, see xref:retail:example-configurations.adoc[].
 
+
 == Synchronize Images to the Branch Server
 
-The OS image you use on the {productname} server must be synchronized for use to the branch server.
-You can do this with the Salt [command]``image-sync`` state, part of the [systemitem]``Image Synchronization Formula``.
+{productname} {smr} {productnumber} no longer need manual image synchronization, all images are available to all clients automatically.
 
-.Procedure: Synchronizing Images to the Branch Server
-
-. On the {productname} server, run this command:
-+
-----
-salt <branch_server_minion_id> state.apply image-sync
-----
-. The image details will be transferred to [path]``/srv/saltboot`` on the branch server.
-
-You can also set synchronization to run automatically on the branch server.
-Configure the image synchronization formula to apply the highstate regularly.
-For more information about [systemitem]``Image Synchronization Formula``, see xref:specialized-guides:salt/salt-formula-imagesync.adoc[].
+This may not be always desired, for example to allow images gradual deployments across all branches.
+For a way how to limit image deployment, see xref:retail:retail-best-practices.adoc[].

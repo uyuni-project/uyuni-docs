@@ -1,0 +1,61 @@
+[[installation-proxy-containers-k3s-uyuni]]
+= Install Containerized {productname} Proxy on k3s
+ifeval::[{suma-content} == true]
+:noindex:
+endif::[]
+
+
+[[installation-proxy-containers-k3s-k3s]]
+== Installing k3s
+
+On the container host machine, install [literal]``k3s`` (replace [literal]``<K3S_HOST_FQDN>`` with the FQDN of your k3s host):
+
+----
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--tls-san=<K3S_HOST_FQDN>" sh -
+----
+
+[[installation-proxy-containers-k3s-helm]]
+== Installing tools
+
+The installation requires the [literal]``mgrpxy`` and [literal]``helm`` packages.
+
+ifeval::[{suma-content} == true]
+The [literal]``mgrpxy`` package is available in the {productname} Proxy product repositories.
+
+[NOTE]
+====
+The Containers Module is required to install [literal]``helm``.
+====
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+The [literal]``mgrpxy`` package is available in the container utils repository: pick the one matching the distribution in: https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable:/ContainerUtils/.
+endif::[]
+
+To install them run:
+
+----
+zypper in helm mgrpxy
+----
+
+[[installation-proxy-containers-k3s-deploy]]
+== Deploying the {productname} proxy helm chart
+
+To configure the storage of the volumes to be used by the {productname} Proxy pod, define persistent volumes for the following claims.
+If you do not customize the storage configuration, k3s will automatically create the storage volumes for you.
+
+The persistent volume claims are named:
+
+* [literal]``squid-cache-pv-claim``
+* [literal]``/package-cache-pv-claim``
+* [literal]``/tftp-boot-pv-claim``
+
+Create the configuration for the {productname} Proxy as documented in xref:installation-and-upgrade:container-deployment/uyuni/proxy-container-setup-uyuni.adoc[].
+Copy the configuration [literal]``tar.gz`` file and then install:
+
+----
+mgrpxy install kubernetes /path/to/config.tar.gz
+----
+
+For more information see link:https://kubernetes.io/docs/concepts/storage/persistent-volumes/[] (kubernetes) or link:https://rancher.com/docs/k3s/latest/en/storage/[] (k3s) documentation.

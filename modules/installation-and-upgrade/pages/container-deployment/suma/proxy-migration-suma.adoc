@@ -1,0 +1,195 @@
+= Proxy Migration
+
+In {productname} 4.3, the containerized proxy is managed by a set of systemd services.
+
+In {productname} {productnumber}, management of the containerized proxy was re-designed and made simpler with the [command]``mgrpxy`` tool.
+
+This section will help you migrate from the legacy [systemitem]``systemd`` proxy using the new [command]``mgrpxy`` tool.
+
+[IMPORTANT]
+====
+An in-place migration from {productname} 4.3 to 5.0 will remain unsupported due to the HostOS change from {sles} 15 SP4 to {micro} {microversion}
+
+The traditional contact protocol is no longer supported in {productname} 5.0 and later.
+Before migrating from {productname} 4.3 to {productnumber}, any existing traditional clients including the traditional proxies must be migrated to {salt}.
+
+For more information about migrating traditional {productname} 4.3 clients to {salt} clients, see https://documentation.suse.com/suma/4.3/en/suse-manager/client-configuration/contact-methods-migrate-traditional.html
+====
+
+
+
+== Migrate from Legacy to Containerized Proxy with Systemd
+
+=== Generate the Proxy Configuration
+
+.Task: Generate the Proxy Configuration
+. Log in to the {productname} Server {webui}.
+. Select menu:Systems[Proxy Configuration] from the left navigation.
+. Enter your Proxy FQDN. Use the same FQDN as the original proxy host.
+. Enter your Server FQDN.
+. Enter the Proxy port number. __We recommend using the default port of 8022__
+. Certificate and private key are located on the Server container host in `/var/lib/containers/storage/volumes/root/_data/ssl-build/`.
+  * RHN-ORG-TRUSTED-SSL-CERT
+  * RHN-ORG-PRIVATE-SSL-KEY
+. Copy the certificate and key to your machine with: 
++
+
+----
+scp root@suma43-example.com:/root/ssl-build/RHN-ORG-PRIVATE-SSL-KEY .
+scp root@suma43-example.com:/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT .
+----
+
+. Select btn:[Choose File] and browse your local machine for the certificate.
+. Select btn:[Choose File] and brose your local machine for the private key.
+. Enter the CA password.
+. Click btn:[Generate].
+
+=== Transfer Proxy Configuration to New Host
+
+.Task: Transfer the Proxy Configuration
+. From the Server transfer the generated tar.gz file containing the proxy configuration to the new Proxy host:
++
+
+----
+scp config.tar.gz <suma-proxy-FQDN>:/root/
+----
+
+. Disable the legacy proxy prior to executing the next step:
++
+
+.Disable the Legacy Proxy
+----
+spacewalk-proxy stop
+----
+
+. Deploy the new Proxy with:
++ 
+
+----
+systemctl start uyuni-proxy-pod
+----
+
+. Enable the new Proxy with:
++ 
+
+----
+systemctl enable --now uyuni-proxy-pod
+----
+
+. Run `podman ps` to verify all the containers are present and running:
++
+
+----
+proxy-salt-broker
+proxy-httpd
+proxy-tftpd
+proxy-squid
+proxy-ssh
+----
+
+
+
+== Migrate {productname} 4.3 Proxy to {productname} {productnumber} Containerized Proxy
+
+
+
+.Task: Migrate {productname} 4.3 Containerized Proxy to {productname} {productnumber} New Containerized Proxy
+. Boot your new machine and begin installation of {micro} {microversion}.
+. During the installation register with {scc} using your {micro} {microversion} registration code.
+. Then register this machine using your {productname} {productnumber} Proxy Extension code.
+. Complete the installation.
+. Update the system:
++
+
+----
+transactional-update --continue
+----
+
+. Install [command]``mgrpxy`` and optionally, [command]``mgrpxy-bash-completion``:
++
+
+----
+transactional-update pkg install mgrpxy mgrpxy-bash-completion 
+----
++
+
+. Reboot.
+
+. Copy your tar.gz proxy configuration to the host.
+
+
+
+== Installing packages using the {webui}
+
+The [package]``mgrpxy`` and [package]``mgrpxy-bash-completion`` packages can also be installed via the web UI after the minion has been bootstrapped and registered with the Server.
+
+.Task: Installing Packages using the {webui}
+. After installation, ensure that the {micro} {microversion} Parent channel and Proxy child channels are added and synced from the menu:Admin[Setup Wizard -> Products] page.
+. In the {webui}, go to menu:Systems[Activation Keys] and create an activation key linked to the synced {micro} {microversion} channel.
+. Bootstrap your system as a minion using the menu:Systems[Bootstrapping] page.
+. Once the new machine is onboarded and displayed in the systems list, select the system and navigate to the menu:System Details[Install Package] page.
+. Install the packages [package]``mgrpxy`` and [package]``mgrpxy-bash-completion``.
+. Reboot the system.
+
+== Generate Proxy Config with spacecmd and Self-Signed Certificate
+
+.Task: Generate Proxy Config with spacecmd and Self-Signed Certificate
+You can generate a Proxy configuration using spacecmd.
+
+. SSH into your container host.
+
+. Execute the following command replacing the Server and Proxy FQDN:
++
+----
+mgrctl exec -ti 'spacecmd proxy_container_config_generate_cert -- dev-pxy.example.com dev-srv.example.com 2048 email@example.com' -o /tmp/config.tar.gz
+----
+
+. Copy the generated config to the Proxy:
++
+----
+mgrctl cp server:/tmp/config.tar.gz .
+----
+
+. Deploy the Proxy with:
++ 
+
+----
+mgrpxy install podman config.tar.gz
+----
+
+== Generate Proxy Config with spacecmd and Custom Certificate
+
+You can generate a Proxy configuration using spacecmd for a custom certificates rather than the default self signed certificates.
+
+[NOTE]
+====
+2 GB represents the default proxy squid cache size. This will need to be adjusted for your environment.
+====
+
+.Task: Generate Proxy Config with spacecmd and Custom Certificate
+. SSH into your Server container host.
+. Execute the following command replacing the Server and Proxy FQDN:
++
+
+----
+for f in ca.crt proxy.crt proxy.key; do
+  mgrctl cp $f server:/tmp/$f
+done
+mgrctl exec -ti 'spacecmd proxy_container_config -- -p 8022 pxy.example.com srv.example.com 2048 email@example.com /tmp/ca.crt /tmp/proxy.crt /tmp/proxy.key -o /tmp/config.tar.gz'
+----
+
+. Copy the generated config to the Proxy:
++
+
+----
+mgrctl cp server:/tmp/config.tar.gz .
+----
+
+. Deploy the Proxy with:
++ 
+
+----
+mgrpxy install podman config.tar.gz
+----
+
+
