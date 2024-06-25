@@ -1,3 +1,4 @@
+- Fixed layout in Liberate Formula
 - Remove SUSE Liberty Linux Base Media section
 - Removed outdated disclaimer in CLM examples regarding AppStreams
   (bsc#1226687)
