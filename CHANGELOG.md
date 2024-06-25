@@ -1,3 +1,5 @@
+- Removed outdated disclaimer in CLM examples regarding AppStreams
+  (bsc#1226687)
 - Documented proper --mirrorPath parameter in disconnected setup chapter of
   the Administration Guide
 - Fixed reposync path for SUSE Liberty Linux Base Media
