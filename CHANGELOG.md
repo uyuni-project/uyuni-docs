@@ -1,3 +1,4 @@
+- Added details on image management in Administration Guide (bsc#1222574)
 - Removed outdated disclaimer in CLM examples regarding AppStreams
   (bsc#1226687)
 - Documented proper --mirrorPath parameter in disconnected setup chapter of
