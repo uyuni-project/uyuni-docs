@@ -1,5 +1,7 @@
 - Updated lists of SUSE Linux Enterprise hardening profiles in openSCAP
   chapter of the Administration Guide
+- Removed outdated disclaimer in CLM examples regarding AppStreams
+  (bsc#1226687)
 - Documented proper --mirrorPath parameter in disconnected setup chapter of
   the Administration Guide
 - Fixed Activation Key link in SUSE Liberty Linux Clients page
