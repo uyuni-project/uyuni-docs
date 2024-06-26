@@ -1,5 +1,6 @@
 - Updated lists of SUSE Linux Enterprise hardening profiles in openSCAP
   chapter in the Administration Guide
+- Added SUSE Liberty Linux 7 LTSS entries (bsc#1226913)
 - Removed outdated disclaimer in CLM examples regarding AppStreams
   (bsc#1226687)
 - Documented proper --mirrorPath parameter in disconnected setup chapter of
