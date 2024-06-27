@@ -1,0 +1,34 @@
+= Deploying on RKE2
+
+== Prerequisites
+The following assumes you have either a single-node RKE2 cluster ready or a server with Podman installed and enough resources for the Uyuni server. 
+
+[NOTE]
+====
+In the case of an RKE2 cluster the kubeconfig will be discovered in the default /etc/rancher folder: there is no need to set KUBECONFIG or copy the file to ~/.kube/config.
+====
+
+== Preparing the Deployment
+
+Podman stores its volumes in [filepath]``/var/lib/containers/storage/volumes/``. To provide custom storage for these volumes, you can mount disks to this path or directly to the expected volume path within it, such as [filepath]``/var/lib/containers/storage/volumes/var-spacewalk``.
+
+Ensure this setup is completed before installing {productname}, as the volumes will be populated during the installation process.
+
+RKE2 does not automatically provision Persistent Volumes by default. Therefore, you must either create the required Persistent Volumes in advance or define a storage class with automatic provisioning before installing Uyuni.
+
+== Offline installation
+
+Just like for K3S, cert-manager images and chart do not need to be copied if a third party SSL server certificate is to be used.
+
+RKE2 doesn't allow to preload images on the nodes. Instead, use skopeo to import the images in a local registry and use this one to install.
+
+Copy the cert-manager and uyuni/server-helm helm charts locally:
+
+----
+helm pull --repo https://charts.jetstack.io --destination . cert-manager
+helm pull --destination . oci://registry.opensuse.org/uyuni/server-helm
+----
+
+//TODO Copy the cert-manager and uyuni images
+//TODO Set the mgradm parameters
+
