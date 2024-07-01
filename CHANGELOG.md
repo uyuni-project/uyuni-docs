@@ -1,6 +1,8 @@
 - Added admonition about domain name and IP address while migrating
   from a non-containerized server in Installation and Upgrade Guide
   (bsc#1227177)
+- Fixed documentation concerning strict mode in Custom Channels chapter
+  in the Administration Guide (bsc#1227130)
 - Updated lists of SUSE Linux Enterprise hardening profiles in openSCAP
   chapter in the Administration Guide
 - Added SUSE Liberty Linux 7 LTSS entries (bsc#1226913)
