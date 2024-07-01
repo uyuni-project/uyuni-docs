@@ -1,3 +1,5 @@
+- Warn about copying certification files manually while migrating
+  4.3 servers to 5.0 in Installation and Upgrade Guide
 - Fixed documentation concerning strict mode in Custom Channels chapter
   in the Administration Guide (bsc#1227130)
 - Updated lists of SUSE Linux Enterprise hardening profiles in openSCAP
