@@ -1,3 +1,4 @@
+- Fixed proxy deployment details (bsc#1226843)
 - Fixed documentation concerning strict mode in Custom Channels chapter
   in the Administration Guide (bsc#1227130)
 - Updated lists of SUSE Linux Enterprise hardening profiles in openSCAP
