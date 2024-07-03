@@ -1,3 +1,4 @@
+- Fixed proxy deployment details (bsc#1226843)
 - Added admonition about domain name and IP address while migrating
   from a non-containerized server in Installation and Upgrade Guide
   (bsc#1227177)
