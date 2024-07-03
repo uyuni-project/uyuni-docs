@@ -1,3 +1,5 @@
+- Warn about copying certification files manually while migrating
+  4.3 servers to 5.0 in Installation and Upgrade Guide (bsc#1227198)
 - Added admonition about domain name and IP address while migrating
   from a non-containerized server in Installation and Upgrade Guide
   (bsc#1227177)
