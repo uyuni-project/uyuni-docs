@@ -10,16 +10,46 @@ To migrate a {productname} {productnumber} Server to a container, a new machine 
 
 [IMPORTANT]
 ====
-An in-place migration from {productname} 4.3 to 5.0 will remain unsupported due to the HostOS change from {sles} 15 SP4 to {micro} {microversion}
+An in-place migration from {productname} 4.3 to 5.0 will remain unsupported because of the change of the underlying operating system from {sles} 15 SP4 to {micro} {microversion}.
 
 The traditional contact protocol is no longer supported in {productname} 5.0 and later.
 Before migrating from {productname} 4.3 to {productnumber}, any existing traditional clients including the traditional proxies must be migrated to {salt}.
 
-For more information about migrating traditional {productname} 4.3 clients to {salt} clients, see https://documentation.suse.com/suma/4.3/en/suse-manager/client-configuration/contact-methods-migrate-traditional.html
+For more information about migrating traditional {productname} 4.3 clients to {salt} clients, see https://documentation.suse.com/suma/4.3/en/suse-manager/client-configuration/contact-methods-migrate-traditional.html.
 ====
 
 
 The original server is referred to as the **source server,** while the newly set-up machine is designated as the **destination server.**
+
+
+[IMPORTANT]
+====
+Self trusted GPG keys are not migrated.
+GPG keys that are trusted in the RPM database only are not migrated.
+Thus synchronizing channels with [command]``spacewalk-repo-sync`` can fail.
+
+The administrator must migrate these keys manually from the 4.3 installation:
+
+1. Copy the keys from the source server to the container host of the destination server.
+2. Add the keys to the container with [command]``mgradm gpg add ...``.
+
+
+
+[IMPORTANT]
+====
+Trusted SSL CA certificates that were installed as part of an RPM and store on {productname} 4.3 in the [path]``/usr/share/pki/trust/anchors/`` directory will not be migrated.
+Because {suse} does not install RPM packages in the container, the administrator must migrate these certificate files manually from the 4.3 installation:
+
+1. Copy the file from the source server to the destination server.
+   For example, as [path]``/local/ca.file``.
+
+2. Copy the file into the container with:
++
+
+----
+mgradm cp /local/ca.file server:/etc/pki/trust/anchors/
+----
+====
 
 The migration procedure currently does not include any hostname renaming functionality.
 The fully qualified domain name (FQDN) of the destination server will remain identical to the one of the source server.
@@ -53,8 +83,8 @@ systemctl stop postgresql
 [NOTE]
 ====
 To establish a passwordless connection, the migration script relies on an SSH agent running on the destination server.
-If the agent is not active yet, initiate it by running `eval $(ssh-agent)`.
-Then, add the SSH key to the running agent with `ssh-add /path/to/the/private/key`.
+If the agent is not active yet, initiate it by running [command]``eval $(ssh-agent)``.
+Then, add the SSH key to the running agent with [command]``ssh-add /path/to/the/private/key``.
 You will be prompted to enter the password for the private key during this process.
 ====
 
@@ -67,11 +97,8 @@ You will be prompted to enter the password for the private key during this proce
 
 [IMPORTANT]
 ====
-When planning your migration from {productname} 4.3 to {productname} 5.0, please ensure that your target instance meets or exceeds the specifications of your current setup.
+When planning your migration from {productname} 4.3 to {productname} 5.0, ensure that your target instance meets or exceeds the specifications of your current setup.
 This includes, but is not limited to, [literal]``Memory (RAM)``, [literal]``CPU Cores``, [literal]``Storage``, [literal]``Network Bandwidth`` etc.
-
-By matching or exceeding these specifications, you can help ensure a smooth and efficient migration process, maintaining the performance and reliability of your SUSE Manager environment.
-
 ====
 
 .Procedure: Performing the Migration
