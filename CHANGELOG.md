@@ -1,6 +1,6 @@
-- Added Salt Connectivity section to the Specialized guides
-- Improved large deployments guide with better values and
-  extra parameters added.
+- Added Salt Connectivity section to the Specialized Guides
+- Improved Large Deployments Guide with better tuning values and
+  extra parameters added
 - Added admonition about domain name and IP address while migrating
   from a non-containerized server in Installation and Upgrade Guide
   (bsc#1227177)
