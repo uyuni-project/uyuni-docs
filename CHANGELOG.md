@@ -1,3 +1,4 @@
+- Warn about copying GPG keys manually while migrating
 - Warn about copying certification files manually while migrating
   4.3 servers to 5.0 in Installation and Upgrade Guide (bsc#1227198)
 - Fixed proxy deployment details (bsc#1226843)
