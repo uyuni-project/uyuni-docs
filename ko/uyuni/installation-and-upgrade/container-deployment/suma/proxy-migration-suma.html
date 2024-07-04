@@ -2015,28 +2015,20 @@
 <div id="toc" class="toc">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#_systemd를_사용하여_레거시에서_컨테이너화된_프록시로_마이그레이션">1. Systemd를 사용하여 레거시에서 컨테이너화된 프록시로 마이그레이션</a>
-<ul class="sectlevel2">
-<li><a href="#_generate_the_proxy_configuration">1.1. Generate the Proxy Configuration</a></li>
-<li><a href="#_transfer_proxy_configuration_to_new_host">1.2. Transfer Proxy Configuration to New Host</a></li>
-</ul>
-</li>
-<li><a href="#_migrate_uyuni_4_3_proxy_to_uyuni_2024_07_containerized_proxy">2. Migrate Uyuni 4.3 Proxy to Uyuni 2024.07 Containerized Proxy</a></li>
-<li><a href="#_webui를_사용하여_패키지_설치">3. Web UI를 사용하여 패키지 설치</a></li>
-<li><a href="#_spacecmd_및_자체_서명_인증서를_사용하여_프록시_구성_생성">4. spacecmd 및 자체 서명 인증서를 사용하여 프록시 구성 생성</a></li>
-<li><a href="#_spacecmd_및_사용자_지정_인증서를_사용하여_프록시_구성_생성">5. spacecmd 및 사용자 지정 인증서를 사용하여 프록시 구성 생성</a></li>
+<li><a href="#_deploy_a_new_uyuni_proxy">1. Deploy a New Uyuni Proxy</a></li>
+<li><a href="#_migrate_clients_to_the_new_proxy">2. Migrate Clients to the New Proxy</a></li>
 </ul>
 </div>
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>Uyuni 4.3에서 컨테이너화된 프록시는 systemd 서비스 세트에 의해 관리됩니다.</p>
+<p>In Uyuni 4.3, the proxy can be deployed using three different methods: RPM based, containerized running on podman or k3s.</p>
 </div>
 <div class="paragraph">
-<p>Uyuni 2024.07에서 컨테이너화된 프록시 관리는 [command] <code>mgrpxy</code> 도구를 사용하여 재설계되고 더 간소화되었습니다.</p>
+<p>In Uyuni 2024.07, management of the containerized proxy running with podman was re-designed and made simpler with the <code class="command">mgrpxy</code> tool. At the same time, RPM based support was removed, and only the containerized version running with podman or k3s is supported.</p>
 </div>
 <div class="paragraph">
-<p>이 섹션에서는 새로운 [command] <code>mgrpxy</code> 도구를 사용하여 레거시 <code class="systemitem">systemd</code> 프록시로부터 마이그레이션하는 데 도움을 줍니다.</p>
+<p>This section describes migrating from Proxy 4.3 using the <code class="command">mgrpxy</code> tool.</p>
 </div>
 <div class="admonitionblock important">
 <table>
@@ -2046,7 +2038,7 @@
 </td>
 <td class="content">
 <div class="paragraph">
-<p>SUSE Linux Enterprise Server 15 SP4에서 SLE Micro 5.5으로 HostOS가 변경되어 Uyuni 4.3에서 5.0으로의 인플레이스 마이그레이션은 계속 지원되지 않습니다.</p>
+<p>An in-place migration from Uyuni 4.3 to 5.0 is unsupported due to the HostOS change from SUSE Linux Enterprise Server 15 SP4 to SLE Micro 5.5.</p>
 </div>
 <div class="paragraph">
 <p>Uyuni 5.0 이상에서는 기존 연락 프로토콜이 더 이상 지원되지 않습니다. Uyuni 4.3에서 2024.07(으)로 마이그레이션하기 전에 기존 프록시를 포함한 기존의 모든 기존 클라이언트를 Salt로 마이그레이션해야 합니다.</p>
@@ -2061,289 +2053,74 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_systemd를_사용하여_레거시에서_컨테이너화된_프록시로_마이그레이션"><a class="anchor" href="#_systemd를_사용하여_레거시에서_컨테이너화된_프록시로_마이그레이션"></a><a class="link" href="#_systemd를_사용하여_레거시에서_컨테이너화된_프록시로_마이그레이션">1. Systemd를 사용하여 레거시에서 컨테이너화된 프록시로 마이그레이션</a></h2>
+<h2 id="_deploy_a_new_uyuni_proxy"><a class="anchor" href="#_deploy_a_new_uyuni_proxy"></a><a class="link" href="#_deploy_a_new_uyuni_proxy">1. Deploy a New Uyuni Proxy</a></h2>
 <div class="sectionbody">
-<div class="sect2">
-<h3 id="_generate_the_proxy_configuration"><a class="anchor" href="#_generate_the_proxy_configuration"></a><a class="link" href="#_generate_the_proxy_configuration">1.1. Generate the Proxy Configuration</a></h3>
-<div class="olist arabic">
-<div class="title">Task: Generate the Proxy Configuration</div>
-<ol class="arabic">
-<li>
-<p>Log in to the Uyuni Server Web UI.</p>
-</li>
-<li>
-<p>Select <span class="menuseq"><b class="menu">Systems</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">Proxy Configuration</b></span> from the left navigation.</p>
-</li>
-<li>
-<p>프록시 FQDN을 입력합니다. 원래 프록시 호스트와 동일한 FQDN을 사용합니다.</p>
-</li>
-<li>
-<p>서버 FQDN을 입력합니다.</p>
-</li>
-<li>
-<p>프록시 포트 번호를 입력합니다. <em>기본 포트인 8022를 사용하는 것이 좋습니다</em></p>
-</li>
-<li>
-<p>Certificate and private key are located on the Server container host in <code>/var/lib/containers/storage/volumes/root/_data/ssl-build/</code>.</p>
+<div class="paragraph">
+<p>Because in-place migration is not supported, the users must deploy a new Uyuni proxy with a new FQDN.</p>
+</div>
 <div class="ulist">
 <ul>
 <li>
-<p>RHN-ORG-TRUSTED-SSL-CERT</p>
-</li>
-<li>
-<p>RHN-ORG-PRIVATE-SSL-KEY</p>
+<p>For more information about installing Uyuni Proxy, see <a href="proxy-deployment-vm-suma.html" class="xref page">Deploy Proxy as a Virtual Machine</a>.</p>
 </li>
 </ul>
 </div>
-</li>
-<li>
-<p>다음을 사용하여 인증서와 키를 컴퓨터로 복사합니다.</p>
-<div class="listingblock">
-<div class="content">
-<pre>scp root@suma43-example.com:/root/ssl-build/RHN-ORG-PRIVATE-SSL-KEY .
-scp root@suma43-example.com:/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT .</pre>
-</div>
-</div>
-</li>
-<li>
-<p><b class="button">파일 선택</b>을 선택하고 로컬 컴퓨터에서 인증서를 찾습니다</p>
-</li>
-<li>
-<p><b class="button">파일 선택</b>을 선택하고 로컬 컴퓨터에서 개인 키를 찾습니다.</p>
-</li>
-<li>
-<p>Enter the CA password.</p>
-</li>
-<li>
-<p>Click <b class="button">Generate</b>.</p>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_transfer_proxy_configuration_to_new_host"><a class="anchor" href="#_transfer_proxy_configuration_to_new_host"></a><a class="link" href="#_transfer_proxy_configuration_to_new_host">1.2. Transfer Proxy Configuration to New Host</a></h3>
-<div class="olist arabic">
-<div class="title">Task: Transfer the Proxy Configuration</div>
-<ol class="arabic">
-<li>
-<p>서버에서 프록시 구성이 포함된 생성된 tar.gz 파일을 새 프록시 호스트로 전송합니다.</p>
-<div class="listingblock">
-<div class="content">
-<pre>scp config.tar.gz &lt;suma-proxy-FQDN&gt;:/root/</pre>
-</div>
-</div>
-</li>
-<li>
-<p>다음 단계를 실행하기 전에 레거시 프록시를 비활성화합니다.</p>
-<div class="listingblock">
-<div class="title">Listing 1. Disable the Legacy Proxy</div>
-<div class="content">
-<pre>spacewalk-proxy stop</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Deploy the new Proxy with:</p>
-<div class="listingblock">
-<div class="content">
-<pre>systemctl start uyuni-proxy-pod</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Enable the new Proxy with:</p>
-<div class="listingblock">
-<div class="content">
-<pre>systemctl enable --now uyuni-proxy-pod</pre>
-</div>
-</div>
-</li>
-<li>
-<p>`podman ps`를 실행하여 모든 컨테이너가 있고 실행 중인지 확인합니다.</p>
-<div class="listingblock">
-<div class="content">
-<pre>proxy-salt-broker
-proxy-httpd
-proxy-tftpd
-proxy-squid
-proxy-ssh</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_migrate_uyuni_4_3_proxy_to_uyuni_2024_07_containerized_proxy"><a class="anchor" href="#_migrate_uyuni_4_3_proxy_to_uyuni_2024_07_containerized_proxy"></a><a class="link" href="#_migrate_uyuni_4_3_proxy_to_uyuni_2024_07_containerized_proxy">2. Migrate Uyuni 4.3 Proxy to Uyuni 2024.07 Containerized Proxy</a></h2>
+<h2 id="_migrate_clients_to_the_new_proxy"><a class="anchor" href="#_migrate_clients_to_the_new_proxy"></a><a class="link" href="#_migrate_clients_to_the_new_proxy">2. Migrate Clients to the New Proxy</a></h2>
 <div class="sectionbody">
-<div class="olist arabic">
-<div class="title">Task: Migrate Uyuni 4.3 Containerized Proxy to Uyuni 2024.07 New Containerized Proxy</div>
-<ol class="arabic">
-<li>
-<p>Boot your new machine and begin installation of SLE Micro 5.5.</p>
-</li>
-<li>
-<p>During the installation register with SUSE Customer Center using your SLE Micro 5.5 registration code.</p>
-</li>
-<li>
-<p>Then register this machine using your Uyuni 2024.07 Proxy Extension code.</p>
-</li>
-<li>
-<p>Complete the installation.</p>
-</li>
-<li>
-<p>Update the system:</p>
-<div class="listingblock">
-<div class="content">
-<pre>transactional-update --continue</pre>
-</div>
-</div>
-</li>
-<li>
-<p><code class="command">mgrpxy</code>와 선택적으로 <code class="command">mgrpxy-bash-completion</code>을 설치합니다.</p>
-<div class="listingblock">
-<div class="content">
-<pre>transactional-update pkg install mgrpxy mgrpxy-bash-completion</pre>
-</div>
-</div>
-</li>
-<li>
-<p>재부팅합니다.</p>
-</li>
-<li>
-<p>Copy your tar.gz proxy configuration to the host.</p>
-</li>
-</ol>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_webui를_사용하여_패키지_설치"><a class="anchor" href="#_webui를_사용하여_패키지_설치"></a><a class="link" href="#_webui를_사용하여_패키지_설치">3. Web UI를 사용하여 패키지 설치</a></h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p><code class="package">mgrpxy</code> 및 <code class="package">mgrpxy-bash-completion</code> 패키지는 미니언이 부트스트랩되어 서버에 등록된 후 웹 UI를 통해 설치할 수도 있습니다.</p>
-</div>
-<div class="olist arabic">
-<div class="title">작업: Web UI를 사용하여 패키지 설치</div>
-<ol class="arabic">
-<li>
-<p>설치가 완료되면 <span class="menuseq"><b class="menu">관리자</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">설정 마법사 &#8594; 제품</b></span> 페이지에서 SLE Micro 5.5 상위 채널과 프록시 하위 채널을 추가하고 동기화합니다.</p>
-</li>
-<li>
-<p>Web UI에서 <span class="menuseq"><b class="menu">시스템</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">활성화 키</b></span>로 이동하여 동기화된 SLE Micro 5.5 채널에 연결된 활성화 키를 만듭니다.</p>
-</li>
-<li>
-<p><span class="menuseq"><b class="menu">시스템</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">부트스트랩</b></span> 페이지를 사용하여 시스템을 미니언으로 부트스트랩합니다.</p>
-</li>
-<li>
-<p>새 머신이 온보딩되어 시스템 목록에 표시되면 시스템을 선택하고 <span class="menuseq"><b class="menu">시스템 세부 정보</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">패키지 설치</b></span> 페이지로 이동합니다.</p>
-</li>
-<li>
-<p><code class="package">mgrpxy</code> 및 <code class="package">mgrpxy-bash-completion</code> 패키지를 설치합니다.</p>
-</li>
-<li>
-<p>Reboot the system.</p>
-</li>
-</ol>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_spacecmd_및_자체_서명_인증서를_사용하여_프록시_구성_생성"><a class="anchor" href="#_spacecmd_및_자체_서명_인증서를_사용하여_프록시_구성_생성"></a><a class="link" href="#_spacecmd_및_자체_서명_인증서를_사용하여_프록시_구성_생성">4. spacecmd 및 자체 서명 인증서를 사용하여 프록시 구성 생성</a></h2>
-<div class="sectionbody">
-<div class="paragraph">
-<div class="title">작업: spacecmd 및 자체 서명 인증서를 사용하여 프록시 구성 생성</div>
-<p>You can generate a Proxy configuration using spacecmd.</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>SSH into your container host.</p>
-</li>
-<li>
-<p>서버 및 프록시 FQDN을 바꾸는 다음 명령을 실행합니다.</p>
-<div class="listingblock">
-<div class="content">
-<pre>mgrctl exec -ti 'spacecmd proxy_container_config_generate_cert -- dev-pxy.example.com dev-srv.example.com 2048 email@example.com' -o /tmp/config.tar.gz</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Copy the generated config to the Proxy:</p>
-<div class="listingblock">
-<div class="content">
-<pre>mgrctl cp server:/tmp/config.tar.gz .</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Deploy the Proxy with:</p>
-<div class="listingblock">
-<div class="content">
-<pre>mgrpxy install podman config.tar.gz</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_spacecmd_및_사용자_지정_인증서를_사용하여_프록시_구성_생성"><a class="anchor" href="#_spacecmd_및_사용자_지정_인증서를_사용하여_프록시_구성_생성"></a><a class="link" href="#_spacecmd_및_사용자_지정_인증서를_사용하여_프록시_구성_생성">5. spacecmd 및 사용자 지정 인증서를 사용하여 프록시 구성 생성</a></h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>spacecmd를 사용하여 기본 자체 서명 인증서가 아닌 사용자 지정 인증서에 대해 프록시 구성을 생성할 수 있습니다.</p>
-</div>
-<div class="admonitionblock note">
+<div class="admonitionblock important">
 <table>
 <tr>
 <td class="icon">
-<i class="fa icon-note" title="Note"></i>
+<i class="fa icon-important" title="Important"></i>
 </td>
 <td class="content">
 <div class="paragraph">
-<p>2GB는 기본 프록시 squid 캐시 크기입니다. 사용자의 환경에 적합하도록 조정해야 합니다.</p>
+<p>Before migrating the clients, ensure that the new proxy is already deployed and fully functional.</p>
 </div>
 </td>
 </tr>
 </table>
 </div>
 <div class="olist arabic">
-<div class="title">작업: spacecmd 및 사용자 지정 인증서를 사용하여 프록시 구성 생성</div>
+<div class="title">Procedure: Migrating Client between Proxies</div>
 <ol class="arabic">
 <li>
-<p>SSH into your Server container host.</p>
+<p>Log in to the Uyuni Server Web UI.</p>
 </li>
 <li>
-<p>서버 및 프록시 FQDN을 바꾸는 다음 명령을 실행합니다.</p>
-<div class="listingblock">
-<div class="content">
-<pre>for f in ca.crt proxy.crt proxy.key; do
-  mgrctl cp $f server:/tmp/$f
-done
-mgrctl exec -ti 'spacecmd proxy_container_config -- -p 8022 pxy.example.com srv.example.com 2048 email@example.com /tmp/ca.crt /tmp/proxy.crt /tmp/proxy.key -o /tmp/config.tar.gz'</pre>
-</div>
-</div>
+<p>From the left navigation, select <span class="menuseq"><b class="menu">Systems</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">Systems List</b></span>.</p>
 </li>
 <li>
-<p>Copy the generated config to the Proxy:</p>
-<div class="listingblock">
-<div class="content">
-<pre>mgrctl cp server:/tmp/config.tar.gz .</pre>
-</div>
-</div>
+<p>Navigate to the old 4.3 proxy page, and click the <code class="guimenu">Proxy</code> tab.</p>
 </li>
 <li>
-<p>Deploy the Proxy with:</p>
-<div class="listingblock">
-<div class="content">
-<pre>mgrpxy install podman config.tar.gz</pre>
-</div>
-</div>
+<p>Select all system to "SSM".</p>
+</li>
+<li>
+<p>From the left navigation, select <span class="menuseq"><b class="menu">Systems</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">System Set Manager</b></span>.</p>
+</li>
+<li>
+<p>Select the sub-menu <span class="menuseq"><b class="menu">Misc</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">Proxy</b></span>.</p>
+</li>
+<li>
+<p>From the drop down select the new proxy to migrate to.</p>
+</li>
+<li>
+<p>Click on <b class="button">Change Proxy</b>.</p>
+</li>
+<li>
+<p>After this action, minions will be migrated to the new proxy.</p>
+</li>
+<li>
+<p>You can check the schedule progress to verify if all systems were successfully migrated.</p>
 </li>
 </ol>
+</div>
+<div class="paragraph">
+<p>After a few minutes, the machines will start to show up the new connection path. When all machines have the connection path under the new proxy, the old 4.3 proxy machine is not needed anymore and can be removed.</p>
 </div>
 </div>
 </div>
