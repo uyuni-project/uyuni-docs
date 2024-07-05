@@ -1,3 +1,4 @@
+- Fix indentation on install storage instructions
 - Update air-gap deployment for server and proxy
 - Improved proxy migration and installation in Installation and Upgrade
   Guide
