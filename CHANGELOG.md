@@ -1,3 +1,5 @@
+- Fix indentation on install storage instructions
+- Update air-gap deployment for server and proxy
 - Improved proxy migration and installation in Installation and Upgrade
   Guide
 - Warn about copying GPG keys manually while migrating
