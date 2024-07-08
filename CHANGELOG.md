@@ -1,3 +1,5 @@
+- Added more information about the Prometheus alert manager in
+  Administration Guide
 - Added Salt Connectivity section to the Specialized Guides
 - Improved Large Deployments Guide with better tuning values and
   extra parameters added
