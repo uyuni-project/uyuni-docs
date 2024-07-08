@@ -1,3 +1,5 @@
+- Add storage extra configuration for migration step in Installation and
+ Upgrade Guide
 - Added Salt Connectivity section to the Specialized Guides
 - Improved Large Deployments Guide with better tuning values and
   extra parameters added
