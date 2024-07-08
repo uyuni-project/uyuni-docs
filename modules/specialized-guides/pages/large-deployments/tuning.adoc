@@ -306,14 +306,14 @@ This section contains information about the available parameters.
 [cols="1,1"]
 |===
 | Description          | Before any action is executed on a client, a presence ping is executed to make sure the client is reachable.
-                         This parameter sets the amount of time before a second command (`find_job`) is sent to the client to verify its presence.
+                         This parameter sets the amount of time before a second command (in most cases `state.apply` or any other {salt} function) is sent to the client to verify its presence.
                          Having many clients typically means some will respond faster than others, so this timeout could be raised to accommodate for the slower ones.
 | Tune when            | xref:client-count[Client count] increases significantly, or some clients are responding correctly but too slowly, and {productname} excludes them from calls.
                          This line appears in [path]``/var/log/rhn/rhn_web_ui.log``: [systemitem]``"Got no result for <COMMAND> on minion <MINION_ID> (minion did not respond in time)"``
 | Value default        | 4 seconds
-| Value recommendation | 4-400 seconds
+| Value recommendation | 4-20 seconds
 | Location             | [path]``/etc/rhn/rhn.conf``
-| Example              | `java.salt_presence_ping_timeout = 40`
+| Example              | `java.salt_presence_ping_timeout = 10`
 | After changing       | Large `java.salt_presence_ping_timeout` value can reduce overall throughput.
                          This can be compensated by increasing xref:java-salt-event-thread-pool-size[`java.salt_event_thread_pool_size`]
 | More information     | xref:specialized-guides:salt/salt-timeouts.adoc[Salt Timeouts]
@@ -327,15 +327,15 @@ This section contains information about the available parameters.
 [cols="1,1"]
 |===
 | Description          | Before any action is executed on a client, a presence ping is executed to make sure the client is reachable.
-                         After xref:java-salt-presence-ping-timeout[`java.salt_presence_ping_timeout`] seconds have elapsed without a response, a second command (`find_job`) is sent to the client for a final check.
-                         This parameter sets the number of seconds after the second command after which the client is definitely considered offline.
+                         After xref:java-salt-presence-ping-timeout[`java.salt_presence_ping_timeout`] seconds have elapsed without a response, a second command (in most cases `state.apply` or any other {salt} function) is sent to the client and if there is no response from the client for the amount of seconds specified with this parameter one more call (`saltutil.find_job`) is sent for a final check.
+                         This parameter sets the number of seconds after the second command after which the client is definitely considered timeout.
                          Having many clients typically means some will respond faster than others, so this timeout could be raised to accommodate for the slower ones.
 | Tune when            | xref:client-count[Client count] increases significantly, or some clients are responding correctly but too slowly, and {productname} excludes them from calls.
                          This line appears in [path]``/var/log/rhn/rhn_web_ui.log``: [systemitem]``"Got no result for <COMMAND> on minion <MINION_ID> (minion did not respond in time)"``
 | Value default        | 1 second
-| Value recommendation | 1-100 seconds
+| Value recommendation | 1-50 seconds
 | Location             | [path]``/etc/rhn/rhn.conf``
-| Example              | `java.salt_presence_ping_gather_job_timeout = 10`
+| Example              | `java.salt_presence_ping_gather_job_timeout = 20`
 | More information     | xref:specialized-guides:salt/salt-timeouts.adoc[Salt Timeouts]
 |===
 
@@ -578,14 +578,50 @@ If you see lines containing ``LOG:  temporary file:`` try raising this parameter
 |===
 | Description          | The number of `salt-master` worker threads that process commands and replies from minions and the Salt API.
                          Increasing this value, assuming sufficient resources are available, allows Salt to process more data in parallel from minions without timing out, but will consume significantly more RAM (typically about 70 MiB per thread).
-| Tune when            | xref:client-count[Client count] increases significantly, xref:thread-pool[`thread_pool`] increases significantly, or `SaltReqTimeoutError` or `Message timed out` errors appear in `/var/log/salt/master`.
+                         Setting this value to very high values could cause opposite effect as the workers will compete to each other for the CPU resources and the performance could be dropped significantly.
+| Tune when            | xref:client-count[Client count] increases significantly, xref:thread-pool[`thread_pool`] increases significantly, or `SaltReqTimeoutError` or `Message timed out` errors appear in `/var/log/salt/master` could be a sign of too low or too high value of this parameter.
 | Value default        | 8
-| Value recommendation | 8-200
+| Value recommendation | 8-32, depending on the number of the CPU cores available for the server, it is recommended to keep the value slightly less than the number of CPU cores.
 | Location             | [path]``/etc/salt/master.d/tuning.conf``
-| Example              | `worker_threads: 50`
+| Example              | `worker_threads: 16`
 | After changing       | Check xref:memory-usage[memory usage].
                          Monitor memory usage closely before and after the change.
+                         It makes sense to monitor the `salt-master` stats event by enabling `master_stats` and adjusting `master_stats_event_iter` to fine tune the value of this parameter.
 | More information     | https://docs.saltstack.com/en/latest/ref/configuration/master.html#worker-threads
+|===
+
+
+
+[[auth-events]]
+=== `auth_events`
+
+[cols="1,1"]
+|===
+| Description          | Determines whether the master will fire authentication events. Authentication events are fired when a minion performs an authentication check with the master.
+                         It helps to reduce the number of events published with the Salt Master Event Publisher and reduce the workload on Event Publisher subscribers.
+| Tune when            | Large amount of `salt/auth` events published in the Salt event bus, which in most cases are useless for the subscribers.
+| Value default        | True
+| Value recommendation | False
+| Location             | [path]``/etc/salt/master.d/tuning.conf``
+| Example              | `auth_events: False`
+| More information     | https://docs.saltproject.io/en/latest/ref/configuration/master.html#auth-events
+|===
+
+
+
+[[minion-data-cache-events]]
+=== `minion_data_cache_events`
+
+[cols="1,1"]
+|===
+| Description          | Determines whether the master will fire minion data cache events (`minion/refresh/*`). Minion data cache events are fired when a minion requests a minion data cache refresh.
+                         It helps to reduce the number of events published with the Salt Master Event Publisher and reduce the workload on Event Publisher subscribers.
+| Tune when            | Large amount of `minion/refresh/*` events published in the Salt event bus, which in most cases are useless for the subscribers.
+| Value default        | True
+| Value recommendation | False
+| Location             | [path]``/etc/salt/master.d/tuning.conf``
+| Example              | `minion_data_cache_events: False`
+| More information     | https://docs.saltproject.io/en/latest/ref/configuration/master.html#minion-data-cache-events
 |===
 
 
@@ -638,8 +674,42 @@ If you see lines containing ``LOG:  temporary file:`` try raising this parameter
 
 
 
+[[wait-for-backend]]
+=== `wait_for_backend`
+
+[cols="1,1"]
+|===
+| Description          | Determines whether the `salt-broker` service should wait for backend sockets to be connected before opening the sockets for listening for connections from `salt-minions`.
+                         When enabled, it helps to prevent collecting ZeroMQ messages with the internal buffers of the sockets and pushing them to the `salt-master` once connection is restored.
+| Tune when            | Unstable connectivity between the {productname} Proxy and the {productname} Server.
+| Value default        | False
+| Value recommendation | True
+| Location             | [path]``/etc/salt/broker``
+| Example              | `wait_for_backend: True`
+| More information     | xref:specialized-guides:salt/salt-connectivity.adoc#proxies-connectivity[Proxies Connectivity]
+|===
+
+
+
+[[tcp-keepalive]]
+=== `tcp_keepalive`
+
+[cols="1,1"]
+|===
+| Description          | The tcp keepalive interval to set on TCP ports. This setting can be used to tune Salt connectivity issues in messy network environments with misbehaving firewalls.
+| Tune when            | Unstable connectivity between managed clients and the {productname} Proxy or the {productname} Server.
+| Value default        | True
+| Value recommendation | True
+| Location             | [path]``/etc/venv-salt-minon/minion.d/tuning.conf`` or [path]``/etc/salt/minion.d/tuning.conf``, depending on the minion type.
+| Example              | `tcp_keepalive: True`
+| After changing       | Check xref:specialized-guides:salt/salt-connectivity.adoc#minions-connectivity[Minions Connectivity] for more details to fine tune extra keepalive parameters.
+| More information     | https://docs.saltproject.io/en/latest/ref/configuration/minion.html#tcp-keepalive, xref:specialized-guides:salt/salt-connectivity.adoc#minions-connectivity[Minions Connectivity]
+|===
+
+
+
 [[memory-usage]]
-=== Memory Usage
+== Memory Usage
 
 Adjusting some of the parameters listed in this section can result in a higher amount of RAM being used by various components.
 It is important that the amount of hardware RAM is adequate after any significant change.
