@@ -1,3 +1,6 @@
+- Added Salt Connectivity section to the Specialized Guides
+- Improved Large Deployments Guide with better tuning values and
+  extra parameters added
 - Fix indentation on install storage instructions
 - Update air-gap deployment for server and proxy
 - Improved proxy migration and installation in Installation and Upgrade
