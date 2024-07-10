@@ -1,3 +1,5 @@
+- Consolidated terminology around the old server and the migration target
+  in Installation and Upgrade Guide
 - Added more information about the Prometheus alert manager in
   Administration Guide
 - Add storage extra configuration for migration step in Installation and
