@@ -14,10 +14,10 @@ This technique applies to {suse} clients only.
 . Create a GPG key.
 . Use it to sign the package's metadata.
 . Add it to the initial RAM disk of your installation media.
-
-* For information on how to create the key and sign the metadata with it, see xref:administration:repo-metadata.adoc[Signing Repository Metadata].
-* For information on how to add the key to installation media used for network boot, see xref:client-configuration:autoinst-owngpgkey.adoc#gpg-key-pxeboot[Own GPG Key for PXE Boot].
-* For information on how to add the key to installation media used for a boot from CD-ROM, see xref:client-configuration:autoinst-owngpgkey.adoc#gpg-key-cdrom[Own GPG Key in a CD-ROM].
+. To copy GPG keys to the container use [command]``mgradm gpg add``.
+  This command copies the GPG key and adds it to the customer keyring.
+. Run command [command]``mgradm restart``.
+  This command creates a unique keyring using the SUSE and the customer keyring.
 
 [NOTE]
 ====
@@ -26,59 +26,3 @@ Ideally, you should sign the metadata before you register any client.
 
 For already onboarded clients that use those repositories, the workaround is to disable GPG key checking on them.
 ====
-
-
-
-[[gpg-key-pxeboot]]
-== Own GPG Key for PXE Boot
-
-The initial RAM disk ([path]``initrd``) used by PXE boot process normally contains {suse}'s GPG key only.
-You must add our own key to this file, so it can be used to check the packages.
-
-[IMPORTANT]
-====
-To access a shell inside the Server container run [literal]``mgrctl term`` on the container host.
-====
-
-.Procedure: Add a GPG key to the initial RAM disk
-. Create a directory with a path identical to the one that is used during the boot process to find the GPG key:
-+
-----
-mkdir -p tftproot/usr/lib/rpm/gnupg/keys
-----
-. Copy your GPG key into this directory with the suffix [path]``.asc``:
-+
-----
-cp /srv/www/htdocs/pub/mgr-gpg-pub.key tftproot/usr/lib/rpm/gnupg/keys/mgr-gpg-pub.asc
-----
-. Inside the top level directory, package the content and append it to the [path]``initrd`` that is part of your installation media files:
-+
-----
-cd tftproot
-find . | cpio -o -H newc | xz --check=crc32 -c >> /path/to/initrd
-----
-
-
-
-[[gpg-key-cdrom]]
-== Own GPG Key in a CD-ROM
-
-You can modify an installation image with the [command]``mksusecd`` utility.
-This utility is contained in the Development Tools module.
-
-.Procedure: Add a GPG key to an Installation ISO image
-. Create a directory with a path identical to the one that is used during the boot process to find the GPG key:
-+
-----
-mkdir -p initrdroot/usr/lib/rpm/gnupg/keys
-----
-. Copy your GPG key into this directory with the suffix [path]``.asc``:
-+
-----
-cp /srv/www/htdocs/pub/mgr-gpg-pub.key initrdroot/usr/lib/rpm/gnupg/keys/mgr-gpg-pub.asc
-----
-. Amend the existing ISO image with [command]``mksusecd``:
-+
-----
-mksusecd --create <new-image>.iso --initrd initrdroot/ <old-image>.iso
-----
