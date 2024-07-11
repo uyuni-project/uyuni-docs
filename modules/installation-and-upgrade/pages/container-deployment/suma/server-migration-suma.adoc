@@ -3,6 +3,9 @@ ifeval::[{uyuni-content} == true]
 :noindex:
 endif::[]
 
+// container host = new server = new server machine with the {productname} {productnumber} Server container(s)
+// old server = {productname} 4.3 Server
+
 // We need to figure out which SUMA versions prior to the container release can or should be migrated. Something like any version prior to yyyy.mm and later than.
 
 To migrate a {productname} 4.3 Server to a container, a new machine is required.
@@ -60,10 +63,8 @@ systemctl stop postgresql
 
 == Prepare the SSH Connection
 
-//   You can do this with establishing an ssh connection from the new container host to the old {productname} Server.
-//   So the fingerprint will be stored in the [path]``~/.ssh/known_hosts` file.`
-
 .Procedure: Preparing the SSH connection
+
 . The SSH configuration and agent should be ready on the new {productnumber} server for a passwordless connection to the 4.3 server.
 +
 
@@ -71,13 +72,29 @@ systemctl stop postgresql
 ====
 To establish a passwordless connection, the migration script relies on an SSH agent running on the {productnumber} server.
 If the agent is not active yet, initiate it by running [command]``eval $(ssh-agent)``.
-Then, add the SSH key to the running agent with [command]``ssh-add /path/to/the/private/key``.
+Then, add the SSH key to the running agent with [command]``ssh-add </path/to/the/private/key>``.
 You will be prompted to enter the password for the private key during this process.
 ====
 
-. The migration script only uses the 4.3 server's FQDN in the SSH command.
+. Copy the public SSH key to the {productname} 4.3 Server ([literal]``<oldserver.fqdn>``) with [command]``ssh-copy-id``.
+    Replace [literal]``<oldserver.fqdn>`` with the FQDN of the 4.3 server:
++
 
-. This means that every other configuration required to connect, needs to be defined in the [path]``~/.ssh/config`` file.
+----
+ssh-copy-id <old server.fqdn>
+----
++
+
+  The SSH key will be copy into the old server's [path]``~/.ssh/authorized_keys`` file.
+  For more information, see the [literal]``ssh-copy-id`` manpage.
+
+. This step is optional:
+  The migration script only uses the 4.3 server's FQDN in the SSH command.
+  This means that every other configuration required to connect, needs to be defined in the [path]``~/.ssh/config`` file.
+
+. Establish an SSH connection from the new server to the old {productname} Server.
+  So the fingerprint will be stored in the local [path]``~/.ssh/known_hosts`` file.
+
 
 
 == Perform the Migration
@@ -90,7 +107,7 @@ This includes, but is not limited to, [literal]``Memory (RAM)``, [literal]``CPU 
 
 .Procedure: Performing the Migration
 . This step is optional.
-However, if custom persistent storage is required for your infrastructure, use the [command]``mgr-storage-server`` tool.
+If custom persistent storage is required for your infrastructure, use the [command]``mgr-storage-server`` tool.
 ** For more information, see [command]``mgr-storage-server --help``.
 This tool simplifies creating the container storage and database volumes.
 
@@ -120,11 +137,13 @@ For more information, see xref:installation-and-upgrade:container-management/per
 ----
 mgradm migrate podman <oldserver.fqdn>
 ----
+
+. Migrate trusted SSL CA certificates.
 +
 
 [IMPORTANT]
 ====
-Trusted SSL CA certificates that were installed as part of an RPM and store on {productname} 4.3 in the [path]``/usr/share/pki/trust/anchors/`` directory will not be migrated.
+Trusted SSL CA certificates that were installed as part of an RPM and stored on {productname} 4.3 in the [path]``/usr/share/pki/trust/anchors/`` directory will not be migrated.
 Because {suse} does not install RPM packages in the container, the administrator must migrate these certificate files manually from the 4.3 installation after migration:
 
 1. Copy the file from the 4.3 server to the new server.
@@ -137,7 +156,7 @@ Because {suse} does not install RPM packages in the container, the administrator
 mgradm cp /local/ca.file server:/etc/pki/trust/anchors/
 ----
 ====
-+
+
 
 [IMPORTANT]
 ====
