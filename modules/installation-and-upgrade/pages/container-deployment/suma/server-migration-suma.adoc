@@ -5,7 +5,7 @@ endif::[]
 
 // We need to figure out which SUMA versions prior to the container release can or should be migrated. Something like any version prior to yyyy.mm and later than.
 
-To migrate a {productname} {productnumber} Server to a container, a new machine is required.
+To migrate a {productname} 4.3 Server to a container, a new machine is required.
 
 
 [IMPORTANT]
@@ -26,16 +26,18 @@ Self trusted GPG keys are not migrated.
 GPG keys that are trusted in the RPM database only are not migrated.
 Thus synchronizing channels with [command]``spacewalk-repo-sync`` can fail.
 
-The administrator must migrate these keys manually from the 4.3 installation **after migration**:
+The administrator must migrate these keys manually from the 4.3 installation to the container host before the actual server migration.
 
-1. Copy the keys from the source server to the container host of the destination server.
-2. Add the keys to the container with [command]``mgradm gpg add ...``.
+1. Copy the keys from the 4.3 server to the container host of the new server.
+   You can do this with establishing an ssh connection from the new container host to the old {productname} Server.
+   So the fingerprint will be stored in the [path]``~/.ssk/known_hosts` file.`
+2. Later, add the keys to the container with [command]``mgradm gpg add ...``.
 ====
 
-The current migration procedure does not include functionality for renaming hostnames. 
-As a result, the fully qualified domain name (FQDN) of the destination server will remain the same as that of the source server. 
-Additionally, the IP address must remain unchanged to ensure that the minions can contact the server. 
-Consequently, after the migration, it will be necessary to manually update the DHCP and DNS records to point to the new server.
+The current migration procedure does not include functionality for renaming hostnames.
+As a result, the fully qualified domain name (FQDN) of the destination server will remain the same as that of the old server.
+Additionally, the IP address must remain unchanged to ensure that the clients can contact the server.
+After the migration, it will be necessary to manually update the DHCP and DNS records to point to the new server.
 
 
 == Initial Preparation on the Old 4.3 Server
@@ -79,8 +81,8 @@ You will be prompted to enter the password for the private key during this proce
 
 [IMPORTANT]
 ====
-When planning your migration from {productname} 4.3 to {productname} 5.0, ensure that your target instance meets or exceeds the specifications of your current setup.
-This includes, but is not limited to, [literal]``Memory (RAM)``, [literal]``CPU Cores``, [literal]``Storage``, [literal]``Network Bandwidth``, etc.
+When planning your migration from {productname} 4.3 to {productname} 5.0, ensure that your target instance meets or exceeds the specifications of the old setup.
+This includes, but is not limited to, [literal]``Memory (RAM)``, [literal]``CPU Cores``, [literal]``Storage``, and [literal]``Network Bandwidth``.
 ====
 
 .Procedure: Performing the Migration
@@ -108,7 +110,8 @@ This command will create the persistent storage volumes at [path]``/var/lib/cont
 
 For more information, see xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[].
 ====
-. Execute the following command to install a new {productname} server, replacing **<oldserver.fqdn>** with the appropriate FQDN of the 4.3 server:
+. Execute the following command to install a new {productname} server.
+  Replace [literal]``<oldserver.fqdn>`` with the FQDN of the 4.3 server:
 +
 
 ----
@@ -119,7 +122,7 @@ mgradm migrate podman <oldserver.fqdn>
 [IMPORTANT]
 ====
 Trusted SSL CA certificates that were installed as part of an RPM and store on {productname} 4.3 in the [path]``/usr/share/pki/trust/anchors/`` directory will not be migrated.
-Because {suse} does not install RPM packages in the container, the administrator must migrate these certificate files manually from the 4.3 installation **after migration**:
+Because {suse} does not install RPM packages in the container, the administrator must migrate these certificate files manually from the 4.3 installation after migration:
 
 1. Copy the file from the 4.3 server to the new server.
    For example, as [path]``/local/ca.file``.
