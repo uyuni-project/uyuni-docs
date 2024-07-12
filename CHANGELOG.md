@@ -1,3 +1,6 @@
+- Fixed X logo position on mobile devices
+- Removed raw image format from the available VM image deployment tables
+  for both Server and Proxy on AArch64
 - Fixed sequence of commands and preparation steps of the 4.3 to 5.0
   server migration procedure
 - Consolidated terminology around the old server and the migration target
