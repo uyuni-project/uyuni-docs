@@ -1,3 +1,5 @@
+- Fixed sequence of commands and preparation steps of the 4.3 to 5.0
+  server migration procedure
 - Consolidated terminology around the old server and the migration target
   in Installation and Upgrade Guide
 - Added more information about the Prometheus alert manager in
