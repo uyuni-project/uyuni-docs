@@ -1,3 +1,4 @@
+- HUB
 - Improved proxy migration and installation in Installation and Upgrade
   Guide
 - Warn about copying GPG keys manually while migrating
