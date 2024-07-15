@@ -1,4 +1,19 @@
-- HUB
+- Fixed X logo position on mobile devices
+- Removed raw image format from the available VM image deployment tables
+  for both Server and Proxy on AArch64
+- Fixed sequence of commands and preparation steps of the 4.3 to 5.0
+  server migration procedure
+- Consolidated terminology around the old server and the migration target
+  in Installation and Upgrade Guide
+- Added more information about the Prometheus alert manager in
+  Administration Guide
+- Add storage extra configuration for migration step in Installation and
+  Upgrade Guide
+- Added Salt Connectivity section to the Specialized Guides
+- Improved Large Deployments Guide with better tuning values and
+  extra parameters added
+- Fix indentation on install storage instructions
+- Update air-gap deployment for server and proxy
 - Improved proxy migration and installation in Installation and Upgrade
   Guide
 - Warn about copying GPG keys manually while migrating
