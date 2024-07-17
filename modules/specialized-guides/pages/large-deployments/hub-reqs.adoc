@@ -1,4 +1,4 @@
-[[lsd-hub-reqs]]
+[[lsd-h////////////°ub-reqs]]
 = Hub Requirements
 
 To set up a Hub installation, you require:
@@ -33,6 +33,49 @@ For more information about deploying with [command]``mgradm``, see xref:installa
 The Hub Server must not have clients registered to it.
 Clients should only be registered to the peripheral servers.
 ====
+
+
+
+=== Generate the Certificates for Peripheral Servers
+
+[NOTE]
+====
+If you will use third party provides Certificates, you can skip this procedure.
+====
+
+.Procedure: Generatig the Certificates for Peripheral Servers
+
+. From the container host, enter the shell in the hub container with:
++
+----
+mgrctl exec -ti /bin/sh
+----
+
+. On the command line, run [command]``rhn-ssl-tool`` for each Peripheral Server (replace placeholders with value from your environment):
+
+----
+rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
+  --set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
+  --set-org-unit="ORGANIZATION UNIT" --set-email="name@example.com" \
+  --set-hostname=<hostname> --set-cname="example.com"
+
+. Copy these files to the Peripheral Server host:
+
+----
+/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT
+/root/ssl-build/<hostname>/server.crt
+/root/ssl-build/<hostname>/server.key
+----
+
+. On each peripheral server host:
+
+* Copy [path]``RHN-ORG-TRUSTED-SSL-CERT`` to [path]``/etc/pki/trust/anchors/`` and run [command]``update-ca-certificates``.
+* Install the Peripheral Server with:
++
+----
+mgradm install podman --ssl-ca-root RHN-ORG-TRUSTED-SSL-CERT \
+  --ssl-server-cert server.crt --ssl-server-key server.key
+----
 
 
 
