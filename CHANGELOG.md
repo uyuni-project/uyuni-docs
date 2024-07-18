@@ -1,3 +1,5 @@
+- Added note about usernames in PAM section in Administration Guide
+ (bsc#1227599)
 - Update Clients Update Using Recurring Actions workflow to account for
   uptodate state changes
 - Fixed X logo position on mobile devices
