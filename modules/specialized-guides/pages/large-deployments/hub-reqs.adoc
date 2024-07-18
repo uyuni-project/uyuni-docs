@@ -11,17 +11,6 @@ To set up a Hub installation, you require:
 
 
 
-== SSL Certificates
-
-The Hub Server's and the Peripheral Servers' SSL certificates must be signed by the same CA.
-There are two ways to fulfill this requirement:
-
-* Use third party certificates.
-* Install Hub Server first and use it to generate the certificates for the Peripheral Servers.
-  For more information, see XXX.
-
-
-
 == Hub Server
 
 Deploy the central {productname} Server, which acts as the Hub Server, with [command]``mgradm``.
@@ -31,19 +20,35 @@ For more information about deploying with [command]``mgradm``, see xref:installa
 [NOTE]
 ====
 The Hub Server must not have clients registered to it.
-Clients should only be registered to the peripheral servers.
+Clients should only be registered to the Peripheral Servers.
 ====
 
 
 
+[[lsd-hub-reqs-certs]]
+=== SSL Certificates
+
+The Hub Server's and the Peripheral Servers' SSL certificates must be signed by the same CA.
+There are two ways to fulfill this requirement:
+
+* Use third party certificates.
+* Install Hub Server first and use it to generate the certificates for the Peripheral Servers.
+  For more information, see xref:specialized-guides:large-deployments/hub-reqs.adoc#lsd-hub-reqs-gencerts[] .
+
+
+
+
+[[lsd-hub-reqs-gencerts]]
 === Generate the Certificates for Peripheral Servers
+
+
 
 [NOTE]
 ====
 If you will use third party provides Certificates, you can skip this procedure.
 ====
 
-.Procedure: Generatig the Certificates for Peripheral Servers
+.Procedure: Generating the Certificates for Peripheral Servers
 
 . From the container host, enter the shell in the Hub container with:
 +
@@ -67,10 +72,24 @@ rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
 /root/ssl-build/<hostname>/server.key
 ----
 
-. On each peripheral server host:
+
+
+== Peripheral Servers
+
+
+
+You will deploy the peripheral servers with [command]``mgradm``.
+For more information about deploying with [command]``mgradm``, see xref:installation-and-upgrade:container-deployment/suma/server-deployment-suma.adoc[].
+
+
+.Procedure:Deploying and Registering Peripheral Servers
+
+. Prepare Peripheral Server hosts.
+
+. On each Peripheral Server host:
 
 * Copy [path]``RHN-ORG-TRUSTED-SSL-CERT`` to [path]``/etc/pki/trust/anchors/`` and run [command]``update-ca-certificates``.
-* Install the Peripheral Server with:
+* Deploy the Peripheral Server with:
 +
 ----
 mgradm install podman --ssl-ca-root RHN-ORG-TRUSTED-SSL-CERT \
@@ -81,27 +100,17 @@ mgradm install podman --ssl-ca-root RHN-ORG-TRUSTED-SSL-CERT \
 +
 
 ----
-mgradm hub register --api-server <hub fqdn> --api-password <hub password> \
-  --api-user <hub admin>
+mgradm hub register --api-server <HUB_FQDN> --api-user <HUB_ADMIN> \
+  --api-password <HUB_ADMIN_PASSWORD>
 ----
++
 
+  Peripheral servers must be registered to the Hub Server as foreign clients.
+  Standard registration methods cannot be used.
 
-
-== Peripheral Servers
-
-Deploy the peripheral servers with [command]``mgradm``.
-For more information about deploying with [command]``mgradm``, see xref:installation-and-upgrade:container-deployment/suma/server-deployment-suma.adoc[].
-
-Peripheral servers must be registered to the Hub Server as foreign clients.
-Standard registration methods cannot be used.
-Use [command]``mgradm`` on the peripheral server host:
-
-----
-mgradm hub register --api-server <HUB_FQDN> --api-user <HUB_ADMIN> --api-password <HUB_ADMIN_PASSWORD>
-----
 
 The peripheral servers must be registered to the Hub Server directly, do not use a proxy.
 
 Optionally, it is possible to register the podman container host as a standard client ({salt} minion) and manage it from {productname} Server.
 
-You need credentials to access the XMLRPC APIs on each server, including the Hub Server.
+// You need credentials to access the XMLRPC APIs on each server, including the Hub Server.
