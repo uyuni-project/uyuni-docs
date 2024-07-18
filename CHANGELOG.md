@@ -1,3 +1,5 @@
+- Update Clients Update Using Recurring Actions workflow to account for
+  uptodate state changes
 - Fixed X logo position on mobile devices
 - Removed raw image format from the available VM image deployment tables
   for both Server and Proxy on AArch64
