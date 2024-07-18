@@ -1,3 +1,4 @@
+- Updated Hub chapter in Large Deployments Guide (bsc#1215815)
 - Fixed X logo position on mobile devices
 - Removed raw image format from the available VM image deployment tables
   for both Server and Proxy on AArch64
