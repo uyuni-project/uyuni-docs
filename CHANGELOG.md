@@ -1,3 +1,5 @@
+- Added more links to the Hardware Requirements section to address
+  questions about disk size recommendations
 - Added note about usernames in PAM section in Administration Guide
  (bsc#1227599)
 - Update Clients Update Using Recurring Actions workflow to account for
