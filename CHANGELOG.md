@@ -1,3 +1,7 @@
+- Update Clients Update Using Recurring Actions workflow to account for
+  uptodate state changes
+- Added note about usernames in PAM section in Administration Guide
+ (bsc#1227599)
 - Fixed X logo position on mobile devices
 - Removed raw image format from the available VM image deployment tables
   for both Server and Proxy on AArch64
