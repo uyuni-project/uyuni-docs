@@ -1,3 +1,5 @@
+- Updated Disconnected Server chapter in Administration Guide
+  (bsc#1226728)
 - Update Clients Update Using Recurring Actions workflow to account for
   uptodate state changes
 - Added note about usernames in PAM section in Administration Guide
