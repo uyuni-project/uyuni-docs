@@ -1,3 +1,5 @@
+- Adjusted SSL certificate renewal commands for containers in
+  Administration Guide
 - Update Clients Update Using Recurring Actions workflow to account for
   uptodate state changes
 - Added note about usernames in PAM section in Administration Guide
