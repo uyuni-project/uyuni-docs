@@ -1,4 +1,7 @@
 - Change path for web.xml tuning in Administration Guide
+- Adjusted SSL certificate renewal commands for containers in
+  Administration Guide
+- Updated SLE Micro update behavior in Installation and Upgrade Guide
 - Updated Disconnected Server chapter in Administration Guide
   (bsc#1226728)
 - Added note about usernames in PAM section in Administration Guide
