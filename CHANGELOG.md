@@ -1,3 +1,5 @@
+- Updated Disconnected Server chapter in Administration Guide
+  (bsc#1226728)
 - Adjusted SSL certificate renewal commands for containers in
   Administration Guide
 - Updated SLE Micro update behavior in Installation and Upgrade Guide
