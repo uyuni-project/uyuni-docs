@@ -1,3 +1,4 @@
+- Updated SLE Micro update behavior in Installation and Upgrade Guide
 - Update Clients Update Using Recurring Actions workflow to account for
   uptodate state changes
 - Added note about usernames in PAM section in Administration Guide
