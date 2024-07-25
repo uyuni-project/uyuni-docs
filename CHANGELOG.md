@@ -1,3 +1,5 @@
+- Adjusted SSL certificate renewal commands for containers in
+  Administration Guide
 - Updated Disconnected Server chapter in Administration Guide
   (bsc#1226728)
 - Added note about usernames in PAM section in Administration Guide
