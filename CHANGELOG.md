@@ -1,3 +1,5 @@
+- Adjusted SUSE Manager Server registration in Installation and
+  Upgrade Guide
 - Adjusted SSL certificate renewal commands for containers in
   Administration Guide
 - Updated SLE Micro update behavior in Installation and Upgrade Guide
