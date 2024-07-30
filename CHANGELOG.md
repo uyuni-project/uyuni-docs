@@ -1,3 +1,5 @@
+- Documentaed activating AppStreams automatically with an
+  activation key
 - Change path for web.xml tuning in Administration Guide
 - Adjusted SSL certificate renewal commands for containers in
   Administration Guide
