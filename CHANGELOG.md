@@ -1,5 +1,7 @@
 - Updated Disconnected Server chapter in Administration Guide
   (bsc#1226728)
+- Adjusted SUSE Manager Server registration in Installation and
+  Upgrade Guide
 - Fixed spacecmd commands in mgrctl calls in Installation and Upgrade
   Guide
 - Adjusted SSL certificate renewal commands for containers in
