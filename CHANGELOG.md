@@ -1,3 +1,5 @@
+- Adjusted SUSE Manager Server registration in Installation and
+  Upgrade Guide
 - Fixed spacecmd commands in mgrctl calls in Installation and Upgrade
   Guide
 - Change path for web.xml tuning in Administration Guide
