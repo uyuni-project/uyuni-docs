@@ -2,6 +2,8 @@
   (bsc#1226728)
 - Adjusted SUSE Manager Server registration in Installation and
   Upgrade Guide
+- Fixed spacecmd commands in mgrctl calls in Installation and Upgrade
+  Guide
 - Adjusted SSL certificate renewal commands for containers in
   Administration Guide
 - Updated SLE Micro update behavior in Installation and Upgrade Guide
