@@ -1,5 +1,11 @@
 - Documentaed activating AppStreams automatically with an
   activation key
+- Added more links back to the Hardware Requirements section and enhance
+  it to address questions about disk size recommendations
+- Adjusted SUSE Manager Server registration in Installation and
+  Upgrade Guide
+- Fixed spacecmd commands in mgrctl calls in Installation and Upgrade
+  Guide
 - Change path for web.xml tuning in Administration Guide
 - Adjusted SSL certificate renewal commands for containers in
   Administration Guide
