@@ -1,6 +1,6 @@
 - PAYG Docs updated for Azure and AWS
 - Fixed button syntax typo in asciidoc content
-- Added note on Salt minion timeout for Azure and PAYG
+- Added note on Salt minion timeout for Azure and PAYG (bsc#1226196)
 - Added more links back to the Hardware Requirements section and enhance
   it to address questions about disk size recommendations
 - Adjusted SUSE Manager Server registration in Installation and
