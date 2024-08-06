@@ -1,5 +1,5 @@
 - Documented activating AppStreams automatically with an
-  activation key
+  activation key in Client Configuration Guide
 - PAYG Docs updated for Azure and AWS
 - Fixed button syntax typo in asciidoc content
 - Added note on Salt minion timeout for Azure and PAYG
