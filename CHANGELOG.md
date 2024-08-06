@@ -1,4 +1,4 @@
-- Documentaed activating AppStreams automatically with an
+- Documented activating AppStreams automatically with an
   activation key
 - Added more links back to the Hardware Requirements section and enhance
   it to address questions about disk size recommendations
