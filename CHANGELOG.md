@@ -1,3 +1,5 @@
+- Added further instructions abuout the permissions for the IAM role
+  in Public Cloud Guide
 - Documented activating AppStreams automatically with an
   activation key in Client Configuration Guide
 - PAYG Docs updated for Azure and AWS
