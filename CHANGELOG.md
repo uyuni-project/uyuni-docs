@@ -1,3 +1,5 @@
+- Documented that is LVM not needed in default cases in Installation
+  and Upgrade Guide
 - Documented activating AppStreams automatically with an
   activation key in Client Configuration Guide
 - PAYG Docs updated for Azure and AWS
