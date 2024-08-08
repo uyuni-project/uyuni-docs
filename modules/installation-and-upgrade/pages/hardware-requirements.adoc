@@ -223,8 +223,13 @@ endif::[]
 
 Persistent volumes are created by default when deploying the container.
 
-However, it is recommended that the channels with the repositories and the database for {productname} are stored on separate storage devices.
+However, it is recommended that the volumes are stored on one or more separate storage devices.
 Such a setup helps avoid data loss in production environments.
+This can be done after container deployment.
+
+// FIXME: continue here
+
+and optionally channels with the repositories and the database for {productname} are stored on separate storage devices.
 
 Storage devices must be set up prior to deploying the container.
 For more details, see xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[Persistent Container Volumes].
@@ -247,10 +252,10 @@ hwinfo --disk | grep -E "Device File:"
 
 Use the [command]``lsblk`` command to see the name and size of each device.
 
-Use the [command]``mgr-storage-server`` command with the device names to set up the external disks as the locations for the database and repositories:
+Use the [command]``mgr-storage-server`` command with the device names to set up the external disks as the locations for the storage and, optionally on a disk of its own, for the database:
 
 ----
-mgr-storage-server <channel_devicename> [<database_devicename>]
+mgr-storage-server <storage-disk-device> [<database-disk-device>]
 ----
 
 The external storage volumes are set up as XFS partitions mounted at [path]``/manager_storage`` and [path]``/pgsql_storage``.
@@ -279,7 +284,8 @@ For [path]``/var/lib/containers/storage/volumes/var-spacewalk``:
 Check the permissions with this command:
 
 ----
-ls -l /var/lib/containers/storage/volumes/var-pgsql /var/lib/containers/storage/volumes/var-spacewalk
+ls -l /var/lib/containers/storage/volumes/var-pgsql
+ls -l /var/lib/containers/storage/volumes/var-spacewalk
 ----
 
 The output should look like this:
@@ -319,13 +325,16 @@ chown wwwrun:www        /var/lib/containers/storage/volumes/var-spacewalk
 
 // container-deployment/suma/server-deployment-vm-suma.adoc etc.
 For all kind of virtual machines (VM), LVM is generally not needed and not recommended.
-The disk setup is virtual and separate disks for subvolumes are possible and recommended.
+The disk setup is virtual and separate disks for volumes are possible and recommended.
 
 // container-deployment/suma/server-deployment-suma.adoc
-For other deployments, separate disks for subvolumes are also recommended.
+For other deployments, separate disks for volumes are also recommended.
 
-On the {productname} Server, the [command]``mgr-storage-server`` tool does it for the database and spacewalk volumes [literal]``var-pgsql`` and [literal]``var-spacewalk``.
-On the {productname} Proxy, the [command]``mgr-storage-proxy`` tool does it for the cache volume [literal]``var-cache``.
+On the {productname} Server, the [command]``mgr-storage-server`` command moves the complete content of the [path]``volumes`` directory to a separate disk and remounts it to [path]``/var/lib/containers/storage/volumes``.
+Optionally, if a second device name is specified, [command]``mgr-storage-server`` moves the content of the [literal]``var-pgsql`` database directory also to a separate disk and remounts it to [path]``/var/lib/containers/storage/volumes/var-pgsql``.
+
+Similarily on the {productname} Proxy, the [command]``mgr-storage-proxy`` command moves the complete content of the [path]``volumes`` directory with the Squid cache to a separate disk and remounts it to [path]``/var/lib/containers/storage/volumes``.
+
 
 
 
