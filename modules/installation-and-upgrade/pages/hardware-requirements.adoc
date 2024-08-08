@@ -223,7 +223,7 @@ endif::[]
 
 Persistent volumes are created by default when deploying the container.
 
-However, it is recommended that the repositories and the database for {productname} are stored on separate storage devices.
+However, it is recommended that the channels with the repositories and the database for {productname} are stored on separate storage devices.
 Such a setup helps avoid data loss in production environments.
 
 Storage devices must be set up prior to deploying the container.
@@ -260,7 +260,7 @@ This is not recommended, as growing channel repositories might fill up the stora
 Using separate storage devices may also increase performance.
 If you want to use a single storage device, run [command]``mgr-storage-server`` with a single device name parameter.
 
-If you are installing a proxy, the [command]``mgr-storage-proxy`` command only takes a single device name parameter and will set up the external storage location as the Squid cache.
+If you are installing a proxy, the [command]``mgr-storage-proxy`` command  takes only one device name parameter and will set up the external storage location as the Squid cache.
 
 When you create disk partitions for the {productname} Server and Proxy, ensure you set the permissions correctly.
 
@@ -284,6 +284,10 @@ ls -l /var/lib/containers/storage/volumes/var-pgsql /var/lib/containers/storage/
 
 The output should look like this:
 
+// better use?  and change command to display dir, too?
+// drwxr-x--- 1 postgres postgres 48 Apr 19 14:33 _data
+// drwxr-x--- 1 wwwrun   www      30 Apr 19 14:34 _data
+
 ----
 /var/lib/containers/storage/volumes/var-pgsql:
 total 0
@@ -291,7 +295,7 @@ drwxr-x--- 1 10556 10556 48 Apr 19 14:33 _data
 
 /var/lib/containers/storage/volumes/var-spacewalk:
 total 0
-drwxr-xr-x 1 10552 root 30 Apr 19 14:34 _data
+drwxr-xr-x 1 10552 root  30 Apr 19 14:34 _data
 ----
 
 If required, change the permissions with these commands:
@@ -305,7 +309,7 @@ And owners with:
 
 ----
 chown postgres:postgres /var/lib/containers/storage/volumes/var-pgsql
-chown wwwrun:www /var/lib/containers/storage/volumes/var-spacewalk
+chown wwwrun:www        /var/lib/containers/storage/volumes/var-spacewalk
 ----
 
 
@@ -314,10 +318,12 @@ chown wwwrun:www /var/lib/containers/storage/volumes/var-spacewalk
 
 
 
-For all kind of virtual machines (VM) you do not need LVM because the disk is virtual and thus can be increased.
+For all kind of virtual machines (VM), LVM is generally not needed and not recommended.
+The disk setup is virtual and separate disks for subvolumes are possible.
+On the {productname} Server, the [command]``mgr-storage-server`` tool does it for the database and spacewalk volumes [literal]``var-pgsql`` and [literal]``var-spacewalk``.
+On the {productname} Proxy, the [command]``mgr-storage-proxy`` tool does it for the cache volume [literal]``var-cache``.
+
+// When installation takes place on bare metal (on-premise), [command]``cockpit`` can be used to create an LVM setup.
+// In such a case, the disk setup needs to be performed manually.
+
 With containers {productname} now has [path]``/var/lib/containers/storage/volumes`` as an extra disk.
-Additional disks for subvolumes are possible, and [command]``mgr-storage-server`` does it for the database volume [literal]``var-pgsql``.
-
-When an installation takes place on bare metal (on-premise}, [command]``cockpit`` can be used to create an LVM setup.
-In such a case, the disk setup needs to be performed manually.
-
