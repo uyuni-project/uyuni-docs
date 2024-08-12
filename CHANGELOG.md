@@ -1,5 +1,7 @@
 - Enhanced instructions about the permissions for the IAM role
   in Public Cloud Guide
+- Removed Verify Packages section from Package Management chapter
+  in Client Configuration Guide
 - Documented activating AppStreams automatically with an
   activation key in Client Configuration Guide
 - PAYG Docs updated for Azure and AWS
