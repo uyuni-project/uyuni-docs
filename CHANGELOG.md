@@ -1,6 +1,6 @@
 - Improved documentation arund non-compliant packages (also known as extra
   packages) in Reference Guide.
-- Restructured documenation of Systems menu and system details tab in
+- Restructured documentaion of Systems menu and system details tab in
   Reference Guide.
 - Enhanced instructions about the permissions for the IAM role
   in Public Cloud Guide
