@@ -1,3 +1,5 @@
+- Added installer-updates.suse.com to the list of URLs in Installation
+  and Upgrade Guide (bsc#1229178)
 - Enhanced instructions about the permissions for the IAM role
   in Public Cloud Guide
 - Removed Verify Packages section from Package Management chapter
