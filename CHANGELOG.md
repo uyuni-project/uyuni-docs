@@ -1,3 +1,5 @@
+- Updated legacy Uyuni Server to containerized Server migration in Installation
+  and Upgrade Guide
 - Added installer-updates.suse.com to the list of URLs in Installation
   and Upgrade Guide (bsc#1229178)
 - Improved documentation around non-compliant packages (also known as extra
