@@ -1,4 +1,5 @@
-- Added uyuni-storage-setup-[server|proxy] packages to Server/Proxy deployment
+- Added uyuni-storage-setup-server package to Server deployment and
+  uyuni-storage-setup-proxy to Proxy deployment
 - Updated legacy Uyuni Server to containerized Server migration in Installation
   and Upgrade Guide
 - Removed Verify Packages section from Package Management chapter
