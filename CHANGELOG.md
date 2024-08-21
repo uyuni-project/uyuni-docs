@@ -1,3 +1,5 @@
+- In network ports section, added port 443 for clients and removed
+  Cobbler only used internally (bsc#1217338)
 - Added installer-updates.suse.com to the list of URLs in Installation
   and Upgrade Guide (bsc#1229178)
 - Improved documentation around non-compliant packages (also known as extra
