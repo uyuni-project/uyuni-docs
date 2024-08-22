@@ -1,3 +1,8 @@
+- Added uyuni-storage-setup-server package to server deployment and
+  uyuni-storage-setup-proxy to proxy deployment in Installation and Upgrade
+  Guide
+- Updated legacy Uyuni Server to containerized Server migration in Installation
+  and Upgrade Guide
 - Removed Verify Packages section from Package Management chapter
   in Client Configuration Guide
 - Documented activating AppStreams automatically with an
