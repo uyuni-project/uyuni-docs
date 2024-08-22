@@ -8,6 +8,8 @@
   Reference Guide
 - Enhanced instructions about the permissions for the IAM role
   in Public Cloud Guide
+- Updated legacy Uyuni Server to containerized Server migration in Installation
+  and Upgrade Guide
 - Removed Verify Packages section from Package Management chapter
   in Client Configuration Guide
 - Documented activating AppStreams automatically with an
