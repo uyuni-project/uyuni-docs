@@ -1,3 +1,4 @@
+- Documented Cobbler kernel options in Client Configuration Guide
 - In network ports section, added port 443 for clients and removed
   Cobbler only used internally (bsc#1217338)
 - Added installer-updates.suse.com to the list of URLs in Installation
