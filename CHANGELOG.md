@@ -1,3 +1,10 @@
+- Documented using openSUSE Leap Micro as the host operating system for
+  Uyuni Proxy
+- Added uyuni-storage-setup-server package to server deployment and
+  uyuni-storage-setup-proxy to proxy deployment in Installation and Upgrade
+  Guide
+- Updated legacy Uyuni Server to containerized Server migration in Installation
+  and Upgrade Guide
 - In network ports section, added port 443 for clients and removed
   Cobbler only used internally (bsc#1217338)
 - Added installer-updates.suse.com to the list of URLs in Installation
@@ -8,6 +15,8 @@
   Reference Guide
 - Enhanced instructions about the permissions for the IAM role
   in Public Cloud Guide
+- Updated legacy Uyuni Server to containerized Server migration in Installation
+  and Upgrade Guide
 - Removed Verify Packages section from Package Management chapter
   in Client Configuration Guide
 - Documented activating AppStreams automatically with an
