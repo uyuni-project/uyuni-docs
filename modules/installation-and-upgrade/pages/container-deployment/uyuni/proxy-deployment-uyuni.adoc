@@ -6,16 +6,17 @@ endif::[]
 
 
 This guide outlines the deployment process for the {productname} {productnumber} Proxy.
-This guide presumes you have already successfully deployed a {productname} {productnumber} Server. 
+This guide presumes you have already successfully deployed a {productname} {productnumber} Server.
 To successfully deploy, you will perform the following actions:
 
 
 .Checklist: Proxy Deployment
 . Review hardware requirements.
-. Synchronize the {leapmicro} {microversion} parent channel and the Proxy extension child channel on the server.
++
+// . Synchronize the {leapmicro} {microversion} parent channel and the Proxy extension child channel on the server.
 . Install {leapmicro} {microversion} on a bare-metal machine.
-. During the installation, register {leapmicro} {microversion} along with the {productname} {productnumber} Proxy extension.
-. Create a {salt} activation key.
++
+// . Create a {salt} activation key.
 . Bootstrap the Proxy as a {salt} minion.
 . Generate a Proxy configuration.
 . Transfer the Proxy configuration from Server to Proxy
@@ -60,89 +61,85 @@ This table shows the hardware requirements for deploying {productname} Proxy.
 | Minimum 40 GB
 
 |
-| [path]``/var/lib/containers/storage/volumes/srv-www``
+| [path]``/var/lib/containers/storage/volumes``
 | Minimum 100 GB, Storage requirements should be calculated for the number of ISO distribution images, containers, and bootstrap repositories you will use.
-
-|
-| [path]``/var/lib/containers/storage/volumes/var-cache`` (Squid)
-| Minimum 100 GB
 
 |===
 
 
 
-== Sync the Parent and Proxy Extension Child channels
+== Container Host General Requirements
 
-Products are listed on the menu:Admin[Setup Wizard -> Products] page. 
-This channel must be fully synchronized on the server, with the child channel [systemitem]Proxy as an extension option selected.
+For general requirements, see xref:installation-and-upgrade:general-requirements.adoc[General requirements].
 
-.{productname} {productnumber} Channel Sync for Proxy
-image::setup-wizard.png[scaledwidth=80%]
-
-.Task: Sync the Proxy Parent Channel and Proxy Extension
-. In the {productname} {webui} select menu:Admin[Products].
-. From the products page enter {sle-micro} in the filter field.
-. Next use the dropdown to select the required architecture. For this example {x86_64}.
-. In the [systemitem]``Product Description`` field select the {sle-micro} {microversion} checkbox then use the dropdown to select the [systemitem]``SUSE Manager Proxy Extension 5.0 x86_64`` extension.
-. Click the btn:[+ Add products] button.
-. Wait for the sync to complete.
+An {leapmicro} {microversion} server should be installed from installation media.
+This procedure is described below.
 
 
 
-== {sle-micro} {microversion} Installation
+[[installation-proxy-containers-requirements]]
+== Container Host Requirements
 
-.Task: Download the Installation Media
-. Locate the {sle-micro} {microversion} installation media at https://www.suse.com/download/sle-micro/.
-. You will need an account with {scc} and must be logged in to download the ISO.
-. Download the following file: [filename]``SLE-Micro-5.5-DVD-x86_64-GM-Media1.iso`` 
-. Prepare a USB fash disk or DVD for installation.
-. Insert a DVD or a bootable USB stick containing the installation image for {sle-micro} {microversion}.
-. Boot or reboot your system.
-+
-
-For detailed documentation on preparing your machines OS (virtual or physical), see link:https://documentation.suse.com/sle-micro/5.5/html/SLE-Micro-all/book-deployment-slemicro.html[{sle-micro} {microversion} Deployment Guide].
+For CPU, RAM, and storage requirements, see xref:installation-and-upgrade:hardware-requirements.adoc[Hardware requirements].
 
 
-.Task: {sle-micro} {microversion} Installation 
-. Use the arrow keys to select [systemitem]``Installation``.
-. Adjust Keyboard and language. Click the [systemitem]``checkbox`` to accept the License Agreement.
-. Click [systemitem]``Next`` to continue.
-. Select your registration method. For this example we will register the server with {scc}.
-+
-
-.{productname} {productnumber} Proxy as an extension
-[NOTE]
+[IMPORTANT]
 ====
-The {productname} {productnumber} Proxy is registered as an extension. Therefore, in addition to acquiring an {scc} registration key for {sle-micro} {microversion}, you will also need an {scc} registration code for the following extension:
-
-* {productname} {productnumber} Proxy
+To guarantee that clients can resolve the FQDN domain name, both the containerized server and the host machines must be linked to a functional DNS server. Additionally, it is essential to ensure correct configuration of reverse lookups.
 ====
 
-. Enter your {scc} Email address. 
-. Enter your registration code for {sle-micro} {microversion}.
-. Click [systemitem]``Next`` to continue.
-. On the [systemitem]``Extension and Module Selection`` page uncheck the **Hide Development Versions** checkbox. 
-. Select the {productname} {productnumber} Proxy extension [systemitem]``Checkbox``.
-. Click [systemitem]``Next`` to continue.
-. Enter your {productname} {productnumber} Proxy extension registration code.
-. Click btn:[Next] to continue.
-. On the [systemitem]``NTP Configuration`` page click btn:[Next].
-. On the [systemitem]``Authentication for the System`` page enter a password for the root user. Click btn:[Next].
-. On the [systemitem]``Installation Settings`` page click btn:[Install].
 
-This concludes installation of {sle-micro} {microversion} and {productname} {productnumber} Proxy as an extension.
+== Installing Uyuni Tools for Use with Containers
 
 
+.Procedure: Installing Uyuni Tools on {leapmicro} {microversion}
+. On your local host open a terminal window or start up a virtual machine running {leapmicro} {microversion}.
 
-=== Update the system
+. Login.
 
+. Enter the [command]``transactional-update shell``:
++
+----
+transactional-update shell
+----
 
-.Task: Update the System
-. Login as *root*.
-. Run **transactional-update**:
+. Add the following repository to your {leapmicro} {microversion} server:
++
+
+----
+zypper ar https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable:/ContainerUtils/openSUSE_Leap_Micro_5.5/systemsmanagement:Uyuni:Stable:ContainerUtils.repo
+----
+
+. Refresh the repository list and accept the key:
++
+----
+zypper ref
+----
+
+. Install the container tools:
 +
 
 [source, shell]
+----
+zypper in mgrpxy mgrpxy-bash-completion uyuni-storage-setup-proxy
+----
++
+[NOTE]
+====
+Alternatively you may install [systemitem]``mgrpxy-zsh-completion`` or [systemitem]``mgrpxy-fish-completion``.
+====
+
+. Exit the transactional shell:
++
+----
+transactional update # exit
+----
+
+. Reboot the host.
+
+////
+// In master, we had already this reduced variant:
+
 ----
 transactional-update
 ----
@@ -152,41 +149,42 @@ transactional-update
 . Install the container utilities:
 +
 
+[source, shell]
+----
+transactional-update pkg install mgrpxy mgrpxy-bash-completion uyuni-storage-setup-proxy
+----
++
+
 [NOTE]
 ====
 Alternatively you may install [systemitem]``mgrpxy-zsh-completion`` or [systemitem]``mgrpxy-fish-completion``.
 ====
-+
 
-[source, shell]
-----
-transactional-update pkg install mgrpxy mgrpxy-bash-completion
-----
-+
+////
 
-. Reboot the system.
+For more information on the Uyuni Container Utilities, see link:https://build.opensuse.org/repositories/systemsmanagement:Uyuni:Stable:ContainerUtils[Uyuni Container Utilities].
+
 
 == Configure Custom Persistent Storage
 
 This step is optional.
-However, if custom persistent storage is required for your infrastructure, use the [command]``mgr-storage-proxy`` tool. 
+However, if custom persistent storage is required for your infrastructure, use the [command]``mgr-storage-proxy`` tool.
 
 * For more information, see [command]``mgr-storage-proxy --help``.
 This tool simplifies creating the container storage and Squid cache volumes.
 
-Use the command in the following manner: 
-+
+Use the command in the following manner:
 
 ----
 mgr-storage-proxy <storage-disk-device>
 ----
 
-For example: 
+For example:
 
 ----
 mgr-storage-proxy /dev/nvme1n1
 ----
-+
+
 
 [NOTE]
 ====
@@ -194,14 +192,6 @@ This command will create the persistent storage volumes at [path]``/var/lib/cont
 
 For more information, see xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[].
 ====
-
-== Create an Activation Key for the Proxy
-
-.Task: Create an Activation Key
-. Select menu:Systems[Activation Keys] then click btn:[+ Create key].
-. Create an activation key for the proxy host with {sle-micro} {microversion} as the parent channel. This key should include all recommended channels and the Proxy as an extension child channel.
-. Proceed to boostrapping the proxy host as a minion.
-
 
 
 == Bootstrap the Proxy Host as a Minion
@@ -263,7 +253,7 @@ For more information about existing or custom certificates and the concept of co
 
 image::suma_proxy_containerized_webui.png[scaledwidth=80%]
 
-[[proxy-setup-containers-transfer-config]]
+[[proxy-deploy-containers-transfer-config]]
 == Transfer the Proxy Configuration
 
 The {webui} generates a configuration archive.
@@ -292,12 +282,12 @@ mgrpxy install podman config.tar.gz
 
 
 
-[[proxy-setup-containers-transfer-start]]
+[[proxy-deploy-containers-transfer-start]]
 == Start the {productname} {productnumber} Proxy
 
 Container can now be started with the [literal]`mgrpxy` command:
 
-[[proc-setup-containers-setup-start]]
+[[proc-install-containers-setup-start]]
 .Task: Start and Check Proxy Status
 
 . Start the Proxy by calling:
@@ -327,7 +317,7 @@ And should be part of the [literal]``proxy-pod`` container pod.
 
 
 
-=== Using a custom container image for a service
+=== Using a Custom Container Image for a Service
 
 By default, the {productname} Proxy suite is set to use the same image version and registry path for each of its services.
 However, it is possible to override the default values for a specific service using the install parameters ending with [literal]``-tag`` and [literal]``-image``.
