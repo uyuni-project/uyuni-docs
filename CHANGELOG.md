@@ -1,3 +1,5 @@
+- Clarified meaning of Default contact method in Client Configuration
+  Guide.
 - Documented using openSUSE Leap Micro as the host operating system for
   Uyuni Proxy
 - Added uyuni-storage-setup-server package to server deployment and
