@@ -127,3 +127,81 @@ You can autoinstall {productname} Proxy 4.3 in the same way as {sle} clients.
 Make sure you use the {sle} installation media, and choose the [guimenu]``SLE-Product-SUSE-Manager-Proxy-4.3-Pool for x86_64`` base channel.
 ====
 endif::[]
+
+== Handling Kernel Options for Distributions and Profiles
+
+{productname} is able to combine the kernel options that you assign.
+This is done using a special inheritance logic.
+There are three object types that are relevant for this:
+
+. Distributions (or short "Distros")
+. Profiles
+. Systems
+
+As a fourth special point of influence on the final kernel options is the Cobbler settings file [path]``/etc/cobbler/settings.yaml``.
+The Cobbler settings file defines default kernel options for all distributions.
+This is not supported in the context of {productname}.
+
+Understanding raw and resolved values is crucial for managing kernel options effectively.
+
+. **Raw values**: These refer to values attached directly to a specific Cobbler item and stored as-is in Cobbler's internal database.
+. **Resolved values**: These values are dynamically generated at runtime, respecting the inheritance hierarchy of Cobbler items.
+
+If you prefix an option with [literal]``!`` then the option will be removed from the final kernel command line.
+
+{productname} will manage the kernel options for both Profiles and Systems for you.
+As such you may only edit the kernel options for Distros.
+
+=== Examples
+
+==== Basic Inheritance Example
+
+Distribution raw value
+
+----
+install=http://uyuni.server/ks/dist/SLES15SP4 self_update=0
+----
+
+Profile raw value
+
+----
+console=tty1
+----
+
+System raw value
+
+----
+console=ttyS0
+----
+
+*Resolved* value for a system inheriting this profile
+
+----
+install=http://uyuni.server/ks/dist/SLES15SP4 self_update=0 console=ttyS0
+----
+
+==== Option Removal Example
+
+Distribution raw value
+
+----
+install=http://uyuni.server/ks/dist/SLES15SP4 self_update=0
+----
+
+Profile raw value
+
+----
+console=tty1
+----
+
+System raw value
+
+----
+!self_update
+----
+
+*Resolved* value for a system inheriting this profile
+
+----
+install=http://uyuni.server/ks/dist/SLES15SP4 console=ttyS0
+----
