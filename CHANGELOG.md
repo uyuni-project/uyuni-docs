@@ -1,4 +1,4 @@
-- Add missing volume sssd to the list of etc persistent volumes
+- Added volume sssd to the list of etc persistent volumes
 - Documented using openSUSE Leap Micro as the host operating system for
   Uyuni Proxy
 - Added uyuni-storage-setup-server package to server deployment and
