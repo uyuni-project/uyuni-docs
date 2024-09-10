@@ -1,5 +1,6 @@
-- Added notes to persistent storage setup and about container full disk
-  trouble
+- Added troubleshooting section about full disk with containers in
+  Administration and notes to persistent storage setup in Installation and
+  Upgrade Guide
 - Documented using openSUSE Leap Micro as the host operating system for
   Uyuni Proxy
 - Added uyuni-storage-setup-server package to server deployment and
