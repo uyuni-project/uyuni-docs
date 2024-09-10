@@ -1,3 +1,5 @@
+- Added volume SSSD to the list of etc persistent volumes to Installation
+  and Upgrade Guide
 - Documented Cobbler kernel options in Client Configuration Guide
 - In network ports section, added port 443 for clients and removed
   Cobbler only used internally (bsc#1217338)
