@@ -2,20 +2,59 @@
 
 This section covers initial preparation and configuration of the image on {aws}.
 
-.The IAM role
-[IMPORTANT]
-====
-To ensure seamless operation, proper AWS permissions for the IAM role are essential. This role must be attached to the instance. Otherwise disconnection errors will be thrown after one hour. 
 
-You can pre-create the role on your {aws} account and then select it from the existing btn:[IAM role] dropdown during the instance configuration process.
+== The IAM Role
 
-If you create the role during the creation of an instance, the role will not be attached automatically. The role should be added post setup.
+To ensure seamless operation, proper {aws} permissions for the IAM (Identity and Access Management) role are essential.
+This role must be attached to the instance, otherwise disconnection errors will be thrown after one hour. 
+
+You can pre-create the role on your {aws} account and then select it from the existing btn:[IAM role] drop-down during the instance configuration process.
+
+If you create the role during the creation of an instance, the role will not be attached automatically.
+The role should be added post setup.
 
 A role can be assigned to a running instance through the following steps: menu:Actions[Security > Modify IAM-role].
+It needs to have the following policy attached in order to be used:
 
-For detailed information on IAM roles, see:  link:https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html[docs.aws.amazon.com/IAM]
+----
+{
+    "AttachedPolicies": [
+        {
+            "PolicyName": "AWSMarketplaceMeteringFullAccess",
+            "PolicyArn": "arn:aws:iam::aws:policy/AWSMarketplaceMeteringFullAccess"
+        }
+    ]
+}
+----
+
+
+To allow the **EC2** service to assume such role:
+
+----
+"AssumeRolePolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {
+                        "Service": "ec2.amazonaws.com"
+                    },
+                    "Action": "sts:AssumeRole"
+                }
+            ]
+        }
+----
+
+[NOTE]
+====
+IAM role can be attached to an **EC2** instance by means of an instance profile, which acts as a container for the role itself.
 ====
 
+For detailed information on IAM roles, see:  link:https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html[docs.aws.amazon.com/IAM]
+
+
+
+== Configure {productname} Instance
 .Procedure: Configuring your {productname} instance
 
 . Select the AMI image and provide a meaningful **name** for your server.
@@ -29,7 +68,8 @@ For detailed information on IAM roles, see:  link:https://docs.aws.amazon.com/IA
 
 .. Your organization should provide the necessary security groups and network configuration.
 
-.. If an IAM role has been previously created, you can attach it by selecting it from the Existing menu:IAM role[] dropdown. Otherwise, attach this role after the instance has been launched.
+.. If an IAM role has been previously created, you can attach it by selecting it from the existing menu:IAM role[] drop-down.
+   Otherwise, attach this role after the instance has been launched.
 
 .. Create the following partitions
 
@@ -49,11 +89,13 @@ For more information see: xref:public-cloud-guide/payg/aws/payg-aws-requirements
 
 . You will be redirected to the **EC2** Dashboard.
 
-. Verify that the instance has successfully launched by selecting menu:Instances[] on the left sidebar. The {productname} {payg} instance should be running in the main content area.
+. Verify that the instance has successfully launched by selecting menu:Instances[] on the left sidebar.
+  The {productname} {payg} instance should be running in the main content area.
 
 [NOTE] 
 .Usage and Costs
 ====
-Keep in mind that since this is a {payg} image, you will be billed according to your actual usage, including the number of systems you **manage** and **monitor** with this instance. It's essential to regularly track and review your usage to prevent unexpected costs and ensure alignment with your needs.
+Because this is a {payg} image, you will be billed according to your actual usage, including the number of systems you **manage** and **monitor** with this instance.
+It is essential to regularly track and review your usage to prevent unexpected costs and ensure alignment with your needs.
 ====
 
