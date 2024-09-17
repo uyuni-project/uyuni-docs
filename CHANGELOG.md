@@ -1,5 +1,30 @@
 - Documented that is LVM not needed in default cases in Installation
   and Upgrade Guide (bsc#1228319)
+- Updated outdated links in Retail Guide
+- Added troubleshooting section about full disk with containers in
+  Administration Guide and notes to persistent storage setup in Installation
+  and Upgrade Guide
+- Added volume SSSD to the list of etc persistent volumes to Installation and
+  Upgrade Guide
+- Documented using openSUSE Leap Micro as the host operating system for
+  Uyuni Proxy
+- Added uyuni-storage-setup-server package to server deployment and
+  uyuni-storage-setup-proxy to proxy deployment in Installation and Upgrade
+  Guide
+- Updated legacy Uyuni Server to containerized Server migration in Installation
+  and Upgrade Guide
+- In network ports section, added port 443 for clients and removed
+  Cobbler only used internally (bsc#1217338)
+- Added installer-updates.suse.com to the list of URLs in Installation
+  and Upgrade Guide (bsc#1229178)
+- Improved documentation around non-compliant packages (also known as extra
+  packages) in Reference Guide
+- Restructured documentation of Systems menu and system details tab in
+  Reference Guide
+- Enhanced instructions about the permissions for the IAM role
+  in Public Cloud Guide
+- Updated legacy Uyuni Server to containerized Server migration in Installation
+  and Upgrade Guide
 - Removed Verify Packages section from Package Management chapter
   in Client Configuration Guide
 - Documented activating AppStreams automatically with an
