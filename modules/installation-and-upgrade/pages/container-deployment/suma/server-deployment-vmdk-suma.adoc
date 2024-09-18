@@ -1,5 +1,52 @@
-[[install-vm]]
-= Deploy {productname} in a Virtual Machine Environment - VMware
+[[install-vm-vmware]]
+= Deploy {productname} {productnumber} Server as a Virtual Machine - VMware
+ifeval::[{uyuni-content} == true]
+:noindex:
+endif::[]
+
+This chapter provides the required Virtual Machine settings for deployment of {productname} {productnumber} as an Image.
+VMware will be used as a sandbox for this installation.
+
+
+// FIXME: make this section a snippet or move it to a general intro for both,
+//        KVM and VMware
+== Available Images
+
+[IMPORTANT]
+====
+The preferred method for deploying {productname} {productnumber} Server is to use one of the following available images.
+All tools are included in these images greatly simplifying deployment.
+====
+
+Images for {productname} {productnumber} are available at link:https://www.suse.com/download/suse-manager/[{productname} {productnumber} VM images].
+
+[NOTE]
+====
+For more information on preparing raw images see:
+
+* link:https://documentation.suse.com/en-us/sle-micro/5.5/single-html/SLE-Micro-deployment/#sec-raw-preparation[]
+* link:https://documentation.suse.com/en-us/sle-micro/5.5/single-html/SLE-Micro-deployment/#cha-images-procedure[]
+
+For additional information on the self install images see:
+
+* link:https://documentation.suse.com/en-us/sle-micro/5.5/single-html/SLE-Micro-deployment/#cha-selfinstal-procedure[]
+====
+
+.Available Server Images
+[cols="3, 3", options="header"]
+|===
+| Architecture | Image Format
+
+| aarch64| qcow2, vmdk
+
+| x86_64  | qcow2, vmdk, raw, Self Installer
+
+| ppc64le | raw, Self Installer
+
+| s390x * | qcow2, raw
+|===
+
+__* Two storage options are available for s390x: CDL DASD and FBA.__
 
 
 
@@ -192,7 +239,7 @@ This sections describes VMware configurations, focusing on the creation of an ex
 . Set the network adapter as required.
 
 . Set the [systemitem]``CD/DVD Drive 1`` to use the uploaded configuration as a [systemitem]``Datastore ISO``.
-  Tick the box next to btn:[Connect].
+  Check the box next to btn:[Connect].
   This drive must be present when you power on the machine initially.
 
 . Power on the VM, and log in using credentials set by configuration disk.
@@ -204,6 +251,10 @@ This sections describes VMware configurations, focusing on the creation of an ex
 Before starting obtain your SUSE Manager Registration Code from SUSE Customer Center - https://scc.suse.com.
 
 
+// FIXME
+// Here we probably want to use sl-micro and thus transactional-update
+// See server-deployment-vm-suma, section "Register {sl-micro} and
+// {productname} {productnumber} Server
 
 [[proc.minimal.susemgr.prep]]
 .Procedure: Preparing for {productname} run
@@ -237,16 +288,33 @@ SUSEConnect -p sle-module-suse-manager-server/<productnumber>/x86_64
 ----
 
 . Prepare {productname} storage:
-  [path]``suma-storage`` command automatically prepares and configures previously created external storage for use with {productname}.
+  [path]``mgr-storage-server`` command automatically prepares and configures previously created external storage for use with {productname}.
   In the following command the first parameter is the device for {productname} data, the second parameter is the device for the database.
 +
 
 ----
-suma-storage /dev/vdb /dev/vdc
+mgr-storage-server <storage-disk-device> [<database-disk-device>]
 ----
 +
-// FIXME info about network configuration and applying update in readme
+For example:
++
+----
+mgr-storage-server /dev/nvme1n1 /dev/nvme2n1
+----
++
+[NOTE]
+====
+This command will create the persistent storage volumes at [path]``/var/lib/containers/storage/volumes``.
 
-. The virtual machine is now ready for {productname} to be set up.
+For more information, see
 
-For proceeding with {productname} setup, see xref:installation-and-upgrade:server-setup.adoc[SUSE Manager Setup].
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+====
+
+. Run the following command to deploy {productname}:
++
+
+----
+mgradm install podman <FQDN>
+----
