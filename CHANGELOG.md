@@ -1,3 +1,5 @@
+- Added VMware image deployment documentation for Server in the
+  Installation and Upgrade Guide
 - Updated outdated links in Retail Guide
 - Added troubleshooting section about full disk with containers in
   Administration Guide and notes to persistent storage setup in Installation
