@@ -1,5 +1,11 @@
 - Clarified meaning of Default contact method in Client Configuration
   Guide
+- Updated outdated links in Retail Guide
+- Added troubleshooting section about full disk with containers in
+  Administration Guide and notes to persistent storage setup in Installation
+  and Upgrade Guide
+- Added volume SSSD to the list of etc persistent volumes to Installation and
+  Upgrade Guide
 - Documented using openSUSE Leap Micro as the host operating system for
   Uyuni Proxy
 - Added uyuni-storage-setup-server package to server deployment and
