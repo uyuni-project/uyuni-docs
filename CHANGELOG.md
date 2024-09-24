@@ -1,6 +1,7 @@
 - Uyuni 2024.09
 - Removed Uyuni legacy documentation about server and proxy installation
-  and upgrading or migrating from and old to a legacy installation
+  and upgrading or migrating from and old to a legacy installation in
+  Installation and Upgrading Guide and Quick Start
 - Updated outdated links in Retail Guide
 - Added troubleshooting section about full disk with containers in
   Administration Guide and notes to persistent storage setup in Installation
