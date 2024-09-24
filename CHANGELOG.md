@@ -1,3 +1,5 @@
+- Documented Ubuntu 24.04 LTS as a supported client OS in Client
+  Configuration G uide
 - Updated outdated links in Retail Guide
 - Added troubleshooting section about full disk with containers in
   Administration Guide and notes to persistent storage setup in Installation
