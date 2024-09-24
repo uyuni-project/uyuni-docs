@@ -1,3 +1,5 @@
+- Added clarification for authentication with PAM in Administration Guide
+  (bsc#1229077)
 - Updated outdated links in Retail Guide
 - Added troubleshooting section about full disk with containers in
   Administration Guide and notes to persistent storage setup in Installation
