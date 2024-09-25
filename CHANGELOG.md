@@ -1,4 +1,4 @@
-- Added reference to Inter-Server Synchronization in Adminisration Guide
+- Added reference to Inter-Server Synchronization in Administration Guide
   (bsc#1230943)
 - Updated outdated links in Retail Guide
 - Added troubleshooting section about full disk with containers in
