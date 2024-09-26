@@ -1,3 +1,5 @@
+- Updated information on PostgreSQL version in Installation and Upgrade
+  Guide
 - Documented Ubuntu 24.04 LTS as a supported client OS in Client
   Configuration Guide
 - Updated outdated links in Retail Guide
