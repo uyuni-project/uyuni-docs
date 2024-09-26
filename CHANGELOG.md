@@ -2,6 +2,10 @@
 - Removed Uyuni legacy documentation about server and proxy installation
   and upgrading or migrating from and old to a legacy installation in
   Installation and Upgrading Guide and Quick Start
+- Updated information on PostgreSQL version in Installation and Upgrade
+  Guide
+- Documented Ubuntu 24.04 LTS as a supported client OS in Client
+  Configuration Guide
 - Updated outdated links in Retail Guide
 - Added troubleshooting section about full disk with containers in
   Administration Guide and notes to persistent storage setup in Installation
