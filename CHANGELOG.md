@@ -651,7 +651,6 @@
 - Documented AWS Permissions for Virtual Host Manager in VHM and
   Amazon Web Services chapter in the Client Configuration Guide
 - Documented Debian 12 as a supported client OS in Client Configuration Guide
-- Documented Ubuntu 24.04 LTS as a supported client OS in Client Configuration Guide
 
 # Last packaged: 2021-09-21 (Uyuni 2021.09)
 
