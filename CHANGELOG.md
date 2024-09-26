@@ -1,5 +1,7 @@
 - Added prerequisite for server migration in Installation and Upgrade Guide
   (bsc#1229902)
+- Documented Ubuntu 24.04 LTS as a supported client OS in Client
+  Configuration Guide
 - Updated outdated links in Retail Guide
 - Added troubleshooting section about full disk with containers in
   Administration Guide and notes to persistent storage setup in Installation
@@ -651,7 +653,6 @@
 - Documented AWS Permissions for Virtual Host Manager in VHM and
   Amazon Web Services chapter in the Client Configuration Guide
 - Documented Debian 12 as a supported client OS in Client Configuration Guide
-- Documented Ubuntu 24.04 LTS as a supported client OS in Client Configuration Guide
 
 # Last packaged: 2021-09-21 (Uyuni 2021.09)
 
