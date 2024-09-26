@@ -1,3 +1,4 @@
+— Documented migrating clients such as CentOS to SUSE Liberty Linux
 - Added prerequisite for server migration in Installation and Upgrade Guide
   (bsc#1229902)
 - Documented Ubuntu 24.04 LTS as a supported client OS in Client
