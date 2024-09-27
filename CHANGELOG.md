@@ -1,5 +1,7 @@
 - Added documentation about orphaned packages in Client Configuration
   Guide (bsc#1227882)
+- Clarified meaning of Default contact method in Client Configuration
+  Guide
 - Added prerequisite for server migration in Installation and Upgrade Guide
   (bsc#1229902)
 - Documented Ubuntu 24.04 LTS as a supported client OS in Client
