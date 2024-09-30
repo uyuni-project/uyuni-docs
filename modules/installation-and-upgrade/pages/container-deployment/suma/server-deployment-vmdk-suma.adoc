@@ -8,8 +8,8 @@ This chapter provides the required Virtual Machine settings for deployment of {p
 VMware will be used as a sandbox for this installation.
 
 
-// FIXME: make this section a snippet or move it to a general intro for both,
-//        KVM and VMware
+// FIXME: make this and later sections a snippet or move it to a general
+//        intro for both, KVM and VMware
 == Available Images
 
 [IMPORTANT]
@@ -22,12 +22,12 @@ Images for {productname} {productnumber} are available at link:https://www.suse.
 
 [NOTE]
 ====
-For more information on preparing raw images see:
+For more information on preparing raw images, see:
 
 * link:https://documentation.suse.com/en-us/sle-micro/5.5/single-html/SLE-Micro-deployment/#sec-raw-preparation[]
 * link:https://documentation.suse.com/en-us/sle-micro/5.5/single-html/SLE-Micro-deployment/#cha-images-procedure[]
 
-For additional information on the self install images see:
+For additional information on the self install images, see:
 
 * link:https://documentation.suse.com/en-us/sle-micro/5.5/single-html/SLE-Micro-deployment/#cha-selfinstal-procedure[]
 ====
@@ -48,171 +48,6 @@ For additional information on the self install images see:
 
 __* Two storage options are available for s390x: CDL DASD and FBA.__
 
-
-
-// FIXME: we probably do not need this section
-
-[[sumavm.ignition]]
-== {productname} basic configuration using [systemitem]``Ignition``
-
-[IMPORTANT]
-====
-{productname} image does not set up [systemitem]``root`` or any other user account.
-User or [systemitem]``root`` authentications need to be set up during first boot.
-This can be done using [systemitem]``Ignition`` or [systemitem]``Cloud-Init`` methods.
-====
-
-[systemitem]``Ignition`` is a provisioning tool that enables you to configure a system according to your specification on the first boot.
-When the system is booted for the first time, [systemitem]``Ignition`` is loaded as part of an initramfs and searches for a configuration file within a specific directory (on a USB flash disk, or you can provide a URL).
-
-[systemitem]``Ignition`` uses a configuration file in the JSON format.
-The file is called [path]``config.ign``.
-
-The [path]``config.ign`` is a JSON configuration file that provides prescriptions for Ignition.
-You can either create the file manually in JSON, or you can use the Fuel Ignition tool to generate a basic set of prescriptions.
-The Fuel Ignition tool does not provide a full set of options, so you might have to modify the file manually.
-For more information, see https://ignite.opensuse.org/.
-
-When installing, the configuration file [path]``config.ign`` must reside in the [path]``ignition`` subdirectory on the configuration media labeled [systemitem]``ignition``.
-The directory structure must look as follows:
-
-----
-<root directory>
-└── ignition
-    └── config.ign
-----
-
-If you intend to configure a QEMU/KVM virtual machine, provide the path to the [path]``config.ign`` file as an attribute of the qemu command.
-For example:
-
-----
--fw_cfg name=opt/com.coreos/config,file=PATH_TO_config.ign
-----
-
-The [path]``config.ign`` file contains various data types: objects, strings, integers, booleans, and lists of objects.
-For the complete specification, see https://coreos.github.io/ignition/configuration-v3_3/.
-
-
-
-// FIXME: we probably do not need this section
-=== Set Root Password Using [systemitem]``Ignition``
-
-The {productname} VM image does not set up root or any other user account.
-User or [systemitem]``root`` authentications need to be set up during first boot.
-The [literal]``passwd`` attribute is used to add users.
-If you intend to log in the system, create root and set the root's password and/or add the SSH key to the [systemitem]``Ignition`` configuration.
-You need to hash the root password, for example, by using the [command]``openssl`` command:
-
-----
-openssl passwd -6
-----
-
-The command creates a hash of the password you chose.
-Use this hash as the value of the [literal]``passwordHash`` attribute.
-
-The users attribute must contain at least one [literal]``name`` attribute.
-[literal]``ssh_authorized_keys`` is a list of ssh keys for the user.
-
-Create the [path]``root/ignition/config.ign`` file with the following content:
-
-----
-{
-  "ignition": {
-    "version": "3.2.0"
-  },
-  "passwd": {
-    "users": [
-      {
-        "name": "root",
-        "passwordHash": "$2a$10$qV298UV11u9lCFDjpHpCUe1cErBiVR.G3shukxs3.2PAO1xhJWs0K"
-      }
-    ]
-  }
-}
-----
-
-Prepare the [systemitem]``Ignition`` ISO file using the command:
-
-----
-mkisofs -full-iso9660-filenames -o suma_ignition.iso -V ignition root
-----
-
-Attach the created [path]``suma_ignition.iso`` file as a volume to the virtual machine at first boot.
-This particular example is setting the [systemitem]``root`` password to `linux`.
-Substitute your password hash for the one in this example.
-
-For more information about [systemitem]``Ignition``, see https://documentation.suse.com/sle-micro/5.4/single-html/SLE-Micro-deployment/#cha-images-ignition.
-
-
-
-// FIXME: we probably do not need this section
-[[sumavm.cloud_init]]
-== {productname} basic configuration using Cloud Init disk
-
-[systemitem]``Cloud Init`` is a provisioning tool that enables you to configure a system according to your specification on the first boot.
-When the system is booted for the first time, [systemitem]``Cloud Init service`` is loaded and searches for a configuration file within a specific directory (on a USB flash disk, or you can provide a URL).
-
-[systemitem]``Cloud Init`` uses few configuration files in the YAML format. Used files are named [path]``meta-data``, [path]``network-config`` and [path]``user-data``.
-
-[systemitem]``Cloud Init`` allows numerous sources where to store configuration data. 
-In this guide we use local iso image with volume id [literal]``cidata`` as a source. 
-The directory structure must look as follows:
-
-----
-<root directory>
-└── meta-data
-└── network-config
-└── user-data
-----
-
-If you intend to configure a QEMU/KVM virtual machine, provide the path to the [path]``config.ign`` as an attribute of the qemu command.
-For example:
-
-----
--fw_cfg name=opt/com.coreos/config,file=PATH_TO_config.ign
-----
-
-The [systemitem]``Cloud Init`` allows many management options. For a complete specification, refer to Cloud Init specification (https://cloudinit.readthedocs.io/en/latest/index.html).
-
-// FIXME: we probably do not need this section
-=== Set Up Root Password Using Cloud Init
-
-You need to hash the root password, for example, by using the [command]``openssl`` command:
-
-----
-openssl passwd -6
-----
-
-The command creates a hash of the password you chose.
-Use this hash as the value of the [literal]``password`` attribute.
-
-Prepare the needed configuration files using the following commands:
-
-----
-touch network-config
-touch meta-data
-----
-
-Create a file named [path]``user-data`` with the following content:
-
-----
-#cloud-config
-chpasswd:
-  expire: false
-  users:
-    - name: root
-      password: $2a$10$qV298UV11u9lCFDjpHpCUe1cErBiVR.G3shukxs3.2PAO1xhJWs0K
-----
-
-Prepare [systemitem]``Cloud Init`` ISO file using the command:
-
-----
-mkisofs -rational-rock -joliet -o suma_cloudinit.iso -V cidata network-config meta-data user-data
-----
-
-Attach the created [path]``suma_cloudinit.iso`` file as a volume to the creating virtual machine.
-This particular example is setting [systemitem]``root`` password to `linux`.
-Substitute your password hash for the one in this example
 
 
 
@@ -237,54 +72,54 @@ This sections describes VMware configurations, focusing on the creation of an ex
 
 . Set the network adapter as required.
 
-. Power on the VM, and follow firstboot dialogs.
+. Power on the VM, and follow firstboot dialogs (keyboard layout, license agreement, time zone, password for root).
+
+. When installation completes log in as root.
+
+. Proceed to the next section.
+
 
 
 [[minimal.susemgr.prep]]
-== Preparing Virtual Machine for {productname}
+== Register {sl-micro} and {productname} {productnumber} Server
 
 Before starting obtain your SUSE Manager Registration Code from SUSE Customer Center - https://scc.suse.com.
 
-
-// FIXME
-// Here we probably want to use sl-micro and thus transactional-update
-// See server-deployment-vm-suma, section "Register {sl-micro} and
-// {productname} {productnumber} Server
-
-[[proc.minimal.susemgr.prep]]
-.Procedure: Preparing for {productname} run
-
+.Procedure: Registering {sl-micro} and {productname} {productnumber}
+. Boot the virtual machine.
 . Log in as `root`.
-
-. Register {productname} with SCC.
-  For example, replace `<productnumber>` with `{productnumber}` and `<architecture>` with `x86_64`:
+. Register {sl-micro} with SCC.
 +
 
 ----
-SUSEConnect -e <EMAIL_ADDRESS> -r <SUSE_MANAGER_CODE> \
-  -p SUSE-Manager-Server/<productnumber>/<architecture>
+transactional-update register -r <REGCODE> -e <your_email>
 ----
 
-. Validate the authorized extensions by running the list extensions command:
+. Reboot.
+
+. Register {productname} {productnumber} with {scc}.
 +
 
 ----
-SUSEConnect --list-extensions
+transactional-update register -p SUSE-Manager-Server/5.0/x86_64 -r <REGCODE>
 ----
 
-. Add {productname} repositories:
+. Reboot
+. Update the system:
 +
 
 ----
-SUSEConnect -p sle-module-basesystem/15.4/x86_64
-SUSEConnect -p sle-module-server-applications/15.4/x86_64
-SUSEConnect -p sle-module-web-scripting/15.4/x86_64
-SUSEConnect -p sle-module-suse-manager-server/<productnumber>/x86_64
+transactional-update
 ----
 
-. Prepare {productname} storage:
-  [path]``mgr-storage-server`` command automatically prepares and configures previously created external storage for use with {productname}.
-  In the following command the first parameter is the device for {productname} data, the second parameter is the device for the database.
+. If updates were applied reboot.
+
+. This step is optional.
+  However, if custom persistent storage is required for your infrastructure, use the [command]``mgr-storage-server`` tool.
+** For more information, see [command]``mgr-storage-server --help``.
+This tool simplifies creating the container storage and database volumes.
+
+** Use the command in the following manner:
 +
 
 ----
@@ -306,7 +141,6 @@ For more information, see
 * xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
 * xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
 ====
-
 . Run the following command to deploy {productname}:
 +
 
