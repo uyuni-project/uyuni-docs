@@ -4,6 +4,8 @@
   Installation and Upgrading Guide and Quick Start
 - Updated information on PostgreSQL version in Installation and Upgrade
   Guide
+- Added documentation about orphaned packages in Client Configuration
+  Guide (bsc#1227882)
 - Documented Ubuntu 24.04 LTS as a supported client OS in Client
   Configuration Guide
 - Updated outdated links in Retail Guide
