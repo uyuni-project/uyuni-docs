@@ -1,4 +1,6 @@
-— Documented migrating clients such as CentOS to SUSE Liberty Linux
+— Documented migrating clients such as AlmaLinux, CentOS, Oracle Linux,
+  and Rocky Linux to SUSE Liberty Linux and SUSE Liberty Linux 7 to
+  SUSE Liberty Linux 7 LTSS
 - Added prerequisite for server migration in Installation and Upgrade Guide
   (bsc#1229902)
 - Documented Ubuntu 24.04 LTS as a supported client OS in Client
