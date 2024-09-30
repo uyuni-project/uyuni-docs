@@ -1,3 +1,5 @@
+- Added documentation about orphaned packages in Client Configuration
+  Guide (bsc#1227882)
 - Clarified meaning of Default contact method in Client Configuration
   Guide
 - Added prerequisite for server migration in Installation and Upgrade Guide
