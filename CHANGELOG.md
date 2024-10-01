@@ -1,4 +1,6 @@
-— Documented migrating clients such as AlmaLinux, CentOS, Oracle Linux,
+- Added VMware image deployment documentation for Server in the
+  Installation and Upgrade Guide (bsc#1227852 and bsc#1228351)
+- Documented migrating clients such as AlmaLinux, CentOS, Oracle Linux,
   and Rocky Linux to SUSE Liberty Linux and SUSE Liberty Linux 7 to
   SUSE Liberty Linux 7 LTSS
 - Added documentation about orphaned packages in Client Configuration
