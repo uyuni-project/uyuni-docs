@@ -1,3 +1,4 @@
+- Update database back and restore procedures using smdba
 - Added VMware image deployment documentation for Server in the
   Installation and Upgrade Guide (bsc#1227852 and bsc#1228351)
 - Documented migrating clients such as AlmaLinux, CentOS, Oracle Linux,
