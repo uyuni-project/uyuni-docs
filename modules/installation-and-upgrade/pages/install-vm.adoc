@@ -3,17 +3,27 @@
 
 
 
+This chapter provides procedures for deploying Kernel Virtual Machine (KVM) or VMware images.
+
+You will find the images for {productname} {productnumber} in various formats.
+They include {sles} {sles-version} {sp-base} as the underlying operating system and the {productname} software current at the time of build.
+Download the appropriate {productname} image for your environment from https://download.suse.com/.
+
+[NOTE]
+====
+Using a tool such as [systemitem]``Ignition`` to set up a [systemitem]``root`` password is optional now.
+For more information about [systemitem]``Ignition``, see xref:installation-and-upgrade:install-ignition.adoc[].
+====
+
+
+
 [[quickstart.sect.kvm.settings]]
 == Virtual Machine Manager Settings
 
-This chapter provides the required Kernel Virtual Machine (KVM) settings for {productname}.
+This section provides the required Kernel Virtual Machine (KVM) settings for {productname}.
 KVM combined with Virtual Machine Manager (_virt-manager_) will be used as a sandbox for this installation.
 
 
-
-You will find the VM images for {productname} {productnumber} in various formats.
-They include {sles} {sles-version} {sp-base} as the underlying operating system and the {productname} software current at the time of build.
-Download the appropriate {productname} image for your environment from https://download.suse.com/.
 
 [NOTE]
 ====
@@ -35,9 +45,8 @@ If you want to use a production environment, review the requirements listed in x
 | VirtIO Disk 2       | 101 GB for [path]``/var/spacewalk``
 | VirtIO Disk 3       | 50 GB for [path]``/var/lib/pgsql``
 | VirtIO Disk 4       | 4 GB for swap
-| CDROM               | Ignition or Cloud Init configuration disk
 | Name:               | suse-manager-test-setup
-| Network             | Bridge _br0_
+| Network:            | Bridge _br0_
 |===
 
 [NOTE]
@@ -45,171 +54,10 @@ If you want to use a production environment, review the requirements listed in x
 For more information on {sle} Virtualization, see https://documentation.suse.com/sles/15-SP4/html/SLES-all/book-virtualization.html.
 ====
 
-[IMPORTANT]
-====
-{productname} VM image does not set up [systemitem]``root`` or any other user account.
-User or [systemitem]``root`` authentications need to be set up during first boot.
-This can be done using [systemitem]``Ignition`` or [systemitem]``Cloud-Init`` methods.
-====
-
-
-
-[[sumavm.ignition]]
-== {productname} basic configuration using [systemitem]``Ignition``
-
-[systemitem]``Ignition`` is a provisioning tool that enables you to configure a system according to your specification on the first boot.
-When the system is booted for the first time, [systemitem]``Ignition`` is loaded as part of an initramfs and searches for a configuration file within a specific directory (on a USB flash disk, or you can provide a URL).
-
-[systemitem]``Ignition`` uses a configuration file in the JSON format.
-The file is called [path]``config.ign``.
-
-The [path]``config.ign`` is a JSON configuration file that provides prescriptions for Ignition.
-You can either create the file manually in JSON, or you can use the Fuel Ignition tool to generate a basic set of prescriptions.
-The Fuel Ignition tool does not provide a full set of options, so you might have to modify the file manually.
-For more information, see https://ignite.opensuse.org/.
-
-When installing, the configuration file [path]``config.ign`` must reside in the [path]``ignition`` subdirectory on the configuration media labeled [systemitem]``ignition``.
-The directory structure must look as follows:
-
-----
-<root directory>
-└── ignition
-    └── config.ign
-----
-
-If you intend to configure a QEMU/KVM virtual machine, provide the path to the [path]``config.ign`` file as an attribute of the qemu command.
-For example:
-
-----
--fw_cfg name=opt/com.coreos/config,file=PATH_TO_config.ign
-----
-
-The [path]``config.ign`` file contains various data types: objects, strings, integers, booleans, and lists of objects.
-For the complete specification, see https://coreos.github.io/ignition/configuration-v3_3/.
-
-
-
-=== Set Root Password Using [systemitem]``Ignition``
-
-The {productname} VM image does not set up root or any other user account.
-User or [systemitem]``root`` authentications need to be set up during first boot.
-The [literal]``passwd`` attribute is used to add users.
-If you intend to log in the system, create root and set the root's password and/or add the SSH key to the [systemitem]``Ignition`` configuration.
-You need to hash the root password, for example, by using the [command]``openssl`` command:
-
-----
-openssl passwd -6
-----
-
-The command creates a hash of the password you chose.
-Use this hash as the value of the [literal]``passwordHash`` attribute.
-
-The users attribute must contain at least one [literal]``name`` attribute.
-[literal]``ssh_authorized_keys`` is a list of ssh keys for the user.
-
-Create the [path]``root/ignition/config.ign`` file with the following content:
-
-----
-{
-  "ignition": {
-    "version": "3.2.0"
-  },
-  "passwd": {
-    "users": [
-      {
-        "name": "root",
-        "passwordHash": "$2a$10$qV298UV11u9lCFDjpHpCUe1cErBiVR.G3shukxs3.2PAO1xhJWs0K"
-      }
-    ]
-  }
-}
-----
-
-Prepare the [systemitem]``Ignition`` ISO file using the command:
-
-----
-mkisofs -full-iso9660-filenames -o suma_ignition.iso -V ignition root
-----
-
-Attach the created [path]``suma_ignition.iso`` file as a volume to the virtual machine at first boot.
-This particular example is setting the [systemitem]``root`` password to `linux`.
-Substitute your password hash for the one in this example.
-
-For more information about [systemitem]``Ignition``, see https://documentation.suse.com/sle-micro/5.4/single-html/SLE-Micro-deployment/#cha-images-ignition.
-
-
-
-[[sumavm.cloud_init]]
-== {productname} basic configuration using Cloud Init disk
-
-[systemitem]``Cloud Init`` is a provisioning tool that enables you to configure a system according to your specification on the first boot.
-When the system is booted for the first time, [systemitem]``Cloud Init service`` is loaded and searches for a configuration file within a specific directory (on a USB flash disk, or you can provide a URL).
-
-[systemitem]``Cloud Init`` uses few configuration files in the YAML format. Used files are named [path]``meta-data``, [path]``network-config`` and [path]``user-data``.
-
-[systemitem]``Cloud Init`` allows numerous sources where to store configuration data. 
-In this guide we use local iso image with volume id [literal]``cidata`` as a source. 
-The directory structure must look as follows:
-
-----
-<root directory>
-└── meta-data
-└── network-config
-└── user-data
-----
-
-If you intend to configure a QEMU/KVM virtual machine, provide the path to the [path]``config.ign`` as an attribute of the qemu command.
-For example:
-
-----
--fw_cfg name=opt/com.coreos/config,file=PATH_TO_config.ign
-----
-
-The [systemitem]``Cloud Init`` allows many management options. For a complete specification, refer to Cloud Init specification (https://cloudinit.readthedocs.io/en/latest/index.html).
-
-=== Set Up Root Password Using Cloud Init
-
-You need to hash the root password, for example, by using the [command]``openssl`` command:
-
-----
-openssl passwd -6
-----
-
-The command creates a hash of the password you chose.
-Use this hash as the value of the [literal]``password`` attribute.
-
-Prepare the needed configuration files using the following commands:
-
-----
-touch network-config
-touch meta-data
-----
-
-Create a file named [path]``user-data`` with the following content:
-
-----
-#cloud-config
-chpasswd:
-  expire: false
-  users:
-    - name: root
-      password: $2a$10$qV298UV11u9lCFDjpHpCUe1cErBiVR.G3shukxs3.2PAO1xhJWs0K
-----
-
-Prepare [systemitem]``Cloud Init`` ISO file using the command:
-
-----
-mkisofs -rational-rock -joliet -o suma_cloudinit.iso -V cidata network-config meta-data user-data
-----
-
-Attach the created [path]``suma_cloudinit.iso`` file as a volume to the creating virtual machine.
-This particular example is setting [systemitem]``root`` password to `linux`.
-Substitute your password hash for the one in this example
-
 
 
 [[sumavm.kvm.settings]]
-== {productname} Virtual Machine Settings
+== {productname} Virtual Machine Creation - KVM
 
 Create a virtual machine with three additional virtual disks required for the {productname} storage partitions.
 
@@ -242,26 +90,31 @@ Also consider to create a separate partition for [path]``/srv`` where Kiwi image
 | VirtIO Disk 3        | pgsql     | 100{nbsp}GB
 | VirtIO Disk 4        | swap      | 4{nbsp}GB
 |===
++
 
-. Click btn:[Add Hardware] to attach a virtual CDROM device with the prepared [systemitem]``Ignition`` or [systemitem]``Cloud Init`` disk.
 . Click btn:[Begin Installation] to boot the new VM from the {productname} image.
-  Wait until the login prompt is presented.
-  Log in using credentials set by configuration disk.
+. At the JeOS Firstboot screen select btn:[Start] to continue and check the following configuration options (keyboard layout, license agreement, time zone, password for root).
+
+. When installation completes, log in as root.
+
+. Proceed with xref:installation-and-upgrade:install-vm.adoc#minimal.susemgr.prep[].
 
 
-== {productname} Virtual Machine Settings - VMware
+
+== {productname} Virtual Machine Creation - VMware
 
 This sections describes VMware configurations, focusing on the creation of an extra virtual disk essential for the {productname} storage partition within VMware environments.
 
 .Procedure: Creating the VMware Virtual Machine
 
-. Download {productname} Server [filename]``.vmdk`` file then transfer a copy to your VMware storage.
+. Download {productname} Server [filename]``.vmdk`` file.
+  Then transfer a copy to your VMware storage.
 
-. Upload the prepared Ignition or Cloud Init disk file you created using the instructions above.
+. Make a copy of uploaded [filename]``.vmdk`` file using VMware web interface.
+  This will convert provided [filename]``.vmdk`` file to the format suitable for vSpere hypervisor.
+  Use this new copy as a base image for the virtual machine.
 
 . Create and name a new virtual machine based on the Guest OS Family [systemitem]``Linux`` and Guest OS Version {sle} 15 (64-bit).
-
-. In [guimenu]``Customize settings`` browse to the uploaded [filename]``.vmdk`` using [systemitem]``IDE controller 0`` storage device in the [systemitem]``Controller Location``.
 
 . Add an additional [systemitem]``Hard Disk 2`` of 500 GB (or more).
 
@@ -269,11 +122,14 @@ This sections describes VMware configurations, focusing on the creation of an ex
 
 . Set the network adapter as required.
 
-. Set the [systemitem]``CD/DVD Drive 1`` to use the uploaded configuration as a [systemitem]``Datastore ISO``.
-  Tick the box next to btn:[Connect].
-  This drive must be present when you power on the machine initially.
+. Power on the VM.
 
-. Power on the VM, and log in using credentials set by configuration disk.
+. At the JeOS Firstboot screen select start to continue and check the following configuration dialogs (keyboard layout, license agreement, time zone, password for root).
+
+. When installation completes log in as root.
+
+. Proceed with xref:installation-and-upgrade:install-vm.adoc#minimal.susemgr.prep[].
+
 
 
 [[minimal.susemgr.prep]]
