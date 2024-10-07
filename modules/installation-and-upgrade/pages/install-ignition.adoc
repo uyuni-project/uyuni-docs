@@ -1,0 +1,94 @@
+[[sumavm.config-tool]]
+= Boot Image Configuration Tools
+
+
+[IMPORTANT]
+====
+{productname} VM images are prepared with JeOS firstboot configuration dialogs.
+Using a boot image configuration tool such as [systemitem]``Ignition`` is optinal now.
+====
+
+
+
+[[sumavm.ignition]]
+== {productname} Basic Configuration Using [systemitem]``Ignition``
+
+[systemitem]``Ignition`` is a provisioning tool that enables you to configure a system according to your specification on the first boot.
+When the system is booted for the first time, [systemitem]``Ignition`` is loaded as part of an initramfs and searches for a configuration file within a specific directory (on a USB flash disk, or you can provide a URL).
+
+[systemitem]``Ignition`` uses a configuration file in the JSON format.
+The file is called [path]``config.ign``.
+
+The [path]``config.ign`` is a JSON configuration file that provides prescriptions for Ignition.
+You can either create the file manually in JSON, or you can use the Fuel Ignition tool to generate a basic set of prescriptions.
+The Fuel Ignition tool does not provide a full set of options, so you might have to modify the file manually.
+For more information, see https://ignite.opensuse.org/.
+
+When installing, the configuration file [path]``config.ign`` must reside in the [path]``ignition`` subdirectory on the configuration media labeled [systemitem]``ignition``.
+The directory structure must look as follows:
+
+----
+<root directory>
+└── ignition
+    └── config.ign
+----
+
+If you intend to configure a QEMU/KVM virtual machine, provide the path to the [path]``config.ign`` file as an attribute of the qemu command.
+For example:
+
+----
+-fw_cfg name=opt/com.coreos/config,file=PATH_TO_config.ign
+----
+
+The [path]``config.ign`` file contains various data types: objects, strings, integers, booleans, and lists of objects.
+For the complete specification, see https://coreos.github.io/ignition/configuration-v3_3/.
+
+
+
+=== Set Root Password Using [systemitem]``Ignition``
+
+The {productname} VM image does not set up root or any other user account.
+User or [systemitem]``root`` authentications need to be set up during first boot.
+The [literal]``passwd`` attribute is used to add users.
+If you intend to log in the system, create root and set the root's password and/or add the SSH key to the [systemitem]``Ignition`` configuration.
+You need to hash the root password, for example, by using the [command]``openssl`` command:
+
+----
+openssl passwd -6
+----
+
+The command creates a hash of the password you chose.
+Use this hash as the value of the [literal]``passwordHash`` attribute.
+
+The users attribute must contain at least one [literal]``name`` attribute.
+[literal]``ssh_authorized_keys`` is a list of ssh keys for the user.
+
+Create the [path]``root/ignition/config.ign`` file with the following content:
+
+----
+{
+  "ignition": {
+    "version": "3.2.0"
+  },
+  "passwd": {
+    "users": [
+      {
+        "name": "root",
+        "passwordHash": "$2a$10$qV298UV11u9lCFDjpHpCUe1cErBiVR.G3shukxs3.2PAO1xhJWs0K"
+      }
+    ]
+  }
+}
+----
+
+Prepare the [systemitem]``Ignition`` ISO file using the command:
+
+----
+mkisofs -full-iso9660-filenames -o suma_ignition.iso -V ignition root
+----
+
+Attach the created [path]``suma_ignition.iso`` file as a volume to the virtual machine at first boot.
+This particular example is setting the [systemitem]``root`` password to `linux`.
+Substitute your password hash for the one in this example.
+
+For more information about [systemitem]``Ignition``, see https://documentation.suse.com/sle-micro/5.4/single-html/SLE-Micro-deployment/#cha-images-ignition.
