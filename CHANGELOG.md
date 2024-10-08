@@ -1,4 +1,4 @@
-- Uyuni 2024.09
+- Uyuni 2024.10
 - Documented setting krb5_keytab in Administration Guide (bsc#1229077,
   partially)
 - Removed Uyuni legacy documentation about server and proxy installation
