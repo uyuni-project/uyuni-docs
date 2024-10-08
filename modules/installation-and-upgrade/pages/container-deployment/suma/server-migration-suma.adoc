@@ -8,42 +8,53 @@ endif::[]
 
 // We need to figure out which SUMA versions prior to the container release can or should be migrated. Something like any version prior to yyyy.mm and later than.
 
-To migrate a {productname} 4.3 Server to a container, you require a new machine with {sle-micro} 5.5 and [literal]``mgradm`` installed.
+
+== Requirements and Considerations
+
+=== General
+
+* To migrate a {productname} 4.3 Server to a container, you require a new machine with {sle-micro} 5.5 and [literal]``mgradm`` installed
+
+* An in-place migration from {productname} 4.3 to 5.0 is unsupported because of the change of the underlying operating system from {sles} 15 SP4 to {sle-micro} {microversion}.
+
+* Before migrating from {productname} 4.3 to {productnumber}, any existing traditional clients including the traditional proxies must be migrated to {salt}.
+** For more information about migrating traditional {productname} 4.3 clients to {salt} clients, see https://documentation.suse.com/suma/4.3/en/suse-manager/client-configuration/contact-methods-migrate-traditional.html.
+
+* Traditional contact protocol is no longer supported in {productname} 5.0 and later.
 
 
-[IMPORTANT]
-====
-An in-place migration from {productname} 4.3 to 5.0 will remain unsupported because of the change of the underlying operating system from {sles} 15 SP4 to {sle-micro} {microversion}.
+=== Hostnames
 
-The traditional contact protocol is no longer supported in {productname} 5.0 and later.
-Before migrating from {productname} 4.3 to {productnumber}, any existing traditional clients including the traditional proxies must be migrated to {salt}.
+* The current migration procedure does not include functionality for renaming hostnames.
+  As a result, the fully qualified domain name (FQDN) of the new server will remain the same as that of the old server.
 
-For more information about migrating traditional {productname} 4.3 clients to {salt} clients, see https://documentation.suse.com/suma/4.3/en/suse-manager/client-configuration/contact-methods-migrate-traditional.html.
-====
+* The IP address must remain unchanged to ensure that the clients can contact the server.
+  After the migration, it will be necessary to manually update the DHCP and DNS records to point to the new server.
 
 
 
-[IMPORTANT]
-====
-Self trusted GPG keys are not migrated.
-GPG keys that are trusted in the RPM database only are not migrated.
-Thus synchronizing channels with [command]``spacewalk-repo-sync`` can fail.
+=== GPG Keys
 
-The administrator must migrate these keys manually from the 4.3 installation to the container host after the actual server migration.
+* Self trusted GPG keys are not migrated.
+* GPG keys that are trusted in the RPM database only are not migrated.
+  Thus synchronizing channels with [command]``spacewalk-repo-sync`` can fail.
+* The administrator must migrate these keys manually from the 4.3 installation to the container host after the actual server migration.
++
+.Procedure: Manual Migration of the 4.3 GPG Keys to New Server
+. Copy the keys from the 4.3 server to the container host of the new server.
+. Later, add each key to the migrated server with the command [command]``mgradm gpg add <PATH_TO_KEY_FILE>``.
 
-1. Copy the keys from the 4.3 server to the container host of the new server.
-2. Later, add each key to the migrated server with the command [command]``mgradm gpg add <PATH_TO_KEY_FILE>``.
-====
 
+////
 The current migration procedure does not include functionality for renaming hostnames.
 As a result, the fully qualified domain name (FQDN) of the new server will remain the same as that of the old server.
 Additionally, the IP address must remain unchanged to ensure that the clients can contact the server.
 After the migration, it will be necessary to manually update the DHCP and DNS records to point to the new server.
+////
 
+== Migration
 
-== Initial Preparation on the Old 4.3 Server
-
-
+=== Initial Preparation on the Old 4.3 Server
 
 .Procedure: Initial preparation on the 4.3 server
 . Stop the {productname} services:
@@ -61,17 +72,12 @@ systemctl stop postgresql
 ----
 
 
-== Prepare the SSH Connection
+=== SSH Connection Preparation
 
-[IMPORTANT]
-====
-You need to have {sle-micro} 5.5 with [literal]``mgradm`` installed.
-Do not pre-install {productname} on this server.
+Pre-installing {productname} on the prepared {sle-micro} 5.5 with [litaral]``mgradm`` is not necessary. 
 The migration process will take care of the server installation.
-====
 
-.Procedure: Preparing the SSH connection
-
+.Procedure: Preparing the SSH Connection
 . Ensure that for [systemitem]``root`` an SSH key exists on the new {productnumber} server.
   If a key does not exist, create it with:
 +
@@ -116,13 +122,12 @@ For more information, see the [literal]``ssh-copy-id`` manpage.
 
 
 
-== Perform the Migration
+=== Perform the Migration
 
-[IMPORTANT]
-====
 When planning your migration from {productname} 4.3 to {productname} 5.0, ensure that your target instance meets or exceeds the specifications of the old setup.
+
 This includes, but is not limited to, [literal]``Memory (RAM)``, [literal]``CPU Cores``, [literal]``Storage``, and [literal]``Network Bandwidth``.
-====
+
 
 .Procedure: Performing the Migration
 . This step is optional.
@@ -160,29 +165,30 @@ mgradm migrate podman <oldserver.fqdn>
 . Migrate trusted SSL CA certificates.
 
 
-[IMPORTANT]
-====
+==== Migration of the Certificates
+//[IMPORTANT]
+//====
 Trusted SSL CA certificates that were installed as part of an RPM and stored on {productname} 4.3 in the [path]``/usr/share/pki/trust/anchors/`` directory will not be migrated.
 Because {suse} does not install RPM packages in the container, the administrator must migrate these certificate files manually from the 4.3 installation after migration:
 
 
+.Procedure: Migrating the Certificates
 . Copy the file from the 4.3 server to the new server.
    For example, as [path]``/local/ca.file``.
-
 . Copy the file into the container with:
 +
 
 ----
 mgradm cp /local/ca.file server:/etc/pki/trust/anchors/
 ----
-====
+//====
 
 
 [IMPORTANT]
 ====
 After successfully running the [command]``mgradm migrate`` command, the {salt} setup on all clients will still point to the old 4.3 server.
 
-To redirect them to the {productnumber} server, it is required to rename the new server at the infrastructure level (DHCP and DNS) to use the same Fully Qualified Domain Name and IP address as 4.3 server.
+To redirect them to the {productnumber} server, it is required to rename the new server at the infrastructure level (DHCP and DNS) to use the same FQDN and IP address as 4.3 server.
 ====
 
 // uncomment when kubernetes support is added
