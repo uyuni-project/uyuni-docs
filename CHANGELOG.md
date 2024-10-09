@@ -1,5 +1,23 @@
 - Added reference to Inter-Server Synchronization in Administration Guide
   (bsc#1230943)
+- Updated database backup and restore procedures using smdba in Administration
+  Guide
+- Documented krb5.conf configuration (bsc#1229077)
+- Added VMware image deployment documentation for Server in the
+  Installation and Upgrade Guide (bsc#1227852 and bsc#1228351)
+- Documented migrating clients such as AlmaLinux, CentOS, Oracle Linux,
+  and Rocky Linux to SUSE Liberty Linux and SUSE Liberty Linux 7 to
+  SUSE Liberty Linux 7 LTSS
+- Added documentation about orphaned packages in Client Configuration
+  Guide (bsc#1227882)
+- Clarified meaning of Default contact method in Client Configuration
+  Guide
+- Added prerequisite for server migration in Installation and Upgrade Guide
+  (bsc#1229902)
+- Updated information on PostgreSQL version in Installation and Upgrade
+  Guide
+- Documented Ubuntu 24.04 LTS as a supported client OS in Client
+  Configuration Guide
 - Updated outdated links in Retail Guide
 - Added troubleshooting section about full disk with containers in
   Administration Guide and notes to persistent storage setup in Installation
@@ -651,7 +669,6 @@
 - Documented AWS Permissions for Virtual Host Manager in VHM and
   Amazon Web Services chapter in the Client Configuration Guide
 - Documented Debian 12 as a supported client OS in Client Configuration Guide
-- Documented Ubuntu 24.04 LTS as a supported client OS in Client Configuration Guide
 
 # Last packaged: 2021-09-21 (Uyuni 2021.09)
 
