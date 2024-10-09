@@ -1,3 +1,5 @@
+- Updated database backup and restore procedures using smdba in Administration
+  Guide
 - Documented krb5.conf configuration (bsc#1229077)
 - Added VMware image deployment documentation for Server in the
   Installation and Upgrade Guide (bsc#1227852 and bsc#1228351)
