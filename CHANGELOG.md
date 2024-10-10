@@ -1,3 +1,5 @@
+- Added reference to Inter-Server Synchronization in Administration Guide
+  (bsc#1230943)
 - Updated database backup and restore procedures using smdba in Administration
   Guide
 - Documented krb5.conf configuration (bsc#1229077)
