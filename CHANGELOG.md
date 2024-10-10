@@ -1,3 +1,5 @@
+- Documented consistently Leap Micro as Uyuni container host system in
+  Installation and Upgrade Guide
 - Updated database backup and restore procedures using smdba in Administration
   Guide
 - Documented krb5.conf configuration (bsc#1229077)
