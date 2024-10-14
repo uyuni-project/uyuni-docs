@@ -25,9 +25,9 @@ For {productname} {smr} hardware requirements, see xref:retail:retail-requiremen
 * Minimum for base installation 100 GB
 * Plus a minimum of 130 GB for repository data
 
-By default the {productname} Server container stores packages in the [path]``/var/lib/containers/storage/volumes/var-spacewalk/`` directory.
+By default the {productname} Server container stores mirrored repository (packages or products), database, and other data in subdirectories of the [path]``/var/lib/containers/storage/volumes/`` directory.
 Repository synchronization fails if this directory runs out of disk space.
-Estimate how much space the [path]``/var/lib/containers/storage/volumes/var-spacewalk/`` directory requires based on the clients and repositories you plan to mirror.
+Estimate how much space the [path]``/var/lib/containers/storage/volumes/`` directory requires based on the number and kind of clients and repositories you plan to mirror.
 
 For more information about filesystem and partitioning details, see xref:installation-and-upgrade:hardware-requirements.adoc#install-hardware-requirements-storage[] and the detailed installation instructions in the Installation and Deployment sections of this guide.
 
@@ -56,32 +56,35 @@ For more information about filesystem and partitioning details, see xref:install
 | 20 GB
 
 |
+| [path]``/var/lib/containers/storage/volumes``
+| Minimum 150 GB (depending on the number of products)
+
+|
 | [path]``/var/lib/containers/storage/volumes/var-pgsql``
 | Minimum 50 GB
-
-|
-| [path]``/var/lib/containers/storage/volumes/var-spacewalk``
-| Minimum storage required: 100 GB (this will be verified by the implemented check)
-
-* 50 GB for each {suse} product and Package Hub
-
-* 360 GB for each {redhat} product
-
-|
-| [path]``/var/lib/containers/storage/volumes/var-cache``
-| Minimum 10 GB.
-Add 100 MB per {suse} product, 1 GB per {redhat} or other product.
-Consider to double the space if the server is used for Inter-Server Synchronization (ISS)
-
 |===
+
+// |
+// | [path]``/var/lib/containers/storage/volumes/var-cache``
+// | Minimum 10 GB.
+// Add 100 MB per {suse} product, 1 GB per {redhat} or other product.
+// Consider to double the space if the server is used for Inter-Server Synchronization (ISS)
+// 
+// |
+// | [path]``/var/lib/containers/storage/volumes/srv-www``
+// | Minimum 100 GB
+// 
+// * Storage requirments should be calculated for the number of ISO distribution images, containers, and bootstrap repositories you will use.
 
 
 The images by default have a 20 GB [literal]``/`` partition.
 The cloud image of {sle-micro} 5.5 has just a 5 GB [literal]``/`` partition. Both work flawlessly with {productname}.
 As long as external storage is mounted to [path]``/var/lib/containers/storage/volumes``, {productname} does not need or use storage on the [literal]``/`` partition, but leaves that to the management of the container host itself.
 
+
+
 ////
-// When uncommenting verify the details!
+// When uncommenting verify the details! (POWER)
 
 ifeval::[{suma-content} == true]
 [cols="1,3,2", options="header"]
@@ -127,6 +130,12 @@ Add 100{nbsp}MB per {suse} product, 1{nbsp}GB per {redhat} or other product.
 Double the space if the server is an ISS Master.
 
 |
+| [path]``/var/lib/containers/storage/volumes/srv-www``
+| Minimum 100 GB
+
+* Storage requirements should be calculated for the number of ISO distribution images, containers, and bootstrap repositories you will use.
+
+|
 | Swap space
 | 3{nbsp}GB
 
@@ -134,7 +143,10 @@ Double the space if the server is an ISS Master.
 
 endif::[]
 
+// end POWER
 ////
+
+
 
 [IMPORTANT]
 ====
@@ -175,19 +187,19 @@ For more information about managing a large number of clients, see xref:speciali
 | Minimum 40 GB
 
 |
-| [path]``/var/lib/containers/storage/volumes/srv-www``
-| Minimum 100 GB
-
-* Storage requirments should be calculated for the number of ISO distribution images, containers, and bootstrap repositories you will use.
-
-|
-| [path]``/var/lib/containers/storage/volumes/var-cache`` (Squid)
-| Minimum 100 GB
+| [path]``/var/lib/containers/storage/volumes``
+| Minimum 150 GB
 
 |===
 
+// /srv-www
+// * Storage requirments should be calculated for the number of ISO distribution images, containers, and bootstrap repositories you will use.
 
-By default the {productname} Proxy container caches packages in the [path]``/var/lib/containers/storage/volumes/var-cache/`` directory.
+// |
+// | [path]``/var/lib/containers/storage/volumes/var-cache`` (Squid)
+// | Minimum 100 GB
+
+By default the {productname} Proxy container caches packages in the [path]``/var/lib/containers/storage/volumes/uyuni-proxy-squid-cache/`` directory.
 If there is not enough space available, the proxy will remove old, unused packages and replace them with newer packages.
 
 As a result of this behavior:
@@ -223,20 +235,14 @@ endif::[]
 
 Persistent volumes are created by default when deploying the container.
 
-However, it is recommended that the repositories and the database for {productname} are stored on separate storage devices.
+However, it is recommended that the volumes are stored on one or more separate storage devices.
 Such a setup helps avoid data loss in production environments.
+This can be done after container deployment.
 
-Storage devices must be set up prior to deploying the container.
+Storage devices best should be set up after first deploying the container.
 For more details, see xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[Persistent Container Volumes].
 
-{productname} requires three different volumes:
-
-* Database volume: [path]``/var/lib/containers/storage/volumes/var-pgsql``
-* Channel volume: [path]``/var/lib/containers/storage/volumes/var-spacewalk``
-* Cache: [path]``/var/lib/containers/storage/volumes/var-cache``
-
 We recommend you use XFS as the filesystem type for all volumes.
-Additionally, for on-premise installations, consider using logical volume management (LVM) to manage the disks.
 The size of the disk for repositories storage is dependent on the number of distributions and channels you intend to manage with {productname}.
 See the tables in this section for guides to estimate the size required.
 
@@ -248,10 +254,10 @@ hwinfo --disk | grep -E "Device File:"
 
 Use the [command]``lsblk`` command to see the name and size of each device.
 
-Use the [command]``mgr-storage-server`` command with the device names to set up the external disks as the locations for the database and repositories:
+Use the [command]``mgr-storage-server`` command with the device names to set up the external disks as the locations for the storage and, optionally on a disk of its own, for the database:
 
 ----
-mgr-storage-server <channel_devicename> [<database_devicename>]
+mgr-storage-server <storage-disk-device> [<database-disk-device>]
 ----
 
 The external storage volumes are set up as XFS partitions mounted at [path]``/manager_storage`` and [path]``/pgsql_storage``.
@@ -261,51 +267,33 @@ This is not recommended, as growing channel repositories might fill up the stora
 Using separate storage devices may also increase performance.
 If you want to use a single storage device, run [command]``mgr-storage-server`` with a single device name parameter.
 
-If you are installing a proxy, the [command]``mgr-storage-proxy`` command only takes a single device name parameter and will set up the external storage location as the Squid cache.
+If you are installing a proxy, the [command]``mgr-storage-proxy`` command takes only one device name parameter and will set up the external storage location as the Squid cache.
 
-When you create disk partitions for the {productname} Server and Proxy, ensure you set the permissions correctly.
 
-For [path]``/var/lib/containers/storage/volumes/var-pgsql``:
 
-* Owner: Read, Write, Execute
-* Group: Read, Execute
-* User: None
+== Logical Volume Management (LVM)
 
-For [path]``/var/lib/containers/storage/volumes/var-spacewalk``:
 
-* Owner: Read, Write, Execute
-* Group: Read, Write, Execute
-* User: Read, Execute
+// container-deployment/suma/server-deployment-vm-suma.adoc etc.
+For all kind of virtual machines (VM), LVM is generally not needed and not recommended.
+The disk setup is virtual and separate disks for volumes are possible and recommended.
 
-Check the permissions with this command:
+// container-deployment/suma/server-deployment-suma.adoc
+For other deployments, separate disks for volumes are also recommended.
 
-----
-ls -l /var/lib/containers/storage/volumes/var-pgsql /var/lib/containers/storage/volumes/var-spacewalk
-----
+On the {productname} Server, the [command]``mgr-storage-server`` command moves the complete content of the [path]``/var/lib/containers/storage/volumes`` directory to a separate disk and remounts it to [path]``/var/lib/containers/storage/volumes``.
+Optionally, if a second device name is specified, [command]``mgr-storage-server`` moves the content of the [path]``/var/lib/containers/storage/volumes/var-pgsql`` database directory to a second separate disk and remounts it to [path]``/var/lib/containers/storage/volumes/var-pgsql``.
 
-The output should look like this:
+Similarily on the {productname} Proxy, the [command]``mgr-storage-proxy`` command moves the complete content of the [path]``/var/lib/containers/storage/volumes`` directory to a separate disk and remounts it to [path]``/var/lib/containers/storage/volumes``.
 
-----
-/var/lib/containers/storage/volumes/var-pgsql:
-total 0
-drwxr-x--- 1 10556 10556 48 Apr 19 14:33 _data
 
-/var/lib/containers/storage/volumes/var-spacewalk:
-total 0
-drwxr-xr-x 1 10552 root 30 Apr 19 14:34 _data
-----
 
-If required, change the permissions with these commands:
 
-----
-chmod 750 /var/lib/containers/storage/volumes/var-pgsql
-chmod 775 /var/lib/containers/storage/volumes/var-spacewalk
-----
+////
+// *** The following is commented, and can probably deleted ***
 
-And owners with:
+// When installation takes place on bare metal (on-premise), [command]``cockpit`` can be used to create an LVM setup.
+// In such a case, the disk setup needs to be performed manually.
 
-----
-chown postgres:postgres /var/lib/containers/storage/volumes/var-pgsql
-chown wwwrun:www /var/lib/containers/storage/volumes/var-spacewalk
-----
-
+// With containers {productname} now has [path]``/var/lib/containers/storage/volumes`` as an extra disk.
+////
