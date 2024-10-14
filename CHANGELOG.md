@@ -1,3 +1,5 @@
+- Documented consistently Leap Micro as Uyuni container host system in
+  Installation and Upgrade Guide
 - Documented that is LVM not needed in default cases in Installation
   and Upgrade Guide (bsc#1228319)
 - Removed inconsistent information about persistent storage (bsc#1230502)
