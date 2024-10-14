@@ -1,5 +1,10 @@
 - Added reference to Inter-Server Synchronization in Administration Guide
   (bsc#1230943)
+- Documented consistently Leap Micro as Uyuni container host system in
+  Installation and Upgrade Guide
+- Documented that is LVM not needed in default cases in Installation
+  and Upgrade Guide (bsc#1228319)
+- Removed inconsistent information about persistent storage (bsc#1230502)
 - Updated database backup and restore procedures using smdba in Administration
   Guide
 - Documented krb5.conf configuration (bsc#1229077)
