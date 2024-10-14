@@ -1,3 +1,5 @@
+- Added reference to Inter-Server Synchronization in Administration Guide
+  (bsc#1230943)
 - Updated database backup and restore procedures using smdba in Administration
   Guide
 - Added VMware image deployment documentation for Server in the
