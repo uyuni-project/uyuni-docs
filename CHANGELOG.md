@@ -1,3 +1,5 @@
+- Added information for running mgr-ssl-cert-setup with 5.0 and containers
+  (bcs#1229079)
 - Added reference to Inter-Server Synchronization in Administration Guide
   (bsc#1230943)
 - Documented consistently Leap Micro as Uyuni container host system in
