@@ -1,3 +1,4 @@
+- Documented krb5.conf configuration (bsc#1229077)
 - Documented that is LVM not needed in default cases in Installation
   and Upgrade Guide (bsc#1228319)
 - Removed inconsistent information about persistent storage (bsc#1230502)
