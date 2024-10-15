@@ -1,3 +1,6 @@
+- Documented that is LVM not needed in default cases in Installation
+  and Upgrade Guide (bsc#1228319)
+- Removed inconsistent information about persistent storage (bsc#1230502)
 - Added reference to Inter-Server Synchronization in Administration Guide
   (bsc#1230943)
 - Updated database backup and restore procedures using smdba in Administration
