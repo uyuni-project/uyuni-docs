@@ -32,7 +32,7 @@ The Hub Server's and the Peripheral Servers' SSL certificates must be signed by 
 There are two ways to fulfill this requirement:
 
 * Use third party certificates.
-* Install Hub Server first and use it to generate the certificates for the Peripheral Servers.
+* Deploy the Hub Server first and use it to generate the certificates for the Peripheral Servers.
   For more information, see xref:specialized-guides:large-deployments/hub-reqs.adoc#lsd-hub-reqs-gencerts[] .
 
 
@@ -45,32 +45,32 @@ There are two ways to fulfill this requirement:
 
 [NOTE]
 ====
-If you will use third party provides Certificates, you can skip this procedure.
+If you will use third party provided Certificates, you can skip this procedure.
 ====
 
 .Procedure: Generating the Certificates for Peripheral Servers
 
-. From the container host, enter the shell in the Hub container with:
+. From the container host, enter the shell in the Hub Server container with:
 +
 ----
 mgrctl exec -ti /bin/sh
 ----
 
-. On the command line, run [command]``rhn-ssl-tool`` for each Peripheral Server (replace placeholders with value from your environment):
+. On the command line, run [command]``rhn-ssl-tool`` for each Peripheral Server (replace placeholders such as [literal]``COUNTRY``, [literal]``STATE``, [literal]``example.com``, etc. with values from your environment):
 +
 
 ----
 rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
   --set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
   --set-org-unit="ORGANIZATION UNIT" --set-email="name@example.com" \
-  --set-hostname=<hostname> --set-cname="example.com"
+  --set-hostname="HOSTNAME" --set-cname="example.com"
 ----
 
 . Copy these files to the Peripheral Server host:
 +
 * [path]``/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT``
-* [path]``/root/ssl-build/<hostname>/server.crt``
-* [path]``/root/ssl-build/<hostname>/server.key``
+* [path]``/root/ssl-build/HOSTNAME/server.crt``
+* [path]``/root/ssl-build/HOSTNAME/server.key``
 
 
 
@@ -97,7 +97,7 @@ mgradm install podman --ssl-ca-root RHN-ORG-TRUSTED-SSL-CERT \
   --ssl-server-cert server.crt --ssl-server-key server.key
 ----
 
-. Register Peripheral Server to the Hub Server:
+. On each Peripheral Server host register Peripheral Server to the Hub Server:
 +
 
 ----
@@ -109,8 +109,16 @@ mgradm hub register --api-server <HUB_FQDN> --api-user <HUB_ADMIN> \
 Peripheral Servers must be registered to the Hub Server as foreign clients.
 Standard registration methods cannot be used.
 
+
+[NOTE]
+====
 Peripheral Servers must be registered to the Hub Server directly, do not use a proxy.
+====
 
 Optionally, it is possible to register the podman container host as a standard client ({salt} minion) and manage it from {productname} Server.
 
 // You need credentials to access the XMLRPC APIs on each server, including the Hub Server.
+
+
+
+Now the XMLRPC API is available and reportdb synchronization will take place.
