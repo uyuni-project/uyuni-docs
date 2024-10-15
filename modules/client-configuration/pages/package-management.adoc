@@ -3,6 +3,15 @@
 
 Clients use packages to install, uninstall, and upgrade software.
 
+// available subtabs:
+//     List / Remove
+//     Upgrade
+//     Install
+//     Lock / Unlock
+//     Profiles
+//     Non Compliant
+
+
 [IMPORTANT]
 ====
 When packages are installed or upgraded, licenses or EULAs are automatically accepted.
@@ -16,19 +25,7 @@ For more about action chains, see xref:reference:schedule/action-chains.adoc[].
 
 
 
-== Verify Packages
-
-You can check that packages you have installed on a client match the current state of the database they were installed from.
-The metadata of the installed package is compared to information in the database, including the file checksum, file size, permissions, owner, group, and type.
-
-.Procedure: Verifying Installed Packages
-. In the {productname} {webui}, navigate to [guimenu]``Systems``, click the client the package is installed on, and navigate to the menu:Systems[Software > Packages > Verify] subtab.
-. Select the packages you want to verify and click btn:[Verify Selected Packages].
-. When the verification is complete, navigate to menu:Systems[Events > History] to see the results.
-
-
-
-== Compare Packages
+== Compare Packages Using Profiles
 
 You can compare the packages installed on a client with a stored profile, or with packages installed on another client.
 When the comparison is made, you can choose to modify the selected client to match.
@@ -50,3 +47,49 @@ When the profile has been created, you can use it to install more clients with t
 . In the {productname} {webui}, navigate to [guimenu]``Systems``, click the client to compare, and navigate to the menu:Systems[Software > Packages > Profiles] subtab.
     To compare with a stored profile, select the profile and click btn:[Compare].
 . To compare with another client, select the client name and click btn:[Compare] to see a list of differences between the two clients.
+
+
+
+[[package-management-orphaned-packages]]
+== Orphaned Packages
+
+Orphaned packages are packages synchronized by {productname} that are not associated with a software channel.
+Therefore, orphaned packages are usually not available to {productname} clients and users cannot install such packages without additional effort.
+
+A package can become orphaned as a result of one of the following events:
+
+
+* A synchronized repository removes a package.
+  By default, {productname} unlinks such a package from the channel, but does not remove the package.
+* A repository supersedes a package with a newer version and thus removes the previous version.
+* The reposync process got interrupted (for example, because of an out of space exception) and thus downloaded packages were not associated with a channel.
+* Users manually uploaded packages, but did not associate them with any channel.
+
+Orphaned packages cost space in user environment and cannot be easily distributed to clients because they are not associated with a channel.
+Orphaned package can make sense with specific workflows like bootstrapping or customer-specific procedures.
+
+You can view orphaned packages in the {webui} by clicking menu:Software[Manage > Packages > view Packages in no channel].
+
+{productname} periodically runs a taskomatic job that searches for orphaned packages and modifies the package organization ID to 1.
+This means that you can delete orphaned packages only after the taskomatic job execution.
+If you encounter an orphaned package that you cannot delete, wait 24 hours and try the deletion again.
+
+// .Procedure: Deleting orphaned packages
+
+Delete orphaned packages:
+
+// * With the UI (FIXME is this possible?  How?
+
+* with command line tools targeting individual packages; for example:
++
+
+----
+spacecmd package_remove zypper-1.14.52-150400.1.9.x86_64
+----
+
+* with command line tools targeting all orphaned packages at once:
++
+
+----
+spacecmd package_removeorphans
+----

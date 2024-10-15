@@ -1,4 +1,77 @@
 - Updated Hub chapter in Large Deployments Guide (bsc#1215815)
+- Added reference to Inter-Server Synchronization in Administration Guide
+  (bsc#1230943)
+- Documented consistently Leap Micro as Uyuni container host system in
+  Installation and Upgrade Guide
+- Documented that is LVM not needed in default cases in Installation
+  and Upgrade Guide (bsc#1228319)
+- Removed inconsistent information about persistent storage (bsc#1230502)
+- Updated database backup and restore procedures using smdba in Administration
+  Guide
+- Documented krb5.conf configuration (bsc#1229077)
+- Added VMware image deployment documentation for Server in the
+  Installation and Upgrade Guide (bsc#1227852 and bsc#1228351)
+- Documented migrating clients such as AlmaLinux, CentOS, Oracle Linux,
+  and Rocky Linux to SUSE Liberty Linux and SUSE Liberty Linux 7 to
+  SUSE Liberty Linux 7 LTSS
+- Added documentation about orphaned packages in Client Configuration
+  Guide (bsc#1227882)
+- Clarified meaning of Default contact method in Client Configuration
+  Guide
+- Added prerequisite for server migration in Installation and Upgrade Guide
+  (bsc#1229902)
+- Updated information on PostgreSQL version in Installation and Upgrade
+  Guide
+- Documented Ubuntu 24.04 LTS as a supported client OS in Client
+  Configuration Guide
+- Updated outdated links in Retail Guide
+- Added troubleshooting section about full disk with containers in
+  Administration Guide and notes to persistent storage setup in Installation
+  and Upgrade Guide
+- Added volume SSSD to the list of etc persistent volumes to Installation and
+  Upgrade Guide
+- Documented using openSUSE Leap Micro as the host operating system for
+  Uyuni Proxy
+- Added uyuni-storage-setup-server package to server deployment and
+  uyuni-storage-setup-proxy to proxy deployment in Installation and Upgrade
+  Guide
+- Updated legacy Uyuni Server to containerized Server migration in Installation
+  and Upgrade Guide
+- In network ports section, added port 443 for clients and removed
+  Cobbler only used internally (bsc#1217338)
+- Added installer-updates.suse.com to the list of URLs in Installation
+  and Upgrade Guide (bsc#1229178)
+- Improved documentation around non-compliant packages (also known as extra
+  packages) in Reference Guide
+- Restructured documentation of Systems menu and system details tab in
+  Reference Guide
+- Enhanced instructions about the permissions for the IAM role
+  in Public Cloud Guide
+- Updated legacy Uyuni Server to containerized Server migration in Installation
+  and Upgrade Guide
+- Removed Verify Packages section from Package Management chapter
+  in Client Configuration Guide
+- Documented activating AppStreams automatically with an
+  activation key in Client Configuration Guide
+- PAYG Docs updated for Azure and AWS
+- Fixed button syntax typo in asciidoc content
+- Added note on Salt minion timeout for Azure and PAYG (bsc#1226196)
+- Added more links back to the Hardware Requirements section and enhance
+  it to address questions about disk size recommendations
+- Adjusted SUSE Manager Server registration in Installation and
+  Upgrade Guide
+- Fixed spacecmd commands in mgrctl calls in Installation and Upgrade
+  Guide
+- Change path for web.xml tuning in Administration Guide
+- Adjusted SSL certificate renewal commands for containers in
+  Administration Guide
+- Updated SLE Micro update behavior in Installation and Upgrade Guide
+- Updated Disconnected Server chapter in Administration Guide
+  (bsc#1226728)
+- Added note about usernames in PAM section in Administration Guide
+ (bsc#1227599)
+- Update Clients Update Using Recurring Actions workflow to account for
+  uptodate state changes
 - Fixed X logo position on mobile devices
 - Removed raw image format from the available VM image deployment tables
   for both Server and Proxy on AArch64
