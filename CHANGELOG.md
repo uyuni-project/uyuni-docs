@@ -1,3 +1,10 @@
+- Updated incorrect URL references for both the Server and Proxy in the 
+  Quickstart and Installation Guides
+- Fixed hardcoded version entries for Uyuni in page content
+- Removed 4.3 version entries in migration documentation
+- The Quickstart Guide for Proxy contained legacy content. Updated 
+  to match containerized deployment
+- Fixed incorrect hardcored product versions. 2024.04 -> 2024.08
 - Added reference to Inter-Server Synchronization in Administration Guide
   (bsc#1230943)
 - Documented consistently Leap Micro as Uyuni container host system in
