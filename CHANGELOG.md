@@ -5,6 +5,8 @@
 - The Quickstart Guide for Proxy contained legacy content. Updated 
   to match containerized deployment
 - Fixed incorrect hardcored product versions. 2024.04 -> 2024.08
+- Added information for running mgr-ssl-cert-setup in Administration Guide
+  (bsc#1229079)
 - Added reference to Inter-Server Synchronization in Administration Guide
   (bsc#1230943)
 - Documented consistently Leap Micro as Uyuni container host system in
