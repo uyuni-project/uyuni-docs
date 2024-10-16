@@ -1,9 +1,33 @@
-- Uyuni 2024.10
-- Documented setting krb5_keytab in Administration Guide (bsc#1229077,
-  partially)
-- Removed Uyuni legacy documentation about server and proxy installation
-  and upgrading or migrating from and old to a legacy installation in
-  Installation and Upgrading Guide and Quick Start
+- Updated incorrect URL references for both the Server and Proxy in the 
+  Quickstart and Installation Guides
+- Fixed hardcoded version entries for Uyuni in page content
+- Removed 4.3 version entries in migration documentation
+- The Quickstart Guide for Proxy contained legacy content. Updated 
+  to match containerized deployment
+- Fixed incorrect hardcoded product versions
+- Added information for running mgr-ssl-cert-setup in Administration Guide
+  (bsc#1229079)
+- Added reference to Inter-Server Synchronization in Administration Guide
+  (bsc#1230943)
+- Documented consistently Leap Micro as Uyuni container host system in
+  Installation and Upgrade Guide
+- Documented that is LVM not needed in default cases in Installation
+  and Upgrade Guide (bsc#1228319)
+- Removed inconsistent information about persistent storage (bsc#1230502)
+- Updated database backup and restore procedures using smdba in Administration
+  Guide
+- Documented krb5.conf configuration (bsc#1229077)
+- Added VMware image deployment documentation for Server in the
+  Installation and Upgrade Guide (bsc#1227852 and bsc#1228351)
+- Documented migrating clients such as AlmaLinux, CentOS, Oracle Linux,
+  and Rocky Linux to SUSE Liberty Linux and SUSE Liberty Linux 7 to
+  SUSE Liberty Linux 7 LTSS
+- Added documentation about orphaned packages in Client Configuration
+  Guide (bsc#1227882)
+- Clarified meaning of Default contact method in Client Configuration
+  Guide
+- Added prerequisite for server migration in Installation and Upgrade Guide
+  (bsc#1229902)
 - Updated information on PostgreSQL version in Installation and Upgrade
   Guide
 - Added documentation about orphaned packages in Client Configuration
