@@ -3,10 +3,51 @@
 [[lsd-hub-install]]
 = Hub XMLRPC API Deployment
 
-Before you begin, you need to install the ``hub-xmlrpc-api`` package, and configure the Hub Server to use the API.
+Before you begin, you must deploy {productname} using the parameter [option]``--hubxmlrpc-replicas 1`` and prepare SSL certificates for the peripheral servers as outlined in xref:specialized-guides:large-deployments/hub-reqs.adoc#lsd-hub-reqs-server[].
 
 
 
+.Procedure: Using Third Party Certificates
+. Preliminary Requirement: Hub server installation
+. Preliminary Requirement: A certificate for every peripheral server (for example, [literal]``server.crt``) and a key (for example, [literal]``server.key``).
+. Preliminary Requirement: CA Certificate.
+. On every peripheral server, copy the same CA to [path]``/etc/pki/trust/anchors/`` and run ``update-ca-certificates``.
+. You can now install {productname} using the following command (replace appropriately the names of the certificates):
++
+
+----
+mgradm install podman --ssl-ca-root CA-Certificate.crt --ssl-server-cert server.crt --ssl-server-key server.key
+----
+
+
+.Procedure: Using generate the certificates with rhn-ssl-tool:
+. Preliminary Requirement: Hub server installation
+
+. On the hub server, enter the hub container with:
++
+
+----
+mgrctl term
+----
+
+
+. Run ``rhn-ssl-tool`` for every pheripheral server
++
+
+----
+rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
+  --set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
+  --set-org-unit="ORGANIZATION UNIT" --set-email="name@example.com" \
+  --set-hostname=<hostname> --set-cname="example.com"
+
+. On every peripheral server
+4.1. Copy ``/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT`` and  ``/root/ssl-build/<hostname>/server.crt`` and ``/root/ssl-build/<hostname>/server.key`` to peripheral server host
+4.2. On every peripheral server, copy ``RHN-ORG-TRUSTED-SSL-CERT`` to ``/etc/pki/trust/anchors/`` and run ``update-ca-certificates``
+4.3. Install SUSE Manager with  ``mgradm install podman --ssl-ca-root RHN-ORG-TRUSTED-SSL-CERT --ssl-server-cert server.crt --ssl-server-key server.key``
+4.4. Register the peripheral server to the hub server
+``mgradm hub register --api-password <hub password> --api-server <hub fqdn> --api-user <hub admin>``
+. Preliminary Requirement: A certificate for every peripheral server (for example, [literal]``server.crt``) and a key (for example, [literal]``server.key``).
+. Preliminary Requirement: CA Certificate.
 .Procedure: Installing and Configuring the Hub XMLRPC API
 . On the Hub Server, or on a host that has access to all peripheral servers' XMLRPC APIs, install the ``hub-xmlrpc-api`` package.
     The package is available in the {productname} {productnumber} repositories.
