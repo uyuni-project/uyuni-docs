@@ -1,35 +1,75 @@
 [[lsd-hub-install]]
-= Hub XMLRPC API Deployment
+= Hub Deployment with XMLRPC
 
-Before you begin, you need to install the ``hub-xmlrpc-api`` package, and configure the Hub Server to use the API.
+For a hub environment, first deploy {productname}.
+Add [option]``--hubxmlrpc-replicas 1`` to the [command]``mgradm install`` command line.
+For example:
+
+----
+mgradm install podman suma.example.com --hubxmlrpc-replicas 1
+----
+
+For more information about deploying with [command]``mgradm``, see xref:installation-and-upgrade:container-deployment/suma/server-deployment-suma.adoc[].
+
+Then prepare SSL certificates for the peripheral servers.
+For more information about SSL certificates, see xref:specialized-guides:large-deployments/hub-reqs.adoc#lsd-hub-reqs-certs[].
 
 
-
-.Procedure: Installing and Configuring the Hub XMLRPC API
-. On the Hub Server, or on a host that has access to all peripheral servers' XMLRPC APIs, install the ``hub-xmlrpc-api`` package.
-    The package is available in the {productname} {productnumber} repositories.
-. OPTIONAL: Set the Hub XMLRPC API service to start automatically at boot time, and start it immediately:
+.Procedure: Using Third Party Certificates
+. Preliminary Requirement: Hub server installation
+. Preliminary Requirement: A certificate for every peripheral server (for example, [literal]``server.crt``) and a key (for example, [literal]``server.key``).
+. Preliminary Requirement: CA Certificate.
+. On every peripheral server, copy the same CA to [path]``/etc/pki/trust/anchors/`` and run ``update-ca-certificates``.
+. You can now install {productname} using the following command (replace appropriately the names of the certificates):
 +
+
 ----
-sudo systemctl enable hub-xmlrpc-api.service
-sudo systemctl start hub-xmlrpc-api.service
+mgradm install podman --ssl-ca-root CA-Certificate.crt --ssl-server-cert server.crt --ssl-server-key server.key
 ----
 
-. OPTIONAL: Check that these parameters in the [path]``/etc/hub/hub.conf`` configuration file are correct:
-*  ``HUB_API_URL``: URL to the Hub Server XMLRPC API endpoint.
-    Use the default value if you are installing `hub-xmlrpc-api` on the Hub Server.
-* ``HUB_CONNECT_TIMEOUT``: the maximum number of seconds to wait for a response when connecting to a Server.
-    Use the default value in most cases.
-* ``HUB_REQUEST_TIMEOUT``: the maximum number of seconds to wait for a response when calling a Server method.
-    Use the default value in most cases.
-* ``HUB_CONNECT_USING_SSL``: use HTTPS instead of HTTP for communicating with peripheral Servers.
-    Recommended for a secure environment.
 
-. Restart services to pick up configuration changes.
+.Procedure: Using Certificates Self-Generated with [command]``rhn-ssl-tool``
+. Preliminary Requirement: Hub server installation
+
+. On the hub server, enter the hub container with:
++
+
+----
+mgrctl term
+----
 
 
-[NOTE]
-====
-To use HTTPS to connect to peripheral Servers, you must set the ``HUB_CONNECT_USING_SSL`` parameter to ``true``, and ensure that the SSL certificates for all the peripheral Servers are installed on the machine where the ``hub-xmlrpc-api`` service runs.
-Do this by copying the ``RHN-ORG-TRUSTED-SSL-CERT`` certificate file from each peripheral Server's [path]``http://<server-url>/pub/`` directory to [path]``/etc/pki/trust/anchors/``, and run [command]``update-ca-certificates``.
-====
+. Run [command]``rhn-ssl-tool`` for every pheripheral server:
++
+
+----
+rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
+  --set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
+  --set-org-unit="ORGANIZATION UNIT" --set-email="name@example.com" \
+  --set-hostname=<hostname> --set-cname="example.com"
+----
+
+. On every peripheral server:
+* Copy [path]``/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT`` and  [path]``/root/ssl-build/<hostname>/server.crt`` and [path]``/root/ssl-build/<hostname>/server.key`` to the peripheral server host.
+* On every peripheral server, copy [path]``RHN-ORG-TRUSTED-SSL-CERT`` to [path]``/etc/pki/trust/anchors/``, and run [command]``update-ca-certificates``.
+* Install {productname} with:
++
+
+----
+mgradm install podman --ssl-ca-root RHN-ORG-TRUSTED-SSL-CERT --ssl-server-cert server.crt --ssl-server-key server.key
+----
+
+* Register the peripheral server to the hub server:
++
+
+----
+mgradm hub register --api-password <hub password> --api-server <hub fqdn> --api-user <hub admin>
+----
+
+
+
+== Background Information
+
+The variables for /etc/hub/hub.conf can be customized with [literal]``Environment=`` settings in the [systemitem]``systemd`` file [path]``/etc/systemd/system/uyuni-hub-xmlrpc.service.d/local.conf`` (it is the same for all containers).
+[literal]``HUB_API_URL`` is set automatically in the systemd unit file during the installation.
+[literal]``HUB_CONNECT_USING_SSL`` is always enabled.
