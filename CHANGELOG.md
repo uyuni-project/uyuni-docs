@@ -1,3 +1,5 @@
+- Added information for running mgr-ssl-cert-setup in Administration Guide
+  (bsc#1229079)
 - Documented krb5.conf configuration (bsc#1229077)
 - Documented that is LVM not needed in default cases in Installation
   and Upgrade Guide (bsc#1228319)
