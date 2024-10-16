@@ -1,3 +1,5 @@
+- Corrected command for containerized proxy in Installation and Upgrade
+  Guide (bsc#1231398)
 - Added reference to Inter-Server Synchronization in Administration Guide
   (bsc#1230943)
 - Documented consistently Leap Micro as Uyuni container host system in
