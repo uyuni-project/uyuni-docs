@@ -1,4 +1,6 @@
 - Updated Hub chapter in Large Deployments Guide (bsc#1215815)
+- Added information for running mgr-ssl-cert-setup in Administration Guide
+  (bsc#1229079)
 - Added reference to Inter-Server Synchronization in Administration Guide
   (bsc#1230943)
 - Documented consistently Leap Micro as Uyuni container host system in
