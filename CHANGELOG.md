@@ -1,3 +1,5 @@
+- Corrected command for containerized proxy in Installation and Upgrade
+  Guide (bsc#1231398)
 - List of required URLs extended in Installation and Upgrade Guide
   (bsc#1230741)
 - Added information for running mgr-ssl-cert-setup in Administration Guide
