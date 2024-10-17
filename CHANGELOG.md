@@ -1,3 +1,5 @@
+- List of required URLs extended in Installation and Upgrade Guide
+  (bsc#1230741)
 - Updated incorrect URL references for both the Server and Proxy in the 
   Quickstart and Installation Guides
 - Fixed hardcoded version entries for Uyuni in page content
