@@ -1,3 +1,5 @@
+- List of required URLs extended in Installation and Upgrade Guide
+  (bsc#1230741)
 - Added information for running mgr-ssl-cert-setup in Administration Guide
   (bsc#1229079)
 - Documented krb5.conf configuration (bsc#1229077)
