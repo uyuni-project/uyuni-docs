@@ -1,3 +1,5 @@
+- Added missing architecture to Installation and Upgrade Guide 
+  (bsc#1230670)
 - Corrected command for containerized proxy in Installation and Upgrade
   Guide (bsc#1231398)
 - List of required URLs extended in Installation and Upgrade Guide
