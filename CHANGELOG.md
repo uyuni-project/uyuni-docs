@@ -1,3 +1,5 @@
+- Fixed SSH Push and SSH Push (with tunnel) contact method sections in
+  Client Configuration Guide
 - Added missing architecture to Installation and Upgrade Guide 
   (bsc#1230670)
 - Corrected command for containerized proxy in Installation and Upgrade
