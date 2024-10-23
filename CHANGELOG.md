@@ -1,3 +1,5 @@
+- Added VMware image deployment documentation for Proxy in the
+  Installation and Upgrade Guide (bsc#1227852)
 - Fixed SSH Push and SSH Push (with tunnel) contact method sections in
   Client Configuration Guide
 - Added missing architecture to Installation and Upgrade Guide 
