@@ -5,27 +5,39 @@
 
 == With Third Party Certificates
 
+// For a hub environment, first ... then ...
+
 Prepare 3rd party certificates for both Hub and Peripheral servers first and then deploy them, to ensure that the hub is using the same CA.
 
-Hub:
+// Hub:
+// mgradm install podman --ssl-ca-root CA-Certificate.crt --ssl-server-cert hub.crt --ssl-server-key hub.key --hubxmlrpc-replicas 1
+
+// Peripheral servers:
+// mgradm install podman --ssl-ca-root CA-Certificate.crt --ssl-server-cert server.crt --ssl-server-key server.key
+
+.Procedure: Hub server
+
+. Install a container host with {sl-micro}.
+For more information, see xref:installation-and-upgrade:container-deployment/suma/server-deployment-suma#deploy-suma-server-micro[].
+
+. On the container host, deploy {productname} as the hub server using the third party certificate.
+  Add [option]``--hubxmlrpc-replicas 1`` to the [command]``mgradm install`` command line.
+  For example:
++
+
+----
 mgradm install podman --ssl-ca-root CA-Certificate.crt --ssl-server-cert hub.crt --ssl-server-key hub.key --hubxmlrpc-replicas 1
-
-Peripheral servers:
-mgradm install podman --ssl-ca-root CA-Certificate.crt --ssl-server-cert server.crt --ssl-server-key server.key
-
-
-For a hub environment, first deploy {productname}.
-Add [option]``--hubxmlrpc-replicas 1`` to the [command]``mgradm install`` command line.
-For example:
-
 ----
-mgradm install podman suma.example.com --hubxmlrpc-replicas 1
-----
++
 
-For more information about deploying with [command]``mgradm``, see xref:installation-and-upgrade:container-deployment/suma/server-deployment-suma.adoc[].
+For more information about deploying with [command]``mgradm``, see xref:installation-and-upgrade:container-deployment/suma/server-deployment-suma.adoc#deploy-suma-server-mgradm[].
+
 
 Then prepare SSL certificates for the peripheral servers.
 For more information about SSL certificates, see xref:specialized-guides:large-deployments/hub-reqs.adoc#lsd-hub-reqs-certs[].
+
+Peripheral servers:
+mgradm install podman --ssl-ca-root CA-Certificate.crt --ssl-server-cert server.crt --ssl-server-key server.key
 
 
 .Procedure: Using Third Party Certificates
@@ -46,24 +58,35 @@ mgradm install podman --ssl-ca-root CA-Certificate.crt --ssl-server-cert server.
 
 == With Self-Generated Certificates
 
+For a hub environment, first ... then ...
 
 
+.Procedure: Hub server
 
-For a hub environment, first deploy {productname} as the hub server.
-Add [option]``--hubxmlrpc-replicas 1`` to the [command]``mgradm install`` command line.
-For example:
+. Install a container host with {sl-micro}.
+For more information, see xref:installation-and-upgrade:container-deployment/suma/server-deployment-suma#deploy-suma-server-micro[].
+
+. On the container host, deploy {productname} as the hub server.
+  Add [option]``--hubxmlrpc-replicas 1`` to the [command]``mgradm install`` command line.
+  For example:
++
 
 ----
 mgradm install podman suma.example.com --hubxmlrpc-replicas 1
 ----
++
 
-For more information about deploying with [command]``mgradm``, see xref:installation-and-upgrade:container-deployment/suma/server-deployment-suma.adoc[].
+For more information about deploying with [command]``mgradm``, see xref:installation-and-upgrade:container-deployment/suma/server-deployment-suma.adoc#deploy-suma-server-mgradm[].
 
-Then prepare SSL certificates for the peripheral servers.
-For more information about SSL certificates, see xref:specialized-guides:large-deployments/hub-reqs.adoc#lsd-hub-reqs-certs[].
+////
+Next step, peripheral server
+ On the container host with the hub server, prepare the SSL certificates for the peripheral servers.
+  For more information about SSL certificates, see xref:specialized-guides:large-deployments/hub-reqs.adoc#lsd-hub-reqs-certs[].
+////
 
 
-.Procedure: Deploying Peripheral Servers with Self-Generated Certificates
+
+.Procedure: Peripheral Servers with Self-Generated Certificates
 
 . On the container host of the hub server, enter the server container with:
 +
@@ -80,13 +103,13 @@ mgrctl term
 rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
   --set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
   --set-org-unit="ORGANIZATION UNIT" --set-email="name@example.com" \
-  --set-hostname=<hostname> --set-cname="example.com"
+  --set-hostname=PERIPHAL --set-cname="example.com"
 ----
 
 . For every peripheral server:
-* From the hub server container, copy [path]``/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT`` and  [path]``/root/ssl-build/<hostname>/server.crt`` and [path]``/root/ssl-build/<hostname>/server.key`` to the peripheral server host.
+* From the hub server container, copy [path]``/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT``,  [path]``/root/ssl-build/<hostname>/server.crt`` and [path]``/root/ssl-build/<hostname>/server.key`` to the peripheral server host.
 * On every peripheral server host, copy [path]``RHN-ORG-TRUSTED-SSL-CERT`` to [path]``/etc/pki/trust/anchors/``, and run [command]``update-ca-certificates``.
-* Next, on every peripheral server host, install {productname} with:
+* Next, on every peripheral server host, deploy {productname} with:
 +
 
 ----
@@ -96,6 +119,7 @@ mgradm install podman --ssl-ca-root RHN-ORG-TRUSTED-SSL-CERT --ssl-server-cert s
 * Finally, on every peripheral server host, register the peripheral server to the hub server:
 +
 
+// CHECKIT: did we specify the credential during the hub server deployment?
 ----
 mgradm hub register --api-password <hub password> --api-server <hub fqdn> --api-user <hub admin>
 ----
