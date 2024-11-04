@@ -1,3 +1,4 @@
+- Updated Hub chapter in Large Deployments Guide (bsc#1215815)
 - Fixed SSH Push and SSH Push (with tunnel) contact method sections in
   Client Configuration Guide
 - Added missing architecture to Installation and Upgrade Guide 
