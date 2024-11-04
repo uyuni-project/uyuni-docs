@@ -1,17 +1,19 @@
+- Added information on upgrading server and proxy containers also for
+  Uyuni
 - Updated Hub chapter in Large Deployments Guide (bsc#1215815)
 - Fixed SSH Push and SSH Push (with tunnel) contact method sections in
   Client Configuration Guide
-- Added missing architecture to Installation and Upgrade Guide 
+- Added missing architecture to Installation and Upgrade Guide
   (bsc#1230670)
 - Corrected command for containerized proxy in Installation and Upgrade
   Guide (bsc#1231398)
 - List of required URLs extended in Installation and Upgrade Guide
   (bsc#1230741)
-- Updated incorrect URL references for both the Server and Proxy in the 
+- Updated incorrect URL references for both the Server and Proxy in the
   Quickstart and Installation Guides
 - Fixed hardcoded version entries for Uyuni in page content
 - Removed 4.3 version entries in migration documentation
-- The Quickstart Guide for Proxy contained legacy content. Updated 
+- The Quickstart Guide for Proxy contained legacy content. Updated
   to match containerized deployment
 - Fixed incorrect hardcored product versions. 2024.04 -> 2024.08
 - Added information for running mgr-ssl-cert-setup in Administration Guide
