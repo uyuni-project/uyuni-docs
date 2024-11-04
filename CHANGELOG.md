@@ -1,3 +1,4 @@
+- Updated Hub chapter in Large Deployments Guide (bsc#1215815)
 - Add registry.suse.com to the list of required URLs in the Network
   Requirements section of the Installation and Upgrade Guide
 - Fixed SSH Push and SSH Push (with tunnel) contact method sections in
