@@ -1,3 +1,5 @@
+- Added information on upgrading server and proxy containers also for
+  Uyuni
 - Added note about case sensitivity of organization name to
   Inter-Server Synchronization chapter of Administration Guide
 - Added reminder note to de-register before registration to Client
