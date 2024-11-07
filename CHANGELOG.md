@@ -1,4 +1,4 @@
-- Added reminder note to unregister before registration to Client
+- Added reminder note to de-register before registration to Client
   Configuration Guide (bsc#1216946)
 - Updated Hub chapter in Large Deployments Guide (bsc#1215815)
 - Add registry.suse.com to the list of required URLs in the Network
