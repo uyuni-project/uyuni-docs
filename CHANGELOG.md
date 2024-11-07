@@ -1,18 +1,25 @@
 - Added VMware image deployment documentation for Proxy in the
   Installation and Upgrade Guide (bsc#1227852)
+- Added reminder note to de-register before registration to Client
+  Configuration Guide (bsc#1216946)
+- Added admonition about podman related IP forwarding configuration to
+  Requirements in Installation and Upgrade Guide (bsc#1224318)
+- Updated Hub chapter in Large Deployments Guide (bsc#1215815)
+- Add registry.suse.com to the list of required URLs in the Network
+  Requirements section of the Installation and Upgrade Guide
 - Fixed SSH Push and SSH Push (with tunnel) contact method sections in
   Client Configuration Guide
-- Added missing architecture to Installation and Upgrade Guide 
+- Added missing architecture to Installation and Upgrade Guide
   (bsc#1230670)
 - Corrected command for containerized proxy in Installation and Upgrade
   Guide (bsc#1231398)
 - List of required URLs extended in Installation and Upgrade Guide
   (bsc#1230741)
-- Updated incorrect URL references for both the Server and Proxy in the 
+- Updated incorrect URL references for both the Server and Proxy in the
   Quickstart and Installation Guides
 - Fixed hardcoded version entries for Uyuni in page content
 - Removed 4.3 version entries in migration documentation
-- The Quickstart Guide for Proxy contained legacy content. Updated 
+- The Quickstart Guide for Proxy contained legacy content. Updated
   to match containerized deployment
 - Fixed incorrect hardcored product versions. 2024.04 -> 2024.08
 - Added information for running mgr-ssl-cert-setup in Administration Guide
