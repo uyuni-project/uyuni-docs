@@ -1,4 +1,4 @@
-- Added reminder note to unregister before registration to Client
+- Added reminder note to de-register before registration to Client
   Configuration Guide (bsc#1216946)
 - Added admonition about podman related IP forwarding configuration to
   Requirements in Installation and Upgrade Guide (bsc#1224318)
