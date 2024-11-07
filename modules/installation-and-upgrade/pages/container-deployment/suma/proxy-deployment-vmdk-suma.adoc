@@ -1,0 +1,425 @@
+[[proxy-install-vmware]]
+= Deploy {productname} {productnumber} Proxy as a Virtual Machine - {vmware}
+ifeval::[{uyuni-content} == true]
+:noindex:
+endif::[]
+
+This chapter provides the Virtual Machine settings for deployment of {productname} {productnumber} Proxy as an image.
+KVM will be combined with Virtual Machine Manager (_virt-manager_) as a sandbox for this installation.
+
+
+
+// FIXME: make this section a snippet or move it to a general intro for both,
+//        KVM and VMware
+== Available Images
+
+[IMPORTANT]
+====
+The preferred method for deploying {productname} {productnumber} Proxy is to use one of the following available images.
+All tools are included in these images greatly simplifying deployment.
+====
+
+Images for {productname} {productnumber} Proxy are available at link:https://www.suse.com/download/suse-manager/[{productname} {productnumber} VM images].
+
+[NOTE]
+====
+For more information on preparing raw images, see:
+
+* link:https://documentation.suse.com/en-us/sle-micro/5.5/single-html/SLE-Micro-deployment/#sec-raw-preparation[]
+* link:https://documentation.suse.com/en-us/sle-micro/5.5/single-html/SLE-Micro-deployment/#cha-images-procedure[]
+
+For additional information on the self install images, see:
+
+* link:https://documentation.suse.com/en-us/sle-micro/5.5/single-html/SLE-Micro-deployment/#cha-selfinstal-procedure[]
+====
+
+// FIXME more archs supported?
+
+.Available Proxy Images
+[cols="3, 3", options="header"]
+|===
+| Architecture | Image Format
+
+| aarch64| qcow2, vmdk
+
+| x86_64  | qcow2, vmdk, raw, Self Installer
+
+|===
+
+
+[[proxy-quickstart.sect.vmware.settings]]
+== Virtual Machine Settings - VMware
+
+This sections describes VMware configurations, focusing on the creation of an extra virtual disk essential for the {productname} Proxy storage partition within VMware environments.
+
+
+.Procedure: Creating the VMware Virtual Machine
+
+. Download {productname} Proxy [filename]``.vmdk`` file then transfer a copy to your VMware storage.
+
+. Make a copy of uploaded [filename]``.vmdk`` file using VMware web interface.
+  This will convert provided [filename]``.vmdk`` file to the format suitable for vSpere hypervisor.
+
+. Create and name a new virtual machine based on the Guest OS Family [systemitem]``Linux`` and Guest OS Version {sle} 15 (64-bit).
+
+. Add an additional [systemitem]``Hard Disk 2`` of 500 GB (or more).
+
+. Configure RAM and number of CPUs (at least 16 GB RAM and 4 CPUs).
+
+. Set the network adapter as required.
+
+. Power on the VM, and follow firstboot dialogs (keyboard layout, license agreement, time zone, password for root).
+
+. When installation completes log in as root.
+
+. Proceed to the next section.
+
+
+
+[[minimal.susemgr.prep]]
+== Register {sl-micro} and {productname} {productnumber} Server
+
+Before starting obtain your SUSE Manager Registration Code from SUSE Customer Center - https://scc.suse.com.
+
+.Procedure: Registering {sl-micro} and {productname} {productnumber}
+. Boot the virtual machine.
+. Log in as `root`.
+. Register {sl-micro} with SCC.
++
+
+----
+transactional-update register -r <REGCODE> -e <your_email>
+----
+
+. Reboot.
+
+. Register {productname} {productnumber} with {scc}.
++
+
+----
+transactional-update register -p SUSE-Manager-Server/5.0/x86_64 -r <REGCODE>
+----
+
+. Reboot
+. Update the system:
++
+
+----
+transactional-update
+----
+
+. If updates were applied reboot.
+
+. This step is optional.
+  However, if custom persistent storage is required for your infrastructure, use the [command]``mgr-storage-server`` tool.
+** For more information, see [command]``mgr-storage-server --help``.
+This tool simplifies creating the container storage and database volumes.
+
+** Use the command in the following manner:
++
+
+----
+mgr-storage-server <storage-disk-device> [<database-disk-device>]
+----
++
+For example:
++
+----
+mgr-storage-server /dev/nvme1n1 /dev/nvme2n1
+----
++
+[NOTE]
+====
+This command will create the persistent storage volumes at [path]``/var/lib/containers/storage/volumes``.
+
+For more information, see
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+====
+. Run the following command to deploy {productname}:
++
+
+----
+mgradm install podman <FQDN>
+----
+
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[cols="1,1", options="header"]
+|===
+2+<| KVM Settings
+| Installation Method | Import Existing Disk Image
+| OS:                 | Linux
+| Version:            | {productname}-Proxy.x86_64-5.0.0-Build16.12.qcow2
+| Memory:             | 2 GB
+| CPU's:              | 2
+| Storage Format:     | _.qcow2_ 40 GB (Default) Root Partition
+| Name:               | test-setup
+| Network             | Bridge _br0_
+|===
+
+
+[NOTE]
+====
+[path]``/var/lib/containers/storage/volumes``
+Minimum 100 GB.  Storage requirements should be calculated for the number of ISO distribution images, containers, and bootstrap repositories you will use.
+====
+
+
+
+[[proxy-minimmal.kvm.setup]]
+== Initial KVM Setup
+
+.Procedure: Creating Initial Setup
+. Create a new virtual machine using the downloaded {minimal} KVM image and select [guimenu]``Import existing disk image``.
+. Configure RAM and number of CPUs (at least 16 GB RAM and 4 CPUs).
+. Name your KVM machine and select the [guimenu]``Customize configuration before install`` check box.
+. Click btn:[Begin Installation] to boot from the image.
+. At the JeOS Firstboot screen select start to continue.
++
+
+image::jeos-firstboot.png[]
+
+. Select keyboard layout.
++
+
+image::select-keyboard.png[]
+
+.  Accept the license agreement.
++
+
+image::accept-license-agreement.png[]
+
+. Select your time zone.
++
+
+image::enter-timezone.png[]
+
+. Enter a password for root.
++
+
+image::root-password.png[]
+
+. When installation completes log in as root.
+
+. Proceed to the next section.
+
+
+
+== Register {sle-micro} and {productname} {productnumber} Proxy
+
+
+.Procedure: Registering {sle-micro} and {productname} {productnumber} Proxy
+. Boot the virtual machine.
+. Log in as `root`.
+. Register {sle-micro} with SCC.
++
+
+----
+transactional-update register -r <REGCODE> -e <your_email>
+----
+
+. Reboot.
+
+. Register {productname} {productnumber} with {scc}.
++
+
+----
+transactional-update register -p SUSE-Manager-Proxy/5.0/x86_64 -r <REGCODE>
+----
+
+. Reboot.
+
+. Update the system:
++
+
+----
+transactional-update
+----
+
+. If updates were applied reboot.
+
+. This step is optional.
+  However, if custom persistent storage is required for your infrastructure, use the [command]``mgr-storage-proxy`` tool.
+** For more information, see [command]``mgr-storage-proxy --help``.
+This tool simplifies creating the container volumes.
+
+** Use the command in the following manner:
++
+
+// CHECKIT
++
+----
+mgr-storage-proxy <storage-disk-device>
+----
++
+For example:
++
+----
+mgr-storage-proxy /dev/nvme1n1
+----
++
+[NOTE]
+====
+This command will move the persistent storage volumes at [path]``/var/lib/containers/storage/volumes`` to the specified storage device.
+
+For more information, see
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+====
+
+
+
+
+== Create an Activation Key for the Proxy
+
+On the {productname} server, create an activation key for the Proxy.
+
+.Task: Create an Activation Key
+. Navigate to menu:Systems[Activation Keys], and click btn:[Create key].
+. Create an activation key for the proxy host with {sle-micro} {microversion} as the parent channel.
+  This key should include all recommended channels and the Proxy as an extension child channel.
+. Proceed to boostrapping the proxy host as a minion.
+
+
+
+== Bootstrap the Proxy Host
+
+.Task: Bootstrap the Proxy Host
+. Select menu:Systems[Bootstrapping].
+. Fill in the fields for your proxy host.
+. Select the Activation key created in the previous step from the dropdown.
+. Click btn:[Bootstrap].
+. Wait for the Bootstrap process to complete successfully.
+  Check the menu:Salt[] menu and confirm the {salt} key is listed and accepted.
+. Reboot the proxy host.
+. Select the host from the menu:System[] list and trigger a second reboot after all events are finished to conclude the onboarding.
+
+
+.Task: Update the Proxy Host
+. Select the host from the menu:Systems[] list and apply all patches to update it.
+. Reboot the proxy host.
+
+
+include::../generate_proxy_config.adoc[]
+
+
+
+[[proxy-vm-setup-containers-transfer-config]]
+== Transfer the Proxy Configuration
+
+The {webui} generates a configuration archive.
+This archive needs to be made available on the proxy container host.
+
+
+.Procedure: Copying the Proxy Configuration
+. Copy the files from the Server container to the Server host OS:
++
+----
+mgrctl cp server:/root/config.tar.gz .
+----
+
+. Next copy the files from the Server host OS to the Proxy host:
++
+----
+scp config.tar.gz <proxy-FQDN>:/root
+----
+
+. Install the Proxy with:
++
+
+----
+mgrpxy install podman config.tar.gz
+----
+
+
+
+[[proxy-vm-setup-containers-transfer-start]]
+== Start the {productname} {productnumber} Proxy
+
+Container can now be started with the [literal]`mgrpxy` command:
+
+[[proc-proxy-vm-setup-containers-setup-start]]
+.Procedure: Start and Check Proxy Status
+
+. Start the Proxy by calling:
++
+
+----
+mgrpxy start
+----
+
+. Check container status by calling:
++
+
+----
+mgrpxy status
+----
++
+
+Five {productname} Proxy containers should be present:
+
+- proxy-salt-broker
+- proxy-httpd
+- proxy-tftpd
+- proxy-squid
+- proxy-ssh
+
+And should be part of the [literal]``proxy-pod`` container pod.
+
+
+////
+[[installation-proxy-containers-services]]
+== Install container services on the host system
+ifeval::[{suma-content} == true]
+
+[NOTE]
+====
+[literal]``Containers Module`` is required to be available for container host on a {sles} machine.
+====
+endif::[]
+
+{productname} Proxy containers are using [literal]``podman`` and [literal]``systemd`` to run and manage all proxy containers.
+
+First step is to install the [literal]``mgrpxy`` utility provided by the package of the same name.
+
+ifeval::[{suma-content} == true]
+The [literal]``mgrpxy`` package is available in the {productname} Proxy product repositories.
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+The [literal]``mgrpxy`` package is available in the container utils repository: pick the one matching the distribution in: https://download.opensuse.org/repositories/systemsmanagement:Uyuni:/Stable:/ContainerUtils/.
+endif::[]
+
+To install them run:
+
+----
+zypper in helm mgrpxy
+----
+////
+
+
+=== Using a Custom Container Image for a Service
+
+By default, the {productname} Proxy suite is set to use the same image version and registry path for each of its services.
+However, it is possible to override the default values for a specific service using the install parameters ending with [literal]``-tag`` and [literal]``-image``.
+
+For example, use it like this:
+
+----
+mgrpxy install podman --httpd-tag 0.1.0 --httpd-image registry.opensuse.org/uyuni/proxy-httpd /path/to/config.tar.gz
+----
+
+It adjusts the configuration file for the httpd service, where [path]``registry.opensuse.org/uyuni/proxy-httpds`` is the image to use and [literal]``0.1.0`` is the version tag, before restarting it.
+
+To reset the values to defaults, run the install command again without those parameters:
+
+----
+mgrpxy install podman /path/to/config.tar.gz
+----
+
+This command first resets the configuration of all services to the global defaults and then reloads it.
