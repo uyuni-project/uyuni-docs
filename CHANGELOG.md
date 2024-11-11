@@ -1,6 +1,13 @@
 - Added new workflow with the instructions about RAW image usage
   to Common Workflows book
 - Added reminder note to unregister before registration to Client
+- Added VMware image deployment documentation for Proxy in the
+  Installation and Upgrade Guide (bsc#1227852)
+- Added information on upgrading server and proxy containers also for
+  Uyuni
+- Added note about case sensitivity of organization name to
+  Inter-Server Synchronization chapter of Administration Guide
+- Added reminder note to de-register before registration to Client
   Configuration Guide (bsc#1216946)
 - Added admonition about podman related IP forwarding configuration to
   Requirements in Installation and Upgrade Guide (bsc#1224318)
