@@ -1,0 +1,300 @@
+= {title}: {subtitle}
+:title: SUSE Manager PAYG on Azure
+:subtitle: An Overview and quick guide
+:SUMA_VERSION: SUSE Manager 4.3
+:usecase: SUSE Manager is a configuration and infrastructure management tool that saves you time and headaches when you have to manage and update tens, hundreds or even thousands of linux machines.
+:executive_summary: The new Azure Marketplace offering is easier to install than before and provides a flexible and automated subscription model paying via Azure.
+
+
+=== Scope
+
+
+This guide takes you through the first steps to install SUSE Manager PAYG in Azure and explain the difference to a regular (BYOS) setup.
+
+
+=== Audience
+
+
+This document is intended for new users of SUSE Manager, as well as those that already run a SUSE Manager instance in their own data center or in the public cloud.
+
+
+== Prerequisites
+
+
+* Azure Account
+
+** You need an Azure account and know in which country it gets billed
+
+* Fully Qualified Domain Name (FQDN)
+
+** The SUSE Manager server must resolve its FQDN correctly. If the FQDN cannot be resolved, it can cause problems in several of different components of SUSE Manager.
+
+* Hostname and IP Address
+
+** To ensure that the SUSE Manager domain name can be resolved by its clients, both server and client machines must be connected to a working DNS server.
+
+** *You must ensure that reverse lookups are correctly configured.*
+
+* SUSE Manager Networking Ports
+
+** You do not need to open all the ports mentioned in the link below. Some ports only need to be opened if you are using the service that requires them.
+
+** https://documentation.suse.com/suma/4.3/en/suse-manager/installation-and-upgrade/ports.html
+
+
+== Technical Architecture
+
+The SUSE Manager PAYG offering in Azure need to communicate with the Azure Billing API, therefore it is not a simple virtual machine (VM) offering.
+
+Azure has created the _Managed Application_ offering for this use case.
+
+see:
+https://learn.microsoft.com/en-us/azure/azure-resource-manager/managed-applications/overview
+
+// https://learn.microsoft.com/en-us/azure/azure-resource-manager/managed-applications/media/overview/managed-apps-resource-group.png
+
+.Architecture Diagram of a managed application
+//image::images/src/svg/AzureManagedApp.svg[architecture of a managed application, 80%]
+image::AzureManagedApp.svg[architecture of a managed application, 60%]
+
+=== Application resource group
+
+This resource group ( in the diagram _ResGroup A_ ) holds the managed application instance, which could be translated as the metadata or definition of the offering. It can only contain a single resource.
+
+A customer has full access to the resource group and uses it to manage the life cycle of the managed application.
+
+=== Managed resource group (MRG)
+
+This resource group ( in the diagram _MRG_ ) holds all the resources that are required by the managed application. For example, an application's virtual machines, storage accounts, and virtual networks.
+
+A _managed application_ is similar to a solution template in Azure Marketplace, with a few key differences:
+
+- The resources are deployed into a _managed resource group_ that is normally managed by the application's publisher.
+
+- It is present in the customer's subscription, but an identity in the publisher's tenant can be given access to the managed resource group.
+
+- The publisher's _management access_ and the customers _deny assignment_ are optional.
++
+There are different permission scenarios available. SUSE is using here the _Customer managed_ to give our customers of SUSE Manager full control.
+
+Customer managed::
+* Customer
+** Customer has full access to the solution (in the managed resource group)
+** The customer manages the solution
+* Publisher
+** The publisher has no access to manage the solution.
+** The publisher develops the application and publishes on Azure Marketplace but does not manage the application.
+** The publisher licenses the application for billing through Azure Marketplace.
+
+
+== Azure Deployment
+
+.Task: Azure Deployment
+. **Login to Azure**
+First, login to your Azure account at https://portal.azure.com. 
+This ensures Azure identifies the country where your account is billed. 
+Billing for SUSE Manager PAYG is managed through the Azure Marketplace, with restrictions on which countries can be billed. 
+Make sure you are logged into the correct account to avoid billing issues.
+    
+. **Locate the SUSE Manager PAYG Offer**
+SUSE Manager PAYG appears in the Azure Marketplace with two offerings:
+    
+* {SUMA_VERSION} with 24x7 Support _EMEA Orders Only_
+* {SUMA_VERSION} with 24x7 Support _No EMEA Orders_
++    
+Choose the listing based on your billing country. Refer to your account's _sold to address_ here: https://learn.microsoft.com/azure/cost-management-billing/manage/change-azure-account-profile.
++
+
+[NOTE]
+====
+Do *not* access the Azure Marketplace directly to get the offer. Always login to the portal first, as the Azure web page cannot identify your billing account accurately.
+====
+
+. **Create SUSE Manager Resource**
+    
+* After logging into the Azure Portal, click on btn:[Create a resource].
+
+* Enter `{SUMA_VERSION}` in the search bar and press kbd:[RETURN].    
++
+
+Select the appropriate _{SUMA_VERSION} with 24x7 Support_ version based on your billing country. For instance, for an account billed in Germany, choose _{SUMA_VERSION} with 24x7 Support (EMEA Orders Only)_.
+
++
+[NOTE]
+====
+The offer will appear as an _Azure Application_, not a _Virtual Machine_.
+====
+
+* Click on the offer description, then go to _Plans + Pricing_. If details are shown, you have chosen the correct offer; if not, you may need to select a different listing.
+
+* Click on the btn:[Create] button to proceed.
+
+. **Configure SUSE Manager Deployment**
++
+Complete the configuration form, familiar if you've created other Azure resources before. The form has two tabs: _Basic_ and _Virtual Machine Settings_.
+
+.. **Basic Tab**
+        
+* **Project Details**
+        
+.. Select a _Resource Group_ (RG), either an existing one or create a new RG for this deployment.
+        
+* **Instance Details**
+        
+.. Specify:
+            
+* **Region**: Choose where the instance will run.
+* **Virtual Machine Name**: Name the VM where SUSE Manager will run.
+* **Username**: Admin account for the SUSE Manager VM.
+* **SSH Key Source and Key**: Required for VM access. *Passwords are not permitted to reduce security risks.*
+        
+* **Managed Application Details**
+        
+.. Enter the **Application Name** for the Managed Application and specify the **Managed Resource Group (MRG)** where SUSE Manager VM and its resources will deploy.
+
+.. **Virtual Machine Settings Tab**
+        
+* **Instance Size**
+        
+.. The default instance size is `D8as v5`, a strong baseline for production. For testing, you may select a smaller instance with 4 vCPUs and 16GB memory or a similar B-Series instance (_Burstable_).
+
+* **Diagnostic Storage Account**
+        
+.. A boot diagnostic storage account is enabled by default, allowing you to choose or create a managed storage account.
+
+* **OS Disk Size**
+        
+.. This root disk holds the SUSE Manager OS and application, as well as /var/cache. Accept the default of 100GB, suitable for most requirements.
+        
+* **Database Disk Size**
+        
+.. Stores the SUSE Manager database, with a minimum requirement of 50GB. The suggested 80GB default is recommended.
+        
+* **Spacewalk Disk Size**
+        
+.. Stores package repositories, needing at least 100GB. Each SUSE product requires 50GB, while Red Hat and other Linux products may need >360GB. The default of 500GB is a safe starting point.
++            
+[NOTE]
+====
+Repository syncs will fail if this directory runs out of space.
+====
+
+* **Public IP Address**
+        
+- By default, a Public IP is created. If you use this, ensure it’s secure and access is limited.
++
+
+[CAUTION]
+====
+Running SUSE Manager in the public cloud requires robust security measures. Limiting, filtering, monitoring, and auditing access to the instance is crucial. A globally accessible SUSE Manager instance without perimeter security is strongly discouraged.
+
+* SUSE Manager has access to all managed nodes, so any security breach risks control over all managed nodes. Threat actors actively search for publicly accessible machines on cloud providers, especially for open management ports (e.g., SSH, RDP).
++
+
+* A default Network Security Group (NSG) is created with only SSH (port 22) access. For further security, restrict access to specific networks and allow Azure’s virtual network to block other requests.
+
+* Consider adding Just-in-Time access, using Azure Bastion Service, firewalls, VPN, or other methods to secure access.
+            
+* Alternatively, avoid a public IP and use other methods to access SUSE Manager VM, such as a private network, VPN, or correct DNS and FQDN settings.
+====
++
+
+* **DNS Prefix for Public IP**
+        
+.. Ensure SUSE Manager’s FQDN resolves correctly, as unresolved FQDNs can affect SUSE Manager components. For the Public IP, Azure auto-generates a DNS name, which includes a unique identifier.
+            
+.. If not using a public IP, ensure your network setup allows proper FQDN resolution.
+
+* **Virtual Network / Subnet**
+        
+.. A default virtual network is proposed for SUSE Manager. You can edit this as needed. Remember, as a _Managed Application_, the network is in the _Managed Resource Group (MRG)_, distinct from any existing network.
+            
+.. You may need to peer this network with the network containing the nodes you want to manage, or place managed nodes within this network.
+
+. **Final Review and Creation**
+    
+* With all fields completed, click btn:[Next] or btn:[Create]. Azure will perform a final check and display a summary screen.
+
+* If all looks correct, click btn:[Create] to deploy the _Managed Application_ SUSE Manager.
+
+
+== Configuration and Startup
+
+After deploying the VM from the Managed Application, you can access it via SSH.
+
+SUSE Manager PAYG requires a new Virtual Network and subnet, which were configured in the previous step. As SUSE Manager is deployed as a _Managed Application_, it cannot be placed into an existing network.
+
+. **Network Configuration Verification**
++
+
+Before proceeding, ensure the network is configured correctly:
+
+* Verify that `hostname -f` matches the reverse DNS lookup of the VM's private IP address.
+
+* Add the private IP and Fully Qualified Domain Name (FQDN) to `/etc/hosts`.
++
+
+For example:
++
+
+----
+172.16.0.4 manager-vm-79512b16b7.westeurope.cloudapp.azure.com
+----
+
+* Update `/etc/sysconfig/network/config` by appending `_location_.cloudapp.azure.com` to `NETCONFIG_DNS_STATIC_SEARCHLIST`.
+
+* Run `netconfig update`.
+
+* Verify that `hostname -f` returns the same FQDN as obtained by running `nslookup 172.16.0.X`.
+
+. **Configuring Managed Clients**
++
+
+When setting up new clients to be managed by SUSE Manager, ensure they are:
+    
+* Placed within the private subnet configured for SUSE Manager PAYG, or
+
+* Connected via network peering if the managed nodes are in a different network.
+
+. **Disk Configuration**
++
+
+After verifying the network setup, proceed to configure the attached disks created during deployment. This step formats the disks with the appropriate filesystem and mounts them to the necessary directories.
++
+
+Use the `_suma-storage_` tool, specifying the block devices as follows:
++
+
+----
+suma-storage <storage-disk-device> <database-disk-device>
+----
++
+
+To identify the disks created during deployment, use:
++
+
+----
+ls /dev/disk/azure/scsi1/
+----
++
+
+The output should show:
+
+* `lun3` for the Spacewalk disk
+
+* `lun4` for the Database disk
++
+
+Therefore, the full command would be:
++
+
+----
+suma-storage /dev/disk/azure/scsi1/lun3 /dev/disk/azure/scsi1/lun4
+----
+
+. **SUSE Manager Setup**
+
+Once the disks are configured, initiate the SUSE Manager setup by executing `yast2 susemanager_setup` as the root user. This command starts the SUSE Manager configuration process.
+
+For detailed steps, refer to the SUSE Manager documentation:
+https://documentation.suse.com/suma/4.3/en/suse-manager/specialized-guides/public-cloud-guide/payg/azure/payg-azure-server-setup.html
