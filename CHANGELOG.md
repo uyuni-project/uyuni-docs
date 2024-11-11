@@ -1,3 +1,5 @@
+- Quickstart guides removed from book list and marked as legacy 
+  content
 - Added VMware image deployment documentation for Proxy in the
   Installation and Upgrade Guide (bsc#1227852)
 - Added information on upgrading server and proxy containers also for
