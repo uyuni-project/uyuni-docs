@@ -1,35 +1,169 @@
 [[lsd-hub-install]]
-= Hub XMLRPC API Deployment
+= Hub Deployment with XMLRPC
 
-Before you begin, you need to install the ``hub-xmlrpc-api`` package, and configure the Hub Server to use the API.
+You can deploy a hub environment either with third party certificates or with self-generated certificates.
+
+For more information about SSL certificates, see xref:specialized-guides:large-deployments/hub-reqs.adoc#lsd-hub-reqs-certs[].
 
 
 
-.Procedure: Installing and Configuring the Hub XMLRPC API
-. On the Hub Server, or on a host that has access to all peripheral servers' XMLRPC APIs, install the ``hub-xmlrpc-api`` package.
-    The package is available in the {productname} {productnumber} repositories.
-. OPTIONAL: Set the Hub XMLRPC API service to start automatically at boot time, and start it immediately:
+== With Third Party Certificates
+
+// FIXME: what does this actually mean?
+//        Just checking that you have those available and use them
+//        while deploying the hub infrastructure?
+Prepare third party certificates for both the Hub Server and the Peripheral servers first.
+
+// Hub:
+// mgradm install podman --ssl-ca-root CA-Certificate.crt --ssl-server-cert hub.crt --ssl-server-key hub.key --hubxmlrpc-replicas 1
+
+// Peripheral servers:
+// mgradm install podman --ssl-ca-root CA-Certificate.crt --ssl-server-cert server.crt --ssl-server-key server.key
+
+
+[[lsd-hub-install-3rd-hub]]
+=== Hub Server Installation
+
+.Procedure: Installing the Hub Server
+
+. Install a container host with {sl-micro}.
+  For more information about {sl-micro} as a container host, see xref:installation-and-upgrade:container-deployment/suma/server-deployment-suma#deploy-suma-server-micro[].
+
+. On the container host, deploy {productname} as the hub server using the third party certificate.
+  Add [option]``--hubxmlrpc-replicas 1`` to the [command]``mgradm install`` command line.
+  For example:
++
+
+----
+mgradm install podman --ssl-ca-root CA-Certificate.crt --ssl-server-cert hub.crt --ssl-server-key hub.key --hubxmlrpc-replicas 1
+----
+
+For more information about deploying with [command]``mgradm``, see xref:installation-and-upgrade:container-deployment/suma/server-deployment-suma.adoc#deploy-suma-server-mgradm[].
+
+
+
+[[lsd-hub-install-3rd-peripheral]]
+=== Peripheral Servers
+
+.Procedure: Installing peripheral servers using third party certificates
+. Preliminary Requirement: A certificate for every peripheral server (for example, [literal]``server.crt``) and a key (for example, [literal]``server.key``).
+. Preliminary Requirement: CA Certificate.
+. Preliminary Requirement: Hub server installation.
+  For more information, see xref:specialized-guides:large-deployments/hub-install.adoc#lsd-hub-install-3rd-hub[].
+* On every peripheral server host, copy the same CA to [path]``/etc/pki/trust/anchors/`` and run ``update-ca-certificates``.
+* On every peripheral server host, install {productname} using the following command (replace appropriately the names of the certificates):
++
+
+----
+mgradm install podman --ssl-ca-root CA-Certificate.crt --ssl-server-cert server.crt --ssl-server-key server.key
+----
+
+
+
+// ========================================================================
+
+== With Self-Generated Certificates
+
+// For a hub environment, first ... then ...
+
+
+
+[[lsd-hub-install-self-hub]]
+=== Hub Server Installation
+
+.Procedure: Installing the hub server
+
+. Install a container host with {sl-micro}.
+  For more information about {sl-micro} as a container host, see xref:installation-and-upgrade:container-deployment/suma/server-deployment-suma#deploy-suma-server-micro[].
+
+. On the container host, deploy {productname} as the hub server.
+  Add [option]``--hubxmlrpc-replicas 1`` to the [command]``mgradm install`` command line.
+  For example:
++
+
+----
+mgradm install podman suma.example.com --hubxmlrpc-replicas 1
+----
++
+
+For more information about deploying with [command]``mgradm``, see xref:installation-and-upgrade:container-deployment/suma/server-deployment-suma.adoc#deploy-suma-server-mgradm[].
+
+////
+Next step, peripheral server
+ On the container host with the hub server, prepare the SSL certificates for the peripheral servers.
+  For more information about SSL certificates, see xref:specialized-guides:large-deployments/hub-reqs.adoc#lsd-hub-reqs-certs[].
+////
+
+
+
+[[lsd-hub-install-self-peripheral]]
+=== Peripheral Servers
+
+.Procedure: Peripheral Servers with Self-Generated Certificates
+
+. Preliminary Requirement: Hub server installation.
+  For more information, see xref:specialized-guides:large-deployments/hub-install.adoc#lsd-hub-install-self-hub[].
+. On the container host of the hub server, enter the server container with:
++
+
+----
+mgrctl term
+----
+
+
+. Inside the container, run [command]``rhn-ssl-tool`` for every pheripheral server:
++
+
+----
+rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
+  --set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
+  --set-org-unit="ORGANIZATION UNIT" --set-email="name@example.com" \
+  --set-hostname=PERIPHAL --set-cname="example.com"
+----
+
+. For every peripheral server:
+* From the hub server container, copy [path]``/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT``,  [path]``/root/ssl-build/<hostname>/server.crt`` and [path]``/root/ssl-build/<hostname>/server.key`` to the peripheral server host.
+* On every peripheral server host, copy [path]``RHN-ORG-TRUSTED-SSL-CERT`` to [path]``/etc/pki/trust/anchors/``, and run [command]``update-ca-certificates``.
+* On every peripheral server host, deploy {productname} with:
++
+
+----
+mgradm install podman --ssl-ca-root RHN-ORG-TRUSTED-SSL-CERT --ssl-server-cert server.crt --ssl-server-key server.key
+----
+
+* Finally, on every peripheral server host, register the peripheral server to the hub server:
++
+
+// CHECKIT: did we specify the credential during the hub server deployment?
 +
 ----
-sudo systemctl enable hub-xmlrpc-api.service
-sudo systemctl start hub-xmlrpc-api.service
+mgradm hub register --api-password <hub password> --api-server <hub fqdn> --api-user <hub admin>
 ----
 
-. OPTIONAL: Check that these parameters in the [path]``/etc/hub/hub.conf`` configuration file are correct:
-*  ``HUB_API_URL``: URL to the Hub Server XMLRPC API endpoint.
+
+
+== Background Information
+
+[NOTE]
+====
+Checking the following hub configuration settings is optional.
+====
+
+On the container host, find environment variables in [path]``/etc/systemd/system/uyuni-hub-xmlrpc.service`` generated by [command]``mgradm``.
+If needed, you can customize these variables with [literal]``Environment=``settings in a user created [path]``/etc/systemd/system/uyuni-hub-xmlrpc.service.d/local.conf`` [systemitem]``systemd`` configuration file on the container host.
+
+It will override settings in [path]``/etc/hub/hub.conf`` inside the server container.
+It is the same file for all containers.
+
+
+* ``HUB_API_URL``: URL to the Hub Server XMLRPC API endpoint.
     Use the default value if you are installing `hub-xmlrpc-api` on the Hub Server.
+    It is set automatically in the systemd unit file during the installation.
 * ``HUB_CONNECT_TIMEOUT``: the maximum number of seconds to wait for a response when connecting to a Server.
     Use the default value in most cases.
 * ``HUB_REQUEST_TIMEOUT``: the maximum number of seconds to wait for a response when calling a Server method.
     Use the default value in most cases.
 * ``HUB_CONNECT_USING_SSL``: use HTTPS instead of HTTP for communicating with peripheral Servers.
     Recommended for a secure environment.
+    It is always enabled.
 
-. Restart services to pick up configuration changes.
-
-
-[NOTE]
-====
-To use HTTPS to connect to peripheral Servers, you must set the ``HUB_CONNECT_USING_SSL`` parameter to ``true``, and ensure that the SSL certificates for all the peripheral Servers are installed on the machine where the ``hub-xmlrpc-api`` service runs.
-Do this by copying the ``RHN-ORG-TRUSTED-SSL-CERT`` certificate file from each peripheral Server's [path]``http://<server-url>/pub/`` directory to [path]``/etc/pki/trust/anchors/``, and run [command]``update-ca-certificates``.
-====

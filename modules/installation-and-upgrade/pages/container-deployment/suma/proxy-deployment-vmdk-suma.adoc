@@ -1,11 +1,11 @@
-[[proxy-install-vm]]
-= Deploy {productname} {productnumber} Proxy as a Virtual Machine - KVM
+[[proxy-install-vmware]]
+= Deploy {productname} {productnumber} Proxy as a Virtual Machine - VMware
 ifeval::[{uyuni-content} == true]
 :noindex:
 endif::[]
 
 This chapter provides the Virtual Machine settings for deployment of {productname} {productnumber} Proxy as an image.
-KVM will be combined with Virtual Machine Manager (_virt-manager_) as a sandbox for this installation.
+VMware will be used as a sandbox for this installation.
 
 
 
@@ -47,73 +47,28 @@ For additional information on the self install images, see:
 |===
 
 
-[[proxy-quickstart.sect.kvm.settings]]
-== Virtual Machine Manager (virt-manager) Settings
+[[proxy-quickstart.sect.vmware.settings]]
+== Virtual Machine Settings - VMware
 
-Enter the following settings when creating a new virtual machine using *virt-manager*.
-
-[NOTE]
-====
-This table specifies the minimum requirements.
-These are suitable for a quick test installation, such as a server with one client.
-If you want to use a production environment and need background information about disk space, see xref:installation-and-upgrade:hardware-requirements.adoc[].
-====
+This sections describes VMware configurations, focusing on the creation of an extra virtual disk essential for the {productname} Proxy storage partition within VMware environments.
 
 
-[cols="1,1", options="header"]
-|===
-2+<| KVM Settings
-| Installation Method | Import Existing Disk Image
-| OS:                 | Linux
-| Version:            | {productname}-Proxy.x86_64-5.0.0-Build16.12.qcow2
-| Memory:             | 2 GB
-| CPU's:              | 2
-| Storage Format:     | _.qcow2_ 40 GB (Default) Root Partition
-| Name:               | test-setup
-| Network             | Bridge _br0_
-|===
+.Procedure: Creating the VMware Virtual Machine
 
+. Download {productname} Proxy [filename]``.vmdk`` file then transfer a copy to your VMware storage.
 
-[NOTE]
-====
-[path]``/var/lib/containers/storage/volumes``
-Minimum 100 GB.  Storage requirements should be calculated for the number of ISO distribution images, containers, and bootstrap repositories you will use.
-====
+. Make a copy of uploaded [filename]``.vmdk`` file using VMware web interface.
+  This will convert provided [filename]``.vmdk`` file to the format suitable for vSpere hypervisor.
 
+. Create and name a new virtual machine based on the Guest OS Family [systemitem]``Linux`` and Guest OS Version {sle} 15 (64-bit).
 
+. Add an additional [systemitem]``Hard Disk 2`` of 500 GB (or more).
 
-[[proxy-minimmal.kvm.setup]]
-== Initial KVM Setup
-
-.Procedure: Creating Initial Setup
-. Create a new virtual machine using the downloaded {minimal} KVM image and select [guimenu]``Import existing disk image``.
 . Configure RAM and number of CPUs (at least 16 GB RAM and 4 CPUs).
-. Name your KVM machine and select the [guimenu]``Customize configuration before install`` check box.
-. Click btn:[Begin Installation] to boot from the image.
-. At the JeOS Firstboot screen select start to continue.
-+
 
-image::jeos-firstboot.png[]
+. Set the network adapter as required.
 
-. Select keyboard layout.
-+
-
-image::select-keyboard.png[]
-
-.  Accept the license agreement.
-+
-
-image::accept-license-agreement.png[]
-
-. Select your time zone.
-+
-
-image::enter-timezone.png[]
-
-. Enter a password for root.
-+
-
-image::root-password.png[]
+. Power on the VM, and follow firstboot dialogs (keyboard layout, license agreement, time zone, password for root).
 
 . When installation completes log in as root.
 
@@ -121,8 +76,10 @@ image::root-password.png[]
 
 
 
+[[minimal.susemgr.prep]]
 == Register {sle-micro} and {productname} {productnumber} Proxy
 
+// Before starting obtain your SUSE Manager Registration Code from SUSE Customer Center - https://scc.suse.com.
 
 .Procedure: Registering {sle-micro} and {productname} {productnumber} Proxy
 . Boot the virtual machine.
@@ -143,7 +100,7 @@ transactional-update register -r <REGCODE> -e <your_email>
 transactional-update register -p SUSE-Manager-Proxy/5.0/x86_64 -r <REGCODE>
 ----
 
-. Reboot.
+. Reboot
 
 . Update the system:
 +
@@ -157,13 +114,11 @@ transactional-update
 . This step is optional.
   However, if custom persistent storage is required for your infrastructure, use the [command]``mgr-storage-proxy`` tool.
 ** For more information, see [command]``mgr-storage-proxy --help``.
-This tool simplifies creating the container volumes.
+This tool simplifies creating the container storage and database volumes.
 
 ** Use the command in the following manner:
 +
 
-// CHECKIT
-+
 ----
 mgr-storage-proxy <storage-disk-device>
 ----
@@ -186,6 +141,8 @@ For more information, see
 
 
 
+// FIXME: make this section a snippet or move it to a general intro for both,
+//        KVM and VMware
 == Create an Activation Key for the Proxy
 
 On the {productname} server, create an activation key for the Proxy.
@@ -281,37 +238,6 @@ Five {productname} Proxy containers should be present:
 - proxy-ssh
 
 And should be part of the [literal]``proxy-pod`` container pod.
-
-
-////
-[[installation-proxy-containers-services]]
-== Install container services on the host system
-ifeval::[{suma-content} == true]
-
-[NOTE]
-====
-[literal]``Containers Module`` is required to be available for container host on a {sles} machine.
-====
-endif::[]
-
-{productname} Proxy containers are using [literal]``podman`` and [literal]``systemd`` to run and manage all proxy containers.
-
-First step is to install the [literal]``mgrpxy`` utility provided by the package of the same name.
-
-ifeval::[{suma-content} == true]
-The [literal]``mgrpxy`` package is available in the {productname} Proxy product repositories.
-endif::[]
-
-ifeval::[{uyuni-content} == true]
-The [literal]``mgrpxy`` package is available in the container utils repository: pick the one matching the distribution in: https://download.opensuse.org/repositories/systemsmanagement:Uyuni:/Stable:/ContainerUtils/.
-endif::[]
-
-To install them run:
-
-----
-zypper in helm mgrpxy
-----
-////
 
 
 === Using a Custom Container Image for a Service
