@@ -1,5 +1,7 @@
 - Added reminder note to de-register before registration to Client
   Configuration Guide (bsc#1216946)
+- Added note about case sensitivity of organization name to
+  Inter-Server Synchronization chapter of Administration Guide
 - Added admonition about podman related IP forwarding configuration to
   Requirements in Installation and Upgrade Guide (bsc#1224318)
 - Updated Hub chapter in Large Deployments Guide (bsc#1215815)
