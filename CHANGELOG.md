@@ -1,3 +1,5 @@
+- Added note about SLE Micro entitlement being included in SUSE
+  Manager extensions' entitlements
 - Added VMware image deployment documentation for Proxy in the
   Installation and Upgrade Guide (bsc#1227852)
 - Added information on upgrading server and proxy containers also for
