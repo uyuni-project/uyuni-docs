@@ -1,5 +1,9 @@
 - Added documentation on deploying SUSE Manager Proxy in Public
-  Cloud
+  Cloud in Large Deployment Guide
+- Added admonition about disabling data synchronization with SCC in
+  Administration Guide
+- Added note about SLE Micro entitlement being included in SUSE
+  Manager extensions' entitlements (bsc#1230833)
 - Added VMware image deployment documentation for Proxy in the
   Installation and Upgrade Guide (bsc#1227852)
 - Added information on upgrading server and proxy containers also for
