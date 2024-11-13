@@ -1,3 +1,5 @@
+- Documented Cobbler option to enable boot ISOs with Secure Boot in
+  Client Configuration Guide
 - Added admonition about disabling data synchronization with SCC in
   Administration Guide
 - Added note about SLE Micro entitlement being included in SUSE
