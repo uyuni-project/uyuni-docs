@@ -1,3 +1,4 @@
+- Update OpenSUSE Leap micro 5.5 download link
 - Added documentation on deploying SUSE Manager Proxy in Public
   Cloud in Large Deployment Guide
 - Added admonition about disabling data synchronization with SCC in
