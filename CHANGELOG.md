@@ -1,3 +1,5 @@
+- Added documentation on deploying SUSE Manager Proxy in Public
+  Cloud in Large Deployment Guide
 - Added note about SLE Micro entitlement being included in SUSE
   Manager extensions' entitlements (bsc#1230833)
 - Added VMware image deployment documentation for Proxy in the
