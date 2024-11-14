@@ -1,5 +1,3 @@
-- Added admonition about disabling data synchronization with SCC in
-  Administration Guide
 - Added documentation on deploying SUSE Manager Proxy in Public
   Cloud in Large Deployment Guide
 - Added note about SLE Micro entitlement being included in SUSE
