@@ -5,86 +5,66 @@
 :usecase: SUSE Manager is a configuration and infrastructure management tool that saves you time and headaches when you have to manage and update tens, hundreds or even thousands of linux machines.
 :executive_summary: The new Azure Marketplace offering is easier to install than before and provides a flexible and automated subscription model paying via Azure.
 
+// Break this up-to-date document into sections that will replace current individual documents under azure deployment in the public cloud.
 
-=== Scope
+== Introduction
 
+This guide walks you through the initial steps for installing SUSE Manager PAYG on Azure, highlighting the differences from a traditional Bring Your Own Subscription (BYOS) setup.
 
-This guide takes you through the first steps to install SUSE Manager PAYG in Azure and explain the difference to a regular (BYOS) setup.
-
-
-=== Audience
-
-
-This document is intended for new users of SUSE Manager, as well as those that already run a SUSE Manager instance in their own data center or in the public cloud.
-
+It is intended for both new users of SUSE Manager and those already managing SUSE Manager instances within their data centers or on other public cloud platforms.
 
 == Prerequisites
 
+*Azure Account*::  
+You need an active Azure account and must know the country where it is billed.
 
-* Azure Account
+*Fully Qualified Domain Name (FQDN)*::  
+The SUSE Manager server must correctly resolve its FQDN. Failure to resolve the FQDN can lead to issues across various SUSE Manager components.
 
-** You need an Azure account and know in which country it gets billed
+*Hostname and IP Address*::  
+Ensure the SUSE Manager domain name is resolvable by all client machines. Both server and clients need to be connected to a DNS server with correctly configured *reverse lookups*.
 
-* Fully Qualified Domain Name (FQDN)
-
-** The SUSE Manager server must resolve its FQDN correctly. If the FQDN cannot be resolved, it can cause problems in several of different components of SUSE Manager.
-
-* Hostname and IP Address
-
-** To ensure that the SUSE Manager domain name can be resolved by its clients, both server and client machines must be connected to a working DNS server.
-
-** *You must ensure that reverse lookups are correctly configured.*
-
-* SUSE Manager Networking Ports
-
-** You do not need to open all the ports mentioned in the link below. Some ports only need to be opened if you are using the service that requires them.
-
-** https://documentation.suse.com/suma/4.3/en/suse-manager/installation-and-upgrade/ports.html
-
+*SUSE Manager Networking Ports*::  
+Not all SUSE Manager ports need to be open. Open ports selectively, based on the services you intend to use.
+https://documentation.suse.com/suma/4.3/en/suse-manager/installation-and-upgrade/ports.html
 
 == Technical Architecture
 
-The SUSE Manager PAYG offering in Azure need to communicate with the Azure Billing API, therefore it is not a simple virtual machine (VM) offering.
+The SUSE Manager PAYG offering in Azure requires integration with the Azure Billing API, making it more than a standard virtual machine (VM) deployment. Azure has implemented the _Managed Application_ model for this purpose.
 
-Azure has created the _Managed Application_ offering for this use case.
+Learn more about Azure Managed Applications: https://learn.microsoft.com/en-us/azure/azure-resource-manager/managed-applications/overview
 
-see:
-https://learn.microsoft.com/en-us/azure/azure-resource-manager/managed-applications/overview
-
-// https://learn.microsoft.com/en-us/azure/azure-resource-manager/managed-applications/media/overview/managed-apps-resource-group.png
-
-.Architecture Diagram of a managed application
-//image::images/src/svg/AzureManagedApp.svg[architecture of a managed application, 80%]
+.Architecture Diagram of a Managed Application
 image::AzureManagedApp.svg[architecture of a managed application, 60%]
 
-=== Application resource group
+=== Application Resource Group
 
-This resource group ( in the diagram _ResGroup A_ ) holds the managed application instance, which could be translated as the metadata or definition of the offering. It can only contain a single resource.
+The _Application Resource Group_ (shown as _ResGroup A_ in the diagram) contains the managed application instance's metadata and definition. This resource group can only hold a single resource.
 
-A customer has full access to the resource group and uses it to manage the life cycle of the managed application.
+Customers have full access to this resource group to manage the lifecycle of the managed application.
 
-=== Managed resource group (MRG)
+=== Managed Resource Group (MRG)
 
-This resource group ( in the diagram _MRG_ ) holds all the resources that are required by the managed application. For example, an application's virtual machines, storage accounts, and virtual networks.
+The _Managed Resource Group_ (shown as _MRG_ in the diagram) includes all resources required by the managed application, such as VMs, storage accounts, and virtual networks.
 
-A _managed application_ is similar to a solution template in Azure Marketplace, with a few key differences:
+A _Managed Application_ in Azure resembles a solution template on the Azure Marketplace, with a few notable differences:
 
-- The resources are deployed into a _managed resource group_ that is normally managed by the application's publisher.
+- Resources are deployed within a _Managed Resource Group_ typically controlled by the application publisher.
+- Although part of the customer’s subscription, an identity within the publisher’s tenant can be granted access to the managed resource group.
+- Optional permissions allow for publisher _management access_ and customer _deny assignments_.
 
-- It is present in the customer's subscription, but an identity in the publisher's tenant can be given access to the managed resource group.
+In this instance, SUSE employs a _Customer Managed_ scenario, providing full control to SUSE Manager users.
 
-- The publisher's _management access_ and the customers _deny assignment_ are optional.
-+
-There are different permission scenarios available. SUSE is using here the _Customer managed_ to give our customers of SUSE Manager full control.
+.Customer Managed Permissions
 
-Customer managed::
-* Customer
-** Customer has full access to the solution (in the managed resource group)
-** The customer manages the solution
-* Publisher
-** The publisher has no access to manage the solution.
-** The publisher develops the application and publishes on Azure Marketplace but does not manage the application.
-** The publisher licenses the application for billing through Azure Marketplace.
+*Customer*:
+- Has full access to the managed resource group and manages the solution.
+  
+*Publisher*:
+- Does not manage the deployed solution.
+- Develops and publishes the application on Azure Marketplace.
+- Licenses the application, with billing managed through Azure Marketplace.
+
 
 
 == Azure Deployment
@@ -224,6 +204,7 @@ After deploying the VM from the Managed Application, you can access it via SSH.
 
 SUSE Manager PAYG requires a new Virtual Network and subnet, which were configured in the previous step. As SUSE Manager is deployed as a _Managed Application_, it cannot be placed into an existing network.
 
+.Task: Configuration and Startup
 . **Network Configuration Verification**
 +
 
