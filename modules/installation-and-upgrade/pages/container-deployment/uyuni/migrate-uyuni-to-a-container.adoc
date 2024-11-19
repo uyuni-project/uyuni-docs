@@ -1,68 +1,70 @@
-= Migrating  the {productname} Server to a Containerized Environment
+= Legacy {productname} Server Migration to a Containerized Environment
 ifeval::[{suma-content} == true]
 :noindex:
 endif::[]
 
 To migrate a legacy {productname} Server (RPM installation) to a container, a new machine is required.
 
-[WARNING]
-====
-It is not possible to perform an in-place migration.
-====
 
+== Requirements and Considerations
+
+=== General
+
+* An in-place migration is not possible.
+
+
+=== Hostnames
+
+* The migration procedure currently does not include any hostname renaming functionality.
+  The fully qualified domain name (FQDN) on the new server will remain identical to that on the old server.
++
 [IMPORTANT]
 ====
-Self trusted GPG keys are not migrated.
-GPG keys that are trusted in the RPM database only are not migrated.
-Thus synchronizing channels with [command]``spacewalk-repo-sync`` can fail.
-
-The administrator must migrate these keys manually from the previous Uyuni installation to the container host after the actual server migration.
-
-1. Copy the keys from the previous Uyuni server to the container host of the new server.
-2. Later, add each key to the migrated server with the command [command]``mgradm gpg add <PATH_TO_KEY_FILE>``.
+After the migration, it will be necessary to manually update the DHCP and DNS records to point to the new server.
 ====
 
 
-The migration procedure currently does not include any hostname renaming functionality.
-The fully qualified domain name (FQDN) on the new server will remain identical to that on the old server.
-Therefore, following migration, it will be necessary to manually adjust the DNS records to point to the new server.
+== GPG Keys
+
+* Self trusted GPG keys are not migrated.
+* GPG keys that are trusted in the RPM database only are not migrated.
+  Thus synchronizing channels with [command]``spacewalk-repo-sync`` can fail.
+* The administrator must migrate these keys manually from the previous {productname} installation to the container host after the actual server migration.
++
+.Procedure: Manual Migration of the GPG Keys to New Server
+. Copy the keys from the previous Uyuni server to the container host of the new server.
+. Later, add each key to the migrated server with the command [command]``mgradm gpg add <PATH_TO_KEY_FILE>``.
 
 
-== Initial Preparation on the Legacy Server
+
+
+=== Initial Preparation on the Legacy Server
 
 .Procedure: Initial preparation on the legacy server
 
 . Stop the {productname} services:
 +
-
 ----
 spacewalk-service stop
 ----
-
 . Stop the PostgreSQL service:
 +
-
 ----
 systemctl stop postgresql
 ----
 
 
-
-== Prepare the SSH Connection
+=== SSH Connection Preparation
 
 .Procedure: Preparing the SSH connection
-
 . Ensure that for [systemitem]``root`` an SSH key exists on the new {productnumber} server.
   If a key does not exist, create it with:
 +
-
 ----
 ssh-keygen -t rsa
 ----
-
 . The SSH configuration and agent should be ready on the new server host for a passwordless connection to the legacy server.
 +
-
 [NOTE]
 ====
 To establish a passwordless connection, the migration script relies on an SSH agent running on the new server.
@@ -70,19 +72,15 @@ If the agent is not active yet, initiate it by running [command]``eval $(ssh-age
 Then add the SSH key to the running agent with [command]``ssh-add`` followed by the path to the private key.
 You will be prompted to enter the password for the private key during this process.
 ====
-
 . Copy the public SSH key to the legacy {productname} Server ([literal]``<oldserver.fqdn>``) with [command]``ssh-copy-id``.
   Replace [literal]``<oldserver.fqdn>`` with the FQDN of the legacy server:
 +
-
 ----
 ssh-copy-id <oldserver.fqdn>
 ----
 +
-
-  The SSH key will be copied into the legacy server's [path]``~/.ssh/authorized_keys`` file.
-  For more information, see the [literal]``ssh-copy-id`` manpage.
-
+The SSH key will be copied into the legacy server's [path]``~/.ssh/authorized_keys`` file.
+For more information, see the [literal]``ssh-copy-id`` manpage.
 . Establish an SSH connection from the new server to the legacy {productname} Server to check that no password is needed.
   Also there must not by any problem with the host fingerprint.
   In case of trouble, remove old fingerprints from the [path]``~/.ssh/known_hosts`` file.
@@ -91,13 +89,10 @@ ssh-copy-id <oldserver.fqdn>
 
 
 
-== Perform the Migration
+=== Perform the Migration
 
-[IMPORTANT]
-====
 When planning your migration from a legacy {productname} to a containerized {productname}, ensure that your target instance meets or exceeds the specifications of the old setup.
-This includes, but is not limited to, [literal]``Memory (RAM)``, [literal]``CPU Cores``, [literal]``Storage``, and [literal]``Network Bandwidth``.
-====
+This includes, but is not limited to, memory (RAM), CPU Cores, Storage, and Network Bandwidth.
 
 .Procedure: Performing the Migration
 . This step is optional.
@@ -107,7 +102,6 @@ This tool simplifies creating the container storage and database volumes.
 
 ** Use the command in the following manner:
 +
-
 ----
 mgr-storage-server <storage-disk-device> [<database-disk-device>]
 ----
@@ -118,7 +112,6 @@ For example:
 mgr-storage-server /dev/nvme1n1 /dev/nvme2n1
 ----
 +
-
 [NOTE]
 ====
 This command will create the persistent storage volumes at [path]``/var/lib/containers/storage/volumes``.
@@ -128,44 +121,39 @@ For more information, see xref:installation-and-upgrade:container-management/per
 . Execute the following command to install a new {productname} server.
   Replace [literal]``<oldserver.fqdn>`` with the FQDN of the legacy server:
 +
-
 ----
 mgradm migrate podman <oldserver.fqdn>
 ----
-
 . Migrate trusted SSL CA certificates.
 
 
-[IMPORTANT]
-====
+==== Migration of the Certificates
 Trusted SSL CA certificates that were installed as part of an RPM and stored on a legacy {productname} in the [path]``/usr/share/pki/trust/anchors/`` directory will not be migrated.
 Because {suse} does not install RPM packages in the container, the administrator must migrate these certificate files manually from the legacy installation after migration:
 
-
+.Procedure: Migrating the Certificates
 . Copy the file from the legacy server to the new server.
    For example, as [path]``/local/ca.file``.
-
 . Copy the file into the container with:
 +
-
 ----
 mgradm cp /local/ca.file server:/etc/pki/trust/anchors/
 ----
-====
 
 
 [IMPORTANT]
 ====
 After successfully running the [command]``mgradm migrate`` command, the {salt} setup on all clients will still point to the old legacy server.
 
-To redirect them to the {productnumber} server, it is required to rename the new server at the infrastructure level (DHCP and DNS) to use the same Fully Qualified Domain Name and IP address as legacy server.
+To redirect them to the {productnumber} server, it is required to rename the new server at the infrastructure level (DHCP and DNS) to use the same FQDN and IP address as legacy server.
 ====
 
 
 // FIXME: check the following!  Partially probably already covered above.!
-== Prepare for Kubernetes
+== Kubernetes Preparations
 
 Before executing the migration with [command]``mgradm migrate`` command, it is essential to predefine **Persistent Volumes**, especially considering that the migration job initiates the container from scratch.
+
 For more information, see the installation section for comprehensive guidance on preparing these volumes in xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[].
 
 
