@@ -1,3 +1,4 @@
+- Document openSUSE Leap 16.0
 - Update OpenSUSE Leap micro 5.5 download link
 - Added documentation on deploying SUSE Manager Proxy in Public
   Cloud in Large Deployment Guide
