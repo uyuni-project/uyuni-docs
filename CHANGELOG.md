@@ -1,6 +1,9 @@
 - Added new workflow with the instructions about RAW image usage
   to Common Workflows book
 - Added reminder note to unregister before registration to Client
+- Fixed Uyuni repository link and removed netavark from the installation
+  command
+- Updated OpenSUSE Leap micro 5.5 download link
 - Added documentation on deploying SUSE Manager Proxy in Public
   Cloud in Large Deployment Guide
 - Added admonition about disabling data synchronization with SCC in

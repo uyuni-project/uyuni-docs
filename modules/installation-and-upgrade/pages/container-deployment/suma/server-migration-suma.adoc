@@ -1,4 +1,4 @@
-= Migrating the {productname} Server to a Containerized Environment
+= {productname} Server Migration to a Containerized Environment
 ifeval::[{uyuni-content} == true]
 :noindex:
 endif::[]
@@ -21,7 +21,6 @@ endif::[]
 ** For more information about migrating traditional {productname} 4.3 clients to {salt} clients, see https://documentation.suse.com/suma/4.3/en/suse-manager/client-configuration/contact-methods-migrate-traditional.html.
 
 * Traditional contact protocol is no longer supported in {productname} 5.0 and later.
-
 
 === Hostnames
 
@@ -55,21 +54,27 @@ Additionally, the IP address must remain unchanged to ensure that the clients ca
 After the migration, it will be necessary to manually update the DHCP and DNS records to point to the new server.
 ////
 
+
 == Migration
 
 === Initial Preparation on the Old 4.3 Server
 
+[IMPORTANT]
+====
+The migration can take a very long time depending on the amount of data that needs to be replicated.
+To reduce downtime it is possible to run the migration multiple times in a process of "initial replication", "re-replication", "final replication and switch over" while all the services on the source can stay up and running and only during the final migration the processes on the source need to be stopped.
+For all "non-final" replications add the parameter [command]``--prepare`` to prevent the automatic stopping the services on the source server.
+For example, use [command]``mgradm migrate podman <oldserver.fqdn> --prepare`` to prevent the automatic stopping the services on the source server.
+====
+
 .Procedure: Initial preparation on the 4.3 server
 . Stop the {productname} services:
 +
-
 ----
 spacewalk-service stop
 ----
-
 . Stop the PostgreSQL service:
 +
-
 ----
 systemctl stop postgresql
 ----
@@ -84,39 +89,36 @@ The migration process will take care of the server installation.
 . Ensure that for [systemitem]``root`` an SSH key exists on the new {productnumber} server.
   If a key does not exist, create it with:
 +
-
 ----
 ssh-keygen -t rsa
 ----
-
-. The SSH configuration and agent should be ready on the new server for a passwordless connection to the 4.3 server.
+. The SSH configuration and agent should be ready on the new server for a connection to the 4.3 server that does not prompt for a password.
 +
-
+----
+eval $(ssh-agent); ssh-add
+----
++
 [NOTE]
 ====
-To establish a passwordless connection, the migration script relies on an SSH agent running on the new server.
+To establish a connection that does not prompt for a password, the migration script relies on an SSH agent running on the new server.
 If the agent is not active yet, initiate it by running [command]``eval $(ssh-agent)``.
 Then add the SSH key to the running agent with [command]``ssh-add`` followed by the path to the private key.
 You will be prompted to enter the password for the private key during this process.
 ====
-
++
 . Copy the public SSH key to the {productname} 4.3 Server ([literal]``<oldserver.fqdn>``) with [command]``ssh-copy-id``.
   Replace [literal]``<oldserver.fqdn>`` with the FQDN of the 4.3 server:
 +
-
 ----
 ssh-copy-id <old server.fqdn>
 ----
 +
-
 The SSH key will be copied into the old server's [path]``~/.ssh/authorized_keys`` file.
 For more information, see the [literal]``ssh-copy-id`` manpage.
 +
-
 // . This step is optional:
 //   The migration script only uses the 4.3 server's FQDN in the SSH command.
 //   This means that every other configuration required to connect, needs to be defined in the [path]``~/.ssh/config`` file.
-
 . Establish an SSH connection from the new server to the old {productname} Server to check that no password is needed.
   Also there must not by any problem with the host fingerprint.
   In case of trouble, remove old fingerprints from the [path]``~/.ssh/known_hosts`` file.
@@ -129,7 +131,7 @@ For more information, see the [literal]``ssh-copy-id`` manpage.
 
 When planning your migration from {productname} 4.3 to {productname} 5.0, ensure that your target instance meets or exceeds the specifications of the old setup.
 
-This includes, but is not limited to, [literal]``Memory (RAM)``, [literal]``CPU Cores``, [literal]``Storage``, and [literal]``Network Bandwidth``.
+This includes, but is not limited to, memory (RAM), CPU Cores, Storage, and Network Bandwidth.
 
 
 .Procedure: Performing the Migration
@@ -140,7 +142,6 @@ This tool simplifies creating the container storage and database volumes.
 
 ** Use the command in the following manner:
 +
-
 ----
 mgr-storage-server <storage-disk-device> [<database-disk-device>]
 ----
@@ -151,41 +152,34 @@ For example:
 mgr-storage-server /dev/nvme1n1 /dev/nvme2n1
 ----
 +
-
 [NOTE]
 ====
 This command will create the persistent storage volumes at [path]``/var/lib/containers/storage/volumes``.
 
 For more information, see xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[].
 ====
++
 . Execute the following command to install a new {productname} server.
   Replace [literal]``<oldserver.fqdn>`` with the FQDN of the 4.3 server:
 +
-
 ----
 mgradm migrate podman <oldserver.fqdn>
 ----
-
 . Migrate trusted SSL CA certificates.
 
 
 ==== Migration of the Certificates
-//[IMPORTANT]
-//====
 Trusted SSL CA certificates that were installed as part of an RPM and stored on {productname} 4.3 in the [path]``/usr/share/pki/trust/anchors/`` directory will not be migrated.
-Because {suse} does not install RPM packages in the container, the administrator must migrate these certificate files manually from the 4.3 installation after migration:
-
+Because {suse} does not install RPM packages in the container, the administrator must migrate these certificate files manually from the 4.3 installation after the migration.
 
 .Procedure: Migrating the Certificates
 . Copy the file from the 4.3 server to the new server.
    For example, as [path]``/local/ca.file``.
 . Copy the file into the container with:
 +
-
 ----
 mgrctl cp /local/ca.file server:/etc/pki/trust/anchors/
 ----
-//====
 
 
 [IMPORTANT]
