@@ -1,3 +1,5 @@
+- Documented Cobbler option to enable boot ISOs with Secure Boot in
+  Client Configuration Guide
 - Fixed Uyuni repository link and removed netavark from the installation
   command
 - Updated OpenSUSE Leap micro 5.5 download link
