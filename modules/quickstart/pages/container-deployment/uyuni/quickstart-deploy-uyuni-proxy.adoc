@@ -1,310 +1,296 @@
-[[quickstart-uyuni-install-proxy]]
-= Deploy {productname} Proxy 
+[[quickstart-deploy-proxy-containers]]
+= Deploy a {productname} {productnumber} Proxy
 ifeval::[{suma-content} == true]
 :noindex:
 endif::[]
 
-{productname} Proxy can be installed as a server extension on openSUSE Leap.
-The proxy is installed in the same way as a client, but is designated as a proxy server during installation.
-This is achieved by adding the {uyuni} Proxy pattern, and executing the proxy setup script.
 
-* For more information about the stable version of {productname}, see https://www.uyuni-project.org/pages/stable-version.html.
-* For more information about the development version of {productname}, see https://www.uyuni-project.org/pages/devel-version.html.
+This guide outlines the deployment process for the {productname} {productnumber} Proxy.
+This guide presumes you have already successfully deployed a {productname} {productnumber} Server.
+To successfully deploy, you will perform the following actions:
 
 
-
-
-== Mirror {productname} Proxy software
-
-The {productname} Proxy software is available from https://download.opensuse.org.
-You can synchronize the proxy software to your {productname} Server.
-This process is also known as mirroring.
-
-
-
-.Procedure: Mirroring {productname} Proxy software
-. On the {productname} Server, create openSUSE Leap and the {productname} Proxy channels with the [command]``spacewalk-common-channels`` command.
-  [command]``spacewalk-common-channels`` is part of the [package]``spacewalk-utils`` package:
+.Checklist: Proxy Deployment
+. Review hardware requirements.
 +
-----
-spacewalk-common-channels \
-opensuse_leap15_5 \
-opensuse_leap15_5-non-oss \
-opensuse_leap15_5-non-oss-updates \
-opensuse_leap15_5-updates \
-opensuse_leap15_5-backports-updates \
-opensuse_leap15_5-sle-updates \
-opensuse_leap15_5-uyuni-client \
-uyuni-proxy-stable-leap-155
-----
+// . Synchronize the {leapmicro} {microversion} parent channel and the Proxy extension child channel on the server.
+. Install {leapmicro} {microversion} on a bare-metal machine.
 +
-Instead of the [systemitem]``uyuni-proxy-stable-leap-155`` version you can also try the latest development version, called [systemitem]``uyuni-proxy-devel-leap``.
-For more information, see xref:client-configuration:clients-opensuseleap.adoc[].
+// . Create a {salt} activation key.
+. Bootstrap the Proxy as a {salt} minion.
+. Generate a Proxy configuration.
+. Transfer the Proxy configuration from Server to Proxy
+. Use the Proxy configuration to register the {salt} minion as a Proxy with {productname}.
 
 
-
-== Register the openSUSE Leap system
-
-Begin by installing openSUSE Leap on a physical or virtual machine.
-To ensure that the proxy is accessible across the network, you must have a resolvable fully qualified domain name (FQDN) on the openSUSE Leap system before you begin the installation.
-You can configure an FQDN with {yast} by navigating to menu:System[Network Settings > Hostname/DNS].
-
-When you have installed openSUSE Leap on the proxy and configured the FQDN, you can prepare the {productname} Server, and register the openSUSE Leap system as a client.
-
-
-
-.Procedure: Registering the openSUSE Leap system
-. On the {productname} Server, create an activation key with openSUSE Leap as a base channel and the proxy and the other channels as child channels.
-  For more information about activation keys, see xref:client-configuration:activation-keys.adoc[].
-. Modify a bootstrap script for the proxy.
-  Ensure you add the GPG key for {uyuni} to the [systemitem]``ORG_GPG_KEY=`` parameter.
-  For example:
-+
-----
-ORG_GPG_KEY=uyuni-gpg-pubkey-0d20833e.key
-----
-  ** For more information, see xref:client-configuration:clients-opensuseleap.adoc[].
-. Bootstrap the client using the script.
-  ** For more information, see xref:client-configuration:registration-bootstrap.adoc[].
-. Navigate to menu:Salt[Keys] and accept the key.
-  When the key is accepted, the new proxy will show in menu:Systems[Overview] in the [guimenu]``Recently Registered Systems`` section.
-. Navigate to menu:System Details[Software > Software Channels], and check that the proxy channel is selected.
-
-
-
-
-== Install Uyuni Proxy on openSUSE Leap
-
-On the client, use the [command]``zypper`` command line tool or on the {productname} Server, the {webui} to install the proxy software on openSUSE Leap.
-
-
-
-.Procedure: Installing Uyuni Proxy on openSUSE Leap
-. Install the pattern for the {productname} Proxy.
-  You can do this either on the client or on the server.
-* For the client, use [command]``zypper``
-+
-----
-zypper in patterns-uyuni_proxy
-----
-* Alternatively, on the {productname} Server, use the {webui}.
-  Navigate to the details tab of the client, click menu:Software[Packages > Install], and schedule [package]``patterns-uyuni_proxy`` for installation.
-. Reboot the client.
-
-
-
-== Prepare the Proxy
-
-Before you begin, ensure that the proxy pattern is installed correctly.
-// FIXME: there might be a better way to check it:
-To verify a successful installation, on the {productname} Server, select the [package]``pattern_uyuni_proxy`` package for installation.
-
-The salt-broker service is automatically started after installation is complete.
-This service forwards the Salt interactions to the {productname} Server.
-
+.Supported operating system for the Proxy Container Host
 [NOTE]
 ====
-It is possible to arrange Salt proxies in a chain.
-In this case, the upstream proxy is named `parent`.
-====
+The supported operating system for the container host is {leapmicro} {microversion}.
 
-Make sure the TCP ports `4505` and `4506` are open on the proxy.
-The proxy must be able to reach the {productname} Server or a parent proxy on these ports.
-
-The proxy shares some SSL information with the {productname} Server.
-You need to copy the certificate and its key from the {productname} Server or the parent proxy to the proxy you are setting up.
-
-
-
-.Procedure: Copying the Server Certificate and Key
-. On the proxy you are setting up, at the command prompt, as root, create a directory for the certificate and key:
-+
-----
-mkdir -m 700 /root/ssl-build
-cd /root/ssl-build
-----
-. Copy the certificate and the key from the source to the new directory.
-  In this example, the source location is called ``PARENT``.
-  Replace this with the correct path:
-+
-----
-scp root@<PARENT>:/root/ssl-build/RHN-ORG-PRIVATE-SSL-KEY .
-scp root@<PARENT>:/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT .
-scp root@<PARENT>:/root/ssl-build/rhn-ca-openssl.cnf .
-----
-
-
-[NOTE]
-====
-To keep the security chain intact, the {productname} Proxy functionality requires the SSL certificate to be signed by the same CA as the {productname} Server certificate.
-Using certificates signed by different CAs for proxies and server is not supported.
-For more information on how {productname} handles certificates, see xref:administration:ssl-certs.adoc[].
+Container host:: A container host is a server equipped with a container engine like Podman, which lets it manage and deploy containers. These containers hold applications and their essential parts, such as libraries, but not a full operating system, making them lightweight. This setup ensures applications run the same way in different environments. The container host supplies the necessary resources such as CPU, memory, and storage for these containers.
 ====
 
 
+== Hardware Requirements for the Proxy
 
-== Set Up the Proxy
+This table shows the hardware requirements for deploying {productname} Proxy.
 
-When you have prepared the proxy, use the supplied interactive [command]``configure-proxy.sh`` script to complete the proxy setup.
+[cols="1,3,2", options="header"]
+.Proxy Hardware Requirements
+|===
 
+| Hardware
+| Details
+| Recommendation
 
+| CPU
+| {x86_64}, {arm}
+| Minimum 2 dedicated 64-bit CPU cores
 
-.Procedure: Setting up the Proxy
-.  On the proxy you are setting up, at the command prompt, as root, execute the setup script:
-+
-----
-configure-proxy.sh
-----
-. Follow the prompts to set up the proxy.
-  Leave a field blank and type kbd:[Enter] to use the default values shown between square brackets.
+| RAM
+| Minimum
+| 2 GB
 
-More information about the settings set by the script:
+|
+| Recommended
+| 8 GB
 
-{productname} Parent::
-the {productname} parent can be either another proxy or a server.
+| Disk Space
+| [path]``/`` (root directory)
+| Minimum 40 GB
 
-HTTP Proxy::
-A HTTP proxy enables your {productname} Proxy to access the Web.
-This is needed if direct access to the Web is prohibited by a firewall.
+|
+| [path]``/var/lib/containers/storage/volumes``
+| Minimum 100 GB, Storage requirements should be calculated for the number of ISO distribution images, containers, and bootstrap repositories you will use.
 
-Traceback Email::
-An email address where to report problems.
-
-Do You Want to Import Existing Certificates?::
-Answer ``N``.
-This ensures using the new certificates that were copied previously from the {productname} server.
-
-Organization::
-The next questions are about the characteristics to use for the SSL certificate of the proxy.
-The organization might be the same organization that was used on the server, unless of course your proxy is not in the same organization as your main server.
-
-Organization Unit::
-The default value here is the proxy's hostname.
-
-City::
-Further information attached to the proxy's certificate.
-
-State::
-Further information attached to the proxy's certificate.
-
-Country Code::
-In the [guimenu]``country code`` field, enter the country code set during the {productname} installation.
-For example, if your proxy is in the US and your {productname} is in DE, enter `DE` for the proxy.
-+
-
-[NOTE]
-====
-The country code must be two upper case letters.
-For a complete list of country codes, see https://www.iso.org/obp/ui/#search.
-====
-
-Cname Aliases (Separated by Space)::
-Use this if your proxy can be accessed through various DNS CNAME aliases.
-Otherwise it can be left empty.
-
-CA Password::
-Enter the password that was used for the certificate of your {productname} Server.
-
-Do You Want to Use an Existing SSH Key for Proxying SSH-Push Salt Minion?::
-Use this option if you want to reuse a SSH key that was used for SSH-Push Salt clients on the server.
-
-Create and Populate Configuration Channel rhn_proxy_config_1000010001?::
-Accept default ``Y``.
-
-SUSE Manager Username::
-Use same user name and password as on the {productname} server.
-
-If parts are missing, such as CA key and public certificate, the script prints commands that you must execute to integrate the needed files.
-When the mandatory files are copied, run [command]``configure-proxy.sh`` again.
-If you receive an HTTP error during script execution, run the script again.
-
-[command]``configure-proxy.sh`` activates services required by {productname} Proxy, such as [systemitem]``squid``, [systemitem]``apache2``, [systemitem]``salt-broker``, and [systemitem]``jabberd``.
-
-To check the status of the proxy system and its clients, click the proxy system's details page on the {webui} (menu:Systems[System List > Proxy], then the system name).
-[guimenu]``Connection`` and [guimenu]``Proxy`` subtabs display various status information.
-
-If you want to PXE boot your clients from your {productname} Proxy, you also need to synchronize the TFTP data from the {productname} Server.
-//For more information about this synchronization, see xref:client-configuration:autoinst-pxeboot.adoc[].
+|===
 
 
 
-.Procedure: Synchronizing Profiles and System Information
-. On the proxy, at the command prompt, as root, install the [package]``susemanager-tftpsync-recv`` package:
-+
-----
-zypper in susemanager-tftpsync-recv
-----
-. On the proxy, run the [command]``configure-tftpsync.sh`` setup script and enter the requested information:
-+
-----
-configure-tftpsync.sh
-----
-+
-You need to provide the hostname and IP address of the {productname} Server and the proxy.
-You also need to enter the path to the ``tftpboot`` directory on the proxy.
-. On the server, at the command prompt, as root, install [package]``susemanager-tftpsync``:
-+
-----
-zypper in susemanager-tftpsync
-----
-. On the server, run [command]``configure-tftpsync.sh`` setup script and enter the requested information:
-+
-----
-configure-tftpsync.sh
-----
-. Run the script again with the fully qualified domain name of the proxy you are setting up.
-  This creates the configuration, and uploads it to the {productname} Proxy:
-+
-----
-configure-tftpsync.sh FQDN_of_Proxy
-----
-. On the server, start an initial synchronization:
-+
-----
-cobbler sync
-----
-+
-You can also synchronize after a change within {cobbler} that needs to be synchronized immediately.
-Otherwise {cobbler} synchronization will run automatically when needed.
-//For more information about PXE booting, see xref:client-configuration:autoinst-pxeboot.adoc[Install via the Network].
+== Container Host General Requirements
+
+For general requirements, see xref:installation-and-upgrade:general-requirements.adoc[General requirements].
+
+An {leapmicro} {microversion} server should be installed from installation media.
+This procedure is described below.
 
 
 
-== Configure DHCP for PXE through Proxy
+[[installation-proxy-containers-requirements]]
+== Container Host Requirements
 
-{productname} uses {cobbler} for client provisioning.
-PXE (tftp) is installed and activated by default.
-Clients must be able to find the PXE boot on the {productname} Proxy using DHCP.
-Use this DHCP configuration for the zone which contains the clients to be provisioned:
+For CPU, RAM, and storage requirements, see xref:installation-and-upgrade:hardware-requirements.adoc[Hardware requirements].
 
-----
-next-server: <IP_Address_of_Proxy>
-filename: "pxelinux.0"
-----
-
-
-
-== Reinstalling a Proxy
-
-A proxy does not contain any information about the clients that are connected to it.
-Therefore, a proxy can be replaced by a new one at any time.
-The replacement proxy must have the same name and IP address as its predecessor.
-
-Proxy systems are registered as Salt clients using a bootstrap script.
-
-This procedure describes software channel setup and registering the installed proxy with an activation key as the {productname} client.
 
 [IMPORTANT]
 ====
-Before you can select the correct child channels while creating the activation key, ensure you have properly synchronized the openSUSE Leap channel with all the needed child channels and the {productname} Proxy channel.
+To guarantee that clients can resolve the FQDN domain name, both the containerized server and the host machines must be linked to a functional DNS server. Additionally, it is essential to ensure correct configuration of reverse lookups.
 ====
 
 
+== Installing Uyuni Tools for Use with Containers
 
-== More Information
 
-For more information about the {uyuni} project, and to download the source, see https://www.uyuni-project.org/.
+.Procedure: Installing Uyuni Tools on {leapmicro} {microversion}
+. On your local host open a terminal window or start up a virtual machine running {leapmicro} {microversion}.
 
-For more {uyuni} product documentation, see https://www.uyuni-project.org/uyuni-docs/uyuni/index.html.
+. Login.
 
-To raise an issue or propose a change to the documentation, use the links under the ``Resources`` menu on the documentation site.
+. Enter the [command]``transactional-update shell``:
++
+----
+transactional-update shell
+----
+
+. Add the following repository to your {leapmicro} {microversion} server:
++
+
+----
+zypper ar https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable/images/repo/Uyuni-Proxy-POOL-$(arch)-Media1/ uyuni-proxy-stable
+----
+
+. Refresh the repository list and accept the key:
++
+----
+zypper ref
+----
+
+. Install the container tools:
++
+
+[source, shell]
+----
+zypper in mgrpxy mgrpxy-bash-completion uyuni-storage-setup-proxy
+----
++
+[NOTE]
+====
+Alternatively you may install [systemitem]``mgrpxy-zsh-completion`` or [systemitem]``mgrpxy-fish-completion``.
+====
+
+. Exit the transactional shell:
++
+----
+transactional update # exit
+----
+
+. Reboot the host.
+
+
+For more information on the Uyuni Container Utilities, see link:https://build.opensuse.org/repositories/systemsmanagement:Uyuni:Stable:ContainerUtils[Uyuni Container Utilities].
+
+
+== Configure Custom Persistent Storage
+
+This step is optional.
+However, if custom persistent storage is required for your infrastructure, use the [command]``mgr-storage-proxy`` tool.
+
+* For more information, see [command]``mgr-storage-proxy --help``.
+This tool simplifies creating the container storage and Squid cache volumes.
+
+Use the command in the following manner:
+
+----
+mgr-storage-proxy <storage-disk-device>
+----
+
+For example:
+
+----
+mgr-storage-proxy /dev/nvme1n1
+----
+
+
+[NOTE]
+====
+This command will create the persistent storage volumes at [path]``/var/lib/containers/storage/volumes``.
+
+For more information, see
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+====
+
+
+== Bootstrap the Proxy Host as a Minion
+
+.Task: Bootstrap the Proxy Host
+. Select menu:Systems[Bootstrapping].
+. Fill in the fields for your Proxy host.
+. Select the Activation key created in the previous step from the dropdown.
+. Click btn:[+ Bootstrap].
+. Wait for the Bootstrap process to complete successfully.
+  Check the menu:Salt[] menu and confirm the {salt} minion key is listed and accepted.
+. Reboot the Proxy host.
+. Select the host from the menu:System[] list and trigger a second reboot after all events are finished to conclude the onboarding.
+
+
+.Task: Update the Proxy Host
+. Select the host from the menu:Systems[] list and apply all patches to update it.
+. Reboot the Proxy host.
+
+
+
+[[proxy-setup-containers-generate-config]]
+== Generate the Proxy Configuration
+
+The configuration archive of the {productname} Proxy is generated by the {productname} Server. 
+Each additional Proxy requires its own configuration archive.
+
+[IMPORTANT]
+====
+The container host for the {productname} Proxy must be registered as a salt minion to the {productname} Server prior to generating this Proxy configuration.
+====
+
+
+You will perform the following tasks:
+
+1. Generate a Proxy configuration file.
+2. Transfer the configuration to the Proxy.
+3. Start the Proxy with the [literal]``mgrpxy`` command.
+
+[[proc-proxy-containers-setup-webui]]
+.Task: Generating a Proxy Container Configuration using Web UI
+
+. In the {webui}, navigate to menu:Systems[Proxy Configuration] and fill the required data:
+. In the [guimenu]``Proxy FQDN`` field type fully qualified domain name for the proxy.
+. In the [guimenu]``Parent FQDN`` field type fully qualified domain name for the {productname} Server or another {productname} Proxy.
+. In the [guimenu]``Proxy SSH port`` field type SSH port on which SSH service is listening on {productname} Proxy. Recommended is to keep default 8022.
+. In the [guimenu]``Max Squid cache size [MB]`` field type maximal allowed size for Squid cache. Typically this should be at most 60% of available storage for the containers.
+. In the [guimenu]``SSL certificate`` selection list choose if new server certificate should be generated for {productname} Proxy or an existing one should be used.
+You can consider generated certificates as {productname} builtin (self signed) certificates.
++
+Depending on the choice then provide either path to signing CA certificate to generate a new certificate or path to an existing certificate and its key to be used as proxy certificate.
++
+The CA certificates generated on the server are stored in the [path]``/var/lib/containers/storage/volumes/root/ssl-build`` directory.
++
+For more information about existing or custom certificates and the concept of corporate and intermediate certificates, see  xref:administration:ssl-certs-imported.adoc[].
+
+. Click btn:[Generate] to register new proxy FQDN in {productname} Server and generate configuration archive with details for container host.
+. After a few moments you are presented with file to download. Save this file locally.
+
+image::suma_proxy_containerized_webui.png[scaledwidth=80%]
+
+[[proxy-deploy-containers-transfer-config]]
+== Transfer the Proxy Configuration
+
+The {webui} generates a configuration archive.
+This archive needs to be made available on the Proxy container host.
+
+
+.Task: Copy the Proxy configuration
+. Copy the files from the Server container to the Server host OS:
++
+----
+mgrctl cp server:/root/config.tar.gz .
+----
+
+. Next copy the files from the Server host OS to the Proxy host: 
++
+----
+scp config.tar.gz <proxy-FQDN>:/root
+----
+
+. Install the Proxy with:
++ 
+
+----
+mgrpxy install podman config.tar.gz
+----
+
+
+
+[[proxy-deploy-containers-transfer-start]]
+== Start the {productname} {productnumber} Proxy
+
+Container can now be started with the [literal]`mgrpxy` command:
+
+[[proc-install-containers-setup-start]]
+.Task: Start and Check Proxy Status
+
+. Start the Proxy by calling:
++
+
+----
+mgrpxy start
+----
+
+. Check container status by calling:
++
+
+----
+mgrpxy status
+----
++
+
+Five {productname} Proxy containers should be present:
+
+- proxy-salt-broker
+- proxy-httpd
+- proxy-tftpd
+- proxy-squid
+- proxy-ssh
+
+And should be part of the [literal]``proxy-pod`` container pod.
+

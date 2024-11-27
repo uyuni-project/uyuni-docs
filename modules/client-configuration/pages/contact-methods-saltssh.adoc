@@ -6,6 +6,11 @@ SSH Push ([literal]``ssh-push``) is used in environments where Salt clients cann
 In this environment, clients are located in a firewall-protected zone called a DMZ.
 No system within the DMZ is authorized to open a connection to the internal network  where the {productname} Server is located.
 
+SSH Push opens a tunnel only from {productname} to the client, but the reverse channel goes directly.
+Such a scenario might not work everywhere.
+Therefore also SSH Push (with tunnel) is available as contact method.
+That also opens a reverse tunnel and thus you can communicate through all firewalls which otherwise might block the connection from client to server.
+
 SSH Push is also to use if installing a daemon agent on clients is not possible.
 
 [WARNING]
@@ -37,7 +42,7 @@ This method expects that there is a direct connection with HTTPS to the Server.
 You need to use the {webui} or API to register these clients with the {productname} Server.
 See the following procedure or example.
 
-.Procedure: Registering clients with SSH Push
+.Procedure: Registering Clients With SSH Push
 . In the {productname} {webui}, navigate to menu:Systems[Bootstrapping] and complete the appropriate fields.
 . Select an activation key with the SSH Push contact method configured.
   For more information about activation keys, see xref:client-configuration:activation-keys.adoc[].
@@ -65,7 +70,7 @@ client.system.setDetails(key, 1000012345, {'contact_method' : 'ssh-push'})
 ----
 
 
-== Available parameters
+== Available Parameters
 
 When you are configuring SSH Push, you can modify parameters that are used when a system is registered, including the host, activation key, and password.
 The password is used only for bootstrapping, it is not saved anywhere.
@@ -75,8 +80,12 @@ These parameters are configured in menu:Systems[Bootstrapping].
 You can also configure persistent parameters that are used system-wide, including the sudo user to access the system as an unprivileged user instead of as root.
 
 
+[IMPORTANT]
+====
+Use [literal]``mgrctl term`` before running steps inside the server container.
+====
 
-.Procedure: Configuring unprivileged SSH access
+.Procedure: Configuring Unprivileged SSH Access
 . Ensure you have the latest [path]``spacewalk-taskomatic`` and [path]``spacewalk-certs-tools`` packages installed on the {productname} Server.
 . On each client system, create an appropriate unprivileged user.
 . On each client system, edit the [filename]``sudoers`` file:
@@ -98,19 +107,16 @@ When the client is successfully installed it runs with root privileges, so the a
 We recommend that you remove the line from the [path]``sudoers`` file after the client has been successfully installed.
 ====
 
-. On the {productname} Server, in the [path]``/etc/rhn/rhn.conf`` configuration file, add or amend this line to include the unprivileged username:
+. Inside the {productname} Server container, edit the [path]``/etc/rhn/rhn.conf`` configuration file, and add or amend this line to include the unprivileged username:
 +
 ----
 ssh_push_sudo_user = <user>
 ----
-
-
-After changing this configuration parameter you must restart services
-such as [systemitem]``salt-secrets-config.service``,
-[systemitem]``tomcat.service``, and
-[systemitem]``taskomatic.service``.
-To cover all needed services, it is the best to restart the {productname} Server as root:
-
++
+. After changing this configuration parameter you must restart services such as [systemitem]``salt-secrets-config.service``, [systemitem]``tomcat.service``, and [systemitem]``taskomatic.service``.
+ To cover all needed services, it is the best to restart the {productname} Server as root.
+ Outside of the container, from the container host, enter:
++
 ----
 mgradm restart
 ----
@@ -141,7 +147,7 @@ In this case, set the number of parallel connections to be three times the total
 
 
 // FIXME: 2024-01-23, ke: to be deleted?
-== Future features
+== Future Features
 
 There are some features that are not yet supported on SSH Push.
 These features do not work on Salt SSH clients:
@@ -151,7 +157,7 @@ These features do not work on Salt SSH clients:
 ** Installing a package on a system using [command]``zypper`` does not invoke the package refresh.
 ** Virtual Host functions (for example, a host to guests) does not work if the virtual host system is Salt SSH-based.
 
-=== For more information
+For more information:
 
-* About Salt SSH in general, see xref:specialized-guides:salt/salt-ssh.adoc[] and https://docs.saltstack.com/en/latest/topics/ssh/.
-* About SSH key rotation, see xref:specialized-guides:salt/salt-ssh.adoc#salt.ssh.key_rotation[].
+* about Salt SSH in general, see xref:specialized-guides:salt/salt-ssh.adoc[] and https://docs.saltstack.com/en/latest/topics/ssh/.
+* about SSH key rotation, see xref:specialized-guides:salt/salt-ssh.adoc#salt.ssh.key_rotation[].

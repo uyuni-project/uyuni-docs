@@ -1,10 +1,10 @@
-= Deploy on {leapmicro} {microversion}
+= {productname} Server Deployment on {leapmicro} {microversion}
 ifeval::[{suma-content} == true]
 :noindex:
 endif::[]
 
 
-== Deployment preparations
+== Deployment Preparations
 
 In this section, you will gain expertise in setting up and deploying a {productname} Server.
 The process encompasses the installation of [command]``Podman``, [systemitem]``Uyuni container utilities``, deployment, and then initiating interaction with the container through [command]``mgrctl``.
@@ -12,13 +12,19 @@ The process encompasses the installation of [command]``Podman``, [systemitem]``U
 [NOTE]
 ====
 This section assumes you have already configured an {leapmicro} {microversion} host server, whether it is running on a physical machine or within a virtual environment.
+
+https://download.opensuse.org/distribution/leap-micro/5.5/
 ====
 
-== Container Host general requirements
+
+== Container Host General Requirements
 
 For general requirements, see xref:installation-and-upgrade:general-requirements.adoc[General requirements].
 
-An {leapmicro} {microversion} server should be installed from installation media.
+An {leapmicro} {microversion} server should be installed from installation media. 
+
+https://download.opensuse.org/distribution/leap-micro/5.5/
+
 This procedure is described below.
 
 [[installation-server-containers-requirements]]
@@ -32,67 +38,77 @@ For CPU, RAM, and storage requirements, see xref:installation-and-upgrade:hardwa
 To guarantee that clients can resolve the FQDN domain name, both the containerized server and the host machines must be linked to a functional DNS server. Additionally, it is essential to ensure correct configuration of reverse lookups.
 ====
 
-== Update the host
 
-
-== Installing Uyuni tools for use with containers
+== Installing Uyuni Tools For Use With Containers
 
 
 .Procedure: Installing Uyuni Tools on {leapmicro} {microversion}
 . On your local host open a terminal window or start up a virtual machine running {leapmicro} {microversion}.
-
-. Login.
-
+. Log in.
 . Enter the [command]``transactional-update shell``:
 +
-
 ----
 transactional-update shell
 ----
 +
-
 . Add the following repository to your {leapmicro} {microversion} server:
 +
-
 ----
-zypper ar https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable:/ContainerUtils/openSUSE_Leap_Micro_5.5/systemsmanagement:Uyuni:Stable:ContainerUtils.repo
+zypper ar https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable/images/repo/Uyuni-Server-POOL-$(arch)-Media1/ uyuni-server-stable
 ----
 +
-
 . Refresh the repository list and accept the key:
 +
 ----
 zypper ref
 ----
 +
-
 . Install the container tools:
 +
-
 [source, shell]
 ----
-zypper in mgradm mgrctl mgradm-bash-completion mgrctl-bash-completion netavark
+zypper in mgradm mgrctl mgradm-bash-completion mgrctl-bash-completion uyuni-storage-setup-server
 ----
 +
-
 . Exit the transactional shell:
 +
 ----
 transactional update # exit
 ----
-
 . Reboot the host.
-
 
 For more information on the Uyuni Container Utilities, see link:https://build.opensuse.org/repositories/systemsmanagement:Uyuni:Stable:ContainerUtils[Uyuni Container Utilities].
 
 
+== Configure Custom Persistent Storage
 
-== Deploying an Uyuni container with Podman
+This step is optional.
+However, if custom persistent storage is required for your infrastructure, use the [command]``mgr-storage-server`` tool. 
+
+* For more information, see [command]``mgr-storage-server --help``.
+This tool simplifies creating the container storage and database volumes.
+
+Use the command in the following manner: 
+----
+mgr-storage-server <storage-disk-device> [<database-disk-device>]
+----
+
+For example: 
+----
+mgr-storage-server /dev/nvme1n1 /dev/nvme2n1
+----
+
+[NOTE]
+====
+This command will create the persistent storage volumes at [path]``/var/lib/containers/storage/volumes``.
+
+For more information, see xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[].
+====
 
 
+== Deploying an Uyuni Container With Podman
 
-=== mgradm overview
+=== [command]``mgradm`` Overview
 
 {productname} is deployed as a container using the [command]``mgradm`` tool.
 There are two methods of deploying a {productname} server as a container. 
@@ -100,20 +116,17 @@ In this section we will focus on basic container deployment.
 
 For information on using a custom configuration file to deploy, see xref:installation-and-upgrade:container-management/mgradm-yaml-custom-configuration.adoc[].
 
-
 For additional information, you can explore further by running [command]``mgradm --help`` from the command line.
 
 
 .Procedure: Deploying an Uyuni container with Podman
 . From the terminal run the following command as the sudo user or as root.
 +
-
 [source, shell]
 ----
 sudo mgradm install podman
 ----
 +
-
 [IMPORTANT]
 ====
 You must deploy the container as sudo or root. The following error will be displayed at the terminal if you miss this step.
@@ -127,29 +140,32 @@ INF Setting up uyuni network
 ====
 
 . Wait for deployment to complete.
-
 . Open a browser and proceed to your servers FQDN.
 
-In this section you learned how to deploy an {productname} Server container.
+//In this section you learned how to deploy an {productname} Server container.
 
 
 
-=== Persistent volumes
+=== Persistent Volumes
 
 Many users will want to specify locations for their persistent volumes.
 
 [NOTE]
 ====
-If you are just testing out {productname} you do not need to specify these volumes. [command]``mgradm`` will setup the correct volumes by default.
+If you are just testing out {productname} you do not need to specify these volumes. 
+[command]``mgradm`` will setup the correct volumes by default.
 
 Specifying volume locations will generally be used for larger production deployments.
 ====
 
 By default [command]``podman`` stores its volumes in [path]``/var/lib/containers/storage/volumes/``. 
 
-You can provide custom storage for the volumes by mounting disks on this path or the expected volume path inside it such as: [path]``/var/lib/containers/storage/volumes/var-spacewalk``. This is especially important for the database and package mirrors. 
+You can provide custom storage for the volumes by mounting disks on this path or the expected volume path inside it such as: [path]``/var/lib/containers/storage/volumes/var-spacewalk``. 
+This is especially important for the database and package mirrors. 
 
-For a list of all persistent volumes in the container, see  xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[].
+For a list of all persistent volumes in the container, see:
 
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
 
 

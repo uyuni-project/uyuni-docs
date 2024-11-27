@@ -1,0 +1,152 @@
+[[salt-connectivity]]
+= Salt Connectivity
+
+Depending on the size and spreadness of the environment where {productname} is used some connectivity issues are possible.
+There are no common recommendations for all the possible use cases as the environments could be very different expecially if public clouds instances are involved.
+
+
+
+[[minions-connectivity]]
+== Minions Connectivity
+
+In case clients are losing the connection to the {productname} Server (or {productname} Proxy if involved), they are unreachable from the {productname} Server {webui} or with command line tools.
+To understand such a connection issue check if the client is not reachable from the {productname} Server with [command]``salt MINION_ID test.ping``, while [command]``venv-salt-call test.ping`` or ([command]``salt-call test.ping`` in case if non-bundle salt is used on the client) is working fine on the client side.
+If this is the case, it is recommended to set [literal]``tcp_keepalive`` parameters.
+
+The parameters with the values from the example below could be used as a starting point to look for the better combination, which could prevent cases of connection loss without restoring for some environments.
+It is recommended to put the parameters in the separate drop-in configuration file like [path]``/etc/venv-salt-minion/minion.d/tuning-keepalives.conf`` or [path]``/etc/salt/minion.d/tuning-keepalives.conf``, depending on the minion type used on the client side.
+
+.Example: Keepalive parameters example values
+
+----
+######      Keepalive settings        ######
+############################################
+# ZeroMQ now includes support for configuring SO_KEEPALIVE if supported by
+# the OS. If connections between the minion and the master pass through
+# a state tracking device such as a firewall or VPN gateway, there is
+# the risk that it could tear down the connection the master and minion
+# without informing either party that their connection has been taken away.
+# Enabling TCP Keepalives prevents this from happening.
+
+# Overall state of TCP Keepalives, enable (1 or True), disable (0 or False)
+# or leave to the OS defaults (-1), on Linux, typically disabled. Default True, enabled.
+tcp_keepalive: True
+
+# How long before the first keepalive should be sent in seconds. Default 300
+# to send the first keepalive after 5 minutes, OS default (-1) is typically 7200 seconds
+# on Linux see /proc/sys/net/ipv4/tcp_keepalive_time.
+tcp_keepalive_idle: 10
+
+# How many lost probes are needed to consider the connection lost. Default -1
+# to use OS defaults, typically 9 on Linux, see /proc/sys/net/ipv4/tcp_keepalive_probes.
+tcp_keepalive_cnt: 3
+
+# How often, in seconds, to send keepalives after the first one. Default -1 to
+# use OS defaults, typically 75 seconds on Linux, see
+# /proc/sys/net/ipv4/tcp_keepalive_intvl.
+tcp_keepalive_intvl: 10
+----
+
+
+
+
+[[proxies-connectivity]]
+== Proxies Connectivity
+
+[command]``salt-broker`` service is used on {productname} Proxies to forward `salt` traffic between the {productname} Server and [command]``salt-minion`` service used on the client side.
+It is possible that [command]``salt-broker`` and all the clients behind it could be affected with the same issue as the clients directly connected to the {productname} Server.
+The issue could be fixed with the same parameters as recommended for the minions, but specified in [path]``/etc/salt/broker`` on each {productname} Proxy.
+
+
+The other possible issue which {productname} Proxy can be affected with is the case when the connectivity to the {productname} Server
+is lost for quite long interval, so the clients behind it started to retry the authentication to the [command]``salt-master`` service on the {productname} Server.
+This situation could be potentially dangerous as it could lead to collecting large amount of ZeroMQ messages with authentication attemps
+in the interal buffer of ZeroMQ sockets used inside the [command]``salt-broker`` service, so that on restoring the connection to the [command]``salt-master``
+all of the messages will be pushed to it.
+It could lead to the issues on {productname} Server side with [command]``salt-master`` service, as it could be impossible to serve all the cached requests in apropriate time or even to the complete denial of the service.
+
+To avoid such situation a set of extra parameters was introduced.
+The most important one is [option]``wait_for_backend``, which should be set to [literal]``True``.
+This prevents opening the sockets for the clients behind the proxy while the connectivity to the [command]``salt-master`` service is not established.
+In this case the messages from the clients are not collected in the internal buffers.
+``drop_after_retries`` is setting the number of retries before closing the sockets to drop the cached messages.
+The other parameters could help to fine tune the behaviour for the environment.
+
+[NOTE]
+====
+Setting timeouts, intervals and ``drop_after_retries`` to lower values are making [command]``salt-broker`` service more aggressive on detecting the connection loss to the [command]``salt-master``, so that it puts the clients behind the proxy to the conditions closer as they are connected
+directly to the {productname} Server.
+On the other hand increasing the values could provide some benefits in case if the network channel between the {productname} Proxy and
+{productname} Server is not stable enough, the message buffering can provide some flexibility while re-establishing the connection.
+====
+
+
+
+.Example: Keepalive parameters example values
+
+----
+######   ZeroMQ connection options    ######
+############################################
+# For more details about the following parameters check ZeroMQ documentation:
+# http://api.zeromq.org/4-2:zmq-setsockopt
+# All of these parameters will be set to the backend sockets
+# (from the salt-broker to the salt-master)
+
+# connect_timeout (sets ZMQ_CONNECT_TIMEOUT)
+# default: 0
+# value unit: milliseconds
+# Sets how long to wait before timing-out a connect to the remote socket.
+# 0 could take much time, so it could be better to set to more strict value
+# for particular environment depending on the network conditions.
+# The value equal to 10000 is setting 10 seconds connect timeout.
+connect_timeout: 3000
+
+# reconnect_ivl (sets ZMQ_RECONNECT_IVL)
+# default: 100
+# value unit: milliseconds
+# Sets the interval of time before reconnection attempt on connection drop.
+reconnect_ivl: 1000
+
+# heartbeat_ivl (sets ZMQ_HEARTBEAT_IVL)
+# default: 0
+# value unit: milliseconds
+# This parameter is important for detection of loosing the connection.
+# In case of value equal to 0 it is not sending heartbits.
+# It's better to set to more relevant value for the particular environment,
+# depending on possible network issues.
+# The value equal to 20000 (20 seconds) works good for most cases.
+heartbeat_ivl: 5000
+
+# heartbeat_timeout (sets ZMQ_HEARTBEAT_TIMEOUT)
+# default: 0
+# value unit: milliseconds
+# Sets the interval of time to consider that the connection is timed out
+# after sending the heartbeat and not getting the response on it.
+# The value equal to 60000 (1 minute) is considering the connection is down
+# after 1 minute of no response to the heartbeat.
+heartbeat_timeout: 10000
+
+
+######   Other connection options    ######
+# The following parameters are not related to ZeroMQ,
+# but the internal parameters of the salt-broker.
+# drop_after_retries
+# default: -1
+# value unit: number of retries
+# Drop the frontend sockets of the salt-broker in case if it reaches
+# the number of retries to reconnect to the backend socket.
+# -1 means not drop the frontend sockets
+# It's better to choose more relevant value for the particular environment.
+# 10 can be a good choise for most of the cases.
+drop_after_retries: 5
+
+# wait_for_backend
+# default: False
+# The main aim of this parameter is to prevent  collecting the messages
+# with the open frontend socket and prevent pushing them on connecting
+# the backend socket to prevent large number of messages to be pushed
+# at once to salt-master.
+# It's better to set it to True if there is significant numer of minions
+# behind the salt-broker.
+wait_for_backend: True
+----

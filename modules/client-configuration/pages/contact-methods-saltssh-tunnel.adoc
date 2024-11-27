@@ -6,11 +6,11 @@ SSH Push (with tunnel) ([literal]``ssh-push-tunnel``) is used in environments wh
 In this environment, clients are located in a firewall-protected zone called a DMZ.
 No system within the DMZ is authorized to open a connection to the internal network, including the {productname} Server.
 
-This SSH method creates an encrypted tunnel from the {productname} Server on the internal network to the clients located on the DMZ.
-After all actions and events are executed, the tunnel is closed.
+// CHECKIT: Maybe, we can delete the following sentence.  It is already
+// described in the second "important" admonition
+In other words: SSH Push (with tunnel) also creates a reverse tunnel from the client to the {productname} Server, not only from the server to the client.
 
 The server uses SSH to contact the clients at regular intervals, checking in and performing scheduled actions and events.
-
 
 [IMPORTANT]
 ====
@@ -26,25 +26,36 @@ In other words, access is only possible if the session is initiated by the serve
 All package managing operations on the client can be performed from the server side only.
 ====
 
+
+[IMPORTANT]
+====
+Use [literal]``mgrctl term`` before running steps inside the server container.
+====
+
 For tunneling connections via SSH, a port number is required for tunneling via HTTPS.
-The port number used by default is `1233`.
-To overwrite it, you can add a custom port numbers greater than 1024 to [path]``/etc/rhn/rhn.conf``:
+The port number used by default is [literal]``1233``.
+To overwrite it, inside the container, you can add a custom port numbers greater than 1024 to [path]``/etc/rhn/rhn.conf``:
 
 ----
 ssh_push_port_https = high_port
 ----
 
-After changing this configuration parameter you must restart services
-such as [systemitem]``salt-secrets-config.service``,
-[systemitem]``tomcat.service``, and
-[systemitem]``taskomatic.service``.  To cover all needed services, it
-is the best to restart [command]``spacewalk-service`` as root:
+After changing this configuration parameter you must restart services such as [systemitem]``salt-secrets-config.service``, [systemitem]``tomcat.service``, and
+[systemitem]``taskomatic.service``.
+To cover all needed services, it is the best to restart the {productname} Server as root.
+Outside of the container, from the container host, enter:
 
 ----
-spacewalk-service restart
+mgradm restart
 ----
 
 
+////
+[IMPORTANT]
+====
+Use [literal]``mgrctl term`` before running steps inside the server container.
+====
+////
 
 For security reasons, you might want to use sudo with SSH, to access the system as an unprivileged user instead of as root.
 
@@ -70,27 +81,23 @@ When the client is successfully installed it runs with root privileges, so the a
 We recommend that you remove the line from the [path]``sudoers`` file after the client has been successfully installed.
 ====
 
-. On the {productname} Server, in the [path]``/etc/rhn/rhn.conf`` configuration file, add or amend this line to include the unprivileged username:
+. Inside the {productname} Server container, edit the [path]``/etc/rhn/rhn.conf`` configuration file, and add or amend this line to include the unprivileged username:
 +
 ----
 ssh_push_sudo_user = <user>
 ----
 
 
-After changing this configuration parameter you must restart services
-such as [systemitem]``salt-secrets-config.service``,
-[systemitem]``tomcat.service``, and
-[systemitem]``taskomatic.service``.  To cover all needed services, it
-is the best to restart [command]``spacewalk-service`` as root:
+After changing this configuration parameter you must restart services such as [systemitem]``salt-secrets-config.service``, [systemitem]``tomcat.service``, and
+[systemitem]``taskomatic.service``.
+To cover all needed services, it is the best to restart the {productname} Server as root.
+Outside of the container, from the container host, enter:
 
 ----
-spacewalk-service restart
+mgradm restart
 ----
-
-
 
 You need to use the {webui} or API to register these clients with the {productname} Server.
-
 
 Before you begin, you need to ensure that you have specified which ports to use for SSH tunneling.
 If you have registered clients before changing the port numbers, they need to be registered again with a re-activation key.
@@ -100,10 +107,16 @@ If you have registered clients before changing the port numbers, they need to be
 
 
 
-.Example: API access to SSH Push (with tunnel)
+.Example: API Access to SSH Push (with tunnel)
 
 You can use the API to manage which contact method to use.
 This example Python code sets the contact method to ``ssh-push-tunnel``.
+
+----
+client = xmlrpclib.Server(SUMA_HOST + "/rpc/api", verbose=0)
+key = client.auth.login(SUMA_LOGIN, SUMA_PASSWORD)
+client.system.setDetails(key, 1000012345, {'contact_method' : 'ssh-push-tunnel'})
+----
 
 Valid values are:
 
@@ -111,8 +124,3 @@ Valid values are:
 * `ssh-push`
 * `ssh-push-tunnel`
 
-----
-client = xmlrpclib.Server(SUMA_HOST + "/rpc/api", verbose=0)
-key = client.auth.login(SUMA_LOGIN, SUMA_PASSWORD)
-client.system.setDetails(key, 1000012345, {'contact_method' : 'ssh-push-tunnel'})
-----

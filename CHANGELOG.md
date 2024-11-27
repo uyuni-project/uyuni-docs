@@ -1,4 +1,148 @@
 - Added details on image management in Administration Guide (bsc#1222574)
+- Documented Cobbler option to enable boot ISOs with Secure Boot in
+  Client Configuration Guide
+- Fixed Uyuni repository link and removed netavark from the installation
+  command
+- Updated OpenSUSE Leap micro 5.5 download link
+- Added documentation on deploying SUSE Manager Proxy in Public
+  Cloud in Large Deployment Guide
+- Added admonition about disabling data synchronization with SCC in
+  Administration Guide
+- Added note about SLE Micro entitlement being included in SUSE
+  Manager extensions' entitlements (bsc#1230833)
+- Added VMware image deployment documentation for Proxy in the
+  Installation and Upgrade Guide (bsc#1227852)
+- Added information on upgrading server and proxy containers also for
+  Uyuni
+- Added note about case sensitivity of organization name to
+  Inter-Server Synchronization chapter of Administration Guide
+- Added reminder note to de-register before registration to Client
+  Configuration Guide (bsc#1216946)
+- Added admonition about podman related IP forwarding configuration to
+  Requirements in Installation and Upgrade Guide (bsc#1224318)
+- Updated Hub chapter in Large Deployments Guide (bsc#1215815)
+- Add registry.suse.com to the list of required URLs in the Network
+  Requirements section of the Installation and Upgrade Guide
+- Fixed SSH Push and SSH Push (with tunnel) contact method sections in
+  Client Configuration Guide
+- Added missing architecture to Installation and Upgrade Guide
+  (bsc#1230670)
+- Corrected command for containerized proxy in Installation and Upgrade
+  Guide (bsc#1231398)
+- List of required URLs extended in Installation and Upgrade Guide
+  (bsc#1230741)
+- Updated incorrect URL references for both the Server and Proxy in the
+  Quickstart and Installation Guides
+- Fixed hardcoded version entries for Uyuni in page content
+- Removed 4.3 version entries in migration documentation
+- The Quickstart Guide for Proxy contained legacy content. Updated
+  to match containerized deployment
+- Fixed incorrect hardcored product versions. 2024.04 -> 2024.08
+- Added information for running mgr-ssl-cert-setup in Administration Guide
+  (bsc#1229079)
+- Added reference to Inter-Server Synchronization in Administration Guide
+  (bsc#1230943)
+- Documented consistently Leap Micro as Uyuni container host system in
+  Installation and Upgrade Guide
+- Documented that is LVM not needed in default cases in Installation
+  and Upgrade Guide (bsc#1228319)
+- Removed inconsistent information about persistent storage (bsc#1230502)
+- Updated database backup and restore procedures using smdba in Administration
+  Guide
+- Documented krb5.conf configuration (bsc#1229077)
+- Added VMware image deployment documentation for Server in the
+  Installation and Upgrade Guide (bsc#1227852 and bsc#1228351)
+- Documented migrating clients such as AlmaLinux, CentOS, Oracle Linux,
+  and Rocky Linux to SUSE Liberty Linux and SUSE Liberty Linux 7 to
+  SUSE Liberty Linux 7 LTSS
+- Added documentation about orphaned packages in Client Configuration
+  Guide (bsc#1227882)
+- Clarified meaning of Default contact method in Client Configuration
+  Guide
+- Added prerequisite for server migration in Installation and Upgrade Guide
+  (bsc#1229902)
+- Updated information on PostgreSQL version in Installation and Upgrade
+  Guide
+- Documented Ubuntu 24.04 LTS as a supported client OS in Client
+  Configuration Guide
+- Updated outdated links in Retail Guide
+- Added troubleshooting section about full disk with containers in
+  Administration Guide and notes to persistent storage setup in Installation
+  and Upgrade Guide
+- Added volume SSSD to the list of etc persistent volumes to Installation and
+  Upgrade Guide
+- Documented using openSUSE Leap Micro as the host operating system for
+  Uyuni Proxy
+- Added uyuni-storage-setup-server package to server deployment and
+  uyuni-storage-setup-proxy to proxy deployment in Installation and Upgrade
+  Guide
+- Updated legacy Uyuni Server to containerized Server migration in Installation
+  and Upgrade Guide
+- In network ports section, added port 443 for clients and removed
+  Cobbler only used internally (bsc#1217338)
+- Added installer-updates.suse.com to the list of URLs in Installation
+  and Upgrade Guide (bsc#1229178)
+- Improved documentation around non-compliant packages (also known as extra
+  packages) in Reference Guide
+- Restructured documentation of Systems menu and system details tab in
+  Reference Guide
+- Enhanced instructions about the permissions for the IAM role
+  in Public Cloud Guide
+- Updated legacy Uyuni Server to containerized Server migration in Installation
+  and Upgrade Guide
+- Removed Verify Packages section from Package Management chapter
+  in Client Configuration Guide
+- Documented activating AppStreams automatically with an
+  activation key in Client Configuration Guide
+- PAYG Docs updated for Azure and AWS
+- Fixed button syntax typo in asciidoc content
+- Added note on Salt minion timeout for Azure and PAYG (bsc#1226196)
+- Added more links back to the Hardware Requirements section and enhance
+  it to address questions about disk size recommendations
+- Adjusted SUSE Manager Server registration in Installation and
+  Upgrade Guide
+- Fixed spacecmd commands in mgrctl calls in Installation and Upgrade
+  Guide
+- Change path for web.xml tuning in Administration Guide
+- Adjusted SSL certificate renewal commands for containers in
+  Administration Guide
+- Updated SLE Micro update behavior in Installation and Upgrade Guide
+- Updated Disconnected Server chapter in Administration Guide
+  (bsc#1226728)
+- Added note about usernames in PAM section in Administration Guide
+ (bsc#1227599)
+- Update Clients Update Using Recurring Actions workflow to account for
+  uptodate state changes
+- Fixed X logo position on mobile devices
+- Removed raw image format from the available VM image deployment tables
+  for both Server and Proxy on AArch64
+- Fixed sequence of commands and preparation steps of the 4.3 to 5.0
+  server migration procedure
+- Consolidated terminology around the old server and the migration target
+  in Installation and Upgrade Guide
+- Added more information about the Prometheus alert manager in
+  Administration Guide
+- Add storage extra configuration for migration step in Installation and
+  Upgrade Guide
+- Added Salt Connectivity section to the Specialized Guides
+- Improved Large Deployments Guide with better tuning values and
+  extra parameters added
+- Fix indentation on install storage instructions
+- Update air-gap deployment for server and proxy
+- Improved proxy migration and installation in Installation and Upgrade
+  Guide
+- Warn about copying GPG keys manually while migrating
+- Warn about copying certification files manually while migrating
+  4.3 servers to 5.0 in Installation and Upgrade Guide (bsc#1227198)
+- Fixed proxy deployment details (bsc#1226843)
+- Added admonition about domain name and IP address while migrating
+  from a non-containerized server in Installation and Upgrade Guide
+  (bsc#1227177)
+- Fixed documentation concerning strict mode in Custom Channels chapter
+  in the Administration Guide (bsc#1227130)
+- Updated lists of SUSE Linux Enterprise hardening profiles in openSCAP
+  chapter in the Administration Guide
+- Added SUSE Liberty Linux 7 LTSS entries (bsc#1226913)
 - Removed outdated disclaimer in CLM examples regarding AppStreams
   (bsc#1226687)
 - Documented proper --mirrorPath parameter in disconnected setup chapter of
