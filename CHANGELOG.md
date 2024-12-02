@@ -1,3 +1,5 @@
+- Fixed podman parameter name in Disconnected Setup chapter of the
+  Administration Guide (bsc#1233383)
 - Documented Cobbler option to enable boot ISOs with Secure Boot in
   Client Configuration Guide
 - Added admonition about disabling data synchronization with SCC in
