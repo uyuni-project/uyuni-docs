@@ -5,7 +5,7 @@
 [[at.images.overview]]
 == Image Building Overview
 
-{productname} enables system administrators to build containers and OS Images and push the result in image stores.
+{productname} enables system administrators to build containers and OS Images and push the results to an image store.
 
 .Procedure: Building and Pushing Images
 . Define an image store.
@@ -13,11 +13,11 @@
 . Build the image.
 . Push the image to the image store.
 
-{productname} supports two distinct build types: Dockerfile and the Kiwi image system.
-
+{productname} supports these two build types: Dockerfile and the Kiwi build type.
 The Kiwi build type is used to build system, virtual, and other images.
+
 The image store for the Kiwi build type is pre-defined as a file system directory at [path]``/srv/www/os-images`` on the server.
-{productname} serves the image store over HTTPS from [literal]``//<SERVER-FQDN>/os-images/``.
+{productname} serves the image store over HTTPS from [literal]``https://<SERVER-FQDN>/os-images/``.
 The image store location is unique and is not customizable.
 
 Images are stored in [path]``/srv/www/os-image/ORGANIZATION-ID``.
@@ -39,7 +39,7 @@ Before you begin, ensure your environment meets these requirements:
   The repository can be public or private, and should be hosted on GitHub, GitLab, or BitBucket.
 * A properly configured image store, such as a Docker registry.
 
-For more information on Containers, see https://documentation.suse.com/container/all/html/Container-guide/.
+For more information on containers, see https://documentation.suse.com/container/all/html/Container-guide/.
 
 
 [[at.images.docker.buildhost]]
@@ -66,15 +66,16 @@ For example, you must build Raspberry Pi {sles}{nbsp}15 SP3 images on a Raspber
 From the {productname} {webui}, perform these steps to configure a build host:
 
 .Procedure: Building a Host
-. Select a {salt} client to be designated as a build host from the menu:Systems[Overview] page.
+. Select a {salt} client to be designated as a build host from the menu:Systems[Systems] overview page.
 . From the [guimenu]``System Details`` page of the selected client assign the containers modules.
-  Go to menu:Software[Software Channels] and enable the containers module (for example, [guimenu]``SLE-Module-Containers15-Pool`` and [guimenu]``SLE-Module-Containers15-Updates``).
-  Confirm by clicking btn:[Change Subscriptions].
-. From the menu:System Details[Properties] page, enable ``Container Build Host`` from the [guimenu]``Add-on System Types`` list. 
+  Navigate to menu:Software[Software Channels] and enable the containers module (for example, [guimenu]``SLE-Module-Containers15-Pool`` and [guimenu]``SLE-Module-Containers15-Updates``).
+  Continue with btn:[Next].
+. Schedule the [guimenu]`` Software Channel Change``, and click btn:[Confirm].
+. From the [guimenu]``System Details`` tab select menu:Properties[] page, and enable ``Container Build Host`` from the [guimenu]``Add-on System Types`` list.
   Confirm by clicking btn:[Update Properties].
-. Install all required packages by applying ``Highstate``.
-  From the system details page select menu:States[Highstate] and click [guimenu]``Apply Highstate``.
-  Alternatively, apply Highstate from the {productname} Server command line:
+. Install all required packages by applying [systemitem]``Highstate``.
+  From the system details tab select menu:States[Highstate], and click btn:[Apply Highstate].
+  Alternatively, apply [systemitem]``Highstate`` from the {productname} Server command line:
 +
 ----
 salt '$your_client' state.highstate
@@ -84,7 +85,7 @@ salt '$your_client' state.highstate
 [[at.images.docker.buildchannels]]
 === Create an Activation Key for Containers
 
-The containers built using {productname} use channels associated to the activation key as repositories when building the image.
+The containers built with {productname} use channels associated to the activation key as repositories when building the image.
 This section guides you through creating an ad-hoc activation key for this purpose.
 
 [NOTE]
@@ -152,11 +153,12 @@ image::images_image_create_profile.png[scaledwidth=80%]
 If your container image tag is in a format such as `myproject/myimage`, make sure your image store registry URI contains the `/myproject` suffix.
 ====
 
-. Use a Dockerfile as the `Image Type`.
-. Use the drop-down menu to select your registry from the `Target Image Store` field.
-. In the [guimenu]``Path`` field, type a GitHub, GitLab or BitBucket repository URL.
+. Use `Dockerfile` as the [guimenu]``Image Type``.
+. Use the drop-down menu to select your registry from the [guimenu]``Target Image Store`` field.
+. In the [guimenu]``Path`` field, type a GitHub, GitLab, or BitBucket repository URL.
+  The path can also be a local directory on the build host.
   The URL should be [literal]``http``, [literal]``https``, or a token authentication URL.
-  Use one of these formats:
+  For GitHub or GitLab, use one of these formats:
 +
 .GitHub Path Options
 * GitHub single user project repository
@@ -240,7 +242,7 @@ The repository is determined by the activation key that you assigned to your ima
 FROM registry.example.com/sles12sp2
 MAINTAINER Tux Administrator "tux@example.com"
 
-### Begin: These lines Required for use with {productname}
+### Begin: These lines are required for use with {productname}
 
 ARG repo
 ARG cert
@@ -254,7 +256,7 @@ RUN update-ca-certificates
 # Add the repository path to the image
 RUN echo "$repo" > /etc/zypp/repos.d/susemanager:dockerbuild.repo
 
-### End: These lines required for use with {productname}
+### End: These lines are required for use with {productname}
 
 # Add the package script
 ADD add_packages.sh /root/add_packages.sh
@@ -350,7 +352,7 @@ These are some known problems when working with images:
 [[at.images.kiwi]]
 == OS Images
 
-OS Images are built by the Kiwi image system.
+OS Images are built by the Kiwi build system.
 The output image is customizable and can be PXE, QCOW2, LiveCD, or other types of images.
 
 For more information about the Kiwi build system, see the https://osinside.github.io/kiwi/[Kiwi documentation].
@@ -367,8 +369,8 @@ The Kiwi image building feature is available for {salt} clients running {sles}{n
 Kiwi image configuration files and configuration scripts must be accessible in one of these locations:
 
 * Git repository
-* HTTP hosted tarball
-* Local build host directory
+* HTTP or HTTPS hosted tar archive
+* Local directory on the build host
 
 For an example of a complete Kiwi repository served by git, see https://github.com/SUSE/manager-build-profiles/tree/master/OSImage.
 
@@ -467,6 +469,7 @@ Specify the RPM package with the {productname} SSL certificate in the build sour
 
 
 
+// FIXME 2024-04-25, ke: continue here compare with container build host
 [[at.images.kiwi.buildchannels]]
 === Create an Activation Key for OS Images
 
@@ -485,7 +488,6 @@ To build OS Images, you need an activation key that is associated with a channel
 . Enter a [guimenu]``Description``, a [guimenu]``Key`` name, and use the drop-down box to select a [guimenu]``Base Channel`` to associate with the key.
 . Confirm with btn:[Create Activation Key].
 
-//For more information, see <<bp.key.managment>>.
 For more information, see xref:client-configuration:activation-keys.adoc[].
 
 
@@ -529,13 +531,13 @@ image::images_image_create_profile_kiwi.png[scaledwidth=80%]
 . In the [guimenu]``Label`` field, provide a name for the `Image Profile`.
 . Use `Kiwi` as the [guimenu]``Image Type``.
 . Image store is automatically selected.
-. Enter a [guimenu]``Config URL`` to the directory containing the Kiwi configuration files:
-.. git URI
-.. HTTPS tarball
-.. Path to build host local directory
+. Enter a [guimenu]``Config URL`` to the directory containing the Kiwi configuration files.
+  For example, a git URI such as https://github.com/SUSE/manager-build-profiles#master:OSImage/SLE-Micro54.
+  Other options are a HTTP or HTTPS hosted tar archive or a local directory on the build host.
+  For more information, see source format options at the end of this section.
 . Enter [guimenu]``Kiwi options`` if needed.
   If the Kiwi configuration files specify multiple profiles, use [option]``--profile <name>`` to select the active one.
-    For other options, see Kiwi documentation.
+  For other options, see Kiwi documentation.
 . Select an [guimenu]``Activation Key``.
   Activation keys ensure that images using a profile are assigned to the correct channel and packages.
 +
@@ -547,13 +549,14 @@ Associate an activation key with an image profile to ensure the image profile us
 +
 
 . Confirm with the btn:[Create] button.
+
+
+.Source Format Options
+
+* _git/HTTP(S) URL to the repository_
 +
 
-.Source format options
-** _git/HTTP(S) URL to the repository_
-+
-
-URL to the git repository containing the sources of the image to be built.
+URL to a public or private git repository containing the sources of the image to be built.
 Depending on the layout of the repository the URL can be:
 +
 ----
@@ -576,7 +579,7 @@ In this example, we use `OSImage/POS_Image-JeOS6`:
 https://github.com/SUSE/manager-build-profiles#master:OSImage/POS_Image-JeOS6
 ----
 
-** _HTTP(S) URL to the tarball_
+* _HTTP(S) URL to the tar archive_
 +
 
 URL to the tar archive, compressed or uncompressed, hosted on the webserver.
@@ -585,7 +588,7 @@ URL to the tar archive, compressed or uncompressed, hosted on the webserver.
 https://myimagesourceserver.example.org/MyKiwiImage.tar.gz
 ----
 
-** _Path to the directory on the build host_
+* _Path to the directory on the build host_
 +
 
 Enter the path to the directory with the Kiwi build system sources.
