@@ -1,6 +1,11 @@
 - Added new workflow with the instructions about RAW image usage
   to Common Workflows book
 - Added reminder note to unregister before registration to Client
+- Fixed podman parameter name in Disconnected Setup chapter of the
+  Administration Guide (bsc#1233383)
+- Added details on image management in Administration Guide (bsc#1222574)
+- Documented Cobbler option to enable boot ISOs with Secure Boot in
+  Client Configuration Guide
 - Fixed Uyuni repository link and removed netavark from the installation
   command
 - Updated OpenSUSE Leap micro 5.5 download link
