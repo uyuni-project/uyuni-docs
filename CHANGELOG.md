@@ -1,5 +1,6 @@
 - Fixed podman parameter name in Disconnected Setup chapter of the
   Administration Guide (bsc#1233383)
+- Added details on image management in Administration Guide (bsc#1222574)
 - Documented Cobbler option to enable boot ISOs with Secure Boot in
   Client Configuration Guide
 - Added admonition about disabling data synchronization with SCC in
