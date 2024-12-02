@@ -1,3 +1,4 @@
+- Added details on image management in Administration Guide (bsc#1222574)
 - Documented Cobbler option to enable boot ISOs with Secure Boot in
   Client Configuration Guide
 - Fixed Uyuni repository link and removed netavark from the installation
