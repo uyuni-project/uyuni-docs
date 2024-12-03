@@ -1,3 +1,5 @@
+- Added new workflow with the instructions about RAW image usage
+  to Common Workflows book
 - Fixed podman parameter name in Disconnected Setup chapter of the
   Administration Guide (bsc#1233383)
 - Added details on image management in Administration Guide (bsc#1222574)
