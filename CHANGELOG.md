@@ -1,3 +1,5 @@
+- Make proper use of terminal inside the container in Retail Guide
+  (bsc#1233871)
 - Added new workflow with the instructions about RAW image usage
   to Common Workflows book
 - Added reminder note to unregister before registration to Client
