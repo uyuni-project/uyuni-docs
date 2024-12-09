@@ -1,3 +1,5 @@
+- Make proper use of terminal inside the container in Retail Guide
+  (bsc#1233871)
 - Added new workflow with the instructions about RAW image usage
   to Common Workflows book
 - Fixed podman parameter name in Disconnected Setup chapter of the
