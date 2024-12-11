@@ -1,3 +1,5 @@
+- Documented onboarding SSH connected Ubuntu clients with install-created
+  user in Client Configuration Guide (bsc#1213437)
 - Improved SSL certificate handling in Administration Guide
 - Make proper use of terminal inside the container in Retail Guide
   (bsc#1233871)
