@@ -1,5 +1,6 @@
 - Clarified SSH authentication methods during Web UI bootstrap process in
   Client Configuration Guide (bsc#1233497)
+- Improved SSL certificate handling in Administration Guide
 - Make proper use of terminal inside the container in Retail Guide
   (bsc#1233871)
 - Added new workflow with the instructions about RAW image usage
