@@ -1,3 +1,4 @@
+- Improved SSL certificate handling in Administration Guide
 - Make proper use of terminal inside the container in Retail Guide
   (bsc#1233871)
 - Added new workflow with the instructions about RAW image usage
