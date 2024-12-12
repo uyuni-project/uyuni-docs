@@ -1,3 +1,5 @@
+- Added Open Enterprise Server 24.4 and 23.4 as supported client systems
+  (bsc#1230585)
 - Make proper use of terminal inside the container in Retail Guide
   (bsc#1233871)
 - Added new workflow with the instructions about RAW image usage
