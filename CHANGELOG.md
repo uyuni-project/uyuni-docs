@@ -1,3 +1,4 @@
+- Add Saline to Salt specialized guides
 - Corrected metadata signing section in Administration Guide
 - Changes proxy helm installation to use package from OS channel in Installation and
   Upgrade Guide
