@@ -1,3 +1,4 @@
+- Change proxy helm installation to use package from OS channel 
 - Added Open Enterprise Server 24.4 and 23.4 as supported client systems
   (bsc#1230585)
 - Improved SSL certificate handling in Administration Guide
