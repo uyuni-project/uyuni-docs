@@ -1,3 +1,5 @@
+- Changes proxy helm installation to use package from OS channel
+  in Installation and Upgrade Guide
 - Make proper use of terminal inside the container in Retail Guide
   (bsc#1233871)
 - Added new workflow with the instructions about RAW image usage
