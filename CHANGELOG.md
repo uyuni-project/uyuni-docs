@@ -1,4 +1,4 @@
-- Corrections to metadata signing page
+- Corrected metadata signing section in Administration Guide
 - Changes proxy helm installation to use package from OS channel in Installation and
   Upgrade Guide
 - Added Open Enterprise Server 24.4 and 23.4 as supported client systems
