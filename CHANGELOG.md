@@ -1,10 +1,12 @@
+- Clarified SSH authentication methods during Web UI bootstrap process in
+  Client Configuration Guide (bsc#1233497)
+- Changes proxy helm installation to use package from OS channel in
+  Installation and Upgrade Guide
 - Documented onboarding SSH connected Ubuntu clients with install-created
   user in Client Configuration Guide (bsc#1213437)
 - Added Saline documentation to Salt Guide
 - Replaced mgradm with mrgctl in Installation and Upgrade Guide
 - Corrected metadata signing section in Administration Guide
-- Changes proxy helm installation to use package from OS channel in Installation and
-  Upgrade Guide
 - Added Open Enterprise Server 24.4 and 23.4 as supported client systems
   (bsc#1230585)
 - Improved SSL certificate handling in Administration Guide
