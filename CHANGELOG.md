@@ -1,3 +1,5 @@
+- Clarified SSH authentication methods during Web UI bootstrap process in
+  Client Configuration Guide (bsc#1233497)
 - Changes proxy helm installation to use package from OS channel
   in Installation and Upgrade Guide
 - Corrected metadata signing section in Administration Guide
