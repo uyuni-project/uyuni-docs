@@ -1,5 +1,9 @@
 - Changes proxy helm installation to use package from OS channel
   in Installation and Upgrade Guide
+- Corrected metadata signing section in Administration Guide
+- Added Open Enterprise Server 24.4 and 23.4 as supported client systems
+  (bsc#1230585)
+- Improved SSL certificate handling in Administration Guide
 - Make proper use of terminal inside the container in Retail Guide
   (bsc#1233871)
 - Added new workflow with the instructions about RAW image usage

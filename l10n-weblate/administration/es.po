@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2024-12-12 10:12+0000\n"
+"POT-Creation-Date: 2024-12-16 13:49+0000\n"
 "PO-Revision-Date: 2024-06-19 16:46+0000\n"
 "Last-Translator: anonymous <noreply@weblate.org>\n"
 "Language-Team: Spanish <https://l10n.opensuse.org/projects/uyuni/docs-"
@@ -1925,6 +1925,7 @@ msgstr ""
 #: modules/administration/pages/auth-methods-pam.adoc:14
 #: modules/administration/pages/auth-methods-sso.adoc:43
 #: modules/administration/pages/mirror-sources.adoc:9
+#: modules/administration/pages/ssl-certs-imported.adoc:34
 #: modules/administration/pages/troubleshooting/tshoot-salt-clients-down-and-dns.adoc:13
 #, no-wrap
 msgid "mgradm restart\n"
@@ -14490,7 +14491,7 @@ msgstr ""
 #. type: delimited block -
 #: modules/administration/pages/repo-metadata.adoc:6
 #, no-wrap
-msgid "mgrctl exec -- gpg --gen-key\n"
+msgid "mgrctl exec -- gpg --full-generate-key\n"
 msgstr ""
 
 #. type: Plain text
@@ -14591,10 +14592,10 @@ msgstr ""
 msgid ""
 "mgrctl exec -- gpg --keyid-format short --list-keys\n"
 "...\n"
-"pub   rsa2048/3E7BFE0A 2019-04-02 [SC] [expires: 2021-04-01]\n"
+"pub   rsa4096/3E7BFE0A 2019-04-02 [SC] [expires: 2029-04-01]\n"
 "      A43F9EC645ED838ED3014B035CFA51BF3E7BFE0A\n"
 "uid         [ultimate] SUSE Manager\n"
-"sub   rsa2048/118DE7FF 2019-04-02 [E] [expires: 2021-04-01]\n"
+"sub   rsa4096/118DE7FF 2019-04-02 [E] [expires: 2029-04-01]\n"
 msgstr ""
 
 #. type: Plain text
@@ -14611,8 +14612,8 @@ msgid ""
 "OK. Found key 3E7BFE0A in keyring.\n"
 "DONE. Set key 3E7BFE0A in /etc/rhn/signing.conf.\n"
 "DONE. Enabled metadata signing in /etc/rhn/rhn.conf.\n"
-"DONE. Exported key 4E2C3DD8 to /srv/susemanager/salt/gpg/mgr-keyring.gpg.\n"
-"DONE. Exported key 4E2C3DD8 to /var/spacewalk/gpg/<KEY_NAME>.key.\n"
+"DONE. Exported key 3E7BFE0A to /srv/susemanager/salt/gpg/mgr-keyring.gpg.\n"
+"DONE. Exported key 3E7BFE0A to /var/spacewalk/gpg/<KEY_NAME>.key.\n"
 "NOTE. For the changes to become effective run:\n"
 "   mgr-sign-metadata-ctl regen-metadata\n"
 msgstr ""
@@ -15221,7 +15222,7 @@ msgstr ""
 #. type: Block title
 #: modules/administration/pages/ssl-certs-hsts.adoc:4
 #: modules/administration/pages/ssl-certs-hsts.adoc:10
-#: modules/administration/pages/ssl-certs-imported.adoc:28
+#: modules/administration/pages/ssl-certs-imported.adoc:32
 #, no-wrap
 msgid "Procedure"
 msgstr ""
@@ -15483,18 +15484,50 @@ msgstr ""
 #. type: Plain text
 #: modules/administration/pages/ssl-certs-imported.adoc:25
 msgid ""
-"On the {productname} Server, at the command prompt, call the command `mgr-"
-"ssl-cert-setup` and provide the certificates as parameters:"
+"On the {productname} container host, at the command prompt, temporarily copy "
+"the certificate files to the container:"
 msgstr ""
 
 #. type: delimited block -
 #: modules/administration/pages/ssl-certs-imported.adoc:26
 #, no-wrap
-msgid "mgrctl exec -- mgr-ssl-cert-setup --root-ca-file=<Path_to_Root_CA_Certificate> --server-cert-file=<Server_Cert_File> --server-key-file=<Server_Key_File>\n"
+msgid ""
+"for f in <Root_CA_Certificate> <Server_Cert_File> <Server_Key_File>; do\n"
+"  mgrctl cp $f server:/tmp\n"
+"done\n"
 msgstr ""
 
 #. type: Plain text
 #: modules/administration/pages/ssl-certs-imported.adoc:27
+msgid ""
+"On the {productname} container host, call the following command to run "
+"[command]``mgr-ssl-cert-setup`` inside the container providing certificates "
+"as parameters:"
+msgstr ""
+
+#. type: delimited block -
+#: modules/administration/pages/ssl-certs-imported.adoc:28
+#, no-wrap
+msgid ""
+"mgrctl exec -ti -- mgr-ssl-cert-setup --root-ca-file=/tmp/<Root_CA_Certificate> \\\n"
+"  --server-cert-file=/tmp/<Server_Cert_File> --server-key-file=/tmp/<Server_Key_File>\n"
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/ssl-certs-imported.adoc:29
+msgid "Remove the temporarily copied files from the container:"
+msgstr ""
+
+#. type: delimited block -
+#: modules/administration/pages/ssl-certs-imported.adoc:30
+#, no-wrap
+msgid ""
+"mgrctl exec -ti -- rm /tmp/<Root_CA_Certificate> /tmp/<Server_Cert_File> \\\n"
+"  /tmp/<Server_Key_File>\n"
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/ssl-certs-imported.adoc:31
 msgid ""
 "Intermediate CAs can either be available in the file which is specified with "
 "`--root-ca-file` or specified as extra options with `--intermediate-ca-"
@@ -15504,66 +15537,70 @@ msgid ""
 msgstr ""
 
 #. type: Plain text
-#: modules/administration/pages/ssl-certs-imported.adoc:29
+#: modules/administration/pages/ssl-certs-imported.adoc:33
 msgid "Restart services to pick up the changes:"
 msgstr ""
 
-#. type: delimited block -
-#: modules/administration/pages/ssl-certs-imported.adoc:30
-#, no-wrap
-msgid ""
-"mgrctl exec -- spacewalk-service stop\n"
-"mgrctl exec -- systemctl restart postgresql.service\n"
-"mgrctl exec -- spacewalk-service start\n"
-msgstr ""
-
 #. type: Plain text
-#: modules/administration/pages/ssl-certs-imported.adoc:31
+#: modules/administration/pages/ssl-certs-imported.adoc:35
 msgid ""
 "If you are using a proxy, you need to generate a server certificate RPM for "
-"each proxy, using their host names and cnames.  You should use "
-"[command]``mgr-ssl-cert-setup`` also on a {productname} Proxy to replace the "
-"certificates.  Because the {productname} Proxy does not have a postgreSQL "
-"database, only [command]``spacewalk-service restart`` is sufficient."
+"each proxy, using their host names and cnames.  Generate a new configuration "
+"tarball and deploy it:"
 msgstr ""
 
 #. type: Plain text
-#: modules/administration/pages/ssl-certs-imported.adoc:32
+#: modules/administration/pages/ssl-certs-imported.adoc:36
+msgid ""
+"For more information, see xref:installation-and-upgrade:container-deployment/"
+"suma/proxy-deployment-suma.adoc#_generate_proxy_configuration[]."
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/ssl-certs-imported.adoc:37
+msgid ""
+"For more information, see xref:installation-and-upgrade:container-deployment/"
+"uyuni/proxy-deployment-uyuni.adoc#proxy-setup-containers-generate-config[].  "
+"proxy-deployment-uyuni.adoc"
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/ssl-certs-imported.adoc:38
 msgid ""
 "If the Root CA was changed, it needs to get deployed to all the clients "
 "connected to {productname}."
 msgstr ""
 
 #. type: Block title
-#: modules/administration/pages/ssl-certs-imported.adoc:33
+#: modules/administration/pages/ssl-certs-imported.adoc:39
 #, no-wrap
 msgid "Procedure: Deploying the Root CA on Salt Clients"
 msgstr ""
 
 #. type: Plain text
-#: modules/administration/pages/ssl-certs-imported.adoc:34
+#: modules/administration/pages/ssl-certs-imported.adoc:40
 msgid "In the {productname} {webui}, navigate to menu:Systems[Overview]."
 msgstr ""
 
 #. type: Plain text
-#: modules/administration/pages/ssl-certs-imported.adoc:35
+#: modules/administration/pages/ssl-certs-imported.adoc:41
 msgid "Check all your Salt Clients to add them to the system set manager."
 msgstr ""
 
 #. type: Plain text
-#: modules/administration/pages/ssl-certs-imported.adoc:36
+#: modules/administration/pages/ssl-certs-imported.adoc:42
 msgid "Navigate to menu:Systems[System Set Manager > Overview]."
 msgstr ""
 
 #. type: Plain text
-#: modules/administration/pages/ssl-certs-imported.adoc:37
+#: modules/administration/pages/ssl-certs-imported.adoc:43
 msgid ""
 "In the [guimenu]``States`` field, click btn:[Apply] to apply the system "
 "states."
 msgstr ""
 
 #. type: Plain text
-#: modules/administration/pages/ssl-certs-imported.adoc:38
+#: modules/administration/pages/ssl-certs-imported.adoc:44
 msgid ""
 "In the [guimenu]``Highstate`` page, click btn:[Apply Highstate] to propagate "
 "the changes to the clients."
