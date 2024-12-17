@@ -1,3 +1,5 @@
+- Documented client tools details for Uyuni client registration in
+  Client Configuration Guide
 - Clarified SSH authentication methods during Web UI bootstrap process in
   Client Configuration Guide (bsc#1233497)
 - Changes proxy helm installation to use package from OS channel in
