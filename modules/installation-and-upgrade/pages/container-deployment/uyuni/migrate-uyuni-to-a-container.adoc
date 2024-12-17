@@ -49,6 +49,67 @@ If the SSH agent is not active yet, initiate it by running `eval $(ssh-agent)`. 
 
 
 
+=== Perform the Migration
+
+When planning your migration from a legacy {productname} to a containerized {productname}, ensure that your target instance meets or exceeds the specifications of the old setup.
+This includes, but is not limited to, memory (RAM), CPU Cores, Storage, and Network Bandwidth.
+
+.Procedure: Performing the Migration
+. This step is optional.
+If custom persistent storage is required for your infrastructure, use the [command]``mgr-storage-server`` tool.
+** For more information, see [command]``mgr-storage-server --help``.
+This tool simplifies creating the container storage and database volumes.
+
+** Use the command in the following manner:
++
+----
+mgr-storage-server <storage-disk-device> [<database-disk-device>]
+----
++
+For example:
++
+----
+mgr-storage-server /dev/nvme1n1 /dev/nvme2n1
+----
++
+[NOTE]
+====
+This command will create the persistent storage volumes at [path]``/var/lib/containers/storage/volumes``.
+
+For more information, see xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[].
+====
+. Execute the following command to install a new {productname} server.
+  Replace [literal]``<oldserver.fqdn>`` with the FQDN of the legacy server:
++
+----
+mgradm migrate podman <oldserver.fqdn>
+----
+. Migrate trusted SSL CA certificates.
+
+
+==== Migration of the Certificates
+
+Trusted SSL CA certificates that were installed as part of an RPM and stored on a legacy {productname} in the [path]``/usr/share/pki/trust/anchors/`` directory will not be migrated.
+Because {suse} does not install RPM packages in the container, the administrator must migrate these certificate files manually from the legacy installation after migration:
+
+.Procedure: Migrating the Certificates
+. Copy the file from the legacy server to the new server.
+   For example, as [path]``/local/ca.file``.
+. Copy the file into the container with:
++
+----
+mgrctl cp /local/ca.file server:/etc/pki/trust/anchors/
+----
+
+
+[IMPORTANT]
+====
+After successfully running the [command]``mgradm migrate`` command, the {salt} setup on all clients will still point to the old legacy server.
+
+To redirect them to the {productnumber} server, it is required to rename the new server at the infrastructure level (DHCP and DNS) to use the same FQDN and IP address as legacy server.
+====
+
+
 == Prepare for Kubernetes
 
 Before executing the migration with [command]``mgradm migrate`` command, it is essential to predefine **Persistent Volumes**, especially considering that the migration job initiates the container from scratch.
