@@ -1,3 +1,5 @@
+- Documented onboarding SSH connected Ubuntu clients with install-created
+  user in Client Configuration Guide (bsc#1213437)
 - Added Saline documentation to Salt Guide
 - Replaced mgradm with mrgctl in Installation and Upgrade Guide
 - Corrected metadata signing section in Administration Guide
