@@ -1,3 +1,5 @@
+- Documented onboarding SSH connected Ubuntu clients with install-created
+  user in Client Configuration Guide (bsc#1213437)
 - Changes proxy helm installation to use package from OS channel
   in Installation and Upgrade Guide
 - Corrected metadata signing section in Administration Guide
