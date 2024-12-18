@@ -1,3 +1,4 @@
+- Documented how to replace existing certificates via mgrtcl (bsc#1233793)
 - Documented onboarding SSH connected Ubuntu clients with install-created
   user in Client Configuration Guide (bsc#1213437)
 - Changes proxy helm installation to use package from OS channel
