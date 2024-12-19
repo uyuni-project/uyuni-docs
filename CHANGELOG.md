@@ -1,3 +1,5 @@
+- Improved documentation on CLM filters in Administration Guide
+  (bsc#1234202)
 - Documented how to replace existing certificates via mgrtcl (bsc#1233793)
 - Clarified SSH authentication methods during Web UI bootstrap process in
   Client Configuration Guide (bsc#1233497)
