@@ -1,5 +1,6 @@
-- Added SUSE Linux Enterprise Server to SUSE Linux Enterprise Server for
-  SAP Applications product migration in Client Configuration Guide
+- Updated product migration in Client Configuration Guide: added SUSE
+  Linux Enterprise Server to SUSE Linux Enterprise Server for SAP
+  Applications and extensions enabled automatically
 - Documented how to replace existing certificates via mgrctl (bsc#1233793)
 - Clarified SSH authentication methods during Web UI bootstrap process in
   Client Configuration Guide (bsc#1233497)
