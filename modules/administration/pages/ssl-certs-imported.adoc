@@ -15,9 +15,9 @@ Before you begin, ensure you have:
 
 All files must be in PEM format.
 
-The host name of the SSL server certificate must match the fully qualified host name of the machine you deploy them on.
-You can set the host names in the [literal]``X509v3 Subject Alternative Name`` section of the certificate.
-You can also list multiple host names if your environment requires it.
+The hostname of the SSL server certificate must match the fully qualified hostname of the machine you deploy them on.
+You can set the hostnames in the [literal]``X509v3 Subject Alternative Name`` section of the certificate.
+You can also list multiple hostnames if your environment requires it.
 Supported Key types are [literal]``RSA`` and [literal]``EC`` (Elliptic Curve).
 
 Third-party authorities commonly use intermediate CAs to sign requested server certificates.
@@ -50,6 +50,8 @@ export SERVER_CERT=<path_to_web_server_certificate>
 yast susemanager_setup
 ----
 +
+// FIXME: where "at the command prompt"?
++
 When you are prompted for certificate details during setup, fill in random values.
 The values are overridden by the values you specified at the command prompt.
 
@@ -77,18 +79,20 @@ After you have completed the initial setup, you can replace the default certific
 ----
 configure-proxy.sh
 ----
+
 . At the ``Do you want to import existing certificates?`` prompt, type kbd:[y].
 . Follow the prompts to complete setup.
 
 
 [NOTE]
 ====
-Use the same certificate authority to sign all server certificates for servers and proxies.
+Use the same certificate authority (CA) to sign all server certificates for servers and proxies.
 Certificates signed with different CAs do not match.
 ====
 
 
 
+[[ssl-certs-import-replace]]
 == Replace Certificates
 
 You can replace active certificates on your {productname} installation with a new certificate.
@@ -96,12 +100,15 @@ To replace the certificates, you can replace the installed CA certificate with t
 
 
 
+=== On the Server
+
 .Procedure: Replacing Existing Certificates
 
-. On the {productname} Server, at the command prompt, call the command `mgr-ssl-cert-setup` and provide the certificates as parameters:
+. On the {productname} Server, at the command prompt, call the command [command]``mgr-ssl-cert-setup`` with the certificates as parameters:
 +
 ----
-mgr-ssl-cert-setup --root-ca-file=<Path_to_Root_CA_Certificate> --server-cert-file=<Server_Cert_File> --server-key-file=<Server_Key_File>
+mgr-ssl-cert-setup --root-ca-file=<Path_to_Root_CA_Certificate> \
+  --server-cert-file=<Server_Cert_File> --server-key-file=<Server_Key_File>
 ----
 
 
@@ -117,12 +124,25 @@ systemctl restart postgresql.service
 spacewalk-service start
 ----
 
-If you are using a proxy, you need to generate a server certificate RPM for each proxy, using their host names and cnames.
-You should use [command]``mgr-ssl-cert-setup`` also on a {productname} Proxy to replace the certificates.
-Because the {productname} Proxy does not have a postgreSQL database, only [command]``spacewalk-service restart`` is sufficient.
+
+
+=== On the Proxy
+
+
+If you are using a proxy, you need to generate a server certificate for the proxy on the {productname} server and copy the files to the proxy.
+Alternatively, you let your own Certificate Authority generate these files and provide them on the proxy.
+After the files are availableon the proxy, use [command]``mgr-ssl-cert-setup`` also on a {productname} Proxy to replace the certificates.
+Because the {productname} Proxy does not have a postgreSQL database, the dedicated proxy restart command is sufficient:
+
+----
+spacewalk-proxy restart
+----
+
+
+
+=== Deploy the Root CA on Salt Clients
 
 If the Root CA was changed, it needs to get deployed to all the clients connected to {productname}.
-
 
 
 .Procedure: Deploying the Root CA on Salt Clients
