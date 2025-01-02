@@ -1,5 +1,4 @@
-- Removed spacewalk-koan from the list of required packages in
-  Administration Guide
+- Updated Troubleshooting Autoinstallation in Administration Guide
 - Added external link for creating virtual network peer for Azure in
   Specialized Gudes (bsc#1234441)
 - Documented how to replace existing certificates via mgrtcl (bsc#1233793)
