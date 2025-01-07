@@ -1,3 +1,5 @@
+- Updated ports listing according to hidden ports file and fixed
+  references in Installation and Upgrade Guide
 - Updated Troubleshooting Autoinstallation in Administration Guide
 - Added external link for creating virtual network peer for Azure in
   Specialized Gudes (bsc#1234441)
