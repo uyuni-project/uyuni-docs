@@ -1,5 +1,35 @@
 - Document openSUSE Leap 16.0
-- Update OpenSUSE Leap micro 5.5 download link
+
+- Updated Troubleshooting Autoinstallation in Administration Guide
+- Added external link for creating virtual network peer for Azure in
+  Specialized Gudes (bsc#1234441)
+- Documented how to replace existing certificates via mgrtcl (bsc#1233793)
+- Clarified SSH authentication methods during Web UI bootstrap process in
+  Client Configuration Guide (bsc#1233497)
+- Changes proxy helm installation to use package from OS channel in
+  Installation and Upgrade Guide
+- Documented onboarding SSH connected Ubuntu clients with install-created
+  user in Client Configuration Guide (bsc#1213437)
+- Added Saline documentation to Salt Guide
+- Replaced mgradm with mrgctl in Installation and Upgrade Guide
+- Corrected metadata signing section in Administration Guide
+- Added Open Enterprise Server 24.4 and 23.4 as supported client systems
+  (bsc#1230585)
+- Improved SSL certificate handling in Administration Guide
+- Make proper use of terminal inside the container in Retail Guide
+  (bsc#1233871)
+- Added new workflow with the instructions about RAW image usage
+  to Common Workflows book
+- Added reminder note to unregister before registration to Client
+  Configuration Guide
+- Fixed podman parameter name in Disconnected Setup chapter of the
+  Administration Guide (bsc#1233383)
+- Added details on image management in Administration Guide (bsc#1222574)
+- Documented Cobbler option to enable boot ISOs with Secure Boot in
+  Client Configuration Guide
+- Fixed Uyuni repository link and removed netavark from the installation
+  command
+- Updated OpenSUSE Leap micro 5.5 download link
 - Added documentation on deploying SUSE Manager Proxy in Public
   Cloud in Large Deployment Guide
 - Added admonition about disabling data synchronization with SCC in
