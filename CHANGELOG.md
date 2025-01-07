@@ -1,3 +1,5 @@
+- Document openSUSE Leap 16.0
+
 - Updated Troubleshooting Autoinstallation in Administration Guide
 - Added external link for creating virtual network peer for Azure in
   Specialized Gudes (bsc#1234441)
