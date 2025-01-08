@@ -1,3 +1,5 @@
+- Added example for LDAP integration with Active Directory in
+  Administration Guide (bsc#1233696)
 - Updated ports listing according to hidden ports file and fixed
   references in Installation and Upgrade Guide
 - Updated Troubleshooting Autoinstallation in Administration Guide
