@@ -1,5 +1,12 @@
 - Added support for SUSE Linux Micro 6.1
-- Added external link for creating virtual network peer for Azure in 
+- Added example for LDAP integration with Active Directory in
+  Administration Guide (bsc#1233696)
+- Updated ports listing according to hidden ports file and fixed
+  references in Installation and Upgrade Guide
+- Added step to refresh repository before calling transactional-update
+  in Installation and Upgrade Guide
+- Updated Troubleshooting Autoinstallation in Administration Guide
+- Added external link for creating virtual network peer for Azure in
   Specialized Gudes (bsc#1234441)
 - Clarified SSH authentication methods during Web UI bootstrap process in
   Client Configuration Guide (bsc#1233497)
