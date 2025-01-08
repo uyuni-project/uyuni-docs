@@ -16,19 +16,24 @@ PAM is a suite of libraries that allows you to integrate {productname} with a ce
 In usernames, additionally to alphanumeric characters, [literal]``-``, [literal]``_``, [literal]``.``, and [literal]``@`` are allowed.
 ====
 . Check the [guimenu]``Pluggable Authentication Modules (PAM)`` checkbox.
-. Configure SSSD in the container.
-  Connect inside the container using:
+. Configure SSSD in the server container.
+  At the command prompt of the {productname} container host, as root, enter the server container:
 +
+
 ----
 mgrctl term
 ----
-Then change the file
+
+. Inside the container, execute the following steps:
++
+
+.. To set configuration options, open the file:
 +
 ----
 /etc/sssd/sssd.conf
 ----
 +
-. Set [literal]``krb5_keytab`` in ``domain/$domain`` to [literal]``/etc/sssd/krb5.keytab``
+.. Set [literal]``krb5_keytab`` in ``domain/$domain`` to [literal]``/etc/sssd/krb5.keytab``
 . Restart {productname} using:
 +
 ----
@@ -46,6 +51,50 @@ Use the password change mechanism of your network service to change the password
 ====
 
 
-For more information about configuring PAM, the SUSE Linux Enterprise Server Security Guide contains a generic example that also works for other network-based authentication methods.
-It also describes how to configure an active directory service.
+For more information about PAM configuration, see the {sles} Security Guide. The Security Guide contains a generic example that also works for other network-based authentication methods.
+It also describes how to configure an Active Directory (AD) service.
 For more information, see {sles-base-os-documentation}/part-auth.html.
+
+
+
+=== LDAP Integration with Active Directory Example
+
+For LDAP integration with Active Directory, you can use the following example.
+
+In te code snippet, change the following placeholders according to your environment:
+
+[literal]``$domain``::
+Your domain name
+[literal]``$ad_server``::
+FQDN of the AD server if it is not auto-detected from the [literal]``$domain``
+[literal]``$uyuni-hostname``:
+The name of the machine this AD client is supposed to be known.
+If not set, it will be [literal]``uyuni-server.mgr.internal``.
+
+----
+/etc/sssd/sssd.conf:
+
+[sssd]
+config_file_version = 2
+services = nss, pam
+domains = $domain
+
+[nss]
+
+[pam]
+
+[domain/$domain]
+id_provider = ad
+chpass_provider = ad
+access_provider = ad
+auth_provider = ad
+
+ad_domain = $domain
+ad_server = $ad_server
+ad_hostname = $uyuni-hostname
+
+ad_gpo_map_network = +susemanager
+
+krb5_keytab = FILE:/etc/rhn/krb5.conf.d/krb5.keytab
+krb5_ccname_template = FILE:/tmp/krb5cc_%{uid}
+----

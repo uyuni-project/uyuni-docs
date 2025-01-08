@@ -1,3 +1,5 @@
+- Added example for LDAP integration with Active Directory in
+  Administration Guide (bsc#1233696)
 - Updated Troubleshooting Autoinstallation in Administration Guide
 - Added external link for creating virtual network peer for Azure in
   Specialized Gudes (bsc#1234441)
