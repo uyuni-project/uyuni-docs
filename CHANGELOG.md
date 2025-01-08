@@ -1,3 +1,4 @@
+- Added support for SUSE Linux Micro 6.1
 - Added example for LDAP integration with Active Directory in
   Administration Guide (bsc#1233696)
 - Updated ports listing according to hidden ports file and fixed
