@@ -1,3 +1,4 @@
+- Added support for SUSE Linux Micro 6.1
 - Added external link for creating virtual network peer for Azure in 
   Specialized Gudes (bsc#1234441)
 - Clarified SSH authentication methods during Web UI bootstrap process in
