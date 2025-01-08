@@ -1,3 +1,5 @@
+- Documented client tools details for Uyuni client registration in
+  Client Configuration Guide
 - Added support for SUSE Linux Micro 6.1
 - Added example for LDAP integration with Active Directory in
   Administration Guide (bsc#1233696)
@@ -8,7 +10,7 @@
 - Updated Troubleshooting Autoinstallation in Administration Guide
 - Added external link for creating virtual network peer for Azure in
   Specialized Gudes (bsc#1234441)
-- Documented how to replace existing certificates via mgrtcl (bsc#1233793)
+- Documented how to replace existing certificates via mgrctl (bsc#1233793)
 - Clarified SSH authentication methods during Web UI bootstrap process in
   Client Configuration Guide (bsc#1233497)
 - Changes proxy helm installation to use package from OS channel in
