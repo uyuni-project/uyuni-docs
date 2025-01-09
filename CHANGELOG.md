@@ -1,4 +1,6 @@
-- Added external link for creating virtual network peer for Azure in 
+- Added ports overview images in Installation and Upgrade Guide
+  (bsc#1217338)
+- Added external link for creating virtual network peer for Azure in
   Specialized Gudes (bsc#1234441)
 - Clarified SSH authentication methods during Web UI bootstrap process in
   Client Configuration Guide (bsc#1233497)
