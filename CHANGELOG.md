@@ -6,6 +6,8 @@
 - Added step to refresh repository before calling transactional-update
   in Installation and Upgrade Guide
 - Updated Troubleshooting Autoinstallation in Administration Guide
+- Added ports overview images in Installation and Upgrade Guide
+  (bsc#1217338)
 - Added external link for creating virtual network peer for Azure in
   Specialized Gudes (bsc#1234441)
 - Documented how to replace existing certificates via mgrtcl (bsc#1233793)
