@@ -1,3 +1,5 @@
+- Added ports overview images in Installation and Upgrade Guide
+  (bsc#1217338)
 - Updated ports listing according to hidden ports file and fixed
   references in Installation and Upgrade Guide
 - Updated Troubleshooting Autoinstallation in Administration Guide
