@@ -1,3 +1,5 @@
+- Updated ports listing according to hidden ports file and fixed
+  references in Installation and Upgrade Guide
 - Updated Troubleshooting Autoinstallation in Administration Guide
 - Added support for SUSE Linux Micro 6.1
 - Added external link for creating virtual network peer for Azure in
