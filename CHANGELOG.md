@@ -1,3 +1,5 @@
+- Deprecated the Quickstart Guide as it duplicated documentation
+  from the Installation and Upgrade Guide
 - Added retail MAC based terminal naming in Retail Guide (jsc#SUMA-314)
 - Added support for SUSE Linux Micro 6.1
 - Added example for LDAP integration with Active Directory in
