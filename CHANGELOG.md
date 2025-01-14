@@ -1,4 +1,6 @@
 - Added retail MAC based terminal naming in Retail Guide (jsc#SUMA-314)
+- Deprecated the Quickstart Guide as it duplicated documentation
+  from the Installation and Upgrade Guide
 - Added example for LDAP integration with Active Directory in
   Administration Guide (bsc#1233696)
 - Added ports overview images in Installation and Upgrade Guide
