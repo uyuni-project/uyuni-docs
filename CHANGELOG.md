@@ -1,3 +1,4 @@
+- Deprecated Debian 11
 - Added retail MAC based terminal naming in Retail Guide (jsc#SUMA-314)
 - Deprecated the Quickstart Guide as it duplicated documentation
   from the Installation and Upgrade Guide
