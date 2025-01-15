@@ -1,3 +1,4 @@
+- Added hint that NFS doesn't support SELinux labeling and shouldn't be used
 - Deprecated Debian 11
 - Deprecated the Quickstart Guide as it duplicated documentation
   from the Installation and Upgrade Guide
