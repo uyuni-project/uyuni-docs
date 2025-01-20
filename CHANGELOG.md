@@ -1,3 +1,5 @@
+- Added admonition that NFS does not support SELinux labeling and should
+  not be used
 - Updated product migration in Client Configuration Guide: added SUSE
   Linux Enterprise Server to SUSE Linux Enterprise Server for SAP
   Applications and extensions enabled automatically
