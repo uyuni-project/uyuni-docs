@@ -1,3 +1,6 @@
+- Added admonition that NFS does not support SELinux labeling and should
+  not be used
+- Documented how to replace existing certificates via mgrctl (bsc#1233793)
 - Deprecated Debian 11
 - Added retail MAC based terminal naming in Retail Guide (jsc#SUMA-314)
 - Deprecated the Quickstart Guide as it duplicated documentation
@@ -16,7 +19,6 @@
   Specialized Gudes (bsc#1234441)
 - Clarified SSH authentication methods during Web UI bootstrap process in
   Client Configuration Guide (bsc#1233497)
-- Documented how to replace existing certificates via mgrtcl (bsc#1233793)
 - Documented onboarding SSH connected Ubuntu clients with install-created
   user in Client Configuration Guide (bsc#1213437)
 - Changes proxy helm installation to use package from OS channel
