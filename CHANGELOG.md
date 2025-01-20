@@ -1,6 +1,7 @@
 - Updated product migration in Client Configuration Guide: added SUSE
   Linux Enterprise Server to SUSE Linux Enterprise Server for SAP
   Applications and extensions enabled automatically
+- Documented how to replace existing certificates via mgrctl (bsc#1233793)
 - Deprecated Debian 11
 - Deprecated the Quickstart Guide as it duplicated documentation
   from the Installation and Upgrade Guide
