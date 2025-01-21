@@ -1,9 +1,10 @@
+- Documented client tools details for Uyuni client registration in
+  Client Configuration Guide
 - Added admonition that NFS does not support SELinux labeling and should
   not be used
 - Updated product migration in Client Configuration Guide: added SUSE
   Linux Enterprise Server to SUSE Linux Enterprise Server for SAP
   Applications and extensions enabled automatically
-- Documented how to replace existing certificates via mgrctl (bsc#1233793)
 - Deprecated Debian 11
 - Deprecated the Quickstart Guide as it duplicated documentation
   from the Installation and Upgrade Guide
@@ -20,6 +21,7 @@
   (bsc#1217338)
 - Added external link for creating virtual network peer for Azure in
   Specialized Gudes (bsc#1234441)
+- Documented how to replace existing certificates via mgrctl (bsc#1233793)
 - Clarified SSH authentication methods during Web UI bootstrap process in
   Client Configuration Guide (bsc#1233497)
 - Changes proxy helm installation to use package from OS channel in
