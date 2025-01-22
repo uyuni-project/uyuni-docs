@@ -1,5 +1,6 @@
 - Documented client tools details for Uyuni client registration in
   Client Configuration Guide
+- Updated external Link in Client Configuration Guide (bsc#1235825)
 - Added admonition that NFS does not support SELinux labeling and should
   not be used
 - Updated product migration in Client Configuration Guide: added SUSE
