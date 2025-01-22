@@ -1,5 +1,7 @@
 - Improved Remove Channel chapter in the Administration Gudie
   (bsc#1233500)
+- Corrected server SSL self-signed certificates renewal procedure
+  in Administration Guide (bsc#1235696)
 - Updated external Link in Client Configuration Guide (bsc#1235825)
 - Added admonition that NFS does not support SELinux labeling and should
   not be used
