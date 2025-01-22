@@ -1,3 +1,5 @@
+- Added admonition that NFS does not support SELinux labeling and should
+  not be used in Installation and Upgrade Guide
 - Corrected server SSL self-signed certificates renewal procedure
   in Administration Guide (bsc#1235696)
 - Updated external Link in Client Configuration Guide (bsc#1235825)
@@ -12,6 +14,7 @@
 - Updated ports listing according to hidden ports file and fixed
   references in Installation and Upgrade Guide
 - Updated Troubleshooting Autoinstallation in Administration Guide
+- Documented how to replace existing certificates via mgrctl (bsc#1233793)
 - Added support for SUSE Linux Micro 6.1
 - Added step to refresh repository before calling transactional-update
   in Installation and Upgrade Guide
@@ -19,7 +22,6 @@
   Specialized Gudes (bsc#1234441)
 - Clarified SSH authentication methods during Web UI bootstrap process in
   Client Configuration Guide (bsc#1233497)
-- Documented how to replace existing certificates via mgrtcl (bsc#1233793)
 - Documented onboarding SSH connected Ubuntu clients with install-created
   user in Client Configuration Guide (bsc#1213437)
 - Changes proxy helm installation to use package from OS channel
