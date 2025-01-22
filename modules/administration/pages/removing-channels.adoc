@@ -14,7 +14,7 @@ Manual channel removal consists of <<preparing-to-remove-channel>> and <<removin
 
 
 [[preparing-to-remove-channel]]
-=== Preparing to Remove a Channel
+=== Prepare to Remove a Channel
 
 Before removing a channel, you must identify the label for the channel to be removed.
 It can be done with {webui} or on the command line.
@@ -26,7 +26,7 @@ It can be done with {webui} or on the command line.
 ====
 
 
-==== Identifying Channel labels
+==== Identify Channel Labels
 
 .Procedure: Identifying Channel Labels Using {webui}
 [role=procedure]
@@ -39,10 +39,10 @@ It can be done with {webui} or on the command line.
 .Procedure: Identifying Channel Labels Using the Command Line
 [role=procedure]
 
-. You can get a list of channels by running the following command:
+. You can get a list of channels by running the following command on the {productname} container host:
 +
 ----
-spacewalk-remove-channel -l
+mgrctl exec -ti -- spacewalk-remove-channel -l
 ----
 
 
@@ -55,50 +55,49 @@ spacewalk-remove-channel -l
 . Check the [literal]``Systems`` column for the channel, or any child channels, that you want to remove.
 
 
-.Procedure: Verify Channel System Subscriptions Using the Command Line
+.Procedure: Verifying Channel System Subscriptions Using the Command Line
 
-. Run the following command:
+. Run the following command on the {productname} container host:
 +
 ----
-spacecmd -- softwarechannel_listsystems <Channel Label>
----- 
+mgrctl exec -ti -- 'spacecmd -- softwarechannel_listsystems <Channel Label>'
+----
 
 
 [[removing-channel]]
-=== Removing Channel
+=== Remove Channel
 
-A channel, with its metadata, can be removed in the SUMA command line by using the [literal]``spacewalk-remove-channel`` command. 
-This command does not remove the packages themselves from the filesystem. 
+A channel, with its metadata, can be removed with command line tools only.
 
-Removing packages from the filesystem is described in <<cleaning-up-channel-packages>>.
-
+For actually removing packages from the filesystem, see <<cleaning-up-channel-packages>>.
 
 
-==== Removing an Individual Channel
+
+==== Remove an Individual Channel
 
 .Procedure: Removing an Individual Channel Using the Command Line
 
-. To remove an individual channel run the following command:
+. To remove an individual channel run the following command on the {productname} container host:
 +
 ----
-spacewalk-remove-channel -c channel-label
+mgrctl exec -ti -- spacewalk-remove-channel -c channel-label
 ----
 +
-. To remove multiple channels at the same time, use [literal]``-c`` flag for each channel, followed by the [literal]``channel-label``. 
+. To remove multiple channels at the same time, use [literal]``-c`` flag for each channel, followed by the [literal]``channel-label``.
   For example:
 +
 ----
-spacewalk-remove-channel -c channel-label1 -c channel-label2
+mgrctl exec -ti -- spacewalk-remove-channel -c channel-label1 -c channel-label2
 ----
 
 
-==== Removing a Parent and All Its Child Channels
+==== Remove a Parent and All the Child Channels
 
-.Procedure: Removing a Parent and All Its Child Channels
-. It is also possible to remove a parent channel with all of its child channels, like this:
+.Procedure: Removing a Parent and All the Child Channels
+. To remove a parent channel with all of the child channels run a command such as:
 +
 ----
-spacewalk-remove-channel -a sles12-sp5-pool-x86_64
+mgrctl exec -ti -- spacewalk-remove-channel -a sles12-sp5-pool-x86_64
 ----
 
 
@@ -117,25 +116,26 @@ spacewalk-remove-channel -a sles12-sp5-pool-x86_64
 //----
 
 
-==== Remove Packages from the Database via the {webui}
+==== Remove Packages from the Database Using {webui}
 
-.Procedure: Remove Packages from the Database via the {webui}
-. After removing the channel, you need to delete the packages from the database via the {webui}.
-. In the {productname} {webui} navigate to menu:SUSEManager[Software > Manage > Packages].
+.Procedure: Removing Packages from the Database Using {webui}
+. After removing the channel, you need to delete the packages from the database using the {webui}.
+. In the {productname} {webui}, navigate to menu:SUSEManager[Software > Manage > Packages].
 . Select [literal]``Package in no channel``, and delete the packages.
 
 
 
-==== Clean the Packages from the Filesystem
+====  Remove the Packages from the Filesystem
 
-.Procedure: Clean the Packages from the Filesystem
-. The following command checks for anything that is still showing in the filesystem, but not in the SUMA database and then removes it.
+.Procedure: Removing the Packages from the Filesystem
+. The following command checks for anything that still exists in the filesystem, but not in the {productname} database, and removes it.
+  On the command line of the container host, run the following command:
 +
 ----
-# spacewalk-data-fsck -r -S -C -O
+mgrctl exec -ti -- spacewalk-data-fsck -r -S -C -O
 ----
-+
-[WARNING]
+
+[NOTE]
 ====
 The final cleanup command can take several minutes, or even hours to complete.
 ====
