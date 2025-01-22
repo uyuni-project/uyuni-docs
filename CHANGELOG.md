@@ -1,6 +1,6 @@
 - Added admonition that NFS does not support SELinux labeling and should
-  not be used
-- Documented how to replace existing certificates via mgrctl (bsc#1233793)
+  not be used in Installation and Upgrade Guide
+- Updated external Link in Client Configuration Guide (bsc#1235825)
 - Deprecated Debian 11
 - Added retail MAC based terminal naming in Retail Guide (jsc#SUMA-314)
 - Deprecated the Quickstart Guide as it duplicated documentation
@@ -12,6 +12,7 @@
 - Updated ports listing according to hidden ports file and fixed
   references in Installation and Upgrade Guide
 - Updated Troubleshooting Autoinstallation in Administration Guide
+- Documented how to replace existing certificates via mgrctl (bsc#1233793)
 - Added support for SUSE Linux Micro 6.1
 - Added step to refresh repository before calling transactional-update
   in Installation and Upgrade Guide
