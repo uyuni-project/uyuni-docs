@@ -1,3 +1,5 @@
+- Corrected contact method in autoinstallation chapter in Client
+  Configuration Guide
 - Corrected server SSL self-signed certificates renewal procedure
   in Administration Guide (bsc#1235696)
 - Updated external Link in Client Configuration Guide (bsc#1235825)
