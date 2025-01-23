@@ -22,7 +22,6 @@
   in Installation and Upgrade Guide
 - Added external link for creating virtual network peer for Azure in
   Specialized Gudes (bsc#1234441)
-- Documented how to replace existing certificates via mgrctl (bsc#1233793)
 - Clarified SSH authentication methods during Web UI bootstrap process in
   Client Configuration Guide (bsc#1233497)
 - Documented onboarding SSH connected Ubuntu clients with install-created
