@@ -1,3 +1,5 @@
+- Improved Remove Channel chapter in the Administration Gudie
+  (bsc#1233500)
 - Documented client tools details for Uyuni client registration in
   Client Configuration Guide
 - Corrected server SSL self-signed certificates renewal procedure
