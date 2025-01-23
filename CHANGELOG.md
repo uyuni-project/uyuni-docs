@@ -1,8 +1,10 @@
 - Documented client tools details for Uyuni client registration in
   Client Configuration Guide
+- Corrected server SSL self-signed certificates renewal procedure
+  in Administration Guide (bsc#1235696)
 - Updated external Link in Client Configuration Guide (bsc#1235825)
 - Added admonition that NFS does not support SELinux labeling and should
-  not be used
+  not be used in Installation and Upgrade Guide
 - Updated product migration in Client Configuration Guide: added SUSE
   Linux Enterprise Server to SUSE Linux Enterprise Server for SAP
   Applications and extensions enabled automatically
