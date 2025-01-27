@@ -1,3 +1,5 @@
+- Documented client tools details for Uyuni client registration in
+  Client Configuration Guide
 - Added admonition that NFS does not support SELinux labeling and should
   not be used in Installation and Upgrade Guide
 - Improved Remove Channel chapter in the Administration Gudie
