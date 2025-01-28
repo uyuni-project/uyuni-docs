@@ -1,3 +1,5 @@
+- Corrected contact method in autoinstallation chapter in Client
+  Configuration Guide
 - Documented client tools details for Uyuni client registration in
   Client Configuration Guide
 - Added admonition that NFS does not support SELinux labeling and should
