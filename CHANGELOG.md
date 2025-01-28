@@ -1,3 +1,5 @@
+- Corrected contact method in autoinstallation chapter in Client
+  Configuration Guide
 - Improved Remove Channel chapter in the Administration Gudie
   (bsc#1233500)
 - Documented client tools details for Uyuni client registration in
