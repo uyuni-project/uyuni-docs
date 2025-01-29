@@ -1,12 +1,11 @@
 [[installation-proxy-containers]]
-= {productname} {productnumber} Proxy Deployment on {sle-micro}
+= {productname} Proxy Deployment on {sle-micro}
 ifeval::[{uyuni-content} == true]
 :noindex:
 endif::[]
 
 
 This guide outlines the deployment process for the {productname} {productnumber} Proxy.
-This guide presumes you have already successfully deployed a {productname} {productnumber} Server.
 
 [IMPORTANT]
 ====
@@ -23,7 +22,7 @@ To successfully deploy, you will perform the following actions:
 . Review hardware requirements.
 . Synchronize the {sle-micro} {microversion} parent channel and the proxy extension child channel on the server.
 . Install {sle-micro} {microversion} on a bare-metal machine.
-. During the installation, register {sle-micro} {microversion} along with the {productname} {productnumber} Proxy extension.
+. During the installation, register {sle-micro} {microversion} along with the {productname} Proxy extension.
 . Create a {salt} activation key.
 . Bootstrap the proxy as a client with the [systemitem]``default`` connection method.
 . Generate a proxy configuration.
@@ -73,18 +72,14 @@ This table shows the hardware requirements for deploying {productname} Proxy.
 | Minimum 40 GB
 
 |
-| [path]``/var/lib/containers/storage/volumes/srv-www``
-| Minimum 100 GB, storage requirements should be calculated for the number of ISO distribution images, containers, and bootstrap repositories you will use.
-
-|
-| [path]``/var/lib/containers/storage/volumes/var-cache`` (Squid)
-| Minimum 100 GB
+| [path]``/var/lib/containers/storage/volumes``
+| Minimum 150 GB
 
 |===
 
 
 
-== Sync the Parent and Proxy Extension Child Channels
+== Synchronize the Parent and Proxy Extension Child Channels
 
 This section presumes that you have already entered your organization credentials under the menu:Admin[Setup Wizard -> Organization Credentials] in the server's {webui}.
 Products are listed on the menu:Admin[Setup Wizard -> Products] page.
@@ -93,7 +88,7 @@ This channel must be fully synchronized on the server, with the child channel [s
 .{productname} {productnumber} Channel Sync for Proxy
 image::setup-wizard.png[scaledwidth=80%]
 
-.Procedure: Synchronizing the Proxy Parent Channel and Proxy Extension
+.Procedure: Synchronizing the Parent Channel and Proxy Extension
 . In the {productname} {webui} select menu:Admin[Products].
 . From the products page enter {sle-micro} in the filter field.
 . Next use the drop-down to select the required architecture.
@@ -124,7 +119,7 @@ For detailed documentation on preparing your machines OS (virtual or physical), 
   Click the [systemitem]``checkbox`` to accept the license agreement.
 . Click [systemitem]``Next`` to continue.
 . Select your registration method.
-  For this example, we will register the server with {scclongform}.
+  For this example, we will register the proxy with {scclongform}.
 +
 
 .{productname} {productnumber} Proxy as an extension
@@ -144,7 +139,8 @@ The {productname} {productnumber} Proxy is registered as an extension. Therefore
 . Enter your {productname} {productnumber} Proxy extension registration code.
 . Click btn:[Next] to continue.
 . On the [systemitem]``NTP Configuration`` page click btn:[Next].
-. On the [systemitem]``Authentication for the System`` page enter a password for the root user. Click btn:[Next].
+. On the [systemitem]``Authentication for the System`` page enter a password for the root user.
+  Click btn:[Next].
 . On the [systemitem]``Installation Settings`` page click btn:[Install].
 
 This finalizes installation of {sle-micro} {microversion} and {productname} {productnumber} Proxy as an extension.
@@ -182,20 +178,20 @@ transactional-update pkg install mgrpxy mgrpxy-bash-completion
 === Configure Custom Persistent Storage
 
 This step is optional.
-However, if custom persistent storage is required for your infrastructure, use the [command]``mgr-storage-proxy`` tool. 
+However, if custom persistent storage is required for your infrastructure, use the [command]``mgr-storage-proxy`` tool.
 This tool simplifies creating the container storage and Squid cache volumes.
 
-Use the command in the following manner: 
+Use the command in the following manner:
 ----
 mgr-storage-proxy <storage-disk-device>
 ----
 
-For example: 
+For example:
 ----
 mgr-storage-proxy /dev/nvme1n1
 ----
 
-For more information, type: 
+For more information, type:
 ----
 mgr-storage-proxy --help
 ----
@@ -211,68 +207,23 @@ For more information, see
 * xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
 ====
 
-== Create an Activation Key for the Proxy
-
-.Procedure: Creating an Activation Key
-. Select menu:Systems[Activation Keys] then click btn:[Create key].
-. Create an activation key for the proxy host with {sle-micro} {microversion} as the parent channel.
-  This key should include all recommended channels and the proxy as an extension child channel.
-. Proceed to boostrapping the proxy host as a [systemitem]``default`` client.
-
-
-
-== Bootstrap the Proxy Host as a Client
-
-.Procedure: Bootstrapping the Proxy Host
-. Select menu:Systems[Bootstrapping].
-. Fill in the fields for your proxy host.
-. Select the activation key created in the previous step from the drop-down.
-. Click btn:[Bootstrap].
-. Wait for the bootstrap process to complete successfully.
-  Check the menu:Salt[] menu and confirm the {salt} key is listed and accepted.
-. Reboot the proxy host.
-. Select the host from the menu:System[] list and trigger a second reboot after all events are finished to conclude the onboarding.
-
-
-.Procedure: Updating the Proxy Host
-. Select the host from the menu:Systems[] list and apply all patches to update it.
-. Reboot the proxy host.
-
+include::../actkey-bootstrap-proxy-suma.adoc[]
 
 include::../generate_proxy_config.adoc[]
 
-
-[[proxy-setup-containers-transfer-config]]
-== Transfer the Proxy Configuration
-
-The {webui} generates a configuration archive.
-This archive needs to be made available on the proxy container host.
-
-
-.Procedure: Copying the Proxy Configuration
-
-. Copy the configuration archive ([literal]``config.tar.gz``) generated in the previous step to the Proxy host:
-+
-----
-scp config.tar.gz <proxy-FQDN>:/root
-----
-. Install the Proxy with:
-+
-----
-mgrpxy install podman config.tar.gz
-----
+include::../transfer_proxy_config.adoc[]
 
 
 
 [[proxy-setup-containers-transfer-start]]
-== Start the {productname} {productnumber} Proxy
+== Start the {productname} Proxy
 
 Container can now be started with the [literal]`mgrpxy` command:
 
 [[proc-setup-containers-setup-start]]
 .Procedure: Starting and Checking Proxy Status
 
-. Start the Proxy by calling:
+. Start the proxy by calling:
 +
 ----
 mgrpxy start
@@ -319,7 +270,7 @@ To install them run:
 
 ----
 zypper in helm mgrpxy
----- 
+----
 ////
 
 
