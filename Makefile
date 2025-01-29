@@ -1,11 +1,10 @@
-# Makefile for SUSE Manager/Uyuni Documentation
+# Makefile for SUSE Multi Linux Manager/Uyuni Documentation
 # Author: Joseph Cayouette, Pau Garcia Quiles
-# Inspired/modified from Owncloud's documentation Makefile
 SHELL = bash
 
 # SUMA Productname and file replacement
-PRODUCTNAME_SUMA ?= 'SUSE Manager'
-FILENAME_SUMA ?= suse_manager
+PRODUCTNAME_SUMA ?= 'SUSE Multi-Linux Manager'
+FILENAME_SUMA ?= suse_multi_linux_manager
 SUMA_CONTENT ?= true
 
 # UYUNI Productname and file replacement
@@ -49,8 +48,8 @@ endef
 define enable-suma-in-antorayml
 	$(call reset-html-language-selector-suma)
 	cd ./$(1) && \
-	sed -i "s/^ # *\(name: *suse-manager\)/\1/;\
-	s/^ # *\(title: *SUSE Manager\)/\1/;\
+	sed -i "s/^ # *\(name: *docs\)/\1/;\
+	s/^ # *\(title: *docs\)/\1/;\
 	s/^ *\(title: *Uyuni\)/#\1/;\
 	s/^ *\(name: *uyuni\)/#\1/;" $(current_dir)/$(1)/antora.yml
 	cd $(current_dir)
@@ -65,8 +64,8 @@ endef
 define enable-uyuni-in-antorayml
 	$(call reset-html-language-selector-uyuni)
 	cd $(current_dir)/$(1) && \
-	sed -i "s/^ *\(name: *suse-manager\)/#\1/;\
-	s/^ *\(title: *SUSE Manager\)/#\1/;\
+	sed -i "s/^ *\(name: *docs\)/#\1/;\
+	s/^ *\(title: *Docs\)/#\1/;\
 	s/^ *# *\(title: *Uyuni\)/\1/;\
 	s/^ *# *\(name: *uyuni\)/\1/;" $(current_dir)/$(1)/antora.yml
 endef
