@@ -1,3 +1,5 @@
+- Updated Backup and Restore chapter regarding containerization in
+  Administration Guide
 - Corrected contact method in autoinstallation chapter in Client
   Configuration Guide
 - Improved Remove Channel chapter in the Administration Gudie
