@@ -83,6 +83,7 @@ The rest of configuration is optional.
 === Default boot image
 
 Configure [systemitem]``Default boot image for new registrations`` to specify what boot image should be booted by not yet registered POS terminal.
+
 This is useful when stable boot image is wanted for initial deployments.
 Without this setting, newest built boot image is used as default boot image.
 
@@ -92,6 +93,7 @@ If [systemitem]``Default boot image for new registrations`` is set, option to se
 === Kernel option for the {saltboot} group
 
 Option [systemitem]``Kernel parameters for the group`` can be used to pass extra kernel options to all POS terminals registered withing this {saltboot} group.
+
 
 === Naming scheme for new registrations
 
@@ -106,7 +108,13 @@ External DHCP service must be used with containerized {saltboot}.
 
 For more information about how to enable PXE booting in DHCP service, see xref:retail:retail-install-setup.adoc[].
 
-Containerized workflow relies on updated image building in {productname} Server 4.3 where PXE images are no longer collected as bundle, but kernel, initrd and filesystem image are collected individually.
+ifeval::[{suma-content} == true]
+Containerized workflow relies on updated image building in {productname} Server 4.3, where PXE images are no longer collected as bundle, but kernel, initrd and filesystem image are collected individually.
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+Containerized workflow relies on updated image building in {productname} Server, where PXE images are no longer collected as bundle, but kernel, initrd and filesystem image are collected individually.
+endif::[]
 
 Containerized workflow uses new TFTP container which instead of providing files present on the proxy, routes TFTP requests as HTTP requests through local proxy to {productname} Server.
 
@@ -114,7 +122,7 @@ Containerized proxy is not a {salt} client, it is not possible to call [systemit
 
 [IMPORTANT]
 ====
-Once POS image is build and made available on {productname} Server, it is immediately available to the {saltboot} clients as well. 
+Once POS image is built and made available on {productname} Server, it is immediately available to the {saltboot} clients as well. 
 Image synchronization is not needed, nor available.
 This may have implications on how images are deployed to production.
 ====
@@ -122,16 +130,19 @@ This may have implications on how images are deployed to production.
 The following sections differentiate between containerized and regular workflow.
 Both are assuming proxy (containerized or in form of {productname} {smr} Branch Server) are available.
 
-Containerized workflow:
 
+//Containerized workflow::
+
+.Procedure: Deploying with containerized workflow
 . Build POS image
 . Configure DHCP server for PXE booting for given network
 . Create [systemitem]``Saltboot group`` and configure it for existing containerized proxy
 . Boot system to be deployed
 
 
-Non-Containerized workflow:
+//Non-Containerized workflow::
 
+.Procedure: Deploying with non-ontainerized workflow
 . Build POS image
 . Configure and apply Retail formulas on {productname} {smr} Branch server
 . Apply [systemitem]``highstate`` state on the Branch server
@@ -139,14 +150,14 @@ Non-Containerized workflow:
 . Apply [systemitem]``image-sync`` state on configured {productname} {smr} Branch server
 . Boot system to be deployed
 
+
 == Validating {saltboot} group configuration
 
 [systemitem]``Containerized Saltboot`` utilizes [systemitem]``Cobbler`` system underneath for managing PXE and UEFI configuration.
 
-
 When new PXE image is built (such as {productname} {smr} POS_Image_JeOS images) [systemitem]``cobbler distro`` and [systemitem]``cobbler profile`` are automatically generated for this image.
 
-For example when first image [literal]``POS_Image_JeOS`` version [literal]``7.0.0`` is build under organization with number 1 [command]``cobbler list`` will show:
+For example, when first image [literal]``POS_Image_JeOS`` version [literal]``7.0.0`` is build under organization with number 1 [command]``cobbler list`` will show:
 
 ----
 # cobbler list
@@ -192,4 +203,4 @@ Kernel options in example are always present and are internal for {saltboot} fun
 
 With this information [systemitem]``Cobbler`` is able to generate required PXE and UEFI Grub configurations which can be checked in [path]``/srv/tftpboot/pxelinux.cfg/default`` and [path]``/srv/tftpboot/grub/x86_64_menu_items.cfg``.
 
-These files contain the end result which will be used by PXE client when determining what to boot and with what parameters.
+These files contain the end result which will be used by PXE client when determining what to boot and with which parameters.
