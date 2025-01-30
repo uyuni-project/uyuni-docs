@@ -1,5 +1,7 @@
 - Updated Backup and Restore chapter regarding containerization in
   Administration Guide
+- Improved documentation on CLM filters in Administration Guide
+  (bsc#1234202)
 - Corrected contact method in autoinstallation chapter in Client
   Configuration Guide
 - Improved Remove Channel chapter in the Administration Gudie
