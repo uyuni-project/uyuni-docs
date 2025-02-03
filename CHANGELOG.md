@@ -1,3 +1,5 @@
+- Set version number of host operating system back to SUSE Linux
+  Enterprise 5.5.
 - Corrected the wording in the procedure in Administration Guide
   (bsc#1236625)
 - Improved documentation on CLM filters in Administration Guide
