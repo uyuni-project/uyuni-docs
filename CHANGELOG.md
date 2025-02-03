@@ -1,3 +1,5 @@
+- Clarify functionality of CLM package/patch allow filters
+  (bsc#1236234)
 - Corrected the instruction for logging in to Azure instance in 
   Specialized Guides (bsc#1234442)
 - Updated Backup and Restore chapter regarding containerization in
