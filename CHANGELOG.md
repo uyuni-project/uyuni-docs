@@ -1,3 +1,5 @@
+- Updated Backup and Restore chapter regarding containerization in
+  Administration Guide
 - Corrected the instruction for logging in to Azure instance in 
   Specialized Guides (bsc#1234442)
 - Corrected the wording in the procedure in Administration Guide
