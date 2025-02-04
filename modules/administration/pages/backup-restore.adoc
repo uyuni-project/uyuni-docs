@@ -13,6 +13,8 @@ Regardless of the backup method you use, you must have available at least three 
 Running out of space can result in backups failing, so check this often.
 ====
 
+The following section describes backing up data within the {productname} container.
+
 
 
 [[backup-restore-product]]
@@ -25,8 +27,8 @@ However, this method requires significant disk space and could take a long time 
 [NOTE]
 ====
 If you want to back up only the required files and directories, use the following list.
-To make this process simpler, and more comprehensive, we recommend backing up the entire [path]``/etc`` and [path]``/root`` directories, not just the ones specified here.
-Some files only exist if you are actually using the related {susemgr} feature.
+To make this process simpler, and more comprehensive, we recommend backing up the entire [path]``/etc`` and [path]``/root`` directories within the container, not just the ones specified here.
+Some files only exist if you are actually using the related {productname} feature.
 ====
 
 
@@ -73,26 +75,27 @@ You also need to back up your database, which you can do with the [command]``smd
 
 
 .Procedure: Restoring from a Manual Backup
-. Re-deploy the {productname} Server with ``mgradm install podman``.
+. On the container host, as root, re-deploy the {productname} Server with ``mgradm install podman``.
 
-. Re-synchronize your {productname} repositories using either the {productname} {webui}, or with the [command]``mgr-sync`` tool at the command prompt.
+. Re-synchronize your {productname} repositories using either the {productname} {webui}, or with the [command]``mgr-sync`` tool at the command prompt in the container.
   You can choose to re-register your product, or skip the registration and SSL certificate generation sections.
-. Re-install the [path]``/var/lib/containers/storage/volumes/root/ssl-build/rhn-org-httpd-ssl-key-pair-MACHINE_NAME-VER-REL.noarch.rpm`` package.
+. In the container, re-install the [path]``/root/ssl-build/rhn-org-httpd-ssl-key-pair-MACHINE_NAME-VER-REL.noarch.rpm`` package.
 . Schedule the re-creation of search indexes next time the [command]``rhn-search`` service is started.
-  This command produces only debug messages, it does not produce error messages:
+  This command produces only debug messages, it does not produce error messages.
+  In the container, enter:
 +
 
 ----
 rhn-search cleanindex
 ----
 
-. Check whether you need to restore [path]``/var/lib/containers/storage/volumes/var-spacewalk/_data/packages/``.
+. On the container host, check whether you need to restore [path]``/var/lib/containers/storage/volumes/var-spacewalk/_data/packages/``.
   If [path]``/var/lib/containers/storage/volumes/var-spacewalk/_data/packages/`` was not in your backup, you need to restore it.
   If the source repository is available, you can restore [path]``/var/lib/containers/storage/volumes/var-spacewalk/_data/packages/` with a complete channel synchronization:
 +
 
 ----
-mgr-sync refresh --refresh-channels
+mgrctl exec -ti -- mgr-sync refresh --refresh-channels
 ----
 
 
@@ -110,7 +113,8 @@ The [command]``smdba`` tool works with local PostgreSQL databases only, it does 
 
 [IMPORTANT]
 ====
-To access a shell inside the Server container, run [literal]``mgrctl term`` on the container host. From there, one can run the CLI tools as usual.
+To access a shell inside the Server container, run [literal]``mgrctl term`` on the container host.
+From there, one can run the CLI tools as usual.
 ====
 
 [IMPORTANT]
@@ -189,27 +193,34 @@ Regular database backups do not require any downtime.
 
 .Procedure: Performing a Manual Database Backup
 . Allocate permanent storage space for your backup.
-  This example uses a directory located at [path]``/var/spacewalk/``.
+  This example, in the container, uses a directory located at [path]``/var/spacewalk/``.
   This becomes a permanent target for your backup, so ensure it remains accessible by your server at all times.
-. In the container terminal, enter:
+  This directory is on persistent storage, and for more information, see xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[].
+. At the command prompt of the {productname} container host, as root, enter the server container:
 +
+
 ----
 mgrctl term
 ----
-. In your backup location, create a directory for the backup:
+
+. Inside the container, execute the following steps:
++
+
+--
+.. In your backup location, create a directory for the backup:
 +
 As root:
 +
 ----
 install -d -o postgres -g postgres -m 700 /var/spacewalk/db-backup
 ----
-. Ensure you have the correct permissions set on the backup location:
+.. Ensure you have the correct permissions set on the backup location:
 +
 ----
 chown postgres:postgres /var/spacewalk/db-backup
 ----
 +
-. To create a backup for the first time, run the [command]``smdba backup-hot`` command with the [option]``enable`` option set.
+.. To create a backup for the first time, run the [command]``smdba backup-hot`` command with the [option]``enable`` option set.
   This creates the backup in the specified directory, and, if necessary, restart the database:
 +
 ----
@@ -222,7 +233,8 @@ This command produces debug messages and finishes sucessfully with the output:
 INFO: Finished
 ----
 +
-. Check that the backup files exist in the [path]``/var/spacewalk/db-backup`` directory, to ensure that your backup has been successful.
+.. Check that the backup files exist in the [path]``/var/spacewalk/db-backup`` directory, to ensure that your backup has been successful.
+--
 
 
 
@@ -236,7 +248,7 @@ We recommend you schedule regular database backups for a low-traffic period, to 
 [IMPORTANT]
 ====
 Ensure you have at least three times the current database size of space available for backups.
-You can check your current database size by running:
+You can check your current database size by running on the container host:
 
 ----
 mgrctl exec "df -h /var/lib/pgsql"
@@ -246,26 +258,33 @@ mgrctl exec "df -h /var/lib/pgsql"
 
 .Procedure: Creating a directory for the backup (do it only once)
 
-. In the container terminal, enter:
+. At the command prompt of the {productname} container host, as root, enter the server container:
 +
+
 ----
 mgrctl term
 ----
-. In your backup location, create a directory for the backup.
-  As root, enter:
+
+. Inside the container, execute the following steps:
++
+
+--
+.. In your backup location, create a directory for the backup.
+   As root, enter:
 +
 ----
 install -d -o postgres -g postgres -m 700 /var/spacewalk/db-backup
 ----
-. Ensure you have the correct permissions set on the backup location:
+.. Ensure you have the correct permissions set on the backup location:
 +
 ----
 chown postgres:postgres /var/spacewalk/db-backup
 ----
+--
 
 
 .Procedure: Scheduling Automatic Backups
-. Create a system unit file at [path]``/etc/systemd/system/server-db-backup.service`` with the content:
+. On the container host, as root, create a system unit file at [path]``/etc/systemd/system/server-db-backup.service`` with the content:
 +
 ----
 [Unit]
@@ -309,31 +328,38 @@ The [command]``smdba`` tool can be used to restore from backup in the case of fa
 
 
 .Procedure: Restoring from Backup
-. In the container terminal, enter:
+. At the command prompt of the {productname} container host, as root, enter the server container:
 +
+
 ----
 mgrctl term
 ----
-. Shut down the database:
+
+. Inside the container, execute the following steps:
++
+
+--
+.. Shut down the database:
 +
 ----
 smdba db-stop
 ----
-. Start the restore process and wait for it to complete:
+.. Start the restore process and wait for it to complete:
 +
 ----
 smdba backup-restore start
 ----
-. Restart the database:
+.. Restart the database:
 +
 ----
 smdba db-start
 ----
-. Check if there are differences between the RPMs and the database.
+.. Check if there are differences between the RPMs and the database.
 +
 ----
 spacewalk-data-fsck
 ----
+--
 
 
 
@@ -357,7 +383,7 @@ Creating a user and syncing the channels:
 PostgreSQL generates an additional roughly 1 GB of data.
 So it is important to think about a backup strategy and create a backups in a regular way.
 
-Archive logs are stored at [path]``/var/lib/pgsql/data/pg_xlog/`` (postgresql).
+Archive logs are stored, inside the container, at [path]``/var/lib/pgsql/data/pg_xlog/`` (postgresql).
 
 
 
@@ -367,7 +393,7 @@ Archive logs are stored at [path]``/var/lib/pgsql/data/pg_xlog/`` (postgresql).
 Database administrators may use the subcommand [command]``space-overview`` to get a report about occupied table spaces, for example:
 
 ----
-smdba space-overview
+mgrctl exec smdba space-overview
 ----
 
 outputs:
@@ -387,7 +413,7 @@ For a more detailed report, use the [command]``space-tables`` subcommand.
 It lists the table and its size, for example:
 
 ----
-smdba space-tables
+mgrctl exec smdba space-tables
 ----
 
 outputs:
@@ -409,132 +435,9 @@ public.log                            | 32 kB
 ----
 
 
-
-== Move the Database
-
-It is possible to move the database to another location.
-For example, if database storage space is running low.
-
-
-
-.Procedure: Moving the Database
-. The default storage location for {productname} is [path]``/var/lib/pgsql/``. If you would like to move it, for example to [path]``/storage/postgres/``, proceed as follows.
-
-. At the command prompt, as root, stop the running database:
-+
-----
-rcpostgresql stop
-----
-+
-Shut down the running spacewalk services:
-+
-----
-spacewalk-service stop
-----
-. Copy the current working directory structure with [command]``cp`` using the [option]``-a, --archive`` option.
-    For example:
-+
-----
-cp --archive /var/lib/pgsql/ /storage/postgres/
-----
-+
-This command copies the contents of [path]``/var/lib/pgsql/``
-to [path]``/storage/postgres/pgsql/``.
-+
-IMPORTANT: The contents of the [path]``/var/lib/pgsql`` directory needs to remain the same, otherwise the {productname} database may malfunction.
-You also should ensure that there is enough available disk space.
-+
-. Mount the new database directory:
-+
-----
-mount /storage/postgres/pgsql
-----
-. Make sure ownership is `postgres:postgres` and not `root:root` by changing to the new directory and running these commands:
-+
-----
-cd /storage/postgres/pgsql/
-ls -l
-----
-+
-Outputs:
-+
-----
-total 8
-drwxr-x---  4 postgres postgres   47 Jun  2 14:35 ./
-----
-. Add the new database mount location to your servers fstab by editing  [path]``etc/fstab``.
-. Start the database with:
-+
-----
-rcpostgresql start
-----
-. Start the spacewalk services:
-+
-----
-spacewalk-service start
-----
-
-
-[[config-smdb.recover-root]]
-== Recover From a Crashed Root Partition
-
-If your root partition has crashed, you can restart the {productname} Server with some additional steps.
-This section assumes you have setup your server using separate partitions for the database and for channels, mounted at [path]``/var/lib/pgsql`` and [path]``/var/spacewalk/``.
-
-
-
-[IMPORTANT]
-====
-After a new installation of a system most users and groups get different IDs.
-Most backup systems store the names instead of the IDs and will restore the files with the correct ownership and permissions.
-But if you mount existing partitions, you must align the ownership to the new system.
-====
-
-.Procedure: Recovering from a Crashed Root Partition
-. Install {productname}.
-  Do not mount the [path]``/var/spacewalk`` and [path]``/var/lib/pgsql`` partitions.
-  Wait for the installation to complete before going on to the next step.
-
-. Shut down the database:
-+
-
-----
-rcpostgresql stop
-----
-
-. Shut down the services:
-+
-
-----
-spacewalk-service stop
-----
-
-. Mount [path]``/var/spacewalk`` and [path]``/var/lib/pgsql`` partitions.
-
-. Restore the directories listed in <<backup-restore-product>>.
-
-. Start the database:
-+
-
-----
-rcpostgresql start
-----
-
-. Start the spacewalk services:
-+
-
-----
-spacewalk-service start
-----
-
-
-{productname} should now operate normally without loss of your database or synchronized channels.
-
-
-
 == Database Connection Information
 
-You can set information for connecting to the {productname} database by adding or editing these variable in [path]``/etc/rhn/rhn.conf``:
+Inside the container, you can set information for connecting to the {productname} database by adding or editing these variable in [path]``/etc/rhn/rhn.conf``:
 
 ----
 db_backend = postgresql
