@@ -1,3 +1,5 @@
+- Set version number of host operating system back to SUSE Linux
+  Enterprise 5.5.
 - Updated Backup and Restore chapter regarding containerization in
   Administration Guide
 - Corrected the instruction for logging in to Azure instance in 
