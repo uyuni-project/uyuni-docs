@@ -1,8 +1,10 @@
 - Set version number of host operating system back to SUSE Linux
-  Enterprise 5.5.
+  Enterprise 5.5
+- Clarify functionality of CLM package/patch allow filters
+  (bsc#1236234)
 - Updated Backup and Restore chapter regarding containerization in
   Administration Guide
-- Corrected the instruction for logging in to Azure instance in 
+- Corrected the instruction for logging in to Azure instance in
   Specialized Guides (bsc#1234442)
 - Corrected the wording in the procedure in Administration Guide
   (bsc#1236625)
