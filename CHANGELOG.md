@@ -1,3 +1,5 @@
+- Remove image with beta reference in Installation and Upgrade Guide
+  (bsc#1236678)
 - Deprecated Debian 11
 - Added retail MAC based terminal naming in Retail Guide (jsc#SUMA-314)
 - Deprecated the Quickstart Guide as it duplicated documentation
