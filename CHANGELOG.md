@@ -1,3 +1,5 @@
+- Remove image with beta reference in Installation and Upgrade Guide
+  (bsc#1236678)
 - Clarify functionality of CLM package/patch allow filters
   (bsc#1236234)
 - Corrected the instruction for logging in to Azure instance in 
