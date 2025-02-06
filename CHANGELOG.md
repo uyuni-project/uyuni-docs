@@ -1,5 +1,7 @@
 - Set version number of host operating system back to SUSE Linux
   Enterprise 5.5
+- Remove image with beta reference in Installation and Upgrade Guide
+  (bsc#1236678)
 - Clarify functionality of CLM package/patch allow filters
   (bsc#1236234)
 - Updated Backup and Restore chapter regarding containerization in
