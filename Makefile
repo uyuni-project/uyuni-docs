@@ -2,10 +2,10 @@
 # Author: Joseph Cayouette, Pau Garcia Quiles
 SHELL = bash
 
-# SUMA Productname and file replacement
-PRODUCTNAME_SUMA ?= 'SUSE Multi-Linux Manager'
-FILENAME_SUMA ?= suse_multi_linux_manager
-SUMA_CONTENT ?= true
+# MLM Productname and file replacement
+PRODUCTNAME_MLM ?= 'SUSE Multi-Linux Manager'
+FILENAME_mlm ?= suse_multi_linux_manager
+MLM_CONTENT ?= true
 
 # UYUNI Productname and file replacement
 PRODUCTNAME_UYUNI ?= 'Uyuni'
@@ -26,7 +26,7 @@ PDF_THEME_UYUNI ?= uyuni
 # UYUNI Chinese PDF Theme
 PDF_THEME_UYUNI_CJK ?= uyuni-cjk
 
-SUPPLEMENTAL_FILES_SUMA=$(shell grep supplemental_files site.yml | cut -d ':' -f 2 | sed "s, ,,g")/partials/header-content.hbs
+SUPPLEMENTAL_FILES_MLM=$(shell grep supplemental_files site.yml | cut -d ':' -f 2 | sed "s, ,,g")/partials/header-content.hbs
 SUPPLEMENTAL_FILES_UYUNI=$(shell grep supplemental_files site.yml | cut -d ':' -f 2 | sed "s, ,,g")/partials/header-content.hbs
 
 #REVDATE ?= "$(shell date +'%B %d, %Y')"
@@ -45,8 +45,8 @@ define validate-product
 	NODE_PATH="$(npm -g root)" antora --generator @antora/xref-validator $(2)
 endef
 
-define enable-suma-in-antorayml
-	$(call reset-html-language-selector-suma)
+define enable-mlm-in-antorayml
+	$(call reset-html-language-selector-mlm)
 	cd ./$(1) && \
 	sed -i "s/^ # *\(name: *docs\)/\1/;\
 	s/^ # *\(title: *docs\)/\1/;\
@@ -55,10 +55,10 @@ define enable-suma-in-antorayml
 	cd $(current_dir)
 endef
 
-define antora-suma-function
+define antora-mlm-function
 	cd $(current_dir)
-	$(call enable-suma-in-antorayml,$(1)) && \
-	cd $(current_dir)/$(1) && DOCSEARCH_ENABLED=true SITE_SEARCH_PROVIDER=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) npx antora $(current_dir)/$(1)/suma-site.yml
+	$(call enable-mlm-in-antorayml,$(1)) && \
+	cd $(current_dir)/$(1) && DOCSEARCH_ENABLED=true SITE_SEARCH_PROVIDER=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) npx antora $(current_dir)/$(1)/mlm-site.yml
 endef
 
 define enable-uyuni-in-antorayml
@@ -96,8 +96,8 @@ define enable-html-language-selector
 	sed -n -i 'p; s,<\!--\ LANGUAGESELECTOR\ -->,<a role=\"button\" class=\"navbar-item\" id=\"$(1)\" onclick="selectLanguage(this.id)"><img src="{{uiRootPath}}/img/$(2).svg" class="langIcon $(3)">\&nbsp;$(4)</a>,p' translations/$(5)
 endef
 
-define enable-suma-html-language-selector
-	$(call enable-html-language-selector,$(1),$(2),$(3),$(4),$(SUPPLEMENTAL_FILES_SUMA))
+define enable-mlm-html-language-selector
+	$(call enable-html-language-selector,$(1),$(2),$(3),$(4),$(SUPPLEMENTAL_FILES_MLM))
 endef
 
 define enable-uyuni-html-language-selector
@@ -117,7 +117,7 @@ define obs-packages-product
 	mv $(3).tar.gz $(4).tar.gz build/packages
 endef
 
-# SUMA Book Builder
+# mlm Book Builder
 define pdf-book-create
 	cd $(current_dir)/$(1) && LANG=$(9) LC_ALL=$(9) LC_TYPE=$(9) asciidoctor-pdf \
 		-r $(current_dir)/extensions/xref-converter.rb \
@@ -126,7 +126,7 @@ define pdf-book-create
 		-a pdf-theme=$(2) \
 		-a pdf-fontsdir=$(PDF_FONTS_DIR) \
 		-a productname=$(3) \
-		-a suma-content=$(4) \
+		-a mlm-content=$(4) \
 		-a examplesdir=modules/$(6)/examples \
 		-a imagesdir=modules/$(6)/assets/images \
 		-a revdate="$(shell LANG=$(9) LC_ALL=$(9) LC_TYPE=$(9) date +'$(10)')" \
@@ -198,9 +198,9 @@ help: ## Prints a basic help menu about available targets
 		printf "%s\n" $$help_info; \
 	done
 
-.PHONY: configure-suma
-configure-suma:
-	./configure suma
+.PHONY: configure-mlm
+configure-mlm:
+	./configure mlm
 
 .PHONY: configure-uyuni
 configure-uyuni:
@@ -224,14 +224,14 @@ copy-branding:
 	mkdir -p $(current_dir)/translations
 	cp -a $(current_dir)/branding $(current_dir)/translations/
 
-.PHONY: configure-suma-branding-dsc
-configure-suma-branding-dsc:
-	sed -i -e 's|supplemental_files: ./branding/supplemental-ui/suma/.*|supplemental_files: ./branding/supplemental-ui/suma/susecom-2023|' site.yml
+.PHONY: configure-mlm-branding-dsc
+configure-mlm-branding-dsc:
+	sed -i -e 's|supplemental_files: ./branding/supplemental-ui/mlm/.*|supplemental_files: ./branding/supplemental-ui/mlm/susecom-2023|' site.yml
 	cat site.yml
 
-.PHONY: configure-suma-branding-webui
-configure-suma-branding-webui:
-	sed -i -e 's|supplemental_files: ./branding/supplemental-ui/suma/.*|supplemental_files: ./branding/supplemental-ui/suma/webui-2023|' site.yml
+.PHONY: configure-mlm-branding-webui
+configure-mlm-branding-webui:
+	sed -i -e 's|supplemental_files: ./branding/supplemental-ui/mlm/.*|supplemental_files: ./branding/supplemental-ui/mlm/webui-2023|' site.yml
 	cat site.yml
 
 .PHONY: clean-branding
@@ -246,18 +246,18 @@ clean: clean-branding
 for-publication:
 	touch $(current_dir)/for-publication
 
-.PHONY: antora-suma-for-publication
-antora-suma-for-publication: for-publication antora-suma
+.PHONY: antora-mlm-for-publication
+antora-mlm-for-publication: for-publication antora-mlm
 
 .PHONY: antora-uyuni-for-publication
 antora-uyuni-for-publication: for-publication antora-uyuni
 
-.PHONY: set-html-language-selector-suma
-set-html-language-selector-suma:
+.PHONY: set-html-language-selector-mlm
+set-html-language-selector-mlm:
 	cd $(current_dir)
-	$(call enable-suma-html-language-selector,zh_CN,china,china,中文)
-	$(call enable-suma-html-language-selector,ja,jaFlag,japan,日本語)
-	$(call enable-suma-html-language-selector,ko,koFlag,korea,한국어)
+	$(call enable-mlm-html-language-selector,zh_CN,china,china,中文)
+	$(call enable-mlm-html-language-selector,ja,jaFlag,japan,日本語)
+	$(call enable-mlm-html-language-selector,ko,koFlag,korea,한국어)
 
 .PHONY: set-html-language-selector-uyuni
 set-html-language-selector-uyuni:
@@ -266,8 +266,8 @@ set-html-language-selector-uyuni:
 	$(call enable-uyuni-html-language-selector,ja,jaFlag,japan,日本語)
 	$(call enable-uyuni-html-language-selector,ko,koFlag,korea,한국어)
 
-.PHONY: all-suma
-all-suma: configure-suma obs-packages-suma
+.PHONY: all-mlm
+all-mlm: configure-mlm obs-packages-mlm
 
 .PHONY: all-uyuni
 all-uyuni: configure-uyuni obs-packages-uyuni
