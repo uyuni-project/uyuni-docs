@@ -1,3 +1,5 @@
+- Emphasize the importance of resizing the default partition before
+  deploying in KVM environments (bsc#1234451)
 - Remove image with beta reference in Installation and Upgrade Guide
   (bsc#1236678)
 - Clarify functionality of CLM package/patch allow filters
