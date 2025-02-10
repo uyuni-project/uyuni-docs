@@ -45,10 +45,14 @@ The only mandatory parameter for the script is the newly configured IP address o
     You also need to provide configuration settings for reverse name resolution.
     Changing network settings is done in the same way as with renaming any other system.
 . Reboot the {productname} Server to use the new network configuration and to ensure the hostname has changed.
-. Run the script [command]``spacewalk-hostname-rename`` script with the public IP address of the server.
-    If the server is not using the new hostname, the script fails.
-    Be aware that this script refreshes the pillar data for all {salt} clients: the time it takes to run depends on the number of registered clients.
-
+. On the container host, from the command line, execute the following command to configure the public IP address of the server:
++
+----
+mgrctl exec -ti -- spacewalk-hostname-rename <PUBLIC_IP_ADDRESS>
+----
++
+  If the server is not using the new hostname, the script fails.
+  Be aware that this script refreshes the pillar data for all {salt} clients: the time it takes to run depends on the number of registered clients.
 . *Skip this step if the clients are managed via a {productname} proxy.*
   Re-configure the clients directly managed to make them aware of the new hostname and IP address.
   In the {salt} client configuration file, you must specify the name of the new {salt} master ({productname} Server) (the filename is [path]``/etc/venv-salt-bundle/minion``or, if you do not use the {salt} bundle, [path]``/etc/salt/minion``):
@@ -57,17 +61,11 @@ The only mandatory parameter for the script is the newly configured IP address o
 master: <new_hostname>
 ----
 
-. Restart the [systemitem]``venv-salt-minion`` service (if using the {salt} bundle):
+. Restart server.
+  On the container host, run the command:
 +
 ----
-systemctl restart venv-salt-minion
-----
-
-+
-Or  the [systemitem]``salt-minion``  service (if not using the {salt} bundle):
-+
-----
-systemctl restart salt-minion
+mgradm restart
 ----
 
 . To fully propagate the hostname to the {salt} client configuration apply the high state.
