@@ -1,3 +1,5 @@
+- Updated host renaming in Troubleshooting section of the
+  Administration Guide
 - Remove image with beta reference in Installation and Upgrade Guide
   (bsc#1236678)
 - Clarify functionality of CLM package/patch allow filters
