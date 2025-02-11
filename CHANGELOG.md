@@ -1,10 +1,12 @@
+- Added note to limit squid's cache_dir size to 60% of availalbe
+  free space in Installation and Upgrade Guide
 - Activation key procedure enhanced in Client Configuration Guide
   (bsc#1233492)
 - Remove image with beta reference in Installation and Upgrade Guide
   (bsc#1236678)
 - Clarify functionality of CLM package/patch allow filters
   (bsc#1236234)
-- Corrected the instruction for logging in to Azure instance in 
+- Corrected the instruction for logging in to Azure instance in
   Specialized Guides (bsc#1234442)
 - Updated Backup and Restore chapter regarding containerization in
   Administration Guide
