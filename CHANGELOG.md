@@ -1,4 +1,4 @@
-- Set version number of host operating system back to SUSE Linux
+- Set version number of host operating system back to SUSE Linux Micro
   Enterprise 5.5
 - Emphasized the importance of resizing the default partition before
   deploying in KVM environments (bsc#1234451)
