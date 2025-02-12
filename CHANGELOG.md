@@ -1,3 +1,5 @@
+- Emphasized the importance of resizing the default partition before
+  deploying in KVM environments (bsc#1234451)
 - Activation key procedure enhanced in Client Configuration Guide
   (bsc#1233492)
 - Remove image with beta reference in Installation and Upgrade Guide
