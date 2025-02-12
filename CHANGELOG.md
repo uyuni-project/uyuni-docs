@@ -1,4 +1,4 @@
-- Added note to limit squid's cache_dir size to 60% of availalbe
+- Added note to limit Squid's cache_dir size to 60% of available
   free space in Installation and Upgrade Guide
 - Activation key procedure enhanced in Client Configuration Guide
   (bsc#1233492)
