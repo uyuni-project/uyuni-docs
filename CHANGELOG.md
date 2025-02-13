@@ -1,9 +1,17 @@
 - Set version number of host operating system back to SUSE Linux
-  Enterprise 5.5
+  Enterprise Micro 5.5
+- Improved SSL certificate importing in Administration Guide
+  (bsc#1236707)
+- Emphasized the importance of resizing the default partition before
+  deploying in KVM environments (bsc#1234451)
+- Activation key procedure enhanced in Client Configuration Guide
+  (bsc#1233492)
 - Remove image with beta reference in Installation and Upgrade Guide
   (bsc#1236678)
 - Clarify functionality of CLM package/patch allow filters
   (bsc#1236234)
+- Corrected the instruction for logging in to Azure instance in
+  Specialized Guides (bsc#1234442)
 - Updated Backup and Restore chapter regarding containerization in
   Administration Guide
 - Corrected the instruction for logging in to Azure instance in
