@@ -18,10 +18,13 @@ zypper update
 == Network Configuration
 
 // (Azure requirement, not ours).
-For {productname} {payg} setup it is required, that a new Virtual Network and a new subnet is configured.
-It is impossible to setup the instance in an existing network.
-When you setup new clients which should be managed, take care that you put them into the private subnet which is configured with {productname} {payg}.
+Remember, the {productname} {payg} setup requires, that a new Virtual Network and a new subnet is configured, which was performed in the previous step.
 
+Because {productname} {payg} is deployed as a 'Managed Application' it is not possible to deploy into an existing network.
+
+Before moving on to the next step, ensure the network is correctly configured:
+
+When you setup new clients which should be managed, take care that you put them into the private subnet which is configured with {productname} {payg} or peer your networks.
 
 [NOTE]
 ====
@@ -33,9 +36,9 @@ If you want to manage systems in an already existing network, you must configure
 . Ensure the network configuration aligns such that `hostname -f` yields the identical name as the reverse DNS lookup of the private IP address. For instance, when executing `nslookup 10.0.0.X`.
 
 . Insert the private IP with its Fully Qualified Domain Name (FQDN) into `/etc/hosts`. For example: +
-`10.0.0.4   instancename.internal.cloudapp.net`
+`10.0.0.4   _instancename.location_.internal.cloudapp.azure.com`
 
-. Edit `/etc/sysconfig/network/config` and append `internal.cloudapp.net` to `NETCONFIG_DNS_STATIC_SEARCHLIST`.
+. Edit `/etc/sysconfig/network/config` and append `internal.cloudapp.azure.com` to `NETCONFIG_DNS_STATIC_SEARCHLIST`.
 
 . Execute `netconfig update`.
 
@@ -43,9 +46,9 @@ If you want to manage systems in an already existing network, you must configure
 
 [IMPORTANT]
 ====
-When adding new virtual machines (VMs), such as {sles} 15 SP5, it's crucial to ensure that they are configured within the same subnet as the SUSE Manager instance. This step is essential for successful network setup and integration.
+When adding new virtual machines (VMs), such as {sles}, it's crucial to ensure that they are configured within the same subnet as the {productname} instance, or that you have setup network peering. This step is essential for successful network setup and integration.
 
-Additionally, be mindful of the geographical restrictions associated with your plans. Make sure to utilize the appropriate Azure accounts which correspond to the specific geographic zones of your project. 
+Additionally, be mindful of the geographical restrictions associated with your plans. Make sure to utilize the appropriate Azure accounts which correspond to the specific geographic zones of your project.
 ====
 
 == Configure Storage
@@ -61,22 +64,25 @@ transactional-update
 
 . Reboot the system.
 
-. Configure storage with the [command]``mgr-storage-server`` tool or in the case of the proxy use [command]``mgr-storage-proxy``. 
+. Configure storage with the [command]``mgr-storage-server`` tool or in the case of the proxy use [command]``mgr-storage-proxy``.
 For more information, see [command]``mgr-storage-server --help`` or [command]``mgr-storage-proxy --help``.
 This tool simplifies creating the container storage and database volumes.
 
+You need to provide the block devices, [command]``mgr-storage-server <storage-disk-device> <database-disk-device>``
 
-. Format the command in the following manner: 
-+
+The command
 
-----
-mgr-storage-server <storage-disk-device> [<database-disk-device>]
+[command] ``ls /dev/disk/azure/scsi1/``
 
-#For example: 
+shows you the to disks created during the deployment
 
-mgr-storage-server /dev/nvme1n1 /dev/nvme2n1
-----
-+
+ lun3 is the storage DiskName
+ lun4 is the database DiskName
+
+so the example command would be
+
+[command]``mgr-storage-server /dev/disk/azure/scsi1/lun3 /dev/disk/azure/scsi1/lun4``
+
 
 [NOTE]
 ====
@@ -86,18 +92,3 @@ For more information, see xref:installation-and-upgrade:container-management/per
 ====
 
 . As root run `mgradm install podman <FQDN>` to deploy.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
