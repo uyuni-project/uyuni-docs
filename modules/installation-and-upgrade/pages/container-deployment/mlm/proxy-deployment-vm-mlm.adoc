@@ -1,0 +1,190 @@
+[[proxy-install-vm]]
+= {productname} Proxy Deployment as a Virtual Machine - KVM
+ifeval::[{uyuni-content} == true]
+:noindex:
+endif::[]
+
+This chapter provides the Virtual Machine settings for deployment of {productname} {productnumber} Proxy as an image.
+KVM will be combined with Virtual Machine Manager (_virt-manager_) as a sandbox for this installation.
+
+
+
+// FIXME: make this section a snippet or move it to a general intro for both,
+//        KVM and VMware
+== Available Images
+
+[IMPORTANT]
+====
+The preferred method for deploying {productnumber} Proxy is to use one of the following available images.
+All tools are included in these images simplifying deployment.
+====
+
+Images for {productname} {productnumber} Proxy are available at link:https://www.suse.com/download/suse-manager/[{productname} {productnumber} VM images].
+
+[NOTE]
+====
+For more information on preparing raw images, see:
+
+* link:https://documentation.suse.com/en-us/sl-micro/6.1/single-html/SL-Micro-deployment/#sec-raw-preparation[]
+* link:https://documentation.suse.com/en-us/sl-micro/6.1/single-html/SL-Micro-deployment/#cha-images-procedure[]
+
+For additional information on the self install images, see:
+
+* link:https://documentation.suse.com/en-us/sl-micro/6.1/single-html/SL-Micro-deployment/#cha-selfinstal-procedure[]
+====
+
+// FIXME more archs supported?
+
+.Available Proxy Images
+[cols="3, 3", options="header"]
+|===
+| Architecture | Image Format
+
+| aarch64| qcow2, vmdk
+
+| x86_64  | qcow2, vmdk, raw, Self Installer
+
+|===
+
+
+[[proxy-quickstart.sect.kvm.settings]]
+== Virtual Machine Manager (virt-manager) Settings
+
+Enter the following settings when creating a new virtual machine using *virt-manager*.
+
+[NOTE]
+====
+This table specifies the minimum requirements.
+These are suitable for a quick test installation, such as a server with one client.
+If you want to use a production environment and need background information about disk space, see xref:installation-and-upgrade:hardware-requirements.adoc[].
+====
+
+
+[cols="1,1", options="header"]
+|===
+2+<| KVM Settings
+| Installation Method | Import Existing Disk Image
+| OS:                 | Linux
+| Version:            | {productname}-Proxy.x86_64-5.1.*.qcow2
+| Memory:             | 2 GB (minimum)
+| CPU's:              | 2
+| Storage Format:     | _.qcow2_ 40 GB (Default) Root Partition
+| Name:               | test-setup
+| Network             | Bridge _br0_
+|===
+
+
+[NOTE]
+====
+[path]``/var/lib/containers/storage/volumes``
+Minimum 150 GB.  
+Storage requirements should be calculated for the number of ISO distribution images, containers, and bootstrap repositories you will use.
+====
+
+
+
+[[proxy-minimmal.kvm.setup]]
+== Initial KVM Setup
+
+.Procedure: Creating Initial Setup
+. Create a new virtual machine using the downloaded {minimal} KVM image and select [guimenu]``Import existing disk image``.
+. Configure RAM and number of CPUs (at least 16 GB RAM and 4 CPUs).
+. Name your KVM machine and select the [guimenu]``Customize configuration before install`` check box.
+. Click btn:[Begin Installation] to boot from the image.
+. At the JeOS Firstboot screen select start to continue.
++
+
+image::jeos-firstboot.png[]
+
+. Select keyboard layout.
++
+
+image::select-keyboard.png[]
+
+.  Accept the license agreement.
++
+
+image::accept-license-agreement.png[]
+
+. Select your time zone.
++
+
+image::enter-timezone.png[]
+
+. Enter a password for root.
++
+
+image::root-password.png[]
+
+. When installation completes log in as root.
+
+. Proceed to the next section.
+
+
+
+include::../register-proxy-mlm.adoc[]
+
+
+include::../actkey-bootstrap-proxy-mlm.adoc[]
+
+
+include::../generate_proxy_config.adoc[]
+
+
+include::../transfer_proxy_config.adoc[]
+
+
+include::../start_proxy.adoc[]
+
+
+////
+[[installation-proxy-containers-services]]
+== Install container services on the host system
+ifeval::[{mlm-content} == true]
+
+[NOTE]
+====
+[literal]``Containers Module`` is required to be available for container host on a {sles} machine.
+====
+endif::[]
+
+{productname} Proxy containers are using [literal]``podman`` and [literal]``systemd`` to run and manage all proxy containers.
+
+First step is to install the [literal]``mgrpxy`` utility provided by the package of the same name.
+
+ifeval::[{mlm-content} == true]
+The [literal]``mgrpxy`` package is available in the {productname} Proxy product repositories.
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+The [literal]``mgrpxy`` package is available in the container utils repository: pick the one matching the distribution in: https://download.opensuse.org/repositories/systemsmanagement:Uyuni:/Stable:/ContainerUtils/.
+endif::[]
+
+To install them run:
+
+----
+zypper in helm mgrpxy
+----
+////
+
+
+=== Using a Custom Container Image for a Service
+
+By default, the {productname} Proxy suite is set to use the same image version and registry path for each of its services.
+However, it is possible to override the default values for a specific service using the install parameters ending with [literal]``-tag`` and [literal]``-image``.
+
+For example, use it like this:
+
+----
+mgrpxy install podman --httpd-tag 0.1.0 --httpd-image registry.opensuse.org/uyuni/proxy-httpd /path/to/config.tar.gz
+----
+
+It adjusts the configuration file for the httpd service, where [path]``registry.opensuse.org/uyuni/proxy-httpds`` is the image to use and [literal]``0.1.0`` is the version tag, before restarting it.
+
+To reset the values to defaults, run the install command again without those parameters:
+
+----
+mgrpxy install podman /path/to/config.tar.gz
+----
+
+This command first resets the configuration of all services to the global defaults and then reloads it.

@@ -3,17 +3,17 @@
 
 This section contains information about registering clients running {ubuntu} 20.04 LTS, 22.04 LTS and 24.04 LTS operating systems.
 
-ifeval::[{suma-content} == true]
+ifeval::[{mlm-content} == true]
 // Use list format: repository URLs / packages and metadata / version info
 [IMPORTANT]
 ====
-* {ubuntu} 20.04, 22.04 and 24.04 repository URLs are available from {scc}
+* {ubuntu} 20.04, 22.04 and 24.04 repository URLs are available from {scclongform}
 * Packages and metadata are provided by Ubuntu, not by {suse}
 * For supported products, see the support table and the release notes
 ====
 endif::[]
 
-ifeval::[{suma-content} == true]
+ifeval::[{mlm-content} == true]
 {productname} supports {ubuntu} 20.04 LTS, 22.04 LTS and 24.04 LTS clients using {salt}.
 endif::[]
 
@@ -31,7 +31,7 @@ Before you register {ubuntu} clients to your {productname} Server, you need to a
 
 include::snippets/arch-other-note.adoc[]
 
-ifeval::[{suma-content} == true]
+ifeval::[{mlm-content} == true]
 
 The products you need for this procedure are:
 
@@ -182,9 +182,9 @@ The procedure shown here can be used to circumvent the subscription limitations 
 
 == Check Synchronization Status
 
-ifeval::[{suma-content} == true]
+ifeval::[{mlm-content} == true]
 
-include::snippets/check_sync_webui_suma.adoc[]
+include::snippets/check_sync_webui_mlm.adoc[]
 
 endif::[]
 
@@ -232,6 +232,10 @@ If the default user has been granted administrative privileges during installati
 With cloud instances this does not happen because [command]``cloud-init`` automatically creates a file under [path]``/etc/sudoers.d`` and grants privilege escalation through [command]``sudo`` without the need for a password.
 ====
 
+
+
+=== Grant Root User Access
+
 .Procedure: Granting Root User Access
 
 . On the client, edit the [filename]``sudoers`` file:
@@ -252,6 +256,36 @@ Replace [systemitem]``<user>`` with the name of the user that is bootstrapping t
 This procedure grants root access without requiring a password, which is required for registering the client.
 When the client is successfully installed it runs with root privileges, so the access is no longer required.
 We recommend that you remove the line from the [path]``sudoers`` file after the client has been successfully installed.
+====
+
+
+
+=== Bootstrap as Install-created User via SSH
+
+To bootstrap an Ubuntu client via SSH you must add the install-created user to the sudo group.
+Then run the bootstrap script from the client.
+
+.Procedure: Adding Install-created User to sudo Group and Bootstrapping via SSH
+
+. On the client, as root, run from the command line (replace [literal]``<username>`` with the name of the install-created user):
++
+
+----
+sudo usermod -aG sudo <username>
+----
+
+. Bootstrap the client system from its command line (replace [literal]``<SERVER_FQDN>`` with the fully qualified domain name of the {productname} Server):
++
+
+----
+sudo su -
+curl -Sks https://<SERVER_FQDN>/pub/bootstrap/bootstrap-script.sh | /bin/bash
+----
+
+[IMPORTANT]
+====
+{ubuntu} can only be bootstrapped using the corresponding {ubuntu} bootstrap script run from the client system's command line after issuing [command]``sudo su -`` as above.
+It cannot be bootstrapped via the {productname} {webui} due to the fact that the root user is disabled on {ubuntu} by default, and that the {webui} does not permit for privilege escalation of the {ubuntu} install-created user.
 ====
 
 

@@ -1,0 +1,113 @@
+[[proxy-install-vmware]]
+= {productname} Proxy Deployment as a Virtual Machine - VMware
+ifeval::[{uyuni-content} == true]
+:noindex:
+endif::[]
+
+This chapter provides the Virtual Machine settings for deployment of {productname} {productnumber} Proxy as an image.
+VMware will be used as a sandbox for this installation.
+
+
+
+// FIXME: make this section a snippet or move it to a general intro for both,
+//        KVM and VMware
+== Available Images
+
+[IMPORTANT]
+====
+The preferred method for deploying {productname} Proxy is to use one of the following available images.
+All tools are included in these images greatly simplifying deployment.
+====
+
+Images for {productname} {productnumber} Proxy are available at link:https://www.suse.com/download/suse-manager/[{productname} {productnumber} VM images].
+
+[NOTE]
+====
+For more information on preparing raw images, see:
+
+* link:https://documentation.suse.com/en-us/sl-micro/6.1/single-html/SL-Micro-deployment/#sec-raw-preparation[]
+* link:https://documentation.suse.com/en-us/sl-micro/6.1/single-html/SL-Micro-deployment/#cha-images-procedure[]
+
+For additional information on the self install images, see:
+
+* link:https://documentation.suse.com/en-us/sl-micro/6.1/single-html/SL-Micro-deployment/#cha-selfinstal-procedure[]
+====
+
+// FIXME more archs supported?
+
+.Available Proxy Images
+[cols="3, 3", options="header"]
+|===
+| Architecture | Image Format
+
+| aarch64| qcow2, vmdk
+
+| x86_64  | qcow2, vmdk, raw, Self Installer
+
+|===
+
+
+[[proxy-quickstart.sect.vmware.settings]]
+== Virtual Machine Settings - VMware
+
+This sections describes VMware configurations, focusing on the creation of an extra virtual disk essential for the {productname} Proxy storage partition within VMware environments.
+
+
+.Procedure: Creating the VMware Virtual Machine
+
+. Download {productname} Proxy [filename]``.vmdk`` file then transfer a copy to your VMware storage.
+
+. Make a copy of uploaded [filename]``.vmdk`` file using VMware web interface.
+  This will convert provided [filename]``.vmdk`` file to the format suitable for vSpere hypervisor.
+
+. Create and name a new virtual machine based on the Guest OS Family [systemitem]``Linux`` and Guest OS Version {sle} 15 (64-bit).
+
+. Add an additional [systemitem]``Hard Disk 2`` of 500 GB (or more).
+
+. Configure RAM and number of CPUs (at least 16 GB RAM and 4 CPUs).
+
+. Set the network adapter as required.
+
+. Power on the VM, and follow firstboot dialogs (keyboard layout, license agreement, time zone, password for root).
+
+. When installation completes log in as root.
+
+. Proceed to the next section.
+
+
+
+include::../register-proxy-mlm.adoc[]
+
+
+include::../actkey-bootstrap-proxy-mlm.adoc[]
+
+include::../generate_proxy_config.adoc[]
+
+
+include::../transfer_proxy_config.adoc[]
+
+
+include::../start_proxy.adoc[]
+
+
+
+=== Using a Custom Container Image for a Service
+
+By default, the {productname} Proxy suite is set to use the same image version and registry path for each of its services.
+However, it is possible to override the default values for a specific service using the install parameters ending with [literal]``-tag`` and [literal]``-image``.
+
+For example, use it like this:
+
+----
+mgrpxy install podman --httpd-tag 0.1.0 --httpd-image registry.opensuse.org/uyuni/proxy-httpd /path/to/config.tar.gz
+----
+
+It adjusts the configuration file for the httpd service, where [path]``registry.opensuse.org/uyuni/proxy-httpds`` is the image to use and [literal]``0.1.0`` is the version tag, before restarting it.
+
+To reset the values to defaults, run the install command again without those parameters:
+
+----
+mgrpxy install podman /path/to/config.tar.gz
+----
+
+This command first resets the configuration of all services to the global defaults and then reloads it.

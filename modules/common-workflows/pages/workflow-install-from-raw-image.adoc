@@ -1,15 +1,20 @@
-[[workflow-inplace-sles-upgrade]]
+[[workflow-install-from-raw-image]]
+= Installing {productname} Using RAW Image
 
-= Installing {productname} using raw image
 
+{productname} offers various image formats, including a RAW format. 
+This guide demonstrates how to set up {productname} Server using the raw image.
 
-{productname} offers various image formats, including a raw format. This guide demonstrates how to set up {productname} Server using the raw image.
 
 
 == Use Case
 
-RAW images are pre-built, ready-to-use representations of a running operating system. Instead of being installed through a traditional installer, they are directly copied to the hard disk of the target host.
-Raw image format is flexible and compatible with a wide range of virtualization and deployment tools. This guide provides essential information about these pre-configured images.
+RAW images are pre-built, ready-to-use representations of a running operating system. 
+Instead of being installed through a traditional installer, they are directly copied to the hard disk of the target host.
+RAW image format is flexible and compatible with a wide range of virtualization and deployment tools. 
+
+This guide provides essential information about these pre-configured images.
+
 
 
 == Outcome 
@@ -17,81 +22,61 @@ Raw image format is flexible and compatible with a wide range of virtualization 
 Successful completion of this workflow results in successful installation of {productname} Server.
 
 
-== Step-by-step Preparation Instructions
 
+== Step-by-step Instructions
 
-[WARNING]
+[NOTE]
 ====
 This workflow is complex and time-consuming.
 Make sure that adequate testing is done before deploying the procedure in live environment.
 ====
 
-.Procedure: Prerequisites
+.Procedure: Prepare the Prerequisites
 [role=procedure]
-. *Download the Image:* Download the architecture-specific [literal]``.raw.xz`` image of SUSE Manager 5.0 Server for your target block size.
-
-
-. *Make Image Accessible:* Copy the image to a web server (preferred), NFS server, or expand the .raw file to add directly as a disk in a virtual environment (if supported).
-
-
-. *Boot Media:* Provide a bootable ISO ({sles} 15 SPX or {sle-micro} 5.5) to access the "Rescue System." Add netsetup=1 on the kernel command line for networking, or configure IP via ifcfg.
-
-. *Target Disk Setup:* In VMware, create:
+. *Download the Image:* Download the architecture-specific [literal]``.raw.xz`` image of {productname} Server for your target block size.
+. *Make Image Accessible:* Copy the image to a web server (preferred), or expand the [literal]``.raw`` file to add directly as a disk in a virtual environment (if supported).
+. *Target Disk Setup:* If applicable, in virtual machine hypervisor, create:
 .. A 40GB root disk
 .. Additional storage for persistent SUSE Manager data
+
 											
 .Procedure: Installation Steps
-										
-. *Prepare Network and Boot Environment*
-
+[role=procedure]										
+. *Prepare Boot Environment and Network*
+.. Provide a bootable ISO ({sles} 15 SPX or {sle-micro} 5.5) to access the "Rescue System."
+   Add [literal]``netsetup=1`` on the kernel command line for networking, or configure IP via [command]``ifcfg``.
 .. Create a new instance, attach the root and persistent storage, then attach the {sles} or {sle-micro} ISO as a virtual CD.
-.. Boot the instance to the ISO, selecting the “Rescue System.”
+.. Boot the instance to the ISO, selecting the [literal]``Rescue System``.
 .. Add the following on the command line to enable network configuration.
-
 +
 ----
 netsetup=1
 ----
 +
-. *Configure Network & Identify Devices*
-
+. *Configure Network and Identify Devices*
 .. Complete network setup as prompted and log in as root.
-.. Use fdisk to confirm the root device name
-+
-----
-fdisk -l
-----
-+
 .. Use a disk storage utility like [literal]``blockdev`` or [literal]``lsblk`` to verify the block size against your downloaded image.
 +
 ----
-blockdev --getpbsz /dev/sda
+blockdev --getpbsz $device
 ----
 +
-
-+
 ----
-lsblk -o NAME,PHY-SEC /dev/sda
+lsblk -o NAME,PHY-SEC
 ----
 +
 . *Transfer the Image*
-
 .. Use [literal]``curl`` to copy the [literal]``.raw.xz`` image onto the root disk:
 +
 ----
 curl -Sks $url | xz -d > $device -v
 ----
 +
-
-.. Replace [literal]``$url``  with the image URL and $device with the root partition device.
-							
+.. Replace [literal]``$url``  with the image URL and [literal]``$device`` with the root partition device.
 . *Finalize Boot and Configuration*
-
 .. Power off the instance, remove the virtual CD from the boot sequence, and start it again to boot from the newly created instance.
-.. Follow on-screen installation directions and, if needed, register with {scc}, adding the SUSE Manager Server Extension.
-
+.. Follow on-screen installation directions and, if needed, register with {scclongform}, adding the SUSE Manager Server Extension.
 . *Install VMware Tools (if applicable)*
-
 .. Install the [literal]``open-vm-tools``
 +
 ----
@@ -99,12 +84,13 @@ transactional-update pkg install open-vm-tools
 ----
 +
 .. Reboot after installation.
-
 . *Provision Persistent Storage*
-
 +
 ----
 mgr-storage-server $device
 ----
 +
-Ensure $device points to the fast, persistent storage added in VMware.
+Ensure [literal]``$device`` points to the fast, persistent storage.
+
+
+For more information, see xref:installation-and-upgrade:container-deployment/mlm/server-deployment-mlm.adoc#_persistent_volumes[Persistent Volumes].

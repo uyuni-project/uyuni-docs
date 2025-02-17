@@ -15,9 +15,9 @@ Before you begin, ensure you have:
 
 All files must be in PEM format.
 
-The host name of the SSL server certificate must match the fully qualified host name of the machine you deploy them on.
-You can set the host names in the [literal]``X509v3 Subject Alternative Name`` section of the certificate.
-You can also list multiple host names if your environment requires it.
+The hostname of the SSL server certificate must match the fully qualified hostname of the machine you deploy them on.
+You can set the hostnames in the [literal]``X509v3 Subject Alternative Name`` section of the certificate.
+You can also list multiple hostnames if your environment requires it.
 Supported Key types are [literal]``RSA`` and [literal]``EC`` (Elliptic Curve).
 
 Third-party authorities commonly use intermediate CAs to sign requested server certificates.
@@ -33,8 +33,8 @@ After you have completed the initial setup, you can replace the default certific
 
 .Procedure: Import Certificates on a New {productname} Server
 
-. Deploy the {productname} Server according to the instructions in xref:installation-and-upgrade:container-deployment/suma/server-deployment-suma.adoc[].
-  Make sure to pass the correct files as parameters to [literal]``mgradm install podman``. 
+. Deploy the {productname} Server according to the instructions in xref:installation-and-upgrade:install-server.adoc[].
+  Make sure to pass the correct files as parameters to [literal]``mgradm install podman``.
   The parameters are:
 +
 ----
@@ -54,24 +54,25 @@ After you have completed the initial setup, you can replace the default certific
 
 .Procedure: Import Certificates on a New {productname} Proxy
 
-. Install the {productname} Proxy according to the instructions in xref:installation-and-upgrade:container-deployment/suma/proxy-deployment-suma.adoc[].
+. Install the {productname} Proxy according to the instructions in xref:installation-and-upgrade:install-proxy.adoc[].
 . Follow the prompts to complete setup.
 
 
 [NOTE]
 ====
-Use the same certificate authority to sign all server certificates for servers and proxies.
+Use the same certificate authority (CA) to sign all server certificates for servers and proxies.
 Certificates signed with different CAs do not match.
 ====
 
 
 
+[[ssl-certs-import-replace]]
 == Replace Certificates
 
 
 [IMPORTANT]
 ====
-The following procedure needs to run inside of the container. 
+The following procedure needs to run inside of the container.
 Use [literal]``mgrctl term`` to open a terminal in the container before you execute it.
 ====
 
@@ -81,10 +82,28 @@ To replace the certificates, you can replace the installed CA certificate with t
 
 .Procedure: Replacing Existing Certificates
 
-. On the {productname} Server, at the command prompt, call the command `mgr-ssl-cert-setup` and provide the certificates as parameters:
+. On the {productname} container host, at the command prompt, temporarily copy the certificate files to the container:
++
+
+----
+for f in <Root_CA_Certificate> <Server_Cert_File> <Server_Key_File>; do
+  mgrctl cp $f server:/tmp
+done
+----
+
+. On the {productname} container host, call the following command to run [command]``mgr-ssl-cert-setup`` inside the container providing certificates as parameters:
 +
 ----
-mgrctl exec -- mgr-ssl-cert-setup --root-ca-file=<Path_to_Root_CA_Certificate> --server-cert-file=<Server_Cert_File> --server-key-file=<Server_Key_File>
+mgrctl exec -ti -- mgr-ssl-cert-setup --root-ca-file=/tmp/<Root_CA_Certificate> \
+  --server-cert-file=/tmp/<Server_Cert_File> --server-key-file=/tmp/<Server_Key_File>
+----
+
+. Remove the temporarily copied files from the container:
++
+
+----
+mgrctl exec -ti -- rm /tmp/<Root_CA_Certificate> /tmp/<Server_Cert_File> \
+  /tmp/<Server_Key_File>
 ----
 
 
@@ -96,18 +115,29 @@ This command performs a number of tests on the provided files to test if they ar
 . Restart services to pick up the changes:
 +
 ----
-mgrctl exec -- spacewalk-service stop
-mgrctl exec -- systemctl restart postgresql.service
-mgrctl exec -- spacewalk-service start
+mgradm restart
 ----
 
 
-If you are using a proxy, you need to generate a server certificate RPM for each proxy, using their host names and cnames.
-You should use [command]``mgr-ssl-cert-setup`` also on a {productname} Proxy to replace the certificates.
-Because the {productname} Proxy does not have a {postgresql} database, only [command]``spacewalk-service restart`` is sufficient.
+If you are using a proxy, you need to generate a server certificate RPM for each proxy, using their hostnames and cnames.
+Generate a new configuration tarball and deploy it:
+
+ifeval::[{mlm-content} == true]
+For more information, see xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc#_generate_proxy_configuration[].
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+For more information, see xref:installation-and-upgrade:container-deployment/uyuni/proxy-deployment-uyuni.adoc#proxy-setup-containers-generate-config[].
+proxy-deployment-uyuni.adoc
+endif::[]
 
 If the Root CA was changed, it needs to get deployed to all the clients connected to {productname}.
 
+
+
+=== Deploy the Root CA on Salt Clients
+
+If the Root CA was changed, it needs to get deployed to all the clients connected to {productname}.
 
 
 .Procedure: Deploying the Root CA on Salt Clients
