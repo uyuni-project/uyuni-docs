@@ -1,3 +1,5 @@
+- Updated host renaming in Troubleshooting section of the
+  Administration Guide
 - Improved SSL certificate importing in Administration Guide
   (bsc#1236707)
 - Emphasized the importance of resizing the default partition before
