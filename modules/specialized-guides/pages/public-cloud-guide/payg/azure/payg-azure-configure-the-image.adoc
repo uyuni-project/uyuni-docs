@@ -6,86 +6,144 @@ This section covers initial preparation and configuration of the Managed Applica
 There are two tabs you need to fill _Basic_ and _Virtual Machine Settings_
 
 . Fill out the _Basic_ tab
+
 +
+
 .. Project details
+
 ... As with every resource in Azure you need to provide a _Resource Group_ (RG). This can be an existing RG or you can create a new RG for this deployment.
+
 .. Do similar with the section _Instance Details_:
+
 ... Region, where the instance should run.
+
 ... Virtual machine name, is the name of the VM in which {productname} will run
+
 ... Username, is the administrator account for the {productname} VM
+
 ... SSH key source and key, are needed to access the machine.
+
 +
+
 We do not allow to use a password here. This is to reduce the risk of brute force attacks.
+
 .. Next is the section _Managed Application Details_
+
 ... Application name is the name of the Managed Application
+
 ... Managed Resource Group (MRG) where {productname} VM and its resources will be deployed into.
+
 +
+
 . Switch to the Tab _Virtual Machine Settings_
+
 +
-.. The default for the instance size is a D8as v5, which is a good baseline for a production server. It provides enough resources for more data disks and IOPS throughput for disk and network ( https://learn.microsoft.com/en-us/azure/virtual-machines/dasv5-dadsv5-series ).
+
+.. The default for the instance size is a D8as v5, which is a good baseline for a production server. It provides enough resources for more data disks and IOPS throughput for disk and network https://learn.microsoft.com/en-us/azure/virtual-machines/dasv5-dadsv5-series.
+
 +
+
 If you only need a test instance you can go smaller and choose a instance size with 4 vcpus and 16GB Memory or use maybe a B-Series ( **B**urstable) instance with similar as above configuration.
+
 +
+
 .. The diagnostic storage account
+
 +
+
 If you normally create a VM in the Azure portal, a boot diagnostics is enabled by default. This uses a managed storage account, which get set up here. You are able to choose an existing storage account or create a new one (default).
 
 .. OS Disk Size
+
 +
+
 This is the root disk of the{productname} install which holds the OS and the {productname} Application. In addition it holds /var/cache where you need to provide storage space for each product you want to manage (see {productname} Documentation - General Requirements - Hardware Requirements).
 The proposed default of 100GB should be accepted.
 
 .. Database Disk Size
+
 +
+
 This holds the Database for {productname} and needs a minimum of 50GB. The proposed value of 80GB is a good default suggestion.
 
 .. Storage Disk Size
+
 +
+
 This holds the package repositories and should have at least 100GB. There need to be 50GB for every SUSE product and >360GB for every RedHat or other Linux product. The proposed default of 500GB is a save default to start with.
 
-NOTE::  Repository synchronization will fail, if this directory runs out of disk space.
+[NOTE]
+====
+Repository synchronization will fail, if this directory runs out of disk space.
+====
 
 .. Public IP Address for the VM
+
 +
+
 - As default a Public IP Address is created to access the {productname} VM and Application. *If you use it, please ensure this is secure and access is limited*.
+
 +
+
+[CAUTION]
 ====
-CAUTION::
 Running {productname} on the public cloud means implementing robust security measures. It is essential to limit, filter, monitor, and audit access to the instance. SUSE strongly advises against a globally accessible {productname} instance that lacks adequate perimeter security.
 ====
+
 +
+
 You should really think twice about it, as the {productname} Server has, later on, access to all managed nodes and if someone get access to {productname} it would mean access to all managed nodes too. Threat actors actively hunt accessible machines with open management ports ( typical SSH or RDP ) especial at cloud providers.
+
 +
+
 A Network Security Group (NSG) is created by default if you choose to create a Public IP. It only allows inbound ssh access via port 22, as a minimal protection of the public IP.
+
 +
+
 You should additional restrict access to a defined list of networks and let the virtual network that Azure provides drop any requests that originate from other networks.
+
 +
+
 Furthermore, you also can add Just-in-time access and/or use the Azure Bastion Service and/or Firewall and/or limit address space other methods like VPN, private network to secure this public access.
+
 +
+
 - You can choose to not create a public IP address ( which is more secure ) but you need to use other methods to access the created {productname} VM and its Web UI to perform further configuration. Additional you need to take care of the DNS and a correct FQDN.
 
 .. DNS Prefix for the public IP Address
+
 The {productname} server must resolve its FQDN correctly. If the FQDN cannot be resolved, it can cause issues in several {productname} components. To ensure that the {productname} domain name can be resolved by its clients, both server and client machines must be connected to a working DNS server. You also need to ensure that *reverse lookups* are correctly configured.
+
 +
+
 If you use the Public IP address, a DNS name is automatically created from Azure. You only need to make sure that a unique name is used. The default suggestion creates one by including a random number to make the domain name unique.
+
 +
+
 If you do not use the public IP, you need to make sure that your setup can resolve the FQDN correctly as mentioned above.
 
 .. Virtual Network / Subnet
+
 You see a default proposal for a virtual network where SUSE Manager will reside. By click _edit_ you can also change it to your needs.
+
 +
+
 Remember that a _Managed Application_ will be deployed from SUSE to your Azure tenant, so this network is the network in the _Managed Resource Group (MRG)_ and can not be something already used.
 At a later stage, you need to peer this network to the network with the nodes you want to manage.
 Alternatively you can create the managed nodes in this network.
+
 +
+
 With all field filled out press _next_ or _Create_. The Azure portal perform a final check and provide you with a summary screen of this deployment.
+
 +
+
 If everything is OK, you can press _Create_ and the _Managed Application_ {productname} gets deployed.
 
 . After the VM is deployed, you can access it via SSH.
 
-[NOTE]
 .Usage and Costs
+[NOTE]
 ====
 Keep in mind that since this is a {payg} image, you will be billed according to your actual usage, including the number of systems you **manage** and **monitor** with this instance. It's essential to regularly track and review your usage to prevent unexpected costs and ensure alignment with your needs.
 ====
