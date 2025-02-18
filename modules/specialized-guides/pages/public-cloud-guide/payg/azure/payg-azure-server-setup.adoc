@@ -5,7 +5,10 @@
 . SSH into your {azure} instance.
 
 . Switch to the root user and update the system.
+
 +
+
+[source,shell]
 ----
 sudo -i
 transactional-update
@@ -35,7 +38,14 @@ For more information, see link:https://learn.microsoft.com/en-us/azure/virtual-n
 .Procedure: Network Configuration
 . Ensure the network configuration aligns such that `hostname -f` yields the identical name as the reverse DNS lookup of the private IP address. For instance, when executing `nslookup 10.0.0.X`.
 
-. Insert the private IP with its Fully Qualified Domain Name (FQDN) into `/etc/hosts`. For example: +
+. Insert the private IP with its Fully Qualified Domain Name (FQDN) into `/etc/hosts`. 
+
++
+
+For example: 
+
++
+
 `10.0.0.4   _instancename.location_.internal.cloudapp.azure.com`
 
 . Edit `/etc/sysconfig/network/config` and append `internal.cloudapp.azure.com` to `NETCONFIG_DNS_STATIC_SEARCHLIST`.
@@ -46,20 +56,25 @@ For more information, see link:https://learn.microsoft.com/en-us/azure/virtual-n
 
 [IMPORTANT]
 ====
-When adding new virtual machines (VMs), such as {sles}, it's crucial to ensure that they are configured within the same subnet as the {productname} instance, or that you have setup network peering. This step is essential for successful network setup and integration.
+When adding new virtual machines (VMs), such as {sles}, it's crucial to ensure that they are configured within the same subnet as the {productname} instance, or that you have setup network peering. 
+This step is essential for successful network setup and integration.
 
-Additionally, be mindful of the geographical restrictions associated with your plans. Make sure to utilize the appropriate Azure accounts which correspond to the specific geographic zones of your project.
+Additionally, be mindful of the geographical restrictions associated with your plans. 
+Make sure to utilize the appropriate Azure accounts which correspond to the specific geographic zones of your project.
 ====
 
 
 == Configure Storage
 
 .Procedure: Configuring Storage
+
 . SSH into your {azure} instance.
 
-. Switch to the root user and update the system.
+. Switch to the root user and update the system:
+
 +
 
+[source,shell]
 ----
 sudo -i
 transactional-update
@@ -67,31 +82,61 @@ transactional-update
 
 . Reboot the system.
 
-. Configure storage with the [command]``mgr-storage-server`` tool or in the case of the proxy use [command]``mgr-storage-proxy``.
-For more information, see [command]``mgr-storage-server --help`` or [command]``mgr-storage-proxy --help``.
-This tool simplifies creating the container storage and database volumes.
+. Configure storage using the appropriate tool:
 
-You need to provide the block devices, [command]``mgr-storage-server <storage-disk-device> <database-disk-device>``
+* For a standard setup, use [command]``mgr-storage-server``.
+* For a proxy configuration, use [command]``mgr-storage-proxy``.
 
-The command
+For more details, run:
 
-[command] ``ls /dev/disk/azure/scsi1/``
++
 
-shows you the to disks created during the deployment
+[source,shell]
+----
+mgr-storage-server --help
+mgr-storage-proxy --help
+----
 
- lun3 is the storage DiskName
- lun4 is the database DiskName
+These tools simplify the creation of container storage and database volumes.
 
-so the example command would be
+. Identify the block devices:
 
-[command]``mgr-storage-server /dev/disk/azure/scsi1/lun3 /dev/disk/azure/scsi1/lun4``
++
 
+[source,shell]
+----
+ls /dev/disk/azure/scsi1/
+----
+
+This command lists the disks created during deployment. Typically:
+
+* `lun3` is the storage disk.
+* `lun4` is the database disk.
+
+. Configure storage using the identified devices:
+
++
+
+[source,shell]
+----
+mgr-storage-server /dev/disk/azure/scsi1/lun3 /dev/disk/azure/scsi1/lun4
+----
 
 [NOTE]
 ====
-This command will create the following persistent storage volumes at [path]``/var/lib/containers/storage/volumes``:
+This command creates persistent storage volumes at:
 
-For more information, see xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[].
+[path]``/var/lib/containers/storage/volumes``
+
+For more details, see xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[].
 ====
 
-. As root run `mgradm install podman <FQDN>` to deploy.
+. Deploy using `mgradm` as root:
+
++
+
+[source,shell]
+----
+mgradm install podman <FQDN>
+----
+
