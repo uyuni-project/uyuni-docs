@@ -1,3 +1,5 @@
+- Updated host renaming in Troubleshooting section of the
+  Administration Guide
 - Set version number of host operating system back to SUSE Linux
   Enterprise 5.5
 - Remove image with beta reference in Installation and Upgrade Guide
