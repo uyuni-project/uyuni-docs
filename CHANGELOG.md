@@ -1,3 +1,5 @@
+- Fixed host operating system name in Installation and Upgrade
+  Guide
 - Updated host renaming in Troubleshooting section of the
   Administration Guide
 - Improved SSL certificate importing in Administration Guide
