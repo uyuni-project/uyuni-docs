@@ -31,8 +31,16 @@ Result: Renaming is successfully propagated
 If you change the hostname of the {productname} Server locally, your {productname} installation ceases to work properly.
 This is because the changes have not been made in the database, which prevents the changes from propagating out your clients and any proxies.
 
+
+
+== Rename Server
+
 If you need to change the hostname of the {productname} Server, you can do so using the [command]``spacewalk-hostname-rename`` script.
 This script updates the settings in the {postgresql} database and the internal structures of {productname}.
+
+
+
+=== Server Configuration
 
 The [command]``spacewalk-hostname-rename`` script is part of the [package]``spacewalk-utils`` package.
 
@@ -45,45 +53,85 @@ The only mandatory parameter for the script is the newly configured IP address o
     You also need to provide configuration settings for reverse name resolution.
     Changing network settings is done in the same way as with renaming any other system.
 . Reboot the {productname} Server to use the new network configuration and to ensure the hostname has changed.
-. Run the script [command]``spacewalk-hostname-rename`` script with the public IP address of the server.
-    If the server is not using the new hostname, the script fails.
-    Be aware that this script refreshes the pillar data for all {salt} clients: the time it takes to run depends on the number of registered clients.
+. On the container host, from the command line, execute the following command to configure the public IP address of the server:
 
-. *Skip this step if the clients are managed via a {productname} proxy.*
-  Re-configure the clients directly managed to make them aware of the new hostname and IP address.
-  In the {salt} client configuration file, you must specify the name of the new {salt} master ({productname} Server) (the filename is [path]``/etc/venv-salt-bundle/minion``or, if you do not use the {salt} bundle, [path]``/etc/salt/minion``):
 +
+
+[source,shell]
+----
+mgrctl exec -ti -- spacewalk-hostname-rename <PUBLIC_IP_ADDRESS>
+----
+
++
+
+If the server is not using the new hostname, the script fails.
+  Be aware that this script refreshes the pillar data for all {salt} clients: the time it takes to run depends on the number of registered clients.
+
+
+
+=== Directly Managed Clients Reconfiguration
+
+*Skip this procedure if clients are managed via a {productname} proxy.*
+
+With the following procedure, reconfigure directly managed clients to make them aware of the new hostname and IP address.
+
+.Procedure: Reconfiguring Directly Managed Clients
+. On the every client, in the {salt} client configuration file, specify the name of the new {salt} master ({productname} Server).
+  The filename is [path]``/etc/venv-salt-minion/minion.d/susemanager.conf`` or, if you do not use the {salt} bundle, [path]``/etc/salt-minion/minion.d/susemanager.conf``:
+
++
+
 ----
 master: <new_hostname>
 ----
 
-. Restart the [systemitem]``venv-salt-minion`` service (if using the {salt} bundle):
+. On every client, restart {salt} service.
+  Either run:
+
 +
+
+[source,shell]
 ----
 systemctl restart venv-salt-minion
 ----
 
 +
-Or  the [systemitem]``salt-minion``  service (if not using the {salt} bundle):
+
+Or, if you do not use the {salt} bundle, run:
+
 +
+
+[source,shell]
 ----
 systemctl restart salt-minion
 ----
 
-. To fully propagate the hostname to the {salt} client configuration apply the high state.
-  Applying the high state will update the hostname in the repository URLs.
 
+
+=== Client Connection with Applying High State
+
+Finally, to fully propagate the hostname to the {salt} client configuration, apply the high state.
+Applying the high state will update the hostname in the repository URLs.
+
+
+
+== Reconfigure Proxy
+
+Every proxy must be reconfigured.
+The new server certificate and key must be copied to the proxy.
+For more information, see xref:installation-and-upgrade:install-proxy.adoc[].
 
 
 [IMPORTANT]
 ====
-Any proxy must be reconfigured.
-The new server certificate and key must be copied to the proxy and the
-[command]``configure-proxy.sh`` script must be run.
-====
-
-[NOTE]
-====
 If you use PXE boot through a proxy, you must check the configuration settings of the proxy.
-On the proxy, run the [command]``configure-tftpsync.sh`` setup script and enter the requested information.
+If you use PXE boot through non-containerized {productname} Proxy 4.3, [systemitem]``tftpsync`` needs to be reconfigured.
+
+On the container host, execute:
+
+[source,shell]
+----
+mgrctl exec -ti -- configure-tftpsync.sh
+----
+
 ====
