@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# This script cleans up the POST-build PDF directories for documentation.suse.com.
+# Execute this script after running 'make antora-mlm' to ensure proper directory structure.
+# This task should be automated in the future.
+
 # Define directories
 BUILD_DIR="build"
 PDF_DIR="$BUILD_DIR/pdf"
