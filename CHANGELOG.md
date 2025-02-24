@@ -1,3 +1,5 @@
+- Add section about container image inspection to Troubleshooting in
+  Administration Guide (bsc#1236323)
 - Fixed host operating system name in Installation and Upgrade
   Guide
 - Updated host renaming in Troubleshooting section of the
