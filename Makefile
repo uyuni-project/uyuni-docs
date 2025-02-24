@@ -4,7 +4,7 @@ SHELL = bash
 
 # MLM Productname and file replacement
 PRODUCTNAME_MLM ?= 'SUSE Multi-Linux Manager'
-FILENAME_mlm ?= suse_multi_linux_manager
+FILENAME_MLM ?= suse_multi_linux_manager
 MLM_CONTENT ?= true
 
 # UYUNI Productname and file replacement

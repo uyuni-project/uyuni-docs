@@ -1,5 +1,9 @@
 - Added note about cache_dir size in Installation and Upgrade
   Guide
+- Updated host renaming in Troubleshooting section of the
+  Administration Guide
+- Improved SSL certificate importing in Administration Guide
+  (bsc#1236707)
 - Activation key procedure enhanced in Client Configuration Guide
   (bsc#1233492)
 - Remove image with beta reference in Installation and Upgrade Guide
