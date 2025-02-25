@@ -1,3 +1,5 @@
+- Added instructions for Server installation on SLES 15 SP6
+  to Installation and Upgrade Guide
 - Updated host renaming in Troubleshooting section of the
   Administration Guide
 - Set version number of host operating system back to SUSE Linux
