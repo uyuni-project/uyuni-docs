@@ -1,4 +1,5 @@
-- Added instructions for Server installation on SLES 15 SP6
+- Added instructions for Server installation on SUSE Linux
+  Enterprise Server 15 SP6
   to Installation and Upgrade Guide
 - Add section about container image inspection to Image
   Management chapter in Administration Guide (bsc#1236323)
