@@ -36,7 +36,9 @@ After you have completed the initial setup, you can replace the default certific
 . Deploy the {productname} Server according to the instructions in xref:installation-and-upgrade:install-server.adoc[].
   Make sure to pass the correct files as parameters to [literal]``mgradm install podman``.
   The parameters are:
+
 +
+
 ----
 3rd Party SSL Certificate Flags:
       --ssl-ca-intermediate strings   Intermediate CA certificate path
@@ -44,6 +46,7 @@ After you have completed the initial setup, you can replace the default certific
       --ssl-server-cert string        Server certificate path
       --ssl-server-key string         Server key path
 ----
+
 
 
 == Import Certificates for New Proxy Installations
@@ -70,12 +73,6 @@ Certificates signed with different CAs do not match.
 == Replace Certificates
 
 
-[IMPORTANT]
-====
-The following procedure needs to run inside of the container.
-Use [literal]``mgrctl term`` to open a terminal in the container before you execute it.
-====
-
 You can replace active certificates on your {productname} installation with a new certificate.
 To replace the certificates, you can replace the installed CA certificate with the new CA, and then update the database.
 
@@ -83,8 +80,10 @@ To replace the certificates, you can replace the installed CA certificate with t
 .Procedure: Replacing Existing Certificates
 
 . On the {productname} container host, at the command prompt, temporarily copy the certificate files to the container:
+
 +
 
+[source,shell]
 ----
 for f in <Root_CA_Certificate> <Server_Cert_File> <Server_Key_File>; do
   mgrctl cp $f server:/tmp
@@ -92,15 +91,20 @@ done
 ----
 
 . On the {productname} container host, call the following command to run [command]``mgr-ssl-cert-setup`` inside the container providing certificates as parameters:
+
 +
+
+[source,shell]
 ----
 mgrctl exec -ti -- mgr-ssl-cert-setup --root-ca-file=/tmp/<Root_CA_Certificate> \
   --server-cert-file=/tmp/<Server_Cert_File> --server-key-file=/tmp/<Server_Key_File>
 ----
 
 . Remove the temporarily copied files from the container:
+
 +
 
+[source,shell]
 ----
 mgrctl exec -ti -- rm /tmp/<Root_CA_Certificate> /tmp/<Server_Cert_File> \
   /tmp/<Server_Key_File>
@@ -109,11 +113,14 @@ mgrctl exec -ti -- rm /tmp/<Root_CA_Certificate> /tmp/<Server_Cert_File> \
 
 Intermediate CAs can either be available in the file which is specified with `--root-ca-file` or specified as extra options with `--intermediate-ca-file`.
 The `--intermediate-ca-file` option can be specified multiple times.
-This command performs a number of tests on the provided files to test if they are valid and can be used for the requested use case.
+The [command]``mgr-ssl-cert-setup`` command performs a number of tests on the provided files to test if they are valid and can be used for the requested use case.
 
-.Procedure
-. Restart services to pick up the changes:
+.Procedure: Restarting the Server
+. On the containter host, restart the server to pick up the changes:
+
 +
+
+[source,shell]
 ----
 mgradm restart
 ----
