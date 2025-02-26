@@ -1,5 +1,6 @@
 - Add section about container image inspection to Image
   Management chapter in Administration Guide (bsc#1236323)
+- Fixed typo in Installation and Upgrade Guide (bsc#1237403)
 - Updated host renaming in Troubleshooting section of the
   Administration Guide
 - Set version number of host operating system back to SUSE Linux
