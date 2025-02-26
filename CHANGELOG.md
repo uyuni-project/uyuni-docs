@@ -1,5 +1,10 @@
 - Added note about cache_dir size in Installation and Upgrade
   Guide
+- Add section about container image inspection to Image
+  Management chapter in Administration Guide (bsc#1236323)
+- Fixed typo in Installation and Upgrade Guide (bsc#1237403)
+- Fixed host operating system name in Installation and Upgrade
+  Guide
 - Updated host renaming in Troubleshooting section of the
   Administration Guide
 - Improved SSL certificate importing in Administration Guide
