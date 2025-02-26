@@ -1,5 +1,7 @@
 - Added instructions for Server installation on SLES 15 SP6
   to Installation and Upgrade Guide
+- Add section about container image inspection to Image
+  Management chapter in Administration Guide (bsc#1236323)
 - Fixed typo in Installation and Upgrade Guide (bsc#1237403)
 - Updated host renaming in Troubleshooting section of the
   Administration Guide
