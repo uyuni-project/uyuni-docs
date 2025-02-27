@@ -4,7 +4,9 @@
 - Updated host renaming in Troubleshooting section of the
   Administration Guide
 - Set version number of host operating system back to SUSE Linux
-  Enterprise 5.5
+  Enterprise Micro 5.5
+- Improved SSL certificate importing in Administration Guide
+  (bsc#1236707)
 - Remove image with beta reference in Installation and Upgrade Guide
   (bsc#1236678)
 - Clarify functionality of CLM package/patch allow filters
