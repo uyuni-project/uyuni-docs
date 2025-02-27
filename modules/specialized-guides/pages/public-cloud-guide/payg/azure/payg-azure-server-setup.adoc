@@ -1,27 +1,34 @@
 [[azure-server-setup]]
 = Initial Setup
+ifeval::[{uyuni-content} == true]
+:noindex:
+endif::[]
 
 .Procedure: Log in and Update the System
 . SSH into your {azure} instance.
 
 . Switch to the root user and update the system.
+
 +
+
+[source,shell]
 ----
 sudo -i
 transactional-update
 ----
-+ 
-. Reboot the system.
 
 
 
 == Network Configuration
 
 // (Azure requirement, not ours).
-For {productname} {payg} setup it is required, that a new Virtual Network and a new subnet is configured.
-It is impossible to setup the instance in an existing network.
-When you setup new clients which should be managed, take care that you put them into the private subnet which is configured with {productname} {payg}.
+Remember, the {productname} {payg} setup requires, that a new Virtual Network and a new subnet is configured, which was performed in the previous step.
 
+Because {productname} {payg} is deployed as a 'Managed Application' it is not possible to deploy into an existing network.
+
+Before moving on to the next step, ensure the network is correctly configured:
+
+When you setup new clients which should be managed, take care that you put them into the private subnet which is configured with {productname} {payg} or peer your networks.
 
 [NOTE]
 ====
@@ -34,10 +41,17 @@ For more information, see link:https://learn.microsoft.com/en-us/azure/virtual-n
 .Procedure: Network Configuration
 . Ensure the network configuration aligns such that `hostname -f` yields the identical name as the reverse DNS lookup of the private IP address. For instance, when executing `nslookup 10.0.0.X`.
 
-. Insert the private IP with its Fully Qualified Domain Name (FQDN) into `/etc/hosts`. For example: +
-`10.0.0.4   instancename.internal.cloudapp.net`
+. Insert the private IP with its Fully Qualified Domain Name (FQDN) into `/etc/hosts`. 
 
-. Edit `/etc/sysconfig/network/config` and append `internal.cloudapp.net` to `NETCONFIG_DNS_STATIC_SEARCHLIST`.
++
+
+For example: 
+
++
+
+`10.0.0.4   _instancename.location_.internal.cloudapp.azure.com`
+
+. Edit `/etc/sysconfig/network/config` and append `internal.cloudapp.azure.com` to `NETCONFIG_DNS_STATIC_SEARCHLIST`.
 
 . Execute `netconfig update`.
 
@@ -45,22 +59,25 @@ For more information, see link:https://learn.microsoft.com/en-us/azure/virtual-n
 
 [IMPORTANT]
 ====
-When adding new virtual machines (VMs), such as {sles} 15 SP5, it is crucial to ensure that they are configured within the same subnet as the {productname} instance. 
+When adding new virtual machines (VMs), such as {sles}, it's crucial to ensure that they are configured within the same subnet as the {productname} instance, or that you have setup network peering. 
 This step is essential for successful network setup and integration.
 
 Additionally, be mindful of the geographical restrictions associated with your plans. 
-Make sure to utilize the appropriate Azure accounts which correspond to the specific geographic zones of your project. 
+Make sure to utilize the appropriate Azure accounts which correspond to the specific geographic zones of your project.
 ====
 
 
 == Configure Storage
 
 .Procedure: Configuring Storage
+
 . SSH into your {azure} instance.
 
-. Switch to the root user and update the system.
+. Switch to the root user and update the system:
+
 +
 
+[source,shell]
 ----
 sudo -i
 transactional-update
@@ -68,42 +85,61 @@ transactional-update
 
 . Reboot the system.
 
-. Configure storage with the [command]``mgr-storage-server`` tool or in the case of the proxy use [command]``mgr-storage-proxy``. 
-For more information, see [command]``mgr-storage-server --help`` or [command]``mgr-storage-proxy --help``.
-This tool simplifies creating the container storage and database volumes.
-. Format the command in the following manner: 
+. Configure storage using the appropriate tool:
+
+* For a standard setup, use [command]``mgr-storage-server``.
+* For a proxy configuration, use [command]``mgr-storage-proxy``.
+
+For more details, run:
+
 +
+
+[source,shell]
 ----
-mgr-storage-server <storage-disk-device> [<database-disk-device>]
+mgr-storage-server --help
+mgr-storage-proxy --help
 ----
+
+These tools simplify the creation of container storage and database volumes.
+
+. Identify the block devices:
+
 +
-. For example: 
-+
+
+[source,shell]
 ----
-mgr-storage-server /dev/nvme1n1 /dev/nvme2n1
+ls /dev/disk/azure/scsi1/
 ----
+
+This command lists the disks created during deployment. Typically:
+
+* `lun3` is the storage disk.
+* `lun4` is the database disk.
+
+. Configure storage using the identified devices:
+
 +
+
+[source,shell]
+----
+mgr-storage-server /dev/disk/azure/scsi1/lun3 /dev/disk/azure/scsi1/lun4
+----
 
 [NOTE]
 ====
-This command will create the following persistent storage volumes at [path]``/var/lib/containers/storage/volumes``:
+This command creates persistent storage volumes at:
 
-For more information, see xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[].
+[path]``/var/lib/containers/storage/volumes``
+
+For more details, see xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[].
 ====
 
-. As root run `mgradm install podman <FQDN>` to deploy.
+. Deploy using `mgradm` as root:
 
++
 
-
-
-
-
-
-
-
-
-
-
-
-
+[source,shell]
+----
+mgradm install podman <FQDN>
+----
 
