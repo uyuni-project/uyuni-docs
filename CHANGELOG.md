@@ -1,3 +1,5 @@
+- Added instructions for Server installation on SUSE Linux
+  Enterprise Server 15 SP6 to Installation and Upgrade Guide
 - Remove image with beta reference in Installation and Upgrade Guide
   (bsc#1236678)
 - Set version number of host operating system back to SUSE Linux
