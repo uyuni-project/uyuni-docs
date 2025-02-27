@@ -1,6 +1,8 @@
+- Removed misleading admonition at the beginning of the Replace
+  Certificates section in the Administration Guide
 - Added note about cache_dir size in Installation and Upgrade
   Guide
-- Add section about container image inspection to Image
+- Added section about container image inspection to Image
   Management chapter in Administration Guide (bsc#1236323)
 - Fixed typo in Installation and Upgrade Guide (bsc#1237403)
 - Fixed host operating system name in Installation and Upgrade
