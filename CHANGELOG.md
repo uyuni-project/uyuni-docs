@@ -1,12 +1,19 @@
 - Added instructions for Server installation on SUSE Linux
   Enterprise Server 15 SP6  to Installation and Upgrade Guide
 - Add section about container image inspection to Image
+- Removed misleading admonition at the beginning of the Replace
+  Certificates section in the Administration Guide
+- Added section about container image inspection to Image
   Management chapter in Administration Guide (bsc#1236323)
+- Added note about cache_dir size in Installation and Upgrade
+  Guide
 - Fixed typo in Installation and Upgrade Guide (bsc#1237403)
 - Updated host renaming in Troubleshooting section of the
   Administration Guide
 - Set version number of host operating system back to SUSE Linux
-  Enterprise 5.5
+  Enterprise Micro 5.5
+- Improved SSL certificate importing in Administration Guide
+  (bsc#1236707)
 - Remove image with beta reference in Installation and Upgrade Guide
   (bsc#1236678)
 - Clarify functionality of CLM package/patch allow filters
