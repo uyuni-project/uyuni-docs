@@ -1,6 +1,5 @@
 - Added instructions for Server installation on SUSE Linux
-  Enterprise Server 15 SP6
-  to Installation and Upgrade Guide
+  Enterprise Server 15 SP6  to Installation and Upgrade Guide
 - Add section about container image inspection to Image
   Management chapter in Administration Guide (bsc#1236323)
 - Fixed typo in Installation and Upgrade Guide (bsc#1237403)
