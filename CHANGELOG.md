@@ -1,3 +1,6 @@
+- Added instructions for Server installation on SUSE Linux
+  Enterprise Server 15 SP6  to Installation and Upgrade Guide
+- Add section about container image inspection to Image
 - Removed misleading admonition at the beginning of the Replace
   Certificates section in the Administration Guide
 - Added section about container image inspection to Image
