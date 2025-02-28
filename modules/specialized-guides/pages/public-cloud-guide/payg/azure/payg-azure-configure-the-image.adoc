@@ -1,49 +1,147 @@
 = Initial Preparation and Configuration of the {azure} Image
 This section covers initial preparation and configuration of the image on {azure}.
 
-.Procedure: Configuring your {productname} instance
+== Configuring your {productname} instance
 
-. Start by logging into your Azure account at Azure Portal.
+There are two tabs you need to fill out: _Basics_ and _Virtual Machine Settings_.
 
-. In the Azure Portal, find the menu:[Virtual Machines] section. This can be done either through the **dashboard** or by using the **search bar**.
+=== Fill Out the _Basics_ Tab
 
-. Select menu:[Create a resource] in the top left corner of the portal.
+.. Project Details
+    ... As with every resource in Azure, you need to provide a _Resource Group_ (RG). This can be an existing RG or you can create a new RG for this deployment.
 
-. Choose menu:[Compute] and then select menu:[Virtual Machine].
+.. Instance Details
+    ... Region – where the instance should run.
+    ... Virtual Machine Name – the name of the VM in which {productname} will run.
+    ... Username – the administrator account for the {productname} VM.
+    ... SSH Key Source and Key – needed to access the machine.
 
-. You will be guided through the **Create a virtual machine** process.
++
+[NOTE]
+====
+We do not allow the use of a password here. This is to reduce the risk of brute force attacks.
+====
 
-. Fill in the required details such as subscription, resource group, and VM name.
+.. Managed Application Details
+    ... Application Name – the name of the Managed Application.
+    ... Managed Resource Group (MRG) – where the {productname} VM and its resources will be deployed into.
 
-. Choose a region for your VM. Ensure it complies with any geo-fencing policies you might have.
+=== Switch to the _Virtual Machine Settings_ Tab
 
-. In the **Image** dropdown, select the **{productname} {productnumber} with 24x7 Support ltd** or the **{productname} {productnumber} with 24x7 Support llc** image for your VM. If the image is not listed, select **Browse all public and private images** to find the required image.
- 
- . Suggested sizes are selected by default for this VM. Configure optional features such as virtual CPUs, memory as required.
+.. Instance Size
+    ... The default for the instance size is _D8as v5_, which is a good baseline for a production server. It provides enough resources for more data disks and IOPS throughput for disk and network. 
+    https://learn.microsoft.com/en-us/azure/virtual-machines/dasv5-dadsv5-series
 
-. Set up an administrator account for the VM. This can be a username and SSH public key.
++
 
-. Ensure the VM is connected to the appropriate virtual network (VNet) and subnet, especially if it needs to communicate with other specific services like {productname}.
-For network requirements, see xref:specialized-guides:public-cloud-guide/payg/azure/payg-azure-server-setup.adoc[Azure Server Setup: Network Configuration].
+[NOTE]
+====
+If you only need a test instance, you can go smaller and choose an instance size with 4 vCPUs and 16GB memory or use a _B-Series (Burstable)_ instance with a similar configuration.
+====
 
-. Configure additional settings such as storage, monitoring, or any extensions you may need. The following partitions are created by default when initializing the {azure} image:
++
 
-* **100 GB** for the root partition
- 
-* **500 GB** for spacewalk storage
- 
-* **80 GB** for the database.
+.. Diagnostic Storage Account
+... If you normally create a VM in the Azure portal, boot diagnostics are enabled by default using a managed storage account. You can choose an existing storage account or create a new one (default).
 
-. Once all configurations are set, review the settings.
+.. OS Disk Size
+... This is the root disk of the {productname} installation, which holds:
+.... The OS and the {productname} application.
+.... [path]``/var/cache`` – where you need to provide storage space for each product you want to manage.
+    
++
 
-. Click "Create" to deploy your VM.
+The proposed default of 100GB should be accepted.
 
-. After the VM is deployed, you can access it via SSH.
+.. Database Disk Size
+... This holds the Database for {productname} and needs a minimum of 50GB. The proposed value of 80GB is a good default suggestion.
 
-[NOTE] 
+.. Spacewalk Disk Size
+... This holds the package repositories and should have at least 100GB. Additional requirements include:
+.... 50GB for every SUSE product.
+.... >360GB for every RedHat or other Linux product.
+    
++
+
+The proposed default of 500GB is a safe default to start with.
+
++
+
+[NOTE]
+====
+Repository synchronization will fail if this directory runs out of disk space.
+====
++
+
+.. Public IP Address for the VM
+... By default, a Public IP Address is created to access the {productname} VM and Application. 
+.... *If you use it, please ensure this is secure and access is limited.*
+
++
+
+[IMPORTANT]
+====
+Running {productname} on the public cloud means implementing robust security measures. It is essential to limit, filter, monitor, and audit access to the instance. SUSE strongly advises against a globally accessible {productname} instance that lacks adequate perimeter security.
+====
+
++
+
+You should carefully consider this, as the {productname} Server will have access to all managed nodes. If someone gains access to {productname}, it would mean access to all managed nodes as well. Threat actors actively scan for accessible machines with open management ports (e.g., SSH or RDP), especially on cloud providers.
+
++
+
+A Network Security Group (NSG) is created by default if you choose to create a Public IP. It only allows inbound SSH access via port 22 as a minimal protection for the public IP.
+
++
+
+It is recommended to additionally restrict access to a defined list of networks and allow Azure's virtual network to drop requests originating from other networks.
+
++
+
+Furthermore, you can add Just-in-Time access and/or use the Azure Bastion Service, Firewall, VPN, or private network methods to secure public access.
+
++
+
+You can choose not to create a Public IP address (which is more secure), but you will need to use other methods to access the created {productname} VM and its Web UI for further configuration. Additionally, you must take care of the DNS and ensure a correct FQDN.
+
+.. DNS Prefix for the Public IP Address   
+
+... The {productname} server must resolve its FQDN correctly. If the FQDN cannot be resolved, it can cause issues in several {productname} components.
+
+... To ensure that the {productname} domain name can be resolved by its clients, both server and client machines must be connected to a working DNS server. You also need to ensure that *reverse lookups* are correctly configured.
+
++
+
+If you use the Public IP address, a DNS name is automatically created from Azure. You only need to ensure that a unique name is used. The default suggestion creates one by including a random number to make the domain name unique.
+
++
+
+If you do not use the Public IP, you need to make sure that your setup can resolve the FQDN correctly as mentioned above.
+
+.. Virtual Network / Subnet
+
+... You will see a default proposal for a virtual network where {productname} will reside. By clicking _edit_, you can adjust it to your needs.
+
+... Remember that a _Managed Application_ will be deployed from SUSE to your Azure tenant. Therefore, this network is the network in the _Managed Resource Group (MRG)_ and cannot overlap with existing networks.
+
++
+
+At a later stage, you need to peer this network to the network with the nodes you want to manage. Alternatively, you can create the managed nodes within this network.
+
++
+
+With all fields filled out, press _Next_ or _Create_. The Azure portal will perform a final check and provide a summary screen of this deployment.
+
++
+
+If everything is correct, press _Create_ to deploy the _Managed Application_ for {productname}.
+
+=== After Deployment
+
+After the VM is deployed, you can access it via SSH.
+
 .Usage and Costs
+[NOTE]
 ====
 Keep in mind that since this is a {payg} image, you will be billed according to your actual usage, including the number of systems you **manage** and **monitor** with this instance. It's essential to regularly track and review your usage to prevent unexpected costs and ensure alignment with your needs.
 ====
-
-
