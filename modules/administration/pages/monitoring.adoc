@@ -97,7 +97,7 @@ The Prometheus software is also available for {productname} Proxy and {productna
 
 [IMPORTANT]
 ====
-* To access a shell inside the Server container run [literal]``mgrctl term`` on the container host.
+* To access a shell inside the Server container run [literal]``mgrctl term`` on the container host, or to execute one command run [literal]``mgrctl exec <options> -- <command>``.
 
 * To copy files from inside the container use [literal]``mgrctl cp``.
 ====
@@ -579,15 +579,58 @@ This section demonstrates how to generate client/server certificates for Prometh
 
 .Procedure: Creating server/client TLS certificate
 
-. On the {productname} Server, at the command prompt, run following command:
-+
-----
-rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
---set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
---set-org-unit="ORGANIZATION UNIT" --set-email="name@example.com" \
---set-hostname="minion.example.com" --set-cname="minion.example.com" --no-rpm
-----
-Ensure that the [systemitem]``set-cname`` parameter is the fully qualified domain name (FQDN) of your Salt client.
-You can use the the [systemitem]``set-cname`` parameter multiple times if you require multiple aliases.
+. At the command prompt of the {productname} container host, as root, run the following commands:
 
-. Copy ``server.crt`` and ``server.key`` files to the Salt minion and provide read access for ``prometheus`` user.
++
+
+--
+.. To generate certificate files, run the following command.
+
++
+
+Ensure that the [systemitem]``set-cname`` parameter is the fully qualified domain name (FQDN) of your Salt client.
+You can use the the [systemitem]``set-cname`` parameter multiple times if you require multiple aliases:
+
++
+
+----
+mgrctl exec -ti -- mgr-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
+  --set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
+  --set-org-unit="ORGANIZATION UNIT" --set-email="name@example.com" \
+  --set-hostname="minion.example.com" --set-cname="minion.example.com" --no-rpm
+----
+
++
+
+Resulting in:
+
++
+
+----
+Generating the web server's SSL private key: /root/ssl-build/minion/server.key
+Generating web server's SSL certificate request: /root/ssl-build/minion/server.csr
+Generating/signing web server's SSL certificate: server.crt
+----
+
+.. Copy [path]``server.crt`` and [path]``server.key`` files from the server container to the host:
+
++
+
+----
+mgrctl cp server:/root/ssl-build/minion/server.key server.key
+mgrctl cp server:/root/ssl-build/minion/server.crt server.crt
+----
+
+.. Copy [path]``server.crt`` and [path]``server.key`` files from the host to the monitoring client:
+
++
+
+----
+ssh minion.example.com 'mkdir /etc/ssl/mlm-server-certs'
+scp /root/server.* minion.example.com:/etc/ssl/mlm-server-certs
+ssh minion.example.com 'chmod go+r /etc/ssl/mlm-server-certs/server.*; ls -la /etc/sslmlm-server-certs'
+----
+
+--
+
+. While configuring Salt minion formular, use minion.example.com as client and mlm-server-certs as directory.
