@@ -97,9 +97,9 @@ The Prometheus software is also available for {productname} Proxy and {productna
 
 [IMPORTANT]
 ====
-* To access a shell inside the Server container run [literal]``mgrctl term`` on the container host, or to execute one command run [literal]``mgrctl exec <options> -- <command>``.
+* To access a shell inside the {productname} Server container run [literal]``mgrctl term`` on the container host, or to execute one command run [literal]``mgrctl exec <options> -- <command>``.
 
-* To copy files from inside the container use [literal]``mgrctl cp``.
+* To copy files from inside the container to the container host use [literal]``mgrctl cp``.
 ====
 
 [NOTE]
@@ -126,20 +126,31 @@ For more information about the monitoring formulas, see xref:specialized-guides:
 
 .Procedure: Manually Installing and Configuring Prometheus
 . On the monitoring server, install the [package]``golang-github-prometheus-prometheus`` package:
+
 +
+
+[source,shell]
 ----
 zypper in golang-github-prometheus-prometheus
 ----
+
 . Enable the Prometheus service:
+
 +
+
+[source,shell]
 ----
 systemctl enable --now prometheus
 ----
+
 . Check that the Prometheus interface loads correctly.
-    In your browser, navigate to the URL of the server where Prometheus is installed, on port 9090 (for example, [literal]``http://example.com:9090``).
+  In your browser, navigate to the URL of the server where Prometheus is installed, on port 9090 (for example, [literal]``http://example.com:9090``).
+
 . Open the configuration file at [path]``/etc/prometheus/prometheus.yml`` and add this configuration information.
-    Replace `server.url` with your {productname} server URL and adjust `username` and `password` fields to match your {productname} credentials.
+  Replace `server.url` with your {productname} server URL and adjust `username` and `password` fields to match your {productname} credentials.
+
 +
+
 ----
 # {productname} self-health metrics
 scrape_configs:
@@ -188,9 +199,14 @@ scrape_configs:
    - source_labels: [__meta_uyuni_scheme]
      target_label: __scheme__
 ----
+
 . Save the configuration file.
+
 . Restart the Prometheus service:
+
 +
+
+[source,shell]
 ----
 systemctl restart prometheus
 ----
@@ -230,15 +246,23 @@ You can choose which dashboards to provision in the formula configuration page.
 .Procedure: Manually Installing Grafana
 
 . Install the [package]``grafana`` package:
+
 +
+
+[source,shell]
 ----
 zypper in grafana
 ----
+
 . Enable the Grafana service:
+
 +
+
+[source,shell]
 ----
 systemctl enable --now grafana-server
 ----
+
 . In your browser, navigate to the URL of the server where Grafana is installed, on port 3000 (for example, [literal]``http://example.com:3000``).
 . On the login page, enter ``admin`` for username and password.
 . Click btn:[Log in]. 
@@ -253,7 +277,9 @@ systemctl enable --now grafana-server
 . To import a dashboard click the btn:[+] icon in the side menu, and then click btn:[Import].
 . For {productname} server overview load the dashboard ID: ``17569``.
 . For {productname} clients overview load the dashboard ID: ``17570``.
+
 +
+
 image::monitoring_grafana_example.png[scaledwidth=80%]
 
 [NOTE]
@@ -584,6 +610,7 @@ This section demonstrates how to generate client/server certificates for Prometh
 +
 
 --
+
 .. To generate certificate files, run the following command.
 
 +
@@ -628,9 +655,22 @@ mgrctl cp server:/root/ssl-build/minion/server.crt server.crt
 ----
 ssh minion.example.com 'mkdir /etc/ssl/mlm-server-certs'
 scp /root/server.* minion.example.com:/etc/ssl/mlm-server-certs
-ssh minion.example.com 'chmod go+r /etc/ssl/mlm-server-certs/server.*; ls -la /etc/sslmlm-server-certs'
+ssh minion.example.com 'chmod go+r /etc/ssl/mlm-server-certs/server.*; ls -la /etc/ssl/mlm-server-certs'
 ----
 
 --
 
-. While configuring Salt minion formular, use minion.example.com as client and mlm-server-certs as directory.
+. To configure {salt} formulars, enter the directory names specified in the previous steps.
+
++
+
+--
+
+.. formular server
+Server Certificate /etc/ssl/mlm-server-certs/server.crt
+Server Key /etc/ssl/mlm-server-certs/server.key
+
+
+.. formular minion
+
+--
