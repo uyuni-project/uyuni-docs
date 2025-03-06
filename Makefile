@@ -121,6 +121,7 @@ endef
 define pdf-book-create
 	cd $(current_dir)/$(1) && LANG=$(9) LC_ALL=$(9) LC_TYPE=$(9) asciidoctor-pdf \
 		-r $(current_dir)/extensions/xref-converter.rb \
+		-r $(current_dir)/extensions/docdate-format.rb \
 		-a lang=$(8) \
 		-a pdf-themesdir=$(PDF_THEME_DIR)/ \
 		-a pdf-theme=$(2) \
@@ -139,6 +140,7 @@ endef
 define pdf-book-create-uyuni
 	cd $(current_dir)/$(1) && LANG=$(9) LC_ALL=$(9) LC_TYPE=$(9) asciidoctor-pdf \
 		-r $(current_dir)/extensions/xref-converter.rb \
+		-r $(current_dir)/extensions/docdate-format.rb \
 		-a lang=$(8) \
 		-a pdf-themesdir=$(PDF_THEME_DIR)/ \
 		-a pdf-theme=$(2) \
