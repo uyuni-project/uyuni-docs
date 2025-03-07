@@ -226,7 +226,7 @@ copy-branding:
 
 .PHONY: configure-mlm-branding-dsc
 configure-mlm-branding-dsc:
-	sed -i -e 's|supplemental_files: ./branding/supplemental-ui/mlm/.*|supplemental_files: ./branding/supplemental-ui/mlm/susecom-2023|' site.yml
+	sed -i -e 's|supplemental_files: ./branding/supplemental-ui/mlm/.*|supplemental_files: ./branding/supplemental-ui/mlm/susecom-2025|' site.yml
 	cat site.yml
 
 .PHONY: configure-mlm-branding-webui
