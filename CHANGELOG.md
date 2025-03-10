@@ -2,6 +2,8 @@
 - Added instructions for Server installation on SUSE Linux
   Enterprise Server 15 SP6  to Installation and Upgrade Guide
 - Add section about container image inspection to Image
+- Fixed procedure in Troubleshooting section about full disk event
+  in the Administration Guide (bsc#1237535)
 - Removed misleading admonition at the beginning of the Replace
   Certificates section in the Administration Guide
 - Added section about container image inspection to Image
