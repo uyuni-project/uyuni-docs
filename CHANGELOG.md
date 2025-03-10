@@ -1,3 +1,5 @@
+- Added links to supported features tables for 3rp party operating
+  systems (bsc#1236810)
 - Fixed procedure in Troubleshooting section about full disk event
   in the Administration Guide (bsc#1237535)
 - Renamed client tools channel to new product name SUSE Multi-Linux
