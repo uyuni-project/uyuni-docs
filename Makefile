@@ -58,7 +58,7 @@ endef
 define antora-mlm-function
 	cd $(current_dir)
 	$(call enable-mlm-in-antorayml,$(1)) && \
-	cd $(current_dir)/$(1) && DOCSEARCH_ENABLED=true SITE_SEARCH_PROVIDER=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) npx antora $(current_dir)/$(1)/mlm-site.yml
+	cd $(current_dir)/$(1) && DOCSEARCH_ENABLED=true SITE_SEARCH_PROVIDER=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) npx antora $(current_dir)/$(1)/mlm-site.yml --stacktrace
 endef
 
 define enable-uyuni-in-antorayml
@@ -121,6 +121,7 @@ endef
 define pdf-book-create
 	cd $(current_dir)/$(1) && LANG=$(9) LC_ALL=$(9) LC_TYPE=$(9) asciidoctor-pdf \
 		-r $(current_dir)/extensions/xref-converter.rb \
+		-r $(current_dir)/extensions/docdate-format.rb \
 		-a lang=$(8) \
 		-a pdf-themesdir=$(PDF_THEME_DIR)/ \
 		-a pdf-theme=$(2) \
@@ -139,6 +140,7 @@ endef
 define pdf-book-create-uyuni
 	cd $(current_dir)/$(1) && LANG=$(9) LC_ALL=$(9) LC_TYPE=$(9) asciidoctor-pdf \
 		-r $(current_dir)/extensions/xref-converter.rb \
+		-r $(current_dir)/extensions/docdate-format.rb \
 		-a lang=$(8) \
 		-a pdf-themesdir=$(PDF_THEME_DIR)/ \
 		-a pdf-theme=$(2) \
