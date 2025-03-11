@@ -1,3 +1,5 @@
+- Removed Ubuntu 20.04 from the list supported clients in Client
+  Configuration Guide (bsc#1238481)
 - Fixed procedure in Troubleshooting section about full disk event
   in the Administration Guide (bsc#1237535)
 - Renamed client tools channel to new product name SUSE Multi-Linux
