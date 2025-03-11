@@ -1,5 +1,5 @@
-- Added links to supported features tables for 3rp party operating
-  systems (bsc#1236810)
+- Added links to supported features tables for third party
+  operating systems (bsc#1236810)
 - Updated instructions for deploying PAYG on Azure
 - Added instructions for Server installation on SUSE Linux
   Enterprise Server 15 SP6  to Installation and Upgrade Guide
