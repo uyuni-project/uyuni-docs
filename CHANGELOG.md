@@ -1,4 +1,4 @@
-- Added links to supported features tables for 3rp party operating
+- Added links to supported features tables for third party operating
   systems (bsc#1236810)
 - Fixed procedure in Troubleshooting section about full disk event
   in the Administration Guide (bsc#1237535)
