@@ -1,3 +1,5 @@
+- Removed Ubuntu 20.04 from the list supported clients in Client
+  Configuration Guide (bsc#1238481)
 - Cleaned up backup and restore procedure in Administration Guide
 - Added links to supported features tables for third party
   operating systems (bsc#1236810)
