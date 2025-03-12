@@ -1,3 +1,4 @@
+- Cleaned up backup and restore procedure in Administration Guide
 - Added links to supported features tables for third party
   operating systems (bsc#1236810)
 - Updated instructions for deploying PAYG on Azure
