@@ -1,7 +1,7 @@
 - Added links to supported features tables for third party operating
   systems (bsc#1236810)
-- Removed Ubuntu 20.04 for MLM from the list supported clients in Client
-  Configuration Guide (bsc#1238481)
+- Removed Ubuntu 20.04 for SUSE Multi-Linux Manager from the list
+  supported clients in Client Configuration Guide (bsc#1238481)
 - Fixed procedure in Troubleshooting section about full disk event
   in the Administration Guide (bsc#1237535)
 - Renamed client tools channel to new product name SUSE Multi-Linux
