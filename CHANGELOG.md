@@ -1,3 +1,4 @@
+- Cleaned up backup and restore procedure in Administration Guide
 - Added links to supported features tables for third party
   operating systems (bsc#1236810)
 - Updated instructions for deploying PAYG on Azure
@@ -6,8 +7,8 @@
 - Add section about container image inspection to Image
 - Removed Ubuntu 20.04 from the list supported clients in Client
   Configuration Guide (bsc#1238481)
-- Fixed procedure in Troubleshooting section about full disk even
-- Cleaned up backup and restore procedure in Administration Guide
+- Fixed procedure in Troubleshooting section about full disk event
+  in the Administration Guide (bsc#1237535)
 - Removed misleading admonition at the beginning of the Replace
   Certificates section in the Administration Guide
 - Added section about container image inspection to Image
