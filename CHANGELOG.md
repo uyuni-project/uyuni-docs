@@ -1,4 +1,5 @@
-- Documented handling of /pub in the context of proxy (bsc#1238827)
+- Documented handling of pub directory of the web server in the
+  context of proxy (bsc#1238827)
 - Added links to supported features tables for third party operating
   systems (bsc#1236810)
 - Removed Ubuntu 20.04 from the list supported clients in Client
