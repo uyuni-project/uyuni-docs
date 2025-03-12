@@ -1,3 +1,5 @@
+- Added new workflow for installing the product on ppc64le to Common
+  Workflows book
 - Cleaned up backup and restore procedure in Administration Guide
 - Added links to supported features tables for third party
   operating systems (bsc#1236810)
