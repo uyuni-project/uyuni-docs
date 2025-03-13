@@ -134,7 +134,8 @@ define pdf-book-create
 		$(11) \
 		--base-dir . \
 		--out-file $(7)/$(5)_$(6)_guide.pdf \
-		modules/$(6)/nav-$(6)-guide.pdf.$(8).adoc
+		modules/$(6)/nav-$(6)-guide.pdf.$(8).adoc \
+		--trace
 endef
 
 define pdf-book-create-uyuni
@@ -153,7 +154,8 @@ define pdf-book-create-uyuni
 		$(11) \
 		--base-dir . \
 		--out-file $(7)/$(5)_$(6)_guide.pdf \
-		modules/$(6)/nav-$(6)-guide.pdf.$(8).adoc
+		modules/$(6)/nav-$(6)-guide.pdf.$(8).adoc \
+		--trace
 endef
 
 define clean-branding
