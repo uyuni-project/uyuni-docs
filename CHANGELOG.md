@@ -1,3 +1,5 @@
+- Added instructions for Proxy installation on SUSE Linux
+  Enterprise Server 15 SP6 to Installation and Upgrade Guide
 - Added new workflow for installing the product on ppc64le to Common
   Workflows book
 - Updated instructions for deploying PAYG on Azure
