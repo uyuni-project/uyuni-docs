@@ -2,6 +2,8 @@
   Enterprise Server 15 SP6 to Installation and Upgrade Guide
 - Added new workflow for installing the product on ppc64le to Common
   Workflows book
+- Cleaned up backup and restore procedure in Administration Guide
+  (bsc#1239630)
 - Updated instructions for deploying PAYG on Azure
 - Added instructions for Server installation on SUSE Linux
   Enterprise Server 15 SP6  to Installation and Upgrade Guide
