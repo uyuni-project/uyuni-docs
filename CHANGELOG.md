@@ -1,3 +1,5 @@
+- Added system_listeventhistory to spacecmd reference in Reference
+  Guide (bsc#1239604)
 - Added new workflow for installing the product on ppc64le to Common
   Workflows book
 - Implemented 2025 SUSE brand update for documentation.suse.com.
