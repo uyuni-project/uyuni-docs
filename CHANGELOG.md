@@ -1,3 +1,5 @@
+- Changed server host OS requirement for Uyuni to openSUSE Leap
+  Micro 5.5
 - Added system_listeventhistory to spacecmd reference in Reference
   Guide (bsc#1239604)
 - Added new workflow for installing the product on ppc64le to Common
