@@ -1,5 +1,7 @@
 - Documented handling of pub directory of the web server in the
   context of proxy (bsc#1238827)
+- Changed server host OS requirement for Uyuni to openSUSE Leap
+  Micro 5.5
 - Added system_listeventhistory to spacecmd reference in Reference
   Guide (bsc#1239604)
 - Added new workflow for installing the product on ppc64le to Common
