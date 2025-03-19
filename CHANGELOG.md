@@ -1,3 +1,5 @@
+- Added instructions for Server and Proxy installation on SUSE Linux
+  Enterprise Server 15 SP7 to Installation and Upgrade Guide
 - Changed server host OS requirement for Uyuni to openSUSE Leap
   Micro 5.5
 - Added system_listeventhistory to spacecmd reference in Reference
