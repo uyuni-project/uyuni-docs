@@ -1,3 +1,5 @@
+- Documented handling of pub directory of the web server in the
+  context of proxy (bsc#1238827)
 - Added instructions for Server and Proxy installation on SUSE Linux
   Enterprise Server 15 SP7 to Installation and Upgrade Guide
 - Changed server host OS requirement for Uyuni to openSUSE Leap
