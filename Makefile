@@ -122,7 +122,6 @@ define pdf-book-create
 	cd $(current_dir)/$(1) && LANG=$(9) LC_ALL=$(9) LC_TYPE=$(9) asciidoctor-pdf \
 		-r $(current_dir)/extensions/xref-converter.rb \
 		-r $(current_dir)/extensions/docdate-format.rb \
-		-r $(current_dir)/extensions/pdf-toc-builder.rb \
 		-a lang=$(8) \
 		-a pdf-themesdir=$(PDF_THEME_DIR)/ \
 		-a pdf-theme=$(2) \
