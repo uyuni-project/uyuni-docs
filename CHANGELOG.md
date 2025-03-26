@@ -1,3 +1,5 @@
+- Documented uptodate action in Common Workflows Guide as
+  background information
 - Documented handling of pub directory of the web server in the
   context of proxy (bsc#1238827)
 - Added instructions for Server and Proxy installation on SUSE Linux
