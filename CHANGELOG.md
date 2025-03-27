@@ -1,3 +1,5 @@
+- Implemented PDF branding update for 2025 branding
+- Enhanced CVE auditing feature in Administration Guide
 - Added additional registry link to Installation and Upgrade Guide
   (bsc#12400101)
 - Added instructions for Proxy installation on SUSE Linux
