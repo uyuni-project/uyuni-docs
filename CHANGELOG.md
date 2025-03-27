@@ -1,6 +1,8 @@
 - Restructured Server Installation to better distinguish between
   SUSE Linux Enterprise Micro and SUSE Linux Enterprise Server
   as host operating system respectively (bsc#1239801)
+- Added additional registry link to Installation and Upgrade Guide
+  (bsc#12400101)
 - Added instructions for Proxy installation on SUSE Linux
   Enterprise Server 15 SP6 to Installation and Upgrade Guide
 - Documented handling of pub directory of the web server in the
