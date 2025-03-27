@@ -113,7 +113,7 @@ This finalizes installation of {sle-micro} {microversion} and {productname} {pro
 
 
 
-=== Update the System
+==== Update the System
 
 
 .Procedure: Updating the System
@@ -146,37 +146,91 @@ Alternatively you may install [systemitem]``mgrpxy-zsh-completion`` or [systemit
 
 . Reboot the system.
 
-== Deploy {productname} Proxy on {sles} {bci-suma}
+[IMPORTANT]
+====
+{sle-micro} is designed to update itself automatically by default and will reboot after applying updates.
+However, this behavior is not desirable for the {productname} environment.
+To prevent automatic updates on your server, {productname} disables the transactional-update timer during the bootstrap process.
+
+If you prefer the {sle-micro} default behavior, enable the timer by running the following command:
+
+[source, shell]
+----
+systemctl enable --now transactional-update.timer
+----
+====
+
+To continue with deployment, see xref:installation-and-upgrade:container-deployment/suma/proxy-deployment-suma.adoc#deploy-suma-proxy-persistent-storage[].
+
+
+
+[[deploy-suma-proxy-sles]]
+=== Deploy on {sles} {bci-suma}
 
 Alternatively, you can install {productname} Proxy on {sles} {bci-suma}.
 The following procedure describes the main steps of the installation process.
 
 .Procedure: Installing {productname} Proxy on {sles} {bci-suma}
 . Locate and download {sles} {bci-suma} [literal]``.iso`` at https://www.suse.com/download/sles/.
+// FIXME Do we need the following step?
++
 . Make sure that the {scc} code you plan to use has the Extensions enabled.
 . Start the installation of {sles} {bci-suma}.
   .. On the [literal]``Language, keyboard and product selection`` select the product to install.
   .. On the [literal]``License agreement`` read the agreement and check [guimenu]``I Agree to the License Terms``.
 . Select the registration method.
+
++
+
+[[NOTE]]
+====
+Please note that for {sles} {bci-suma}, you are required to have a valid {sles} subscription and corresponding regcode, which you must provide on this screen.
+You will be required to enter the {productname} Extension regcode below.
+====
 . In the screen [literal]``Extensions and Modules Selection`` check the following:
-  * {productname} Proxy Extension
++
+
+* {productname} Proxy Extension
   * Basesystem Module
   * Containers Module
++
+
+Enter the {productname} Extension regcode.
 . Complete the installation.
 . When the installation completes, log in to the newly installed server as root.
-. As root, run
+. Update the System (optional, if the system was not set to
+download updates during install):
 
 +
 
 [source,shell]
 ----
+zypper up
+----
+
++
+
+// FIXME: is "Reboot" required here?  Cf. server counterpart
+
+. As root install podman and additional tools:
+
++
+[source,shell]
+----
 zypper install podman mgrpxy mgrpxy-bash-completion
 ----
 
+To continue with deployment, see xref:installation-and-upgrade:container-deployment/suma/proxy-deployment-suma.adoc#deploy-suma-proxy-persistent-storage[].
+
+
+
+[[deploy-suma-proxy-persistent-storage]]
 == Configure Custom Persistent Storage
 
-This step is optional.
-However, if custom persistent storage is required for your infrastructure, use the [command]``mgr-storage-proxy`` tool.
+Configuring persistent storage is optional, but it is the only way to avoid serious trouble with container full disk conditions.
+If custom persistent storage is required for your infrastructure, use the [command]``mgr-storage-proxy`` tool.
+
+* For more information, see [command]``mgr-storage-proxy --help``.
 This tool simplifies creating the container storage and Squid cache volumes.
 
 Use the command in the following manner:
@@ -193,12 +247,6 @@ For example:
 mgr-storage-proxy /dev/nvme1n1
 ----
 
-For more information, type:
-
-[source, shell]
-----
-mgr-storage-proxy --help
-----
 
 
 [NOTE]
@@ -277,4 +325,3 @@ mgrpxy install podman /path/to/config.tar.gz
 ----
 
 This command first resets the configuration of all services to the global defaults and then reloads it.
-
