@@ -1,3 +1,4 @@
+- Enhanced CVE auditing feature in Administration Guide
 - Added instructions for Proxy installation on SUSE Linux
   Enterprise Server 15 SP6 to Installation and Upgrade Guide
 - Added new workflow for installing the product on ppc64le to Common
