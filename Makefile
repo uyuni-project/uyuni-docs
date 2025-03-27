@@ -58,8 +58,8 @@ endef
 
 define antora-suma-function
 	cd $(current_dir)
-	$(call enable-mlm-in-antorayml,$(1)) && \
-	cd $(current_dir)/$(1) && DOCSEARCH_ENABLED=true SITE_SEARCH_PROVIDER=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) npx antora $(current_dir)/$(1)/mlm-site.yml --stacktrace
+	$(call enable-suma-in-antorayml,$(1)) && \
+	cd $(current_dir)/$(1) && DOCSEARCH_ENABLED=true SITE_SEARCH_PROVIDER=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) npx antora $(current_dir)/$(1)/suma-site.yml --stacktrace
 endef
 
 define enable-uyuni-in-antorayml
