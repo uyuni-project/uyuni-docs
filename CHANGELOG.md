@@ -1,3 +1,4 @@
+- Implemented PDF branding update for 2025 branding
 - Added additional registry link to Installation and Upgrade Guide
   (bsc#12400101)
 - Documented handling of pub directory of the web server in the
