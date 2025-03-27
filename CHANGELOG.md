@@ -1,3 +1,4 @@
+- Enhanced CVE auditing feature in Administration Guide
 - Added additional registry link to Installation and Upgrade Guide
   (bsc#12400101)
 - Documented handling of pub directory of the web server in the
