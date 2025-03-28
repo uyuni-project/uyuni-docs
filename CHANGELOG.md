@@ -1,4 +1,3 @@
-- Mark OVAL data consumption as Tech Preview
 - Restructured Server and Proxy Installation to better distinguish
   between SUSE Linux Enterprise Micro and SUSE Linux Enterprise
   Server as host operating system respectively (bsc#1239801)
