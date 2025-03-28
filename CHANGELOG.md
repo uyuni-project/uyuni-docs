@@ -1,3 +1,4 @@
+- Mark OVAL data consumption as Tech Preview
 - Implemented PDF branding update for 2025 branding
 - Enhanced CVE auditing feature in Administration Guide
 - Added additional registry link to Installation and Upgrade Guide
