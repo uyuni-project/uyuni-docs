@@ -8,30 +8,37 @@
     const textLength = text.length;
     const validPositions = positions
       .filter((position) => position.length > 0 && position.start + position.length <= textLength);
-
+  
     if (validPositions.length === 0) {
       return [
         {
           type: 'text',
           text: text.slice(0, snippetLength >= textLength ? textLength : snippetLength) + (snippetLength < textLength ? '...' : ''),
         },
-      ]
+      ];
     }
-
+  
     const orderedPositions = validPositions.sort((p1, p2) => p1.start - p2.start);
-    const range = {
-      start: 0,
-      end: textLength,
-    };
+    const range = { start: 0, end: textLength };
+  
     const firstPosition = orderedPositions[0];
     if (snippetLength && text.length > snippetLength) {
       const firstPositionStart = firstPosition.start;
-      const firstPositionLength = firstPosition.length;
-      const firstPositionEnd = firstPositionStart + firstPositionLength;
-
-      range.start = firstPositionStart - snippetLength < 0 ? 0 : firstPositionStart - snippetLength;
-      range.end = firstPositionEnd + snippetLength > textLength ? textLength : firstPositionEnd + snippetLength;
+      const firstPositionEnd = firstPositionStart + firstPosition.length;
+  
+      range.start = firstPositionStart - snippetLength < 0 
+        ? 0 
+        : text.lastIndexOf(' ', firstPositionStart - snippetLength);
+  
+      range.end = firstPositionEnd + snippetLength > textLength 
+        ? textLength 
+        : text.indexOf(' ', firstPositionEnd + snippetLength);
+  
+      // Safety fallback
+      if (range.start === -1 || range.start === undefined) range.start = 0;
+      if (range.end === -1 || range.end === undefined) range.end = textLength;
     }
+  
     const nodes = [];
     if (firstPosition.start > 0) {
       nodes.push({
@@ -39,16 +46,15 @@
         text: (range.start > 0 ? '...' : '') + text.slice(range.start, firstPosition.start),
       });
     }
-    let lastEndPosition = 0;
+    let lastEndPosition = firstPosition.start;
+  
     const positionsWithinRange = orderedPositions
       .filter((position) => position.start >= range.start && position.start + position.length <= range.end);
-
+  
     for (const position of positionsWithinRange) {
       const start = position.start;
-      const length = position.length;
-      const end = start + length;
-      if (lastEndPosition > 0) {
-        // create text Node from the last end position to the start of the current position
+      const end = start + position.length;
+      if (lastEndPosition < start) {
         nodes.push({
           type: 'text',
           text: text.slice(lastEndPosition, start),
@@ -60,15 +66,17 @@
       });
       lastEndPosition = end;
     }
+  
     if (lastEndPosition < range.end) {
       nodes.push({
         type: 'text',
         text: text.slice(lastEndPosition, range.end) + (range.end < textLength ? '...' : ''),
       });
     }
-
-    return nodes
+  
+    return nodes;
   }
+  
 
   /**
    * Taken and adapted from: https://github.com/olivernn/lunr.js/blob/aa5a878f62a6bba1e8e5b95714899e17e8150b38/lib/tokenizer.js#L24-L67
@@ -204,61 +212,56 @@
     });
   }
 
-  function createSearchResultItem (doc, sectionTitle, item, highlightingResult) {
-    const documentTitle = document.createElement('div');
-    documentTitle.classList.add('search-result-document-title');
-    highlightingResult.pageTitleNodes.forEach(function (node) {
-      let element;
-      if (node.type === 'text') {
-        element = document.createTextNode(node.text);
-      } else {
-        element = document.createElement('span');
-        element.classList.add('search-result-highlight');
-        element.innerText = node.text;
-      }
-      documentTitle.appendChild(element);
-    });
-    const documentHit = document.createElement('div');
-    documentHit.classList.add('search-result-document-hit');
-    const documentHitLink = document.createElement('a');
-    documentHitLink.href = siteRootPath + doc.url + (sectionTitle ? '#' + sectionTitle.hash : '');
-    documentHit.appendChild(documentHitLink);
-    if (highlightingResult.sectionTitleNodes.length > 0) {
-      const documentSectionTitle = document.createElement('div');
-      documentSectionTitle.classList.add('search-result-section-title');
-      documentHitLink.appendChild(documentSectionTitle);
-      highlightingResult.sectionTitleNodes.forEach(function (node) {
-        let element;
-        if (node.type === 'text') {
-          element = document.createTextNode(node.text);
-        } else {
-          element = document.createElement('span');
-          element.classList.add('search-result-highlight');
-          element.innerText = node.text;
-        }
-        documentSectionTitle.appendChild(element);
-      });
+function createSearchResultItem (doc, sectionTitle, item, highlightingResult) {
+  const breadcrumbs = doc.breadcrumbs || [];
+  const chapterTitleText = breadcrumbs.length > 0 ? breadcrumbs[0] : '';
+  const sectionTitleText = sectionTitle ? sectionTitle.text : doc.title;
+
+  const documentTitle = document.createElement('div');
+  documentTitle.classList.add('search-result-document-title');
+
+  const chapterTitleEl = document.createElement('div');
+  chapterTitleEl.classList.add('chapter-title');
+  chapterTitleEl.textContent = chapterTitleText;
+
+  const sectionTitleEl = document.createElement('div');
+  sectionTitleEl.classList.add('section-title');
+  sectionTitleEl.textContent = sectionTitleText;
+
+  documentTitle.appendChild(chapterTitleEl);
+  documentTitle.appendChild(sectionTitleEl);
+
+  const documentHit = document.createElement('div');
+  documentHit.classList.add('search-result-document-hit');
+
+  const documentHitLink = document.createElement('a');
+  documentHitLink.href = siteRootPath + doc.url + (sectionTitle ? '#' + sectionTitle.hash : '');
+  documentHit.appendChild(documentHitLink);
+
+  highlightingResult.pageContentNodes.forEach(function (node) {
+    let element;
+    if (node.type === 'text') {
+      element = document.createTextNode(node.text);
+    } else {
+      element = document.createElement('span');
+      element.classList.add('search-result-highlight');
+      element.innerText = node.text;
     }
-    highlightingResult.pageContentNodes.forEach(function (node) {
-      let element;
-      if (node.type === 'text') {
-        element = document.createTextNode(node.text);
-      } else {
-        element = document.createElement('span');
-        element.classList.add('search-result-highlight');
-        element.innerText = node.text;
-      }
-      documentHitLink.appendChild(element);
-    });
-    const searchResultItem = document.createElement('div');
-    searchResultItem.classList.add('search-result-item');
-    searchResultItem.appendChild(documentTitle);
-    searchResultItem.appendChild(documentHit);
-    searchResultItem.addEventListener('mousedown', function (e) {
-      e.preventDefault();
-    });
-    return searchResultItem
-  }
+    documentHitLink.appendChild(element);
+  });
+
+  const searchResultItem = document.createElement('div');
+  searchResultItem.classList.add('search-result-item');
+  searchResultItem.appendChild(documentTitle);
+  searchResultItem.appendChild(documentHit);
+
+  searchResultItem.addEventListener('mousedown', function (e) {
+    e.preventDefault();
+  });
+
+  return searchResultItem;
+}
+
 
   function createNoResult (text) {
     const searchResultItem = document.createElement('div');
