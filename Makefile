@@ -233,7 +233,7 @@ configure-mlm-branding-dsc:
 
 .PHONY: configure-mlm-branding-webui
 configure-mlm-branding-webui:
-	sed -i -e 's|supplemental_files: ./branding/supplemental-ui/mlm/.*|supplemental_files: ./branding/supplemental-ui/mlm/webui-2023|' site.yml
+	sed -i -e 's|supplemental_files: ./branding/supplemental-ui/mlm/.*|supplemental_files: ./branding/supplemental-ui/mlm/webui-2025|' site.yml
 	cat site.yml
 
 .PHONY: clean-branding
