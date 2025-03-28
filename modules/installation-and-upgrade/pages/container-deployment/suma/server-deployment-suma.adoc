@@ -92,14 +92,30 @@ This adds to the complexity of a {productname} deployment, and may affect the re
 
 For a list of all persistent volumes in the container, see xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[].
 
-// To set up custom persistent volumes see:
+
+
+
+[[deploy-suma-server-host]]
+==  Deploy {productname}
+
+// FIXME
+// Maybe, here we'd better use a section title such as:
+// _Prepare Host OS for {productname} Deployment_
+
+You can deploy {productname} on {sle-micro} {microversion} or {sles} {bci-suma}.
+{sle-micro} is a transactional system, while {sles} is a full server operating system.
+
+Depending on your decision, either continue with xref:installation-and-upgrade:container-deployment/suma/server-deployment-suma.adoc#deploy-suma-server-micro[] or with xref:installation-and-upgrade:container-deployment/suma/server-deployment-suma.adoc#deploy-suma-server-sles[] and skip the not selected section.
 
 
 
 [[deploy-suma-server-micro]]
-==  Deploy {productname} on {sle-micro} {microversion}
+=== Deploy on {sle-micro} {microversion}
 
-.Procedure: Download the Installation Media
+
+==== Download the Installation Media
+
+.Procedure: Downloading the Installation Media
 . Locate the {sle-micro} {microversion} installation media at https://www.suse.com/download/sle-micro/.
 . Download [filename]``SLE-Micro-5.5-DVD-x86_64-GM-Media1.iso``.
 . Prepare a DVD or USB flash drive with the downloaded [filename]``.iso`` image for installation.
@@ -111,7 +127,7 @@ For a list of all persistent volumes in the container, see xref:installation-and
 For more information about preparing your machines (virtual or physical), see link:https://documentation.suse.com/sle-micro/5.5/html/SLE-Micro-all/book-deployment-slemicro.html[{sle-micro} {microversion} Deployment Guide].
 
 
-.Procedure: {sle-micro} {microversion} Installation
+.Procedure: Installing {sle-micro} {microversion}
 . Use the arrow keys to select [systemitem]``Installation``.
 . Adjust keyboard and language.
 . Click the [systemitem]``checkbox`` to accept the license agreement.
@@ -155,7 +171,7 @@ This concludes installation of {sle-micro} {microversion} and {productname} {pro
 
 
 
-=== Registration from the Command Line (Optional)
+==== Registration from the Command Line (Optional)
 
 If you added {productname} {productnumber} as an extension during {sle-micro} {microversion} installation then you can skip this step. However, optionally you may skip registration during {sle-micro} {microversion} installation by selecting the btn:[Skip Registration] button.
 This section provides steps on registering your products after {sle-micro} {microversion} installation.
@@ -198,9 +214,9 @@ transactional-update register -p SUSE-Manager-Server/5.0/x86_64 -r <reg_code>
 . Reboot.
 
 
-=== Update the System
+==== Update the System
 
-.Procedure
+.Procedure: Updating the System
 . Log in as *root*.
 . Run **transactional-update**:
 
@@ -213,7 +229,93 @@ transactional-update
 
 . Reboot.
 
-=== Configure Custom Persistent Storage
+[IMPORTANT]
+====
+{sle-micro} is designed to update itself automatically by default and will reboot after applying updates.
+However, this behavior is not desirable for the {productname} environment.
+To prevent automatic updates on your server, {productname} disables the transactional-update timer during the bootstrap process.
+
+If you prefer the {sle-micro} default behavior, enable the timer by running the following command:
+
+[source, shell]
+----
+systemctl enable --now transactional-update.timer
+----
+====
+
+To continue with deployment, see xref:installation-and-upgrade:container-deployment/suma/server-deployment-suma.adoc#deploy-suma-server-persistent-storage[].
+
+
+[[deploy-suma-server-sles]]
+=== Deploy on {sles} {bci-suma}
+
+Alternatively, you can deploy {productname} on {sles} {bci-suma}.
+
+
+The following procedure describes the main steps of the installation process.
+
+.Procedure: Installing {productname} on {sles} {bci-suma}
+. Locate and download {sles} {bci-suma} [literal]``.iso`` at https://www.suse.com/download/sles/.
+// FIXME Do we need the following step?
++
+. Make sure that the {scc} code you plan to use has the Extensions enabled.
+. Start the installation of {sles} {bci-suma}.
+  .. On the [literal]``Language, keyboard and product selection`` select the product to install.
+  .. On the [literal]``License agreement`` read the agreement and check [guimenu]``I Agree to the License Terms``.
+. Select the registration method.
+
++
+
+[[NOTE]]
+====
+Please note that for {sles} {bci-suma}, you are required to have a valid {sles} subscription and corresponding regcode, which you must provide on this screen.
+You will be required to enter the {productname} Extension regcode below.
+====
+. In the screen [literal]``Extensions and Modules Selection`` check the following:
++
+
+  * {productname} Server Extension
+  * Basesystem Module
+  * Containers Module
++
+
+Enter the {productname} Extension regcode.
+. Complete the installation.
+. When the installation completes, log in to the newly installed server as root.
+. Update the System (optional, if the system was not set to
+download updates during install):
+
++
+
+[source,shell]
+----
+zypper up
+----
+
+. Reboot.
+. Log in as root and install [package]``podman`` plus [package]``mgradm`` and [package]``mgradm-bash-completion`` (if not already automatically installed):
+
+[source,shell]
+----
+zypper install podman mgradm mgradm-bash-completion
+----
+
+// FIXME: Should come later, after configuring storage and then run with FQDN
+// . Finish the {productname} installation on {sles} {bci-suma} by running command:
+//
+// +
+//
+// [source,shell]
+// ----
+// mgradm install podman
+// ----
+
+To continue with deployment, see xref:installation-and-upgrade:container-deployment/suma/server-deployment-suma.adoc#deploy-suma-server-persistent-storage[].
+
+
+
+[[deploy-suma-server-persistent-storage]]
+== Configure Custom Persistent Storage
 
 Configuring persistent storage is optional, but it is the only way to avoid serious trouble with container full disk conditions.
 It is highly recommended to configure custom persistent storage with the [command]``mgr-storage-server`` tool.
@@ -253,46 +355,8 @@ For more information, see
 ====
 
 
-ifeval::[{suma-content} == true]
-== Install {productname} on {sles} {bci-suma}
-
-Alternatively, you can install {productname} on {sles} {bci-suma}.
-The following procedure describes the main steps of the installation process.
-
-.Procedure: Installing {productname} on {sles} {bci-suma}
-. Locate and download {sles} {bci-suma} [literal]``.iso`` at https://www.suse.com/download/sles/.
-. Make sure that the {scc} code you plan to use has the Extensions enabled.
-. Start the installation of {sles} {bci-suma}.
-  .. On the [literal]``Language, keyboard and product selection`` select the product to install.
-  .. On the [literal]``License agreement`` read the agreement and check [guimenu]``I Agree to the License Terms``.
-. Select the registration method. 
-. In the screen [literal]``Extensions and Modules Selection`` check the following:
-  * {productname} Server Extension
-  * Basesystem Module
-  * Containers Module
-. Complete the installation.
-. When the installation completes, log in to the newly installed server as root.
-. As root, run
-
-+
-
-[source,shell]
-----
-zypper install podman
-----
-. Finish the {productname} installation on {sles} {bci-suma} by running command:
-
-+
-
-[source,shell]
-----
-mgradm install podman
-----
-endif::[]
-
-
 [[deploy-suma-server-mgradm]]
-== Deploy with [literal]``mgradm``
+== Deploy {productname} with [literal]``mgradm``
 
 .Procedure: Deploying {productname} {productnumber} Using [literal]``mgradm``
 . Log in as root.
@@ -338,20 +402,6 @@ than 48 characters in length.
 . Wait for deployment to complete.
 . Open a browser and proceed to your servers FQDN.
 . Enter your username (default is [literal]``admin``) and the password you set during the deployment process.
-
-[IMPORTANT]
-====
-{sle-micro} is designed to update itself automatically by default and will reboot after applying updates.
-However, this behavior is not desirable for the {productname} environment.
-To prevent automatic updates on your server, {productname} disables the transactional-update timer during the bootstrap process.
-
-If you prefer the {sle-micro} default behavior, enable the timer by running the following command:
-
-[source, shell]
-----
-systemctl enable --now transactional-update.timer
-----
-====
 
 In this guide you deployed {productname} {productnumber} Server as a container.
 Proceed to the next section to add your organization credentials for syncing with {scclongform}.
