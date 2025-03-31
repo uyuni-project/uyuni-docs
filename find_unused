@@ -25,7 +25,7 @@ PERCENTS=()
 UNUSED_COUNTS=()
 UNUSED_FILES=()
 
-# Draws a usage bar like 📊 [████████░░░░] 80% — All files used ✅
+# Draw usage bar like 📊 [████████░░░░] 80% — All files used ✅
 draw_bar() {
   local percent=$1
   local bars=$((percent / 10))
@@ -75,14 +75,11 @@ find_unused() {
   TOTAL_FILES=0
   UNUSED_LIST=()
 
-  for I in "$GUIDE_DIR"/*.adoc; do
-    FILE_NAME=$(basename "$I")
+  # Recursively find all .adoc files under pages/, ignoring README.adoc
+  mapfile -t FILES_ON_DISK < <(find "$GUIDE_DIR" -type f -iname '*.adoc' ! -iname 'README.adoc' | sort)
 
-    # Skip README.adoc
-    if [ "$FILE_NAME" == "README.adoc" ]; then
-      continue
-    fi
-
+  for FILE_PATH in "${FILES_ON_DISK[@]}"; do
+    FILE_NAME=$(basename "$FILE_PATH")
     TOTAL_FILES=$((TOTAL_FILES + 1))
 
     grep -q "$FILE_NAME" "$NAV_FILE" "$GUIDE_DIR"/*.adoc
@@ -163,6 +160,7 @@ unset IFS
 for row in "${SORTED_ROWS[@]}"; do
   IFS='~' read -r percent_val guide unused <<< "$row"
   guide_disp="$(truncate "$guide" 22)"
+  TOTAL_COUNT=$((TOTAL_COUNT + 1))
 
   # Color percentage
   if (( percent_val == 100 )); then
@@ -177,10 +175,9 @@ for row in "${SORTED_ROWS[@]}"; do
     status_icon="${CROSS}"
   fi
 
-  TOTAL_COUNT=$((TOTAL_COUNT + 1))
-
   if [ -z "$unused" ]; then
-    echo -e "$(printf "%-22s  %-7b  " "$guide_disp" "$percent_colored")$status_icon"
+    full_line=$(printf "%-22s  %-7b  %b" "$guide_disp" "$percent_colored" "$status_icon")
+    echo -e "$full_line"
   else
     IFS=',' read -ra FILES <<< "$unused"
     echo -e "$(printf "%-22s  %-7b  %b" "$guide_disp" "$percent_colored" "${RED}${FILES[0]}${NC}")"
@@ -197,5 +194,3 @@ echo -e "${BOLD}${GREEN}✅ $CLEAN_COUNT of $TOTAL_COUNT guides have all files u
 echo
 echo "EXIT_CODE = $EXIT_CODE"
 exit $EXIT_CODE
-
-
