@@ -1,29 +1,201 @@
 #!/bin/bash
 
 CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-
 EXIT_CODE=0
 
+# Colors
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+BOLD='\033[1m'
+NC='\033[0m' # No Color
+
+# Emojis
+GECKO="🦎"
+BOOK="📗"
+CHECK="✅"
+CROSS="❌"
+BAR_LABEL="📊"
+SUMMARY_LABEL="📘"
+CLOCK="🕒"
+
+# Summary arrays
+GUIDES=()
+PERCENTS=()
+UNUSED_COUNTS=()
+UNUSED_FILES=()
+
+# Draws a usage bar like 📊 [████████░░░░] 80% — All files used ✅
+draw_bar() {
+  local percent=$1
+  local bars=$((percent / 10))
+  local empty=$((10 - bars))
+  local bar=""
+  for ((i = 0; i < bars; i++)); do bar+="█"; done
+  for ((i = 0; i < empty; i++)); do bar+="░"; done
+
+  if (( percent == 100 )); then
+    echo -e "${GREEN}${BAR_LABEL} [$bar] $percent% — All files used ${CHECK}${NC}"
+  elif (( percent >= 70 )); then
+    echo -e "${YELLOW}${BAR_LABEL} [$bar] $percent%${NC}"
+  else
+    echo -e "${RED}${BAR_LABEL} [$bar] $percent%${NC}"
+  fi
+}
+
+# Truncate strings safely
+truncate() {
+  local str="$1"
+  local maxlen=$2
+  if [ ${#str} -le $maxlen ]; then
+    printf "%s" "$str"
+  else
+    printf "%s…" "${str:0:((maxlen-1))}"
+  fi
+}
+
 find_unused() {
-  echo "CHECKING IF FILES ON DISK ARE ACTUALLY USED IN GUIDE: ${1^^}"
+  GUIDE_NAME=$1
+  echo -e "${GREEN}${BOOK} CHECKING GUIDE: ${GUIDE_NAME^^}${NC}"
+
+  GUIDE_DIR="$CURRENT_DIR/modules/$GUIDE_NAME/pages"
+  NAV_FILE="$CURRENT_DIR/modules/$GUIDE_NAME/nav-$GUIDE_NAME-guide.adoc"
+
+  if [ ! -d "$GUIDE_DIR" ]; then
+    echo "  => No directory found: $GUIDE_DIR"
+    return
+  fi
+
+  if [ ! -f "$NAV_FILE" ]; then
+    echo "  => No nav file found: $NAV_FILE"
+    return
+  fi
+
   UNUSED_IN_GUIDE=0
-  cd modules/$1/pages
-  for I in *.adoc; do
-    printf "  $I... "
-    grep -q $I ../nav-$1-guide.adoc *.adoc
+  TOTAL_FILES=0
+  UNUSED_LIST=()
+
+  for I in "$GUIDE_DIR"/*.adoc; do
+    FILE_NAME=$(basename "$I")
+
+    # Skip README.adoc
+    if [ "$FILE_NAME" == "README.adoc" ]; then
+      continue
+    fi
+
+    TOTAL_FILES=$((TOTAL_FILES + 1))
+
+    grep -q "$FILE_NAME" "$NAV_FILE" "$GUIDE_DIR"/*.adoc
     grepsult=$?
-    if [ "$grepsult" -eq "0" ]; then echo "yes"; else echo "no"; fi
-    EXIT_CODE=$((EXIT_CODE + $grepsult))
-    UNUSED_IN_GUIDE=$((UNUSED_IN_GUIDE + $grepsult))
+
+    if [ "$grepsult" -eq 0 ]; then
+      echo -e "  ${GECKO} ${GREEN}$FILE_NAME${NC}"
+    else
+      echo -e "  ${CROSS} ${RED}$FILE_NAME${NC}"
+      UNUSED_LIST+=("$FILE_NAME")
+      UNUSED_IN_GUIDE=$((UNUSED_IN_GUIDE + 1))
+      EXIT_CODE=$((EXIT_CODE + 1))
+    fi
   done
-  echo "  => Unused files in $1 guide: $UNUSED_IN_GUIDE"
+
+  USED_FILES=$((TOTAL_FILES - UNUSED_IN_GUIDE))
+  if [ "$TOTAL_FILES" -gt 0 ]; then
+    PERCENT=$(( 100 * USED_FILES / TOTAL_FILES ))
+  else
+    PERCENT=100
+  fi
+
+  usage_output=$(draw_bar "$PERCENT")
+  if [ "$UNUSED_IN_GUIDE" -gt 0 ]; then
+    echo -e "$usage_output — ${RED}${CROSS} Guide has unused files${NC}"
+    echo -e "${RED}🚨 Unused files in $GUIDE_NAME:${NC}"
+    for FILE in "${UNUSED_LIST[@]}"; do
+      echo -e "   • ${RED}$FILE${NC}"
+    done
+  else
+    echo -e "$usage_output"
+  fi
+
+  # Save for summary
+  GUIDES+=("$GUIDE_NAME")
+  PERCENTS+=("$PERCENT")
+  UNUSED_COUNTS+=("$UNUSED_IN_GUIDE")
+  UNUSED_FILES+=("$(IFS=, ; echo "${UNUSED_LIST[*]}")")
+
   echo
 }
 
-for I in $@; do
-  cd "$CURRENT_DIR"
-  find_unused $I
+# Loop through all modules
+for dir in "$CURRENT_DIR"/modules/*; do
+  if [ -d "$dir/pages" ]; then
+    GUIDE_NAME=$(basename "$dir")
+    find_unused "$GUIDE_NAME"
+  fi
 done
 
-echo EXIT_CODE = $EXIT_CODE
+# Timestamp
+NOW=$(date +"%Y-%m-%d %H:%M:%S")
+echo -e "${CLOCK} Checked at: ${BOLD}$NOW${NC}"
+echo
+
+# === Sorted & Enhanced Summary Output ===
+
+echo -e "${SUMMARY_LABEL} ${BOLD}SUMMARY${NC}"
+printf "%-22s  %-7s  %s\n" "Guide" "Used %" "Unused Files"
+printf -- "----------------------  -------  ------------------------------\n"
+
+# Build sortable list
+SORTED_ROWS=()
+CLEAN_COUNT=0
+TOTAL_COUNT=0
+
+for i in "${!GUIDES[@]}"; do
+  guide="${GUIDES[$i]}"
+  percent="${PERCENTS[$i]}"
+  unused="${UNUSED_FILES[$i]}"
+  SORTED_ROWS+=("${percent}~${guide}~${unused}")
+done
+
+# Sort by percent descending
+IFS=$'\n' SORTED_ROWS=($(sort -t '~' -k1,1nr <<< "${SORTED_ROWS[*]}"))
+unset IFS
+
+for row in "${SORTED_ROWS[@]}"; do
+  IFS='~' read -r percent_val guide unused <<< "$row"
+  guide_disp="$(truncate "$guide" 22)"
+
+  # Color percentage
+  if (( percent_val == 100 )); then
+    percent_colored="${GREEN}${percent_val}%${NC}"
+    status_icon="${CHECK}"
+    CLEAN_COUNT=$((CLEAN_COUNT + 1))
+  elif (( percent_val >= 70 )); then
+    percent_colored="${YELLOW}${percent_val}%${NC}"
+    status_icon="${CROSS}"
+  else
+    percent_colored="${RED}${percent_val}%${NC}"
+    status_icon="${CROSS}"
+  fi
+
+  TOTAL_COUNT=$((TOTAL_COUNT + 1))
+
+  if [ -z "$unused" ]; then
+    echo -e "$(printf "%-22s  %-7b  " "$guide_disp" "$percent_colored")$status_icon"
+  else
+    IFS=',' read -ra FILES <<< "$unused"
+    echo -e "$(printf "%-22s  %-7b  %b" "$guide_disp" "$percent_colored" "${RED}${FILES[0]}${NC}")"
+    for j in "${FILES[@]:1}"; do
+      file_colored="${RED}${j}${NC}"
+      echo -e "$(printf "%-22s  %-7s  %b" "" "" "$file_colored")"
+    done
+    echo
+  fi
+done
+
+echo
+echo -e "${BOLD}${GREEN}✅ $CLEAN_COUNT of $TOTAL_COUNT guides have all files used.${NC}"
+echo
+echo "EXIT_CODE = $EXIT_CODE"
 exit $EXIT_CODE
+
+
