@@ -1,3 +1,4 @@
+- Marked OVAL data consumption as Technology Preview
 - Enhanced CVE auditing feature in Administration Guide
 - Restructured Server and Proxy Installation to better distinguish
   between SUSE Linux Enterprise Micro and SUSE Linux Enterprise
