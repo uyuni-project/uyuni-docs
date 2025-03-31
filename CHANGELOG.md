@@ -1,3 +1,4 @@
+- Added password definition requirements to Administration Guide
 - Marked OVAL data consumption as Technology Preview
 - Implemented PDF branding update for 2025 branding
 - Enhanced CVE auditing feature in Administration Guide
