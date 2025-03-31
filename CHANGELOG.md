@@ -1,4 +1,7 @@
-- Marked OVAL data consumption as Tech Preview
+- Restructured Server Installation to better distinguish between
+  SUSE Linux Enterprise Micro and SUSE Linux Enterprise Server
+  as host operating system respectively (bsc#1239801)
+- Marked OVAL data consumption as Technology Preview
 - Implemented PDF branding update for 2025 branding
 - Enhanced CVE auditing feature in Administration Guide
 - Added additional registry link to Installation and Upgrade Guide
