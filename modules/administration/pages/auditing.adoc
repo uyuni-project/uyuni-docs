@@ -25,18 +25,14 @@ CVE identification numbers use the form ``CVE-YEAR-XXXX``.
 
 In the {productname} {webui}, navigate to menu:Audit[CVE Audit] to see a list of all clients and their current patch status.
 
-By default, the CVE data is updated at 2300 every day.
+By default, the patch data is updated at 23:00 every day.
 We recommend that before you begin a CVE audit you refresh the data to ensure you have the latest patches.
 
-
-
-.Procedure: Updating CVE Data
+.Procedure: Updating Patch Data
 . In the {productname} {webui}, navigate to menu:Admin[Task Schedules] and select the ``cve-server-channels-default`` schedule.
 . Click btn:[cve-server-channels-bunch].
 . Click btn:[Single Run Schedule] to schedule the task.
-    Allow the task to complete before continuing with the CVE audit.
-
-
+Allow the task to complete before continuing with the CVE audit.
 
 .Procedure: Verifying Patch Status
 . In the {productname} {webui}, navigate to menu:Audit[CVE Audit].
@@ -46,17 +42,76 @@ We recommend that before you begin a CVE audit you refresh the data to ensure yo
 
 For more information about the patch status icons used on this page, see xref:reference:audit/audit-cve-audit.adoc[].
 
-
-For each system, the [guimenu]``Next Action`` column provides information about what you need to do to address vulnerabilities.
+For each system, the [guimenu]``Actions`` column provides information about what you need to do to address vulnerabilities.
 If applicable, a list of candidate channels or patches is also given.
 You can also assign systems to a [guimenu]``System Set`` for further batch processing.
-
 
 You can use the {productname} API to verify the patch status of your clients.
 Use the ``audit.listSystemsByPatchStatus`` API method.
 For more information about this method, see the {productname} API Guide.
 
+== OVAL
+The CVE Audit operation relies on two primary data sources: Channels and OVAL (Open Vulnerability and Assessment Language).
+These two sources provide us with metadata for conducting CVE audits, each serving a distinct purpose.
 
+Channels::
+Channels include the updated software packages, which include patches, and provide insights into the essential patches required to address vulnerabilities.
+
+OVAL::
+In contrast, OVAL data supplies information about the vulnerabilities themselves and the packages that render a system vulnerable to a CVE.
+
+While it is possible to conduct CVE audits using only channels data, synchronizing OVAL data enhances the accuracy of the results, particularly in cases involving zero-day vulnerabilities or partially patched vulnerabilities.
+
+OVAL data is also much more lightweight than channels data.
+For example, OVAL data for {opensuse} Leap 15.4 is around 50{nbsp}MB.
+Having synced OVAL data only, you can already perform CVE audits and check if your systems are vulnerable or not to a CVE, but you can't apply patches since they come from channels.
+
+By default, OVAL data is updated at 23:00 every day.
+We recommend that before you begin a CVE audit you refresh the data to ensure you have the latest vulnerabilities metadata.
+
+.Procedure: Updating OVAL Data
+. In the {productname} {webui}, navigate to menu:Admin[Task Schedules] and select the ``oval-data-sync-default`` schedule.
+. Click btn:[oval-data-sync-bunch].
+. Click btn:[Single Run Schedule] to schedule the task.
+
+Allow the task to complete before continuing with the CVE audit.
+
+=== Collecting CPE
+
+To be able to accurately identify what vulnerabilities apply to a certain client, we need to identify the operating system product that client uses. To do that, we collect the CPE (Common Platform Enumeration) of the client as a salt grain, then we save it to the database.
+
+The CPE of newly registered clients will be automatically collected and saved to the database.
+However, for existing clients, it is necessary to execute the ``Update Packages List`` action at least once.
+
+.Procedure: Update Packages List
+. In the {productname} {webui}, navigate to menu:Systems[System List > All] and select a client.
+. Then go to the [guimenu]``Software`` tab and select the [guimenu]``Packages`` sub-tab.
+. Click btn:[Update Packages List] to update packages and collect the CPE of client.
+
+=== OVAL Sources
+
+To ensure the integrity and currency of the OVAL data, {productname} exclusively consumes OVAL data from the official maintainers of every product. Below, you can find the list of OVAL data sources.
+
+[[oval-sources]]
+[cols="1,1", options="header"]
+.OVAL Sources
+|===
+| Product | Source URL
+| openSUSE Leap .5+.^| https://ftp.suse.com/pub/projects/security/oval
+| openSUSE Leap Micro
+| SUSE Linux Enterprise Server
+| SUSE Linux Enterprise Desktop
+| SUSE Linux Enterprise Micro
+| RedHat Enterprise Linux | https://www.redhat.com/security/data/oval/v2
+| Debian | https://www.debian.org/security/oval
+| Ubuntu | https://security-metadata.canonical.com/oval
+|===
+
+
+[NOTE]
+====
+OVAL metadata is used in CVE auditing for only a subset of clients, namely, clients that use openSUSE Leap, SUSE enterprise products, RHEL, Debian or Ubuntu. This is due to the absence of OVAL vulnerability definitions metadata for the other products.
+====
 
 == CVE Status
 
