@@ -1,6 +1,6 @@
-- Restructured Server Installation to better distinguish between
-  SUSE Linux Enterprise Micro and SUSE Linux Enterprise Server
-  as host operating system respectively (bsc#1239801)
+- Restructured Server and Proxy Installation to better distinguish
+  between SUSE Linux Enterprise Micro and SUSE Linux Enterprise
+  Server as host operating system respectively (bsc#1239801)
 - Added password definition requirements to Administration Guide
 - Marked OVAL data consumption as Technology Preview
 - Implemented PDF branding update for 2025 branding
