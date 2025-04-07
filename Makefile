@@ -227,12 +227,12 @@ copy-branding:
 
 .PHONY: configure-suma-branding-dsc
 configure-suma-branding-dsc:
-	sed -i -e 's|supplemental_files: ./branding/supplemental-ui/suma/.*|supplemental_files: ./branding/supplemental-ui/suma/susecom-2023|' site.yml
+	sed -i -e 's|supplemental_files: ./branding/supplemental-ui/suma/.*|supplemental_files: ./branding/supplemental-ui/suma/susecom-2025|' site.yml
 	cat site.yml
 
 .PHONY: configure-suma-branding-webui
 configure-suma-branding-webui:
-	sed -i -e 's|supplemental_files: ./branding/supplemental-ui/suma/.*|supplemental_files: ./branding/supplemental-ui/suma/webui-2023|' site.yml
+	sed -i -e 's|supplemental_files: ./branding/supplemental-ui/suma/.*|supplemental_files: ./branding/supplemental-ui/suma/webui-2025|' site.yml
 	cat site.yml
 
 .PHONY: clean-branding
