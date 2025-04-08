@@ -1,5 +1,5 @@
-- Unified hardware requirements for proxy installation in
-  Installation and Upgrade Guide (bsc#1240635)
+- Unified hardware requirements for proxy and server installation
+  in Installation and Upgrade Guide (bsc#1240635)
 - Restructured Server and Proxy Installation to better distinguish
   between SUSE Linux Enterprise Micro and SUSE Linux Enterprise
   Server as host operating system respectively (bsc#1239801)
