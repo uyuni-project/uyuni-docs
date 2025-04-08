@@ -1,3 +1,5 @@
+- Unified hardware requirements for proxy installation in
+  Installation and Upgrade Guide (bsc#1240635)
 - Marked OVAL data consumption as Technology Preview
 - Added password definition requirements to Administration Guide
 - Restructured Server Installation to better distinguish between
