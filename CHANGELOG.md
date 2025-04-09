@@ -1,3 +1,5 @@
+- Documented SUSE Linux Enterprise Server 15 as valid
+  migration target (bsc#1240901)
 - Unified hardware requirements for proxy and server installation
   in Installation and Upgrade Guide (bsc#1240635)
 - Restructured Server and Proxy Installation to better distinguish
