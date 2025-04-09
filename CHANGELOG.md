@@ -1,3 +1,5 @@
+- Documented SUSE Linux Enterprise Server 15 as valid
+  migration target (bsc#1240901)
 - Marked OVAL data consumption as Technology Preview
 - Added password definition requirements to Administration Guide
 - Restructured Server Installation to better distinguish between
