@@ -1,3 +1,5 @@
+- Added policycoreutils to the list of packages to install in
+  Installation and Upgrade Guide
 - Unified hardware requirements for proxy and server installation
   in Installation and Upgrade Guide (bsc#1240635)
 - Restructured Server and Proxy Installation to better distinguish
