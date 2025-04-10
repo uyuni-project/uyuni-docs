@@ -1,3 +1,5 @@
+- Improved documentation about monitoring in Administration
+  Guide
 - Documented SUSE Linux Enterprise Server 15 as valid
   migration target (bsc#1240901)
 - Unified hardware requirements for proxy and server installation
