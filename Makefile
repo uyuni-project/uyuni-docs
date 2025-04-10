@@ -58,7 +58,7 @@ endef
 define antora-mlm-function
 	cd $(current_dir)
 	$(call enable-mlm-in-antorayml,$(1)) && \
-	cd $(current_dir)/$(1) && DOCSEARCH_ENABLED=true SITE_SEARCH_PROVIDER=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) npx antora $(current_dir)/$(1)/mlm-site.yml
+	cd $(current_dir)/$(1) && DOCSEARCH_ENABLED=true SITE_SEARCH_PROVIDER=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) npx antora $(current_dir)/$(1)/mlm-site.yml --stacktrace
 endef
 
 define enable-uyuni-in-antorayml
@@ -133,7 +133,8 @@ define pdf-book-create
 		$(11) \
 		--base-dir . \
 		--out-file $(7)/$(5)_$(6)_guide.pdf \
-		modules/$(6)/nav-$(6)-guide.pdf.$(8).adoc
+		modules/$(6)/nav-$(6)-guide.pdf.$(8).adoc \
+		--trace
 endef
 
 define pdf-book-create-uyuni
@@ -151,7 +152,8 @@ define pdf-book-create-uyuni
 		$(11) \
 		--base-dir . \
 		--out-file $(7)/$(5)_$(6)_guide.pdf \
-		modules/$(6)/nav-$(6)-guide.pdf.$(8).adoc
+		modules/$(6)/nav-$(6)-guide.pdf.$(8).adoc \
+		--trace
 endef
 
 define clean-branding
@@ -226,12 +228,12 @@ copy-branding:
 
 .PHONY: configure-mlm-branding-dsc
 configure-mlm-branding-dsc:
-	sed -i -e 's|supplemental_files: ./branding/supplemental-ui/mlm/.*|supplemental_files: ./branding/supplemental-ui/mlm/susecom-2023|' site.yml
+	sed -i -e 's|supplemental_files: ./branding/supplemental-ui/mlm/.*|supplemental_files: ./branding/supplemental-ui/mlm/susecom-2025|' site.yml
 	cat site.yml
 
 .PHONY: configure-mlm-branding-webui
 configure-mlm-branding-webui:
-	sed -i -e 's|supplemental_files: ./branding/supplemental-ui/mlm/.*|supplemental_files: ./branding/supplemental-ui/mlm/webui-2023|' site.yml
+	sed -i -e 's|supplemental_files: ./branding/supplemental-ui/mlm/.*|supplemental_files: ./branding/supplemental-ui/mlm/webui-2025|' site.yml
 	cat site.yml
 
 .PHONY: clean-branding

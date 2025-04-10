@@ -1,5 +1,39 @@
 - Improved documentation about monitoring in Administration
   Guide
+- Documented SUSE Linux Enterprise Server 15 as valid
+  migration target (bsc#1240901)
+- Unified hardware requirements for proxy and server installation
+  in Installation and Upgrade Guide (bsc#1240635)
+- Restructured Server and Proxy Installation to better distinguish
+  between SUSE Linux Enterprise Micro and SUSE Linux Enterprise
+  Server as host operating system respectively (bsc#1239801)
+- Added password definition requirements to Administration Guide
+- Marked OVAL data consumption as Technology Preview
+- Implemented PDF branding update for 2025 branding
+- Enhanced CVE auditing feature in Administration Guide
+- Added additional registry link to Installation and Upgrade Guide
+  (bsc#12400101)
+- Documented handling of pub directory of the web server in the
+  context of proxy (bsc#1238827)
+- Added instructions for Server and Proxy installation on SUSE Linux
+  Enterprise Server 15 SP7 to Installation and Upgrade Guide
+- Changed server host OS requirement for Uyuni to openSUSE Leap
+  Micro 5.5
+- Added system_listeventhistory to spacecmd reference in Reference
+  Guide (bsc#1239604)
+- Added new workflow for installing the product on ppc64le to Common
+  Workflows book
+- Implemented 2025 SUSE brand update for documentation.suse.com.
+- Added links to supported features tables for third party operating
+  systems (bsc#1236810)
+- Removed Ubuntu 20.04 for SUSE Multi-Linux Manager from the list
+  supported clients in Client Configuration Guide (bsc#1238481)
+- Fixed procedure in Troubleshooting section about full disk event
+  in the Administration Guide (bsc#1237535)
+- Renamed client tools channel to new product name SUSE Multi-Linux
+  Manager Client Tools
+- Cleaned up backup and restore procedure in Administration Guide
+  (bsc#1239630)
 - Removed misleading admonition at the beginning of the Replace
   Certificates section in the Administration Guide
 - Added note about cache_dir size in Installation and Upgrade
