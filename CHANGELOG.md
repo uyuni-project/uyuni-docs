@@ -1,3 +1,5 @@
+- Improved documentation about monitoring in Administration
+  Guide
 - Removed misleading admonition at the beginning of the Replace
   Certificates section in the Administration Guide
 - Added note about cache_dir size in Installation and Upgrade
