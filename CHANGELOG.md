@@ -1,3 +1,13 @@
+- Introduced dedicated Asciidoctor PDF themes for: Japanese, Korean
+  and Simplified Chinese. Each theme now uses language-specific
+  Noto Sans CJK fonts to handle subtle typographic differences and
+  improve localization accuracy.
+- Improved footer page numbering and chapter title formatting for all
+  CJK languages.
+- Updated CJK title pages to visually align with the English design.
+- Resolved several long-standing formatting issues related to CJK output.
+- Enabled future flexibility by allowing per-language refinements based
+  on translator feedback.
 - Documented SUSE Linux Enterprise Server 15 as valid
   migration target (bsc#1240901)
 - Unified hardware requirements for proxy and server installation
