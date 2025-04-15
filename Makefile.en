@@ -1,0 +1,94 @@
+# Clean up build artifacts
+.PHONY: clean-en
+clean-en: clean-branding-en ## Remove build artifacts from output directory (Antora and PDF)
+	$(call clean-function,translations/en,en)
+
+.PHONY: clean-branding-en
+clean-branding-en:
+	$(call clean-branding,en)
+
+.PHONY: copy-branding-en
+copy-branding-en: copy-branding
+	$(call copy-branding,en)
+
+.PHONY: configure-suma-branding-dsc-en
+configure-suma-branding-dsc-en: configure-suma-branding-dsc
+	$(call configure-suma-branding-dsc,en)
+
+.PHONY: configure-suma-branding-webui-en
+configure-suma-branding-webui-en: configure-suma-branding-webui
+	$(call configure-suma-branding-webui,en)
+
+.PHONY: validate-suma-en
+validate-suma-en:
+	$(call validate-product,translations/en,suma-site.yml)
+
+.PHONY: pdf-tar-suma-en
+pdf-tar-suma-en:
+	$(call pdf-tar-product,en,susemanager-docs_en-pdf,$(current_dir)/build/en/pdf)
+
+.PHONY: set-html-language-selector-suma-en
+set-html-language-selector-suma-en: set-html-language-selector-suma
+	mkdir -p $(shell dirname translations/en/$(SUPPLEMENTAL_FILES_SUMA))
+	cp -a translations/$(SUPPLEMENTAL_FILES_SUMA) translations/en/$(SUPPLEMENTAL_FILES_SUMA)
+
+.PHONY: prepare-antora-suma-en
+prepare-antora-suma-en: copy-branding-en set-html-language-selector-suma-en
+	cd $(current_dir)
+	mkdir -p $(current_dir)/translations/en && \
+	cp -a antora.yml translations/en/antora.yml && \
+	sed "s/\(url\:\ https\:\/\/documentation\.suse\.com\/suma\/4\.3\/\)/\1en\//;\
+	s/\-\ url\:\ \./\-\ url\:\ \.\.\/\.\.\//;\
+	s/start_path\:\ \./\start_path\:\ translations\/en/;\
+	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/en/;" site.yml > translations/en/suma-site.yml && \
+	cp -a $(current_dir)/modules $(current_dir)/translations/en/
+	find modules/ -maxdepth 1 -name "*" -type d -exec mkdir -p $(current_dir)/translations/en/{} \; && \
+	mkdir -p $(current_dir)/translations/en/modules/ROOT/pages/
+	cp -a $(current_dir)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(current_dir)/translations/en/modules/ROOT/pages/	
+	cd $(current_dir)
+
+.PHONY: antora-suma-en
+antora-suma-en: configure-suma-branding-dsc-en prepare-antora-suma-en pdf-all-suma-en pdf-tar-suma-en
+	$(call antora-suma-function,translations/en,en)
+
+.PHONY: obs-packages-suma-en
+obs-packages-suma-en: configure-suma-branding-webui-en pdf-all-suma-en antora-suma-en ## Generate SUMA OBS tar files
+	$(call obs-packages-product,en,en/pdf,susemanager-docs_en,susemanager-docs_en-pdf)
+
+# UYUNI
+
+.PHONY: validate-uyuni-en
+validate-uyuni-en:
+	$(call validate-product,translations/en,uyuni-site.yml)
+
+.PHONY: pdf-tar-uyuni-en
+pdf-tar-uyuni-en:
+	$(call pdf-tar-product,en,uyuni-docs_en-pdf,$(current_dir)/build/en/pdf)
+
+.PHONY: set-html-language-selector-uyuni-en
+set-html-language-selector-uyuni-en: set-html-language-selector-uyuni
+	mkdir -p $(shell dirname translations/en/$(SUPPLEMENTAL_FILES_UYUNI))
+	cp -a translations/$(SUPPLEMENTAL_FILES_UYUNI) translations/en/$(SUPPLEMENTAL_FILES_UYUNI)
+
+.PHONY: prepare-antora-uyuni-en
+prepare-antora-uyuni-en: copy-branding-en set-html-language-selector-uyuni-en
+	cd $(current_dir)
+	mkdir -p $(current_dir)/translations/en && \
+	cp antora.yml translations/en/antora.yml && \
+	sed "s/\(url\:\ https\:\/\/www\.uyuni-project\.org\/uyuni-docs\/\)/\1en\//;\
+	s/\-\ url\:\ \./\-\ url\:\ \.\.\/\.\.\//;\
+	s/start_path\:\ \./\start_path\:\ translations\/en/;\
+	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/en/;" site.yml > translations/en/uyuni-site.yml && \
+	cp -a $(current_dir)/modules $(current_dir)/translations/en/
+	find modules/ -maxdepth 1 -name "*" -type d -exec mkdir -p $(current_dir)/translations/en/{} \; && \
+	mkdir -p $(current_dir)/translations/en/modules/ROOT/pages/	
+	cp -a $(current_dir)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(current_dir)/translations/en/modules/ROOT/pages/	
+	cd $(current_dir)
+
+.PHONY: antora-uyuni-en
+antora-uyuni-en: prepare-antora-uyuni-en pdf-all-uyuni-en pdf-tar-uyuni-en
+	$(call antora-uyuni-function,translations/en,en)
+
+.PHONY: obs-packages-uyuni-en
+obs-packages-uyuni-en: pdf-all-uyuni-en antora-uyuni-en ## Generate UYUNI OBS tar files
+	$(call obs-packages-product,en,en/pdf,uyuni-docs_en,uyuni-docs_en-pdf)
