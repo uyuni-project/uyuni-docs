@@ -12,13 +12,12 @@
 - Enhanced CVE auditing feature in Administration Guide
 - Added additional registry link to Installation and Upgrade Guide
   (bsc#12400101)
-- Restructured Server and Proxy Installation to better distinguish
-  between SUSE Linux Enterprise Micro and SUSE Linux Enterprise
-  Server as host operating system respectively (bsc#1239801)
 - Added instructions for Proxy installation on SUSE Linux
   Enterprise Server 15 SP6 to Installation and Upgrade Guide
 - Documented handling of pub directory of the web server in the
   context of proxy (bsc#1238827)
+- Fixed removing Salt bundle client procedure in Client Configuration
+  Guide
 - Added system_listeventhistory to spacecmd reference in Reference
   Guide (bsc#1239604)
 - Added new workflow for installing the product on ppc64le to Common
