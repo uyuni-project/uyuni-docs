@@ -1,5 +1,6 @@
 - Unified hardware requirements for proxy and server installation
-  in Installation and Upgrade Guide (bsc#1240635)
+  in Installation and Upgrade Guide (bsc#1240635); images now
+  default to 40 GB root partition
 - Documented SUSE Linux Enterprise Server 15 as valid
   migration target (bsc#1240901)
 - Marked OVAL data consumption as Technology Preview
