@@ -1,3 +1,4 @@
+- Document renaming the journal folder when changing machine-id.
 - Removed documentation for virtualization entitlements as they are not
   used anymore from Client Configuration Guide.
 - Introduced dedicated Asciidoctor PDF themes for: Japanese, Korean
