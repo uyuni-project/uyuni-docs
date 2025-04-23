@@ -1,3 +1,5 @@
+- Added java.smtp_server parameter for mail configuration in
+  Administration Guide (bsc#1241490)
 - Unified hardware requirements for proxy and server installation
   in Installation and Upgrade Guide (bsc#1240635); images now
   default to 40 GB root partition
