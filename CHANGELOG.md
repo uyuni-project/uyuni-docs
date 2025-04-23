@@ -1,3 +1,5 @@
+- Differentiated between version 4.3 and 5.0 as old server that should
+  be migrated to version 5.1
 - Removed documentation for virtualization entitlements as they are not
   used anymore from Client Configuration Guide.
 - Introduced dedicated Asciidoctor PDF themes for: Japanese, Korean
