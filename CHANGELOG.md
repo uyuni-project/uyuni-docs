@@ -1,3 +1,5 @@
+- Fixed removing Salt bundle client procedure in Client Configuration
+  Guide
 - Removed documentation for virtualization entitlements as they are not
   used anymore from Client Configuration Guide.
 - Introduced dedicated Asciidoctor PDF themes for: Japanese, Korean
