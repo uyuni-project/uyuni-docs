@@ -1,8 +1,22 @@
-- 4.3 vs. 5.0 as source
+- Differentiated between version 4.3 and 5.0 as old server that should
+  be migrated to version 5.1
+- Removed documentation for virtualization entitlements as they are not
+  used anymore from Client Configuration Guide.
+- Introduced dedicated Asciidoctor PDF themes for: Japanese, Korean
+  and Simplified Chinese. Each theme now uses language-specific
+  Noto Sans CJK fonts to handle subtle typographic differences and
+  improve localization accuracy.
+- Improved footer page numbering and chapter title formatting for all
+  CJK languages.
+- Updated CJK title pages to visually align with the English design.
+- Resolved several long-standing formatting issues related to CJK output.
+- Enabled future flexibility by allowing per-language refinements based
+  on translator feedback.
+- Unified hardware requirements for proxy and server installation
+  in Installation and Upgrade Guide (bsc#1240635); images now
+  default to 40 GB root partition
 - Documented SUSE Linux Enterprise Server 15 as valid
   migration target (bsc#1240901)
-- Unified hardware requirements for proxy and server installation
-  in Installation and Upgrade Guide (bsc#1240635)
 - Restructured Server and Proxy Installation to better distinguish
   between SUSE Linux Enterprise Micro and SUSE Linux Enterprise
   Server as host operating system respectively (bsc#1239801)
