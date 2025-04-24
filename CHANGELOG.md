@@ -1,5 +1,5 @@
 - Documented renaming the journal folder when changing machine ID in
-  Administration Guide
+  Administration Guide (bsc#1241286)
 - Added java.smtp_server parameter for mail configuration in
   Administration Guide (bsc#1241490)
 - Unified hardware requirements for proxy and server installation
