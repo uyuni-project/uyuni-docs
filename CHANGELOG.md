@@ -1,5 +1,10 @@
 - Fixed removing Salt bundle client procedure in Client Configuration
   Guide
+- Documented renaming the journal folder when changing machine ID in
+  Administration Guide (bsc#1241286)
+- Added java.smtp_server parameter for mail configuration in
+  Administration Guide (bsc#1241490)
+- Added the copyright page for Uyuni
 - Removed documentation for virtualization entitlements as they are not
   used anymore from Client Configuration Guide.
 - Introduced dedicated Asciidoctor PDF themes for: Japanese, Korean
