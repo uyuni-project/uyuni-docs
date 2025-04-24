@@ -1,3 +1,5 @@
+- Documented renaming the journal folder when changing machine ID in
+  Administration Guide
 - Added java.smtp_server parameter for mail configuration in
   Administration Guide (bsc#1241490)
 - Added the copyright page for Uyuni
