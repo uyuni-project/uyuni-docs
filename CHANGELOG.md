@@ -1,3 +1,5 @@
+- Added initial version of hub online synchronization to Large Deployments
+  Guide in Specialized Guides
 - Added background information about installing PTF on an air-gapped
   server in Installation and Upgrade Guide
 - Fixed removing Salt bundle client procedure in Client Configuration
