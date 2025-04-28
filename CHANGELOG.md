@@ -1,3 +1,5 @@
+- Fixed removing Salt bundle client procedure in Client Configuration
+  Guide
 - Documented renaming the journal folder when changing machine ID in
   Administration Guide (bsc#1241286)
 - Added java.smtp_server parameter for mail configuration in
