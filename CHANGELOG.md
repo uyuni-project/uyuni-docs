@@ -1,7 +1,7 @@
-- Add new backup/restore implementation
-- Add new SSL certificate usage using podman secrets
-- Add descriptions about various containers used
-- Add the EULA for SUSE Multi-Linux Manager
+- Added new backup/restore implementation
+- Added new SSL certificate usage using podman secrets
+- Added descriptions about various containers used
+- Added the EULA for SUSE Multi-Linux Manager
 - Added background information about installing PTF on an air-gapped
   server in Installation and Upgrade Guide
 - Fixed removing Salt bundle client procedure in Client Configuration
