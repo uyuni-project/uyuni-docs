@@ -12,6 +12,8 @@ Before you begin, ensure you have:
   If you are using a CA chain, all intermediate CAs must also be available.
 * An SSL server private key
 * An SSL server certificate
+* An SSL database private key
+* An SSL database certificate
 
 All files must be in PEM format.
 
@@ -19,6 +21,11 @@ The hostname of the SSL server certificate must match the fully qualified hostna
 You can set the hostnames in the [literal]``X509v3 Subject Alternative Name`` section of the certificate.
 You can also list multiple hostnames if your environment requires it.
 Supported Key types are [literal]``RSA`` and [literal]``EC`` (Elliptic Curve).
+
+[IMPORTANT]
+====
+Database SSL certificates requires [literal]``reportdb`` and [literal]``db`` as [literal]``Subject Alternative Name``.
+====
 
 Third-party authorities commonly use intermediate CAs to sign requested server certificates.
 In this case, all CAs in the chain are required to be available.
@@ -45,8 +52,12 @@ After you have completed the initial setup, you can replace the default certific
       --ssl-ca-root string            Root CA certificate path
       --ssl-server-cert string        Server certificate path
       --ssl-server-key string         Server key path
+      --ssl-db-cert string            Database certificate path
+      --ssl-db-key string             Database key path
 ----
 
+Intermediate CAs can either be available in the file which is specified with `--ssl-ca-root` or specified as extra options with `--ssl-ca-intermediate`.
+The `--ssl-ca-intermediate` option can be specified multiple times.
 
 
 == Import Certificates for New Proxy Installations
@@ -77,47 +88,25 @@ You can replace active certificates on your {productname} installation with a ne
 To replace the certificates, you can replace the installed CA certificate with the new CA, and then update the database.
 
 
-.Procedure: Replacing Existing Certificates
+.Procedure: Replacing All Existing Certificates
 
-. On the {productname} container host, at the command prompt, temporarily copy the certificate files to the container:
-
-+
-
-[source,shell]
-----
-for f in <Root_CA_Certificate> <Server_Cert_File> <Server_Key_File>; do
-  mgrctl cp $f server:/tmp
-done
-----
-
-. On the {productname} container host, call the following command to run [command]``mgr-ssl-cert-setup`` inside the container providing certificates as parameters:
+. On the {productname} container host, at the command prompt, recreate podman certificate secrets
 
 +
 
 [source,shell]
 ----
-mgrctl exec -ti -- mgr-ssl-cert-setup --root-ca-file=/tmp/<Root_CA_Certificate> \
-  --server-cert-file=/tmp/<Server_Cert_File> --server-key-file=/tmp/<Server_Key_File>
+podman secret create --replace uyuni-ca $path_to_ca_certificate
+podman secret create --replace uyuni-db-ca $path_to_database_ca_certificate
+podman secret create --replace uyuni-cert $path_to_server_certificate
+podman secret create --replace uyuni-key $path_to_server_key
+podman secret create --replace uyuni-db-cert $path_to_database_certificate
+podman secret create --replace uyuni-db-key $path_to_database_key
+mgradm restart
 ----
-
-. Remove the temporarily copied files from the container:
-
-+
-
-[source,shell]
-----
-mgrctl exec -ti -- rm /tmp/<Root_CA_Certificate> /tmp/<Server_Cert_File> \
-  /tmp/<Server_Key_File>
-----
-
-
-Intermediate CAs can either be available in the file which is specified with `--root-ca-file` or specified as extra options with `--intermediate-ca-file`.
-The `--intermediate-ca-file` option can be specified multiple times.
-The [command]``mgr-ssl-cert-setup`` command tests if provided files are valid and suitable for the requested use case.
-The command then copies or deploys the files to all the places where they are needed.
 
 .Procedure: Restarting the Server
-. On the containter host, restart the server to pick up the changes:
+. On the container host, restart the server to pick up the changes:
 
 +
 
