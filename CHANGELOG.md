@@ -1,3 +1,5 @@
+- Added conversion from onboarded client to a proxy to Installantion
+  and Upgrade Guide
 - Add the EULA for SUSE Multi-Linux Manager
 - Added background information about installing PTF on an air-gapped
   server in Installation and Upgrade Guide
