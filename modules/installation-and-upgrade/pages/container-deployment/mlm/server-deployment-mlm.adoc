@@ -4,7 +4,7 @@ ifeval::[{uyuni-content} == true]
 :noindex:
 endif::[]
 
-This guide shows you how to install and configure a {productname} {productnumber} container on {sle-micro} {microversion} or {sles} {bci-mlm}.
+This guide shows you how to install and configure a {productname} {productnumber} container on {sl-micro} {microversion} or {sles} {bci-mlm}.
 
 // Link to hardware requirements do not show them here. We list them on other pages.
 // Done within next section.
@@ -19,7 +19,7 @@ For background information about disk space, see xref:installation-and-upgrade:h
 .Software and Hardware Requirements
 |===
 | Software and Hardware  | Recommended
-| Operating System       | {sle-micro} {microversion} or
+| Operating System       | {sl-micro} {microversion} or
 
                            {sles} {bci-mlm}
 | Architecture           | {x86_64}, {arm}, {s390x}, {ppc64le}
@@ -35,7 +35,7 @@ For background information about disk space, see xref:installation-and-upgrade:h
 .Supported operating system for the Server Container Host
 [NOTE]
 ====
-The supported operating system for the container host is {sle-micro} {microversion} or {sles} {bci-mlm}.
+The supported operating system for the container host is {sl-micro} {microversion} or {sles} {bci-mlm}.
 
 Container host::
 A container host is a server equipped with a container engine like [systemitem]``Podman``, which lets it manage and deploy containers.
@@ -53,8 +53,8 @@ An FQDN typically follows the format <host>.<domain>.com.
 
 For instance:
 
-* [literal]``{productname}.example.com``
-* [literal]``{productname}.container.lab``
+* [literal]``mlm.example.com``
+* [literal]``mlm.container.lab``
 
 For more information, see the section on network requirements in xref:installation-and-upgrade:network-requirements.adoc[].
 ====
@@ -93,25 +93,40 @@ This adds to the complexity of a {productname} deployment, and may affect the re
 
 For a list of all persistent volumes in the container, see xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[].
 
-// To set up custom persistent volumes see:
+
+
+
+[[deploy-mlm-server-host]]
+==  Prepare {productname} Server Host
+
+You can deploy {productname} on {sl-micro} {microversion} or {sles} {bci-mlm}.
+{sl-micro} is a transactional system, while {sles} is a full server operating system.
+
+Depending on your decision, either continue with xref:installation-and-upgrade:container-deployment/mlm/server-deployment-mlm.adoc#deploy-mlm-server-micro[] or with xref:installation-and-upgrade:container-deployment/mlm/server-deployment-mlm.adoc#deploy-mlm-server-sles[] and skip the not selected section.
 
 
 
 [[deploy-mlm-server-micro]]
-==  Deploy {productname} on {sle-micro} {microversion}
+=== Install {sl-micro} {microversion} and Deploy Server
 
-.Procedure: Download the Installation Media
+
+==== Download the Installation Media
+
+.Procedure: Downloading the Installation Media
 . Locate the {sl-micro} {microversion} installation media at https://www.suse.com/download/sle-micro/.
 . Download [filename]``SL-Micro-6.1-DVD-x86_64-GM-Media1.iso``.
 . Prepare a DVD or USB flash drive with the downloaded [filename]``.iso`` image for installation.
 . Insert the DVD or USB flash drive (USB disk or key) containing the installation image for {sl-micro} {microversion}.
 . Boot or reboot your system.
-+
-
-For more information about preparing your machines (virtual or physical), see link:https://documentation.suse.com/sle-micro/5.5/html/SLE-Micro-all/book-deployment-slemicro.html[{sle-micro} {microversion} Deployment Guide].
 
 
-.Procedure: {sl-micro} {microversion} Installation
+For more information about preparing your machines (virtual or physical), see link:https://documentation.suse.com/sle-micro/6.1/html/Micro-deployment-images/index.html[Introduction to {sl-micro} {microversion} Deployment].
+
+
+==== Install {sl-micro}
+
+.Procedure: Installing {sl-micro} {microversion}
+
 . Use the arrow keys to select [systemitem]``Installation``.
 . Adjust keyboard and language.
 . Click the [systemitem]``checkbox`` to accept the license agreement.
@@ -154,7 +169,7 @@ This concludes installation of {sl-micro} {microversion} and {productname} {prod
 
 
 
-=== Registration from the Command Line (Optional)
+==== Registration from the Command Line (Optional)
 
 If you added {productname} {productnumber} as an extension during {sl-micro} {microversion} installation then you can skip this step. However, optionally you may skip registration during {sl-micro} {microversion} installation by selecting the btn:[Skip Registration] button.
 This section provides steps on registering your products after {sl-micro} {microversion} installation.
@@ -193,9 +208,9 @@ transactional-update register -p SUSE-Manager-Server/5.1/x86_64 -r <reg_code>
 . Reboot.
 
 
-=== Update the System
+==== Update the System
 
-.Procedure
+.Procedure: Updating the System
 . Log in as *root*.
 . Run **transactional-update**:
 
@@ -208,8 +223,91 @@ transactional-update
 
 . Reboot.
 
+[IMPORTANT]
+====
+{sl-micro} is designed to update itself automatically by default and will reboot after applying updates.
+However, this behavior is not desirable for the {productname} environment.
+To prevent automatic updates on your server, {productname} disables the transactional-update timer during the bootstrap process.
 
-=== Configure Custom Persistent Storage
+If you prefer the {sl-micro} default behavior, enable the timer by running the following command:
+
+[source, shell]
+----
+systemctl enable --now transactional-update.timer
+----
+====
+
+To continue with deployment, see xref:installation-and-upgrade:container-deployment/mlm/server-deployment-mlm.adoc#deploy-mlm-server-persistent-storage[].
+
+
+[[deploy-mlm-server-sles]]
+=== Install {sles} {bci-mlm} and Deploy Server
+
+Alternatively, you can deploy {productname} on {sles} {bci-mlm}.
+
+
+The following procedure describes the main steps of the installation process.
+
+.Procedure: Installing {productname} on {sles} {bci-mlm}
+. Locate and download {sles} {bci-mlm} [literal]``.iso`` at https://www.suse.com/download/sles/.
+// FIXME Do we need the following step?
++
+. Make sure that the {scc} code you plan to use has the Extensions enabled.
+. Start the installation of {sles} {bci-mlm}.
+  .. On the [literal]``Language, keyboard and product selection`` select the product to install.
+  .. On the [literal]``License agreement`` read the agreement and check [guimenu]``I Agree to the License Terms``.
+. Select the registration method.
+
++
+
+[NOTE]
+====
+For {sles} {bci-mlm}, you are required to have a valid {sles} subscription and corresponding regcode, which you must provide on this screen.
+You will be required to enter the {productname} Extension regcode below.
+====
+. In the screen [literal]``Extensions and Modules Selection`` check the following:
+  * {productname} Server Extension
+  * Basesystem Module
+  * Containers Module
+. Complete the installation.
++
+
+Enter the {productname} Extension regcode.
+. When the installation completes, log in to the newly installed server as root.
+. Update the System (optional, if the system was not set to download updates during install):
+
++
+
+[source,shell]
+----
+zypper up
+----
+
+. Reboot.
+. Log in as root and install [package]``podman`` plus [package]``mgradm`` and [package]``mgradm-bash-completion`` (if not already automatically installed):
+
++
+
+[source,shell]
+----
+zypper install podman mgradm mgradm-bash-completion
+----
+
+. Start the Podman service by rebooting the system, or running a command:
+
++
+
+[source, shell]
+----
+systemctl enable --now podman.service
+----
+
+To continue with deployment, see xref:installation-and-upgrade:container-deployment/mlm/server-deployment-mlm.adoc#deploy-mlm-server-persistent-storage[].
+
+
+
+[[deploy-mlm-server-persistent-storage]]
+== Configure Custom Persistent Storage
 
 Configuring persistent storage is optional, but it is the only way to avoid serious trouble with container full disk conditions.
 It is highly recommended to configure custom persistent storage with the [command]``mgr-storage-server`` tool.
@@ -251,45 +349,8 @@ For more information, see
 ====
 
 
-
-== Install {productname} on {sles} {bci-mlm}
-
-Alternatively, you can install {productname} on {sles} {bci-mlm}.
-The following procedure describes the main steps of the installation process.
-
-.Procedure: Installing {productname} on {sles} {bci-mlm}
-. Locate and download {sles} {bci-mlm} [literal]``.iso`` at https://www.suse.com/download/sles/.
-. Make sure that the {scc} code you plan to use has the Extensions enabled.
-. Start the installation of {sles} {bci-mlm}.
-  .. On the [literal]``Language, keyboard and product selection`` select the product to install.
-  .. On the [literal]``License agreement`` read the agreement and check [guimenu]``I Agree to the License Terms``.
-. Select the registration method. 
-. In the screen [literal]``Extensions and Modules Selection`` check the following:
-  * {productname} Server Extension
-  * Basesystem Module
-  * Containers Module
-. Complete the installation.
-. When the installation completes, log in to the newly installed server as root.
-. As root, run
-
-+
-
-[source,shell]
-----
-zypper install podman
-----
-. Finish the {productname} installation on {sles} {bci-mlm} by running command:
-
-+
-
-[source,shell]
-----
-mgradm install podman
-----
-
-
 [[deploy-mlm-server-mgradm]]
-== Deploy with [literal]``mgradm``
+== Deploy {productname} with [literal]``mgradm``
 
 .Procedure: Deploying {productname} {productnumber} Using [literal]``mgradm``
 . Log in as root.
@@ -297,7 +358,7 @@ mgradm install podman
 +
 [source,shell]
 ----
-mgradm install podman <{productname}.example.com>
+mgradm install podman <multi-linux-manager.example.com>
 ----
 +
 
@@ -314,7 +375,7 @@ podman login -u <EMAIL> -p <REGISTRATION-CODE> registry.suse.com
 Use the {productname} {productnumber} registration key when prompted.
 ====
 
-. Enter a certificate and administrator account password when prompted.
+. Enter CA key (certificate authority) and administrator account password when prompted.
 +
 
 [NOTE]
@@ -330,20 +391,6 @@ than 48 characters in length.
 . Wait for deployment to complete.
 . Open a browser and proceed to your servers FQDN.
 . Enter your username (default is [literal]``admin``) and the password you set during the deployment process.
-
-[IMPORTANT]
-====
-{sl-micro} is designed to update itself automatically by default and will reboot after applying updates.
-However, this behavior is not desirable for the {productname} environment.
-To prevent automatic updates on your server, {productname} disables the transactional-update timer during the bootstrap process.
-
-If you prefer the {sl-micro} default behavior, enable the timer by running the following command:
-
-[source, shell]
-----
-systemctl enable --now transactional-update.timer
-----
-====
 
 In this guide you deployed {productname} {productnumber} Server as a container.
 Proceed to the next section to add your organization credentials for syncing with {scclongform}.
