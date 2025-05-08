@@ -1,4 +1,4 @@
-- Add the EULA for SUSE Multi-Linux Manager
+- Added the EULA for SUSE Multi-Linux Manager (bsc#1241647)
 - Added background information about installing PTF on an air-gapped
   server in Installation and Upgrade Guide
 - Fixed removing Salt bundle client procedure in Client Configuration
