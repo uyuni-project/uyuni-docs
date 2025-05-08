@@ -1,3 +1,5 @@
+- Documented uptodate action in Common Workflows Guide as
+  background information
 - Added the EULA for SUSE Multi-Linux Manager (bsc#1241647)
 - Added background information about installing PTF on an air-gapped
   server in Installation and Upgrade Guide

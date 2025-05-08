@@ -75,6 +75,94 @@ A third step is optional but highly recommended to finalize the update process.
 . Click btn:[Create Schedule] to save the action.
 
 
+
+[[cw-update-background]]
+== Background Information on [literal]``uptodate`` State
+
+
+. The [systemitem]``uptodate`` state applies critical patches to the update components.
+
++
+
+--
+
+..  On {suse}-based systems, the state executes the command:
+
++
+
+[source,shell]
+----
+zypper --non-interactive patch --updatestack-only
+----
+
++
+
+And then, the state also updates {salt}.
+
+.. On all the other systems, not based on {suse}, the state only updates {salt}.
+
+--
+
+. The state runs the package manager, such as [command]``dnf``, [command]``yum``, [command]``apt``, or [command]``zypper`` based on what is available on the client operating system to update the rest of the packages.
+
++
+
+--
+
+.. Listing all of the remaining packages that can be upgraded.
+
+.. Upgrading the packages to their latest available version by using the client's package manager.
+ The version depends on the synchronized repositories in {productname}.
+ This is different depending on the operating system of the client:
+
+... For Debian-based clients, such as Debian or Ubuntu, the action executes [command]``apt dist-upgrade -q -y $PACKAGES``.
+... For RPM-based clients that are not SUSE, such as Red Hat Enterprise Linux or SUSE Liberty Linux, the action executes [command]``yum --quiet -y update $PACKAGES`` or [command]``dnf --quiet -y upgrade $PACKAGES`` (depending on the package manager the client is using).
+... For non-transactional SUSE clients, such as SUSE Linux Enterprise 15, the action executes [command]``zypper --non-interactive --auto-agree-with-licenses update $PACKAGES``.
+... For transactional SUSE clients, the action executes the same in a transactional shell.
+
+--
+
++
+
+// . version 4.3" if SUMULIMA detects that reboot is necessary, for 4.3.x, it will automatically reboot that client.
+
++
+
+// 5.0 and later
+
+. With [systemitem]``reboot`` and [systemitem]``rebootifneeded`` two reboot strategies exist.
+  Users have the option to select and enable one reboot action from them.
+
++
+
+--
+
+[systemitem]``rebootifneeded``::
+
+Reboot detection is specific to the client operating system.
+
+* For Debian or Ubuntu, see https://www.debian.org/doc/debian-policy/ch-opersys.html#signaling-that-a-reboot-is-required.
+
+* For non-transactional {suse} clients, {productname} checks if any of the patches require reboot by using [command]``zypper -x list-patches``, and reboots if so.
+
+* For transactional {suse} clients, {productname} checks if there is a pending transaction, and reboots if so.
+
++
+
+// FIXME: is this meant?
+
++
+
+* For the Red Hat-based clients, {productname} uses [command]``dnf -q needs-restarting -r``, and reboots if so.
+
+--
+
++
+
+For more information, see the [literal]``reboot_info.py`` module: https://github.com/uyuni-project/uyuni/blob/master/susemanager-utils/susemanager-sls/src/modules/reboot_info.py
+
+
+
 == Related Topics
 
 * For more information about recurring actions, see xref:administration:actions.adoc#recurring_actions[Recurring Actions].
