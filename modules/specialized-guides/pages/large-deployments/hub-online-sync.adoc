@@ -1,0 +1,246 @@
+[[hub-online-sync]]
+= Hub Online Synchronization
+
+
+//OM 2025-04-28: shall we write hub or HUb, peripheral or Peripheral? In the GUI, I saw mixed cases.
+
+== Introduction 
+
+Hub online synchronization reuses the existing repository synchronization and synchronizes channels in the peripheral servers from the repositories on the hub server.
+
+When the connection between hub and peripheral server is established, the hub server becomes the main source of data for the peripheral server.
+In case of vendor channels, hub server is effectively replacing {scclongform}.
+In case of custom channels, when they are synchronized, the peripheral server will fetch the packages from the hub and not from the original location of the custom channel defined on the hub.
+
+
+The main characteristics of this feature are:
+
+* There can only be one hub server per connection, with one or more peripheral servers.
+
+* Each peripheral server can only have one hub server. 
+
+* Content can be synchronized on regular basis, or on demand.
+
+
+
+== Registration of the hub and peripheral servers
+
+Hub online synchronization is configured from menu menu:Admin[Hub Configuration].
+
+Configuration process uses token which uniquely identifies peripheral server's connection to the hub.
+
+There are two ways to register a peripheral server to the hub server:
+
+. by using a combination of token creation on the peripheral, and subsequent registration on the hub server.
+  This method uses <<peripheral-token-generation>> and <<token-transfer>>.
+. by direct registration from the hub, without any user interactions with the peripheral server. 
+  This method is described in <<direct-registration>>.
+
+
+
+=== Registration from peripheral server by token generation
+
+Before being registered to the hub server, a token needs to be generated on the peripheral server and passed to the administrator of the hub server.
+
+[[peripheral-token-generation]]
+.Procedure: Generating token on the peripheral server
+. On the peripheral server, go to menu:Admin[Hub Configuration > Access Tokens].
+. Click button btn:[Add token] and select option [literal]``Issue new token``.
+. In the field [literal]``Server FQDN`` on the form that opens type the FQDN of the hub server that will be using this token.
+. Click btn:[Issue].
+. A new form with the successfully generated token appears and button btn:[Copy].
+
++
+
+[IMPORTANT]
+==== 
+The only time token is displayed is at the time of its creation.
+Save it in a safe place until it is later needed.
+====
+
+. Once generated, the token appears on the screen [literal]``Access Tokens``.
+
+The generated token needs to be transferred to the hub server before it can be used. 
+
+
+[[token-transfer]]
+.Procedure: Registering to the hub server with the token
+. On the hub server, go to menu:Hub Configuration[Peripherals Configuration].
+. Click button btn:[Add peripheral].
+  A new form [literal]``Register a new peripheral server`` opens.
+. In the field [literal]``Peripheral Server FQDN`` enter the name of the peripheral server.
+. In the field [literal]``Registration mode`` select option [literal]``Existing token``.
+. In the field [literal]``Token`` paste the token that was created on the peripheral server.
+. In the field [literal]``Root CA certificate`` specify the certificate using one of the options:
+  * Use option [literal]``Not needed`` if both hub and peripheral servers have the same certificate authority.
+  * Use option [literal]``Upload a file`` if the servers have different certificate authorities to upload a certificate file.
+  * Use option [literal]``Paste a PEM certificate`` to paste a certificate.  
+. Click button btn:[Register].
+  A newly registered peripheral server will appear on screen [literal]``Peripherals Configuration``.
+
+
+
+=== Registration from the hub server directly
+
+It is possible to initiate the registration of a peripheral server from hub server, without any interaction with the peripheral server.
+
+[[direct-registration]]
+.Procedure: Direct registering from the hub server
+
+. On the hub server, go to menu:Hub Configuration[Peripherals Configuration].
+. Click button btn:[Add peripheral].
+  A new form [literal]``Register a new peripheral server`` opens.
+. In the field [literal]``Peripheral Server FQDN`` enter the name of the peripheral server.
+. In the field [literal]``Registration mode`` select option [literal]``Administrator User/Password``.
+. In the fields [literal]``Username`` and [literal]``Password`` enter the credentials for the peripheral server. 
+
++
+[IMPORTANT]
+====  
+The credentials must be those of [literal]``SUSE Manager Administrator`` of the peripheral server.
+====
+
+. In the field [literal]``Root CA certificate`` specify the certificate using one of the options:
+  * Use option [literal]``Not needed`` if both hub and peripheral servers have the same certificate authority.
+  * Use option [literal]``Upload a file`` if the servers have different certificate authorities to upload a certificate file.
+  * Use option [literal]``Paste a PEM certificate`` in cases when PEM certificate is used.
+. Click button btn:[Register].
+. The newly registered peripheral server will be shown in the menu:Systems[System List] with the value [literal]``Foreign`` in the column [literal]``System Type``.
+. To access its details, click on the peripheral server's name and select tab menu:Details[Peripheral Server].
+
+Peripheral server uses hub to access the vendor channels and does not connect to the {scclongform} directly.
+Therefore, if you open configured peripheral server's page menu:Admin[Setup Wizard > Organization Credentials], menu:Admin[Setup Wizard > Products] or menu:Admin[Setup Wizard > PAYG Connections], you will see a notification that this is peripheral server and its connections are managed via hub.
+
+
+=== Access tokens
+
+All existing tokens are shown in menu:Hub Configuration[Access Tokens].
+
+A token can viewed as [literal]``Consumed`` and [literal]``Issued``, both from the perspective of the peripheral and the hub server.
+
+* From the perspective of the peripheral server:
+
++
+
+Consumed::
+The [literal]``Consumed``token is generated on the peripheral server and received by the hub server to be used.
+
++
+
+Issued::
+The [literal]``Issued`` token is issued by the hub server to be used by the peripheral server.
+
+
+* From the perspective of the hub server:
+
++
+
+Consumed::
+The [literal]``Consumed``token is generated on the hub server and received by the peripheral server to be used.
+
++
+
+Issued::
+The [literal]``Issued`` token is issued by the peripheral server to be used by the hub server.
+
+
+==== Token operations
+
+A token can be invalidated, or deleted.
+
+Be careful when using option btn:[Invalidate] as it no longer grants access to the other server.
+This operation ensures that no communication will happen until a new token is generated if the existing one is compromised, or until the current token is reactivated.
+Invalidated token can be made valid again at any time.
+
+It is possible to delete a token.
+Deleting is only possible when the server associated with the token is not registered as hub or peripheral.
+This operation cannot be undone.
+
+
+=== Access hub server details from the peripheral server
+
+Every peripheral server stores the information about its hub server.
+
+[IMPORTANT]
+====
+A peripheral server can only have one hub server configured.
+====
+
+.Procedure: Accessing hub server details
+. On the peripheral server, go to menu:Hub Configuration[Hub Details].
+. On the screen [literal]``Hub Details`` find the information about the hub server.
+.. Field [literal]``Server FQDN`` shows the hub server's FQDN.
+.. Field [literal]``Registration date`` shows the time when the peripheral server was registered to the hub server. 
+.. Field [literal]``Last modified`` shows the time of the last saved configuration change. 
+.. Field [literal]``Root Certificate Authority`` shows certificate details.
+   To download, edit or delete the root certificate, clicking btn:[Download], btn:[Edit] or btn:[Delete] respectively.
+   Deleting the certificate will break the connection between servers.
+.. Field [literal]``GPG Public Key`` shows whether the GPG key has been configured for the hub server.
+   For more information about GPG keys between hub and peripheral servers, see <<gpg-for-hub-online-sync>>.
+.. Field [literal]``Mirror credentials`` is the username the peripheral server uses when connecting to the hub server to synchronize vendor channels.
+   This username is generated automatically on the hub server, and then transmitted to the peripheral server during the registration phase.
+
+
+[[gpg-for-hub-online-sync]]
+==== GPG key usage with hub online synhronization
+
+When the metadata on the hub server are signed with a GPG key, the public key is automatically transmitted from hub to peripheral server.
+
+By default, {productname} is not signing metadata.
+Therefore, when the peripheral server is downloading data from the hub server there is no way of checking if the downloaded metadata have a valid signature, unless the customer has created their own GPG key.
+
+To enable checking of the data integrity, the GPG key needs to be created on the hub.
+When the peripheral server is configured to communicate with the hub, the public GPG key will then automatically be transferred to it.
+
+When the GPG key is created on the hub, field [literal]``GPG Public Key`` will be set to show that this server is using the GPG key.
+For more information about setting up own GPG key, see xref:administration:repo-metadata.adoc[].
+
+
+=== Deregister peripheral server
+
+Deregistration can happen from both sides, from the hub or from the peripheral server.
+
+.Procedure: Deregistering from the peripheral server
+. Go to menu:Hub Configuration[Hub Details]. 
+. Click btn:[Deregister].
+. Confirm the operation by clicking btn:[Deregister] on the pop-up window.
+. Page menu:Hub Configuration[Hub Details] is now empty.
+
+.Procedure: Deregistering from the hub server
+. Go to menu:Hub Configuration[Peripheral Configuration].
+. Find the perpheral server on the list.
+. Click btn:[Deregister] next to the peripheral server's name.
+. The peripheral server is no longer shown on the list.
+
+
+== Synchronize channels from hub to peripheral server
+
+Synchronizing vendor channels for the configured hub and server is done via dedicated user interface.
+
+.Procedure: Synchronizing channels from hub to peripheral server
+. Go to menu:Admin[Hub Configuration > Peripherals Configuration].
+. In the field [literal]``Synchronized channels`` click on btn:[Edit channels].
+. Page [literal]``Sync Channels from Hub to Peripheral`` opens.
+. Select the channels you want to synchronize.
+. A pop-up window with the summary of your selections will open.
+. From the drop-down field [label]``Select an organization from the Peripheral to sync your channels to`` select the correct organization.
+. Click btn:[Confirm] to confirm the selection.
+
+
+
+////
+OM 2025-04-28: This section will be completed once the migration UI is finalised, and we are ready to proceed with removing ISS v1 from teh documentation too.
+== [WIP] ISS Version 1 migration
+
+ISS v1 is deprecated.
+Its functionality is replaced by hub online synchroinzation.
+
+Customers who have ISS v1 configured are expected to migrate to hub online synchroization.
+
+.Procedure: Migrating ISS v1 to Hub online synchronization
+. Log in to peripheral server (in v1 terminology, this was slave server).
+. Go to menu:Admin:[Hub Configuration > Access Tokens].
+. Issue a new token for the hub server. 
+  Follow the steps from <<peripheral-token-generation>>.
+. etc... 
+////

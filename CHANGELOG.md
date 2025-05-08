@@ -1,3 +1,6 @@
+- Added initial version of hub online synchronization to Large Deployments
+  Guide in Specialized Guides
+- Add the EULA for SUSE Multi-Linux Manager
 - Added the EULA for SUSE Multi-Linux Manager (bsc#1241647)
 - Added background information about installing PTF on an air-gapped
   server in Installation and Upgrade Guide
