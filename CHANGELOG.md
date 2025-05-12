@@ -1,6 +1,6 @@
 - Added conversion from onboarded client to a proxy to Installantion
   and Upgrade Guide
-- Add the EULA for SUSE Multi-Linux Manager
+- Added the EULA for SUSE Multi-Linux Manager
 - Added new backup/restore implementation
 - Added new SSL certificate usage using podman secrets
 - Added descriptions about various containers used
