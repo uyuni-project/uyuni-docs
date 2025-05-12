@@ -1,3 +1,5 @@
+- Documented uptodate action in Common Workflows Guide as
+  background information
 - Added background information about installing PTF on an air-gapped
   server in Installation and Upgrade Guide
 - Documented renaming the journal folder when changing machine ID in
