@@ -1,3 +1,5 @@
+- Improved documentation about monitoring in Administration
+  Guide
 - Added new backup/restore implementation
 - Added new SSL certificate usage using podman secrets
 - Added descriptions about various containers used
