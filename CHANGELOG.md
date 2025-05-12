@@ -1,3 +1,5 @@
+- Documented in Administration Guide that action chains are
+  user-specific (bsc#1242561)
 - Documented uptodate action in Common Workflows Guide as
   background information
 - Added new backup/restore implementation
