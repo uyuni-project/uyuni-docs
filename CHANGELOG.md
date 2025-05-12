@@ -1,3 +1,5 @@
+- Documented in Administration Guide that action chains are
+  user-specific (bsc#1242561)
 - Added new backup/restore implementation
 - Added new SSL certificate usage using podman secrets
 - Added descriptions about various containers used
