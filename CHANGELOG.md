@@ -1,9 +1,35 @@
 - Improved documentation about monitoring in Administration
   Guide
+- Added new backup/restore implementation
+- Added new SSL certificate usage using podman secrets
+- Added descriptions about various containers used
+- Added the EULA for SUSE Multi-Linux Manager (bsc#1241647)
+- Added background information about installing PTF on an air-gapped
+  server in Installation and Upgrade Guide
+- Fixed removing Salt bundle client procedure in Client Configuration
+  Guide
+- Documented renaming the journal folder when changing machine ID in
+  Administration Guide (bsc#1241286)
+- Added java.smtp_server parameter for mail configuration in
+  Administration Guide (bsc#1241490)
+- Added the copyright page for Uyuni
+- Removed documentation for virtualization entitlements as they are not
+  used anymore from Client Configuration Guide.
+- Introduced dedicated Asciidoctor PDF themes for: Japanese, Korean
+  and Simplified Chinese. Each theme now uses language-specific
+  Noto Sans CJK fonts to handle subtle typographic differences and
+  improve localization accuracy.
+- Improved footer page numbering and chapter title formatting for all
+  CJK languages.
+- Updated CJK title pages to visually align with the English design.
+- Resolved several long-standing formatting issues related to CJK output.
+- Enabled future flexibility by allowing per-language refinements based
+  on translator feedback.
+- Unified hardware requirements for proxy and server installation
+  in Installation and Upgrade Guide (bsc#1240635); images now
+  default to 40 GB root partition
 - Documented SUSE Linux Enterprise Server 15 as valid
   migration target (bsc#1240901)
-- Unified hardware requirements for proxy and server installation
-  in Installation and Upgrade Guide (bsc#1240635)
 - Restructured Server and Proxy Installation to better distinguish
   between SUSE Linux Enterprise Micro and SUSE Linux Enterprise
   Server as host operating system respectively (bsc#1239801)
