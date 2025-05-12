@@ -1,3 +1,5 @@
+- Documented in Administration Guide that action chains are
+  user-specific (bsc#1242561)
 - Added background information about installing PTF on an air-gapped
   server in Installation and Upgrade Guide
 - Documented renaming the journal folder when changing machine ID in
