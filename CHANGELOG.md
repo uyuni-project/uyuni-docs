@@ -1,3 +1,5 @@
+- Added initial version of hub online synchronization to Large Deployments
+  Guide in Specialized Guides
 - Added conversion from onboarded client to a proxy to Installantion
   and Upgrade Guide
 - Added the EULA for SUSE Multi-Linux Manager
