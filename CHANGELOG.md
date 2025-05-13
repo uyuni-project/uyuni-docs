@@ -1,3 +1,4 @@
+- Update Hub Online Sync with the latest UI changes
 - Clarified that NFS with Cobbler is not supported (bsc#1240666)
 - Removed SCAP file size limit from Reference Guide
 - Added initial version of hub online synchronization to Large Deployments
