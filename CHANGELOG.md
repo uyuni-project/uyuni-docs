@@ -1,3 +1,4 @@
+- Removed SCAP file size limit from Reference Guide
 - Documented in Administration Guide that action chains are
   user-specific (bsc#1242561)
 - Added background information about installing PTF on an air-gapped
