@@ -1,5 +1,9 @@
 - Added initial version of hub online synchronization to Large Deployments
   Guide in Specialized Guides
+- Documented in Administration Guide that action chains are
+  user-specific (bsc#1242561)
+- Documented uptodate action in Common Workflows Guide as
+  background information
 - Added new backup/restore implementation
 - Added new SSL certificate usage using podman secrets
 - Added descriptions about various containers used
