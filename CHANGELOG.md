@@ -1,4 +1,4 @@
-- Clarify that NFS with Cobbler is not supported (bsc#1240666)
+- Clarified that NFS with Cobbler is not supported (bsc#1240666)
 - Removed SCAP file size limit from Reference Guide
 - Added initial version of hub online synchronization to Large Deployments
   Guide in Specialized Guides
