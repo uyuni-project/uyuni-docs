@@ -1,3 +1,4 @@
+- Removed SCAP file size limit from Reference Guide
 - Documented uptodate action in Common Workflows Guide as
   background information
 - Documented in Administration Guide that action chains are
