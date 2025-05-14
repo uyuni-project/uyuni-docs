@@ -1,3 +1,4 @@
+- Added initial version of the support data upload feature
 - Added SLE15 SP7 as supported client.
 - Updated Hub Online Synchronization section with the latest 
   UI changes in Large Deployment Guide 
