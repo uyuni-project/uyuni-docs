@@ -1,3 +1,5 @@
+- Updated Hub Online Synchronization section with the latest 
+  UI changes in Large Deployment Guide 
 - Removed references to Inter-Server Synchronization version 1 from
   documentation
 - Clarified that NFS with Cobbler is not supported (bsc#1240666)
