@@ -1,3 +1,4 @@
+- Added initial version of the support data upload feature
 - Removed references to Inter-Server Synchronization version 1 from
   documentation
 - Clarified that NFS with Cobbler is not supported (bsc#1240666)
