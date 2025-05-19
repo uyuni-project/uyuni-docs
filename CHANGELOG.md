@@ -1,3 +1,4 @@
+- Added SLE15 SP7 as supported client.
 - Updated Hub Online Synchronization section with the latest 
   UI changes in Large Deployment Guide 
 - Removed references to Inter-Server Synchronization version 1 from
