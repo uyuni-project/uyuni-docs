@@ -1,3 +1,6 @@
+- Updated Network Requirement section to add settings for server configuration behind
+  HTTP OSI level 7 proxy.
+- Added SUSE Linux Enterprise Server 15 SP7 as supported client
 - Updated Hub Online Synchronization section with the latest 
   UI changes in Large Deployment Guide 
 - Removed references to Inter-Server Synchronization version 1 from
