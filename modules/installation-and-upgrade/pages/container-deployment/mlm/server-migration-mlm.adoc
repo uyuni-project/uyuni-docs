@@ -63,7 +63,7 @@ After the migration, it will be necessary to manually update the DHCP and DNS re
 
 == Migration
 
-=== Initial Preparation on the Old 4.3 Server
+===  Prepare {productname} {productnumber} Server Host
 
 [IMPORTANT]
 ====
@@ -71,21 +71,9 @@ Do not pre-install {productname} on the prepared {sl-micro} {microversion} or {s
 
 The migration process is designed to perform the server installation automatically.
 Running [command]``mgradm install`` and then [command]``mgradm migrate``  is not supported and will lead to an unsupported system state.
+
+In the following steps, we are only preparing the host system, not installing the actual {productname} {productnumber} Server.
 ====
-
-.Procedure: Initial Preparation on the 4.3 Server
-. Stop the {productname} services:
-+
-----
-spacewalk-service stop
-----
-. Stop the PostgreSQL service:
-+
-----
-systemctl stop postgresql
-----
-
-===  Prepare {productname} {productnumber} Server Host
 
 [[prepare-micro-host]]
 include::../prepare-micro-host.adoc[leveloffset=+2]
@@ -93,8 +81,12 @@ include::../prepare-micro-host.adoc[leveloffset=+2]
 [[deploy-sles-host]]
 include::../prepare-sles-host.adoc[leveloffset=+2]
 
+
 === SSH Connection Preparation
 
+This step ensures that the new {productname} {productnumber} Server can connect to the existing 4.3 Server over SSH without requiring a password.
+It involves generating and configuring SSH keys, setting up an SSH agent, and copying the public key to the old server.
+This setup is required for the migration process to run without manual intervention.
 
 .Procedure: Preparing the SSH Connection
 . Ensure that for [systemitem]``root`` an SSH key exists on the new {productnumber} server.
@@ -116,7 +108,7 @@ If the agent is not active yet, initiate it by running [command]``eval $(ssh-age
 Then add the SSH key to the running agent with [command]``ssh-add`` followed by the path to the private key.
 You will be prompted to enter the password for the private key during this process.
 ====
-+
+
 . Copy the public SSH key to the {productname} 4.3 Server ([literal]``<oldserver.fqdn>``) with [command]``ssh-copy-id``.
   Replace [literal]``<oldserver.fqdn>`` with the FQDN of the 4.3 server:
 +
@@ -145,33 +137,19 @@ This includes, but is not limited to, memory (RAM), CPU Cores, Storage, and Netw
 
 .Procedure: Performing the Migration
 . This step is optional.
-If custom persistent storage is required for your infrastructure, use the [command]``mgr-storage-server`` tool.
-** For more information, see [command]``mgr-storage-server --help``.
-This tool simplifies creating the container storage and database volumes.
+  If custom persistent storage is required for your infrastructure, use the [command]``mgr-storage-server`` tool.
+  For more information about [command]``mgr-storage-server``, see xref:installation-and-upgrade:hardware-requirements.adoc#install-hardware-requirements-storage[].
 
-** Use the command in the following manner:
-+
-----
-mgr-storage-server <storage-disk-device> [<database-disk-device>]
-----
-+
-For example:
-+
-----
-mgr-storage-server /dev/nvme1n1 /dev/nvme2n1
-----
-+
-[NOTE]
-====
-This command will create the persistent storage volumes at [path]``/var/lib/containers/storage/volumes``.
-
-For more information, see xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[].
-====
-+
 . Execute the following command to install a new {productname} server.
   Replace [literal]``<oldserver.fqdn>`` with the FQDN of the 4.3 server:
 +
 [IMPORTANT]
+====
+Make sure to upgrade your 4.3 server and apply all available updates before starting the migration process.
+Additionally, remove any unnecessary channels to help reduce the overall migration time.
+====
++
+[NOTE]
 ====
 The migration can take a very long time depending on the amount of data that needs to be replicated.
 To reduce downtime it is possible to run the migration multiple times in a process of _initial replication_, _re-replication_, or  _final replication and switch over_ while all the services on the old server can stay up and running.
@@ -179,15 +157,29 @@ To reduce downtime it is possible to run the migration multiple times in a proce
 Only during the final migration the processes on the old server need to be stopped.
 
 For all non-final replications add the parameter [command]``--prepare`` to prevent the automatic stopping the services on the old server.
-For example:
+For example on {productname} server:
 ----
 mgradm migrate podman <oldserver.fqdn> --prepare
 ----
 ====
+
+.Procedure: Final Migration
+. Stop the {productname} services on 4.3 Server:
++
+----
+spacewalk-service stop
+----
+. Stop the PostgreSQL service on 4.3 Server:
++
+----
+systemctl stop postgresql
+----
+. Perform the migration on {productname} server
 +
 ----
 mgradm migrate podman <oldserver.fqdn>
 ----
+
 . Migrate trusted SSL CA certificates.
 
 
