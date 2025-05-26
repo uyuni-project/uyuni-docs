@@ -1,3 +1,5 @@
+- Updated Network Requirement section to add settings for server
+  configuration behind HTTP OSI level 7 proxy.
 - Improved server migration in Installation and Upgrade Guide
 - Clarified that NFS with Cobbler is not supported (bsc#1240666)
 - Removed SCAP file size limit from Reference Guide
