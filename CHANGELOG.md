@@ -1,3 +1,5 @@
+- Rebranding: changing extensions product during the registration from SUSE Manager
+  to Multi-Linux-Manager for 5.1
 - Updated Network Requirement section to add settings for server configuration behind
   HTTP OSI level 7 proxy.
 - Added SUSE Linux Enterprise Server 15 SP7 as supported client
