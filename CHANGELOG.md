@@ -1,3 +1,4 @@
+- Suggest to bootstrap a peripheral server before doing a Hub registration
 - Improved server migration in Installation and Upgrade Guide
 - Updated Network Requirement section to add settings for server
   configuration behind HTTP OSI level 7 proxy.
