@@ -1,10 +1,11 @@
+- Improved server migration in Installation and Upgrade Guide
+- Updated Network Requirement section to add settings for server
+  configuration behind HTTP OSI level 7 proxy.
 - Rebranding: changing extensions product during the registration from SUSE Manager
   to Multi-Linux-Manager for 5.1
-- Updated Network Requirement section to add settings for server configuration behind
-  HTTP OSI level 7 proxy.
 - Added SUSE Linux Enterprise Server 15 SP7 as supported client
-- Updated Hub Online Synchronization section with the latest 
-  UI changes in Large Deployment Guide 
+- Updated Hub Online Synchronization section with the latest UI changes
+  in Large Deployment Guide
 - Removed references to Inter-Server Synchronization version 1 from
   documentation
 - Clarified that NFS with Cobbler is not supported (bsc#1240666)
