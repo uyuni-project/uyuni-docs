@@ -1,3 +1,5 @@
+- Improved proxy deployment sections in Installation and Upgrade
+  Guide
 - Updated Network Requirement section to add settings for server
   configuration behind HTTP OSI level 7 proxy.
 - Improved server migration in Installation and Upgrade Guide
