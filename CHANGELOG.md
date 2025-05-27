@@ -1,3 +1,5 @@
+- Fixed KVM image version number in Installation and Upgrade Guide
+  (bsc#1243416)
 - Improved server migration in Installation and Upgrade Guide
 - Updated Network Requirement section to add settings for server
   configuration behind HTTP OSI level 7 proxy.
