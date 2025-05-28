@@ -1,8 +1,12 @@
 - Fixed the hostname rename page for containers (bsc#1229825)
-- Added SUSE Linux Enterprise Server 15 SP7 as supported client.
 - Updated Network Requirement section to add settings for server
   configuration behind HTTP OSI level 7 proxy
 - Improved server migration in Installation and Upgrade Guide
+- Fixed KVM image version number in Installation and Upgrade Guide
+  (bsc#1243416)
+- Improved proxy deployment sections in Installation and Upgrade
+  Guide
+- Suggest to bootstrap a peripheral server before doing a Hub registration
 - Rebranding: changing extensions product during the registration from
   SUSE Manager to Multi-Linux-Manager for 5.1
 - Added SUSE Linux Enterprise Server 15 SP7 as supported client
