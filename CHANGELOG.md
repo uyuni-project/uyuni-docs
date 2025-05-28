@@ -1,4 +1,4 @@
-- Fix broken links for the API FAQ and Scripts (bsc#1243243)
+- Fixed broken links for the API FAQ and Scripts (bsc#1243243)
 - Fixed KVM image version number in Installation and Upgrade Guide
   (bsc#1243416)
 - Improved proxy deployment sections in Installation and Upgrade
