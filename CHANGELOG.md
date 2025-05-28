@@ -1,5 +1,10 @@
 - Added parameter value needed for IPv6 route to Installation
   and Upgrade Guide (bsc#1241034)
+- Improved proxy deployment sections in Installation and Upgrade
+  Guide
+- Updated Network Requirement section to add settings for server
+  configuration behind HTTP OSI level 7 proxy.
+- Improved server migration in Installation and Upgrade Guide
 - Clarified that NFS with Cobbler is not supported (bsc#1240666)
 - Removed SCAP file size limit from Reference Guide
 - Documented uptodate action in Common Workflows Guide as
