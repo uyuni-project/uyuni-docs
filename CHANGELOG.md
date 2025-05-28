@@ -2,6 +2,17 @@
   and Upgrade Guide (bsc#1241034)
 - Updated Hub Online Synchronization section with the latest 
   UI changes in Large Deployment Guide 
+- Fixed KVM image version number in Installation and Upgrade Guide
+  (bsc#1243416)
+- Improved proxy deployment sections in Installation and Upgrade
+  Guide
+- Suggest to bootstrap a peripheral server before doing a Hub registration
+- Improved server migration in Installation and Upgrade Guide
+- Updated Network Requirement section to add settings for server
+  configuration behind HTTP OSI level 7 proxy
+- Rebranding: changing extensions product during the registration from
+  SUSE Manager to Multi-Linux-Manager for 5.1
+- Added SUSE Linux Enterprise Server 15 SP7 as supported client
 - Removed references to Inter-Server Synchronization version 1 from
   documentation
 - Clarified that NFS with Cobbler is not supported (bsc#1240666)
