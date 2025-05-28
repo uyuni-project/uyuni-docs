@@ -1,3 +1,5 @@
+- Fixed KVM image version number in Installation and Upgrade Guide
+  (bsc#1243416)
 - Improved proxy deployment sections in Installation and Upgrade
   Guide
 - Suggest to bootstrap a peripheral server before doing a Hub registration
