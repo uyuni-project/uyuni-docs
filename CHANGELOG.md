@@ -1,3 +1,4 @@
+- Add missing 4505 and 4506 Salt ports in the network requirements
 - Fixed broken links for the API FAQ and Scripts (bsc#1243243)
 - Added parameter value needed for IPv6 route to Installation
   and Upgrade Guide (bsc#1241034)
