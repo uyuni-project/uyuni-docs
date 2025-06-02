@@ -1,7 +1,7 @@
+- Added containers file and linked it to navigation list in
+  Installation and Upgrade Guide
 - Added parameter value needed for IPv6 route to Installation
   and Upgrade Guide (bsc#1241034)
-- Linked containers file to navigation list in Installation and
-  Upgrade Guide
 - Improved proxy deployment sections in Installation and Upgrade
   Guide
 - Updated Network Requirement section to add settings for server
