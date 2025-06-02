@@ -1,8 +1,10 @@
+- Linked containers file to navigation list in Installation and
+  Upgrade Guide
 - Fixed broken links for the API FAQ and Scripts (bsc#1243243)
 - Added parameter value needed for IPv6 route to Installation
   and Upgrade Guide (bsc#1241034)
-- Updated Hub Online Synchronization section with the latest 
-  UI changes in Large Deployment Guide 
+- Updated Hub Online Synchronization section with the latest
+  UI changes in Large Deployment Guide
 - Fixed KVM image version number in Installation and Upgrade Guide
   (bsc#1243416)
 - Improved proxy deployment sections in Installation and Upgrade
