@@ -1,0 +1,175 @@
+= Server Migration 
+
+
+== Migrate {sle-micro} 5.5 to {sl-micro} 6.1
+
+
+This document provides the tested procedure to upgrade a {sle-micro} 5.5 host deployed with {productname} 5.0 Server to {sl-micro} 6.1 with {productname} {productnumber}.
+
+== Prerequisites
+
+* {productname} 5.0 is installed and running on {sle-micro} 5.5.
+* System is registered and has active subscriptions with {scc}.
+
+== Migration Procedure: {sle-micro} 5.5 > {sl-micro} 6.1
+
+.Procedure: Migration from {productname} 5.0 to {productname} {productnumber}
+[role=procedure]
+_____
+
+. Verify Current Product Status
+
++
+
+[source,console]
+----
+SUSEConnect --status-text
+----
+
++
+
+**Confirm:**
+
+- Base OS: `SUSE Linux Enterprise Micro 5.5`
+- Extension: `SUSE Manager Server 5.0 Extension`
+
++
+
+. Ensure System is Updated
+
++
+
+[source,console]
+----
+transactional-update patch
+----
+
++
+
+
+* If patches were applied, **reboot the system** before proceeding to migration:
+
+[source,console]
+----
+reboot
+----
+
+* If no updates were found, you can proceed directly to the migration step.
+
++
+
+. Start the Migration:
+
++
+
+[source,console]
+----
+transactional-update migration --auto-agree-with-licenses --gpg-auto-import-keys
+----
+
++
+
+Follow the prompts and select the available migration to **SUSE Linux Micro 6.1** and **MLM Server Extension 5.1**.
+
++
+
+. Reboot to Apply Changes
+
++
+
+[source,console]
+----
+reboot
+----
+
++
+
+. Post-Reboot Checks:
+
++
+
+Verify upgraded OS and MLM extension:
++
+
+[source,console]
+----
+cat /etc/os-release
+SUSEConnect --status-text
+----
+
++
+
+You should see:
+
+- `SL-Micro 6.1`
+- `Multi-Linux Manager Server Extension 5.1`
+
++
+
+. Enable Root SSH Access (_if required_)
+SL Micro 6.1 disables root login via SSH by default.
+Edit `/etc/ssh/sshd_config.d/sshd.conf`:
+
++
+
+[source,console]
+----
+PermitRootLogin yes
+systemctl restart sshd
+----
+
+. Upgrade Server Containers
+
++
+
+[source,console]
+----
+mgradm upgrade podman
+----
+
++
+
+Follow the prompts to pull and configure the new 5.1.0-beta2 containers.
+
+
+. Check running containers:
+
++
+
+[source,console]
+----
+podman ps
+----
+
++
+
+You should see:
+
+- `server:5.1.0-beta2`
+- `server-postgresql:5.1.0-beta2`
+
++
+
+. Verify MLM Tools
+
+[source,console]
+----
+mgradm --version
+----
+
+Expected output:
+
+- Version `5.1.9` or later
+- References `5.1.0-beta2`
+_____
+
+
+[NOTE]
+====
+* Previous versions of SUSE Multi-Linux Manager containers (`5.0`) must be stopped before upgrade. (Developers, is this Uyuni only?)
+* Errors for missing services like `uyuni-db` or `saline` during upgrade can be ignored if not installed previously.
+====
+
+== Migration Complete
+
+The system is now running MLM 5.1 (Beta 2) on SL Micro 6.1. Continue with post-migration validation.
