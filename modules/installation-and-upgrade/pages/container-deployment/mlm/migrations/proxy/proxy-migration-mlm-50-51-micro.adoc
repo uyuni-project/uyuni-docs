@@ -1,0 +1,158 @@
+= Proxy Migration
+
+== Proxy Migration from {sle-micro} 5.5 to {sl-micro} 6.1
+
+This document provides the tested procedure to upgrade a {sle-micro} 5.5 host deployed with {productname} 5.0 Proxy to {sl-micro} 6.1 with {productname} {productnumber}.
+
+== Prerequisites
+
+* {productname} 5.0 Proxy is installed and running on {sle-micro} 5.5
+* System is registered and has active subscriptions with {scc}
+* Proxy system is registered with the {productname} Server
+
+== Migration Procedure: {sle-micro} 5.5 > {sl-micro} 6.1
+
+.Procedure: Migrate MLM Proxy to {productname} {productnumber}
+[role=procedure]
+_____
+
+. Verify System and Proxy Version
+
++
+
+[source,console]
+----
+cat /etc/os-release
+mgrpxy --version
+----
+
++
+
+**Confirm:**
+
+- OS: `SLE Micro 5.5`
+- Proxy: `mgrpxy version 0.1.29`
+
++
+
+. Check Running Containers
+
++
+
+[source,console]
+----
+podman ps
+----
+
++
+
+Ensure proxy-related containers are running, e.g.:
+
+- `proxy-squid`
+- `proxy-ssh`
+- `proxy-httpd`
+- `proxy-tftpd`
+- `proxy-salt-broker`
+
++
+
+. Synchronize Proxy Products in SUSE Manager
+
++
+
+Use the {productname} Web UI to synchronize the new product versions, including `SL-Micro 6.1` and `MLM Proxy Extension`.
+
++
+
+. Perform Proxy Product Migration
+
++
+
+Use the Web UI to migrate the proxy system from:
+
+- `SLE Micro 5.5` + `MLM Proxy 5.0 Extension`  
+to  
+- `SL Micro 6.1` + `MLM Proxy {productnumber} Extension`
+
++
+
+⚠ When prompted, **do not select** optional channels unless confirmed to be required.
+
++
+
+. Monitor the Migration Action
+
++
+
+In the Web UI, confirm the action is scheduled and completes successfully.
+
+If the action **fails**, check for GPG key issues:
+
+- Error like `Signature verification failed [4-Signatures public key is not available]`
+
++
+
+[source,console]
+----
+zypper refresh --gpg-auto-import-keys
+----
+
++
+
+Re-run the migration if necessary.
+
++
+
+. Reboot the System
+
++
+
+[source,console]
+----
+reboot
+----
+
++
+
+. Post-Reboot Validation
+
++
+
+[source,console]
+----
+cat /etc/os-release
+mgrpxy --version
+----
+
++
+
+You should see:
+
+- OS: `SL Micro 6.1`
+- Proxy: updated version consistent with {productnumber}
+
++
+
+. Validate Proxy Containers
+
++
+
+[source,console]
+----
+podman ps
+----
+
++
+
+Ensure all MLM proxy containers are running and updated.
+_____
+
+[NOTE]
+====
+* A missing GPG key (`09D9EA69`) may cause the migration to fail. See known bug: `1243373`.
+* Other package dependency issues may occur. Review logs if the `pkg.upgrade` Salt call fails.
+====
+
+== Migration Complete
+
+The proxy is now running on SL Micro 6.1 with {productname} {productnumber}. Validate connectivity and continue with post-upgrade checks.
