@@ -15,14 +15,6 @@ Consider achieving network isolation of the {productname} environment according 
 For more information, see https://www.suse.com/support/kb/doc/?id=000020166.
 ====
 
-[IMPORTANT]
-====
-After installing {productname} with [command]``mgradm install podman``, configure IP forwarding in file [path]``/etc/sysctl.conf`` by setting the value:
-----
-net.ipv6.conf.eth0.accept_ra = 2
-----
-====
-
 
 == Fully Qualified Domain Name (FQDN)
 The {productname} server must resolve its FQDN correctly.
@@ -36,9 +28,31 @@ You also need to ensure that reverse lookups are correctly configured.
 
 For more information about setting up a DNS server, see {sles-base-os-documentation}/cha-dns.html.
 
+
+== Reenable router advertisements
+
+When the {productname} is installed using [command]``mgradm install podman`` or [command]``mgrpxy install podman``, it sets up Podman which enables IPv4 and IPv6 forwarding.
+This is needed for communication from the outside of the container.
+
+However, if your system previously had [literal]``/proc/sys/net/ipv6/conf/eth0/accept_ra`` set to [literal]``1``, it will stop using router advertisiements.
+As a result, the routes are no longer obtained via router advertisements and the default IPv6 route is missing.
+
+To recover correct functioning of the IPv6 routing, follow the procedure:
+
+.Procedure: Reenabling router advertisments
+. Create a file in [path]``/etc/sysctl.d``, for example [literal]``99-ipv6-ras.conf``.
+. Add the following parameter and value to the file:
+
++
+----
+net.ipv6.conf.eth0.accept_ra = 2
+----
+. Reboot.
+
+
 == Deployment behind HTTP or HTTPS OSI level 7 proxy
 
-Some environments enforce internet access through a HTTP or HTTPS proxy.
+Some environment enforce internet access through a HTTP or HTTPS proxy.
 This could be a Squid server or similar.
 To allow the {productname} Server internet access in such configuration, you need to configure the following.
 
