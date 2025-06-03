@@ -1,6 +1,5 @@
-
 - Enhanced instructions about router advertisements and parameter
-  value needed for IPv6 route to Installation and Upgrade Guide
+  value needed for IPv6 route in Installation and Upgrade Guide
   (bsc#1241034)
 - Linked containers file to navigation list in Installation and
   Upgrade Guide
