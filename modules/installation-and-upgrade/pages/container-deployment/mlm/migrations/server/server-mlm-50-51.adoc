@@ -6,12 +6,12 @@
 
 This document provides the tested procedure to upgrade a {sle-micro} 5.5 host deployed with {productname} 5.0 Server to {sl-micro} 6.1 with {productname} {productnumber}.
 
-== Prerequisites
+=== Prerequisites
 
 * {productname} 5.0 is installed and running on {sle-micro} 5.5.
 * System is registered and has active subscriptions with {scc}.
 
-== Migration Procedure: {sle-micro} 5.5 > {sl-micro} 6.1
+=== Migration Procedure: {sle-micro} 5.5 > {sl-micro} 6.1
 
 .Procedure: Migration from {productname} 5.0 to {productname} {productnumber}
 [role=procedure]
@@ -69,7 +69,7 @@ transactional-update migration --auto-agree-with-licenses --gpg-auto-import-keys
 
 +
 
-Follow the prompts and select the available migration to **SUSE Linux Micro 6.1** and **MLM Server Extension 5.1**.
+Follow the prompts and select the available migration to **SUSE Linux Micro 6.1** and **{productname} Server Extension 5.1**.
 
 +
 
@@ -88,7 +88,7 @@ reboot
 
 +
 
-Verify upgraded OS and MLM extension:
+Verify upgraded OS and {productname} extension:
 +
 
 [source,console]
@@ -150,7 +150,7 @@ You should see:
 
 +
 
-. Verify MLM Tools
+. Verify {productname} Tools
 
 [source,console]
 ----
@@ -170,6 +170,183 @@ _____
 * Errors for missing services like `uyuni-db` or `saline` during upgrade can be ignored if not installed previously.
 ====
 
-== Migration Complete
+=== Migration Complete
 
-The system is now running MLM 5.1 (Beta 2) on SL Micro 6.1. Continue with post-migration validation.
+The system is now running {productname} 5.1 (Beta 2) on SL Micro 6.1. Continue with post-migration validation.
+
+== Migrate SUSE Linux Enterprise Server 15 SP6 to 15 SP7
+
+This document provides the tested procedure to upgrade a SUSE Linux Enterprise Server 15 SP6 host deployed with SUSE Multi-Linux Manager 5.0 Server to SUSE Linux Enterprise Server 15 SP7 with SUSE Multi-Linux Manager 5.1.
+
+=== Prerequisites
+
+* SUSE Multi-Linux Manager 5.0 is installed and running on SUSE Linux Enterprise Server 15 SP6.
+* The system is registered and has valid subscriptions in SUSE Customer Center (SCC).
+* Ensure backups are created before proceeding.
+
+
+
+=== Migration Procedure: {sles} 15 SP6 → {sles} 15 SP7
+
+.Procedure: Migration from SUSE Multi-Linux Manager 5.0 to 5.1
+[role=procedure]
+_____
+
+. Verify Current Product Status
+
++
+
+[source,console]
+----
+SUSEConnect --status-text
+----
+
++
+
+**Confirm:**
+
+- Base OS: `SUSE Linux Enterprise Server 15 SP6`
+- Extension: `SUSE Manager Server 5.0 Extension`
+
++
+
+. Apply All System Patches
+
++
+
+[source,console]
+----
+zypper patch
+----
+
++
+
+*Reboot* if the update stack was updated:
+
+[source,console]
+----
+reboot
+----
+
++
+
+. Register Required Products for SP7
+
++
+
+[source,console]
+----
+SUSEConnect --product sle-module-basesystem/15.7/x86_64
+SUSEConnect --product sle-module-containers/15.7/x86_64
+SUSEConnect --product SLES/15.7/x86_64 --regcode <your-regcode>
+SUSEConnect --product Multi-Linux-Manager-Server-SLE/5.1/x86_64 --regcode <your-regcode>
+----
+
++
+
+Ensure that `SUSEConnect --status-text` shows SUSE Linux Enterprise Server 15 SP7 and the SUSE Multi-Linux Manager Server 5.1 extension as active.
+
++
+
+. Perform the Distribution Upgrade
+
++
+
+[source,console]
+----
+zypper --releasever=15.7 dup --download-in-advance
+----
+
++
+
+Confirm when prompted. After the upgrade completes, reboot the system:
+
+[source,console]
+----
+reboot
+----
+
++
+
+. Post-Reboot: Verify Upgrade Status
+
++
+
+[source,console]
+----
+cat /etc/os-release
+SUSEConnect --status-text
+----
+
++
+
+Expected output:
+
+- `VERSION="15-SP7"`
+- SUSE Multi-Linux Manager Server Extension `5.1` is active
+
++
+
+. Upgrade Server Containers
+
++
+
+[source,console]
+----
+mgradm upgrade podman --registry registry.suse.com/multi-linux-manager/5.1/x86_64 --image server --pgsql-image server-postgresql
+----
+
++
+
+Follow prompts to pull the new container images and reconfigure the environment.
+
++
+
+. Check Running Containers
+
++
+
+[source,console]
+----
+podman ps
+----
+
++
+
+Expected containers:
+
+- `server:5.1.0-beta2`
+- `server-postgresql:5.1.0-beta2`
+
++
+
+. Verify {productname} Tools Version
+
+[source,console]
+----
+mgradm --version
+----
+
++
+
+Expected output:
+
+- Version `5.1.9` or later
+- Image tag `5.1.0-beta2`
+
+_____
+
+
+
+[NOTE]
+====
+* If services like `uyuni-db` or `saline` fail during shutdown, refer to known issues: https://bugzilla.suse.com/show_bug.cgi?id=1243329
+
+* `mgradm stop` may not gracefully handle systemd shutdown in this release; proceed with `mgradm upgrade` directly if needed.
+====
+
+
+
+=== Migration Complete
+
+The system is now successfully upgraded to SUSE Linux Enterprise Server 15 SP7 and SUSE Multi-Linux Manager 5.1. Validate your setup before resuming production operations.
