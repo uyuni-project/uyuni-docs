@@ -1,3 +1,4 @@
+- Added SLE15 SP7 as supported client
 - Added missing 4505 and 4506 Salt ports in network requirements in
   Installation and Upgrade Guide
 - Added parameter value needed for IPv6 route to Installation
