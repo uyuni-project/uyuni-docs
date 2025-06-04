@@ -1,6 +1,7 @@
 - Enhanced instructions about router advertisements and parameter
   value needed for IPv6 route in Installation and Upgrade Guide
   (bsc#1241034)
+- Added missing 4505 and 4506 Salt ports in network requirements in Installation and Upgrade Guide
 - Linked containers file to navigation list in Installation and
   Upgrade Guide
 - Fixed broken links for the API FAQ and Scripts (bsc#1243243)
