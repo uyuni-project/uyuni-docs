@@ -1,4 +1,5 @@
-- (bsc#1243569)
+- Documented root SSH login configuration with password in Installation
+  and Upgrade Guide (bsc#1243569)
 - Added missing 4505 and 4506 Salt ports in network requirements in Installation and Upgrade Guide
 - Linked containers file to navigation list in Installation and
   Upgrade Guide
