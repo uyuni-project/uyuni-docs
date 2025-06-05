@@ -1,3 +1,5 @@
+- Documented root SSH login configuration with password in Troubleshooting
+  section in Administration Guide (bsc#1243569)
 - Moved Inter-Server Sunchronization documentation from Administration
   to Large Deployments Guide
 - Enhanced instructions about router advertisements and parameter
