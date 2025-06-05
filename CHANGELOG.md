@@ -1,6 +1,11 @@
 - Enhanced instructions about router advertisements and parameter
   value needed for IPv6 route in Installation and Upgrade Guide
   (bsc#1241034)
+- Added SLE15 SP7 as supported client
+- Added missing 4505 and 4506 Salt ports in network requirements in
+  Installation and Upgrade Guide
+- Added parameter value needed for IPv6 route to Installation
+  and Upgrade Guide (bsc#1241034)
 - Improved proxy deployment sections in Installation and Upgrade
   Guide
 - Updated Network Requirement section to add settings for server
