@@ -1,3 +1,4 @@
+- Fixed Api doc is not linked in the reference guide (bsc#1243243)
 - Documented root SSH login configuration with password in Troubleshooting
   section in Administration Guide (bsc#1243569)
 - Moved Inter-Server Sunchronization documentation from Administration
