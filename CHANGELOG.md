@@ -1,3 +1,5 @@
+- Moved Inter-Server Sunchronization documentation from Administration
+  to Large Deployments Guide
 - Enhanced instructions about router advertisements and parameter
   value needed for IPv6 route in Installation and Upgrade Guide
   (bsc#1241034)
