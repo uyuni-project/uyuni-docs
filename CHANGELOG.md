@@ -1,3 +1,4 @@
+- Fixed the hostname rename page for containers (bsc#1229825)
 - Moved Inter-Server Sunchronization documentation from Administration
   to Large Deployments Guide
 - Enhanced instructions about router advertisements and parameter
