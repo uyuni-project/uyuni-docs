@@ -72,68 +72,87 @@ After all the branches are migrated, shutdown and remove the old SLEPOS Admin Se
 
 In this procedure, you migrate the SLEPOS infrastructure and the branches one by one, first exporting and then importing.
 
+.Procedure: Migration with Branch by Branch Data Dump
+[role=procedure]
+____
 . Install the {productname} {smr} server {productnumber}
   For more information, see xref:retail:retail-install-unified.adoc[].
 
 . On every branch server:
+
 +
+
 ----
 posAdmin --export --type xml --file dumpfile.xml
 ----
+
 +
+
 These dumps will contain only the LDAP data of the branch, and any global data.
 
 . Similarily, you can export the LDAP data of every branch if you run the command on the Admin server with the branch credentials explicitly specified:
+
 +
+
 ----
 posAdmin --export --type xml --file dumpfile.xml --user $branch_dn \
     --password $password
 ----
+
 +
-For background information about SLEPOS branch server configuration, see https://documentation.suse.com/sle-pos/11-SP3/html/SLEPOS-guide/cha.slepos_branchserv.html.
 
 . Review the generated YAML file ([literal]``retail.yml``) and adjust it as necessary.
   Consider ``HWTYPE`` group naming and image name and version changes in the partitioning data.
   You can shorten the names as needed, and the image names must match the images in {productname}.
   The [option]``--save-mapping`` option can help you with this task.
+
 +
+
 . Check whether there are duplicate MAC addresses of the terminals in the generated YAML file.
   Choose which entry you want to keep.
   As long as there are duplicate MAC addresses, {productname} will refuse importing the YAML file.
+
 +
+
 [NOTE]
 ====
 {slepos} images will not be migrated. You must rebuild the images using the OS image building functionality.
 For more information about building images, see xref:administration:image-management.adoc[].
 ====
 
++
+
 The data can be imported branch by branch.
 For each branch perform the following steps:
 
-// . Replace each old SLEPOS branch server with the {productname} {smr} branch server (see https://www.suse.com/documentation/suse-manager-for-retail-3-2/retail-getting-started/retail.chap.install.html[Install Branch Server]) and connect it to the {productname} {smr} server (the same procedure as for https://www.suse.com/documentation/suse-manager-for-retail-3-2/retail-getting-started/retail.chap.admin.html#retail.sect.admin.branch_mass_config[Branch Server Mass Configuration]).
-// +
-// Use the empty profiles together with activation keys to onboard all the systems of your infrastructure.
-// Use an activation key to assign the channels listed in https://www.suse.com/documentation/suse-manager-for-retail-3-2/retail-getting-started/retail.chap.install.html[Configuring Server].
++
 
 . Run the import command for one branch after the other:
+
 +
+
 ----
 retail_yaml --from-yaml retail.yml --branch <branch_name>
 ----
+
 +
+
 Repeat the command for every branch.
+
++
 
 . To finalize each branch server migration, you must install the branch server machine as a Salt-based client and bootstrap it as a proxy.
   For more information about proxy installation, see xref:retail-install.adoc#retail.sect.install.branch[Installing and Registering].
   For more information about using an activation key to assign the required channels, see xref:retail-install.adoc#retail.sect.install.install.config[Configuring Server].
   After onboarded to {productname} {smr}, the branch server machine is connected with the empty profile (by FQDN), and so it will get the Retail configuration.
 
+
 . Apply Highstate on the branch server; this will happen automatically if [guimenu]``Configuration File Deployment`` is enabled.
 
 . Boot the terminals of the branch.
 
 After all the branches are migrated, shut down and remove the old SLEPOS Admin Server.
-
+____
 
 
 [[retail_migr.sect.slepostosuma.s1.x2y]]
