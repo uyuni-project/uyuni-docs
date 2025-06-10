@@ -63,6 +63,17 @@ mgr-bootstrap --activation-keys=<ACTIVATION_KEY> --script=bootstrap-<EDITED_NAME
 
 The [command]``mgr-bootstrap`` command offers several other options, including the ability to set a specific hostname, set specific GPG keys, and set the registration method (salt-minion or salt-bundle).
 
+[NOTE]
+====
+
+If users wish to create a bootstrap script to register against the Proxy, they can do so using the following command from the Server container:
+
+----
+mgr-boostrap --hostname $proxyfqdn
+----
+
+====
+
 For more information, see the [literal]``mgr-bootstrap`` man page, or run [command]``mgr-bootstrap --help``.
 
 
@@ -143,6 +154,18 @@ ACTIVATION_KEYS=1-sles15
 ORG_GPG_KEY=
 ----
 
+[NOTE]
+====
+Instead of editing the script manually, user can pass the following environment variables at runtime:
+
+- `ACTIVATION_KEYS`: Activation keys to use for registration
+- `ORG_GPG_KEY`: Path or identifier of the GPG key
+- `REACTIVATION_KEY`: Reactivation key for previously registered systems
+- `MGR_SERVER_HOSTNAME`: Hostname of the Server or Proxy to register the client against
+
+Using environment variables allows dynamic input at runtime and makes it easier to reuse the same bootstrap script across different systems or environments.
+====
+
 . When you have finished, save the file, and repeat this procedure for the second bootstrap script.
 
 [NOTE]
@@ -182,9 +205,18 @@ cat bootstrap-sles15.sh | ssh root@EXAMPLE.COM /bin/bash
 
 . Alternatively, on the client, run this command:
 +
-
 ----
-curl -Sks https://server_hostname/pub/bootstrap/bootstrap-sles15.sh | /bin/bash
+ACTIVATION_KEYS="17-someactivationkey" \
+MGR_SERVER_HOSTNAME="proxy.example.com" \
+ORG_GPG_KEY="mykey" \
+REACTIVATION_KEY=my-reactivation-key \
+curl -Sks https://server_hostname/pub/bootstrap/bootstrap.sh | /bin/bash
+----
++
+If you do not need to override any values, you can omit the environment variables entirely:
++
+----
+curl -Sks https://server_hostname/pub/bootstrap/bootstrap.sh | /bin/bash
 ----
 +
 

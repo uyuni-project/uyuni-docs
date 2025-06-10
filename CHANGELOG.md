@@ -1,4 +1,6 @@
 - Linked API documentation from Reference Guide (bsc#1243243)
+- Added information about passing environment variables to bootstrap
+  script in Client Configuration Guide
 - Documented root SSH login configuration with password in Troubleshooting
   section in Administration Guide (bsc#1243569)
 - Moved Inter-Server Synchronization documentation from Administration
