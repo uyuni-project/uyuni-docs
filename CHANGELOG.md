@@ -1,4 +1,4 @@
-- Added info about passing env variables to bootstrap script in Client
+- Added information about passing environment variables to bootstrap script in Client
   Configuration Guide
 - Enhanced instructions about router advertisements and parameter
   value needed for IPv6 route in Installation and Upgrade Guide
