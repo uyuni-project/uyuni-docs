@@ -1,4 +1,5 @@
-- Added info about passing env variables to bootstrap script
+- Added info about passing env variables to bootstrap script in Client
+  Configuration Guide
 - Fixed Api doc is not linked in the reference guide (bsc#1243243)
 - Documented root SSH login configuration with password in Troubleshooting
   section in Administration Guide (bsc#1243569)
