@@ -1,5 +1,5 @@
-- Documented the only Client Tool for SLE 15 have the Ansible package
-  (bsc#1244125)
+- Documented that only Client Tools for SLE 15 channel contains the
+  Ansible package (bsc#1244125)
 - Fixed Api doc is not linked in the reference guide (bsc#1243243)
 - Documented root SSH login configuration with password in Troubleshooting
   section in Administration Guide (bsc#1243569)
