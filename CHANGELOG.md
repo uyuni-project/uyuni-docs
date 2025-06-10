@@ -1,4 +1,8 @@
 - Added containers file and linked it to navigation list in
+- Added new backup/restore implementation
+- Added new SSL certificate usage using podman secrets
+- Added new backup/restore implementation
+- Added new SSL certificate usage using podman secrets
   Installation and Upgrade Guide
 - Enhanced instructions about router advertisements and parameter
   value needed for IPv6 route in Installation and Upgrade Guide
