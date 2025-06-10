@@ -1,10 +1,14 @@
 - Fixed the hostname rename page for containers (bsc#1229825)
+- Fixed Api doc is not linked in the reference guide (bsc#1243243)
+- Documented root SSH login configuration with password in Troubleshooting
+  section in Administration Guide (bsc#1243569)
 - Moved Inter-Server Sunchronization documentation from Administration
   to Large Deployments Guide
 - Enhanced instructions about router advertisements and parameter
   value needed for IPv6 route in Installation and Upgrade Guide
   (bsc#1241034)
-- Added missing 4505 and 4506 Salt ports in network requirements in Installation and Upgrade Guide
+- Added missing 4505 and 4506 Salt ports in network requirements 
+  in Installation and Upgrade Guide
 - Linked containers file to navigation list in Installation and
   Upgrade Guide
 - Fixed broken links for the API FAQ and Scripts (bsc#1243243)
@@ -15,6 +19,11 @@
 - Improved proxy deployment sections in Installation and Upgrade
   Guide
 - Suggest to bootstrap a peripheral server before doing a Hub registration
+- Fixed outdated urls pointing to API documentation in the Help section of the
+  Reference Manual
+- Added documentation for performing a distribution upgrade and migration of 
+  the Server and Proxy from version 5.0 to 5.1, supporting both SUSE Linux 
+  Enterprise SP6 to SP7 and SLE Micro 5.5 to SLE Micro 6.1
 - Improved server migration in Installation and Upgrade Guide
 - Updated Network Requirement section to add settings for server
   configuration behind HTTP OSI level 7 proxy
