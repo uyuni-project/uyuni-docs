@@ -1,9 +1,9 @@
-- Added info about passing env variables to bootstrap script in Client
-  Configuration Guide
-- Fixed Api doc is not linked in the reference guide (bsc#1243243)
+- Linked API documentation from Reference Guide (bsc#1243243)
+- Added information about passing environment variables to bootstrap
+  script in Client Configuration Guide
 - Documented root SSH login configuration with password in Troubleshooting
   section in Administration Guide (bsc#1243569)
-- Moved Inter-Server Sunchronization documentation from Administration
+- Moved Inter-Server Synchronization documentation from Administration
   to Large Deployments Guide
 - Enhanced instructions about router advertisements and parameter
   value needed for IPv6 route in Installation and Upgrade Guide
