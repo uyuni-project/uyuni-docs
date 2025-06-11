@@ -1,3 +1,6 @@
+- Added containers file and linked it to navigation list in
+  Installation and Upgrade Guide
+- Added new backup/restore implementation in Administration Guide
 - Added information about passing environment variables to bootstrap
   script in Client Configuration Guide
 - Enhanced instructions about router advertisements and parameter
