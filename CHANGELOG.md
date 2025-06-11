@@ -1,3 +1,5 @@
+- Fixed registry namespace and removed beta suffix from image names
+  in Instructions and Upgrade Guide
 - Linked API documentation from Reference Guide (bsc#1243243)
 - Added information about passing environment variables to bootstrap
   script in Client Configuration Guide
