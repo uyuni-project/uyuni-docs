@@ -1,3 +1,5 @@
+- Fixed procedure remediation procedure in Ansible chapter in
+  Administration Guide (bsc#1244338)
 - Fixed registry namespace and removed beta suffix from image names
   in Installation and Upgrade Guide
 - Documented that Ansible for the control node must come from the distribution
