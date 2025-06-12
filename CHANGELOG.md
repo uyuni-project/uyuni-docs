@@ -1,3 +1,5 @@
+- Fixed procedure remediation procedure in Ansible chapter in
+  Administration Guide (bsc#1244338)
 - Added containers file and linked it to navigation list in
   Installation and Upgrade Guide
 - Added new backup/restore implementation in Administration Guide
