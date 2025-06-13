@@ -1,3 +1,5 @@
+- Fixed Task Schedule page after changing the page and allow only
+  disabling Tasks, but not deleting them
 - Fixed procedure about converting client to proxy in Installation and
   Upgrade Guide
 - Fixed procedure remediation procedure in Ansible chapter in
