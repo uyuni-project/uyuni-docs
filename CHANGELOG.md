@@ -1,3 +1,4 @@
+- Add the recommendation for Swap memory
 - Fixed procedure about converting client to proxy in Installation and
   Upgrade Guide
 - Fixed procedure remediation procedure in Ansible chapter in
