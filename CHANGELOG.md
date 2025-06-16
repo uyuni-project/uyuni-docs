@@ -1,3 +1,6 @@
+- Added missing Task Schedules to the list and fixed Task Schedule page after
+  changing the page and allow only disabling Tasks, but not deleting them in
+  Administration Guide
 - Fixed procedure remediation procedure in Ansible chapter in
   Administration Guide (bsc#1244338)
 - Fixed asciidoc menu macro issue with duplicate CSS class,
