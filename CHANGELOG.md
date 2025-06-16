@@ -1,5 +1,9 @@
 - Added the recommendation for Swap memory in Installation and
   Upgrade Guide
+- Fine tuned backup and restore procedures (bsc#1244524)
+- Added missing Task Schedules to the list and fixed Task Schedule page after
+  changing the page and allow only disabling Tasks, but not deleting them in
+  Administration Guide
 - Fixed procedure about converting client to proxy in Installation and
   Upgrade Guide
 - Fixed procedure remediation procedure in Ansible chapter in
@@ -18,7 +22,7 @@
 - Enhanced instructions about router advertisements and parameter
   value needed for IPv6 route in Installation and Upgrade Guide
   (bsc#1241034)
-- Added missing 4505 and 4506 Salt ports in network requirements 
+- Added missing 4505 and 4506 Salt ports in network requirements
   in Installation and Upgrade Guide
 - Linked containers file to navigation list in Installation and
   Upgrade Guide
@@ -32,8 +36,8 @@
 - Suggest to bootstrap a peripheral server before doing a Hub registration
 - Fixed outdated urls pointing to API documentation in the Help section of the
   Reference Manual
-- Added documentation for performing a distribution upgrade and migration of 
-  the Server and Proxy from version 5.0 to 5.1, supporting both SUSE Linux 
+- Added documentation for performing a distribution upgrade and migration of
+  the Server and Proxy from version 5.0 to 5.1, supporting both SUSE Linux
   Enterprise SP6 to SP7 and SLE Micro 5.5 to SLE Micro 6.1
 - Improved server migration in Installation and Upgrade Guide
 - Updated Network Requirement section to add settings for server
