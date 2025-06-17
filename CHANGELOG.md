@@ -1,3 +1,5 @@
+- Added the recommendation for Swap memory in Installation and
+  Upgrade Guide
 - Fine tuned backup and restore procedures (bsc#1244524)
 - Added missing Task Schedules to the list and fixed Task Schedule page after
   changing the page and allow only disabling Tasks, but not deleting them in
