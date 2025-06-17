@@ -1,3 +1,4 @@
+- Fixed Python script in Administration Guide (bsc#1244290)
 - Added the recommendation for Swap memory in Installation and
   Upgrade Guide
 - Fine tuned backup and restore procedures (bsc#1244524)
