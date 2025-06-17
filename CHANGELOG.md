@@ -1,3 +1,5 @@
+- Added SUSE Linux Enterprise Server command line registration in
+  Installation and Upgrade Guide
 - Fixed Python script in Administration Guide (bsc#1244290)
 - Added the recommendation for Swap memory in Installation and
   Upgrade Guide
