@@ -1,5 +1,6 @@
 - Added reference to troubleshooting remote root login from Server migration
   from 5.0 on SUSE Linux Micro in Installation and Upgrade Guide
+- Fixed Python script in Administration Guide (bsc#1244290)
 - Added the recommendation for Swap memory in Installation and
   Upgrade Guide
 - Fine tuned backup and restore procedures (bsc#1244524)
