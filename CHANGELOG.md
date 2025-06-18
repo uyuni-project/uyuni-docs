@@ -1,3 +1,5 @@
+- Documented TFTP file synchronization after migrating a 4.3 proxy in
+  Installation and Upgrade Guide (bsc#1244427)
 - Fixed procedure remediation procedure in Ansible chapter in
   Administration Guide (bsc#1244338)
 - Fixed asciidoc menu macro issue with duplicate CSS class,
