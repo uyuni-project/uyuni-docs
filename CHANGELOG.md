@@ -1,3 +1,4 @@
+- Added Role-Based Access Control (RBAC) chapter to Administration Guide
 - Added reference to troubleshooting remote root login from Server migration
   from 5.0 on SUSE Linux Micro in Installation and Upgrade Guide
 - Fixed Python script in Administration Guide (bsc#1244290)
