@@ -1,3 +1,4 @@
+- Fix the note for the server subscription
 - Added containers file and linked it to navigation list in
   Installation and Upgrade Guide
 - Added new backup/restore implementation in Administration Guide
