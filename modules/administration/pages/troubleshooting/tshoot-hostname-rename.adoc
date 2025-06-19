@@ -44,7 +44,7 @@ This script updates the settings in the {postgresql} database and the internal s
 
 The [command]``spacewalk-hostname-rename`` script is part of the [package]``spacewalk-utils`` package.
 
-The only mandatory parameter for the script is the newly configured IP address of the {productname} Server.
+The only mandatory parameter for the script is the new fully qualified domain name of the {productname} Server.
 
 
 
@@ -53,21 +53,37 @@ The only mandatory parameter for the script is the newly configured IP address o
     You also need to provide configuration settings for reverse name resolution.
     Changing network settings is done in the same way as with renaming any other system.
 . Reboot the {productname} Server to use the new network configuration and to ensure the hostname has changed.
-. On the container host, from the command line, execute the following command to configure the public IP address of the server:
+. On the container host, from the command line, execute the following command to update the settings of the server:
 
 +
 
 [source,shell]
 ----
-mgrctl exec -ti -- spacewalk-hostname-rename <PUBLIC_IP_ADDRESS>
+mgrctl exec -ti -- spacewalk-hostname-rename <NEW-FQDN>
 ----
 
 +
 
-If the server is not using the new hostname, the script fails.
-  Be aware that this script refreshes the pillar data for all {salt} clients: the time it takes to run depends on the number of registered clients.
+Be aware that this script refreshes the pillar data for all {salt} clients: the time it takes to run depends on the number of registered clients.
 
+In case third party SSL certificates are used on the {productname} server, the server certificate and key need to be recreated with the new FQDN.
 
+.Procedure: Renaming {productname} Server with third party certificates
+. Copy the root certification authority certificate, the new server certificate and key to the {productname} Server host.
+. Copy them to a temporary folder in the container using [command]``mgrctl cp``.
+. Run [command]``spacewalk-hostname-rename`` with parameters to deploy the new certificate.
+
++
+
+[source,shell]
+----
+mgrctl exec mkdir /tmp/ssl
+mgrctl cp ca.crt server:/tmp/ssl/ca.crt
+mgrctl cp srv.crt server:/tmp/ssl/srv.crt
+mgrctl cp srv.key server:/tmp/ssl/srv.key
+mgrctl exec -ti -- spacewalk-hostname-rename <NEW-FQDN> --ssl-ca-cert=/tmp/ssl/ca.crt --ssl-server-cert=/tmp/ssl/srv.crt and --ssl-server-key=/tmp/ssl/srv.key 
+mgrctl exec rm -r /tmp/ssl
+----
 
 === Directly Managed Clients Reconfiguration
 
