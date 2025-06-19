@@ -1,3 +1,4 @@
+- Fix the hostname rename page for containers (bsc#1229825)
 - Documented TFTP file synchronization after migrating a 4.3 proxy in
   Installation and Upgrade Guide (bsc#1244427)
 - Added Role-Based Access Control (RBAC) chapter to Administration Guide
