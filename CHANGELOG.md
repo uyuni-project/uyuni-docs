@@ -1,3 +1,4 @@
+- Fixed the hostname rename page for containers (bsc#1229825)
 - Fixed the note for the server subscription in Public Cloud Guide
 - Added containers file and linked it to navigation list in
   Installation and Upgrade Guide
