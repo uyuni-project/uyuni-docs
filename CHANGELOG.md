@@ -1,3 +1,4 @@
+- Fixed the note for the server subscription in Public Cloud Guide
 - Added containers file and linked it to navigation list in
   Installation and Upgrade Guide
 - Added new backup/restore implementation in Administration Guide
