@@ -1,5 +1,7 @@
 - Added details about the behavior of the rescheduled failed action
   (bsc#1244065)
+- Fixed the hostname rename page for containers (bsc#1229825)
+- Fixed the note for the server subscription in Public Cloud Guide
 - Added containers file and linked it to navigation list in
   Installation and Upgrade Guide
 - Added new backup/restore implementation in Administration Guide
