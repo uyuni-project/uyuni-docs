@@ -1,4 +1,4 @@
-- Added details about the behaviour of the rescheduled failed action
+- Added details about the behavior of the rescheduled failed action
   (bsc#1244065)
 - Added containers file and linked it to navigation list in
   Installation and Upgrade Guide
