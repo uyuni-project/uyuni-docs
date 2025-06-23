@@ -1,3 +1,5 @@
+- Added details about the behavior of the rescheduled failed action
+  (bsc#1244065)
 - Added missing DB SSL CA parameters in Administration Guide (bsc#1245120)
 - Documented TFTP file synchronization after migrating a 4.3 proxy in
   Installation and Upgrade Guide (bsc#1244427)
