@@ -1,5 +1,8 @@
 - Added details about the behavior of the rescheduled failed action
   (bsc#1244065)
+- Added missing DB SSL CA parameters in Administration Guide (bsc#1245120)
+- Documented TFTP file synchronization after migrating a 4.3 proxy in
+  Installation and Upgrade Guide (bsc#1244427)
 - Added Role-Based Access Control (RBAC) chapter to Administration Guide
 - Added reference to troubleshooting remote root login from Server migration
   from 5.0 on SUSE Linux Micro in Installation and Upgrade Guide
