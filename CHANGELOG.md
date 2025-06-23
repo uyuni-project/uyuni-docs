@@ -1,3 +1,5 @@
+- Fixed rhn-search command execution in Backup and Restore chapter of
+  the Administration Guide
 - Added details about the behavior of the rescheduled failed action
   (bsc#1244065)
 - Added missing DB SSL CA parameters in Administration Guide (bsc#1245120)
