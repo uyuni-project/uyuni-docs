@@ -1,3 +1,5 @@
+- Fixed rhn-search command execution in Backup and Restore chapter of
+  the Administration Guide
 - Documented TFTP file synchronization after migrating a 4.3 proxy in
   Installation and Upgrade Guide (bsc#1244427)
 - Added Role-Based Access Control (RBAC) chapter to Administration Guide
