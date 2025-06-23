@@ -1,6 +1,8 @@
 - Added missing DB SSL CA parameters in Administration Guide and
   added cross-reference from deployments in Installation and Upgrade
   Guide (bsc#1245120)
+- Added details about the behavior of the rescheduled failed action
+  (bsc#1244065)
 - Documented TFTP file synchronization after migrating a 4.3 proxy in
   Installation and Upgrade Guide (bsc#1244427)
 - Added Role-Based Access Control (RBAC) chapter to Administration Guide
