@@ -1,3 +1,4 @@
+- Improved documentation about migration (bsc#1245240)
 - Fixed rhn-search command execution in Backup and Restore chapter of
   the Administration Guide
 - Added details about the behavior of the rescheduled failed action
