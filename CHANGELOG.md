@@ -1,8 +1,10 @@
+- Added missing DB SSL CA parameters in Administration Guide and
+  added cross-reference from deployments in Installation and Upgrade
+  Guide (bsc#1245120)
 - Fixed rhn-search command execution in Backup and Restore chapter of
   the Administration Guide
 - Added details about the behavior of the rescheduled failed action
   (bsc#1244065)
-- Added missing DB SSL CA parameters in Administration Guide (bsc#1245120)
 - Documented TFTP file synchronization after migrating a 4.3 proxy in
   Installation and Upgrade Guide (bsc#1244427)
 - Added Role-Based Access Control (RBAC) chapter to Administration Guide
