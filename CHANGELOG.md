@@ -1,3 +1,4 @@
+- Fixed the label for the hub server fqdn
 - Added missing DB SSL CA parameters in Administration Guide and
   added cross-reference from deployments in Installation and Upgrade
   Guide (bsc#1245120)
