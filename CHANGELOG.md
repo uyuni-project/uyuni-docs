@@ -1,3 +1,4 @@
+- Added note about autoyast profiles not having passwords
 - Added missing DB SSL CA parameters in Administration Guide and
   added cross-reference from deployments in Installation and Upgrade
   Guide (bsc#1245120)
