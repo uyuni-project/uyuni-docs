@@ -1,3 +1,4 @@
+- Raised recommended proxy RAM value to 8 GB (bsc#1244552)
 - Added missing DB SSL CA parameters in Administration Guide and
   added cross-reference from deployments in Installation and Upgrade
   Guide (bsc#1245120)
