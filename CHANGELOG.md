@@ -1,3 +1,4 @@
+- Added note about autoyast profiles not having passwords
 - Added details about the behavior of the rescheduled failed action
   (bsc#1244065)
 - Fixed the hostname rename page for containers (bsc#1229825)
