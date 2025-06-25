@@ -1,3 +1,4 @@
+- Added notes about how to run `mgradm` on security-enforced hosts (bsc#1243704)
 - Added hints to use swapfiles instead of swap partitions in
   Requirements section in Installation and Upgrade Guide
 - Added examples for synchronizing BaseOS and AppStream channels for
