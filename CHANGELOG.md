@@ -1,3 +1,4 @@
+- Added notes about how to run `mgradm` on CIS-enforced hosts (bsc#1243704)
 - Added note about AutoYaST profiles not having passwords
 - Raised recommended proxy RAM value to 8 GB (bsc#1244552)
 - Improved Hub documentation: peripheral list page, hierarchy of the Hub
