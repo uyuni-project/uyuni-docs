@@ -1,4 +1,5 @@
 - Added documentation for task schedule errata-advisory-map-sync-default
+  (bsc#1243808)
 - Added note about AutoYaST profiles not having passwords
 - Raised recommended proxy RAM value to 8 GB (bsc#1244552)
 - Improved Hub documentation: peripheral list page, hierarchy of the Hub
