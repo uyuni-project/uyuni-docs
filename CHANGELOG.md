@@ -1,3 +1,5 @@
+- Fixed asciidoc menu macro issue with duplicate css class,
+  menu items now display correctly
 - Raised recommended proxy RAM value to 8 GB (bsc#1244552)
 - Added note about autoyast profiles not having passwords
 - Added details about the behavior of the rescheduled failed action
