@@ -1,3 +1,4 @@
+- Improved documentation about migration (bsc#1245240)
 - Added documentation for task schedule errata-advisory-map-sync-default
   (bsc#1243808)
 - Added note about AutoYaST profiles not having passwords
