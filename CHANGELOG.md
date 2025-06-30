@@ -1,3 +1,5 @@
+- Fixed asciidoc menu macro issue with duplicate css class, menu
+  items now display correctly
 - Added documentation for task schedule errata-advisory-map-sync-default
   (bsc#1243808)
 - Added note about AutoYaST profiles not having passwords
