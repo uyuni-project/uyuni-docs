@@ -1,3 +1,4 @@
+- Fixed the hostname rename page for containers (bsc#1229825)
 - Added containers file and linked it to navigation list in
   Installation and Upgrade Guide
 - Added new backup/restore implementation in Administration Guide
