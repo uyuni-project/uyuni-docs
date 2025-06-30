@@ -1,5 +1,9 @@
 - Added examples for synchronizing BaseOS and AppStream channels for
   version 8 and 9 in Client Configuration Guide (bsc#1244822)
+- Fixed asciidoc menu macro issue with duplicate css class, menu
+  items now display correctly
+- Added documentation for task schedule errata-advisory-map-sync-default
+  (bsc#1243808)
 - Added note about AutoYaST profiles not having passwords
 - Raised recommended proxy RAM value to 8 GB (bsc#1244552)
 - Improved Hub documentation: peripheral list page, hierarchy of the Hub
