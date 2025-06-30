@@ -1,3 +1,4 @@
+- Added Amazon Linux 2023 as supported client
 - Fixed asciidoc menu macro issue with duplicate css class, menu
   items now display correctly
 - Added documentation for task schedule errata-advisory-map-sync-default
