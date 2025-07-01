@@ -1,3 +1,5 @@
+- Added examples for synchronizing BaseOS and AppStream channels for
+  version 8 and 9 in Client Configuration Guide (bsc#1244822)
 - Added Amazon Linux 2023 as supported client
 - Fixed asciidoc menu macro issue with duplicate css class, menu
   items now display correctly
