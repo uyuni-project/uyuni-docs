@@ -1,3 +1,4 @@
+- Fixed Python script in Administration Guide (bsc#1244290)
 - Fixed asciidoc menu macro issue with duplicate css class,
   menu items now display correctly
 - Raised recommended proxy RAM value to 8 GB (bsc#1244552)
