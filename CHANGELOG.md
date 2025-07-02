@@ -1,5 +1,13 @@
 - Fixed procedure remediation procedure in Ansible chapter in
   Administration Guide (bsc#1244338)
+- Fixed asciidoc menu macro issue with duplicate CSS class,
+  menu items now display correctly
+- Raised recommended proxy RAM value to 8 GB (bsc#1244552)
+- Added note about autoyast profiles not having passwords
+- Added details about the behavior of the rescheduled failed action
+  (bsc#1244065)
+- Fixed the hostname rename page for containers (bsc#1229825)
+- Fixed the note for the server subscription in Public Cloud Guide
 - Added containers file and linked it to navigation list in
   Installation and Upgrade Guide
 - Added new backup/restore implementation in Administration Guide
