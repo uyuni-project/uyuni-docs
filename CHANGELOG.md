@@ -1,4 +1,6 @@
-- Fixed asciidoc menu macro issue with duplicate css class,
+- Fixed procedure remediation procedure in Ansible chapter in
+  Administration Guide (bsc#1244338)
+- Fixed asciidoc menu macro issue with duplicate CSS class,
   menu items now display correctly
 - Raised recommended proxy RAM value to 8 GB (bsc#1244552)
 - Added note about autoyast profiles not having passwords
