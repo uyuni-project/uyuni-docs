@@ -1,3 +1,5 @@
+- Fixed procedure remediation procedure in Ansible chapter in
+  Administration Guide (bsc#1244338)
 - Added examples for synchronizing BaseOS and AppStream channels for
   version 8 and 9 in Client Configuration Guide (bsc#1244822)
 - Fixed AsciiDoc menu macro issue with duplicate CSS class, menu
