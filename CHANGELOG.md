@@ -1,3 +1,5 @@
+- Documented TFTP file synchronization after migrating a 4.3 proxy in
+  Installation and Upgrade Guide (bsc#1244427)
 - Fixed Python script in Administration Guide (bsc#1244290)
 - Added missing Task Schedules to the list and fixed Task Schedule page after
   changing the page and allow only disabling Tasks, but not deleting them in
