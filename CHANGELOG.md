@@ -1,3 +1,5 @@
+- Fix the hostname rename page for containers in Troubleshooting of
+  Administration Guide (bsc#1229825)
 - Added examples for synchronizing BaseOS and AppStream channels for
   version 8 and 9 in Client Configuration Guide (bsc#1244822)
 - Added Amazon Linux 2023 as supported client
