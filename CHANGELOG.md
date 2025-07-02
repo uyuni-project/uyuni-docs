@@ -1,5 +1,23 @@
 - Fix the hostname rename page for containers in Troubleshooting of
   Administration Guide (bsc#1229825)
+- Added examples for synchronizing BaseOS and AppStream channels for
+  version 8 and 9 in Client Configuration Guide (bsc#1244822)
+- Added Amazon Linux 2023 as supported client
+- Fixed asciidoc menu macro issue with duplicate css class, menu
+  items now display correctly
+- Added documentation for task schedule errata-advisory-map-sync-default
+  (bsc#1243808)
+- Added note about AutoYaST profiles not having passwords
+- Raised recommended proxy RAM value to 8 GB (bsc#1244552)
+- Improved Hub documentation: peripheral list page, hierarchy of the Hub
+  configuration page, and label for the Hub server FQDN
+- Added missing DB SSL CA parameters in Administration Guide and
+  added cross-reference from deployments in Installation and Upgrade
+  Guide (bsc#1245120)
+- Fixed rhn-search command execution in Backup and Restore chapter of
+  the Administration Guide
+- Added details about the behavior of the rescheduled failed action
+  (bsc#1244065)
 - Documented TFTP file synchronization after migrating a 4.3 proxy in
   Installation and Upgrade Guide (bsc#1244427)
 - Added Role-Based Access Control (RBAC) chapter to Administration Guide
