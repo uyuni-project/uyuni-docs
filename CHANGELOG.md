@@ -1,3 +1,6 @@
+- Fixed Python script in Administration Guide (bsc#1244290)
+- Fixed asciidoc menu macro issue with duplicate css class,
+  menu items now display correctly
 - Fixed procedure remediation procedure in Ansible chapter in
   Administration Guide (bsc#1244338)
 - Added examples for synchronizing BaseOS and AppStream channels for
