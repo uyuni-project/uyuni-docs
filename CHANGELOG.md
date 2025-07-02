@@ -1,3 +1,5 @@
+- Added hints to use swapfiles instead of swap partitions in
+  Requirements section in Installation and Upgrade Guide
 - Added examples for synchronizing BaseOS and AppStream channels for
   version 8 and 9 in Client Configuration Guide (bsc#1244822)
 - Added Amazon Linux 2023 as supported client
