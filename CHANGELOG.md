@@ -1,6 +1,6 @@
 - Added examples for synchronizing BaseOS and AppStream channels for
   version 8 and 9 in Client Configuration Guide (bsc#1244822)
-- Fixed asciidoc menu macro issue with duplicate CSS class, menu
+- Fixed AsciiDoc menu macro issue with duplicate CSS class, menu
   items now display correctly
 - Raised recommended proxy RAM value to 8 GB (bsc#1244552)
 - Added note about autoyast profiles not having passwords
