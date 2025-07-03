@@ -1,3 +1,8 @@
+- Added instruction for mandatory channel needed for Ansible 
+  control node installation to Administration Guide 
+  (bsc#1244400)
+- Fixed asciidoc menu macro issue with duplicate css class,
+  menu items now display correctly
 - Documented TFTP file synchronization after migrating a 4.3 proxy in
   Installation and Upgrade Guide (bsc#1244427)
 - Fixed Python script in Administration Guide (bsc#1244290)
