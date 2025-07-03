@@ -1,0 +1,91 @@
+[id="mgr-storage-tools"]
+= Understanding `mgr-storage-server` and `mgr-storage-proxy`
+
+`mgr-storage-server` and `mgr-storage-proxy` are helper scripts provided with SUSE Multi-Linux Manager 5.0 and later. They are designed to configure storage for SUSE Multi-Linux Manager Server and Proxy.
+
+The scripts take disk devices as arguments. `mgr-storage-proxy` requires a single argument for the storage disk device. `mgr-storage-server` requires a storage disk device and can optionally accept a second argument for a dedicated database disk device.
+While both normal and database storage can reside on the same disk, it is advisable to place the database on a dedicated, high-performance disk to ensure better performance and easier management.
+
+
+== What these tools do
+
+Both scripts perform standard storage setup operations:
+
+* Validate the provided storage devices.
+* Ensure that devices are empty and suitable for use.
+* Create XFS filesystems on the specified devices.
+* Mount the devices temporarily for data migration.
+* Move the relevant storage directories to the new devices.
+* Create entries in `/etc/fstab` so that the storage mounts automatically on boot.
+* Remount the devices at their final locations.
+
+.Additional tool-specific behavior:
+[cols="1,3a"]
+|===
+| `mgr-storage-server`
+| 
+* Optionally supports a separate device for database storage.
+* Stops SUSE Manager services during migration, restarts them afterward.
+* Moves Podman volumes directory `/var/lib/containers/storage/volumes` to the prepared storage, and optionally `/var/lib/containers/storage/volumes/var-pgsql` to the prepared database storage.
+
+| `mgr-storage-proxy`
+|
+* Focuses only on proxy storage (no database storage support).
+* Stops and restarts the proxy service during migration.
+* Moves podman volumes directory `/var/lib/containers/storage/volumes` to the prepared storage.
+|===
+
+
+[NOTE]
+====
+Both tools automate standard Linux storage operations. There is no hidden or custom logic beyond what a Linux administrator would do manually.
+====
+
+== What these tools do *not* do
+
+* They do *not* create or manage LVM volumes.
+* They do *not* configure RAID or complex storage topologies.
+* They do *not* prevent you from managing storage using normal Linux tools after setup.
+* They do *not* provide dynamic resizing or expansion capabilities — these must be handled using standard Linux storage tools.
+
+== Post-installation storage management
+
+Once storage has been configured, you can safely manage it using standard Linux commands.
+
+=== Examples
+
+.To extend storage if using LVM:
+
+----
+lvextend -L +10G /dev/your_vg/your_lv
+xfs_growfs /var/lib/containers/storage/volumes
+----
+
+.To migrate to a larger disk:
+* Add and format the new disk.
+* Mount it temporarily.
+* Use `rsync` to copy data.
+* Update `/etc/fstab`.
+* Remount at the correct location.
+
+== When to use (or not use) 
+
+* Use these tools *only* during initial storage setup or when migrating to new storage where the tool is expected to handle data migration and update `/etc/fstab`.
+* Do *not* rerun these scripts for resizing or expanding storage. Use standard Linux tools (e.g., `lvextend`, `xfs_growfs`) for such operations.
+
+== Summary
+
+`mgr-storage-server` and `mgr-storage-proxy` help automate the initial persistent storage setup for SUSE Multi-Linux Manager components using standard Linux storage practices.
+They do not limit or interfere with standard storage management afterward.  
+
+After setup, continue managing your storage using familiar Linux tools.
+
+[IMPORTANT]
+====
+Always take a backup before making changes to your storage setup.
+====
+
+[IMPORTANT]
+====
+A full database volume can cause significant issues with system operation. As disk usage notifications have not yet been adapted for containerized environments, users are encouraged to monitor the disk space used by Podman volumes themselves, either through tools such as Grafana, Prometheus, or any other preferred method. Pay particular attention to the var-pgsql volume, located under `/var/lib/containers/storage/volumes/`
+====
