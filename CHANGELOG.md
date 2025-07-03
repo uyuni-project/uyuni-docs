@@ -1,3 +1,4 @@
+- Fixed 4.3 server migration section (bsc#1245240)
 - Added instruction for mandatory channel needed for Ansible 
   control node installation to Administration Guide 
   (bsc#1244400)
