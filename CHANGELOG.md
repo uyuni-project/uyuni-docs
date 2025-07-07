@@ -121,7 +121,7 @@
 - Implemented PDF branding update for 2025 branding
 - Enhanced CVE auditing feature in Administration Guide
 - Added additional registry link to Installation and Upgrade Guide
-  (bsc#12400101)
+  (bsc#1240010)
 - Documented handling of pub directory of the web server in the
   context of proxy (bsc#1238827)
 - Added instructions for Server and Proxy installation on SUSE Linux
