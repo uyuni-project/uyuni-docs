@@ -1,3 +1,4 @@
+- Extended troubleshooting section with a reposync example (bsc#1211373)
 - Added port 8022 for proxy in network requirements in Installation
   and Upgrade Guide
 - Added admonition about supported clients as monitoring servers in
