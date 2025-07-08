@@ -1,4 +1,4 @@
-- Added deatailed description of the scripts used for storage 
+- Added detailed description of the scripts used for storage 
   administrations to Installation and Uprade Guide (bsc#1245241)
 - Added hints to use swapfiles instead of swap partitions in
   Requirements section in Installation and Upgrade Guide
