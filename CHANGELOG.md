@@ -1,3 +1,5 @@
+- Added port 8022 for proxy in network requirements in Installation
+  and Upgrade Guide
 - Added hints to use swapfiles instead of swap partitions in
   Requirements section in Installation and Upgrade Guide
 - Added examples for synchronizing BaseOS and AppStream channels for
