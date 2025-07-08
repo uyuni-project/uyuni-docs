@@ -1,4 +1,5 @@
 - Renamed parameter in Specialized Guides (bsc#1245241)
+- Extended troubleshooting section with a reposync example (bsc#1211373)
 - Added deatailed description of the scripts used for storage 
   administrations to Installation and Uprade Guide (bsc#1245241)
 - Fixed 4.3 server migration section (bsc#1245240)
@@ -7,6 +8,8 @@
   (bsc#1244400)
 - Fixed asciidoc menu macro issue with duplicate css class,
   menu items now display correctly
+- Added admonition about supported clients as monitoring servers in
+  Administration Guide
 - Documented TFTP file synchronization after migrating a 4.3 proxy in
   Installation and Upgrade Guide (bsc#1244427)
 - Fixed Python script in Administration Guide (bsc#1244290)
