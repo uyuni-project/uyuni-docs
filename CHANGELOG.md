@@ -1,4 +1,7 @@
 - Renamed parameter in Specialized Guides (bsc#1245241)
+- Extended troubleshooting section with a reposync example (bsc#1211373)
+- Added port 8022 for proxy in network requirements in Installation
+  and Upgrade Guide
 - Added admonition about supported clients as monitoring servers in
   Administration Guide
 - Added hints to use swapfiles instead of swap partitions in
