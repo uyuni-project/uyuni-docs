@@ -1,3 +1,4 @@
+- Renamed parameter in Specialized Guides (bsc#1245241)
 - Added deatailed description of the scripts used for storage 
   administrations to Installation and Uprade Guide (bsc#1245241)
 - Fixed 4.3 server migration section (bsc#1245240)
