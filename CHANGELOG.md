@@ -1,3 +1,4 @@
+- Extended troubleshooting section with a reposync example (bsc#1211373)
 - Added admonition about supported clients as monitoring servers in
   Administration Guide
 - Added hints to use swapfiles instead of swap partitions in
