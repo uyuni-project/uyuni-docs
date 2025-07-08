@@ -1,3 +1,4 @@
+- Renamed parameter in Specialized Guides (bsc#1245241)
 - Added admonition about supported clients as monitoring servers in
   Administration Guide
 - Added hints to use swapfiles instead of swap partitions in
