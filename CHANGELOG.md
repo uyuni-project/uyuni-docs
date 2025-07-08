@@ -1,3 +1,4 @@
+- Renamed parameter in Specialized Guides (bsc#1245241)
 - Extended troubleshooting section with a reposync example (bsc#1211373)
 - Added deatailed description of the scripts used for storage 
   administrations to Installation and Uprade Guide (bsc#1245241)
