@@ -4,8 +4,8 @@
 - Added instruction for mandatory channel needed for Ansible 
   control node installation to Administration Guide 
   (bsc#1244400)
-- Fixed asciidoc menu macro issue with duplicate css class,
-  menu items now display correctly
+- Added port 8022 for proxy in network requirements in Installation
+  and Upgrade Guide
 - Added admonition about supported clients as monitoring servers in
   Administration Guide
 - Documented TFTP file synchronization after migrating a 4.3 proxy in
