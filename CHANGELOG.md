@@ -1,3 +1,4 @@
+- Extended troubleshooting section with a reposync example (bsc#1211373)
 - Added deatailed description of the scripts used for storage 
   administrations to Installation and Uprade Guide (bsc#1245241)
 - Fixed 4.3 server migration section (bsc#1245240)
