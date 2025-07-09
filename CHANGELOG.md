@@ -1,4 +1,10 @@
 - Added notes about how to run `mgradm` on security-enforced hosts (bsc#1243704)
+- Reorganised files for better visibility of differences between AutoYaST 
+  and Kickstart profiles (bsc#1217755)
+- Added detailed description of the scripts used for storage 
+  administrations to Installation and Uprade Guide (bsc#1245241)
+- Renamed parameter in Specialized Guides (bsc#1245241)
+- Extended troubleshooting section with a reposync example (bsc#1211373)
 - Added port 8022 for proxy in network requirements in Installation
   and Upgrade Guide
 - Added admonition about supported clients as monitoring servers in
