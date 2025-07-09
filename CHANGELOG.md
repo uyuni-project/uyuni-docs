@@ -1,3 +1,4 @@
+- Fixed the admonition in Client Configuration Guide (bsc#1233496)
 - Renamed parameter in Specialized Guides (bsc#1245241)
 - Extended troubleshooting section with a reposync example (bsc#1211373)
 - Added detailed description of the scripts used for storage 
