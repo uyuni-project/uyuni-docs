@@ -1,3 +1,5 @@
+- Improved instruction in the procedure for checking synchronization
+  progress (bsc#1233494)
 - Fixed the admonition in Client Configuration Guide (bsc#1233496)
 - Added notes about how to run `mgradm` on security-enforced hosts (bsc#1243704)
 - Reorganised files for better visibility of differences between AutoYaST 
