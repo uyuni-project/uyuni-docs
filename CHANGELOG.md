@@ -1,4 +1,6 @@
 - Fixed the admonition in Client Configuration Guide (bsc#1233496)
+- Reorganised files for better visibility of differences between AutoYaST 
+  and Kickstart profiles (bsc#1217755)
 - Renamed parameter in Specialized Guides (bsc#1245241)
 - Extended troubleshooting section with a reposync example (bsc#1211373)
 - Added detailed description of the scripts used for storage 
