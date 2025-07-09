@@ -1,3 +1,4 @@
+- Added notes about how to run `mgradm` on security-enforced hosts (bsc#1243704)
 - Reorganised files for better visibility of differences between AutoYaST 
   and Kickstart profiles (bsc#1217755)
 - Added detailed description of the scripts used for storage 
