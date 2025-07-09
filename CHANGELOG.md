@@ -1,3 +1,5 @@
+- Improved instruction in the procedure for checking synchronization
+  progress (bsc#1233494)
 - Renamed parameter in Specialized Guides (bsc#1245241)
 - Extended troubleshooting section with a reposync example (bsc#1211373)
 - Added detailed description of the scripts used for storage 
