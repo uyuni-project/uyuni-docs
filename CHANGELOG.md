@@ -1,5 +1,41 @@
 - Documented that Ansible for the control node must come from the
   distribution of the client (bsc#1244125)
+- Fixed the admonition in Client Configuration Guide (bsc#1233496)
+- Reorganised files for better visibility of differences between AutoYaST 
+  and Kickstart profiles (bsc#1217755)
+- Renamed parameter in Specialized Guides (bsc#1245241)
+- Extended troubleshooting section with a reposync example (bsc#1211373)
+- Added detailed description of the scripts used for storage 
+  administrations to Installation and Uprade Guide (bsc#1245241)
+- Fixed 4.3 server migration section (bsc#1245240)
+- Added instruction for mandatory channel needed for Ansible 
+  control node installation to Administration Guide 
+  (bsc#1244400)
+- Added port 8022 for proxy in network requirements in Installation
+  and Upgrade Guide
+- Added admonition about supported clients as monitoring servers in
+  Administration Guide
+- Documented TFTP file synchronization after migrating a 4.3 proxy in
+  Installation and Upgrade Guide (bsc#1244427)
+- Fixed Python script in Administration Guide (bsc#1244290)
+- Added missing Task Schedules to the list and fixed Task Schedule page after
+  changing the page and allow only disabling Tasks, but not deleting them in
+  Administration Guide
+- Fixed procedure remediation procedure in Ansible chapter in
+  Administration Guide (bsc#1244338)
+- Added examples for synchronizing BaseOS and AppStream channels for
+  version 8 and 9 in Client Configuration Guide (bsc#1244822)
+- Fixed AsciiDoc menu macro issue with duplicate CSS class, menu
+  items now display correctly
+- Raised recommended proxy RAM value to 8 GB (bsc#1244552)
+- Added note about autoyast profiles not having passwords
+- Added details about the behavior of the rescheduled failed action
+  (bsc#1244065)
+- Fixed the hostname rename page for containers (bsc#1229825)
+- Fixed the note for the server subscription in Public Cloud Guide
+- Added containers file and linked it to navigation list in
+  Installation and Upgrade Guide
+- Added new backup/restore implementation in Administration Guide
 - Added information about passing environment variables to bootstrap
   script in Client Configuration Guide
 - Enhanced instructions about router advertisements and parameter
