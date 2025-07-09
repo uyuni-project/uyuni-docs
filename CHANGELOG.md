@@ -1,5 +1,5 @@
-- Documented that Ansible for the control node must come from the distribution
-  of the client (bsc#1244125)
+- Documented that Ansible for the control node must come from the
+  distribution of the client (bsc#1244125)
 - Added information about passing environment variables to bootstrap
   script in Client Configuration Guide
 - Enhanced instructions about router advertisements and parameter
