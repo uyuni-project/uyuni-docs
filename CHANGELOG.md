@@ -1,5 +1,7 @@
 - Changed prerequisite for proxy conversion in Installation and Upgrade
   guide (bsc#1246158)
+- Fixed persistent storage configuration details in Installation and Uprade
+  Guide (bsc#1235567)
 - Fixed the admonition in Client Configuration Guide (bsc#1233496)
 - Added notes about how to run `mgradm` on security-enforced hosts (bsc#1243704)
 - Reorganised files for better visibility of differences between AutoYaST 
