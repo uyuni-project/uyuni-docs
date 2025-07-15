@@ -1,3 +1,5 @@
+- Fixed issues in Image Building chapter in the Administration Guide
+  (bsc#1245987)
 - Changed prerequisite for proxy conversion in Installation and Upgrade
   guide (bsc#1246158)
 - Fixed persistent storage configuration details in Installation and Uprade
