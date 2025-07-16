@@ -1,3 +1,5 @@
+- Fixed troubleshooting procedure about login timeout in Administration
+  Guide
 - Changed prerequisite for proxy conversion in Installation and Upgrade
   guide (bsc#1246158)
 - Fixed persistent storage configuration details in Installation and Uprade
