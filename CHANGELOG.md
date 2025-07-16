@@ -1,5 +1,7 @@
 - Documented that Ansible for the control node must come from the
   distribution of the client (bsc#1244125)
+- Fixed persistent storage configuration details in Installation and Uprade
+  Guide (bsc#1235567)
 - Fixed the admonition in Client Configuration Guide (bsc#1233496)
 - Reorganised files for better visibility of differences between AutoYaST 
   and Kickstart profiles (bsc#1217755)
