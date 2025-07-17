@@ -1,3 +1,5 @@
+- Fixed issues in Image Building chapter in the Administration Guide
+  (bsc#1245987)
 - Confidential Computing command updated in Administration Guide
   (bsc#1246638)
 - Fixed troubleshooting procedure about login timeout in Administration
