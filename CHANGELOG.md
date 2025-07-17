@@ -1,3 +1,5 @@
+- Confidential Computing command updated in Administration Guide
+  (bsc#1246638)
 - Documented that Ansible for the control node must come from the
   distribution of the client (bsc#1244125)
 - Fixed troubleshooting procedure about login timeout in Administration
