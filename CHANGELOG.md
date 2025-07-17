@@ -1,3 +1,5 @@
+- Confidential Computing command updated in Administration Guide
+  (bsc#1246638)
 - Fixed troubleshooting procedure about login timeout in Administration
   Guide
 - Changed prerequisite for proxy conversion in Installation and Upgrade
