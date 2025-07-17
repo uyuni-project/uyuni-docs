@@ -1,5 +1,7 @@
 - Documented that Ansible for the control node must come from the
   distribution of the client (bsc#1244125)
+- Fixed troubleshooting procedure about login timeout in Administration
+  Guide
 - Fixed persistent storage configuration details in Installation and Uprade
   Guide (bsc#1235567)
 - Fixed the admonition in Client Configuration Guide (bsc#1233496)
