@@ -1,3 +1,4 @@
+- Documented how to disable HSTS in Administration Guide
 - Confidential Computing command updated in Administration Guide
   (bsc#1246638)
 - Fixed troubleshooting procedure about login timeout in Administration
