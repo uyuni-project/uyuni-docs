@@ -1,3 +1,4 @@
+- Removed System Group User from Administration Guide (bsc#1246659)  
 - Confidential Computing command updated in Administration Guide
   (bsc#1246638)
 - Fixed troubleshooting procedure about login timeout in Administration
