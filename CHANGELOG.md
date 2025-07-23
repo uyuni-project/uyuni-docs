@@ -1,5 +1,50 @@
 - Added SUSE Linux Enterprise Server command line registration in
   Installation and Upgrade Guide
+- Confidential Computing command updated in Administration Guide
+  (bsc#1246638)
+- Fixed troubleshooting procedure about login timeout in Administration
+  Guide
+- Changed prerequisite for proxy conversion in Installation and Upgrade
+  guide (bsc#1246158)
+- Fixed persistent storage configuration details in Installation and Uprade
+  Guide (bsc#1235567)
+- Fixed the admonition in Client Configuration Guide (bsc#1233496)
+- Added notes about how to run `mgradm` on security-enforced hosts (bsc#1243704)
+- Reorganised files for better visibility of differences between AutoYaST 
+  and Kickstart profiles (bsc#1217755)
+- Added detailed description of the scripts used for storage 
+  administrations to Installation and Uprade Guide (bsc#1245241)
+- Renamed parameter in Specialized Guides (bsc#1245241)
+- Extended troubleshooting section with a reposync example (bsc#1211373)
+- Added port 8022 for proxy in network requirements in Installation
+  and Upgrade Guide
+- Added admonition about supported clients as monitoring servers in
+  Administration Guide
+- Added hints to use swapfiles instead of swap partitions in
+  Requirements section in Installation and Upgrade Guide
+- Added examples for synchronizing BaseOS and AppStream channels for
+  version 8 and 9 in Client Configuration Guide (bsc#1244822)
+- Added Amazon Linux 2023 as supported client
+- Fixed asciidoc menu macro issue with duplicate css class, menu
+  items now display correctly
+- Added documentation for task schedule errata-advisory-map-sync-default
+  (bsc#1243808)
+- Added note about AutoYaST profiles not having passwords
+- Raised recommended proxy RAM value to 8 GB (bsc#1244552)
+- Improved Hub documentation: peripheral list page, hierarchy of the Hub
+  configuration page, and label for the Hub server FQDN
+- Added missing DB SSL CA parameters in Administration Guide and
+  added cross-reference from deployments in Installation and Upgrade
+  Guide (bsc#1245120)
+- Fixed rhn-search command execution in Backup and Restore chapter of
+  the Administration Guide
+- Added details about the behavior of the rescheduled failed action
+  (bsc#1244065)
+- Documented TFTP file synchronization after migrating a 4.3 proxy in
+  Installation and Upgrade Guide (bsc#1244427)
+- Added Role-Based Access Control (RBAC) chapter to Administration Guide
+- Added reference to troubleshooting remote root login from Server migration
+  from 5.0 on SUSE Linux Micro in Installation and Upgrade Guide
 - Fixed Python script in Administration Guide (bsc#1244290)
 - Added the recommendation for Swap memory in Installation and
   Upgrade Guide
@@ -98,7 +143,7 @@
 - Implemented PDF branding update for 2025 branding
 - Enhanced CVE auditing feature in Administration Guide
 - Added additional registry link to Installation and Upgrade Guide
-  (bsc#12400101)
+  (bsc#1240010)
 - Documented handling of pub directory of the web server in the
   context of proxy (bsc#1238827)
 - Added instructions for Server and Proxy installation on SUSE Linux

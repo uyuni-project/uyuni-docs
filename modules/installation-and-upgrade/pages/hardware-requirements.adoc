@@ -73,7 +73,7 @@ For more information about filesystem and partitioning details, see xref:install
 | Minimum 50 GB
 
 | Swap space
-| Systems with heavy or unpredictable workloads can benefit from additional swap space, regardless of total RAM. It is recommended to place swap on the fastest available storage (for example, SSD).
+| Systems can benefit from additional swap space.   {suse} recommends using a swap file instead of a swap partition.  For more information about swap space, see xref:installation-and-upgrade:hardware-requirements.adoc#installation-swap-space[].
 | 8 to 12 GB
 |===
 
@@ -151,7 +151,7 @@ Double the space if the server is an ISS Master.
 
 |
 | Swap space
-| 3{nbsp}GB
+| 3{nbsp}GB. Systems can benefit from additional swap space.   {suse} recommends using a swap file instead of a swap partition.  For more information about swap space, see xref:installation-and-upgrade:hardware-requirements.adoc#installation-swap-space[].
 
 |===
 
@@ -208,7 +208,7 @@ If you want to use a production environment start with recommended values.
 
 |
 | Recommended
-| The same as minimum values
+| 8 GB
 
 | Disk Space
 | [path]``/`` (root directory)
@@ -219,7 +219,7 @@ If you want to use a production environment start with recommended values.
 | Minimum 100 GB
 
 | Swap space
-| Systems with heavy or unpredictable workloads can benefit from additional swap space, regardless of total RAM. It is recommended to place swap on the fastest available storage (for example, SSD).
+| Systems can benefit from additional swap space.   {suse} recommends using a swap file instead of a swap partition.  For more information about swap space, see xref:installation-and-upgrade:hardware-requirements.adoc#installation-swap-space[].
 | 4 to 8 GB
 
 |===
@@ -240,6 +240,45 @@ In general, {suse} recommends to adjust the value for the cache directory to abo
 The [option]``cache_dir`` value is set when generating proxy configuration on the server.
 You cannot set the option directly in [path]``squid.conf``.
 ====
+
+
+
+[[installation-swap-space]]
+== Swap space
+
+Workloads differ from system to system.
+Systems with heavy or unpredictable workloads can benefit from additional swap space, regardless of total RAM.
+It is recommended to place swap on the fastest available storage (for example, SSD).
+{suse} recommends using a swap file instead of a swap partition.
+
+For size recommendations, see the tables above.
+
+The following shell command snippet creates a 8GiB swap file.
+
+[NOTE]
+====
+A swap file on BtrFS filesystem prevent creating of a snapshot of that volume.
+[path]``/var`` in the following example is already excluded from the snapper snapshots, so it is safe to use [path]``/var/swap``.
+====
+
+[source,shell]
+----
+## setup swapfile at /var/swap
+# run following as a root user
+
+# allocate 8GiB for swap file
+fallocate -l 8G /var/swap
+# ensure CoW is disabled for the swap file
+chattr +C /var/swap
+# allow only root access
+chmod 600 /var/swap
+# make swap file based on allocated file
+mkswap /var/swap
+# activate swap use for the running system
+swapon /var/swap
+# activate swap during the next boots
+echo "/var/swap swap swap defaults 0 0" >> /etc/fstab
+----
 
 
 
