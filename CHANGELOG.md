@@ -1,3 +1,5 @@
+- Fixed User Role Permissions table in Users chapter in
+  Administration Guide (bsc#1246659)
 - Confidential Computing command updated in Administration Guide
   (bsc#1246638)
 - Fixed troubleshooting procedure about login timeout in Administration
@@ -7,11 +9,12 @@
 - Fixed persistent storage configuration details in Installation and Uprade
   Guide (bsc#1235567)
 - Fixed the admonition in Client Configuration Guide (bsc#1233496)
-- Added notes about how to run `mgradm` on security-enforced hosts (bsc#1243704)
-- Reorganised files for better visibility of differences between AutoYaST 
+- Added notes about how to run mgradm on security-enforced hosts
+  (bsc#1243704)
+- Reorganised files for better visibility of differences between AutoYaST
   and Kickstart profiles (bsc#1217755)
-- Added detailed description of the scripts used for storage 
-  administrations to Installation and Uprade Guide (bsc#1245241)
+- Added detailed description of the scripts used for storage
+  administration to Installation and Uprade Guide (bsc#1245241)
 - Renamed parameter in Specialized Guides (bsc#1245241)
 - Extended troubleshooting section with a reposync example (bsc#1211373)
 - Added port 8022 for proxy in network requirements in Installation
