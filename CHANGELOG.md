@@ -1,3 +1,5 @@
+- Added SUSE Linux Enterprise Server command line registration in
+  Installation and Upgrade Guide
 - Fixed User Role Permissions table in Users chapter in
   Administration Guide (bsc#1246659)
 - Confidential Computing command updated in Administration Guide
