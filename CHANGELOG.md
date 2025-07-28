@@ -1,3 +1,5 @@
+- Fixed issues in Image Building chapter in the Administration Guide
+  (bsc#1245987)
 - Added deployment of Uyuni using images from RPM packages
 - Fixed User Role Permissions table in Users chapter in
   Administration Guide (bsc#1246659)
