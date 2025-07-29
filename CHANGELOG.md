@@ -1,3 +1,5 @@
+- Added section about creation of database backup volume during
+  migration or upgrade in Installation and Upgrade Guide
 - Added deployment of Uyuni using images from RPM packages
 - Fixed User Role Permissions table in Users chapter in
   Administration Guide (bsc#1246659)
