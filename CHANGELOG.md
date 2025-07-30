@@ -1,3 +1,4 @@
+- ISS data (bsc#1246957)
 - Confidential Computing command updated in Administration Guide
   (bsc#1246638)
 - Documented that Ansible for the control node must come from the
