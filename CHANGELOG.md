@@ -1,3 +1,5 @@
+- Removed duplicated paragraphs from Hub documentation in Large
+  Deployments Guide
 - Cleaned up Uyuni migration from legacy to container depoyment in
   Installation and Upgrade Guide
 - Added section about creation of database backup volume during
