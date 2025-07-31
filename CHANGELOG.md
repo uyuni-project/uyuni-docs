@@ -1,3 +1,4 @@
+- Added revision date to metadata for tracking document changes
 - Removed duplicated paragraphs from Hub documentation in Large
   Deployments Guide
 - Cleaned up Uyuni migration from legacy to container depoyment in
