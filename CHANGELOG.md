@@ -1,3 +1,5 @@
+- Fixed upgrade procedure for server and proxy in Installation and
+  Upgrade Guide (bsc#1247084)
 - Fixed the hostname rename page for containers (bsc#1229825)
 - Added containers file and linked it to navigation list in
   Installation and Upgrade Guide
