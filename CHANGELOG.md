@@ -1,5 +1,40 @@
 - Fix the hostname rename page for containers in Troubleshooting of
   Administration Guide (bsc#1229825)
+- Fixed upgrade procedure for server and proxy in Installation and
+  Upgrade Guide (bsc#1247084)
+- Added revision date to metadata for tracking document changes
+- Removed duplicated paragraphs from Hub documentation in Large
+  Deployments Guide
+- Cleaned up Uyuni migration from legacy to container depoyment in
+  Installation and Upgrade Guide
+- Added section about creation of database backup volume during
+  migration or upgrade in Installation and Upgrade Guide
+- Added deployment of Uyuni using images from RPM packages
+- Fixed User Role Permissions table in Users chapter in
+  Administration Guide (bsc#1246659)
+- Confidential Computing command updated in Administration Guide
+  (bsc#1246638)
+- Fixed troubleshooting procedure about login timeout in Administration
+  Guide
+- Changed prerequisite for proxy conversion in Installation and Upgrade
+  guide (bsc#1246158)
+- Fixed persistent storage configuration details in Installation and Uprade
+  Guide (bsc#1235567)
+- Fixed the admonition in Client Configuration Guide (bsc#1233496)
+- Added notes about how to run mgradm on security-enforced hosts
+  (bsc#1243704)
+- Reorganised files for better visibility of differences between AutoYaST
+  and Kickstart profiles (bsc#1217755)
+- Added detailed description of the scripts used for storage
+  administration to Installation and Uprade Guide (bsc#1245241)
+- Renamed parameter in Specialized Guides (bsc#1245241)
+- Extended troubleshooting section with a reposync example (bsc#1211373)
+- Added port 8022 for proxy in network requirements in Installation
+  and Upgrade Guide
+- Added admonition about supported clients as monitoring servers in
+  Administration Guide
+- Added hints to use swapfiles instead of swap partitions in
+  Requirements section in Installation and Upgrade Guide
 - Added examples for synchronizing BaseOS and AppStream channels for
   version 8 and 9 in Client Configuration Guide (bsc#1244822)
 - Added Amazon Linux 2023 as supported client
@@ -121,7 +156,7 @@
 - Implemented PDF branding update for 2025 branding
 - Enhanced CVE auditing feature in Administration Guide
 - Added additional registry link to Installation and Upgrade Guide
-  (bsc#12400101)
+  (bsc#1240010)
 - Documented handling of pub directory of the web server in the
   context of proxy (bsc#1238827)
 - Added instructions for Server and Proxy installation on SUSE Linux
