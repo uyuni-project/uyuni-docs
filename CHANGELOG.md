@@ -1,4 +1,5 @@
-- ISS data (bsc#1246957)
+- Documented to write data to persistent volume in ISS chapter of
+  Administration Guide (bsc#1246957)
 - Confidential Computing command updated in Administration Guide
   (bsc#1246638)
 - Documented that Ansible for the control node must come from the
