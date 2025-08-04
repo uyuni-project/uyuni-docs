@@ -1,3 +1,5 @@
+- Removed duplicated paragraphs from Hub documentation in Large
+  Deployments Guide
 - Documented to write data to persistent volume in ISS chapter of
   Administration Guide (bsc#1246957)
 - Fixed upgrade procedure for server and proxy in Installation and
