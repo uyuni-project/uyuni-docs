@@ -1,3 +1,5 @@
+- Documented to write data to persistent volume in ISS chapter of
+  Administration Guide (bsc#1246957)
 - Fixed upgrade procedure for server and proxy in Installation and
   Upgrade Guide (bsc#1247084)
 - Confidential Computing command updated in Administration Guide
