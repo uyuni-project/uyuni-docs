@@ -1,5 +1,9 @@
 - Removed duplicated paragraphs from Hub documentation in Large
   Deployments Guide
+- Documented to write data to persistent volume in ISS chapter of
+  Administration Guide (bsc#1246957)
+- Fixed upgrade procedure for server and proxy in Installation and
+  Upgrade Guide (bsc#1247084)
 - Confidential Computing command updated in Administration Guide
   (bsc#1246638)
 - Documented that Ansible for the control node must come from the
