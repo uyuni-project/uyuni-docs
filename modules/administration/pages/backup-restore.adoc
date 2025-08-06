@@ -4,7 +4,8 @@
 :page-revdate: {revdate}
 
 This chapter contains information on the files you need to back up.
-With the [command]``mgradm backup`` tool you create {productname} backups. Information about restoring from your backups in the case of a system failure completes this chapter.
+With the built-in backup and restore solution ([command]``mgradm backup``) you create {productname} backups.
+Information about restoring from your backups in the case of a system failure completes this chapter.
 
 Because {productname} relies on a database as well as the installed program and configurations, it is important to back up all components of your installation.
 Back up your {productname} installation regularly to prevent data loss and enable quick recovery.
@@ -15,10 +16,90 @@ Regardless of the backup method you use, you must have available at least three 
 Running out of space can result in backups failing, so check this often.
 ====
 
+
+
+[[backup-restore-old]]
+== Disable old method with smdba
+
 [NOTE]
 ====
-[command]``smdba`` backup tool is deprecated in {productname}.
+With the advent of the built-in solution, the old method with the [command]``smdba`` backup tool is deprecated.
+If you migrated from SUSE Manager with [command]``smdba`` to the new solution, you must disable the old funtionality and remove the old backup archives.
 ====
+
+Either disable smdba before migrating from SUSE Manager 4.3 or 5.0 (recommended) or later on the migrated {productname} {productnumber} system.
+
+
+.Procedure: Disabling old method with installed smdba before migration
+
+This procedure only works when smdba is still installed.
+
+. Commands are different on SUSE Manager 4.3 (non-containerized installation) or SUSE Manager 5.0 (containerized installation)
+present (so 5.0 or on 4.3 before migration):
+
++
+
+--
+
+SUSE Manager 4.3::
+On the command line, as root, execute:
+
++
+
+[source,shell]
+----
+smdba backup-hot enable off
+----
+
+SUSE Manager 5.0::
+On the command line of the container host, as root, execute:
+
++
+
+[source,shell]
+----
+mgrctl exec -ti -- smdba backup-hot enable off
+----
+
+--
+
++
+
+--
+This will change [option]``archive_command`` in [path]``/var/lib/pgsql/data/postgresql.conf`` as follows:
+
+----
+archive_command = '/bin/true'
+----
+
+--
+
+Now your old system is ready to be migrated to {productname} {productnumber}.
+
+
+.Procedure: Disabling old method on {productname} {productnumber} after migration
+
+. mgrctl term
+
+////
+in /var/lib/pgsql/data/postgresql.conf change the following parameters:
+
+----
+archive_mode = off
+archive_command = '/bin//true'
+----
+
+. Restart the container.
+
+* On micro container host:
+
+* On sles container host
+
+////
+
+after this restart postgress (or beter the container)
+
+
 
 [[backup-product]]
 == Back up {productname}
