@@ -1,3 +1,5 @@
+- Fixed issues in Image Building chapter in the Administration Guide
+  (bsc#1245987)
 - Fixed upgrade procedure for server and proxy in Installation and
   Upgrade Guide (bsc#1247084)
 - Added revision date to metadata for tracking document changes
