@@ -21,19 +21,22 @@ Running out of space can result in backups failing, so check this often.
 [[backup-restore-old]]
 == Disable old method with smdba
 
+Skip this section if you installed {productname} {productnumber} from scratch.
+
 [NOTE]
 ====
 With the advent of the built-in solution, the old method with the [command]``smdba`` backup tool is deprecated.
-If you migrated from SUSE Manager with [command]``smdba`` to the new solution, you must disable the old funtionality and remove the old backup archives.
+If you migrated from an old system with [command]``smdba`` to the new solution, you must disable the old funtionality and remove the old backup archives.
 ====
 
-Either disable smdba before migrating from SUSE Manager 4.3 or 5.0 (recommended) or later on the migrated {productname} {productnumber} system.
+Either disable smdba before migrating (recommended) or later on the migrated {productname} {productnumber} system.
 
 
 .Procedure: Disabling old method with installed smdba before migration
 
 This procedure only works when smdba is still installed.
 
+ifeval::[{mlm-content} == true]
 . Commands are different on SUSE Manager 4.3 (non-containerized installation) or SUSE Manager 5.0 (containerized installation)
 present (so 5.0 or on 4.3 before migration):
 
@@ -62,7 +65,19 @@ mgrctl exec -ti -- smdba backup-hot enable off
 ----
 
 --
+endif::[]
 
+ifeval::[{uyuni-content} == true]
+. On the command line of the container host, as root, execute:
+
++
+
+[source,shell]
+----
+mgrctl exec -ti -- smdba backup-hot enable off
+----
+
+endif::[]
 +
 
 --
@@ -79,25 +94,44 @@ Now your old system is ready to be migrated to {productname} {productnumber}.
 
 .Procedure: Disabling old method on {productname} {productnumber} after migration
 
-. mgrctl term
+Use this procedure after migration, when smdba is no longer available.
 
-////
-in /var/lib/pgsql/data/postgresql.conf change the following parameters:
+. On the container host, open a command line inside the server container:
+
++
+
+[source,shell]
+----
+mgrctl term
+----
+
++
+
+--
+
+
+.. In [path]``/var/lib/pgsql/data/postgresql.conf`` change the these options as follows:
+
++
 
 ----
 archive_mode = off
 archive_command = '/bin//true'
 ----
 
-. Restart the container.
+--
 
-* On micro container host:
+. Restart the container:
 
-* On sles container host
++
 
-////
+[source,shell]
+----
+mgradm restart
+----
 
-after this restart postgress (or beter the container)
+
+
 
 
 
