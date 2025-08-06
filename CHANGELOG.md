@@ -1,4 +1,4 @@
-- Documented to write data to persistent volume in ISS chapter of
+- Documented how to write data to persistent volume in ISS chapter of
   Administration Guide (bsc#1246957)
 - Added revision date to metadata for tracking document changes
 - Removed duplicated paragraphs from Hub documentation in Large
