@@ -1,0 +1,147 @@
+[[proxy-conversion-from-client-mlm]]
+= Convert a Client to MLM Proxy
+
+== Overview
+
+This chapter describes how to convert a client system into a {productname} Proxy using the {webui}.
+
+It assumes that the proxy host system has already been bootstrapped, is subscribed to the base operating system channel (such as  {sles} 15 SP7 or {sl-micro} 6.1) and to the Proxy Extension channel.
+
+For information about client onboarding, see xref:client-configuration:registration-overview.adoc[].
+
+== Requirements
+
+Before starting the conversion, ensure the following requirements are fulfilled.
+
+
+=== Supported Systems
+
+Only the following operating systems are currently supported for proxy conversion:
+
+* {sles} 15 SP7
+* {sl-micro} 6.1
+
+=== Client Must Be
+
+- Already onboarded in {productname}
+- Reachable via the network
+- Subscribed to the appropriate proxy extension channel:
+** {productname} Proxy Extension 5.1 (matching architecture)
+
+
+== Preparation
+
+Before proceeding with the proxy conversion, make sure the following preparations are completed to avoid interruptions during the conversion process.
+
+=== SSL Certificates
+
+Valid SSL certificates are required to secure communication between the proxy and other components.
+
+You need:
+
+* The public certificate of the Certificate Authority (CA) that signed the certificate on the {productname} server
+* A certificate for the proxy.
+* The corresponding private key for the proxy certificate.
+
+[NOTE]
+====
+If your CA uses an intermediate certificate chain, you must include all intermediate certificates as well.
+====
+
+If you are not using third party certificates, you can generate them using the `rhn-ssl-tool` inside the {productname} container.
+
+.Generate a proxy certificate
+
+. On the {productname} server host, run:
++
+[source,shell]
+----
+mgrctl exec -ti -- rhn-ssl-tool --gen-server \
+  --set-hostname="<PROXY-FQDN>" \
+  --dir="/root/ssl-build"
+----
++
+For more information about other parameters, see xref:administration:ssl-certs-selfsigned.adoc[].
++
+
+. Transfer the certificates to {productname} server host
++
+[source,shell]
+----
+mgrctl cp server:/root/ssl-build/<PROXY-FQDN>/server.crt /root/proxycert.pem
+mgrctl cp server:/root/ssl-build/<PROXY-FQDN>/server.key /root/proxykey.pem
+mgrctl cp server:/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT /root/rootca.pem
+----
++
+[NOTE]
+====
+To confirm the exact folder where the certificates and key files were generated, you can list the directories with:
+----
+mgrctl exec -ti -- ls -ltd /root/ssl-build/*/
+----
+====
+
+. Transfer the certificates from the {productname} server host to your local machine or other target system:
++
+
+[source,shell]
+----
+scp <MLM-FQDN>:/root/proxycert.pem ./
+scp <MLM-FQDN>:/root/proxykey.pem ./
+scp <MLM-FQDN>:/root/rootca.pem ./
+----
+
+=== Packages Preparation
+
+It is recommended to deploy the container images as RPM packages. Please ensure the following packages are installed on the client:
+
+* suse-multi-linux-manager-5.1-<ARCH>-proxy-httpd-image
+* suse-multi-linux-manager-5.1-<ARCH>-proxy-salt-broker-image
+* suse-multi-linux-manager-5.1-<ARCH>-proxy-squid-image
+* suse-multi-linux-manager-5.1-<ARCH>-proxy-ssh-image
+* suse-multi-linux-manager-5.1-<ARCH>-proxy-tftpd-image
+
+You can install these packages from the {webui} by navigating to the [literal]``Software`` > [literal]``Packages`` >  [literal]``Install`` tab, then searching for the packages above, and installing them.
+
+For details on air-gapped deployment, see xref:installation-and-upgrade:container-deployment/mlm/proxy-air-gapped-deployment-mlm.adoc[]
+
+== Setup Proxy Client
+
+. Navigate to the client's [literal]``Overview`` page.
+. Click button btn:[Convert to Proxy].
++
+Confirm you were redirected to the proxy configuration form.
++
+This page can be accessed later from the [literal]``Details`` > [literal]``Proxy`` > [literal]``Configuration`` tab.
+
+. In the {webui}, navigate to menu:Proxy[Configuration] and fill in the required data:
+
++
+.Procedure: Configuring the Proxy
+.. In the [guimenu]``Parent FQDN`` field, type the fully qualified domain name for the parent server or proxy.
+.. In the [guimenu]``Proxy SSH port`` field, type the SSH port on which the SSH service is listening on the {productname} Proxy. It is recommended to keep the default: 8022.
+.. In the [guimenu]``Max Squid cache size`` field, type the maximum allowed size for the Squid cache, in Gigabytes.
+.. In the [guimenu]``Proxy admin email`` field, type the administrator's email address.
+.. In the [literal]``Certificates`` section, provide the certificates for the {productname} Proxy, obtained in the preparation step.
+
+.. In the [literal]``Source`` section, select one of the two options: [literal]``RPM`` or [literal]``Registry``.
++
+* The [literal]``RPM`` option is recommended for air-gapped or restricted environments.
+* The [literal]``Registry`` option can be used if connectivity to the container image registry is available. +
+If selected, you will be prompted to choose between two sub-options: [literal]``Simple`` or [literal]``Advanced``.
++
+** If [literal]``Simple`` is selected, provide values in the [literal]``Registry URL`` and [literal]``Containers Tag`` fields.
+*** For [literal]``Registry URL`` use: [literal]``registry.suse.com/suse/multi-linux-manager/5.1/x86_64``.
+*** Select the tag from the drop-down list.
+
+** If [literal]``Advanced`` is selected, an additional section of the form is shown:
+*** For each individual container URL field, use the registry: [literal]``registry.suse.com/suse/multi-linux-manager/5.1/x86_64`` followed by the corresponding suffix, for example, `_proxy-httpd_` or `_salt-broker_`.
+*** Select the tag from the drop-down list.
+
+. Once all fields are filled, click btn:[Apply] to apply the configuration and schedule the proxy installation task.
+
+== Verify Proxy Activation
+
+Check the client’s event history to confirm task success.
+
+(Optional) Access the proxy’s HTTP endpoint to validate it shows a welcome page.
