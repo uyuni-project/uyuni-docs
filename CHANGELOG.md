@@ -1,3 +1,5 @@
+- Fix the hostname rename page for containers in Troubleshooting of
+  Administration Guide (bsc#1229825)
 - Added SUSE Linux Enterprise Server command line registration in
   Installation and Upgrade Guide
 - Fixed issues in Image Building chapter in the Administration Guide
