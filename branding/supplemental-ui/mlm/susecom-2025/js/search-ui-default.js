@@ -150,11 +150,10 @@
     return []
   }
 
-  // UPDATED: prefer doc.description over doc.text for the snippet source
   function highlightText (doc, terms) {
-    const snippetSource = (doc.description && doc.description.trim()) ? doc.description : doc.text;
-    const positions = getTermPosition(snippetSource, terms);
-    return buildHighlightedText(snippetSource, positions, snippetLength)
+    const text = doc.text;
+    const positions = getTermPosition(text, terms);
+    return buildHighlightedText(text, positions, snippetLength)
   }
 
   function getTermPosition (text, terms) {
