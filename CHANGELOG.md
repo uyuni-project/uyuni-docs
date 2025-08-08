@@ -1,3 +1,5 @@
+- Warned about old backup configuration in Administration Guide
+  (bsc#1247481)
 - Added SUSE Linux Enterprise Server command line registration in
   Installation and Upgrade Guide
 - Fixed issues in Image Building chapter in the Administration Guide
