@@ -1,3 +1,5 @@
+- Fixed introduction of the Ansible chapter in Administration
+  Guide (bsc#1244125)
 - Added SUSE Linux Enterprise Server command line registration in
   Installation and Upgrade Guide
 - Fixed upgrade procedure for server and proxy in Installation and
@@ -5,7 +7,7 @@
 - Added revision date to metadata for tracking document changes
 - Removed duplicated paragraphs from Hub documentation in Large
   Deployments Guide
-- Cleaned up Uyuni migration from legacy to container depoyment in
+- Cleaned up Uyuni migration from legacy to container deployment in
   Installation and Upgrade Guide
 - Added section about creation of database backup volume during
   migration or upgrade in Installation and Upgrade Guide
