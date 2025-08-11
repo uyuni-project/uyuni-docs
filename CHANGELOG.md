@@ -1,3 +1,5 @@
+- Fix the hostname rename page for containers in Troubleshooting of
+  Administration Guide (bsc#1229825)
 - Fixed introduction of the Ansible chapter in Administration
   Guide (bsc#1244125)
 - Fixed proxy migration from 5.0 to 5.1 in Installation and Upgrade
