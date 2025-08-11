@@ -1,3 +1,5 @@
+- Added warning about old backup configuration in Administration Guide
+  (bsc#1247481)
 - Removed duplicated paragraphs from Hub documentation in Large
   Deployments Guide
 - Documented to write data to persistent volume in ISS chapter of
