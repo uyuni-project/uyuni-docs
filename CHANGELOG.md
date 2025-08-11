@@ -1,4 +1,4 @@
-- Warned about old backup configuration in Administration Guide
+- Added warning about old backup configuration in Administration Guide
   (bsc#1247481)
 - Removed duplicated paragraphs from Hub documentation in Large
   Deployments Guide
