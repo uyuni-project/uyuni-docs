@@ -1,3 +1,5 @@
+- Documented how to write data to persistent volume in ISS chapter of
+  Administration Guide (bsc#1246957)
 - Fixed introduction of the Ansible chapter in Administration
   Guide (bsc#1244125)
 - Fixed proxy migration from 5.0 to 5.1 in Installation and Upgrade
