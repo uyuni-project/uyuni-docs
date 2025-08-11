@@ -1,3 +1,5 @@
+- Documented how to write data to persistent volume in ISS chapter of
+  Administration Guide (bsc#1246957)
 - Added warning about old backup configuration in Administration Guide
   (bsc#1247481)
 - Added SUSE Linux Enterprise Server command line registration in
