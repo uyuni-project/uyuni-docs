@@ -1,3 +1,5 @@
+- Fixed proxy migration from 5.0 to 5.1 in Installation and Upgrade
+  Guide
 - Fixed introduction of the Ansible chapter in Administration
   Guide (bsc#1244125)
 - Added warning about old backup configuration in Administration Guide
