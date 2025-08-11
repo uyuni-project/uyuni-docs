@@ -1,3 +1,5 @@
+- Fixed the package names for server and proxy air-gapped deployment
+  (bsc#1247784)
 - Added warning about old backup configuration in Administration Guide
   (bsc#1247481)
 - Added SUSE Linux Enterprise Server command line registration in
