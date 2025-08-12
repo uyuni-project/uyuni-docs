@@ -1,5 +1,5 @@
-- Added instructions for third-party channels to Adminsyration
-  guide (bsc#1246422).
+- Added instructions for third-party channels to Adminstration
+  Guide (bsc#1246422).
 - Fixed User Role Permissions table in Users chapter in
   Administration Guide (bsc#1246659)
 - Added warning about old backup configuration in Administration Guide
