@@ -1,3 +1,5 @@
+- Fixed issues in Image Building chapter in the Administration Guide
+  (bsc#1245987)
 - Fixed proxy migration from 5.0 to 5.1 in Installation and Upgrade
   Guide
 - Documented how to write data to persistent volume in ISS chapter of
