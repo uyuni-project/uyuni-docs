@@ -1,11 +1,11 @@
 [[installation-proxy-containers]]
-= {productname} {productnumber} Proxy Deployment on {sle-micro}
+= {productname} {productnumber} Proxy Deployment
 ifeval::[{uyuni-content} == true]
 :noindex:
 endif::[]
 
 
-This guide outlines the deployment process for the {productname} {productnumber} Proxy.
+This guide outlines the deployment process for the {productname} {productnumber} Proxy container on {sle-micro} {microversion} or {sles} {bci-suma}.
 This guide presumes you have already successfully deployed a {productname} {productnumber} Server.
 
 [IMPORTANT]
@@ -17,13 +17,12 @@ We are working on managing it as Salt SSH client ([systemitem]``salt-ssh`` conta
 
 To successfully deploy, you will perform the following actions:
 
-
 // Add certificate tasks item
 .Procedure: Deploying Proxy
 . Review hardware requirements.
-. Synchronize the {sle-micro} {microversion} parent channel and the proxy extension child channel on the server.
-. Install {sle-micro} {microversion} on a bare-metal machine.
-. During the installation, register {sle-micro} {microversion} along with the {productname} Proxy extension.
+. Synchronize the {sle-micro} {microversion} or {sles} {bci-suma} parent channel and the proxy extension child channel on the server.
+. Install {sle-micro} or {sles} on a bare-metal machine.
+. During the installation, register {sle-micro} or {sles} along with the {productname} Proxy extension.
 . Create a {salt} activation key.
 . Bootstrap the proxy as a client with the [systemitem]``default`` connection method.
 . Generate a proxy configuration.
@@ -34,7 +33,7 @@ To successfully deploy, you will perform the following actions:
 .Supported operating system for the Proxy Container Host
 [NOTE]
 ====
-The supported operating system for the container host is {sle-micro} {microversion}.
+The supported operating system for the container host are {sle-micro} {microversion} and {sles} {bci-suma}.
 
 Container host::
 A container host is a server equipped with a container engine like Podman, which lets it manage and deploy containers.
@@ -53,110 +52,45 @@ For more information about hardware requirements for deploying {productname} Pro
 
 == Synchronize the Parent and Proxy Extension Child Channels
 
-This section presumes that you have already entered your organization credentials under the menu:Admin[Setup Wizard -> Organization Credentials] in the server's {webui}.
-Products are listed on the menu:Admin[Setup Wizard -> Products] page.
+This section presumes that you have already entered your organization credentials under the menu:Admin[Setup Wizard > Organization Credentials] in the server's {webui}.
+Products are listed on the menu:Admin[Setup Wizard > Products] page.
 This channel must be fully synchronized on the server, with the child channel [systemitem]``Proxy`` as an extension option selected.
 
 
 .Procedure: Synchronizing the Proxy Parent Channel and Proxy Extension
 . In the {productname} {webui} select menu:Admin[Products].
-. From the products page enter {sle-micro} in the filter field.
+. From the products page enter {sle-micro} or {sles} in the filter field.
 . Next use the drop-down to select the required architecture.
   For this example {x86_64}.
-. In the [systemitem]``Product Description`` field select the {sle-micro} {microversion} checkbox then use the drop-down to select the [systemitem]``SUSE Manager Proxy Extension 5.0 x86_64`` extension.
+. In the [systemitem]``Product Description`` field select the {sle-micro} {microversion} or {sles} {bci-suma} checkbox then use the drop-down to select the [systemitem]``SUSE Manager Proxy Extension 5.0 x86_64`` extension.
 . Click the btn:[Add products] button.
 . Wait for the synchronization to complete.
 
 
+[[deploy-suma-proxy-host]]
+==  Prepare {productname} Proxy Host
 
-== {sle-micro} {microversion} Installation
+In the following subsections, you either prepare the proxy host with {sle-micro} or {sles}.
 
-.Procedure: Downloading the Installation Media
-. Locate the {sle-micro} {microversion} installation media at https://www.suse.com/download/sle-micro/.
-. You will need an account with {scclongform} and must be logged in to download the ISO.
-. Download [filename]``SLE-Micro-5.5-DVD-x86_64-GM-Media1.iso``.
-. Prepare a USB flash disk or DVD for installation.
-. Insert a DVD or a bootable USB stick containing the installation image for {sle-micro} {microversion}.
-. Boot or reboot your system.
+[[deploy-suma-proxy-micro]]
+include::../prepare-micro-host.adoc[leveloffset=+1]
 
+To continue with deployment, see xref:installation-and-upgrade:container-deployment/suma/proxy-deployment-suma.adoc#deploy-suma-proxy-persistent-storage[].
 
-For detailed documentation on preparing your machines OS (virtual or physical), see link:https://documentation.suse.com/sle-micro/5.5/html/SLE-Micro-all/book-deployment-slemicro.html[{sle-micro} {microversion} Deployment Guide].
+[[deploy-suma-proxy-sles]]
+include::../prepare-sles-host.adoc[leveloffset=+1]
 
-
-.Procedure: Installing {sle-micro} {microversion}
-. Use the arrow keys to select [systemitem]``Installation``.
-. Adjust Keyboard and language.
-  Click the [systemitem]``checkbox`` to accept the license agreement.
-. Click [systemitem]``Next`` to continue.
-. Select your registration method.
-  For this example, we will register the proxy with {scclongform}.
-
-+
-
-.{productname} {productnumber} Proxy as an extension
-[NOTE]
-====
-The {productname} {productnumber} Proxy is registered as an extension. Therefore, in addition to acquiring an {scclongform} registration key for {sle-micro} {microversion}, you will also need an {scclongform} registration code for the following extension:
-
-* {productname} {productnumber} Proxy
-====
-
-. Enter your {scclongform} Email address.
-. Enter your registration code for {sle-micro} {microversion}.
-. Click [systemitem]``Next`` to continue.
-. On the [systemitem]``Extension and Module Selection`` page uncheck the **Hide Development Versions** checkbox.
-. Select the {productname} {productnumber} Proxy extension [systemitem]``Checkbox``.
-. Click [systemitem]``Next`` to continue.
-. Enter your {productname} {productnumber} Proxy extension registration code.
-. Click btn:[Next] to continue.
-. On the [systemitem]``NTP Configuration`` page click btn:[Next].
-. On the [systemitem]``Authentication for the System`` page enter a password for the root user.
-  Click btn:[Next].
-. On the [systemitem]``Installation Settings`` page click btn:[Install].
-
-This finalizes installation of {sle-micro} {microversion} and {productname} {productnumber} Proxy as an extension.
+To continue with deployment, see xref:installation-and-upgrade:container-deployment/suma/proxy-deployment-suma.adoc#deploy-suma-proxy-persistent-storage[].
 
 
 
-=== Update the System
+[[deploy-suma-proxy-persistent-storage]]
+== Configure Custom Persistent Storage
 
+Configuring persistent storage is optional, but it is the only way to avoid serious trouble with container full disk conditions.
+If custom persistent storage is required for your infrastructure, use the [command]``mgr-storage-proxy`` tool.
 
-.Procedure: Updating the System
-. Log in as *root*.
-. Run **transactional-update**:
-
-+
-
-[source, shell]
-----
-transactional-update
-----
-
-. Reboot the system.
-. Log in as root.
-. Install the container utilities:
-
-+
-
-[source, shell]
-----
-transactional-update pkg install mgrpxy mgrpxy-bash-completion
-----
-
-+
-
-Alternatively you may install [systemitem]``mgrpxy-zsh-completion`` or [systemitem]``mgrpxy-fish-completion``.
-
-+
-
-. Reboot the system.
-
-
-
-=== Configure Custom Persistent Storage
-
-This step is optional.
-However, if custom persistent storage is required for your infrastructure, use the [command]``mgr-storage-proxy`` tool.
+* For more information, see [command]``mgr-storage-proxy --help``.
 This tool simplifies creating the container storage and Squid cache volumes.
 
 Use the command in the following manner:
@@ -173,12 +107,6 @@ For example:
 mgr-storage-proxy /dev/nvme1n1
 ----
 
-For more information, type:
-
-[source, shell]
-----
-mgr-storage-proxy --help
-----
 
 
 [NOTE]
@@ -235,7 +163,7 @@ Five {productname} Proxy containers should be present and should be part of the 
 
 
 
-=== Using a Custom Container Image for a Service
+== Use a Custom Container Image for a Service
 
 By default, the {productname} Proxy suite is configured to use the same image version and registry path for each of its services.
 However, it is possible to override the default values for a specific service using the install parameters ending with [literal]``-tag`` and [literal]``-image``.
@@ -257,4 +185,3 @@ mgrpxy install podman /path/to/config.tar.gz
 ----
 
 This command first resets the configuration of all services to the global defaults and then reloads it.
-

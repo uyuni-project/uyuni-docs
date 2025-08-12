@@ -1,6 +1,110 @@
 - Removed Ubuntu 20.04 from the list supported clients in Client
   Configuration Guide (bsc#1238481)
+- Added warning about old backup configuration in Administration Guide
+  (bsc#1247481)
+- Removed duplicated paragraphs from Hub documentation in Large
+  Deployments Guide
+- Documented to write data to persistent volume in ISS chapter of
+  Administration Guide (bsc#1246957)
+- Fixed upgrade procedure for server and proxy in Installation and
+  Upgrade Guide (bsc#1247084)
+- Confidential Computing command updated in Administration Guide
+  (bsc#1246638)
+- Documented that Ansible for the control node must come from the
+  distribution of the client (bsc#1244125)
+- Fixed troubleshooting procedure about login timeout in Administration
+  Guide
+- Fixed persistent storage configuration details in Installation and Uprade
+  Guide (bsc#1235567)
+- Fixed the admonition in Client Configuration Guide (bsc#1233496)
+- Reorganised files for better visibility of differences between AutoYaST 
+  and Kickstart profiles (bsc#1217755)
+- Renamed parameter in Specialized Guides (bsc#1245241)
+- Extended troubleshooting section with a reposync example (bsc#1211373)
+- Added detailed description of the scripts used for storage 
+  administrations to Installation and Uprade Guide (bsc#1245241)
+- Fixed 4.3 server migration section (bsc#1245240)
+- Added instruction for mandatory channel needed for Ansible 
+  control node installation to Administration Guide 
+  (bsc#1244400)
+- Added port 8022 for proxy in network requirements in Installation
+  and Upgrade Guide
+- Added admonition about supported clients as monitoring servers in
+  Administration Guide
+- Documented TFTP file synchronization after migrating a 4.3 proxy in
+  Installation and Upgrade Guide (bsc#1244427)
+- Fixed Python script in Administration Guide (bsc#1244290)
+- Added missing Task Schedules to the list and fixed Task Schedule page after
+  changing the page and allow only disabling Tasks, but not deleting them in
+  Administration Guide
+- Fixed procedure remediation procedure in Ansible chapter in
+  Administration Guide (bsc#1244338)
+- Added examples for synchronizing BaseOS and AppStream channels for
+  version 8 and 9 in Client Configuration Guide (bsc#1244822)
+- Fixed AsciiDoc menu macro issue with duplicate CSS class, menu
+  items now display correctly
+- Raised recommended proxy RAM value to 8 GB (bsc#1244552)
+- Added note about autoyast profiles not having passwords
+- Added details about the behavior of the rescheduled failed action
+  (bsc#1244065)
+- Fixed the hostname rename page for containers (bsc#1229825)
+- Fixed the note for the server subscription in Public Cloud Guide
+- Added containers file and linked it to navigation list in
+  Installation and Upgrade Guide
+- Added new backup/restore implementation in Administration Guide
+- Added information about passing environment variables to bootstrap
+  script in Client Configuration Guide
+- Enhanced instructions about router advertisements and parameter
+  value needed for IPv6 route in Installation and Upgrade Guide
+  (bsc#1241034)
+- Added SLE15 SP7 as supported client
+- Added missing 4505 and 4506 Salt ports in network requirements in
+  Installation and Upgrade Guide
+- Added parameter value needed for IPv6 route to Installation
+  and Upgrade Guide (bsc#1241034)
+- Improved proxy deployment sections in Installation and Upgrade
+  Guide
+- Updated Network Requirement section to add settings for server
+  configuration behind HTTP OSI level 7 proxy.
+- Improved server migration in Installation and Upgrade Guide
+- Clarified that NFS with Cobbler is not supported (bsc#1240666)
+- Removed SCAP file size limit from Reference Guide
+- Documented uptodate action in Common Workflows Guide as
+  background information
+- Documented in Administration Guide that action chains are
+  user-specific (bsc#1242561)
+- Added background information about installing PTF on an air-gapped
+  server in Installation and Upgrade Guide
+- Documented renaming the journal folder when changing machine ID in
+  Administration Guide (bsc#1241286)
+- Added java.smtp_server parameter for mail configuration in
+  Administration Guide (bsc#1241490)
+- Unified hardware requirements for proxy and server installation
+  in Installation and Upgrade Guide (bsc#1240635); images now
+  default to 40 GB root partition
+- Documented SUSE Linux Enterprise Server 15 as valid
+  migration target (bsc#1240901)
+- Marked OVAL data consumption as Technology Preview
+- Added password definition requirements to Administration Guide
+- Restructured Server Installation to better distinguish between
+  SUSE Linux Enterprise Micro and SUSE Linux Enterprise Server
+  as host operating system respectively (bsc#1239801)
+- Implemented PDF branding update for 2025 branding
+- Enhanced CVE auditing feature in Administration Guide
+- Added additional registry link to Installation and Upgrade Guide
+  (bsc#1240010)
+- Added instructions for Proxy installation on SUSE Linux
+  Enterprise Server 15 SP6 to Installation and Upgrade Guide
+- Documented handling of pub directory of the web server in the
+  context of proxy (bsc#1238827)
+- Fixed removing Salt bundle client procedure in Client Configuration
+  Guide
+- Added system_listeventhistory to spacecmd reference in Reference
+  Guide (bsc#1239604)
+- Added new workflow for installing the product on ppc64le to Common
+  Workflows book
 - Cleaned up backup and restore procedure in Administration Guide
+  (bsc#1239630)
 - Added links to supported features tables for third party
   operating systems (bsc#1236810)
 - Updated instructions for deploying PAYG on Azure
