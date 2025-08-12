@@ -1,5 +1,9 @@
 - Added instructions for third-party channels to Adminstration
   Guide (bsc#1246422)
+- Fixed proxy migration from 5.0 to 5.1 in Installation and Upgrade
+  Guide
+- Documented how to write data to persistent volume in ISS chapter of
+  Administration Guide (bsc#1246957)
 - Fixed the package names for server and proxy air-gapped deployment
   (bsc#1247784)
 - Fixed introduction of the Ansible chapter in Administration
