@@ -1,3 +1,5 @@
+- Fixed introduction of the Ansible chapter in Administration
+  Guide (bsc#1244125)
 - Added warning about old backup configuration in Administration Guide
   (bsc#1247481)
 - Removed duplicated paragraphs from Hub documentation in Large
