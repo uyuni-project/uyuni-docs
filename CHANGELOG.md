@@ -1,5 +1,3 @@
-- Added instructions for third-party channels to Adminstration
-  Guide (bsc#1246422)
 - Fixed the package names for server and proxy air-gapped deployment
   (bsc#1247784)
 - Documented how to write data to persistent volume in ISS chapter of
