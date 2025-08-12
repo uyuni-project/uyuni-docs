@@ -1,3 +1,5 @@
+- Fixed User Role Permissions table in Users chapter in
+  Administration Guide (bsc#1246659)
 - Added warning about old backup configuration in Administration Guide
   (bsc#1247481)
 - Removed duplicated paragraphs from Hub documentation in Large
