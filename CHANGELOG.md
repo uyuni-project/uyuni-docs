@@ -1,6 +1,8 @@
 - Documented stopping the server before rebooting the host operating
   system for the migration from 5.0 to 5.1 in Installation and
   Upgrade Guide (bsc#1247705)
+- Fixed the package names for server and proxy air-gapped deployment
+  (bsc#1247784)
 - Documented how to write data to persistent volume in ISS chapter of
   Administration Guide (bsc#1246957)
 - Fixed introduction of the Ansible chapter in Administration
