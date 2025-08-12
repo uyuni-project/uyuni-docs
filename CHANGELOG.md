@@ -1,3 +1,5 @@
+- Fixed the package names for server and proxy air-gapped deployment
+  (bsc#1247784)
 - Fixed introduction of the Ansible chapter in Administration
   Guide (bsc#1244125)
 - Added warning about old backup configuration in Administration Guide
