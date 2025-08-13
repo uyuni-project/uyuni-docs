@@ -1,3 +1,5 @@
+- Added instructions for third-party channels to Adminstration
+  Guide (bsc#1246422)
 - Fixed proxy migration from 5.0 to 5.1 in Installation and Upgrade
   Guide
 - Documented how to write data to persistent volume in ISS chapter of
