@@ -17,10 +17,19 @@ runtime:
   cache_dir: ./.cache/antora
 antora:
   extensions:
-  {% for entity in antora.extensions -%}
-    {% filter indent(0,true) %}
-    - {{ entity.extension}}
-    {% endfilter %}
+  {% for entity in antora.extensions %}
+  {# Case 1: full object like {require: '@antora/lunr-extension', store: {...}} #}
+  {% if entity.require is defined %}
+    - require: {{ entity.require | tojson }}
+    {% for k, v in entity.items() if k != 'require' %}
+      {{ k }}: {{ v | tojson }}
+    {% endfor %}
+  {# Case 2: simple path/package string, provided as entity.extension or as a bare string #}
+  {% elif entity.extension is defined and entity.extension %}
+    - {{ entity.extension | tojson }}
+  {% elif entity is string %}
+    - {{ entity | tojson }}
+  {% endif %}
   {% endfor %}
 asciidoc:
   extensions:

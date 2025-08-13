@@ -58,6 +58,7 @@ endef
 define antora-mlm-function
 	cd $(current_dir)
 	$(call enable-mlm-in-antorayml,$(1)) && \
+	$(call ensure-extensions,$(1)) && \
 	cd $(current_dir)/$(1) && DOCSEARCH_ENABLED=true SITE_SEARCH_PROVIDER=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) npx antora $(current_dir)/$(1)/mlm-site.yml --stacktrace
 endef
 
@@ -73,6 +74,7 @@ endef
 define antora-uyuni-function
 	cd $(current_dir)
 	$(call enable-uyuni-in-antorayml,$(1)) && \
+	$(call ensure-extensions,$(1)) && \
 	cd $(current_dir)/$(1) && DOCSEARCH_ENABLED=true SITE_SEARCH_PROVIDER=lunr LANG=$(2) LC_ALL=$(2) LC_ALL=$(2) npx antora $(current_dir)/$(1)/uyuni-site.yml
 endef
 
@@ -165,6 +167,11 @@ define copy-branding
 	cd $(current_dir)
         mkdir -p $(current_dir)/translations/$(1)
         cp -a $(current_dir)/branding $(current_dir)/translations/$(1)/
+endef
+
+define ensure-extensions
+	mkdir -p $(current_dir)/$(1)/extensions
+	cp -a $(current_dir)/extensions/*.js $(current_dir)/$(1)/extensions/
 endef
 
 # Create an Index

@@ -4,169 +4,166 @@
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.antoraSearch = {}));
 })(this, (function (exports) { 'use strict';
 
+  // -------------------------------------------------
+  // Helpers: highlighting + meta description fetch
+  // -------------------------------------------------
   function buildHighlightedText (text, positions, snippetLength) {
-    const textLength = text.length;
-    const validPositions = positions
-      .filter((position) => position.length > 0 && position.start + position.length <= textLength);
-  
+    const t = String(text || '');
+    const textLength = t.length;
+    const validPositions = (positions || [])
+      .filter((p) => p && p.length > 0 && p.start >= 0 && p.start + p.length <= textLength);
+
     if (validPositions.length === 0) {
-      return [
-        {
-          type: 'text',
-          text: text.slice(0, snippetLength >= textLength ? textLength : snippetLength) + (snippetLength < textLength ? '...' : ''),
-        },
-      ];
+      const end = snippetLength >= textLength ? textLength : snippetLength;
+      return [{ type: 'text', text: t.slice(0, end) + (end < textLength ? '...' : '') }];
     }
-  
-    const orderedPositions = validPositions.sort((p1, p2) => p1.start - p2.start);
+
+    const ordered = validPositions.slice().sort((a, b) => a.start - b.start);
+    const first = ordered[0];
     const range = { start: 0, end: textLength };
-  
-    const firstPosition = orderedPositions[0];
-    if (snippetLength && text.length > snippetLength) {
-      const firstPositionStart = firstPosition.start;
-      const firstPositionEnd = firstPositionStart + firstPosition.length;
-  
-      range.start = firstPositionStart - snippetLength < 0 
-        ? 0 
-        : text.lastIndexOf(' ', firstPositionStart - snippetLength);
-  
-      range.end = firstPositionEnd + snippetLength > textLength 
-        ? textLength 
-        : text.indexOf(' ', firstPositionEnd + snippetLength);
-  
-      // Safety fallback
-      if (range.start === -1 || range.start === undefined) range.start = 0;
-      if (range.end === -1 || range.end === undefined) range.end = textLength;
+
+    if (snippetLength && textLength > snippetLength) {
+      const firstStart = first.start;
+      const firstEnd = firstStart + first.length;
+
+      range.start = firstStart - snippetLength < 0 ? 0 : t.lastIndexOf(' ', firstStart - snippetLength);
+      range.end = firstEnd + snippetLength > textLength ? textLength : t.indexOf(' ', firstEnd + snippetLength);
+      if (range.start === -1 || range.start == null) range.start = 0;
+      if (range.end === -1 || range.end == null) range.end = textLength;
     }
-  
+
     const nodes = [];
-    if (firstPosition.start > 0) {
-      nodes.push({
-        type: 'text',
-        text: (range.start > 0 ? '...' : '') + text.slice(range.start, firstPosition.start),
-      });
+    if (first.start > range.start) {
+      nodes.push({ type: 'text', text: (range.start > 0 ? '...' : '') + t.slice(range.start, first.start) });
     }
-    let lastEndPosition = firstPosition.start;
-  
-    const positionsWithinRange = orderedPositions
-      .filter((position) => position.start >= range.start && position.start + position.length <= range.end);
-  
-    for (const position of positionsWithinRange) {
-      const start = position.start;
-      const end = start + position.length;
-      if (lastEndPosition < start) {
-        nodes.push({
-          type: 'text',
-          text: text.slice(lastEndPosition, start),
-        });
-      }
-      nodes.push({
-        type: 'mark',
-        text: text.slice(start, end),
-      });
-      lastEndPosition = end;
+
+    let lastEnd = first.start;
+    const within = ordered.filter((p) => p.start >= range.start && p.start + p.length <= range.end);
+
+    for (const p of within) {
+      const start = p.start;
+      const end = start + p.length;
+      if (lastEnd < start) nodes.push({ type: 'text', text: t.slice(lastEnd, start) });
+      nodes.push({ type: 'mark', text: t.slice(start, end) });
+      lastEnd = end;
     }
-  
-    if (lastEndPosition < range.end) {
-      nodes.push({
-        type: 'text',
-        text: text.slice(lastEndPosition, range.end) + (range.end < textLength ? '...' : ''),
-      });
+
+    if (lastEnd < range.end) {
+      nodes.push({ type: 'text', text: t.slice(lastEnd, range.end) + (range.end < textLength ? '...' : '') });
     }
-  
     return nodes;
   }
-  
 
-  /**
-   * Taken and adapted from: https://github.com/olivernn/lunr.js/blob/aa5a878f62a6bba1e8e5b95714899e17e8150b38/lib/tokenizer.js#L24-L67
-   * @param lunr
-   * @param text
-   * @param term
-   * @return {{start: number, length: number}}
-   */
   function findTermPosition (lunr, term, text) {
-    const str = text.toLowerCase();
+    const str = String(text || '').toLowerCase();
+    const needle = String(term || '').toLowerCase();
     const len = str.length;
+    if (!needle) return { start: 0, length: 0 };
 
     for (let sliceEnd = 0, sliceStart = 0; sliceEnd <= len; sliceEnd++) {
-      const char = str.charAt(sliceEnd);
+      const ch = str.charAt(sliceEnd);
       const sliceLength = sliceEnd - sliceStart;
-
-      if ((char.match(lunr.tokenizer.separator) || sliceEnd === len)) {
+      if ((ch && ch.match(lunr.tokenizer.separator)) || sliceEnd === len) {
         if (sliceLength > 0) {
           const value = str.slice(sliceStart, sliceEnd);
-          // QUESTION: if we get an exact match without running the pipeline should we stop?
-          if (value.includes(term)) {
-            // returns the first match
-            return {
-              start: sliceStart,
-              length: value.length,
-            }
-          }
+          const idx = value.indexOf(needle);
+          if (idx !== -1) return { start: sliceStart + idx, length: needle.length };
         }
         sliceStart = sliceEnd + 1;
       }
     }
-
-    // not found!
-    return {
-      start: 0,
-      length: 0,
-    }
+    return { start: 0, length: 0 };
   }
 
-  /* global CustomEvent, globalThis */
+  function getTermPosition (text, terms) {
+    const positions = (terms || [])
+      .map((term) => findTermPosition(globalThis.lunr, term, text))
+      .filter((p) => p.length > 0)
+      .sort((a, b) => a.start - b.start);
+    return positions.length ? positions : [];
+  }
 
-  const config = document.getElementById('search-ui-script').dataset;
-  const snippetLength = parseInt(config.snippetLength || 100, 10);
-  const siteRootPath = config.siteRootPath || '';
-  appendStylesheet(config.stylesheet);
+  // Async meta description fetch with simple in-memory cache
+  const __descCache = new Map();
+  async function fetchMetaDescription (url) {
+    try {
+      const normalized = url.replace(/#.*$/, '');
+      if (__descCache.has(normalized)) return __descCache.get(normalized);
+      const p = (async () => {
+        try {
+          const res = await fetch(normalized, { credentials: 'same-origin' });
+          if (!res.ok) return null;
+          const html = await res.text();
+          const m = html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i);
+          return m ? m[1] : null;
+        } catch { return null; }
+      })();
+      __descCache.set(normalized, p);
+      return p;
+    } catch { return null; }
+  }
+
+  function getTextTermsFromMetadata (metadata) {
+    const terms = [];
+    if (!metadata) return terms;
+    for (const term in metadata) if (Object.prototype.hasOwnProperty.call(metadata, term)) {
+      const fields = metadata[term];
+      if (fields && Object.prototype.hasOwnProperty.call(fields, 'text')) terms.push(term);
+    }
+    return terms;
+  }
+
+  function pickDescription (doc) {
+    const direct = doc && typeof doc.description === 'string' && doc.description.trim();
+    if (direct) return doc.description.trim();
+    const attr = doc && doc.attributes && typeof doc.attributes.description === 'string' && doc.attributes.description.trim();
+    if (attr) return doc.attributes.description.trim();
+    return '';
+  }
+
+  // -------------------------------------------------
+  // Boot / DOM
+  // -------------------------------------------------
+  const cfgEl = document.getElementById('search-ui-script');
+  const cfg = (cfgEl && cfgEl.dataset) || {};
+  const snippetLength = parseInt(cfg.snippetLength || 100, 10);
+  const siteRootPath = cfg.siteRootPath || '';
+
+  appendStylesheet(cfg.stylesheet);
   const searchInput = document.getElementById('search-input');
   const searchResultContainer = document.createElement('div');
   searchResultContainer.classList.add('search-result-dropdown-menu');
-  searchInput.parentNode.appendChild(searchResultContainer);
+  if (searchInput && searchInput.parentNode) searchInput.parentNode.appendChild(searchResultContainer);
   const facetFilterInput = document.querySelector('#search-field input[type=checkbox][data-facet-filter]');
 
   function appendStylesheet (href) {
-    if (!href) return
+    if (!href) return;
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = href;
     document.head.appendChild(link);
   }
 
+  // -------------------------------------------------
+  // Highlight integration
+  // -------------------------------------------------
   function highlightPageTitle (title, terms) {
     const positions = getTermPosition(title, terms);
-    return buildHighlightedText(title, positions, snippetLength)
+    return buildHighlightedText(title, positions, snippetLength);
   }
 
   function highlightSectionTitle (sectionTitle, terms) {
-    if (sectionTitle) {
-      const text = sectionTitle.text;
-      const positions = getTermPosition(text, terms);
-      return buildHighlightedText(text, positions, snippetLength)
-    }
-    return []
+    if (!sectionTitle) return [];
+    const text = sectionTitle.text;
+    const positions = getTermPosition(text, terms);
+    return buildHighlightedText(text, positions, snippetLength);
   }
 
-  // UPDATED: prefer doc.description over doc.text for the snippet source
   function highlightText (doc, terms) {
-    const snippetSource = (doc.description && doc.description.trim()) ? doc.description : doc.text;
-    const positions = getTermPosition(snippetSource, terms);
-    return buildHighlightedText(snippetSource, positions, snippetLength)
-  }
-
-  function getTermPosition (text, terms) {
-    const positions = terms
-      .map((term) => findTermPosition(globalThis.lunr, term, text))
-      .filter((position) => position.length > 0)
-      .sort((p1, p2) => p1.start - p2.start);
-
-    if (positions.length === 0) {
-      return []
-    }
-    return positions
+    const desc = pickDescription(doc);
+    const src = desc || doc.text || '';
+    const positions = getTermPosition(src, terms);
+    return buildHighlightedText(src, positions, snippetLength);
   }
 
   function highlightHit (searchMetadata, sectionTitle, doc) {
@@ -181,9 +178,12 @@
       pageTitleNodes: highlightPageTitle(doc.title, terms.title || []),
       sectionTitleNodes: highlightSectionTitle(sectionTitle, terms.title || []),
       pageContentNodes: highlightText(doc, terms.text || []),
-    }
+    };
   }
 
+  // -------------------------------------------------
+  // Rendering
+  // -------------------------------------------------
   function createSearchResult (result, store, searchResultDataset) {
     let currentComponent;
     result.forEach(function (item) {
@@ -193,110 +193,129 @@
       let sectionTitle;
       if (ids.length > 1) {
         const titleId = ids[1];
-        sectionTitle = doc.titles.filter(function (item) {
-          return String(item.id) === titleId
-        })[0];
+        sectionTitle = (doc.titles || []).filter(function (x) { return String(x.id) === titleId; })[0];
       }
       const metadata = item.matchData.metadata;
       const highlightingResult = highlightHit(metadata, sectionTitle, doc);
-      const componentVersion = store.componentVersions[`${doc.component}/${doc.version}`];
+      const textTerms = getTextTermsFromMetadata(metadata);
+      const componentVersion = store.componentVersions[doc.component + '/' + doc.version];
       if (componentVersion !== undefined && currentComponent !== componentVersion) {
-        const searchResultComponentHeader = document.createElement('div');
-        searchResultComponentHeader.classList.add('search-result-component-header');
-        const { title, displayVersion } = componentVersion;
-        const componentVersionText = `${title}${doc.version && displayVersion ? ` ${displayVersion}` : ''}`;
-        searchResultComponentHeader.appendChild(document.createTextNode(componentVersionText));
-        searchResultDataset.appendChild(searchResultComponentHeader);
+        const hdr = document.createElement('div');
+        hdr.classList.add('search-result-component-header');
+        const title = componentVersion.title;
+        const displayVersion = componentVersion.displayVersion;
+        hdr.appendChild(document.createTextNode(title + (doc.version && displayVersion ? ' ' + displayVersion : '')));
+        searchResultDataset.appendChild(hdr);
         currentComponent = componentVersion;
       }
-      searchResultDataset.appendChild(createSearchResultItem(doc, sectionTitle, item, highlightingResult));
+      searchResultDataset.appendChild(createSearchResultItem(doc, sectionTitle, item, highlightingResult, textTerms));
     });
   }
 
-function createSearchResultItem (doc, sectionTitle, item, highlightingResult) {
-  const breadcrumbs = doc.breadcrumbs || [];
-  const chapterTitleText = breadcrumbs.length > 0 ? breadcrumbs[0] : '';
-  const sectionTitleText = sectionTitle ? sectionTitle.text : doc.title;
+  function createSearchResultItem (doc, sectionTitle, item, highlightingResult, textTerms) {
+    const breadcrumbs = doc.breadcrumbs || [];
+    const chapterTitleText = breadcrumbs.length > 0 ? breadcrumbs[0] : '';
+    const sectionTitleText = sectionTitle ? sectionTitle.text : doc.title;
 
-  const documentTitle = document.createElement('div');
-  documentTitle.classList.add('search-result-document-title');
+    const documentTitle = document.createElement('div');
+    documentTitle.classList.add('search-result-document-title');
 
-  const chapterTitleEl = document.createElement('div');
-  chapterTitleEl.classList.add('chapter-title');
-  chapterTitleEl.textContent = chapterTitleText;
+    const chapterTitleEl = document.createElement('div');
+    chapterTitleEl.classList.add('chapter-title');
+    chapterTitleEl.textContent = chapterTitleText;
 
-  const sectionTitleEl = document.createElement('div');
-  sectionTitleEl.classList.add('section-title');
-  sectionTitleEl.textContent = sectionTitleText;
+    const sectionTitleEl = document.createElement('div');
+    sectionTitleEl.classList.add('section-title');
+    sectionTitleEl.textContent = sectionTitleText;
 
-  documentTitle.appendChild(chapterTitleEl);
-  documentTitle.appendChild(sectionTitleEl);
+    documentTitle.appendChild(chapterTitleEl);
+    documentTitle.appendChild(sectionTitleEl);
 
-  const documentHit = document.createElement('div');
-  documentHit.classList.add('search-result-document-hit');
-
-  const documentHitLink = document.createElement('a');
-  documentHitLink.href = siteRootPath + doc.url + (sectionTitle ? '#' + sectionTitle.hash : '');
-  documentHit.appendChild(documentHitLink);
-
-  highlightingResult.pageContentNodes.forEach(function (node) {
-    let element;
-    if (node.type === 'text') {
-      element = document.createTextNode(node.text);
-    } else {
-      element = document.createElement('span');
-      element.classList.add('search-result-highlight');
-      element.innerText = node.text;
-    }
-    documentHitLink.appendChild(element);
-  });
-
-  const searchResultItem = document.createElement('div');
-  searchResultItem.classList.add('search-result-item');
-  searchResultItem.appendChild(documentTitle);
-  searchResultItem.appendChild(documentHit);
-
-  searchResultItem.addEventListener('mousedown', function (e) {
-    e.preventDefault();
-  });
-
-  return searchResultItem;
-}
-
-
-  function createNoResult (text) {
-    const searchResultItem = document.createElement('div');
-    searchResultItem.classList.add('search-result-item');
     const documentHit = document.createElement('div');
     documentHit.classList.add('search-result-document-hit');
-    const message = document.createElement('strong');
-    message.innerText = 'No results found for query "' + text + '"';
-    documentHit.appendChild(message);
+
+    const documentHitLink = document.createElement('a');
+    documentHitLink.href = siteRootPath + doc.url + (sectionTitle ? '#' + sectionTitle.hash : '');
+    documentHit.appendChild(documentHitLink);
+
+    // initial (fast) render: use description if present in store, else body text
+    highlightingResult.pageContentNodes.forEach(function (node) {
+      let el;
+      if (node.type === 'text') {
+        el = document.createTextNode(node.text);
+      } else {
+        el = document.createElement('mark');
+        el.classList.add('search-result-highlight');
+        el.textContent = node.text;
+      }
+      documentHitLink.appendChild(el);
+    });
+
+    // async upgrade: replace snippet with <meta name="description"> if not present in store
+    (async () => {
+      const immediateDesc = pickDescription(doc);
+      if (immediateDesc) return; // already using description
+      const meta = await fetchMetaDescription(documentHitLink.href);
+      if (!meta) return;
+      const positions = getTermPosition(meta, textTerms || []);
+      const nodes = buildHighlightedText(meta, positions, snippetLength);
+      documentHitLink.textContent = '';
+      nodes.forEach((node) => {
+        let el;
+        if (node.type === 'text') {
+          el = document.createTextNode(node.text);
+        } else {
+          el = document.createElement('mark');
+          el.classList.add('search-result-highlight');
+          el.textContent = node.text;
+        }
+        documentHitLink.appendChild(el);
+      });
+    })();
+
+    const searchResultItem = document.createElement('div');
+    searchResultItem.classList.add('search-result-item');
+    searchResultItem.appendChild(documentTitle);
     searchResultItem.appendChild(documentHit);
-    return searchResultItem
+
+    searchResultItem.addEventListener('mousedown', function (e) { e.preventDefault(); });
+
+    return searchResultItem;
+  }
+
+  function createNoResult (text) {
+    const item = document.createElement('div');
+    item.classList.add('search-result-item');
+    const hit = document.createElement('div');
+    hit.classList.add('search-result-document-hit');
+    const msg = document.createElement('strong');
+    msg.textContent = 'No results found for query "' + text + '"';
+    hit.appendChild(msg);
+    item.appendChild(hit);
+    return item;
   }
 
   function clearSearchResults (reset) {
-    if (reset === true) searchInput.value = '';
+    if (reset === true && searchInput) searchInput.value = '';
     searchResultContainer.innerHTML = '';
   }
 
   function filter (result, documents) {
     const facetFilter = facetFilterInput && facetFilterInput.checked && facetFilterInput.dataset.facetFilter;
     if (facetFilter) {
-      const [field, value] = facetFilter.split(':');
+      const pair = facetFilter.split(':');
+      const field = pair[0], value = pair[1];
       return result.filter((item) => {
         const ids = item.ref.split('-');
         const docId = ids[0];
         const doc = documents[docId];
-        return field in doc && doc[field] === value
-      })
+        return field in doc && doc[field] === value;
+      });
     }
-    return result
+    return result;
   }
 
   function search (index, documents, queryString) {
-    // execute an exact match search
     let query;
     let result = filter(
       index.query(function (lunrQuery) {
@@ -306,10 +325,8 @@ function createSearchResultItem (doc, sectionTitle, item, highlightingResult) {
       }),
       documents
     );
-    if (result.length > 0) {
-      return result
-    }
-    // no result, use a begins with search
+    if (result.length > 0) return result;
+
     result = filter(
       index.query(function (lunrQuery) {
         lunrQuery.clauses = query.clauses.map((clause) => {
@@ -318,15 +335,13 @@ function createSearchResultItem (doc, sectionTitle, item, highlightingResult) {
             clause.wildcard = globalThis.lunr.Query.wildcard.TRAILING;
             clause.usePipeline = false;
           }
-          return clause
+          return clause;
         });
       }),
       documents
     );
-    if (result.length > 0) {
-      return result
-    }
-    // no result, use a contains search
+    if (result.length > 0) return result;
+
     result = filter(
       index.query(function (lunrQuery) {
         lunrQuery.clauses = query.clauses.map((clause) => {
@@ -335,73 +350,61 @@ function createSearchResultItem (doc, sectionTitle, item, highlightingResult) {
             clause.wildcard = globalThis.lunr.Query.wildcard.LEADING | globalThis.lunr.Query.wildcard.TRAILING;
             clause.usePipeline = false;
           }
-          return clause
+          return clause;
         });
       }),
       documents
     );
-    return result
+    return result;
   }
 
   function searchIndex (index, store, text) {
     clearSearchResults(false);
-    if (text.trim() === '') {
-      return
-    }
+    if (!text || text.trim() === '') return;
     const result = search(index, store.documents, text);
-    const searchResultDataset = document.createElement('div');
-    searchResultDataset.classList.add('search-result-dataset');
-    searchResultContainer.appendChild(searchResultDataset);
+    const dataset = document.createElement('div');
+    dataset.classList.add('search-result-dataset');
+    searchResultContainer.appendChild(dataset);
     if (result.length > 0) {
-      createSearchResult(result, store, searchResultDataset);
+      createSearchResult(result, store, dataset);
     } else {
-      searchResultDataset.appendChild(createNoResult(text));
+      dataset.appendChild(createNoResult(text));
     }
   }
 
-  function confineEvent (e) {
-    e.stopPropagation();
-  }
+  function confineEvent (e) { e.stopPropagation(); }
 
   function debounce (func, wait, immediate) {
     let timeout;
     return function () {
-      const context = this;
-      const args = arguments;
-      const later = function () {
-        timeout = null;
-        if (!immediate) func.apply(context, args);
-      };
+      const context = this, args = arguments;
+      const later = function () { timeout = null; if (!immediate) func.apply(context, args); };
       const callNow = immediate && !timeout;
       clearTimeout(timeout);
       timeout = setTimeout(later, wait);
       if (callNow) func.apply(context, args);
-    }
+    };
   }
 
   function enableSearchInput (enabled) {
-    if (facetFilterInput) {
-      facetFilterInput.disabled = !enabled;
+    if (facetFilterInput) facetFilterInput.disabled = !enabled;
+    if (searchInput) {
+      searchInput.disabled = !enabled;
+      searchInput.title = enabled ? '' : 'Loading index...';
     }
-    searchInput.disabled = !enabled;
-    searchInput.title = enabled ? '' : 'Loading index...';
   }
 
-  function isClosed () {
-    return searchResultContainer.childElementCount === 0
-  }
+  function isClosed () { return searchResultContainer.childElementCount === 0; }
 
   function executeSearch (index) {
     const debug = 'URLSearchParams' in globalThis && new URLSearchParams(globalThis.location.search).has('lunr-debug');
-    const query = searchInput.value;
+    const query = (searchInput && searchInput.value) || '';
     try {
-      if (!query) return clearSearchResults()
+      if (!query) return clearSearchResults();
       searchIndex(index.index, index.store, query);
     } catch (err) {
       if (err instanceof globalThis.lunr.QueryParseError) {
-        if (debug) {
-          console.debug('Invalid search query: ' + query + ' (' + err.message + ')');
-        }
+        if (debug) console.debug('Invalid search query: ' + query + ' (' + err.message + ')');
       } else {
         console.error('Something went wrong while searching', err);
       }
@@ -409,31 +412,25 @@ function createSearchResultItem (doc, sectionTitle, item, highlightingResult) {
   }
 
   function toggleFilter (e, index) {
-    searchInput.focus();
-    if (!isClosed()) {
-      executeSearch(index);
-    }
+    if (searchInput) searchInput.focus();
+    if (!isClosed()) executeSearch(index);
   }
 
+  // -------------------------------------------------
+  // initSearch (called by search-index.js)
+  // -------------------------------------------------
   function initSearch (lunr, data) {
     const start = performance.now();
     const index = { index: lunr.Index.load(data.index), store: data.store };
     enableSearchInput(true);
-    searchInput.dispatchEvent(
-      new CustomEvent('loadedindex', {
-        detail: {
-          took: performance.now() - start,
-        },
-      })
-    );
-    searchInput.addEventListener(
-      'keydown',
-      debounce(function (e) {
-        if (e.key === 'Escape' || e.key === 'Esc') return clearSearchResults(true)
+    if (searchInput) {
+      searchInput.dispatchEvent(new CustomEvent('loadedindex', { detail: { took: performance.now() - start } }));
+      searchInput.addEventListener('keydown', debounce(function (e) {
+        if (e.key === 'Escape' || e.key === 'Esc') return clearSearchResults(true);
         executeSearch(index);
-      }, 100)
-    );
-    searchInput.addEventListener('click', confineEvent);
+      }, 100));
+      searchInput.addEventListener('click', confineEvent);
+    }
     searchResultContainer.addEventListener('click', confineEvent);
     if (facetFilterInput) {
       facetFilterInput.parentElement.addEventListener('click', confineEvent);
@@ -442,11 +439,10 @@ function createSearchResultItem (doc, sectionTitle, item, highlightingResult) {
     document.documentElement.addEventListener('click', clearSearchResults);
   }
 
-  // disable the search input until the index is loaded
+  // Disable input until index is ready
   enableSearchInput(false);
 
+  // UMD export
   exports.initSearch = initSearch;
-
   Object.defineProperty(exports, '__esModule', { value: true });
-
 }));
