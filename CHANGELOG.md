@@ -1,3 +1,5 @@
+- Removed random leftover references to traditional clients
+  (bsc#1247305)
 - Fixed broken link in Administration Guide (bsc#1247322)
 - Added instructions for third-party channels to Adminstration
   Guide (bsc#1246422)
