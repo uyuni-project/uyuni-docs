@@ -1,3 +1,4 @@
+- Fixed broken link in Administration Guide (bsc#1247322)
 - Fixed introduction of the Ansible chapter in Administration
   Guide (bsc#1244125)
 - Added instructions for third-party channels to Adminstration
