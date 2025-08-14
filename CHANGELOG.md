@@ -1,3 +1,5 @@
+- Fixed procedure name for confidential computing in Administration
+  Guide (bsc#1247318)
 - Removed random leftover references to traditional clients
   (bsc#1247305)
 - Fixed broken link in Administration Guide (bsc#1247322)
