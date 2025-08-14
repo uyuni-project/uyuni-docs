@@ -1,3 +1,4 @@
+- Fixed broken link in Administration Guide (bsc#1247322)
 - Added instructions for third-party channels to Adminstration
   Guide (bsc#1246422)
 - Fixed proxy migration from 5.0 to 5.1 in Installation and Upgrade
