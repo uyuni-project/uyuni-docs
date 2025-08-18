@@ -1,4 +1,5 @@
-- sync (bsc#1246883)
+- Fixed spacewalk-repo-sync command in Client Configuration
+  Guide (bsc#1246883)
 - Fixed introduction of the Ansible chapter in Administration
   Guide (bsc#1244125)
 - Removed Ubuntu 20.04 from the list supported clients in Client
