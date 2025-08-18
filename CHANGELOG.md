@@ -1,5 +1,14 @@
 - Removed Ubuntu 20.04 from the list supported clients in Client
   Configuration Guide (bsc#1238481)
+- Removed random leftover references to traditional clients
+  (bsc#1247305)
+- Fixed broken link in Administration Guide (bsc#1247322)
+- Fixed introduction of the Ansible chapter in Administration
+  Guide (bsc#1244125)
+- Added instructions for third-party channels to Adminstration
+  Guide (bsc#1246422).
+- Fixed User Role Permissions table in Users chapter in
+  Administration Guide (bsc#1246659)
 - Added warning about old backup configuration in Administration Guide
   (bsc#1247481)
 - Removed duplicated paragraphs from Hub documentation in Large
