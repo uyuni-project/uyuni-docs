@@ -1,6 +1,12 @@
 - Documented stopping the server before rebooting the host operating
   system for the migration from 5.0 to 5.1 in Installation and
   Upgrade Guide (bsc#1247705)
+- Removed reference to smdba from reference Guide (bsc#1247213)
+- Fixed procedure name for confidential computing in Administration
+  Guide (bsc#1247318)
+- Fixed broken link in Administration Guide (bsc#1247322)
+- Added instructions for third-party channels to Adminstration
+  Guide (bsc#1246422)
 - Fixed the package names for server and proxy air-gapped deployment
   (bsc#1247784)
 - Documented how to write data to persistent volume in ISS chapter of
