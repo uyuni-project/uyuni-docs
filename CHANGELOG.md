@@ -1,3 +1,5 @@
+- Removed Ubuntu 20.04 from the list supported clients in Client
+  Configuration Guide (bsc#1238481)
 - Removed random leftover references to traditional clients
   (bsc#1247305)
 - Fixed broken link in Administration Guide (bsc#1247322)
