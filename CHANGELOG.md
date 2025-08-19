@@ -1,5 +1,13 @@
 - Fixed issues in Image Building chapter in the Administration Guide
   (bsc#1245987)
+- Removed reference to smdba from reference Guide (bsc#1247213)
+- Fixed procedure name for confidential computing in Administration
+  Guide (bsc#1247318)
+- Removed random leftover references to traditional clients
+  (bsc#1247305)
+- Fixed broken link in Administration Guide (bsc#1247322)
+- Added instructions for third-party channels to Adminstration
+  Guide (bsc#1246422)
 - Fixed proxy migration from 5.0 to 5.1 in Installation and Upgrade
   Guide
 - Documented how to write data to persistent volume in ISS chapter of
