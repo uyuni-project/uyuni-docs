@@ -4,6 +4,8 @@
 - Removed reference to smdba from reference Guide (bsc#1247213)
 - Fixed procedure name for confidential computing in Administration
   Guide (bsc#1247318)
+- Fixed invocation of spacewalk-repo-sync command in Client
+  Configuration Guide (bsc#1246883)
 - Fixed broken link in Administration Guide (bsc#1247322)
 - Added instructions for third-party channels to Adminstration
   Guide (bsc#1246422)
