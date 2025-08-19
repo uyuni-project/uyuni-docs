@@ -3,10 +3,6 @@
   Guide (bsc#1247318)
 - Fixed invocation of spacewalk-repo-sync command in Client
   Configuration Guide (bsc#1246883)
-- Removed Ubuntu 20.04 from the list supported clients in Client
-  Configuration Guide (bsc#1238481)
-- Removed random leftover references to traditional clients
-  (bsc#1247305)
 - Fixed broken link in Administration Guide (bsc#1247322)
 - Added instructions for third-party channels to Adminstration
   Guide (bsc#1246422)
