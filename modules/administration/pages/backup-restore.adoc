@@ -1,10 +1,13 @@
 [[backup-restore]]
 = Backup and Restore
+:revdate: 2025-06-23
+:page-revdate: {revdate}
 
-This chapter contains information on the files you need to back up, and introduces the [command]``mgradm backup`` tool to create {productname} backups and information about restoring from your backups in the case of a system failure.
+This chapter contains information on the files you need to back up.
+With the built-in backup and restore solution ([command]``mgradm backup``) you create {productname} backups.
+Information about restoring from your backups in the case of a system failure completes this chapter.
 
 Because {productname} relies on a database as well as the installed program and configurations, it is important to back up all components of your installation.
-
 Back up your {productname} installation regularly to prevent data loss and enable quick recovery.
 
 [IMPORTANT]
@@ -13,13 +16,109 @@ Regardless of the backup method you use, you must have available at least three 
 Running out of space can result in backups failing, so check this often.
 ====
 
+
+
+[[backup-restore-old]]
+== Disable old method with smdba
+
+Skip this section if you installed {productname} {productnumber} from scratch.
+
 [NOTE]
 ====
-[command]``smdba`` backup tool is deprecated in {productname}.
+With the advent of the built-in solution, the old method with the [command]``smdba`` backup tool is deprecated.
+If you migrated from an old system with [command]``smdba`` to the new solution, you must disable the old funtionality and remove the old backup archives.
 ====
+
+Either disable [command]``smdba`` before migrating (recommended) or later on the migrated {productname} {productnumber} system.
+
+
+.Procedure: Disabling old method with installed smdba before migration
+
+This procedure only works when smdba is still installed.
+
+ifeval::[{mlm-content} == true]
+. Commands are different on SUSE Manager 4.3 (non-containerized installation) or SUSE Manager 5.0 (containerized installation)
+present (so 5.0 or on 4.3 before migration):
+
++
+
+--
+
+SUSE Manager 4.3::
+On the command line, as root, execute:
+
++
+
+[source,shell]
+----
+smdba backup-hot --enable=off
+----
+
+SUSE Manager 5.0::
+On the command line of the container host, as root, execute:
+
++
+
+[source,shell]
+----
+mgrctl exec -- smdba backup-hot --enable=off
+----
+
+--
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+. On the command line of the container host, as root, execute:
+
++
+
+[source,shell]
+----
+mgrctl exec -- smdba backup-hot --enable=off
+----
+
+endif::[]
++
+
+--
+This will change [option]``archive_command`` in [path]``/var/lib/pgsql/data/postgresql.conf`` as follows:
+
+----
+archive_command = '/bin/true'
+----
+
+--
+
+Now your old system is ready to be migrated to {productname} {productnumber}.
+
+
+.Procedure: Disabling old method on {productname} {productnumber} after migration
+
+Use this procedure after migration, when smdba is no longer available.
+
+. On the container host, as root, edit [path]``/var/lib/containers/storage/volumes/var-pgsql/_data/postgresql.conf`` and set these options:
+
++
+
+----
+archive_mode = off
+archive_command = '/bin/true'
+----
+
+. Restart the container:
+
++
+
+[source,shell]
+----
+mgradm restart
+----
+
+
 
 [[backup-product]]
 == Back up {productname}
+
 
 The most comprehensive method for backing up your {productname} installation is to use [command]``mgradm backup create`` command.
 This can save you time in administering your backup, and can be faster to reinstall and re-synchronize in the case of failure.
@@ -44,7 +143,9 @@ A full backup of the {productname} consists of backing up the following componen
 
 [WARNING]
 ====
-The {productname} service is automatically stopped during creation of a full backup.
+The {productname} service is automatically stopped for the time it takes to create a full backup.
+The downtime can be significant.
+After backup is done, service is automatically restarted.
 ====
 
 .Procedure: Creating Full Backup with [command]``mgradm backup create``
@@ -138,6 +239,7 @@ After both checks are successful, actual backup restore is performed.
 +
 [source,shell]
 ----
+mgradm stop
 mgradm backup restore $path
 mgradm start
 ----
@@ -165,11 +267,11 @@ mgrctl exec -ti -- mgr-sync refresh --refresh-channels
 
 . Schedule the re-creation of search indexes next time the [command]``rhn-search`` service is started.
 This command produces only debug messages, it does not produce error messages.
-In the container, enter:
+On the container host, enter:
 +
 [source,shell]
 ----
-rhn-search cleanindex
+mgrctl exec -ti -- rhn-search cleanindex
 ----
 
 

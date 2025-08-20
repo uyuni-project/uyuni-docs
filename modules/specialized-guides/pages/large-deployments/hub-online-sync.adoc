@@ -1,10 +1,13 @@
 [[hub-online-sync]]
 = Hub Online Synchronization
+:revdate: 2025-06-25
+:page-revdate: {revdate}
 
 
-//OM 2025-04-28: shall we write hub or HUb, peripheral or Peripheral? In the GUI, I saw mixed cases.
+//OM 2025-04-28: shall we write hub or Hub, peripheral or Peripheral? In the GUI, I saw mixed cases.
 
 == Introduction 
+
 
 Hub online synchronization reuses the existing repository synchronization and synchronizes channels in the peripheral servers from the repositories on the hub server.
 
@@ -36,6 +39,12 @@ There are two ways to register a peripheral server to the hub server:
 . by direct registration from the hub, without any user interactions with the peripheral server. 
   This method is described in <<direct-registration>>.
 
++
+[IMPORTANT]
+====
+In any case, if the peripheral host should be managed by the hub, you must first bootstrap the host as a minion to the hub before proceeding with the registration of the peripheral server. 
+If the bootstrapping happens later, two systems are shown in the systems list.
+====
 
 
 === Registration from peripheral server by token generation
@@ -65,7 +74,7 @@ The generated token needs to be transferred to the hub server before it can be u
 
 [[token-transfer]]
 .Procedure: Registering to the hub server with the token
-. On the hub server, go to menu:Hub Configuration[Peripherals Configuration].
+. On the hub server, go to menu:Admin[Hub Configuration > Peripherals Configuration].
 . Click button btn:[Add peripheral].
   A new form [literal]``Register a new peripheral server`` opens.
 . In the field [literal]``Peripheral Server FQDN`` enter the name of the peripheral server.
@@ -87,7 +96,7 @@ It is possible to initiate the registration of a peripheral server from hub serv
 [[direct-registration]]
 .Procedure: Direct registering from the hub server
 
-. On the hub server, go to menu:Hub Configuration[Peripherals Configuration].
+. On the hub server, go to menu:Admin[Hub Configuration > Peripherals Configuration].
 . Click button btn:[Add peripheral].
   A new form [literal]``Register a new peripheral server`` opens.
 . In the field [literal]``Peripheral Server FQDN`` enter the name of the peripheral server.
@@ -114,7 +123,7 @@ Therefore, if you open configured peripheral server's page menu:Admin[Setup Wiza
 
 === Access tokens
 
-All existing tokens are shown in menu:Hub Configuration[Access Tokens].
+All existing tokens are shown in menu:Admin[Hub Configuration > Access Tokens].
 
 A token can viewed as [literal]``Consumed`` and [literal]``Issued``, both from the perspective of the peripheral and the hub server.
 
@@ -157,7 +166,7 @@ Deleting is only possible when the server associated with the token is not regis
 This operation cannot be undone.
 
 
-=== Access hub server details from the peripheral server
+== Access hub server details from the peripheral server
 
 Every peripheral server stores the information about its hub server.
 
@@ -167,9 +176,9 @@ A peripheral server can only have one hub server configured.
 ====
 
 .Procedure: Accessing hub server details
-. On the peripheral server, go to menu:Hub Configuration[Hub Details].
+. On the peripheral server, go to menu:Admin[Hub Configuration > Hub Details].
 . On the screen [literal]``Hub Details`` find the information about the hub server.
-.. Field [literal]``Server FQDN`` shows the hub server's FQDN.
+.. Field [literal]``Hub server FQDN`` shows the hub server's FQDN.
 .. Field [literal]``Registration date`` shows the time when the peripheral server was registered to the hub server. 
 .. Field [literal]``Last modified`` shows the time of the last saved configuration change. 
 .. Field [literal]``Root Certificate Authority`` shows certificate details.
@@ -182,7 +191,7 @@ A peripheral server can only have one hub server configured.
 
 
 [[gpg-for-hub-online-sync]]
-==== GPG key usage with hub online synhronization
+=== GPG key usage with hub online synchronization
 
 When the metadata on the hub server are signed with a GPG key, the public key is automatically transmitted from hub to peripheral server.
 
@@ -196,39 +205,59 @@ When the GPG key is created on the hub, field [literal]``GPG Public Key`` will b
 For more information about setting up own GPG key, see xref:administration:repo-metadata.adoc[].
 
 
-=== Deregister peripheral server
+== Access peripheral server details from the hub server
 
-Deregistration can happen from both sides, from the hub or from the peripheral server.
+On the hub server, the menu:Admin[Hub Configuration > Peripherals Configuration] page displays the information about all the 
+peripheral servers currently registered.
 
-.Procedure: Deregistering from the peripheral server
-. Go to menu:Hub Configuration[Hub Details]. 
-. Click btn:[Deregister].
-. Confirm the operation by clicking btn:[Deregister] on the pop-up window.
-. Page menu:Hub Configuration[Hub Details] is now empty.
+[[peripherals-columns]]
+[cols="1,1", options="header"]
+.Peripheral servers list columns
+|===
+| Column                      | Description
+| Peripheral FQDN             | Fully qualified domain name of the peripheral server.
+| N. of synced channels       | Number of the channels currently synchronized from the hub to this peripheral.
+| N. of synced organizations  | Number of peripheral organization currently owning the synchronized channels.
+| Download Root CA            | Action to download the current root certificate authority, if different from the one used by the hub
+| Delete                      | Action to deregister the peripheral server
+|===
 
-.Procedure: Deregistering from the hub server
-. Go to menu:Hub Configuration[Peripheral Configuration].
-. Find the perpheral server on the list.
-. Click btn:[Deregister] next to the peripheral server's name.
-. The peripheral server is no longer shown on the list.
+.Procedure: Accessing the details of a peripheral server
+. On the hub server, go to menu:Admin[Hub Configuration > Peripherals Configuration].
+. Find the perpheral server on the list
+. Click the fully qualified domain name of the peripheral server to access its details.
+. On the screen [literal]``Peripheral Details`` .
+.. Field [literal]``Peripheral server FQDN`` shows the peripheral server's FQDN.
+.. Field [literal]``Registration date`` shows the time when the peripheral server was registered to the hub server. 
+.. Field [literal]``Last modified`` shows the time of the last saved configuration change. 
+.. Field [literal]``Root Certificate Authority`` shows certificate details.
+   To download, edit or delete the root certificate, respectively click btn:[Download], btn:[Edit] or btn:[Delete].
+   Deleting the certificate will break the connection between servers.
+.. Field [literal]``Mirror credentials`` is the username the peripheral server uses when connecting to the hub server to synchronize vendor channels.
+      This username is generated automatically on the hub server, and then transmitted to the peripheral server during the registration phase.
+   To generate new credentials, click btn:[Regenerate Credentials].
+   This action will create a new password and transmit it securely to the peripheral server.
+.. Field [literal]``Synchronized channels`` shows the number of currently synchronized channels and organization. 
 
 
-== Synchronize channels from hub to peripheral server
+=== Synchronize channels from hub to peripheral server
 
 Synchronizing vendor channels for the configured hub and server is done via dedicated user interface.
 
 .Procedure: Synchronizing channels from hub to peripheral server
 . Go to menu:Admin[Hub Configuration > Peripherals Configuration].
+. Find the perpheral server on the list
+. Click the fully qualified domain name of the peripheral server to access its details.
 . In the field [literal]``Synchronized channels`` click on btn:[Edit channels].
 . Page [literal]``Sync Channels from Hub to Peripheral`` opens.
 . Select the channels you want to synchronize.
-. For Custom Channels also select the target organization on the peripheral from the dropdown.
+. For custom channels also select the target organization on the peripheral from the dropdown.
 
 +
 [IMPORTANT]
 ====
-The drop-down list only exists on custom channels which do not yet exist on the peripheral server.
-If the channel exists, the organization will stay unchanged.
+The drop-down list exists only for custom channels which do not yet exist on the peripheral server.
+If the channel exists, the organization stays unchanged.
 ====
 
 . Click btn:[Apply Changes] to view the summary of your changes.
@@ -236,29 +265,33 @@ If the channel exists, the organization will stay unchanged.
 . Click btn:[Confirm] to confirm the selection.
 
 
-Now channels will be created on the peripheral server and everything will be set up to mirror the channels with the next regular repository synchronization task.
+Following the confirmation, the channels will be created on the peripheral server and everything will be set up to mirror the channels during the next regular repository synchronization task.
 
-+
-[IMPORTANT]
-====
-The repository synchronization will not start immediately after clicking the confirmation button.
-====
+The repository synchronization can be initated from the peripheral server.
+
+.Procedure: Initiating repository synchronization from the peripheral server
+. Go to menu:Admin[Hub Configuration > Hub Details].
+. Find the perpheral server on the list
+. Click the fully qualified domain name of the peripheral server to access its details.
+. Click btn:[Sync Channels].
+. Confirm the operation by clicking btn:[Schedule] on the pop-up window.
+
+The full channel synchronization will start in the background.
 
 
+== Deregister peripheral server
 
-////
-OM 2025-04-28: This section will be completed once the migration UI is finalised, and we are ready to proceed with removing ISS v1 from teh documentation too.
-== [WIP] ISS Version 1 migration
+Deregistration can happen from both sides, from the hub or from the peripheral server.
 
-ISS v1 is deprecated.
-Its functionality is replaced by hub online synchroinzation.
+.Procedure: Deregistering from the peripheral server
+. Go to menu:Admin[Hub Configuration > Hub Details]. 
+. Click btn:[Deregister].
+. Confirm the operation by clicking btn:[Deregister] on the pop-up window.
+. Page menu:Admin[Hub Configuration > Hub Details] is now empty.
 
-Customers who have ISS v1 configured are expected to migrate to hub online synchroization.
+.Procedure: Deregistering from the hub server
+. Go to menu:Admin[Hub Configuration > Peripheral Configuration].
+. Find the perpheral server on the list.
+. Click btn:[Deregister] next to the peripheral server's name.
+. The peripheral server is no longer shown on the list.
 
-.Procedure: Migrating ISS v1 to Hub online synchronization
-. Log in to peripheral server (in v1 terminology, this was slave server).
-. Go to menu:Admin:[Hub Configuration > Access Tokens].
-. Issue a new token for the hub server. 
-  Follow the steps from <<peripheral-token-generation>>.
-. etc... 
-////

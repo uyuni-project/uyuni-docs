@@ -1,5 +1,7 @@
 [[installation-network-requirements]]
 = Network Requirements
+:revdate: 2025-07-08
+:page-revdate: {revdate}
 
 This section details the networking and port requirements for {productname}.
 
@@ -8,7 +10,7 @@ This section details the networking and port requirements for {productname}.
 IP forwarding will be enabled by containerized installation.
 This means {productname} Server and Proxies will behave as a router.
 This behavior is done by podman directly.
-podman containers do not run if IP forwarding is disabled.
+Podman containers do not run if IP forwarding is disabled.
 
 Consider achieving network isolation of the {productname} environment according to your policies.
 
@@ -17,6 +19,7 @@ For more information, see https://www.suse.com/support/kb/doc/?id=000020166.
 
 
 == Fully Qualified Domain Name (FQDN)
+
 The {productname} server must resolve its FQDN correctly.
 If the FQDN cannot be resolved, it can cause serious problems in a number of different components.
 
@@ -28,9 +31,31 @@ You also need to ensure that reverse lookups are correctly configured.
 
 For more information about setting up a DNS server, see {sles-base-os-documentation}/cha-dns.html.
 
+
+== Reenable router advertisements
+
+When the {productname} is installed using [command]``mgradm install podman`` or [command]``mgrpxy install podman``, it sets up Podman which enables IPv4 and IPv6 forwarding.
+This is needed for communication from the outside of the container.
+
+However, if your system previously had [literal]``/proc/sys/net/ipv6/conf/eth0/accept_ra`` set to [literal]``1``, it will stop using router advertisements.
+As a result, the routes are no longer obtained via router advertisements and the default IPv6 route is missing.
+
+To recover correct functioning of the IPv6 routing, follow the procedure:
+
+.Procedure: Reenabling router advertisements
+. Create a file in [path]``/etc/sysctl.d``, for example [literal]``99-ipv6-ras.conf``.
+. Add the following parameter and value to the file:
+
++
+----
+net.ipv6.conf.eth0.accept_ra = 2
+----
+. Reboot.
+
+
 == Deployment behind HTTP or HTTPS OSI level 7 proxy
 
-Some environment enforce internet access through a HTTP or HTTPS proxy.
+Some environments enforce internet access through a HTTP or HTTPS proxy.
 This could be a Squid server or similar.
 To allow the {productname} Server internet access in such configuration, you need to configure the following.
 
@@ -136,12 +161,12 @@ External inbound ports must be opened to configure a firewall on the {productnam
 
 Opening these ports allows external network traffic to access the {productname} Server.
 
+// | 22          |          |            | Only required if the user wants to manage the server host with {salt} SSH.
 
 [cols="1,1,1,3", options="header"]
 .External Port Requirements for {productname} Server
 |===
 | Port number | Protocol | Used By    | Notes
-| 22          |          |            | Required for ssh-push and ssh-push-tunnel contact methods.
 | 67          | TCP/UDP  | DHCP       | Required only if clients are requesting IP addresses from the server.
 | 69          | TCP/UDP  | TFTP       | Required if server is used as a PXE server for automated client installation.
 | 80          | TCP      | HTTP       | Required temporarily for some bootstrap repositories and automated installations.
@@ -222,8 +247,7 @@ Opening these ports allows external network traffic to access the {productname} 
 .External Port Requirements for {productname} Proxy
 |===
 | Port number | Protocol | Used By | Notes
-| 22          |          |         | Required for ssh-push and ssh-push-tunnel contact methods.
-Clients connected to the proxy initiate check in on the server and hop through to clients.
+| 22          |          |         | Only required if the user wants to manage the proxy host with {salt} SSH.
 | 67          | TCP/UDP  | DHCP    | Required only if clients are requesting IP addresses from the server.
 | 69          | TCP/UDP  | TFTP    | Required if the server is used as a PXE server for automated client installation.
 | 443         | TCP      | HTTPS   | {webui}, client, and server and proxy (``tftpsync``) requests.
@@ -231,6 +255,7 @@ Clients connected to the proxy initiate check in on the server and hop through t
 The client initiates the connection, and it stays open to receive commands from the Salt master.
 | 4506        | TCP      | salt    | Required to accept communication requests from clients.
 The client initiates the connection, and it stays open to report results back to the Salt master.
+| 8022        |          |         | Required for ssh-push and ssh-push-tunnel contact methods. Clients connected to the proxy initiate check in on the server and hop through to clients.
 |===
 
 
@@ -247,6 +272,8 @@ Opening these ports allows network traffic from the {productname} Proxy to commu
 | Port number | Protocol | Used By | Notes
 | 80          |          |         | Used to reach the server.
 | 443         | TCP      | HTTPS   | Required for {scclongform}.
+| 4505        | TCP      | Salt    | Required to connect to Salt master either directly or via proxy.
+| 4506        | TCP      | Salt    | Required to connect to Salt master either directly or via proxy.
 |===
 
 
@@ -264,6 +291,8 @@ In most cases, you will not need to adjust these ports.
 | 22          | Inbound   | SSH      | Required for ssh-push and ssh-push-tunnel contact methods.
 | 80          | Outbound  |          | Used to reach the server or proxy.
 | 443         | Outbound  |          | Used to reach the server or proxy.
+| 4505        | Outbound  | TCP      | Required to connect to Salt master either directly or via proxy.
+| 4506        | Outbound  | TCP      | Required to connect to Salt master either directly or via proxy.
 | 9090        | Outbound  | TCP      | Required for Prometheus user interface.
 | 9093        | Outbound  | TCP      | Required for Prometheus alert manager.
 | 9100        | Outbound  | TCP      | Required for Prometheus node exporter.

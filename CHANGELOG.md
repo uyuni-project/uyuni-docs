@@ -1,12 +1,138 @@
 - Added support data upload feature to Administration Guide
 - Improved server migration in Installation and Upgrade Guide
-- Updated Network Requirement section to add settings for server
-  configuration behind HTTP OSI level 7 proxy
 - Rebranding: changing extensions product during the registration from SUSE Manager
   to Multi-Linux-Manager for 5.1
+- Documented stopping the server before rebooting the host operating
+  system for the migration from 5.0 to 5.1 in Installation and
+  Upgrade Guide (bsc#1247705)
+- Removed reference to smdba from reference Guide (bsc#1247213)
+- Fixed procedure name for confidential computing in Administration
+  Guide (bsc#1247318)
+- Fixed invocation of spacewalk-repo-sync command in Client
+  Configuration Guide (bsc#1246883)
+- Fixed broken link in Administration Guide (bsc#1247322)
+- Added instructions for third-party channels to Adminstration
+  Guide (bsc#1246422)
+- Fixed the package names for server and proxy air-gapped deployment
+  (bsc#1247784)
+- Documented how to write data to persistent volume in ISS chapter of
+  Administration Guide (bsc#1246957)
+- Fixed introduction of the Ansible chapter in Administration
+  Guide (bsc#1244125)
+- Fixed proxy migration from 5.0 to 5.1 in Installation and Upgrade
+  Guide
+- Added warning about old backup configuration in Administration Guide
+  (bsc#1247481)
+- Added SUSE Linux Enterprise Server command line registration in
+  Installation and Upgrade Guide
+- Fixed issues in Image Building chapter in the Administration Guide
+  (bsc#1245987)
+- Fixed upgrade procedure for server and proxy in Installation and
+  Upgrade Guide (bsc#1247084)
+- Added revision date to metadata for tracking document changes
+- Removed duplicated paragraphs from Hub documentation in Large
+  Deployments Guide
+- Cleaned up Uyuni migration from legacy to container deployment in
+  Installation and Upgrade Guide
+- Added section about creation of database backup volume during
+  migration or upgrade in Installation and Upgrade Guide
+- Added deployment of Uyuni using images from RPM packages
+- Fixed User Role Permissions table in Users chapter in
+  Administration Guide (bsc#1246659)
+- Confidential Computing command updated in Administration Guide
+  (bsc#1246638)
+- Fixed troubleshooting procedure about login timeout in Administration
+  Guide
+- Changed prerequisite for proxy conversion in Installation and Upgrade
+  guide (bsc#1246158)
+- Fixed persistent storage configuration details in Installation and Uprade
+  Guide (bsc#1235567)
+- Fixed the admonition in Client Configuration Guide (bsc#1233496)
+- Added notes about how to run mgradm on security-enforced hosts
+  (bsc#1243704)
+- Reorganised files for better visibility of differences between AutoYaST
+  and Kickstart profiles (bsc#1217755)
+- Added detailed description of the scripts used for storage
+  administration to Installation and Uprade Guide (bsc#1245241)
+- Renamed parameter in Specialized Guides (bsc#1245241)
+- Extended troubleshooting section with a reposync example (bsc#1211373)
+- Added port 8022 for proxy in network requirements in Installation
+  and Upgrade Guide
+- Added admonition about supported clients as monitoring servers in
+  Administration Guide
+- Added hints to use swapfiles instead of swap partitions in
+  Requirements section in Installation and Upgrade Guide
+- Added examples for synchronizing BaseOS and AppStream channels for
+  version 8 and 9 in Client Configuration Guide (bsc#1244822)
+- Added Amazon Linux 2023 as supported client
+- Fixed asciidoc menu macro issue with duplicate css class, menu
+  items now display correctly
+- Added documentation for task schedule errata-advisory-map-sync-default
+  (bsc#1243808)
+- Added note about AutoYaST profiles not having passwords
+- Raised recommended proxy RAM value to 8 GB (bsc#1244552)
+- Improved Hub documentation: peripheral list page, hierarchy of the Hub
+  configuration page, and label for the Hub server FQDN
+- Added missing DB SSL CA parameters in Administration Guide and
+  added cross-reference from deployments in Installation and Upgrade
+  Guide (bsc#1245120)
+- Fixed rhn-search command execution in Backup and Restore chapter of
+  the Administration Guide
+- Added details about the behavior of the rescheduled failed action
+  (bsc#1244065)
+- Documented TFTP file synchronization after migrating a 4.3 proxy in
+  Installation and Upgrade Guide (bsc#1244427)
+- Added Role-Based Access Control (RBAC) chapter to Administration Guide
+- Added reference to troubleshooting remote root login from Server migration
+  from 5.0 on SUSE Linux Micro in Installation and Upgrade Guide
+- Fixed Python script in Administration Guide (bsc#1244290)
+- Added the recommendation for Swap memory in Installation and
+  Upgrade Guide
+- Fine tuned backup and restore procedures (bsc#1244524)
+- Added missing Task Schedules to the list and fixed Task Schedule page after
+  changing the page and allow only disabling Tasks, but not deleting them in
+  Administration Guide
+- Fixed procedure about converting client to proxy in Installation and
+  Upgrade Guide
+- Fixed procedure remediation procedure in Ansible chapter in
+  Administration Guide (bsc#1244338)
+- Fixed registry namespace and removed beta suffix from image names
+  in Installation and Upgrade Guide
+- Documented that Ansible for the control node must come from the distribution
+  of the client (bsc#1244125)
+- Linked API documentation from Reference Guide (bsc#1243243)
+- Added information about passing environment variables to bootstrap
+  script in Client Configuration Guide
+- Documented root SSH login configuration with password in Troubleshooting
+  section in Administration Guide (bsc#1243569)
+- Moved Inter-Server Synchronization documentation from Administration
+  to Large Deployments Guide
+- Enhanced instructions about router advertisements and parameter
+  value needed for IPv6 route in Installation and Upgrade Guide
+  (bsc#1241034)
+- Added missing 4505 and 4506 Salt ports in network requirements
+  in Installation and Upgrade Guide
+- Linked containers file to navigation list in Installation and
+  Upgrade Guide
+- Fixed broken links for the API FAQ and Scripts (bsc#1243243)
+- Updated Hub Online Synchronization section with the latest
+  UI changes in Large Deployment Guide
+- Fixed KVM image version number in Installation and Upgrade Guide
+  (bsc#1243416)
+- Improved proxy deployment sections in Installation and Upgrade
+  Guide
+- Suggest to bootstrap a peripheral server before doing a Hub registration
+- Fixed outdated urls pointing to API documentation in the Help section of the
+  Reference Manual
+- Added documentation for performing a distribution upgrade and migration of
+  the Server and Proxy from version 5.0 to 5.1, supporting both SUSE Linux
+  Enterprise SP6 to SP7 and SLE Micro 5.5 to SLE Micro 6.1
+- Improved server migration in Installation and Upgrade Guide
+- Updated Network Requirement section to add settings for server
+  configuration behind HTTP OSI level 7 proxy
+- Rebranding: changing extensions product during the registration from
+  SUSE Manager to Multi-Linux-Manager for 5.1
 - Added SUSE Linux Enterprise Server 15 SP7 as supported client
-- Updated Hub Online Synchronization section with the latest UI changes
-  in Large Deployment Guide
 - Removed references to Inter-Server Synchronization version 1 from
   documentation
 - Clarified that NFS with Cobbler is not supported (bsc#1240666)
@@ -57,7 +183,7 @@
 - Implemented PDF branding update for 2025 branding
 - Enhanced CVE auditing feature in Administration Guide
 - Added additional registry link to Installation and Upgrade Guide
-  (bsc#12400101)
+  (bsc#1240010)
 - Documented handling of pub directory of the web server in the
   context of proxy (bsc#1238827)
 - Added instructions for Server and Proxy installation on SUSE Linux
