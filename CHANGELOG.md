@@ -1,7 +1,4 @@
 - Added support data upload feature to Administration Guide
-- Improved server migration in Installation and Upgrade Guide
-- Rebranding: changing extensions product during the registration from SUSE Manager
-  to Multi-Linux-Manager for 5.1
 - Documented stopping the server before rebooting the host operating
   system for the migration from 5.0 to 5.1 in Installation and
   Upgrade Guide (bsc#1247705)
