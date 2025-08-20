@@ -1,3 +1,6 @@
+- Documented stopping the server before rebooting the host operating
+  system for the migration from 5.0 to 5.1 in Installation and
+  Upgrade Guide (bsc#1247705)
 - Fixed invocation of spacewalk-repo-sync command in Client
   Configuration Guide (bsc#1246883)
 - Removed reference to smdba from reference Guide (bsc#1247213)
