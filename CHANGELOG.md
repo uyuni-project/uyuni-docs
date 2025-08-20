@@ -1,5 +1,5 @@
-- Added information on how you can use pre-installed images to
-  migrate from 4.3 to 5.0
+- Added information on using pre-installed images to migrate from 4.3
+  to 5.1 (bsc#1247786)
 - Removed reference to smdba from Reference Guide (bsc#1247213)
 - Fixed procedure name for confidential computing in Administration
   Guide (bsc#1247318)
