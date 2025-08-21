@@ -1,3 +1,5 @@
+- Fixed issues in Image Building chapter in the Administration Guide
+  (bsc#1245987)
 - Documented stopping the server before rebooting the host operating
   system for the migration from 5.0 to 5.1 in Installation and
   Upgrade Guide (bsc#1247705)
