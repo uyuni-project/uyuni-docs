@@ -1,3 +1,5 @@
+- Fixed issues in Image Building chapter in the Administration Guide
+  (bsc#1245987)
 - Fixed invocation of spacewalk-repo-sync command in Client
   Configuration Guide (bsc#1246883)
 - Fixed introduction of the Ansible chapter in Administration
