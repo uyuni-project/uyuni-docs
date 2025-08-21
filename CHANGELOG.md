@@ -1,3 +1,4 @@
+- Added support data upload feature to Administration Guide
 - Fixed issues in Image Building chapter in the Administration Guide
   (bsc#1245987)
 - Documented stopping the server before rebooting the host operating
