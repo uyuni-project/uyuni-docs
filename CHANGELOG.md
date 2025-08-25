@@ -1,3 +1,5 @@
+- Added proxy package installation command in Installation and
+  Upgrade Guide (bsc#1248292)
 - Fixed invocation of spacewalk-repo-sync command in Client
   Configuration Guide (bsc#1246883)
 - Fixed introduction of the Ansible chapter in Administration
