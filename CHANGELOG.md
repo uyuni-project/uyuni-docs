@@ -1,3 +1,5 @@
+- Fixed issues in Image Building chapter in the Administration Guide
+  (bsc#1245987)
 - Added proxy package installation command in Installation and
   Upgrade Guide (bsc#1248292)
 - Fixed invocation of spacewalk-repo-sync command in Client
