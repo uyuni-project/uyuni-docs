@@ -1,3 +1,7 @@
+- Replaced salt-minion with venv-salt-minion package in Image
+  Management chapter in Administration Guide (bsc#1248448)
+- Added information on using pre-installed images to migrate from 4.3
+  to 5.1 (bsc#1247786)
 - Added support data upload feature to Administration Guide
 - Fixed issues in Image Building chapter in the Administration Guide
   (bsc#1245987)
