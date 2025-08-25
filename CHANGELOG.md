@@ -1,3 +1,5 @@
+- Replaced salt-minion with venv-salt-minion package in Image
+  Management chapter in Administration Guide (bsc#1248448)
 - Fixed issues in Image Building chapter in the Administration Guide
   (bsc#1245987)
 - Added proxy package installation command in Installation and
