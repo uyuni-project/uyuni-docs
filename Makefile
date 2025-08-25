@@ -254,12 +254,12 @@ antora-mlm-for-publication: for-publication antora-mlm
 .PHONY: antora-uyuni-for-publication
 antora-uyuni-for-publication: for-publication antora-uyuni
 
-.PHONY: set-html-language-selector-mlm
-set-html-language-selector-mlm:
-	cd $(current_dir)
-	$(call enable-mlm-html-language-selector,zh_CN,china,china,中文)
-	$(call enable-mlm-html-language-selector,ja,jaFlag,japan,日本語)
-	$(call enable-mlm-html-language-selector,ko,koFlag,korea,한국어)
+#.PHONY: set-html-language-selector-mlm
+#set-html-language-selector-mlm:
+#	cd $(current_dir)
+#	$(call enable-mlm-html-language-selector,zh_CN,china,china,中文)
+#	$(call enable-mlm-html-language-selector,ja,jaFlag,japan,日本語)
+#	$(call enable-mlm-html-language-selector,ko,koFlag,korea,한국어)
 
 .PHONY: set-html-language-selector-uyuni
 set-html-language-selector-uyuni:
