@@ -1,3 +1,5 @@
+- Documented building and deploying certificate on Image Build
+  Host (bsc#1248447)
 - Replaced salt-minion with venv-salt-minion package in Image
   Management chapter in Administration Guide (bsc#1248448)
 - Added information on using pre-installed images to migrate from 4.3
