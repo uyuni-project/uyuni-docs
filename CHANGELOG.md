@@ -1,3 +1,5 @@
+- Documented building and deploying certificate on Image Build
+  Host (bsc#1248447)
 - Package salt-minion superseded with venv-salt-minion; salt-minion
   for bootstrapping SLE clients only (bsc#1247323)
 - Replaced salt-minion with venv-salt-minion package in Image
