@@ -1,5 +1,7 @@
 - Package salt-minion superseded with venv-salt-minion; salt-minion
   for bootstrapping SLE clients only (bsc#1247323)
+- Added note about onboarding CentOS 7 clients with repositories
+  disabled in Client Configuration Guide (bsc#1248467)
 - Added information about storing custom channel related GPG key
   permanently in Administration Guide (bsc#1240225)
 - Documented building and deploying certificate on Image Build
