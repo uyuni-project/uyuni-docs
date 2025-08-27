@@ -1,3 +1,5 @@
+- Added information about storing custom channel related GPG key
+  permanently in Administration Guide (bsc#1240225)
 - Restructured Server Installation to better distinguish between
   SUSE Linux Enterprise Micro and SUSE Linux Enterprise Server
   as host operating system respectively (bsc#1239801)
