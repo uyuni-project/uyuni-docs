@@ -1,5 +1,7 @@
-- Added note about onboarded CentOS 7 clients with repositories
+- Added note about onboarding CentOS 7 clients with repositories
   disabled in Client Configuration Guide (bsc#1248467)
+- Added information about storing custom channel related GPG key
+  permanently in Administration Guide (bsc#1240225)
 - Documented building and deploying certificate on Image Build
   Host (bsc#1248447)
 - Package salt-minion superseded with venv-salt-minion; salt-minion
