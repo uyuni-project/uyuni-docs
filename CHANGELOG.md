@@ -1,3 +1,4 @@
+- (bsc#1247296)
 - Added information about storing custom channel related GPG key
   permanently in Administration Guide (bsc#1240225)
 - Documented building and deploying certificate on Image Build
