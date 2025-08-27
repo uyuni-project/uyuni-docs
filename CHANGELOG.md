@@ -1,3 +1,5 @@
+- Added note about onboarded CentOS 7 clients with repositories
+  disabled in Client Configuration Guide (bsc#1248467)
 - Documented building and deploying certificate on Image Build
   Host (bsc#1248447)
 - Package salt-minion superseded with venv-salt-minion; salt-minion
