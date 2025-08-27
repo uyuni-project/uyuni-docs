@@ -1,5 +1,7 @@
 - Documented to use the same CA password during migrating from 4.3
   in Installation and Upgrade Guide (bsc#1247296)
+- Added note about onboarding CentOS 7 clients with repositories
+  disabled in Client Configuration Guide (bsc#1248467)
 - Added information about storing custom channel related GPG key
   permanently in Administration Guide (bsc#1240225)
 - Documented building and deploying certificate on Image Build
