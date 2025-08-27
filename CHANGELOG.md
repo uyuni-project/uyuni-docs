@@ -1,3 +1,5 @@
+- Added information about storing custom channel related GPG key
+  permanently in Administration Guide (bsc#1240225)
 - Documented building and deploying certificate on Image Build
   Host (bsc#1248447)
 - Replaced salt-minion with venv-salt-minion package in Image
