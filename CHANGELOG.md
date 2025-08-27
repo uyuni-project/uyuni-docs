@@ -1,3 +1,5 @@
+- Added information about storing custom channel related GPG key
+  permanently in Administration Guide (bsc#1240225)
 - Replaced salt-minion with venv-salt-minion package in Image
   Management chapter in Administration Guide (bsc#1248448)
 - Fixed issues in Image Building chapter in the Administration Guide
