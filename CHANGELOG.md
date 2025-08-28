@@ -1,4 +1,4 @@
-- Documented new System Hardware Report
+- Documented System Hardware as a new Report in Administration Guide
 - Documented to use the same CA password during migrating from 4.3
   in Installation and Upgrade Guide (bsc#1247296)
 - Added note about onboarding CentOS 7 clients with repositories
