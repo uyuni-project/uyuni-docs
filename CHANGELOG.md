@@ -1,3 +1,5 @@
+- Added note about onboarding CentOS 7 clients with repositories
+  disabled in Client Configuration Guide (bsc#1248467)
 - Added information about storing custom channel related GPG key
   permanently in Administration Guide (bsc#1240225)
 - Replaced salt-minion with venv-salt-minion package in Image
