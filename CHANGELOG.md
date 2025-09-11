@@ -1,3 +1,4 @@
+- Added clarification about containerized proxy (bsc#1248247)
 - Package salt-minion superseded with venv-salt-minion; salt-minion
   for bootstrapping SLE clients only (bsc#1247323)
 - Added note about onboarding CentOS 7 clients with repositories
