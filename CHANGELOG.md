@@ -1,3 +1,5 @@
+- Fixed broken link and added clarification about containerized 
+  proxy (bsc#1248247)
 - Added note about onboarding CentOS 7 clients with repositories
   disabled in Client Configuration Guide (bsc#1248467)
 - Added information about storing custom channel related GPG key
