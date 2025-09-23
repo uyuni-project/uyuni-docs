@@ -1,6 +1,10 @@
 - Fixed command for proxy installation (bsc#1249807)
 - Package salt-minion superseded with venv-salt-minion; salt-minion
   for bootstrapping SLE clients only (bsc#1247323)
+- Fixed the hostname rename page for containers in Troubleshooting
+  section in Administration Guide (bsc#1229825)
+- Documented to use the same CA password during migrating from 4.3
+  in Installation and Upgrade Guide (bsc#1247296)
 - Added note about onboarding CentOS 7 clients with repositories
   disabled in Client Configuration Guide (bsc#1248467)
 - Documented to use the same CA password during migrating from 4.3
