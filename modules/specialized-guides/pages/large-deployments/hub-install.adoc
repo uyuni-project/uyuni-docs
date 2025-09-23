@@ -15,6 +15,12 @@ You can deploy a hub environment either with third party certificates or with se
 //        while deploying the hub infrastructure?
 Prepare third party certificates for both the Hub Server and the Peripheral servers first.
 
+[IMPORTANT]
+====
+Database SSL certificates require [literal]``reportdb`` and [literal]``db`` as [literal]``Subject Alternative Name``.
+The same certificate can be used for server and database, as long the required alternative names are added.
+====
+
 // Hub:
 // mgradm install podman --ssl-ca-root CA-Certificate.crt --ssl-server-cert hub.crt --ssl-server-key hub.key --hubxmlrpc-replicas 1
 
@@ -36,7 +42,7 @@ Prepare third party certificates for both the Hub Server and the Peripheral serv
 +
 
 ----
-mgradm install podman --ssl-ca-root CA-Certificate.crt --ssl-server-cert hub.crt --ssl-server-key hub.key --hubxmlrpc-replicas 1
+mgradm install podman --ssl-ca-root CA-Certificate.crt --ssl-server-cert hub.crt --ssl-server-key hub.key --ssl-db-ca-root CA-Certificate.crt --ssl-db-cert hud-db.crt --ssl-db-key hub-db.key --hubxmlrpc-replicas 1
 ----
 
 For more information about deploying with [command]``mgradm``, see xref:installation-and-upgrade:container-deployment/mlm/server-deployment-mlm.adoc#deploy-mlm-server-mgradm[].
@@ -47,7 +53,7 @@ For more information about deploying with [command]``mgradm``, see xref:installa
 === Peripheral Servers
 
 .Procedure: Installing peripheral servers using third party certificates
-. Preliminary Requirement: A certificate for every peripheral server (for example, [literal]``server.crt``) and a key (for example, [literal]``server.key``).
+. Preliminary Requirement: A certificate for every peripheral server and its database (for example, [literal]``server.crt``) and a key (for example, [literal]``server.key``).
 . Preliminary Requirement: CA Certificate.
 . Preliminary Requirement: Hub server installation.
   For more information, see xref:specialized-guides:large-deployments/hub-install.adoc#lsd-hub-install-3rd-hub[].
@@ -56,7 +62,7 @@ For more information about deploying with [command]``mgradm``, see xref:installa
 +
 
 ----
-mgradm install podman --ssl-ca-root CA-Certificate.crt --ssl-server-cert server.crt --ssl-server-key server.key
+mgradm install podman --ssl-ca-root CA-Certificate.crt --ssl-server-cert server.crt --ssl-server-key server.key --ssl-db-ca-root CA-Certificate.crt --ssl-db-server-cert db.crt --ssl-db-server-key db.key
 ----
 
 
@@ -99,6 +105,12 @@ Next step, peripheral server
 [[lsd-hub-install-self-peripheral]]
 === Peripheral Servers
 
+[IMPORTANT]
+====
+Database SSL certificates require [literal]``reportdb`` and [literal]``db`` as [literal]``Subject Alternative Name``.
+The same certificate can be used for server and database, as long the required alternative names are added.
+====
+
 .Procedure: Peripheral Servers with Self-Generated Certificates
 
 . Preliminary Requirement: Hub server installation.
@@ -118,7 +130,7 @@ mgrctl term
 rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
   --set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
   --set-org-unit="ORGANIZATION UNIT" --set-email="name@example.com" \
-  --set-hostname=PERIPHAL --set-cname="example.com"
+  --set-hostname=PERIPHAL-FQDN --set-cname="reportdb" --set-cname="db"
 ----
 
 . For every peripheral server:
@@ -128,7 +140,7 @@ rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
 +
 
 ----
-mgradm install podman --ssl-ca-root RHN-ORG-TRUSTED-SSL-CERT --ssl-server-cert server.crt --ssl-server-key server.key
+mgradm install podman --ssl-ca-root RHN-ORG-TRUSTED-SSL-CERT --ssl-server-cert server.crt --ssl-server-key server.key -ssl-db-ca-root RHN-ORG-TRUSTED-SSL-CERT --ssl-db-server-cert server.crt --ssl-db-server-key server.key
 ----
 
 * Finally, on every peripheral server host, register the peripheral server to the hub server:
