@@ -1,3 +1,4 @@
+- Updated hub certificates deployment documentation (bsc#1249462)
 - Fixed command for proxy installation (bsc#1249807)
 - Added clarification about containerized proxy (bsc#1248247)
 - Package salt-minion superseded with venv-salt-minion; salt-minion
