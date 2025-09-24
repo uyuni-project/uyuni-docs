@@ -1,3 +1,4 @@
+- Added shared header to theme for documentation.suse.com
 - Fixed broken link and added clarification about containerized 
   proxy (bsc#1248247)
 - Added note about onboarding CentOS 7 clients with repositories
