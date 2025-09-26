@@ -1,3 +1,4 @@
+- Shared header enablement for documentation.suse.com
 - Fixed command for proxy installation (bsc#1249807)
 - Added clarification about containerized proxy (bsc#1248247)
 - Updated hub certificates deployment documentation (bsc#1249462)
