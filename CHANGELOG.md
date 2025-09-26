@@ -1,3 +1,4 @@
+- Added lang support for new shared header to html outputs
 - Shared header added to theme for documentation.suse.com
 - Updated hub certificates deployment documentation (bsc#1249462)
 - Fixed command for proxy installation (bsc#1249807)
