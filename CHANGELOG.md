@@ -1,4 +1,9 @@
 - Shared header enablement for documentation.suse.com
+- Fixed command for proxy installation (bsc#1249807)
+- Added clarification about containerized proxy (bsc#1248247)
+- Updated hub certificates deployment documentation (bsc#1249462)
+- Fixed the hostname rename page for containers in Troubleshooting
+  section in Administration Guide (bsc#1229825)
 - Documented to use the same CA password during migrating from 4.3
   in Installation and Upgrade Guide (bsc#1247296)
 - Added note about onboarding CentOS 7 clients with repositories
