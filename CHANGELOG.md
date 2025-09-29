@@ -1,3 +1,4 @@
+- Documented System Hardware as a new Report in Administration Guide
 - Shared header enablement for documentation.suse.com
 - Fixed command for proxy installation (bsc#1249807)
 - Added clarification about containerized proxy (bsc#1248247)
