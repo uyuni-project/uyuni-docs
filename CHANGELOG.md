@@ -1,3 +1,4 @@
+- Added information about requesting access to PTFs (bsc#1213308)
 - Documented System Hardware as a new Report in Administration Guide
 - Shared header enablement for documentation.suse.com
 - Fixed command for proxy installation (bsc#1249807)
