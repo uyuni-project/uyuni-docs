@@ -1,3 +1,4 @@
+- Removed reference to hub peripheral registration using mgradm.
 - Documented System Hardware as a new Report in Administration Guide
 - Shared header enablement for documentation.suse.com
 - Fixed command for proxy installation (bsc#1249807)
