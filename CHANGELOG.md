@@ -1,4 +1,3 @@
-- Added information about requesting access to PTFs (bsc#1213308)
 - Added shared header to theme for documentation.suse.com
 - Fixed broken link and added clarification about containerized 
   proxy (bsc#1248247)
