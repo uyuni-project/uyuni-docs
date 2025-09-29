@@ -1,3 +1,4 @@
+- Documented System Hardware as a new Report in Administration Guide
 - Added lang support for new shared header to html outputs
 - Shared header added to theme for documentation.suse.com
 - Updated hub certificates deployment documentation (bsc#1249462)
