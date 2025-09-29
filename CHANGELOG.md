@@ -1,3 +1,4 @@
+- Removed reference to hub peripheral registration using mgradm
 - Documented System Hardware as a new Report in Administration Guide
 - Added lang support for new shared header to html outputs
 - Shared header added to theme for documentation.suse.com
