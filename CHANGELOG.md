@@ -1,3 +1,5 @@
+- Added information about pachage already being provided for
+  Inter-Server Synchronization v2 to Administration guide (bsc#1229977)
 - Added shared header to theme for documentation.suse.com
 - Fixed broken link and added clarification about containerized 
   proxy (bsc#1248247)
