@@ -1,5 +1,5 @@
 - Added steps for troubleshooting registering cloned clients to 
-  Adminiustration Guide (bsc#1250427)
+  Administration Guide (bsc#1250427)
 - Removed reference to hub peripheral registration using mgradm
 - Documented System Hardware as a new Report in Administration Guide
 - Shared header enablement for documentation.suse.com
