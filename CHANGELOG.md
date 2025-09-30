@@ -1,3 +1,5 @@
+- Improved the description of the ability to aggregate user roles in
+  Administration Guide (bsc#1250525) 
 - Improved the warning about partial backups in Administration Guide
   (bsc#1250551)
 - Removed reference to hub peripheral registration using mgradm.
