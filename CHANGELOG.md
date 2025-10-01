@@ -1,3 +1,4 @@
+- Add a note for the upgrade with third-party SSL certificates
 - Improved the warning about partial backups in Administration Guide
   (bsc#1250551)
 - Removed reference to hub peripheral registration using mgradm
