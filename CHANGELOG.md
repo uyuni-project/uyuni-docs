@@ -1,3 +1,5 @@
+- Corrected the images files location in Administration guide
+  (bsc#1249384)
 - Added steps for troubleshooting registering cloned clients to 
   Administration Guide (bsc#1250427)
 - Added shared header to theme for documentation.suse.com
