@@ -1,4 +1,9 @@
 - Added information about requesting access to PTFs (bsc#1213308)
+- Added note for the upgrade with third-party SSL certificates to 
+  Installation and Upgrade Guide
+- Improved the warning about partial backups in Administration Guide
+  (bsc#1250551)
+- Removed reference to hub peripheral registration using mgradm
 - Documented System Hardware as a new Report in Administration Guide
 - Added lang support for new shared header to html outputs
 - Shared header added to theme for documentation.suse.com
