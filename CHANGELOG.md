@@ -1,3 +1,5 @@
+- Improved the description of the ability to aggregate user roles in
+  Administration Guide (bsc#1250525) 
 - Added steps for troubleshooting registering cloned clients to 
   Administration Guide (bsc#1250427)
 - Added information about requesting access to PTFs (bsc#1213308)
