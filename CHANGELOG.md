@@ -1,3 +1,5 @@
+- Corrected invalid command parameters in Specialized Guides
+  (bsc#1250747) 
 - Improved the description of the ability to aggregate user roles in
   Administration Guide (bsc#1250525) 
 - Added steps for troubleshooting registering cloned clients to 
