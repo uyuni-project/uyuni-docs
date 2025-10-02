@@ -1,3 +1,7 @@
+- Enhanced file location information in Administration Guide
+  (bsc#1250364)
+- Added note for the upgrade with third-party SSL certificates to 
+  Installation and Upgrade Guide
 - Corrected invalid command parameters in Specialized Guides
   (bsc#1250747) 
 - Improved the description of the ability to aggregate user roles in
