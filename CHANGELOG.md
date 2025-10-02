@@ -2,6 +2,15 @@
   (bsc#1250364)
 - Added note for the upgrade with third-party SSL certificates to 
   Installation and Upgrade Guide
+- Corrected invalid command parameters in Specialized Guides
+  (bsc#1250747) 
+- Improved the description of the ability to aggregate user roles in
+  Administration Guide (bsc#1250525) 
+- Added steps for troubleshooting registering cloned clients to 
+  Administration Guide (bsc#1250427)
+- Removed reference to hub peripheral registration using mgradm
+- Added information about requesting access to PTFs (bsc#1213308)
+- Added note for the upgrade with third-party SSL certificates to Installation and Upgrade Guide
 - Improved the warning about partial backups in Administration Guide
   (bsc#1250551)
 - Removed reference to hub peripheral registration using mgradm.
