@@ -1,3 +1,5 @@
+- Corrected invalid command parameters in Specialized Guides
+  (bsc#1250747) 
 - Added note for the upgrade with third-party SSL certificates to Installation and Upgrade Guide
 - Improved the warning about partial backups in Administration Guide
   (bsc#1250551)
