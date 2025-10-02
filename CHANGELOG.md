@@ -1,3 +1,5 @@
+- Added information about pachage already being provided for
+  Inter-Server Synchronization v2 to Administration guide (bsc#1229977)
 - Added information about requesting access to PTFs (bsc#1213308)
 - Added steps for troubleshooting registering cloned clients to 
   Administration Guide (bsc#1250427)
