@@ -1,3 +1,4 @@
+- Fixed the broken link in Specialized Guides (bsc#1249073)
 - Enhanced file location information in Administration Guide
   (bsc#1250364)
 - Added note for the upgrade with third-party SSL certificates to 
