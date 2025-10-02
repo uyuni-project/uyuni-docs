@@ -1,3 +1,5 @@
+- Enhanced file location information in Administration Guide
+  (bsc#1250364)
 - Corrected invalid command parameters in Specialized Guides
   (bsc#1250747)
 - Improved the description of the ability to aggregate user roles in
