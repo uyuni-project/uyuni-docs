@@ -1,3 +1,6 @@
+- Added steps for troubleshooting registering cloned clients to 
+  Administration Guide (bsc#1250427)
+- Removed reference to hub peripheral registration using mgradm
 - Added information about requesting access to PTFs (bsc#1213308)
 - Added note for the upgrade with third-party SSL certificates to Installation and Upgrade Guide
 - Improved the warning about partial backups in Administration Guide
