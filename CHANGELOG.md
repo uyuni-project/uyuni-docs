@@ -1,4 +1,7 @@
-- Added note for the upgrade with third-party SSL certificates to Installation and Upgrade Guide
+- Enhanced file location information in Administration Guide
+  (bsc#1250364)
+- Added note for the upgrade with third-party SSL certificates to 
+  Installation and Upgrade Guide
 - Improved the warning about partial backups in Administration Guide
   (bsc#1250551)
 - Removed reference to hub peripheral registration using mgradm.
