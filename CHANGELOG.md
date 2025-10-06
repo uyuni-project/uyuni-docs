@@ -1,3 +1,4 @@
+- Document the new autoinstallation snippets (bsc#1194792)
 - Fixed the broken link in Specialized Guides (bsc#1249073)
 - Enhanced file location information in Administration Guide
   (bsc#1250364)
