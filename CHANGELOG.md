@@ -1,5 +1,10 @@
 - Corrected the images files location in Administration guide
   (bsc#1249384)
+- Added new workflow for liberating RHEL server in Common Workflows 
+  Guides (bsc#1250423)
+- Added information about pachage already being provided for
+  Inter-Server Synchronization v2 to Administration guide (bsc#1229977)
+- Added information about requesting access to PTFs (bsc#1213308)
 - Added steps for troubleshooting registering cloned clients to 
   Administration Guide (bsc#1250427)
 - Added shared header to theme for documentation.suse.com
