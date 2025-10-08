@@ -1,3 +1,4 @@
+- Added openSUSE Tumbleweed support for Uyuni
 - Added new workflow for liberating RHEL server in Common Workflows 
   Guides (bsc#1250423)
 - Fixed the broken link in Specialized Guides (bsc#1249073)
