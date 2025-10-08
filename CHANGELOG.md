@@ -1,3 +1,5 @@
+- Corrected the images files location in Administration guide
+  (bsc#1249384)
 - Added new workflow for liberating RHEL server in Common Workflows 
   Guides (bsc#1250423)
 - Added information about pachage already being provided for
