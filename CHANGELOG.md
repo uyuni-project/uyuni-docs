@@ -1,3 +1,5 @@
+- Improved the appearance of Web UI instructions in Administration
+  Guide (bsc#1250451)
 - Improved example for proxy bootstrap script in Client Configuration 
   Guide (bsc#1251117)
 - Added new workflow for liberating RHEL server in Common Workflows 
