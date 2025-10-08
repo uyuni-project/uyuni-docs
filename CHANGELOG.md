@@ -1,3 +1,5 @@
+- Improved the appearance of Web UI instructions in Administration
+  Guide (bsc#1250451)
 - Added new workflow for liberating RHEL server in Common Workflows 
   Guides (bsc#1250423)
 - Fixed the broken link in Specialized Guides (bsc#1249073)
