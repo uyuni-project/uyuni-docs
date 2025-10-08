@@ -1,5 +1,7 @@
 - Improved example for proxy bootstrap script in Client Configuration 
   Guide (bsc#1251117)
+- Corrected the images files location in Administration guide
+  (bsc#1249384)
 - Added new workflow for liberating RHEL server in Common Workflows 
   Guides (bsc#1250423)
 - Fixed the broken link in Specialized Guides (bsc#1249073)
