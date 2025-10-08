@@ -1,5 +1,11 @@
 - Improved the appearance of Web UI instructions in Administration
   Guide (bsc#1250451)
+- Improved example for proxy bootstrap script in Client Configuration 
+  Guide (bsc#1251117)
+- Corrected the images files location in Administration guide
+  (bsc#1249384)
+- Added new workflow for liberating RHEL server in Common Workflows 
+  Guides (bsc#1250423)
 - Fixed the broken link in Specialized Guides (bsc#1249073)
 - Enhanced file location information in Administration Guide
   (bsc#1250364)
