@@ -1,3 +1,5 @@
+- Corrected the images files location in Administration guide
+  (bsc#1249384)
 - Fixed the broken link in Specialized Guides (bsc#1249073)
 - Enhanced file location information in Administration Guide
   (bsc#1250364)
