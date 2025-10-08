@@ -1,3 +1,5 @@
+- Improved the appearance of Web UI instructions in Administration
+  Guide (bsc#1250451)
 - Fixed the broken link in Specialized Guides (bsc#1249073)
 - Enhanced file location information in Administration Guide
   (bsc#1250364)
