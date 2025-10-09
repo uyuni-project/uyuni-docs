@@ -1,4 +1,6 @@
 - Removed virtualization from documentation (bsc#1246983)
+- Fixed instruction and command in Client Configuration Guide
+  (bsc#1248803) 
 - Improved the appearance of Web UI instructions in Administration
   Guide (bsc#1250451)
 - Improved example for proxy bootstrap script in Client Configuration 
