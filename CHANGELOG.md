@@ -1,3 +1,4 @@
+- Removed virtulalization from documenttaion (bsc#12469830
 - Improved the appearance of Web UI instructions in Administration
   Guide (bsc#1250451)
 - Improved example for proxy bootstrap script in Client Configuration 
