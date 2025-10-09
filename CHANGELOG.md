@@ -1,3 +1,4 @@
+- Removed virtualization from documentation (bsc#1246983)
 - Fixed instruction and command in Client Configuration Guide
   (bsc#1248803) 
 - Added openSUSE Tumbleweed support for Uyuni
