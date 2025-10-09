@@ -1,13 +1,18 @@
 = Distribution Upgrade and Server Migration
+:revdate: 2025-07-29
+:page-revdate: {revdate}
 
 
 [NOTE]
 ====
 * {productname} 5.0 must be stopped before upgrade.
-* {productname} 5.0 is not supported on top of {sl-micro} 6.1 & {sles} 15 SP7 as host os
+* {productname} 5.0 is not supported on top of {sl-micro} 6.1 & {sles} 15 SP7 as host OS.
 ====
 
+include::../../../snippet-hardened-tmpdir.adoc[leveloffset=+2]
+
 == {sle-micro} 5.5 to {sl-micro} 6.1
+
 
 
 This document provides the tested procedure to upgrade a {sle-micro} 5.5 host deployed with {productname} 5.0 Server to {sl-micro} 6.1 and migrate to {productname} {productnumber}.
@@ -34,14 +39,14 @@ SUSEConnect --status-text
 
 +
 
-**Confirm:**
+Confirm:
 
 - Base OS: `SUSE Linux Enterprise Micro 5.5`
 - Extension: `SUSE Manager Server 5.0 Extension`
 
 +
 
-. Ensure System is Updated
+. Ensure system is updated
 
 +
 
@@ -52,19 +57,25 @@ transactional-update patch
 
 +
 
+--
 
-* If patches were applied, **reboot the system** before proceeding to migration:
+* If patches were applied, stop the server and then reboot the system before proceeding to migration:
+
++
 
 [source,console]
 ----
+mgradm stop
 reboot
 ----
 
 * If no updates were found, you can proceed directly to the migration step.
 
+--
+
 +
 
-. Start the Migration:
+. Start the migration:
 
 +
 
@@ -79,18 +90,19 @@ Follow the prompts and select the available migration to **SUSE Linux Micro 6.1*
 
 +
 
-. Reboot to Apply Changes
+. Stop the server and then reboot to apply changes:
 
 +
 
 [source,console]
 ----
+mgradm stop
 reboot
 ----
 
 +
 
-. Post-Reboot Checks:
+. Post-Reboot checks:
 
 +
 
@@ -138,7 +150,7 @@ systemctl restart sshd
 
 For more information, see xref:administration:troubleshooting/tshoot-remote-root-on-micro.adoc[].
 
-. Upgrade Server Containers
+. Upgrade server containers
 
 +
 
@@ -200,6 +212,12 @@ _____
 The system is now running {productname} 5.1 on SL Micro 6.1.
 Continue with post-migration validation.
 
+
+
+include::../../../snippet-database-backup-volume.adoc[leveloffset=+2]
+
+
+
 == {sles} 15 SP6 to 15 SP7
 
 This document provides the tested procedure to upgrade a SUSE Linux Enterprise Server 15 SP6 host deployed with SUSE Multi-Linux Manager 5.0 Server to SUSE Linux Enterprise Server 15 SP7 with SUSE Multi-Linux Manager 5.1.
@@ -218,7 +236,7 @@ This document provides the tested procedure to upgrade a SUSE Linux Enterprise S
 [role=procedure]
 _____
 
-. Verify Current Product Status
+. Verify current product status
 
 +
 
@@ -229,7 +247,7 @@ SUSEConnect --status-text
 
 +
 
-**Confirm:**
+Confirm:
 
 +
 
@@ -238,7 +256,7 @@ SUSEConnect --status-text
 
 +
 
-. Apply All System Patches
+. Apply all system patches
 
 +
 
@@ -249,32 +267,15 @@ zypper patch
 
 +
 
-*Reboot* if the update stack was updated:
+. Stop the server, and then reboot if the update stack was updated:
 
 +
 
 [source,console]
 ----
+mgradm stop
 reboot
 ----
-
-+
-
-. Register Required Products for SP7
-
-+
-
-[source,console]
-----
-SUSEConnect --product sle-module-basesystem/15.7/x86_64
-SUSEConnect --product sle-module-containers/15.7/x86_64
-SUSEConnect --product SLES/15.7/x86_64 --regcode <your-regcode>
-SUSEConnect --product Multi-Linux-Manager-Server-SLE/5.1/x86_64 --regcode <your-regcode>
-----
-
-+
-
-Ensure that `SUSEConnect --status-text` shows SUSE Linux Enterprise Server 15 SP7 and the SUSE Multi-Linux Manager Server 5.1 extension as active.
 
 +
 
@@ -293,18 +294,19 @@ Zypper will show the possible migration targets with detailed summaries.
 
 . Select the appropriate target, and follow the prompts to complete the migration.
 
-. After the upgrade completes, reboot the system:
+. After the upgrade completes, stop the server and then reboot the system:
 
 +
 
 [source,console]
 ----
+mgradm stop
 reboot
 ----
 
 +
 
-. Post-Reboot: Verify Upgrade Status
+. Post-Reboot: Verify upgrade status
 
 +
 
@@ -323,7 +325,7 @@ Expected output:
 
 +
 
-. Upgrade Server Containers
+. Upgrade server containers
 
 +
 
@@ -338,7 +340,7 @@ Follow prompts to pull the new container images and reconfigure the environment.
 
 +
 
-. Check Running Containers
+. Check running containers
 
 +
 
@@ -356,7 +358,7 @@ Expected containers:
 
 +
 
-. Verify {productname} Tools Version
+. Verify {productname} Tools version
 
 +
 
@@ -374,10 +376,29 @@ Expected output:
 
 _____
 
-
-
-
 === Migration Complete
 
 The system is now successfully upgraded to SUSE Linux Enterprise Server 15 SP7 and SUSE Multi-Linux Manager 5.1.
 Validate your setup before resuming production operations.
+
+[IMPORTANT]
+====
+
+{productname} {productnumber} introduces a rebranded set of client tools for all supported operating systems. This transition is seamless, and users performing a new product synchronization should only notice the updated channel names.
+
+Channels named `SUSE Manager Client Tools for XYZ`, used by clients previously registered with {productname} 4.3 or 5.0, are no longer available in version 5.1 and will no longer receive updates in 5.1.
+
+Although the legacy channels remain assigned to existing clients after migration, the corresponding repositories have been removed.
+
+To ensure continued updates, users must:
+
+- Mirror the new `SUSE Multi-Linux Manager Client Tools for XYZ` channels for the relevant products and assign them to the appropriate clients.
+- Unassign the outdated `SUSE Manager Client Tools for XYZ` channels.
+
+This also means that any CLM projects based on the old client tools must be adjusted accordingly.
+
+====
+
+
+
+include::../../../snippet-database-backup-volume.adoc[leveloffset=+2]
