@@ -1,4 +1,91 @@
 - Documented how to disable HSTS in Administration Guide
+- Added openSUSE Tumbleweed support for Uyuni
+- Documented the new autoinstallation snippets (bsc#1194792)
+- Improved the appearance of Web UI instructions in Administration
+  Guide (bsc#1250451)
+- Improved example for proxy bootstrap script in Client Configuration 
+  Guide (bsc#1251117)
+- Corrected the images files location in Administration guide
+  (bsc#1249384)
+- Added new workflow for liberating RHEL server in Common Workflows 
+  Guides (bsc#1250423)
+- Fixed the broken link in Specialized Guides (bsc#1249073)
+- Enhanced file location information in Administration Guide
+  (bsc#1250364)
+- Added note for the upgrade with third-party SSL certificates to 
+  Installation and Upgrade Guide
+- Corrected invalid command parameters in Specialized Guides
+  (bsc#1250747) 
+- Improved the description of the ability to aggregate user roles in
+  Administration Guide (bsc#1250525) 
+- Added steps for troubleshooting registering cloned clients to 
+  Administration Guide (bsc#1250427)
+- Removed reference to hub peripheral registration using mgradm
+- Added information about requesting access to PTFs (bsc#1213308)
+- Added note for the upgrade with third-party SSL certificates to Installation and Upgrade Guide
+- Improved the warning about partial backups in Administration Guide
+  (bsc#1250551)
+- Removed reference to hub peripheral registration using mgradm.
+- Documented System Hardware as a new Report in Administration Guide
+- Shared header enablement for documentation.suse.com
+- Fixed command for proxy installation (bsc#1249807)
+- Added clarification about containerized proxy (bsc#1248247)
+- Updated hub certificates deployment documentation (bsc#1249462)
+- Improved documentation about migration (bsc#1245240)
+- Fixed the hostname rename page for containers in Troubleshooting
+  section in Administration Guide (bsc#1229825)
+- Documented to use the same CA password during migrating from 4.3
+  in Installation and Upgrade Guide (bsc#1247296)
+- Added note about onboarding CentOS 7 clients with repositories
+  disabled in Client Configuration Guide (bsc#1248467)
+- Added information about storing custom channel related GPG key
+  permanently in Administration Guide (bsc#1240225)
+- Documented building and deploying certificate on Image Build
+  Host (bsc#1248447)
+- Package salt-minion superseded with venv-salt-minion; salt-minion
+  for bootstrapping SLE clients only (bsc#1247323)
+- Replaced salt-minion with venv-salt-minion package in Image
+  Management chapter in Administration Guide (bsc#1248448)
+- Added information on using pre-installed images to migrate from 4.3
+  to 5.1 (bsc#1247786)
+- Added support data upload feature to Administration Guide
+- Documented stopping the server before rebooting the host operating
+  system for the migration from 5.0 to 5.1 in Installation and
+  Upgrade Guide (bsc#1247705)
+- Removed reference to smdba from reference Guide (bsc#1247213)
+- Fixed procedure name for confidential computing in Administration
+  Guide (bsc#1247318)
+- Fixed invocation of spacewalk-repo-sync command in Client
+  Configuration Guide (bsc#1246883)
+- Fixed broken link in Administration Guide (bsc#1247322)
+- Added instructions for third-party channels to Adminstration
+  Guide (bsc#1246422)
+- Fixed the package names for server and proxy air-gapped deployment
+  (bsc#1247784)
+- Documented how to write data to persistent volume in ISS chapter of
+  Administration Guide (bsc#1246957)
+- Fixed introduction of the Ansible chapter in Administration
+  Guide (bsc#1244125)
+- Fixed proxy migration from 5.0 to 5.1 in Installation and Upgrade
+  Guide
+- Added warning about old backup configuration in Administration Guide
+  (bsc#1247481)
+- Added SUSE Linux Enterprise Server command line registration in
+  Installation and Upgrade Guide
+- Fixed issues in Image Building chapter in the Administration Guide
+  (bsc#1245987)
+- Fixed upgrade procedure for server and proxy in Installation and
+  Upgrade Guide (bsc#1247084)
+- Added revision date to metadata for tracking document changes
+- Removed duplicated paragraphs from Hub documentation in Large
+  Deployments Guide
+- Cleaned up Uyuni migration from legacy to container deployment in
+  Installation and Upgrade Guide
+- Added section about creation of database backup volume during
+  migration or upgrade in Installation and Upgrade Guide
+- Added deployment of Uyuni using images from RPM packages
+- Fixed User Role Permissions table in Users chapter in
+  Administration Guide (bsc#1246659)
 - Confidential Computing command updated in Administration Guide
   (bsc#1246638)
 - Fixed troubleshooting procedure about login timeout in Administration
@@ -8,11 +95,12 @@
 - Fixed persistent storage configuration details in Installation and Uprade
   Guide (bsc#1235567)
 - Fixed the admonition in Client Configuration Guide (bsc#1233496)
-- Added notes about how to run `mgradm` on security-enforced hosts (bsc#1243704)
-- Reorganised files for better visibility of differences between AutoYaST 
+- Added notes about how to run mgradm on security-enforced hosts
+  (bsc#1243704)
+- Reorganised files for better visibility of differences between AutoYaST
   and Kickstart profiles (bsc#1217755)
-- Added detailed description of the scripts used for storage 
-  administrations to Installation and Uprade Guide (bsc#1245241)
+- Added detailed description of the scripts used for storage
+  administration to Installation and Uprade Guide (bsc#1245241)
 - Renamed parameter in Specialized Guides (bsc#1245241)
 - Extended troubleshooting section with a reposync example (bsc#1211373)
 - Added port 8022 for proxy in network requirements in Installation

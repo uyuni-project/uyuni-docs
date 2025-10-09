@@ -1,5 +1,8 @@
 = Legacy {productname} Server Migration to Container
+:revdate: 2025-07-30
+:page-revdate: {revdate}
 ifeval::[{mlm-content} == true]
+
 :noindex:
 endif::[]
 
@@ -10,19 +13,19 @@ In the context of this migration, the legacy {productname} Server  (RPM installa
 
 == Requirements and Considerations
 
-=== General
-
-* An in-place migration is not possible.
 
 
 === Hostnames
 
-* The migration procedure currently does not include any hostname renaming functionality.
-  The fully qualified domain name (FQDN) on the new server will remain identical to that on the legacy server.
-+
+Neither in-place migration is not possible nor allows the migration procedure currently any hostname renaming functionality.
+
+Thus the fully qualified domain name (FQDN) on the new server will remain identical to that on the legacy server.
+
 [IMPORTANT]
 ====
-After the migration, it will be necessary to manually update the DHCP and DNS records to point to the new server.
+After migration, it is necessary to update the DHCP and DNS records to point to the new server.
+
+For more information, see <<migration-finalization>>.
 ====
 
 
@@ -32,7 +35,8 @@ After the migration, it will be necessary to manually update the DHCP and DNS re
 * GPG keys that are trusted in the RPM database only are not migrated.
   Thus synchronizing channels with [command]``spacewalk-repo-sync`` can fail.
 * The administrator must migrate these keys manually from the legacy {productname} installation to the container host after the actual server migration.
-+
+
+
 .Procedure: Manual Migration of the GPG Keys to New Server
 . Copy the keys from the legacy Uyuni server to the container host of the new server.
 . Later, add each key to the migrated server with the command [command]``mgradm gpg add <PATH_TO_KEY_FILE>``.
@@ -42,8 +46,6 @@ After the migration, it will be necessary to manually update the DHCP and DNS re
 
 === Initial Preparation on the Legacy Server
 
-[IMPORTANT]
-====
 The migration can take a very long time depending on the amount of data that needs to be replicated.
 To reduce downtime it is possible to run the migration multiple times in a process of _initial replication_, _re-replication_, or  _final replication and switch over_ while all the services on the legacy server can stay up and running.
 
@@ -51,10 +53,12 @@ Only during the final migration the processes on the legacy server need to be st
 
 For all non-final replications add the parameter [command]``--prepare`` to prevent the automatic stopping the services on the legacy server.
 For example:
+
+[source,shell]
 ----
 mgradm migrate podman <oldserver.fqdn> --prepare
 ----
-====
+
 
 .Procedure: Initial Preparation on the Legacy Server
 
@@ -117,30 +121,51 @@ This includes, but is not limited to, memory (RAM), CPU Cores, Storage, and Netw
 
 include::../snippet-hardened-tmpdir.adoc[leveloffset=+2]
 
-.Procedure: Performing the Migration
-. This step is optional.
-If custom persistent storage is required for your infrastructure, use the [command]``mgr-storage-server`` tool.
-** For more information, see [command]``mgr-storage-server --help``.
+
+// Unify the following with matching MLM section and => snippet
+
+==== Configure Custom Persistent Storage
+
+Configuring persistent storage is optional, but it is the only way to avoid serious trouble with container full disk conditions.
+It is highly recommended to configure custom persistent storage with the [command]``mgr-storage-server`` tool.
+
+For more information, see [command]``mgr-storage-server --help``.
 This tool simplifies creating the container storage and database volumes.
 
-** Use the command in the following manner:
-+
+Use the command in the following manner:
+
+[source,shell]
 ----
 mgr-storage-server <storage-disk-device> [<database-disk-device>]
 ----
-+
+
+[NOTE]
+====
+Devices must not have any filesystem.
+The command aborts if a filesystem exists on the storage device.
+====
+
 For example:
-+
+
+[source,shell]
 ----
 mgr-storage-server /dev/nvme1n1 /dev/nvme2n1
 ----
-+
+
 [NOTE]
 ====
 This command will create the persistent storage volumes at [path]``/var/lib/containers/storage/volumes``.
 
-For more information, see xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[].
+For more information, see
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
 ====
+
+
+==== Perform the Migration
+
+
 . Execute the following command to install a new {productname} server.
   Replace [literal]``<oldserver.fqdn>`` with the FQDN of the legacy server:
 +
@@ -165,12 +190,31 @@ mgrctl cp /local/ca.file server:/etc/pki/trust/anchors/
 ----
 
 
+
+[[migration-finalization]]
+==== Finalize migration
+
 [IMPORTANT]
 ====
 After successfully running the [command]``mgradm migrate`` command, the {salt} setup on all clients will still point to the legacy server.
 
-To redirect them to the new {productnumber} server, it is required to rename the new server at the infrastructure level (DHCP and DNS) to use the same FQDN and IP address as legacy server.
+To redirect them to the new {productnumber} server, it is required to rename the new server at the infrastructure level (DHCP and DNS) to use the same FQDN and IP address as the legacy server.
 ====
+
+
+[IMPORTANT]
+====
+If something goes wrong with the migration it is possible to restart the old system.
+As root, restart {postgresql} and the spacewalk services with the following commands:
+
+[source,shell]
+----
+service postgresql start
+spacewalk-service start
+----
+
+====
+
 
 
 // FIXME: check the following!  Partially probably already covered above.!
