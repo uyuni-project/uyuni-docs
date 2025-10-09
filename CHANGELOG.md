@@ -1,5 +1,7 @@
 - Fixed instruction and command in Client Configuration Guide
   (bsc#1248803) 
+- Added openSUSE Tumbleweed support for Uyuni
+- Documented the new autoinstallation snippets (bsc#1194792)
 - Improved the appearance of Web UI instructions in Administration
   Guide (bsc#1250451)
 - Improved example for proxy bootstrap script in Client Configuration 
@@ -30,6 +32,7 @@
 - Fixed command for proxy installation (bsc#1249807)
 - Added clarification about containerized proxy (bsc#1248247)
 - Updated hub certificates deployment documentation (bsc#1249462)
+- Improved documentation about migration (bsc#1245240)
 - Fixed the hostname rename page for containers in Troubleshooting
   section in Administration Guide (bsc#1229825)
 - Documented to use the same CA password during migrating from 4.3
