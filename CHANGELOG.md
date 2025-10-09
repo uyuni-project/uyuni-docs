@@ -1,3 +1,4 @@
+- Added openSUSE Tumbleweed support for Uyuni
 - Documented the new autoinstallation snippets (bsc#1194792)
 - Improved the appearance of Web UI instructions in Administration
   Guide (bsc#1250451)
