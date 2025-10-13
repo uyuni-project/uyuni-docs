@@ -1,3 +1,5 @@
+- Improved documentation about monitoring in Administration
+  Guide
 - Documented how to disable HSTS in Administration Guide
 - Removed virtualization from documentation (bsc#1246983)
 - Fixed instruction and command in Client Configuration Guide
