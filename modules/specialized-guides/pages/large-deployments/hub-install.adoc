@@ -1,18 +1,25 @@
 [[lsd-hub-install]]
-= Hub Deployment with XMLRPC
+= Hub deployment with XMLRPC
+:revdate: 2025-02-06
+:page-revdate: {revdate}
 
 You can deploy a hub environment either with third party certificates or with self-generated certificates.
 
-For more information about SSL certificates, see xref:specialized-guides:large-deployments/hub-reqs.adoc#lsd-hub-reqs-certs[].
 
 
+== With third party certificates
 
-== With Third Party Certificates
 
 // FIXME: what does this actually mean?
 //        Just checking that you have those available and use them
 //        while deploying the hub infrastructure?
 Prepare third party certificates for both the Hub Server and the Peripheral servers first.
+
+[IMPORTANT]
+====
+Database SSL certificates require [literal]``reportdb`` and [literal]``db`` as [literal]``Subject Alternative Name``.
+The same certificate can be used for server and database, as long the required alternative names are added.
+====
 
 // Hub:
 // mgradm install podman --ssl-ca-root CA-Certificate.crt --ssl-server-cert hub.crt --ssl-server-key hub.key --hubxmlrpc-replicas 1
@@ -22,9 +29,11 @@ Prepare third party certificates for both the Hub Server and the Peripheral serv
 
 
 [[lsd-hub-install-3rd-hub]]
-=== Hub Server Installation
+=== Hub server installation
 
 .Procedure: Installing the Hub Server
+[role=procedure]
+_____
 
 . Install a container host with {sl-micro}.
   For more information about {sl-micro} as a container host, see xref:installation-and-upgrade:container-deployment/mlm/server-deployment-mlm#deploy-mlm-server-micro[].
@@ -32,46 +41,59 @@ Prepare third party certificates for both the Hub Server and the Peripheral serv
 . On the container host, deploy {productname} as the hub server using the third party certificate.
   Add [option]``--hubxmlrpc-replicas 1`` to the [command]``mgradm install`` command line.
   For example:
+
 +
 
 ----
-mgradm install podman --ssl-ca-root CA-Certificate.crt --ssl-server-cert hub.crt --ssl-server-key hub.key --hubxmlrpc-replicas 1
+mgradm install podman --ssl-ca-root CA-Certificate.crt --ssl-server-cert hub.crt --ssl-server-key hub.key --ssl-db-ca-root CA-Certificate.crt --ssl-db-cert hud-db.crt --ssl-db-key hub-db.key --hubxmlrpc-replicas 1
 ----
+
+_____
 
 For more information about deploying with [command]``mgradm``, see xref:installation-and-upgrade:container-deployment/mlm/server-deployment-mlm.adoc#deploy-mlm-server-mgradm[].
 
 
 
 [[lsd-hub-install-3rd-peripheral]]
-=== Peripheral Servers
+=== Peripheral servers
 
 .Procedure: Installing peripheral servers using third party certificates
-. Preliminary Requirement: A certificate for every peripheral server (for example, [literal]``server.crt``) and a key (for example, [literal]``server.key``).
+[role=procedure]
+_____
+
+. Preliminary Requirement: A certificate for every peripheral server and its database (for example, [literal]``server.crt``) and a key (for example, [literal]``server.key``).
+
 . Preliminary Requirement: CA Certificate.
+
 . Preliminary Requirement: Hub server installation.
   For more information, see xref:specialized-guides:large-deployments/hub-install.adoc#lsd-hub-install-3rd-hub[].
+
 * On every peripheral server host, copy the same CA to [path]``/etc/pki/trust/anchors/`` and run ``update-ca-certificates``.
+
 * On every peripheral server host, install {productname} using the following command (replace appropriately the names of the certificates):
+
 +
 
 ----
-mgradm install podman --ssl-ca-root CA-Certificate.crt --ssl-server-cert server.crt --ssl-server-key server.key
+mgradm install podman --ssl-ca-root CA-Certificate.crt --ssl-server-cert server.crt --ssl-server-key server.key --ssl-db-ca-root CA-Certificate.crt --ssl-db-cert db.crt --ssl-db-key db.key
 ----
 
-
+_____
 
 // ========================================================================
 
-== With Self-Generated Certificates
+== With self-generated certificates
 
 // For a hub environment, first ... then ...
 
 
 
 [[lsd-hub-install-self-hub]]
-=== Hub Server Installation
+=== Hub server installation
 
 .Procedure: Installing the hub server
+[role=procedure]
+_____
 
 . Install a container host with {sl-micro}.
   For more information about {sl-micro} as a container host, see xref:installation-and-upgrade:container-deployment/mlm/server-deployment-mlm#deploy-mlm-server-micro[].
@@ -79,70 +101,79 @@ mgradm install podman --ssl-ca-root CA-Certificate.crt --ssl-server-cert server.
 . On the container host, deploy {productname} as the hub server.
   Add [option]``--hubxmlrpc-replicas 1`` to the [command]``mgradm install`` command line.
   For example:
+
 +
 
 ----
 mgradm install podman MLM.example.com --hubxmlrpc-replicas 1
 ----
-+
+
+_____
 
 For more information about deploying with [command]``mgradm``, see xref:installation-and-upgrade:container-deployment/mlm/server-deployment-mlm.adoc#deploy-mlm-server-mgradm[].
+
+
 
 ////
 Next step, peripheral server
  On the container host with the hub server, prepare the SSL certificates for the peripheral servers.
-  For more information about SSL certificates, see xref:specialized-guides:large-deployments/hub-reqs.adoc#lsd-hub-reqs-certs[].
 ////
 
 
 
 [[lsd-hub-install-self-peripheral]]
-=== Peripheral Servers
+=== Peripheral servers
 
-.Procedure: Peripheral Servers with Self-Generated Certificates
+[IMPORTANT]
+====
+Database SSL certificates require [literal]``reportdb`` and [literal]``db`` as [literal]``Subject Alternative Name``.
+The same certificate can be used for server and database, as long the required alternative names are added.
+====
+
+.Procedure: Peripheral servers with self-generated certificates
+[role=procedure]
+_____
 
 . Preliminary Requirement: Hub server installation.
   For more information, see xref:specialized-guides:large-deployments/hub-install.adoc#lsd-hub-install-self-hub[].
+
 . On the container host of the hub server, enter the server container with:
+
 +
 
 ----
 mgrctl term
 ----
 
+. Inside the container, run [command]``rhn-ssl-tool`` for every peripheral server:
 
-. Inside the container, run [command]``rhn-ssl-tool`` for every pheripheral server:
 +
 
 ----
 rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
   --set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
   --set-org-unit="ORGANIZATION UNIT" --set-email="name@example.com" \
-  --set-hostname=PERIPHAL --set-cname="example.com"
+  --set-hostname=PERIPHAL-FQDN --set-cname="reportdb" --set-cname="db"
 ----
 
 . For every peripheral server:
+
 * From the hub server container, copy [path]``/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT``,  [path]``/root/ssl-build/<hostname>/server.crt`` and [path]``/root/ssl-build/<hostname>/server.key`` to the peripheral server host.
+
 * On every peripheral server host, copy [path]``RHN-ORG-TRUSTED-SSL-CERT`` to [path]``/etc/pki/trust/anchors/``, and run [command]``update-ca-certificates``.
+
 * On every peripheral server host, deploy {productname} with:
+
 +
 
 ----
-mgradm install podman --ssl-ca-root RHN-ORG-TRUSTED-SSL-CERT --ssl-server-cert server.crt --ssl-server-key server.key
+mgradm install podman --ssl-ca-root RHN-ORG-TRUSTED-SSL-CERT --ssl-server-cert server.crt --ssl-server-key server.key --ssl-db-ca-root RHN-ORG-TRUSTED-SSL-CERT --ssl-db-server-cert server.crt --ssl-db-server-key server.key
 ----
 
-* Finally, on every peripheral server host, register the peripheral server to the hub server:
-+
-
-// CHECKIT: did we specify the credential during the hub server deployment?
-+
-----
-mgradm hub register --api-password <hub password> --api-server <hub fqdn> --api-user <hub admin>
-----
+_____
 
 
-
-== Background Information
+== Background information
 
 [NOTE]
 ====

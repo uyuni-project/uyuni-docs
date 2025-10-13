@@ -1,0 +1,133 @@
+[[iss2]]
+= Inter-Server Synchronization version 2
+:revdate: 2025-06-04
+:page-revdate: {revdate}
+
+If you have more than one {productname} installation, you will need to copy contents between servers.
+Inter-Server Synchronization (ISS) allows you to export data from one server (hub) and import it on another server (peripheral).
+This is useful for hub deployment scenarios or disconnected setups.
+
+
+== Install Inter-Server Synchronization packages
+
+
+To use ISS you need to install the [package]``inter-server-sync`` package on hub and peripheral servers.
+
+
+
+== Content synchronization
+
+
+[IMPORTANT]
+====
+Use [literal]``mgrctl term`` before running steps inside the server container.
+====
+
+.Procedure: Export data on source server
+
+. At the command prompt of the {productname} container host of the hub server, as root, enter the server container:
+
++
+
+----
+mgrctl term
+----
+
+. Inside the container, execute the following steps:
++
+
+--
+.. Execute the ISS export command.
+   The [option]``-h`` option provides detailed help:
+
++
+
+[source,shell]
+----
+inter-server-sync export -h
+----
+
+--
+
+The export procedure creates an output directory with all the needed data for the import procedure.
+
+[IMPORTANT]
+====
+To avoid data loss or filling up the container file system, store the data on a persistent volume (preferably [path]``/var/spacewalk``).
+For more information about persistent volumes, see xref:installation-and-upgrade:hardware-requirements.adoc#server-hardware-requirements[].
+====
+
+
+
+.Procedure: Copy export directory to peripheral server
+. Contents from the hub server needs to be synchronized to the peripheral server.
+  At the command prompt of the {productname} container host of the hub server, as root, enter the server container:
+
++
+
+----
+mgrctl term
+----
+
+. Inside the container, execute the following steps:
+
++
+
+--
+
+.. Synchronize to the peripheral server:
+
++
+
+[source,shell]
+----
+rsync -r <PATH_EXPORTED_DIR> root@<PERIPHERAL_SERVER>:~/
+----
+
+--
+
+
+When all contents is copied, start importing it.
+
+
+
+.Procedure: Import data on peripheral server
+. At the command prompt of the {productname} container host of the peripheral server, as root, enter the server container:
+
++
+
+----
+mgrctl term
+----
+
+. Inside the container, execute the following steps:
+
++
+
+--
+.. Execute the ISS import command.
+   The [option]``-h`` option provides detailed help:
+
++
+
+[source,shell]
+----
+inter-server-sync import -h
+----
+
+--
+
+
+== Database connection configuration
+
+
+Database connection configuration is loaded by default from [path]``/etc/rhn/rhn.conf``.
+Properties file location can be overridden with parameter [literal]``--serverConfig``.
+
+
+
+== Known limitations
+
+* Hub and peripheral servers need to be on the same version.
+* Export and import organization should have exactly the same name.
+  The organization name is case sensitive.

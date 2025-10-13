@@ -1,5 +1,7 @@
 [[ssl-certs-import]]
 = Import SSL Certificates
+:revdate: 2025-06-20
+:page-revdate: {revdate}
 
 //By default, {productname} uses a self-signed certificate.
 //For additional security, you can import a custom certificate, signed by a third party certificate authority (CA).
@@ -35,6 +37,7 @@ If there is no extra parameter or option available to specify intermediate CAs, 
 
 == Import Certificates for New Installations
 
+
 By default, {productname} uses a self-signed certificate.
 After you have completed the initial setup, you can replace the default certificate with an imported certificate.
 
@@ -48,12 +51,14 @@ After you have completed the initial setup, you can replace the default certific
 
 ----
 3rd Party SSL Certificate Flags:
-      --ssl-ca-intermediate strings   Intermediate CA certificate path
-      --ssl-ca-root string            Root CA certificate path
-      --ssl-server-cert string        Server certificate path
-      --ssl-server-key string         Server key path
-      --ssl-db-cert string            Database certificate path
-      --ssl-db-key string             Database key path
+      --ssl-ca-intermediate strings    Intermediate CA certificate path
+      --ssl-ca-root string             Root CA certificate path
+      --ssl-server-cert string         Server certificate path
+      --ssl-server-key string          Server key path
+      --ssl-db-ca-intermediate strings Intermediate CA certificate path for the database if different from the server one
+      --ssl-db-ca-root string          Root CA certificate path for the database if different from the server one
+      --ssl-db-cert string             Database certificate path
+      --ssl-db-key string              Database key path
 ----
 
 Intermediate CAs can either be available in the file which is specified with `--ssl-ca-root` or specified as extra options with `--ssl-ca-intermediate`.
@@ -102,7 +107,6 @@ podman secret create --replace uyuni-cert $path_to_server_certificate
 podman secret create --replace uyuni-key $path_to_server_key
 podman secret create --replace uyuni-db-cert $path_to_database_certificate
 podman secret create --replace uyuni-db-key $path_to_database_key
-mgradm restart
 ----
 
 .Procedure: Restarting the Server
@@ -132,6 +136,21 @@ endif::[]
 
 If the Root CA was changed, it needs to get deployed to all the clients connected to {productname}.
 
+[NOTE]
+====
+If the CA certificate was updated, a RPM file with Kiwi certificate needs to be repackaged.
+
+On the {productname} Server container host, execute following command:
+
+[source,shell]
+----
+mgrctl exec mgr-package-rpm-certificate-osimage
+----
+
+Then apply highstate on the Image Build hosts to deploy the new certificates for Kiwi to use.
+====
+
+
 
 .Procedure: Deploying the Root CA on Clients
 
@@ -140,3 +159,6 @@ If the Root CA was changed, it needs to get deployed to all the clients connecte
 . Navigate to menu:Systems[System Set Manager > Overview].
 . In the [guimenu]``States`` field, click btn:[Apply] to apply the system states.
 . In the [guimenu]``Highstate`` page, click btn:[Apply Highstate] to propagate the changes to the clients.
+
+
+

@@ -1,6 +1,9 @@
 [[installation-proxy-containers]]
 = {productname} {productnumber} Proxy Deployment
+:revdate: 2025-06-26
+:page-revdate: {revdate}
 ifeval::[{uyuni-content} == true]
+
 :noindex:
 endif::[]
 
@@ -20,15 +23,27 @@ To successfully deploy, you will perform the following actions:
 
 // Add certificate tasks item
 .Procedure: Deploying Proxy
+[role=procedure]
+_____
 . Review hardware requirements.
+
 . Synchronize the {sl-micro} {microversion} or {sles} {bci-mlm} parent channel and the proxy extension child channel on the server.
+
 . Install {sl-micro} or {sles} on a bare-metal machine.
+
 . During the installation, register {sl-micro} or {sles} along with the {productname} Proxy extension.
+
 . Create a {salt} activation key.
+
 . Bootstrap the proxy as a client with the [systemitem]``default`` connection method.
+
 . Generate a proxy configuration.
+
 . Transfer the proxy configuration from server to proxy.
+
 . Use the proxy configuration to register the client as a proxy with {productname}.
+
+_____
 
 
 .Supported operating system for the Proxy Container Host
@@ -46,6 +61,7 @@ The container host supplies the necessary resources such as CPU, memory, and sto
 
 == Hardware Requirements for the Proxy
 
+
 For more information about hardware requirements for deploying {productname} Proxy, see xref:installation-and-upgrade:hardware-requirements.adoc#proxy-hardware-requirements[].
 
 
@@ -58,173 +74,39 @@ This channel must be fully synchronized on the server, with the child channel [s
 
 
 .Procedure: Synchronizing the Parent Channel and Proxy Extension
+[role=procedure]
+_____
+
 . In the {productname} {webui} select menu:Admin[Products].
+
 . From the products page enter {sl-micro} or {sles} in the filter field.
+
 . Next use the drop-down to select the required architecture.
   For this example {x86_64}.
+
 . In the [systemitem]``Product Description`` field select the {sl-micro} {microversion} or {sles} {bci-mlm} checkbox then use the drop-down to select the [systemitem]``{productname} Proxy Extension 5.1 x86_64`` extension.
+
 . Click the btn:[Add products] button.
+
 . Wait for the synchronization to complete.
 
+_____
 
 
 [[deploy-mlm-proxy-host]]
 ==  Prepare {productname} Proxy Host
 
+In the following subsections, you either prepare the proxy host with {sle-micro} or {sles}.
 
-
-=== Install {sl-micro} {microversion} and Deploy Proxy
-
-.Procedure: Downloading the Installation Media
-. Locate the {sl-micro} {microversion} installation media at https://www.suse.com/download/sl-micro/.
-. You will need an account with {scclongform} and must be logged in to download the ISO.
-. Download [filename]``SL-Micro-6.1-DVD-x86_64-GM-Media1.iso``.
-. Prepare a USB flash disk or DVD for installation.
-. Insert a DVD or a bootable USB stick containing the installation image for {sl-micro} {microversion}.
-. Boot or reboot your system.
-
-
-For detailed documentation on preparing your machines OS (virtual or physical), see link:https://documentation.suse.com/sle-micro/6.1/html/Micro-deployment-images/index.html[Introduction to {sl-micro} {microversion} Deployment].
-
-
-.Procedure: Installing {sl-micro} {microversion}
-. Use the arrow keys to select [systemitem]``Installation``.
-. Adjust Keyboard and language.
-  Click the [systemitem]``checkbox`` to accept the license agreement.
-. Click [systemitem]``Next`` to continue.
-. Select your registration method.
-  For this example, we will register the proxy with {scclongform}.
-. Enter your {scclongform} Email address.
-. Enter your registration code for {sl-micro} {microversion}.
-. Click [systemitem]``Next`` to continue.
-. Select the {productname} {productnumber} Proxy extension [systemitem]``Checkbox``.
-. Click [systemitem]``Next`` to continue.
-. Enter your {productname} {productnumber} Proxy extension registration code.
-. Click btn:[Next] to continue.
-. On the [systemitem]``NTP Configuration`` page click btn:[Next].
-. On the [systemitem]``Authentication for the System`` page enter a password for the root user.
-  Click btn:[Next].
-. On the [systemitem]``Installation Settings`` page click btn:[Install].
-
-This finalizes installation of {sl-micro} {microversion} and {productname} {productnumber} Proxy as an extension.
-
-
-
-==== Update the System
-
-
-.Procedure: Updating the System
-. Log in as *root*.
-. Run **transactional-update**:
-
-+
-
-[source, shell]
-----
-transactional-update
-----
-
-. Reboot the system.
-. Log in as root.
-. Install the container utilities ([package]``mgrpxy`` should already be installed automatically):
-
-+
-
-[source, shell]
-----
-transactional-update pkg install mgrpxy-bash-completion
-----
-
-+
-
-Alternatively you may install [systemitem]``mgrpxy-zsh-completion`` or [systemitem]``mgrpxy-fish-completion``.
-
-+
-
-. Reboot the system.
-
-[IMPORTANT]
-====
-{sl-micro} is designed to update itself automatically by default and will reboot after applying updates.
-However, this behavior is not desirable for the {productname} environment.
-To prevent automatic updates on your server, {productname} disables the transactional-update timer during the bootstrap process.
-
-If you prefer the {sl-micro} default behavior, enable the timer by running the following command:
-
-[source, shell]
-----
-systemctl enable --now transactional-update.timer
-----
-====
+[[deploy-mlm-proxy-micro]]
+include::../snippet-prepare-micro-host.adoc[leveloffset=+1]
 
 To continue with deployment, see xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc#deploy-mlm-proxy-persistent-storage[].
 
 
 
 [[deploy-mlm-proxy-sles]]
-=== Install {sles} {bci-mlm} and Deploy Proxy
-
-Alternatively, you can install {productname} Proxy on {sles} {bci-mlm}.
-The following procedure describes the main steps of the installation process.
-
-.Procedure: Installing {productname} Proxy on {sles} {bci-mlm}
-. Locate and download {sles} {bci-mlm} [literal]``.iso`` at https://www.suse.com/download/sles/.
-// FIXME Do we need the following step?
-+
-. Make sure that the {scc} code you plan to use has the Extensions enabled.
-. Start the installation of {sles} {bci-mlm}.
-  .. On the [literal]``Language, keyboard and product selection`` select the product to install.
-  .. On the [literal]``License agreement`` read the agreement and check [guimenu]``I Agree to the License Terms``.
-. Select the registration method.
-
-+
-
-[[NOTE]]
-====
-For {sles} {bci-mlm}, you are required to have a valid {sles} subscription and corresponding regcode, which you must provide on this screen.
-You will be required to enter the {productname} Extension regcode below.
-====
-. In the screen [literal]``Extensions and Modules Selection`` check the following:
-+
-
-* {productname} Proxy Extension
-  * Basesystem Module
-  * Containers Module
-+
-
-Enter the {productname} Extension regcode.
-. Complete the installation.
-. When the installation completes, log in to the newly installed server as root.
-. Update the System (optional, if the system was not set to
-download updates during install):
-
-+
-
-[source,shell]
-----
-zypper up
-----
-
-. Reboot.
-
-. Log in as root and install [package]``podman`` plus [package]``mgrpxy`` and [package]``mgrpxy-bash-completion`` (if not already automatically installed):
-
-+
-
-[source,shell]
-----
-zypper install podman mgrpxy mgrpxy-bash-completion
-----
-
-. Start the Podman service by rebooting the system, or running a command:
-
-+
-
-[source, shell]
-----
-systemctl enable --now podman.service
-----
-
+include::../snippet-prepare-sles-host.adoc[leveloffset=+1]
 
 To continue with deployment, see xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc#deploy-mlm-proxy-persistent-storage[].
 
@@ -265,11 +147,15 @@ For more information, see
 * xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
 ====
 
-include::../actkey-bootstrap-proxy-mlm.adoc[]
+// Snippet for creating activation key only
+include::../snippet-actkey-bootstrap-proxy-mlm.adoc[]
 
-include::../generate_proxy_config.adoc[]
+// (New) Snippet for bootsrapping the proxy
+include::../snippet-bootstrap-proxy-client.adoc[]
 
-include::../transfer_proxy_config.adoc[]
+include::../snippet-generate_proxy_config.adoc[]
+
+include::../snippet-transfer_proxy_config.adoc[]
 
 
 
@@ -280,6 +166,8 @@ Container can now be started with the [literal]`mgrpxy` command:
 
 [[proc-setup-containers-setup-start]]
 .Procedure: Starting and Checking Proxy Status
+[role=procedure]
+_____
 
 . Start the proxy by calling:
 
@@ -307,6 +195,7 @@ Five {productname} Proxy containers should be present and should be part of the 
 * proxy-squid
 * proxy-ssh
 
+_____
 
 
 == Use a Custom Container Image for a Service
