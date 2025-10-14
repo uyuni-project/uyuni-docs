@@ -21,6 +21,8 @@ Running out of space can result in backups failing, so check this often.
 [[backup-restore-old]]
 == Disable old method with smdba
 
+
+
 Skip this section if you installed {productname} {productnumber} from scratch.
 
 [NOTE]
@@ -33,21 +35,18 @@ Either disable [command]``smdba`` before migrating (recommended) or later on the
 
 
 .Procedure: Disabling old method with installed smdba before migration
+[role=procedure]
+____
 
 This procedure only works when smdba is still installed.
 
 ifeval::[{mlm-content} == true]
+
 . Commands are different on SUSE Manager 4.3 (non-containerized installation) or SUSE Manager 5.0 (containerized installation)
 present (so 5.0 or on 4.3 before migration):
 
-+
-
---
-
 SUSE Manager 4.3::
 On the command line, as root, execute:
-
-+
 
 [source,shell]
 ----
@@ -57,14 +56,11 @@ smdba backup-hot --enable=off
 SUSE Manager 5.0::
 On the command line of the container host, as root, execute:
 
-+
-
 [source,shell]
 ----
 mgrctl exec -- smdba backup-hot --enable=off
 ----
 
---
 endif::[]
 
 ifeval::[{uyuni-content} == true]
@@ -85,32 +81,32 @@ This will change [option]``archive_command`` in [path]``/var/lib/pgsql/data/post
 ----
 archive_command = '/bin/true'
 ----
+--
 
+____
 
 Now your old system is ready to be migrated to {productname} {productnumber}.
 
 
 .Procedure: Disabling old method on {productname} {productnumber} after migration
-
+[role=procedure]
+____
 Use this procedure after migration, when smdba is no longer available.
 
 . On the container host, as root, edit [path]``/var/lib/containers/storage/volumes/var-pgsql/_data/postgresql.conf`` and set these options:
-
 +
-
 ----
 archive_mode = off
 archive_command = '/bin/true'
 ----
 
 . Restart the container:
-
 +
-
 [source,shell]
 ----
 mgradm restart
 ----
+____
 
 
 
@@ -147,6 +143,8 @@ After backup is done, service is automatically restarted.
 ====
 
 .Procedure: Creating Full Backup with [command]``mgradm backup create``
+[role=procedure]
+____
 . On the container host, as root, create backup with:
 
 +
@@ -159,6 +157,7 @@ mgradm backup create $path
 +
 
 Replace [literal]``$path`` by the path to the backup location.
+____
 
 === Partial Backup of {productname}
 
@@ -174,24 +173,29 @@ Therefore they cannot guarantee backup/restore consistency.
 ====
 
 .Procedure: Creating Partial Backup by Skipping Database Backup
+[role=procedure]
+____
 . On the container host, as root, create backup with:
 
 +
-
-[source, shell]
+[source,shell]
 ----
 mgradm backup create --skipdatabase $path
 ----
-
++
 Replace [literal]``$path`` by the path to the backup location.
+____
 
-.Procedure: Creating Partial Backup by Skipping a Volume.
+.Procedure: Creating Partial Backup by Skipping a Volume
+[role=procedure]
+____
 . On the container host, as root, create backup with:
 +
-[source, shell]
+[source,shell]
 ----
 mgradm backup create --skipvolumes $volumes $path
 ----
++
 Replace [literal]``$path`` by the path to the backup location.
 
 +
@@ -201,6 +205,7 @@ Replace [literal]``$volumes`` by the name of the volume name to be included in t
 +
 
 Use [literal]``all`` to skip all volumes, except database volumes.
+____
 
 === Backing up extra volumes
 
@@ -208,6 +213,8 @@ Use [literal]``all`` to skip all volumes, except database volumes.
 If additional volumes were configured during the installation, or additional volumes should be added to the backup, they need to be specified using [command]``--extravolumes $volumes``.
 
 .Procedure: Creating Backup with Additional Custom Volume
+[role=procedure]
+____
 . On the container host, as root, create backup with:
 
 +
@@ -228,6 +235,8 @@ Replace [literal]``$volumes`` by the name of the volume name to be included in t
 === Perform a Manual Database Backup
 
 .Procedure: Performing a Manual Database Backup
+[role=procedure]
+____
 . Allocate permanent storage space for your backup.
 
 . At the command prompt of the {productname} container host, as root, use:
@@ -238,6 +247,7 @@ Replace [literal]``$volumes`` by the name of the volume name to be included in t
 ----
 mgradm backup create --skipvolumes all --skipconfig --skipimages $path
 ----
+____
 
 [[restore-product]]
 == Restore {productname} from the Existing Backup
@@ -254,6 +264,8 @@ After both checks are successful, actual backup restore is performed.
 ====
 
 .Procedure: Restoring from an Existing Backup
+[role=procedure]
+____
 . On the container host, as root, re-deploy the {productname} Server with:
 
 +
@@ -268,6 +280,7 @@ mgradm start
 +
 
 Replace [literal]``$path`` by the path to the backup location.
+____
 
 Verification of the backup can be a time-consuming operation. If backup integrity is ensured by other means, verification can be skipped by using [command]``--skipverify`` option.
 
@@ -293,7 +306,9 @@ mgrctl exec -ti -- mgr-sync refresh --refresh-channels
 ----
 
 . Schedule the re-creation of search indexes next time the [command]``rhn-search`` service is started.
++
 This command produces only debug messages, it does not produce error messages.
++
 On the container host, enter:
 
 +
@@ -302,5 +317,6 @@ On the container host, enter:
 ----
 mgrctl exec -ti -- rhn-search cleanindex
 ----
+____
 
 
