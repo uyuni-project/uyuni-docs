@@ -1,3 +1,5 @@
+- Corected the procedure instruction in Administration Guide
+  (bsc#1252023)
 - Improved documentation about monitoring in Administration
   Guide
 - Documented how to disable HSTS in Administration Guide
