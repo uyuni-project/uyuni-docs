@@ -1,3 +1,5 @@
+- Corected the procedure instruction in Administration Guide
+  (bsc#1252023)
 - Improved documentation about monitoring in Administration
   Guide
 - Removed virtualization from documentation (bsc#1246983)
