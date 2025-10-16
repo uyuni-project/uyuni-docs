@@ -1,3 +1,5 @@
+- Added instructions for firewall settings in Administration
+  Guide
 - Corected the procedure instruction in Administration Guide
   (bsc#1252023)
 - Improved documentation about monitoring in Administration
