@@ -1,3 +1,5 @@
+- Fixed several table issues in both Korean and English tables
+- Moved snippets to partials directory for proper includes
 - Added instructions for firewall settings in Administration
   Guide
 - Corected the procedure instruction in Administration Guide
