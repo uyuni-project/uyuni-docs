@@ -88,6 +88,8 @@ endif::[]
 - ✅ **PDF Relative Paths Fixed**: Corrected depth-based paths to point to book-specific partials
 - ✅ **Dual Build Compatibility**: Conditional includes work for both HTML and PDF
 - ✅ **Complex Directory Depths**: Proper relative paths calculated for nested structures
+- ✅ **Mass Include Updates**: Used sed commands to globally fix ~150+ include statements
+- ✅ **Multi-Module Validation**: Verified all 4 modules work correctly with new syntax
 
 ### Other Branches Status
 | Branch | Status | Notes |
@@ -268,6 +270,78 @@ sed -i 's|value: ../../snippets/|value: partials/|g' parameters.yml
 
 echo "✅ Completed migration for $BOOK_NAME"
 echo "🔍 VERIFY: Test both 'make antora-mlm' and PDF builds"
+```
+
+#### 2.1. 🚨 CRITICAL POST-MIGRATION FIXES (Required for Success!)
+
+**These fixes are ESSENTIAL and must be applied after file migration:**
+
+**🔥 CRITICAL FIX #1: Antora Module Prefix Correction**
+```bash
+# This MUST be done for each migrated book - without this, includes will be RED/BROKEN!
+# Replace 'BOOK_NAME' with actual book name: client-configuration, administration, retail, installation-and-upgrade
+
+BOOK_NAME="client-configuration"  # Change for each book
+echo "Applying CRITICAL Antora module prefix fix for $BOOK_NAME..."
+find "modules/$BOOK_NAME/pages" -name "*.adoc" -exec sed -i "s/include::partial\$/include::$BOOK_NAME:partial$/g" {} \;
+echo "✅ Fixed Antora includes for $BOOK_NAME"
+
+# Verify the fix worked (should show NO results):
+grep -r "include::partial\$" "modules/$BOOK_NAME/pages/" || echo "✅ All partial includes now have module prefixes"
+```
+
+**🔥 CRITICAL FIX #2: Parameters.yml Global Configuration**
+```bash
+# This MUST be done ONCE per repository (affects all PDF builds)
+echo "Updating parameters.yml for PDF builds..."
+sed -i 's|value: \.\./\.\./snippets/|value: partials/|g' parameters.yml
+
+# Verify the critical change:
+grep -A 1 "attribute: snippet" parameters.yml
+# MUST show: value: partials/  (not ../../snippets/)
+echo "✅ Parameters.yml updated for PDF builds"
+```
+
+**🔥 CRITICAL FIX #3: PDF Relative Path Corrections**
+```bash
+# For books with complex directory structures (especially installation-and-upgrade)
+# This fixes paths that point to non-existent global partials directory
+
+echo "Fixing PDF relative paths for complex directory structures..."
+
+# Fix installation-and-upgrade book specifically:
+find modules/installation-and-upgrade/pages -name "*.adoc" -exec sed -i 's|include::\.\./\.\./\.\./\.\./partials/|include::../../../../installation-and-upgrade/partials/|g' {} \;
+
+echo "✅ PDF relative paths corrected"
+```
+
+**🔥 VERIFICATION COMMANDS**
+```bash
+# 0. Detect product context for correct build commands
+if git branch --show-current | grep -E "(master|manager-5\.1)"; then
+    PRODUCT="mlm"
+    BUILD_CMD="antora-mlm"
+    PDF_CMD="pdf-installation-and-upgrade-mlm-en"
+else
+    PRODUCT="suma"
+    BUILD_CMD="antora-suma"
+    PDF_CMD="pdf-installation-and-upgrade-suma-en"
+fi
+echo "Using product context: $PRODUCT"
+
+# MUST run these tests after applying fixes:
+
+# 1. Test for missing module prefixes (should return 0 results):
+echo "Checking for missing module prefixes..."
+grep -r "include::partial\$" modules/*/pages/ && echo "❌ FAILED: Still have includes without module prefixes!" || echo "✅ PASSED: All includes have module prefixes"
+
+# 2. Test Antora build (should complete without include errors):
+echo "Testing Antora build with product: $PRODUCT"
+make $BUILD_CMD 2>&1 | grep -E "(ERROR.*include file not found)" && echo "❌ FAILED: Include errors found!" || echo "✅ PASSED: No include errors"
+
+# 3. Test PDF build (should complete without path errors):
+echo "Testing PDF build..."
+make $PDF_CMD && echo "✅ PASSED: PDF build successful" || echo "❌ FAILED: PDF build errors"
 ```
 
 #### 2.1. ⚠️ Critical Configuration Updates
@@ -559,6 +633,234 @@ If you see red/failing includes after migration:
 2. **modules/*/partials/**: Should contain all snippet files
 3. **Antora includes**: Must use `book:partial$snippet-name.adoc`
 4. **PDF includes**: Must use correct relative paths like `../../../partials/`
+
+## 🤖 AI Context for Future Branch Migrations
+
+### Complete Migration Context for AI Systems
+
+**This section provides comprehensive context for AI assistants working on similar migrations in other branches or repositories.**
+
+#### Technical Environment Summary
+- **Documentation System**: AsciiDoc + Antora + asciidoctor-pdf
+- **Build Targets**: HTML (Antora), PDF (asciidoctor-pdf) 
+- **Architecture**: Multi-module Antora component with book-specific modules
+- **Translation System**: Copies `modules/` to `translations/en/modules/` during builds
+- **Configuration**: Global `parameters.yml` controls PDF build attributes
+
+#### Migration Pattern Recognition
+**File Structure Pattern**:
+```
+OLD: modules/{book}/pages/snippets/{snippet-name}.adoc
+NEW: modules/{book}/partials/{snippet-name}.adoc
+```
+
+**Include Syntax Pattern**:
+```adoc
+OLD: include::snippets/{snippet-name}.adoc[]
+
+NEW: 
+ifndef::backend-pdf[]
+include::{book}:partial${snippet-name}.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::{relative-path}/partials/{snippet-name}.adoc[]
+endif::[]
+```
+
+#### Critical Success Factors
+1. **Module Prefixes are Required**: Antora multi-module components must use `module:partial$` syntax
+2. **Directory Depth Matters**: PDF relative paths must account for exact file location depth
+3. **Parameters.yml is Global**: The `snippet` attribute affects all PDF builds
+4. **Translation Cache Issues**: Old files persist in `translations/` directory during builds
+
+#### Automation Commands for AI Use
+```bash
+# 0. Product Detection (CRITICAL FIRST STEP)
+if git branch --show-current | grep -E "(master|manager-5\.1)"; then
+    PRODUCT="mlm"
+    BUILD_CMD="antora-mlm"
+    PDF_SUFFIX="mlm-en"
+else
+    PRODUCT="suma"
+    BUILD_CMD="antora-suma" 
+    PDF_SUFFIX="suma-en"
+fi
+echo "Branch product detected: $PRODUCT"
+
+# 1. Assessment Commands
+find modules/ -path "*/pages/snippets" -type d                    # Find books needing migration
+find modules/*/pages -name "*.adoc" -exec grep -l "snippets/" {} \;  # Find files with snippet includes
+
+# 2. Migration Commands  
+mkdir -p "modules/$BOOK/partials"                                 # Create partials directory
+mv "modules/$BOOK/pages/snippets/"*.adoc "modules/$BOOK/partials/" # Move files
+rmdir "modules/$BOOK/pages/snippets"                              # Remove old directory
+
+# 3. Critical Fix Commands
+find "modules/$BOOK/pages" -name "*.adoc" -exec sed -i "s/include::partial\$/include::$BOOK:partial$/g" {} \;  # Fix module prefixes
+sed -i 's|value: \.\./\.\./snippets/|value: partials/|g' parameters.yml  # Fix global config
+
+# 4. Verification Commands (Product-Aware)
+grep -r "include::partial\$" modules/*/pages/ || echo "✅ All prefixes fixed"  # Check for missing prefixes
+make $BUILD_CMD 2>&1 | grep -E "(ERROR.*include file not found)" || echo "✅ Build successful"  # Test build
+make "pdf-installation-and-upgrade-$PDF_SUFFIX" && echo "✅ PDF test passed" || echo "❌ PDF test failed"  # Test PDF
+```
+
+#### Books and Expected Scope
+**Books that typically have snippets** (check these first):
+- `client-configuration`: High volume (~15 files, 100+ includes)
+- `installation-and-upgrade`: Complex nested structure (13 files, depth-sensitive paths)
+- `administration`: Low volume (1-2 files)
+- `retail`: Low volume (4 files)
+
+**Books that typically don't need migration**:
+- `common-workflows`, `legal`, `reference`, `specialized-guides`, `ROOT`
+
+#### Product-Specific File Patterns
+**AI systems should expect different file patterns based on branch:**
+
+**MLM Branches (master, manager-5.1+):**
+```bash
+# Typical snippet files might include:
+modules/client-configuration/partials/snippet-*-mlm.adoc
+modules/installation-and-upgrade/partials/snippet-register-proxy-mlm.adoc
+modules/retail/partials/check_sync_webui_mlm.adoc
+
+# Build configuration files:
+nav-*-guide.pdf.mlm.adoc
+Makefile.mlm
+site-mlm.yml
+```
+
+**SUMA Branches (manager-5.0, manager-4.3):**
+```bash
+# Typical snippet files might include:
+modules/client-configuration/partials/snippet-*-suma.adoc  
+modules/installation-and-upgrade/partials/snippet-register-proxy-suma.adoc
+modules/retail/partials/check_sync_webui_suma.adoc
+
+# Build configuration files:
+nav-*-guide.pdf.suma.adoc
+Makefile.suma
+site-suma.yml
+```
+
+**Cross-Product Files (Common):**
+```bash
+# These patterns appear in all branches:
+modules/*/partials/snippet-*.adoc  # Generic snippets
+modules/*/partials/*_gpg.adoc      # GPG-related snippets
+modules/*/partials/manual_*.adoc   # Manual procedure snippets
+```
+
+#### Directory Depth Reference
+**Common file depths and their PDF paths**:
+- `pages/file.adoc`: `../partials/`
+- `pages/subdir/file.adoc`: `../../partials/`  
+- `pages/subdir/subdir2/file.adoc`: `../../../partials/`
+- `pages/container-deployment/uyuni/file.adoc`: `../../../../partials/`
+- `pages/container-deployment/mlm/migrations/server/file.adoc`: `../../../../../../partials/`
+
+#### Error Patterns to Watch For
+- **"include file not found"**: Usually PDF path depth issue or parameters.yml not updated
+- **Red includes in editor**: Missing module prefix in Antora includes
+- **Build succeeds but content missing**: Translation cache issue, clear `translations/` directory
+- **Some files work, others don't**: Inconsistent module prefix application
+
+#### Branch-Specific Considerations
+- **Main/Development**: Full migration needed, test thoroughly
+- **Release branches**: Consider backporting vs full migration
+- **Feature branches**: May need rebase after main branch migration
+- **Tag/Archive branches**: Generally leave as-is unless actively maintained
+
+#### 🚨 CRITICAL: Product Naming by Branch
+**Product names and directory structures vary significantly by branch:**
+
+**Modern Branches (master, manager-5.1+):**
+- **Product Name**: MLM (Multi-Linux Manager)
+- **Build Commands**: `make antora-mlm`, `make pdf-*-mlm-en`
+- **Configuration**: Uses MLM-specific settings and file structures
+- **File Patterns**: Look for `mlm` in filenames and paths
+
+**Legacy Branches (manager-5.0, manager-4.3):**
+- **Product Name**: SUMA (SUSE Manager) 
+- **Build Commands**: `make antora-suma`, `make pdf-*-suma-en`
+- **Configuration**: Uses SUMA-specific settings and file structures
+- **File Patterns**: Look for `suma` in filenames and paths
+
+**Migration Impact:**
+```bash
+# Branch Detection Example:
+if git branch --show-current | grep -E "(master|manager-5\.1)"; then
+    PRODUCT="mlm"
+    BUILD_CMD="make antora-mlm"
+else
+    PRODUCT="suma" 
+    BUILD_CMD="make antora-suma"
+fi
+
+echo "Detected product: $PRODUCT"
+echo "Use build command: $BUILD_CMD"
+```
+
+**AI Systems MUST:**
+1. **Check branch name first** to determine product context
+2. **Use correct build commands** for testing (mlm vs suma)
+3. **Expect different file patterns** in snippet names and includes
+4. **Verify product-specific configurations** in parameters.yml and build files
+
+#### Testing Strategy
+1. **Pre-migration**: Count files, identify books, check current build status
+2. **During migration**: Apply fixes in order (files → prefixes → config → paths)
+3. **Post-migration**: Verify builds, check for broken includes, test sample content
+4. **Documentation**: Update this file with any new patterns discovered
+
+#### Success Metrics
+- ✅ Zero `include::partial$` patterns without module prefixes
+- ✅ All builds complete without "include file not found" errors  
+- ✅ Parameters.yml shows `value: partials/` (not `../../snippets/`)
+- ✅ All snippet files moved to appropriate `partials/` directories
+- ✅ Translation builds work correctly
+
+**This migration guide serves as complete context for AI systems to successfully replicate this migration across any Uyuni documentation branch.**
+
+### Mass Update Techniques Used
+
+**The following sed commands were used to efficiently fix large numbers of files:**
+
+#### Global Module Prefix Fix (Most Critical)
+```bash
+# Applied to each book individually - this fixed ~150+ include statements
+find modules/client-configuration/pages -name "*.adoc" -exec sed -i 's/include::partial\$/include::client-configuration:partial$/g' {} \;
+find modules/installation-and-upgrade/pages -name "*.adoc" -exec sed -i 's/include::partial\$/include::installation-and-upgrade:partial$/g' {} \;
+find modules/administration/pages -name "*.adoc" -exec sed -i 's/include::partial\$/include::administration:partial$/g' {} \;
+find modules/retail/pages -name "*.adoc" -exec sed -i 's/include::partial\$/include::retail:partial$/g' {} \;
+```
+
+#### PDF Path Correction for Complex Structure
+```bash
+# Fixed installation-and-upgrade book's complex nested directories
+find modules/installation-and-upgrade/pages -name "*.adoc" -exec sed -i 's|include::\.\./\.\./\.\./\.\./partials/|include::../../../../installation-and-upgrade/partials/|g' {} \;
+```
+
+#### Verification Commands
+```bash
+# Verify no missing module prefixes remain
+grep -r "include::partial\$" modules/*/pages/ && echo "❌ FAILED: Missing prefixes found!" || echo "✅ PASSED: All includes have module prefixes"
+
+# Verify build works without include errors (product-aware)
+BRANCH=$(git branch --show-current)
+if echo "$BRANCH" | grep -E "(master|manager-5\.1)"; then
+    BUILD_CMD="antora-mlm"
+else
+    BUILD_CMD="antora-suma"
+fi
+
+make $BUILD_CMD 2>&1 | grep -E "(ERROR.*include file not found)" && echo "❌ FAILED: Include errors found!" || echo "✅ PASSED: No include errors"
+```
+
+**These automation techniques enabled fixing 150+ files efficiently while maintaining accuracy across different product contexts (MLM vs SUMA).**
 
 ### Emergency Rollback
 ```bash
