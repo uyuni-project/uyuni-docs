@@ -1,3 +1,5 @@
+- Remove the option of editing the sshd_config file to
+  enable root login (bsc#1252106)
 - Added instructions for firewall settings in Administration
   Guide
 - Corected the procedure instruction in Administration Guide
