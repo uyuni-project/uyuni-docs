@@ -1,4 +1,6 @@
-- Corected the procedure instruction in Administration Guide
+- Updated and corrected the migration instructions for
+  server and proxy in Installation and Upgrade Guide
+- Corrected the procedure instruction in Administration Guide
   (bsc#1252023)
 - Improved documentation about monitoring in Administration
   Guide

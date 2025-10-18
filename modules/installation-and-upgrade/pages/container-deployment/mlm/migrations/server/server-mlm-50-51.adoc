@@ -1,7 +1,6 @@
 = Distribution Upgrade and Server Migration
-:revdate: 2025-07-29
+:revdate: 2025-10-19
 :page-revdate: {revdate}
-
 
 [NOTE]
 ====
@@ -10,6 +9,23 @@
 ====
 
 include::../../../snippet-hardened-tmpdir.adoc[leveloffset=+2]
+
+== Client Tools Rebranding
+
+{productname} {productnumber} introduces a rebranded set of client tools for all supported operating systems. This transition is seamless, and users performing a new product synchronization should only notice the updated channel names.
+
+Channels named `SUSE Manager Client Tools for XYZ`, used by clients previously registered with {productname} 4.3 or 5.0, are no longer available in version 5.1 and will no longer receive updates in 5.1.
+
+Although the legacy channels remain assigned to existing clients after migration, the corresponding repositories have been removed.
+
+To ensure continued updates, users must:
+
+- Mirror the new `SUSE Multi-Linux Manager Client Tools for XYZ` channels for the relevant products and assign them to the appropriate clients.
+- Unassign the outdated `SUSE Manager Client Tools for XYZ` channels.
+
+This also means that any CLM projects based on the old client tools must be adjusted accordingly.
+
+
 
 == {sle-micro} 5.5 to {sl-micro} 6.1
 
@@ -119,8 +135,8 @@ SUSEConnect --status-text
 
 You should see:
 
-- `SL-Micro 6.1`
-- `Multi-Linux Manager Server Extension 5.1`
+- `PRETTY_NAME="SUSE Linux Micro 6.1"`
+- `SUSE Multi-Linux Manager Server 5.1 Extension`
 
 +
 
@@ -150,6 +166,26 @@ systemctl restart sshd
 
 For more information, see xref:administration:troubleshooting/tshoot-remote-root-on-micro.adoc[].
 
++
+
+. Verify {productname} Tools
+
++
+
+[source,console]
+----
+mgradm --version
+----
+
++
+
+Expected output:
+
++
+
+- Version `5.1.11` or higher
+- References `5.1.0` or higher
+
 . Upgrade server containers
 
 +
@@ -177,28 +213,9 @@ podman ps
 
 You should see:
 
-- `server:5.1.0`
-- `server-postgresql:5.1.0`
+- `server:5.1.0` or higher
+- `server-postgresql:5.1.0` or higher
 
-+
-
-. Verify {productname} Tools
-
-+
-
-[source,console]
-----
-mgradm --version
-----
-
-+
-
-Expected output:
-
-+
-
-- Version `5.1.11` or later
-- References `5.1.0`
 _____
 
 
@@ -210,7 +227,8 @@ _____
 === Migration Complete
 
 The system is now running {productname} 5.1 on SL Micro 6.1.
-Continue with post-migration validation.
+Validate your setup before resuming production operations.
+If you have a {productname} 5.0 proxy connected to this server, proceed to the xref:installation-and-upgrade:container-deployment/mlm/migrations/proxy/proxy-mlm-50-51.adoc[] guide to upgrade the proxy host.
 
 
 
@@ -294,7 +312,7 @@ Zypper will show the possible migration targets with detailed summaries.
 
 . Select the appropriate target, and follow the prompts to complete the migration.
 
-. After the upgrade completes, stop the server and then reboot the system:
+. After the migration completes, stop the server and then reboot the system:
 
 +
 
@@ -306,8 +324,11 @@ reboot
 
 +
 
-. Post-Reboot: Verify upgrade status
+. Post-Reboot checks:
 
++
+
+Verify upgraded OS and {productname} extension:
 +
 
 [source,console]
@@ -318,10 +339,28 @@ SUSEConnect --status-text
 
 +
 
-Expected output:
+You should see:
 
 - `VERSION="15-SP7"`
-- SUSE Multi-Linux Manager Server Extension `5.1` is active
+- `SUSE Multi-Linux Manager Server 5.1 Extension for SLE`
+
++
+
+. Verify {productname} Tools version
+
++
+
+[source,console]
+----
+mgradm --version
+----
+
++
+
+Expected output:
+
+- Version `5.1.11` or higher
+- Image tag `5.1.0` or higher
 
 +
 
@@ -353,52 +392,18 @@ podman ps
 
 Expected containers:
 
-- `server:5.1.0`
-- `server-postgresql:5.1.0`
-
-+
-
-. Verify {productname} Tools version
-
-+
-
-[source,console]
-----
-mgradm --version
-----
-
-+
-
-Expected output:
-
-- Version `5.1.11` or later
-- Image tag `5.1.0`
+- `server:5.1.0` or higher
+- `server-postgresql:5.1.0` or higher
 
 _____
 
 === Migration Complete
 
-The system is now successfully upgraded to SUSE Linux Enterprise Server 15 SP7 and SUSE Multi-Linux Manager 5.1.
+The system is now running {productname} 5.1 on SUSE Linux Enterprise Server 15 SP7.
 Validate your setup before resuming production operations.
-
-[IMPORTANT]
-====
-
-{productname} {productnumber} introduces a rebranded set of client tools for all supported operating systems. This transition is seamless, and users performing a new product synchronization should only notice the updated channel names.
-
-Channels named `SUSE Manager Client Tools for XYZ`, used by clients previously registered with {productname} 4.3 or 5.0, are no longer available in version 5.1 and will no longer receive updates in 5.1.
-
-Although the legacy channels remain assigned to existing clients after migration, the corresponding repositories have been removed.
-
-To ensure continued updates, users must:
-
-- Mirror the new `SUSE Multi-Linux Manager Client Tools for XYZ` channels for the relevant products and assign them to the appropriate clients.
-- Unassign the outdated `SUSE Manager Client Tools for XYZ` channels.
-
-This also means that any CLM projects based on the old client tools must be adjusted accordingly.
-
-====
+If you have a {productname} 5.0 proxy connected to this server, proceed with xref:installation-and-upgrade:container-deployment/mlm/migrations/proxy/proxy-mlm-50-51.adoc[].
 
 
 
 include::../../../snippet-database-backup-volume.adoc[leveloffset=+2]
+

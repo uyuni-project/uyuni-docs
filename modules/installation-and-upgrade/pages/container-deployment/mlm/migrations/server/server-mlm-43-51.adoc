@@ -1,5 +1,5 @@
 = {productname} Server Migration to a Containerized Environment
-:revdate: 2025-07-09
+:revdate: 2025-10-19
 :page-revdate: {revdate}
 ifeval::[{uyuni-content} == true]
 
@@ -79,10 +79,15 @@ Running [command]``mgradm install`` and then [command]``mgradm migrate``  is not
 In the following steps, we are only preparing the host system, not installing the actual {productname} {productnumber} Server.
 ====
 
-You can use VM images on the {sl-micro} {microversion} as a migration target.
-In such a scenario, you can prepare the host system as described in xref:installation-and-upgrade:container-deployment/mlm/server-deployment-vm-mlm.adoc[] or xref:installation-and-upgrade:container-deployment/mlm/server-deployment-vmdk-mlm.adoc[].
-But at the end as the last step, instead of [command]``mgradm install`` you must execute the command [command]``mgradm migrate``.
+You can use VM images based on {sl-micro} {microversion} as a migration target.
+In such a scenario, you can prepare the host system as described in
 
+* xref:installation-and-upgrade:container-deployment/mlm/server-deployment-vm-mlm.adoc[] or
+
+* xref:installation-and-upgrade:container-deployment/mlm/server-deployment-vmdk-mlm.adoc[].
+
+However, at the end the last step is executing the command [command]``mgradm migrate <FQDN>`` instead
+of [command]``mgradm install <FQDN>``.
 
 
 
@@ -169,7 +174,7 @@ Make sure the correct CA password is available before starting the migration pro
   If custom persistent storage is required for your infrastructure, use the [command]``mgr-storage-server`` tool.
   For more information about [command]``mgr-storage-server``, see xref:installation-and-upgrade:hardware-requirements.adoc#install-hardware-requirements-storage[].
 
-. Execute the following command to install a new {productname} server.
+. Execute the following command to migrate and set up a new {productname} {productnumber} server.
   Replace [literal]``<oldserver.fqdn>`` with the FQDN of the 4.3 server:
 +
 [IMPORTANT]
@@ -181,19 +186,21 @@ Additionally, remove any unnecessary channels to help reduce the overall migrati
 [NOTE]
 ====
 The migration can take a very long time depending on the amount of data that needs to be replicated.
-To reduce downtime it is possible to run the migration multiple times in a process of _initial replication_, _re-replication_, or  _final replication and switch over_ while all the services on the old server can stay up and running.
+To reduce downtime it is possible to run the migration multiple times in a process of _initial replication_, _re-replication_, or  _final replication and switch over_ while all the services on the old 4.3 server can stay up and running.
 
-Only during the final migration the processes on the old server need to be stopped.
+Only during the final migration, the processes on the old 4.3 server need to be stopped.
 
-For all non-final replications add the parameter [command]``--prepare`` to prevent the automatic stopping the services on the old server.
-For example on {productname} server:
+For all non-final replications add the parameter [command]``--prepare`` to prevent the automatic stopping of
+services on the old 4.3 server.
+====
++
 ----
 mgradm migrate podman <oldserver.fqdn> --prepare
 ----
-====
+
 
 .Procedure: Final Migration
-. Stop the {productname} services on 4.3 Server:
+. Stop the SUSE Manager services on 4.3 Server:
 +
 ----
 spacewalk-service stop
@@ -203,7 +210,7 @@ spacewalk-service stop
 ----
 systemctl stop postgresql
 ----
-. Perform the migration on {productname} server
+. Perform the final migration on {productname} {productnumber} Server
 +
 ----
 mgradm migrate podman <oldserver.fqdn>
@@ -215,10 +222,10 @@ mgradm migrate podman <oldserver.fqdn>
 ==== Migration of the Certificates
 
 Trusted SSL CA certificates that were installed as part of an RPM and stored on {productname} 4.3 in the [path]``/usr/share/pki/trust/anchors/`` directory will not be migrated.
-Because {suse} does not install RPM packages in the container, the administrator must migrate these certificate files manually from the 4.3 installation after the migration.
+Because {suse} does not install RPM packages in the container, the administrator must migrate these certificate files manually from the SUSE Manager 4.3 server after the migration.
 
 .Procedure: Migrating the Certificates
-. Copy the file from the 4.3 server to the new server.
+. Copy the file from the SUSE Manager 4.3 Server to the new {productname} {productnumber} Server.
    For example, as [path]``/local/ca.file``.
 . Copy the file into the container with:
 +
@@ -242,8 +249,7 @@ Adjusting the IP address can be avoided if the latest version of the minion is i
 //mgradm migrate kubernetes <oldserver.fqdn>
 //----
 
-[IMPORTANT]
-====
+== Client Tools Rebranding
 
 {productname} {productnumber} introduces a rebranded set of client tools for all supported operating systems. This transition is seamless, and users performing a new product synchronization should only notice the updated channel names.
 
@@ -257,5 +263,3 @@ To ensure continued updates, users must:
 - Unassign the outdated `SUSE Manager Client Tools for XYZ` channels.
 
 This also means that any CLM projects based on the old client tools must be adjusted accordingly.
-
-====
