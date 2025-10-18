@@ -1,0 +1,240 @@
+[[workflow-migrate-to-new-client-tools-channels]]
+= Switch to New Client Tools Channels
+:revdate: 2025-05-13
+:page-revdate: {revdate}
+
+
+{productname} 5.1 introduces a new, rebranded set of client tools for all supported operating systems.
+
+This change requires some manual steps when upgrading from earlier versions to 5.1.
+
+Users performing a new product synchronization will not notice any differences. However, for products synchronized before the upgrade, you must synchronize the new client tools channels after migration.
+
+Channels previously named `SUSE Manager Client Tools for XYZ` (with labels such as `manager-tools-*`), used in SUSE Manager 4.3 or 5.0, are no longer available in version 5.1.  
+Although these old channels remain assigned to existing clients after migration, their corresponding repositories have been removed.
+
+To ensure continued updates for client tools, you must:
+
+* Mirror the new `SUSE Multi-Linux Manager Client Tools for XYZ` channels for the relevant products and assign them to the appropriate clients.
+* Update any CLM projects, activation keys, or AutoYaST profiles that reference the old client tools channels to use the new ones.
+
+This workflow demonstrates how to automate the synchronization of the new client tools channels and switch existing entities to use them via the XML-RPC API.
+
+The process involves two main steps:
+
+1. Synchronize the new client tools channels.  
+2. Update entities such as activation keys and CLM projects to use the new channels.
+
+== Use Case / Situation
+
+This workflow is intended for administrators managing {productname} 5.1. It helps automate the process of syncing new channels and updating activation keys and CLM projects, including project promotion, through the API, eliminating the need for manual operations in the {webui}.
+
+By following this workflow, you can create a Python script that:
+
+* Synchronize the new client tools channels
+* Lists all available activations keys/ CLM projects.
+* Removes old client tools channels and attaches the new ones.
+* Builds and promotes project environments
+
+== Outcome
+
+After completing this workflow, new client tools will be synced and activation key and CLM projects will be fully switched to the new client tools channels.
+
+
+== Preparation
+
+Before you start, ensure that:
+
+* You have administrator access to {productname}.
+* A working Python environment is available.
+
+
+This workflow is divided into two major steps:
+
+1. Synchronizing the new client tools channels.
+
+2. Updating CLM projects and activation keys to use these new channels.
+
+== Step-by-step Workflow
+
+
+=== Step 1: Synchronize New Client Tools Channels
+
+The first step ensures that all new client tools channels are synchronized for already installed base products.  
+This is achieved by listing all installed products via the XML-RPC API and identifying the matching client tools extensions.
+
+==== Workflow Overview
+
+The synchronization logic consists of two main operations:
+
+1. List all installed products and their associated extensions.  
+2. Add the client tools channels (`SLE-M-T` family) that are not yet synchronized.
+
+These operations use the following XML-RPC methods:
+
+* `sync.content.listProducts(key)` - Returns a list of all available products and their extensions.  
+* `sync.content.addChannel(key, channelLabel, '')` - adds a specific channel for synchronization.
+
+===== Sample Implementation
+
+----
+def find_extensions_of_synced_products(client, key):
+    """Retrieve all extensions of installed products."""
+    all_extensions = []
+    products = client.sync.content.listProducts(key)
+    for product in products:
+        if product.get('status', '').lower() == 'installed':
+            extensions = product.get('extensions', [])
+            all_extensions.extend(extensions)
+    return all_extensions
+
+
+def add_client_tools_channels(client, key, extensions, dry_run):
+    """Add all new client tools channels that are not yet synced."""
+    for ext in extensions:
+        if "Client Tools" in ext.get('friendly_name', ''):
+            for ch in ext.get('channels', []):
+                if ch.get('family') == 'SLE-M-T' and not ch.get('optional', False):
+                    if ch.get('status', '').lower() == 'installed':
+                        continue
+                    label = ch.get('label')
+                    client.sync.content.addChannel(key, label, '')
+----
+
+. Detect installed products using `client.sync.content.listProducts(key)`.  
+. Iterate through product extensions to locate those containing “Client Tools” in their `friendly_name`.  
+. For each client tools extension:
+   * Check if the channel’s `family` equals `SLE-M-T`.  
+   * Skip if the channel is already installed (`status = installed`).  
+   * Otherwise, add the channel using `client.sync.content.addChannel(key, label, '')`.  
+
+
+This will ensure that all required client tools channels are added automatically before updating CLM projects or activation keys in Step 2.  
+Once the channels have been added, they will be picked up by the next scheduled repository synchronization job.
+
+[NOTE]
+====
+If you want to trigger an immediate synchronization, you can schedule the *Single Run Schedule* task from the `mgr-sync-refresh-bunch` task family.  
+This forces the server to refresh and synchronize all newly added channels right away.
+====
+
+Based on this workflow, a helper utility script named `sync_client_tools` has been created in the https://github.com/uyuni-project/contrib[Uyuni contrib repository] that one can use. 
+
+
+=== Step 2: Update CLM Projects and Activation Keys
+
+Once the new client tools channels are synchronized, the next step is to update your Content Lifecycle Management  projects and activation keys so that they reference the new channels instead of the old ones.
+
+This ensures that clients continue receiving updates from the correct repositories.
+
+==== Workflow Overview
+
+This step consists of the following main tasks:
+
+1. Identify CLM projects that still reference the old client tools channels.  
+2. Detach old (`manager-tools`) channels and attach the new (`managertools`) channels.  
+3. Rebuild and promote the CLM project environments in the correct order.  
+4. Update related activation keys to reference the new channels.
+
+
+===== Sample Implementation
+
+. List all projects and select the one to process.  
+  For initial testing, use a single project such as `clm-project-example`:
++
+----
+projects = client.contentmanagement.listProjects(key)
+for p in projects:
+    if p['label'] == 'clm-project-example':  # Adjust to process all projects if needed
+        project_label = p['label']
+----
+Testing with a single project helps prevent large-scale accidental updates.
+
+. Retrieve project sources and identify both old (`manager-tools`) and new (`managertools`) client tools channels:
++
+----
+sources = client.contentmanagement.listProjectSources(key, project_label)
+old_tools = [s['channelLabel'] for s in sources if 'manager-tools' in s.get('channelLabel', '').lower()]
+new_tools = [s['channelLabel'] for s in sources if 'managertools' in s.get('channelLabel', '').lower()]
+----
+These lists will be used to detach outdated channels and attach the new ones.
+
+. For each old channel detected, call the `detachSource` endpoint:
++
+----
+if old_tools:
+    for old in old_tools:
+         client.contentmanagement.detachSource(key, project_label, 'software', old)
+----
+It is strongly recommended to run in dry-run mode first to validate which channels would be removed.
+
+. If the new client tools channels are not already attached, identify the matching base channel, list its child channels, and attach those with `managertools` in the label :
++
+----
+if not new_tools:
+    source_labels = [s.get('channelLabel', '') for s in sources]
+    base_channel_label = next((lbl for lbl in source_labels if lbl in base_channels), None)
+
+    if base_channel_label:
+        children = client.channel.software.listChildren(key, base_channel_label)
+        managertools_labels = [s['label'] for s in children if 'managertools' in s.get('label', '').lower()]
+        if managertools_labels:
+            for label in managertools_labels:
+                   client.contentmanagement.attachSource(key, project_label, 'software', label)
+----
+Ensure the new client tools channels are already mirrored and synchronized before attachment.
+
+. Once sources are updated, list the project environments in sequence:
++
+----
+all_envs = client.contentmanagement.listProjectEnvironments(key, project_label)
+----
+The returned list is ordered, and promotions should follow that order.
++
+Build the first environment, then promote subsequent ones with short pauses between each to ensure completion.
++
+----
+if not all_envs:
+    return
+
+first_env_label = all_envs[0]['label']
+
+for i, env in enumerate(all_envs):
+    env_label = env['label']
+    is_first_env = (env_label == first_env_label)
+
+    if is_first_env:
+        description = "Build for new client tools channels."
+        client.contentmanagement.buildProject(key, project_label, description)
+    else:
+        client.contentmanagement.promoteProject(key, project_label, env_label)
+
+    if not dry_run and i < len(all_envs) - 1:
+        log("Waiting 30 seconds before next promotion...")
+        time.sleep(30)
+----
+
+After CLM projects are updated, ensure that any activation keys referencing old client tools channels are switched to the new channels as well.  
+You can use `activationkey.listActivationKeys(key)` , `activationkey.removedChildChannels(key, key_label, channels)` and `activationkey.addChildChannels(key, key_label, channels)` to automate this process.
+
+Based on this workflow, a helper utility script named `migrate_to_new_client_tools` has been created in the https://github.com/uyuni-project/contrib[Uyuni contrib repository] to simplify and automate the migration process.  
+It can significantly reduce manual effort, but it should be used with caution. Always test the script in *dry-run* mode and on a *single entity first* (for example, one CLM project or one activation key) before running it across all projects.
+
+[NOTE]
+====
+The provided script example based on this workflow use some helper functions, mainly the following:
+
+* `log(message)` – Prints or logs messages during execution.
+* `dry_run_log(message)` – Logs intended actions when running in dry-run mode, without performing real API calls.
+* `wait_for_completion(client, key, project_label, env_label)` – Waits for build or promotion tasks to complete, ensuring that the process finishes successfully before proceeding.
+
+These helper functions are not part of the XML-RPC API but are necessary for structured output, error handling, and safe automation.  
+Without them, the script would execute API calls without clear feedback or control flow, which could lead to incomplete or unsafe project promotions.
+====
+
+[NOTE]
+====
+It is recommend to run your script in dry-run mode first to review the planned changes and test with a single project before applying it to all.
+====
+
+
