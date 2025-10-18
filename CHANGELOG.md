@@ -1,3 +1,5 @@
+- Fixed the broken references for the system details pages
+  in Reference Guide
 - Corected the procedure instruction in Administration Guide
   (bsc#1252023)
 - Improved documentation about monitoring in Administration
