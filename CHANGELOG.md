@@ -1,4 +1,5 @@
 
+- Updated the admin_* screenshots in multiple sections
 - Reformatted storage-scripts table to use plain paragraphs instead of bullet 
   lists to fix po4a extraction issue causing missing bullets in CJK translations
 - Removed Ubuntu 20.04 for SUSE Multi-Linux Manager from the list of
