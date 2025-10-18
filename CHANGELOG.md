@@ -1,3 +1,5 @@
+- Aligned the preface section to match the navigation in
+  Installation and Upgrade Guide
 - Fixed the broken references for the system details pages
   in Reference Guide
 - Corected the procedure instruction in Administration Guide
