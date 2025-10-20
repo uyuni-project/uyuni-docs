@@ -1,5 +1,5 @@
-[[workflow-migrate-to-new-client-tools-channels]]
-= Switch to New Client Tools Channels
+[[workflow-switch-to-new-client-tools-channels]]
+= Switch to new client tools channels
 :revdate: 2025-05-13
 :page-revdate: {revdate}
 
@@ -8,7 +8,8 @@
 
 This change requires some manual steps when upgrading from earlier versions to 5.1.
 
-Users performing a new product synchronization will not notice any differences. However, for products synchronized before the upgrade, you must synchronize the new client tools channels after migration.
+Users performing a new product synchronization will not notice any differences.
+However, for products synchronized before the upgrade, you must synchronize the new client tools channels after migration.
 
 Channels previously named `SUSE Manager Client Tools for XYZ` (with labels such as `manager-tools-*`), used in SUSE Manager 4.3 or 5.0, are no longer available in version 5.1.  
 Although these old channels remain assigned to existing clients after migration, their corresponding repositories have been removed.
@@ -16,25 +17,31 @@ Although these old channels remain assigned to existing clients after migration,
 To ensure continued updates for client tools, you must:
 
 * Mirror the new `SUSE Multi-Linux Manager Client Tools for XYZ` channels for the relevant products and assign them to the appropriate clients.
+
 * Update any CLM projects, activation keys, or AutoYaST profiles that reference the old client tools channels to use the new ones.
 
 This workflow demonstrates how to automate the synchronization of the new client tools channels and switch existing entities to use them via the XML-RPC API.
 
 The process involves two main steps:
 
-1. Synchronize the new client tools channels.  
-2. Update entities such as activation keys and CLM projects to use the new channels.
+. Synchronize the new client tools channels.  
+. Update entities such as activation keys and CLM projects to use the new channels.
 
-== Use Case / Situation
+
+== Use case / Situation
 
 This workflow is intended for administrators managing {productname} 5.1. It helps automate the process of syncing new channels and updating activation keys and CLM projects, including project promotion, through the API, eliminating the need for manual operations in the {webui}.
 
 By following this workflow, you can create a Python script that:
 
 * Synchronize the new client tools channels
+
 * Lists all available activations keys/ CLM projects.
+
 * Removes old client tools channels and attaches the new ones.
+
 * Builds and promotes project environments
+
 
 == Outcome
 
@@ -46,36 +53,43 @@ After completing this workflow, new client tools will be synced and activation k
 Before you start, ensure that:
 
 * You have administrator access to {productname}.
+
 * A working Python environment is available.
 
 
 This workflow is divided into two major steps:
 
-1. Synchronizing the new client tools channels.
+. Synchronizing the new client tools channels.
 
-2. Updating CLM projects and activation keys to use these new channels.
-
-== Step-by-step Workflow
+. Updating CLM projects and activation keys to use these new channels.
 
 
-=== Step 1: Synchronize New Client Tools Channels
+
+== Step-by-step workflow
+
+
+=== Step 1: Synchronize new client tools channels
 
 The first step ensures that all new client tools channels are synchronized for already installed base products.  
 This is achieved by listing all installed products via the XML-RPC API and identifying the matching client tools extensions.
 
-==== Workflow Overview
+
+==== Workflow overview
 
 The synchronization logic consists of two main operations:
 
-1. List all installed products and their associated extensions.  
-2. Add the client tools channels (`SLE-M-T` family) that are not yet synchronized.
+. List all installed products and their associated extensions.  
+. Add the client tools channels (`SLE-M-T` family) that are not yet synchronized.
+
 
 These operations use the following XML-RPC methods:
 
 * `sync.content.listProducts(key)` - Returns a list of all available products and their extensions.  
+
 * `sync.content.addChannel(key, channelLabel, '')` - adds a specific channel for synchronization.
 
-===== Sample Implementation
+
+===== Sample implementation
 
 ----
 def find_extensions_of_synced_products(client, key):
@@ -102,15 +116,21 @@ def add_client_tools_channels(client, key, extensions, dry_run):
 ----
 
 . Detect installed products using `client.sync.content.listProducts(key)`.  
+
 . Iterate through product extensions to locate those containing “Client Tools” in their `friendly_name`.  
+
 . For each client tools extension:
+
    * Check if the channel’s `family` equals `SLE-M-T`.  
+
    * Skip if the channel is already installed (`status = installed`).  
+
    * Otherwise, add the channel using `client.sync.content.addChannel(key, label, '')`.  
 
 
 This will ensure that all required client tools channels are added automatically before updating CLM projects or activation keys in Step 2.  
 Once the channels have been added, they will be picked up by the next scheduled repository synchronization job.
+
 
 [NOTE]
 ====
@@ -121,23 +141,23 @@ This forces the server to refresh and synchronize all newly added channels right
 Based on this workflow, a helper utility script named `sync_client_tools` has been created in the https://github.com/uyuni-project/contrib[Uyuni contrib repository] that one can use. 
 
 
-=== Step 2: Update CLM Projects and Activation Keys
+=== Step 2: Update CLM projects and activation keys
 
 Once the new client tools channels are synchronized, the next step is to update your Content Lifecycle Management  projects and activation keys so that they reference the new channels instead of the old ones.
 
 This ensures that clients continue receiving updates from the correct repositories.
 
-==== Workflow Overview
+==== Workflow overview
 
 This step consists of the following main tasks:
 
-1. Identify CLM projects that still reference the old client tools channels.  
-2. Detach old (`manager-tools`) channels and attach the new (`managertools`) channels.  
-3. Rebuild and promote the CLM project environments in the correct order.  
-4. Update related activation keys to reference the new channels.
+. Identify CLM projects that still reference the old client tools channels.  
+. Detach old (`manager-tools`) channels and attach the new (`managertools`) channels.  
+. Rebuild and promote the CLM project environments in the correct order.  
+. Update related activation keys to reference the new channels.
 
 
-===== Sample Implementation
+===== Sample implementation
 
 . List all projects and select the one to process.  
   For initial testing, use a single project such as `clm-project-example`:
