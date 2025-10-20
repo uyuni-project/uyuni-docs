@@ -1,4 +1,5 @@
-
+- Removed the option of editing the sshd_config file to
+  enable root login (bsc#1252106)
 - Added conditional logic for Uyuni licensing.
 - Fixed unterminated listing blocks across multiple documents.
 - Corrected table formatting issues in both Korean and 
