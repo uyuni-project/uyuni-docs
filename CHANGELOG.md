@@ -1,3 +1,5 @@
+- Removed the option of editing the sshd_config file to
+  enable root login (bsc#1252106)
 - Updated and corrected the migration instructions for
   server and proxy in Installation and Upgrade Guide
 - Corrected the procedure instruction in Administration Guide
