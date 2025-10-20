@@ -1,5 +1,11 @@
-- Remove the option of editing the sshd_config file to
+- Removed the option of editing the sshd_config file to
   enable root login (bsc#1252106)
+- Added conditional logic for Uyuni licensing.
+- Fixed unterminated listing blocks across multiple documents.
+- Corrected table formatting issues in both Korean and 
+  English versions.
+- Moved snippets to the partials directory for proper inclusion 
+  and reuse.
 - Added instructions for firewall settings in Administration
   Guide
 - Corected the procedure instruction in Administration Guide
