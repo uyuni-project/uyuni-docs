@@ -1,3 +1,5 @@
+- Removed the option of editing the sshd_config file to
+  enable root login (bsc#1252106)
 - Added workflow for switching to new client tools channels
   to Common Workflows 
 - Updated and corrected the migration instructions for
