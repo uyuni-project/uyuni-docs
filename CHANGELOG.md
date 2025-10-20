@@ -1,4 +1,4 @@
-- Update workflow for switching to new client tools channels
+- Updated workflow for switching to new client tools channels
   in Common Workflows
 - Added links to new client tools workflow in Administration
   Guide
