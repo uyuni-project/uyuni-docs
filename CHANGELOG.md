@@ -1,4 +1,4 @@
-- Add SSL certificates requirement before migrations.
+- Added SSL certificates requirement before migrations
 - Removed the option of editing the sshd_config file to
   enable root login (bsc#1252106)
 - Added conditional logic for Uyuni licensing.
