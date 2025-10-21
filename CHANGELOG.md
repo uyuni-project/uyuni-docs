@@ -1,3 +1,4 @@
+- Fix volumes, ports and air-gapped install after database split
 - Added SSL certificates requirement before migrations
 - Removed the option of editing the sshd_config file to
   enable root login (bsc#1252106)
