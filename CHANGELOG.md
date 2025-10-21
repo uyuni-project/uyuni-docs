@@ -1,3 +1,4 @@
+- Fix the proxy timeout procedure (bsc#1252020)
 - Added SSL certificates requirement before migrations
 - Removed the option of editing the sshd_config file to
   enable root login (bsc#1252106)
