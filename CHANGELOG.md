@@ -1,3 +1,4 @@
+- Added SSL certificates requirement before migrations
 - Updated workflow for switching to new client tools channels
   in Common Workflows
 - Added links to new client tools workflow in Administration
