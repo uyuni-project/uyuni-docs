@@ -12,57 +12,57 @@ endif::[]
 // We need to figure out which mlm versions prior to the container release can or should be migrated. Something like any version prior to yyyy.mm and later than.
 
 
-== Requirements and Considerations
+== Requirements and considerations
 
 
-=== General
+=== General requirements
 
 * To migrate a {productname} 4.3 Server to a container, you require a new machine with {sl-micro} {microversion} or {sles} {bci-mlm} and [literal]``mgradm`` installed.
 
 * An in-place migration from {productname} 4.3 to {productnumber} is not supported, regardless of whether the chosen host operating system is {sl-micro} {microversion} or {sles} {bci-mlm}.
 
 * Before migrating from {productname} 4.3 to {productnumber}, any existing traditional clients including the traditional proxies must be migrated to {salt}.
-For more information about migrating traditional {productname} 4.3 clients to {salt} clients, see https://documentation.suse.com/suma/4.3/en/suse-manager/client-configuration/contact-methods-migrate-traditional.html.
+For more information about migrating traditional {productname} 4.3 clients to {salt} clients, see https://documentation.suse.com/suma/4.3/en/suse-manager/client-configuration/contact-methods-migrate-traditional.html[Migrate Traditional Clients to Salt Clients].
 
 * Traditional contact protocol is no longer supported in {productname} 5.0 and later.
 
 [IMPORTANT]
 ====
 This guide only covers the migration from {productname} 4.3 to {productnumber}.
+
 Migrating an existing {productname} {productnumber} instance to the same version while switching the host operating system from {sl-micro} {microversion} to {sles} {bci-mlm}, or vice versa, is not handled by the [command]``mgradm migrate`` command.
 ====
 
+
 === Hostnames
 
-* The current migration procedure does not include functionality for renaming hostnames.
-  As a result, the fully qualified domain name (FQDN) of the new server will remain the same as that of the old server.
+* Current migration procedure does not include functionality for renaming hostnames.
+  As a result, fully qualified domain name (FQDN) of the new server will remain the same as that of the old server.
 
 * The IP address must remain unchanged to ensure that the clients can contact the server.
-+
+
+
 [IMPORTANT]
 ====
-After the migration, it will be necessary to manually update the DHCP and DNS records to point to the new server.
+After the migration, it is necessary to manually update the DHCP and DNS records to point to the new server.
 ====
 
 
-=== GPG Keys
+=== GPG keys
 
-* Self trusted GPG keys are not migrated.
+* Self-trusted GPG keys are not migrated.
 * GPG keys that are trusted in the RPM database only are not migrated.
-  Thus synchronizing channels with [command]``spacewalk-repo-sync`` can fail.
+  Thus, synchronizing channels with [command]``spacewalk-repo-sync`` can fail.
 * The administrator must migrate these keys manually from the 4.3 installation to the container host after the actual server migration.
 +
-.Procedure: Manual Migration of the 4.3 GPG Keys to New Server
+.Procedure: Manual migration of the 4.3 GPG keys to the new server
+[role=procedure]
+____
 . Copy the keys from the 4.3 server to the container host of the new server.
+
 . Later, add each key to the migrated server with the command [command]``mgradm gpg add <PATH_TO_KEY_FILE>``.
+____
 
-
-////
-The current migration procedure does not include functionality for renaming hostnames.
-As a result, the fully qualified domain name (FQDN) of the new server will remain the same as that of the old server.
-Additionally, the IP address must remain unchanged to ensure that the clients can contact the server.
-After the migration, it will be necessary to manually update the DHCP and DNS records to point to the new server.
-////
 
 === SSL certificates
 
@@ -73,7 +73,7 @@ During a migration the server SSL certificate and CA chain are copied from the s
 
 == Migration
 
-===  Prepare {productname} {productnumber} Server Host
+===  Prepare {productname} {productnumber} server host
 
 [IMPORTANT]
 ====
@@ -88,7 +88,13 @@ In the following steps, we are only preparing the host system, not installing th
 You can use VM images based on {sl-micro} {microversion} as a migration target.
 In such a scenario, you can prepare the host system as described in
 
-* xref:installation-and-upgrade:container-deployment/mlm/server-deployment-vm-mlm.adoc[] or
+* xref:installation-and-upgrade:container-deployment/mlm/server-deployment-vm-mlm.adoc[] 
+
++
+
+or
+
++
 
 * xref:installation-and-upgrade:container-deployment/mlm/server-deployment-vmdk-mlm.adoc[].
 
@@ -104,25 +110,34 @@ include::../../../snippet-prepare-micro-host.adoc[leveloffset=+2]
 include::../../../snippet-prepare-sles-host.adoc[leveloffset=+2]
 
 
-=== SSH Connection Preparation
+=== SSH connection preparation
 
 This step ensures that the new {productname} {productnumber} Server can connect to the existing 4.3 Server over SSH without requiring a password.
 It involves generating and configuring SSH keys, setting up an SSH agent, and copying the public key to the old server.
 This setup is required for the migration process to run without manual intervention.
 
-.Procedure: Preparing the SSH Connection
+.Procedure: Preparing the SSH connection
+[role=procedure]
+____
 . Ensure that for [systemitem]``root`` an SSH key exists on the new {productnumber} server.
   If a key does not exist, create it with:
+
 +
+
 ----
 ssh-keygen -t rsa
 ----
+
 . The SSH configuration and agent should be ready on the new server for a connection to the 4.3 server that does not prompt for a password.
+
 +
+
 ----
 eval $(ssh-agent); ssh-add
 ----
+
 +
+
 [NOTE]
 ====
 To establish a connection that does not prompt for a password, the migration script relies on an SSH agent running on the new server.
@@ -150,7 +165,10 @@ For more information, see the [literal]``ssh-copy-id`` manpage.
   Then try again.
   The fingerprint will be stored in the local [path]``~/.ssh/known_hosts`` file.
 
-=== Perform the Migration
+____
+
+
+=== Perform the migration
 
 When planning your migration from SUSE Manager 4.3 to {productname} {productnumber}, ensure that your target instance meets or exceeds the specifications of the old setup.
 
@@ -175,20 +193,26 @@ Make sure the correct CA password is available before starting the migration pro
 ====
 
 
-.Procedure: Performing the Migration
+.Procedure: Performing the migration
+[role=procedure]
+____
 . This step is optional.
   If custom persistent storage is required for your infrastructure, use the [command]``mgr-storage-server`` tool.
   For more information about [command]``mgr-storage-server``, see xref:installation-and-upgrade:hardware-requirements.adoc#install-hardware-requirements-storage[].
 
 . Execute the following command to migrate and set up a new {productname} {productnumber} server.
   Replace [literal]``<oldserver.fqdn>`` with the FQDN of the 4.3 server:
+
 +
+
 [IMPORTANT]
 ====
 Make sure to upgrade your 4.3 server and apply all available updates before starting the migration process.
 Additionally, remove any unnecessary channels to help reduce the overall migration time.
 ====
+
 +
+
 [NOTE]
 ====
 The migration can take a very long time depending on the amount of data that needs to be replicated.
@@ -199,45 +223,66 @@ Only during the final migration, the processes on the old 4.3 server need to be 
 For all non-final replications add the parameter [command]``--prepare`` to prevent the automatic stopping of
 services on the old 4.3 server.
 ====
+
 +
+
 ----
 mgradm migrate podman <oldserver.fqdn> --prepare
 ----
+____
 
 
-.Procedure: Final Migration
+.Procedure: Final migration
+[role=procedure]
+____
 . Stop the SUSE Manager services on 4.3 Server:
+
 +
+
 ----
 spacewalk-service stop
 ----
+
 . Stop the PostgreSQL service on 4.3 Server:
+
 +
+
 ----
 systemctl stop postgresql
 ----
+
 . Perform the final migration on {productname} {productnumber} Server
+
 +
+
 ----
 mgradm migrate podman <oldserver.fqdn>
 ----
 
 . Migrate trusted SSL CA certificates.
 
+____
 
-==== Migration of the Certificates
+
+==== Migration of the certificates
 
 Trusted SSL CA certificates that were installed as part of an RPM and stored on {productname} 4.3 in the [path]``/usr/share/pki/trust/anchors/`` directory will not be migrated.
 Because {suse} does not install RPM packages in the container, the administrator must migrate these certificate files manually from the SUSE Manager 4.3 server after the migration.
 
-.Procedure: Migrating the Certificates
+.Procedure: Migrating the certificates
+[role=procedure]
+____
 . Copy the file from the SUSE Manager 4.3 Server to the new {productname} {productnumber} Server.
    For example, as [path]``/local/ca.file``.
+
 . Copy the file into the container with:
+
 +
+
 ----
 mgrctl cp /local/ca.file server:/etc/pki/trust/anchors/
 ----
+____
 
 
 [IMPORTANT]
@@ -255,18 +300,21 @@ Adjusting the IP address can be avoided if the latest version of the minion is i
 //mgradm migrate kubernetes <oldserver.fqdn>
 //----
 
-== Client Tools Rebranding
 
-{productname} {productnumber} introduces a rebranded set of client tools for all supported operating systems. This transition is seamless, and users performing a new product synchronization should only notice the updated channel names.
+== Client tools rebranding
 
-Channels named `SUSE Manager Client Tools for XYZ`, used by clients previously registered with {productname} 4.3 or 5.0, are no longer available in version 5.1 and will no longer receive updates in 5.1.
+{productname} {productnumber} introduces a rebranded set of client tools for all supported operating systems. 
+This transition is seamless, and users performing a new product synchronization should only notice the updated channel names.
+
+Channels named [literal]``SUSE Manager Client Tools for XYZ``, used by clients previously registered with {productname} 4.3 or 5.0, are no longer available in version 5.1 and will no longer receive updates in 5.1.
 
 Although the legacy channels remain assigned to existing clients after migration, the corresponding repositories have been removed.
 
 To ensure continued updates, users must:
 
-- Mirror the new `SUSE Multi-Linux Manager Client Tools for XYZ` channels for the relevant products and assign them to the appropriate clients.
-- Unassign the outdated `SUSE Manager Client Tools for XYZ` channels.
+* Mirror the new [literal]``SUSE Multi-Linux Manager Client Tools for XYZ`` channels for the relevant products and assign them to the appropriate clients.
+
+* Unassign the outdated [literal]``SUSE Manager Client Tools for XYZ`` channels.
 
 This also means that any CLM projects based on the old client tools must be adjusted accordingly.
 
