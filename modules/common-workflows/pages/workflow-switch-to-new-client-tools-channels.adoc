@@ -11,7 +11,7 @@ This change requires some manual steps when upgrading from earlier versions to 5
 Users performing a new product synchronization will not notice any differences.
 However, for products synchronized before the upgrade, you must synchronize the new client tools channels after migration.
 
-Channels previously named `SUSE Manager Client Tools for XYZ` (with labels such as `manager-tools-*`), used in SUSE Manager 4.3 or 5.0, are no longer available in version 5.1.  
+Channels previously named `SUSE Manager Client Tools for XYZ` (with labels such as `manager-tools-*`), used in SUSE Manager 4.3 or 5.0, are no longer available in version 5.1.
 Although these old channels remain assigned to existing clients after migration, their corresponding repositories have been removed.
 
 To ensure continued updates for client tools, you must:
@@ -22,9 +22,16 @@ To ensure continued updates for client tools, you must:
 
 This workflow demonstrates how to automate the synchronization of the new client tools channels and switch existing entities to use them via the XML-RPC API.
 
+[NOTE]
+====
+In order to get the new client tools, a product catalog refresh is required first.
+You can trigger a refresh either via the {webui} or via the command line with
+`mgr-sync refresh`.
+====
+
 The process involves two main steps:
 
-. Synchronize the new client tools channels.  
+. Synchronize the new client tools channels.
 . Update entities such as activation keys and CLM projects to use the new channels.
 
 
@@ -76,9 +83,16 @@ This is achieved by listing all installed products via the XML-RPC API and ident
 
 ==== Workflow overview
 
+[NOTE]
+====
+In order to get the new client tools, a product catalog refresh is required first.
+You can trigger a refresh either via the {webui} or via the command line with
+`mgr-sync refresh`.
+====
+
 The synchronization logic consists of two main operations:
 
-. List all installed products and their associated extensions.  
+. List all installed products and their associated extensions.
 . Add the client tools channels (`SLE-M-T` family) that are not yet synchronized.
 
 
@@ -115,30 +129,30 @@ def add_client_tools_channels(client, key, extensions, dry_run):
                     client.sync.content.addChannel(key, label, '')
 ----
 
-. Detect installed products using `client.sync.content.listProducts(key)`.  
+. Detect installed products using `client.sync.content.listProducts(key)`.
 
-. Iterate through product extensions to locate those containing “Client Tools” in their `friendly_name`.  
+. Iterate through product extensions to locate those containing “Client Tools” in their `friendly_name`.
 
 . For each client tools extension:
 
-   * Check if the channel’s `family` equals `SLE-M-T`.  
+   * Check if the channel’s `family` equals `SLE-M-T`.
 
-   * Skip if the channel is already installed (`status = installed`).  
+   * Skip if the channel is already installed (`status = installed`).
 
-   * Otherwise, add the channel using `client.sync.content.addChannel(key, label, '')`.  
+   * Otherwise, add the channel using `client.sync.content.addChannel(key, label, '')`.
 
 
-This will ensure that all required client tools channels are added automatically before updating CLM projects or activation keys in Step 2.  
+This will ensure that all required client tools channels are added automatically before updating CLM projects or activation keys in Step 2.
 Once the channels have been added, they will be picked up by the next scheduled repository synchronization job.
 
 
 [NOTE]
 ====
-If you want to trigger an immediate synchronization, you can schedule the *Single Run Schedule* task from the `mgr-sync-refresh-bunch` task family.  
+If you want to trigger an immediate synchronization, you can schedule the *Single Run Schedule* task from the `mgr-sync-refresh-bunch` task family.
 This forces the server to refresh and synchronize all newly added channels right away.
 ====
 
-Based on this workflow, a helper utility script named `sync_client_tools` has been created in the https://github.com/uyuni-project/contrib[Uyuni contrib repository] that one can use. 
+Based on this workflow, a helper utility script named `sync_client_tools` has been created in the https://github.com/uyuni-project/contrib[Uyuni contrib repository] that one can use.
 
 
 === Step 2: Update CLM projects and activation keys
@@ -151,15 +165,15 @@ This ensures that clients continue receiving updates from the correct repositori
 
 This step consists of the following main tasks:
 
-. Identify CLM projects that still reference the old client tools channels.  
-. Detach old (`manager-tools`) channels and attach the new (`managertools`) channels.  
-. Rebuild and promote the CLM project environments in the correct order.  
+. Identify CLM projects that still reference the old client tools channels.
+. Detach old (`manager-tools`) channels and attach the new (`managertools`) channels.
+. Rebuild and promote the CLM project environments in the correct order.
 . Update related activation keys to reference the new channels.
 
 
 ===== Sample implementation
 
-. List all projects and select the one to process.  
+. List all projects and select the one to process.
   For initial testing, use a single project such as `clm-project-example`:
 +
 ----
@@ -188,7 +202,7 @@ if old_tools:
 ----
 It is strongly recommended to run in dry-run mode first to validate which channels would be removed.
 
-. If the new client tools channels are not already attached, identify the matching base channel, list its child channels, and attach those with `managertools` in the label :
+. If the new client tools channels are not already attached, identify the matching base channel, list its child channels, and attach those with `managertools` in the label:
 +
 ----
 if not new_tools:
@@ -234,7 +248,7 @@ for i, env in enumerate(all_envs):
         time.sleep(30)
 ----
 
-After CLM projects are updated, ensure that any activation keys referencing old client tools channels are switched to the new channels as well.  
+After CLM projects are updated, ensure that any activation keys referencing old client tools channels are switched to the new channels as well.
 You can use the following API calls
 
 * `activationkey.listActivationKeys(key)`
@@ -243,7 +257,7 @@ You can use the following API calls
 
 to automate this process.
 
-Based on this workflow, a helper utility script named `migrate_to_new_client_tools` has been created in the https://github.com/uyuni-project/contrib[Uyuni contrib repository] to simplify and automate the migration process.  
+Based on this workflow, a helper utility script named `migrate_to_new_client_tools` has been created in the https://github.com/uyuni-project/contrib[Uyuni contrib repository] to simplify and automate the migration process.
 It can significantly reduce manual effort, but it should be used with caution. Always test the script in *dry-run* mode and on a *single entity first* (for example, one CLM project or one activation key) before running it across all projects.
 
 [NOTE]
@@ -254,7 +268,7 @@ The provided script example based on this workflow use some helper functions, ma
 * `dry_run_log(message)` – Logs intended actions when running in dry-run mode, without performing real API calls.
 * `wait_for_completion(client, key, project_label, env_label)` – Waits for build or promotion tasks to complete, ensuring that the process finishes successfully before proceeding.
 
-These helper functions are not part of the XML-RPC API but are necessary for structured output, error handling, and safe automation.  
+These helper functions are not part of the XML-RPC API but are necessary for structured output, error handling, and safe automation.
 Without them, the script would execute API calls without clear feedback or control flow, which could lead to incomplete or unsafe project promotions.
 ====
 
