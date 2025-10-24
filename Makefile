@@ -182,23 +182,119 @@ define pdf-book-create-index
 		$(1)/modules/$(2)/nav-$(2)-guide.adoc > $(1)/modules/$(2)/nav-$(2)-guide.pdf.$(3).adoc
 endef
 
+# Color definitions
+CYAN := $(shell tput setaf 6)
+GREEN := $(shell tput setaf 2)
+YELLOW := $(shell tput setaf 3)
+BLUE := $(shell tput setaf 4)
+MAGENTA := $(shell tput setaf 5)
+RED := $(shell tput setaf 1)
+RESET := $(shell tput sgr0)
+BOLD := $(shell tput bold)
+
+# Default target - show help
+.DEFAULT_GOAL := help
+
 # Help Menu
-PHONY: help
-help: ## Prints a basic help menu about available targets
-	@IFS=$$'\n' ; \
-	help_lines=(`fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##/:/'`); \
-	printf "%-30s %s\n" "target" "help" ; \
-	printf "%-30s %s\n" "------" "----" ; \
-	for help_line in $${help_lines[@]}; do \
-		IFS=$$':' ; \
-		help_split=($$help_line) ; \
-		help_command=`echo $${help_split[0]} | sed -e 's/^ *//' -e 's/ *$$//'` ; \
-		help_info=`echo $${help_split[2]} | sed -e 's/^ *//' -e 's/ *$$//'` ; \
-		printf '\033[36m'; \
-		printf "%-30s %s" $$help_command ; \
-		printf '\033[0m'; \
-		printf "%s\n" $$help_info; \
-	done
+.PHONY: help
+help:
+	@printf "$(CYAN)============================================$(RESET)\n"
+	@printf "$(BOLD)   Uyuni Documentation Build System$(RESET)\n"
+	@printf "$(CYAN)============================================$(RESET)\n"
+	@printf "\n"
+	@printf "$(GREEN)CONFIGURATION:$(RESET) $(YELLOW)(Run this first to configure your product)$(RESET)\n"
+	@printf "  $(CYAN)configure-uyuni$(RESET)                Configure for Uyuni builds\n"
+	@printf "  $(CYAN)configure-mlm$(RESET)                  Configure for SUSE MLM builds\n"
+	@printf "\n"
+	@printf "$(GREEN)QUICK START EXAMPLES:$(RESET)\n"
+	@printf "  $(CYAN)make html-uyuni$(RESET)                Build Uyuni HTML for ALL languages (fast)\n"
+	@printf "  $(CYAN)make html-uyuni-en$(RESET)             Build Uyuni HTML only (fast, single language)\n"
+	@printf "  $(CYAN)make antora-uyuni-en$(RESET)           Build Uyuni HTML + PDFs (complete, single language)\n"
+	@printf "  $(CYAN)make obs-packages-uyuni$(RESET)        Build complete Uyuni for ALL languages + packaging\n"
+	@printf "  $(CYAN)make clean-en$(RESET)                  Clean English build artifacts\n"
+	@printf "\n"
+	@printf "$(GREEN)HTML DOCUMENTATION BUILDS:$(RESET)\n"
+	@printf "  $(CYAN)html-uyuni-<lang>$(RESET)              Build Uyuni HTML only (fast development)\n"
+	@printf "  $(CYAN)html-mlm-<lang>$(RESET)                Build SUSE MLM HTML only (fast development)\n"
+	@printf "  $(CYAN)antora-uyuni-<lang>$(RESET)            Build Uyuni HTML + PDF (complete build)\n"
+	@printf "  $(CYAN)antora-mlm-<lang>$(RESET)              Build SUSE MLM HTML + PDF (complete build)\n"
+	@printf "\n"
+	@printf "$(GREEN)PDF DOCUMENTATION BUILDS:$(RESET)\n"
+	@printf "  $(CYAN)pdf-all-uyuni-<lang>$(RESET)           Build ALL Uyuni PDF guides\n"
+	@printf "  $(CYAN)pdf-all-mlm-<lang>$(RESET)             Build ALL SUSE MLM PDF guides\n"
+	@printf "  $(CYAN)pdf-<section>-uyuni-<lang>$(RESET)     Build single Uyuni PDF guide\n"
+	@printf "  $(CYAN)pdf-<section>-mlm-<lang>$(RESET)       Build single SUSE MLM PDF guide\n"
+	@printf "\n"
+	@printf "$(GREEN)COMPLETE BUILD + PACKAGING:$(RESET)\n"
+	@printf "  $(CYAN)obs-packages-uyuni$(RESET)             Complete Uyuni build for ALL languages\n"
+	@printf "  $(CYAN)obs-packages-mlm$(RESET)               Complete SUSE MLM build for ALL languages\n"
+	@printf "  $(CYAN)obs-packages-uyuni-<lang>$(RESET)      Complete Uyuni build (single language)\n"
+	@printf "  $(CYAN)obs-packages-mlm-<lang>$(RESET)        Complete SUSE MLM build (single language)\n"
+	@printf "\n"
+	@printf "$(GREEN)VALIDATION & QUALITY:$(RESET)\n"
+	@printf "  $(CYAN)validate-uyuni-<lang>$(RESET)          Validate Uyuni documentation structure\n"
+	@printf "  $(CYAN)validate-mlm-<lang>$(RESET)            Validate SUSE MLM documentation structure\n"
+	@printf "  $(CYAN)checkstyle$(RESET)                     Check AsciiDoc style compliance\n"
+	@printf "  $(CYAN)checkstyle-autofix$(RESET)             Auto-fix AsciiDoc style issues\n"
+	@printf "\n"
+	@printf "$(GREEN)MAINTENANCE & CLEANUP:$(RESET)\n"
+	@printf "  $(CYAN)clean-<lang>$(RESET)                   Remove build artifacts for specific language\n"
+	@printf "  $(CYAN)clean$(RESET)                          Remove all build artifacts\n"
+	@printf "  $(CYAN)clean-branding$(RESET)                 Remove all branding files\n"
+	@printf "\n"
+	@printf "$(GREEN)DEBUG & DEVELOPMENT:$(RESET)\n"
+	@printf "  $(CYAN)debug-help$(RESET)                     Show debug usage and test colors\n"
+	@printf "  $(CYAN)test-colors$(RESET)                    Test color output functionality\n"
+	@printf "  $(CYAN)list-targets$(RESET)                   List all available build targets\n"
+	@printf "\n"
+	@printf "$(GREEN)AVAILABLE LANGUAGES:$(RESET)\n"
+	@printf "  $(YELLOW)en$(RESET) (English)    $(YELLOW)ja$(RESET) (Japanese)    $(YELLOW)ko$(RESET) (Korean)    $(YELLOW)zh_CN$(RESET) (Chinese)\n"
+	@printf "\n"
+	@printf "$(GREEN)AVAILABLE PDF SECTIONS:$(RESET)\n"
+	@printf "  $(YELLOW)installation-and-upgrade$(RESET)      $(YELLOW)client-configuration$(RESET)      $(YELLOW)administration$(RESET)\n"
+	@printf "  $(YELLOW)reference$(RESET)                     $(YELLOW)retail$(RESET)                    $(YELLOW)common-workflows$(RESET)\n"
+	@printf "  $(YELLOW)specialized-guides$(RESET)            $(YELLOW)legal$(RESET)\n"
+	@printf "\n"
+	@printf "$(GREEN)DEBUG OPTIONS:$(RESET)\n"
+	@printf "  $(CYAN)DEBUG=1 <target>$(RESET)               Enable verbose build output\n"
+	@printf "  $(CYAN)VERBOSE_LOG=1 <target>$(RESET)         Enable colored progress messages\n"
+	@printf "\n"
+
+.PHONY: test-colors
+test-colors:
+	@printf "$(CYAN)Testing color output:$(RESET)\n"
+	@printf "$(GREEN)✓ Green text (success)$(RESET)\n"
+	@printf "$(YELLOW)⚠ Yellow text (warning)$(RESET)\n"
+	@printf "$(BLUE)ℹ Blue text (info)$(RESET)\n"
+	@printf "$(MAGENTA)✦ Magenta text (special)$(RESET)\n"
+	@printf "$(CYAN)➜ Cyan text (commands)$(RESET)\n"
+	@printf "$(BOLD)Bold text$(RESET)\n"
+
+.PHONY: debug-help
+debug-help:
+	@printf "$(CYAN)============================================$(RESET)\n"
+	@printf "$(BOLD)   Debug and Development Help$(RESET)\n"
+	@printf "$(CYAN)============================================$(RESET)\n"
+	@printf "\n"
+	@printf "$(GREEN)Available Debug Options:$(RESET)\n"
+	@printf "  $(CYAN)DEBUG=1$(RESET)          Enable verbose output for troubleshooting\n"
+	@printf "  $(CYAN)VERBOSE_LOG=1$(RESET)    Enable colored progress messages during build\n"
+	@printf "\n"
+	@printf "$(GREEN)Examples:$(RESET)\n"
+	@printf "  $(YELLOW)make DEBUG=1 html-uyuni-en$(RESET)         Build with verbose output\n"
+	@printf "  $(YELLOW)make VERBOSE_LOG=1 antora-uyuni$(RESET)    Build with colored progress\n"
+	@printf "\n"
+
+.PHONY: list-targets
+list-targets:
+	@printf "$(CYAN)============================================$(RESET)\n"
+	@printf "$(BOLD)   All Available Make Targets$(RESET)\n"
+	@printf "$(CYAN)============================================$(RESET)\n"
+	@printf "\n"
+	@$(MAKE) -pRrq -f $(firstword $(MAKEFILE_LIST)) : 2>/dev/null | \
+		awk -v RS= -F: '/^# File/,/^# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | \
+		sort | grep -E -v -e '^[^[:alnum:]]' -e '^$@$$' | \
+		pr -t -w 80 -4
 
 .PHONY: configure-mlm
 configure-mlm:
