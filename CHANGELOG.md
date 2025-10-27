@@ -1,3 +1,5 @@
+- Updated and corrected the migration instructions for
+  server and proxy in Installation and Upgrade Guide
 - Added SSL certificates requirement before migrations
 - Removed the option of editing the sshd_config file to
   enable root login (bsc#1252106)
