@@ -1,3 +1,5 @@
+- Added product refresh step under proxy migration in
+  Administration Guide and Common Workflows
 - Added SSL certificates requirement before migrations
 - Updated workflow for switching to new client tools channels
   in Common Workflows
