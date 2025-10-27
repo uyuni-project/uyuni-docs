@@ -1,0 +1,195 @@
+= Migrate {productname} Server from SUSE Micro 5.5 to Tumbleweed
+:revdate: 2025-10-27
+:page-revdate: {revdate}
+:description: This page describes how to migrate a {productname} Server running on SUSE Micro 5.5 to a fresh host running openSUSE Tumbleweed as the base OS.
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+This page describes a simple, backup-and-restore migration of a {productname} Server running on SUSE Micro 5.5 to a fresh host running openSUSE Tumbleweed as the base OS.
+
+
+== Overview of the Migration Process
+
+You will:
+
+* Create a full server backup with [command]``mgradm backup`` on the SUSE Micro 5.5 host.
+* Reinstall the host with openSUSE Tumbleweed (server profile).
+* Install {productname} tools and prerequisites on Tumbleweed.
+* Restore the backup with [command]``mgradm backup restore``.
+* Start services and verify the server.
+
+
+== Requirements and Considerations
+
+* Source server: SUSE Micro 5.5 running {productname} (for example: {productnumber}).
+* Target server: openSUSE Tumbleweed with the same hostname/FQDN and IP (recommended) to avoid client-side changes.
+* SSH/scp access between machines for transferring the backup tarball.
+* Sufficient free disk space on both source and target for the backup and restore.
+
+[IMPORTANT]
+====
+Restore to the same {productname} version you backed up, or a version explicitly documented as compatible for restore. If you use development or preview repositories (for example, Uyuni Master), expect changes and re-validate.
+====
+
+== Migration Procedure
+
+=== Step 1: Create a Backup on the SUSE Micro 5.5 Server
+.Procedure:  Create a Backup
+[role="procedure"]
+____
+. As root on the old server, create a backup directory and run the backup:
+
++
+
+[source,shell]
+----
+mgradm backup /tmp/uyuni-backup
+----
+. Package the backup for transfer:
+
++
+
+[source,shell]
+----
+tar -C /tmp -cvf /tmp/uyuni-backup.tar uyuni-backup
+----
+. Copy the backup to a safe location you can reach from the new host:
+
++
+
+[source,shell]
+----
+scp /tmp/uyuni-backup.tar <USER>@<HOST>:/path/to/store/
+----
+
+[TIP]
+====
+You can store the backup to external storage or an object store as long as you can fetch it on the new host.
+====
+
+____
+
+=== Step 2: Reinstall the Host with openSUSE Tumbleweed
+.Procedure: Reinstall the Host
+[role="procedure"]
+____
+
+. Reprovision the VM or bare-metal host with openSUSE Tumbleweed.
+. Choose a basic “server profile” installation.
+. Set the same hostname/FQDN and IP address as the original server if you want clients to reconnect seamlessly.
+
+____
+
+=== Step 3: Install {productname} Tools and Prerequisites on Tumbleweed
+
+.Procedure: Install Tools and Prerequisites
+[role="procedure"]
+____
+
+. Add the Uyuni Master repository and install tools:
++
+[source,shell]
+----
+zypper ar https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Master/images/repo/Uyuni-Server-POOL-x86_64-Media1 uyuni-server-master
+zypper ref
+zypper in mgradm mgrctl mgradm-bash-completion mgrctl-bash-completion uyuni-storage-setup-server
+----
+. Install Podman if it was not automatically pulled in:
+
++
+
+[source,shell]
+----
+zypper in podman
+----
+
+[NOTE]
+====
+The package [package]``uyuni-storage-setup-server`` provides the [command]``mgr-storage-server`` tool for preparing persistent volumes. Installing [package]``podman`` explicitly may be necessary on some installations.
+====
+
+____
+
+=== Step 4: Optional - Prepare Persistent Storage
+
+.Procedure: Prepare Persistent Storage
+[role="procedure"]
+____
+
+It is recommended to configure persistent storage with [command]``mgr-storage-server`` to avoid container full-disk issues.
+
+[source,shell]
+----
+mgr-storage-server <storage-disk-device> [<database-disk-device>]
+----
+
+[NOTE]
+====
+Devices must be raw (no existing filesystem). The tool creates volumes at [path]``/var/lib/containers/storage/volumes``.
+
+For details, see:
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+====
+
+____
+
+=== Step 5 Fetch and Restore the Backup on Tumbleweed
+
+.Procedure: Fetch and Restore the Backup
+[role="procedure"]
+____
+
+. Copy the backup to the new server and unpack it:
+
++
+
+[source,shell]
+----
+scp <USER>@<HOST>:/path/to/store/uyuni-backup.tar /tmp/
+tar -C /tmp -xvf /tmp/uyuni-backup.tar
+----
+. Restore using [command]``mgradm`` (point to the extracted backup directory):
+
++
+
+[source,shell]
+----
+mgradm backup restore /tmp/uyuni-backup
+----
+
+____
+
+=== Step 6: Start Services and Verify
+
+.Procedure: Start Services and Verify
+
+. Start the server services:
+
++
+
+[source,shell]
+----
+mgradm start
+----
+. Verify:
+** Check that all containers are up: [command]``mgrctl ps`` or [command]``podman ps``.
+** Access the Web UI (HTTPS) and log in.
+** Review logs for errors: [command]``mgrctl logs server`` and other components as needed.
+
+___
+
+== Notes and Troubleshooting
+
+* If Podman wasn’t installed automatically, install it with [command]``zypper in podman`` and rerun the restore/start steps.
+* Ensure the target host has the same time, hostname, and IP configuration expected by your setup (especially if clients exist).
+* For large environments, ensure adequate disk throughput and space. The backup and restore can take a long time.
+
+[IMPORTANT]
+====
+If the restore fails or the new system cannot start, you can still boot the original SUSE Micro 5.5 system and continue service. Keep the original VM/snapshots until you fully validate the new Tumbleweed-based server.
+====
+
