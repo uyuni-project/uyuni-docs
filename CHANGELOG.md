@@ -1,3 +1,4 @@
+- Added troubleshooting section for mass duplicate machine_id
 - Improved recommendation in Large Deployments Guide
   (bsc#1252723)
 - Corected the procedure instruction in Administration Guide
