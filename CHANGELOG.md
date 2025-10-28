@@ -1,3 +1,5 @@
+- Improved section about Saline deployment in Specialized
+  Guides (bsc#1252637)
 - Improved recommendation in Large Deployments Guide
   (bsc#1252723)
 - Added Tumbleweed migration for Uyuni
