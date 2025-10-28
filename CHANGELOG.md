@@ -1,3 +1,5 @@
+- Improved recommendation in Large Deployments Guide
+  (bsc#1252723)
 - Added Tumbleweed migration for Uyuni
 - Updated and corrected the migration instructions for
   server and proxy in Installation and Upgrade Guide
