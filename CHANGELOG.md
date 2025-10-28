@@ -1,3 +1,5 @@
+- - Improved recommendation in Large Deployments Guide
+  (bsc#1252723)
 - Corected the procedure instruction in Administration Guide
   (bsc#1252023)
 - Corrected the command in Client Configuration Guide (bsc#1249148)
