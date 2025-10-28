@@ -1,5 +1,5 @@
-= Proxy Migration
-:revdate: 2025-06-17
+= Proxy Migration from 5.0 to 5.1
+:revdate: 2025-10-19
 :page-revdate: {revdate}
 
 == Introduction
@@ -13,23 +13,30 @@ The upgrade scenarios covered include:
 * Migrating from **SUSE Linux Enterprise Server (SLES) 15 SP6** to **SLES 15 SP7**
 * Upgrading the **{productname} Proxy Extension** from **version 5.0** to **version {productnumber}**
 
+[IMPORTANT]
+====
+Before migrating the proxy, it is required to first migrate the SUSE Manager 5.0 Server to {productname} {productnumber}.
+====
+
 
 == {sle-micro} 5.5 to {sl-micro} 6.1
 
 This section provides the tested procedure to upgrade a {sle-micro} 5.5 host deployed with {productname} 5.0 Proxy to {sl-micro} 6.1 with {productname} {productnumber} Proxy.
+
 
 === Prerequisites
 
 * {productname} 5.0 Proxy is installed and running on {sle-micro} 5.5.
 * Proxy system is registered with the {productname} Server.
 
-=== Distribution Upgrade and Proxy Migration
 
-.Procedure: Migrate {productname} 5.0 Proxy to {productname} {productnumber}
+=== Distribution upgrade and proxy migration
+
+.Procedure: Migrate {productname} 5.0 Proxy to {productname} {productnumber} Proxy
 [role=procedure]
-_____
+____
 
-. Verify System and Proxy Version
+. Verify System and {productname} Tools version.
 
 +
 
@@ -43,12 +50,12 @@ mgrpxy --version
 
 Confirm:
 
-- Operating System: `SLE Micro 5.5`
-- Proxy Component: `mgrpxy version 0.1.29` or higher
+* Operating System: [literal]``SLE Micro 5.5``
+* Tools version: [literal]``mgrpxy version 0.1.29`` or higher
 
 +
 
-. Check Running Containers
+. Check running containers.
 
 +
 
@@ -69,25 +76,36 @@ Ensure the following containers are running:
 
 +
 
-. Synchronize Proxy Products in {productname} Server
+. Synchronize the new Proxy Products in {productname} Server.
+  For more information, see xref:client-configuration:products.adoc[].
 
 +
 
 Use the Web UI to synchronize:
 
-- `SL-Micro 6.1`
-- `{productname} {productnumber} Proxy Extension`
+* [literal]``SUSE Linux Micro 6.1``
+* [literal]``{productname} Proxy Extension {productnumber}``
 
 +
 
-. Perform Proxy Product Migration
+. Perform proxy product migration.
+  For more information, see xref:client-configuration:client-upgrades-product-migration.adoc[].
 
 +
 
-Use the Web UI to migrate from:
+Navigate to the proxy system and select menu:Systems[Overview] > menu:Software[Product Migration].
 
-- `SLE Micro 5.5` + `{productname} Proxy 5.0 Extension` to
-- `SL Micro 6.1` + `{productname} Proxy {productnumber} Extension`
++
+
+Migrate from
+
+* [lteral]``SLE Micro 5.5`` + [literal]``SUSE Manager Proxy 5.0 Extension``
+
++
+
+to
+
+* [literal]``SL Micro 6.1`` + [literal]``{productname} Proxy Extension {productnumber}``
 
 +
 
@@ -98,42 +116,76 @@ Use the Web UI to migrate from:
 
 +
 
-. Monitor the Migration Action
+[NOTE]
+====
+It is recommended to do a dry-run first before performing the actual migration.
+====
 
 +
 
-. Reboot the System
+. Monitor the migration action.
+
++
+
+You can follow the process under menu:Systems[Details > Events] tab in the {webui}.
+
++
+
+. After the upgrade completes, stop the proxy container and then reboot the system.
 
 +
 
 [source,console]
 ----
+mgrpxy stop
 reboot
 ----
 
 +
 
-. Post-Reboot Validation
+. Perform post-reboot checks. 
+
++
+
+Verify upgraded OS and {productname} extension:
 
 +
 
 [source,console]
 ----
 cat /etc/os-release
+SUSEConnect --status-text
+----
+
++
+
+You should see:
+
+* [literal]``PRETTY_NAME="SUSE Linux Micro 6.1"``
+* [literal]``SUSE Multi-Linux Manager Proxy 5.1 Extension``
+
++
+
+. Verify {productname} tools version.
+
++
+
+[source,console]
+----
 mgrpxy --version
 ----
 
 +
 
-Expected:
+Expected output:
 
-- OS: `SL Micro 6.1`
-- Updated Proxy version
+- `mgrpxy version 5.1.11` or higher
 
++
 
 . Enable Root SSH Access (_if required_).
-SL Micro 6.1 disables root login via SSH by default.
-Edit `/etc/ssh/sshd_config.d/sshd.conf`:
+  SL Micro 6.1 disables root login via SSH by default.
+  Edit `/etc/ssh/sshd_config.d/sshd.conf`:
 
 +
 
@@ -144,7 +196,7 @@ PermitRootLogin yes
 
 +
 
-And restart the service:
+Restart the service:
 
 +
 
@@ -158,7 +210,7 @@ systemctl restart sshd
 For more information, see xref:administration:troubleshooting/tshoot-remote-root-on-micro.adoc[].
 
 
-. Install the packages with:
+. Install the new proxy container images as RPM packages.
 
 +
 
@@ -167,20 +219,22 @@ For more information, see xref:administration:troubleshooting/tshoot-remote-root
 transactional-update pkg install suse-multi-linux-manager-5.1-x86_64-proxy*
 ----
 
-. Reboot
+. Reboot the P-roxy.
 
-. Upgrade proxy containers:
+. Upgrade proxy containers and restart them.
 
 +
 
 [source,console]
 ----
 mgrpxy upgrade podman
+mgrpxy stop
+mgrpxy start
 ----
 
 +
 
-. Validate Proxy Containers
+. Confirm proxy containers are operational.
 
 +
 
@@ -191,33 +245,40 @@ podman ps
 
 +
 
-All expected proxy containers should be up and running.
+All expected proxy containers should be up and running:
 
-_____
+- `proxy-salt-broker`
+- `proxy-httpd`
+- `proxy-squid`
+- `proxy-tftpd`
+- `proxy-ssh`
+
+____
 
 
-
-=== Migration Complete
+=== Migration complete
 
 The proxy host system is now running {sl-micro} {microversion} with updated {productname} {productnumber} Proxy packages and synchronized product channels.
 
 
 == {sles} 15 SP6 to 15 SP7
 
-This section provides the tested procedure to upgrade a {sles} {sp-version} host deployed with {productname} 5.0 Proxy to {sles} SP7 with {productname} {productnumber} Proxy.
+This section provides the procedure to upgrade a {sles} SP6 host deployed with {productname} 5.0 Proxy to {sles} {sp-version} with {productname} {productnumber} Proxy.
+
 
 === Prerequisites
 
 * {productname} Proxy 5.0 is installed and running on {sles} 15 SP6.
 * Proxy system is registered with the {productname} Server.
 
-=== Distribution Upgrade and Proxy Migration
 
-.Procedure: Update {productname} Proxy Components on {sles} 15 SP6
+=== Distribution upgrade and proxy migration
+
+.Procedure: Update {productname} Proxy components on {sles} 15 SP6
 [role=procedure]
-_____
+____
 
-. Verify Operating System and Proxy Version
+. Verify operating system and {productname} tools version.
 
 +
 
@@ -229,31 +290,15 @@ mgrpxy --version
 
 +
 
-**Expected Output:**
-+
+Confirm:
 
-[source,console]
-----
-NAME="SLES"
-VERSION="15-SP6"
-VERSION_ID="15.6"
-PRETTY_NAME="SUSE Linux Enterprise Server 15 SP6"
-ID="sles"
-ID_LIKE="suse"
-----
+* Operating System: [literal]``SUSE Linux Enterprise Server 15 SP6``
+* Tools version: [literal]``mgrpxy version 0.1.29`` or higher
+
 
 +
 
-and
-
-+
-----
-mgrpxy version 0.1.29 (HEAD 053c629)
-----
-
-+
-
-. List Running Proxy Containers
+. List running proxy containers.
 
 +
 
@@ -275,25 +320,47 @@ Verify the following containers are running:
 
 +
 
-. Synchronize Products on the {productname} Server
+. Synchronize the new proxy products in {productname} Server.
+  For more information see xref:client-configuration:products.adoc[].
 
 +
 
-Using the Web UI, synchronize the following:
+Using the {webui}, synchronize the following:
 
-- `SUSE Linux Enterprise Server 15 SP6`
-- `{productname} Proxy Extension 5.0`
-
-+
-
-. Trigger the Product Migration via Web UI
+* [literal]``SUSE Linux Enterprise Server 15 SP7``
+- [literal]``{productname} Proxy Extension for SLE 5.1``
 
 +
 
-Navigate to the proxy system in the {productname} Web UI and select:
+[NOTE]
+====
+Proxy extensions are listed under [literal]``Basesystem Module 15 SP7` > `Containers Module 15 SP7``.
+====
 
-- **Migrate from**: `SLES 15 SP6` + `Manager Proxy Extension 5.0`
-- **To**: `SLES 15 SP7` + `Manager Proxy Extension (updated channels)`
++
+
+. Perform proxy product migration.
+  For more information, see xref:client-configuration:client-upgrades-product-migration.adoc[].
+
++
+
+Navigate to the proxy system and select menu:Systems[Overview > Software > Product Migration].
+
++
+
+Migrate from
+
++
+
+* [literal]``SUSE Linux Enterprise Server 15 SP6`` + [literal]``SUSE Manager Proxy Extension 5.0``
+
++
+
+to
+
++
+
+* [literal]``SUSE Linux Enterprise Server 15 SP7`` + [literal]``{productname} Proxy Extension for SLE 5.1``
 
 +
 
@@ -304,58 +371,97 @@ When prompted, **do not select** optional channels unless you have confirmed the
 
 +
 
-. Monitor the Migration Job
+[NOTE]
+====
+It is recommended to do a dry-run first before performing the actual migration.
+====
 
 +
 
-Check job status under the system action history in the Web UI.
+. Monitor the migration action.
 
 +
 
-. Reboot the Proxy System
+You can follow the process under menu:Systems[Details > Events] tab in the {webui}.
+
++
+
+. After the upgrade completes, stop the proxy container and then reboot the system.
 
 +
 
 [source,console]
 ----
+mgrpxy stop
 reboot
 ----
 
 +
 
-. Validate Post-Reboot Status
+. Perform post-reboot checks:
+
++
+
+Verify upgraded OS and {productname} extension.
 
 +
 
 [source,console]
 ----
 cat /etc/os-release
+SUSEConnect --status-text
+----
+
++
+
+You should see:
+
+* [literal]``PRETTY_NAME="SUSE Linux Enterprise Server 15 SP7"``
+* [literal]``SUSE Multi-Linux Manager Proxy 5.1 Extension for SLE``
+
++
+
+. Verify {productname} tools version.
+
++
+
+[source,console]
+----
 mgrpxy --version
 ----
 
 +
 
-Expected:
+Expected output:
+
+* [literal]``mgrpxy version 5.1.11`` or higher
+
 
 +
 
-- OS: `SUSE Linux Enterprise Server 15 SP7`
-- Updated `mgrpxy` version (e.g., `5.1.9`)
+. Install the new proxy container images as RPM packages.
 
 +
 
-. Update proxy containers:
+[source,shell]
+----
+zypper install suse-multi-linux-manager-5.1-x86_64-proxy*
+----
+
+. Upgrade proxy containers and restart them.
 
 +
 
 [source,console]
 ----
 mgrpxy upgrade podman
+mgrpxy stop
+mgrpxy start
 ----
 
 +
 
-. Confirm Proxy Containers Are Operational
+. Confirm proxy containers are operational.
 
 +
 
@@ -366,7 +472,7 @@ podman ps
 
 +
 
-Ensure all relevant proxy containers are up:
+All expected proxy containers should be up and running:
 
 - `proxy-salt-broker`
 - `proxy-httpd`
@@ -374,9 +480,9 @@ Ensure all relevant proxy containers are up:
 - `proxy-tftpd`
 - `proxy-ssh`
 
-_____
+____
 
 
-=== Migration Complete
+=== Migration complete
 
 The proxy host system is now running {sles} 15 SP7 with updated {productname} {productnumber} Proxy packages and synchronized product channels.

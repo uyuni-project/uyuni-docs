@@ -1,4 +1,9 @@
 - Added troubleshooting section for mass duplicate machine_id
+- Improved recommendation in Large Deployments Guide
+  (bsc#1252723)
+- Added Tumbleweed migration for Uyuni
+- Updated and corrected the migration instructions for
+  server and proxy in Installation and Upgrade Guide
 - Added SSL certificates requirement before migrations
 - Removed the option of editing the sshd_config file to
   enable root login (bsc#1252106)
