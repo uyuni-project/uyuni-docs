@@ -1,3 +1,5 @@
+- Improved recommendation in Large Deployments Guide
+  (bsc#1252723)
 - Added product refresh step under proxy migration in
   Administration Guide and Common Workflows
 - Added SSL certificates requirement before migrations
