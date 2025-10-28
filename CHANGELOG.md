@@ -1,3 +1,4 @@
+- Added Tumbleweed migration for Uyuni
 - Updated and corrected the migration instructions for
   server and proxy in Installation and Upgrade Guide
 - Added SSL certificates requirement before migrations
