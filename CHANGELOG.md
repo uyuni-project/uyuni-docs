@@ -1,3 +1,5 @@
+- Fixed the file name in the provided example in Administration
+  Guide (bsc#1252727)
 - Improved section about Saline deployment in Specialized
   Guides (bsc#1252637)
 - Added troubleshooting section for mass duplicate machine_id
