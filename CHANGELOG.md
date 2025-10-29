@@ -1,3 +1,5 @@
+- Improved section about Saline deployment in Specialized
+  Guides (bsc#1252637)
 - Added troubleshooting section for mass duplicate machine_id
 - Improved recommendation in Large Deployments Guide
   (bsc#1252723)
