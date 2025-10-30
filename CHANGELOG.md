@@ -1,3 +1,5 @@
+- Fixed volumes, ports and air-gapped installation after database
+  split in Installation and Upgrade Guide
 - Fixed the file name in the provided example in Administration
   Guide (bsc#1252727)
 - Improved section about Saline deployment in Specialized
