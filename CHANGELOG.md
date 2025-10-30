@@ -1,4 +1,7 @@
-- Fixed volumes and ports after database split in Installation and Upgrade Guide
+- Fixed the proxy timeout procedure in Administration Guide
+  (bsc#1252020)
+- Fixed volumes and ports after database split in Installation
+  and Upgrade Guide
 - Fixed the file name in the provided example in Administration
   Guide (bsc#1252727)
 - Improved section about Saline deployment in Specialized
