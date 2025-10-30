@@ -1,4 +1,4 @@
-- Fix the proxy timeout procedure (bsc#1252020)
+- Fixed the proxy timeout procedure in Administration Guide (bsc#1252020)
 - Fixed the file name in the provided example in Administration
   Guide (bsc#1252727)
 - Improved section about Saline deployment in Specialized
