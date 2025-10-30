@@ -1,0 +1,204 @@
+= Migrating the {productname} Proxy to {opensuse} Tumbleweed
+:revdate: 2025-10-27
+:page-revdate: {revdate}
+:description: This page describes how to migrate a {productname} Proxy host from openSUSE Leap Micro 5.5 to a fresh openSUSE Tumbleweed installation using the proxy administration tool [command]``mgrpxy``.
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+This page describes how to migrate a {productname} Proxy host from openSUSE Leap Micro 5.5 to a fresh openSUSE Tumbleweed installation using the proxy administration tool [command]``mgrpxy``.
+
+[IMPORTANT]
+====
+This guide was tested on Tumbleweed only. There is no known reason it wouldn’t work on other supported bases, but always validate in a test environment before production.
+====
+
+
+
+== Overview of the Proxy Migration Process
+
+You will:
+
+* Save proxy configuration from the old system (including Apache/Squid tuning).
+* Reinstall the host with openSUSE Tumbleweed.
+* Re-register the host using the system reactivation key.
+* Install [command]``mgrpxy`` (and Podman if needed).
+* Restore configuration and run [command]``mgrpxy install podman`` with optional tuning files.
+
+
+== Requirements and Considerations
+
+* Keep the same hostname/FQDN and IP when possible so the server and clients interact with the proxy as before.
+* Ensure you have the “system reactivation key” for the existing proxy system (UI: Systems > select the proxy > Details > Reactivation).
+* Ensure SSH/scp access to move configuration archives off and onto the machine.
+
+== Migration Procedure
+
+=== Step 1: Save Proxy Configuration and Tuning Files
+
+.Procedure: Save Proxy Configuration and Tuning Files
+[role="procedure"]
+____
+
+. Copy the Uyuni proxy configuration directory to a safe location:
+
++
+
+[source,shell]
+----
+scp -r /etc/uyuni <USER>@<HOST>:/some/where/safe/
+----
+. Identify Apache and Squid tuning files currently in use by the legacy proxy services:
+
++
+
+[source,shell]
+----
+systemctl cat uyuni-proxy-httpd.service | grep EXTRA_CONF= | sed 's/.*=-v\([^:]\+\):.*/\1/'
+systemctl cat uyuni-proxy-squid.service | grep EXTRA_CONF= | sed 's/.*=-v\([^:]\+\):.*/\1/'
+----
+. Copy those tuning files to the same safe location as well.
+
+[TIP]
+====
+Typical default paths after you copy them back will be:
+
+* Apache tuning: [path]``/etc/uyuni/proxy/apache.conf``
+* Squid tuning: [path]``/etc/uyuni/proxy/squid.conf``
+====
+
+____
+
+=== Step 2: Reinstall the Host with openSUSE Tumbleweed
+.Procedure: Reinstalling the Host with openSUSE Tumbleweed
+[role="procedure"]
+____
+
+. Reinstall the machine with openSUSE Tumbleweed (server profile recommended).
+. Set the same hostname/FQDN and IP as before when possible.
+
+____
+
+
+
+=== Step 3: Re-register the Host with the Reactivation Key
+
+.Procedure: Re-registering the Host with the Reactivation Key
+[role="procedure"]
+____
+
+. From the {productname} Web UI, obtain the system reactivation key for the existing proxy system record (Systems > Details > Reactivation).
+. Bootstrap/re-register the Tumbleweed host using that reactivation key so it claims the existing system entry.
+
+[NOTE]
+====
+Use your standard bootstrapping process for Tumbleweed hosts in your environment (for example, the bootstrap script or your configuration management), ensuring the reactivation key is applied.
+====
+
+____
+
+
+
+=== Step 4: Install {productname} Proxy Tools and Podman
+
+.Procedure: Installing Proxy Tools and Podman
+[role="procedure"]
+____
+
+. Add the Uyuni Stable repository and install tools:
+
++
+
+[source,shell]
+----
+zypper ar https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable/images/repo/Uyuni-Proxy-POOL-x86_64-Media1 uyuni-proxy-stable
+zypper ref
+zypper in mgrpxy mgrctl mgrpxy-bash-completion mgrctl-bash-completion
+----
+. Ensure Podman is installed (required to run containers):
+
++
+
+[source,shell]
+----
+zypper in podman
+----
+
+____
+
+
+
+=== Step 5: Restore Configuration and Install the Proxy
+
+.Procedure: Restoring Configuration and Install the Proxy
+[role="procedure"]
+____
+
+. Copy back the saved configuration directory to the new host:
+
++
+
+[source,shell]
+----
+scp -r <USER>@<HOST>:/some/where/safe/uyuni /etc/
+----
+. If you saved Apache/Squid tuning files, place them at the expected default paths or note their locations for parameters in the next command:
+
++
+
+[source,shell]
+----
+# Default paths expected by mgrpxy parameters (adjust/move your files accordingly)
+# Apache tuning: /etc/uyuni/proxy/apache.conf
+# Squid tuning:  /etc/uyuni/proxy/squid.conf
+----
+. Run the proxy installation with Podman. If you do not use tuning files, omit the corresponding parameters:
+
++
+
+[source,shell]
+----
+# With tuning files
+mgrpxy install podman \
+	--tuning-httpd /etc/uyuni/proxy/apache.conf \
+	--tuning-squid /etc/uyuni/proxy/squid.conf
+
+# If you have no tuning files, remove the tuning parameters:
+# mgrpxy install podman
+----
+
+[NOTE]
+====
+In an upcoming release, if tuning files are placed at the default paths noted above, the explicit parameters will not be required.
+====
+
+____
+
+
+=== Step 6: Verify the Proxy
+
+.Procedure: Verifying the Proxy
+[role="procedure"]
+____
+
+. Check containers are running:
+
++
+
+[source,shell]
+----
+mgrctl ps
+# or
+podman ps
+----
+. Confirm the proxy appears healthy in the {productname} Web UI and that clients using this proxy operate normally.
+
+____
+
+== Troubleshooting
+
+* If Podman was missing, install it and rerun the [command]``mgrpxy install`` step.
+* Verify the host’s time, hostname, and IP match expectations.
+* If the host did not reattach to the existing system record, confirm you used the correct reactivation key and repeat the bootstrap.
+
