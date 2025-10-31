@@ -1,3 +1,6 @@
+- Fixed the proxy timeout procedure in Administration Guide (bsc#1252020)
+- Fixed the file name in the provided example in Administration
+  Guide (bsc#1252727)
 - Improved section about Saline deployment in Specialized
   Guides (bsc#1252637)
 - Fix volumes, ports and air-gapped install after database split
