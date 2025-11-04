@@ -1,3 +1,4 @@
+- Improved CLM procedure in Adminstration Guide (bsc#1230876)
 - Fixed the proxy timeout procedure in Administration Guide (bsc#1252020)
 - Fixed the file name in the provided example in Administration
   Guide (bsc#1252727)
