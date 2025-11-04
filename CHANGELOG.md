@@ -1,3 +1,6 @@
+- Information about mirroring Ubuntu ESM packages will be limited to Uyuni.
+  This is to eliminate confusion about which features and packages are supported
+  within SUSE Multi-Linux manager offering.
 - Fixed the proxy timeout procedure in Administration Guide (bsc#1252020)
 - Fixed the file name in the provided example in Administration
   Guide (bsc#1252727)
