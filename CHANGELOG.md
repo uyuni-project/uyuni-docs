@@ -1,3 +1,4 @@
+- Clarify the instructions that needs to run in container (bsc#1252680)
 - Fixed the proxy timeout procedure in Administration Guide (bsc#1252020)
 - Fixed the file name in the provided example in Administration
   Guide (bsc#1252727)
