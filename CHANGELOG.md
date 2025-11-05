@@ -1,3 +1,4 @@
+- Clarified the instructions that needs to run in container (bsc#1252680)
 - Information about mirroring Ubuntu ESM packages will be limited to Uyuni.
   This is to eliminate confusion about which features and packages are supported
   within SUSE Multi-Linux manager offering.
