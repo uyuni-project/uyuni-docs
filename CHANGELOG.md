@@ -1,3 +1,5 @@
+- Clarified the instructions that needs to run in container 
+  (bsc#1252680)
 - Improved CLM procedure in Adminstration Guide (bsc#1230876)
 - Added troubleshooting section for mass duplicate machine_id
 - Improved recommendation in Large Deployments Guide
