@@ -1,3 +1,5 @@
+- Clarified the instructions that needs to run in containeri
+  (bsc#1252680)
 - Fixed the proxy timeout procedure in Administration Guide
   (bsc#1252020)
 - Fixed volumes and ports after database split in Installation
