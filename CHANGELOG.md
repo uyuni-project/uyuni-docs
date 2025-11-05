@@ -1,5 +1,6 @@
 - Clarified the instructions that needs to run in containeri
   (bsc#1252680)
+- Improved CLM procedure in Adminstration Guide (bsc#1230876)
 - Fixed the proxy timeout procedure in Administration Guide
   (bsc#1252020)
 - Fixed volumes and ports after database split in Installation
