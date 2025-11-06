@@ -1,3 +1,5 @@
+- Added instructions to clean unused container images after upgrad
+  (bsc#1253022)
 - Clarified the instructions that needs to run in containeri
   (bsc#1252680)
 - Improved CLM procedure in Adminstration Guide (bsc#1230876)
