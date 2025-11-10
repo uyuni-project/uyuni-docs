@@ -1,3 +1,5 @@
+- Changed the installation instructions to use product instead of packages 
+  (bsc#1249041)
 - Clarified the instructions that needs to run in container 
   (bsc#1252680)
 - Improved CLM procedure in Adminstration Guide (bsc#1230876)
