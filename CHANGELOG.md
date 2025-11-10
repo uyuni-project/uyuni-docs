@@ -1,10 +1,10 @@
 - Clarified the instructions that needs to run in container 
   (bsc#1252680)
-- Improved CLM procedure in Adminstration Guide (bsc#1230876)
+- Improved CLM procedure in Administration Guide (bsc#1230876)
 - Added troubleshooting section for mass duplicate machine_id
 - Improved recommendation in Large Deployments Guide
   (bsc#1252723)
-- Corected the procedure instruction in Administration Guide
+- Corrected the procedure instruction in Administration Guide
   (bsc#1252023)
 - Corrected the command in Client Configuration Guide (bsc#1249148)
 - Improved the appearance of Web UI instructions in Administration
@@ -15,7 +15,7 @@
   (bsc#1249384)
 - Added new workflow for liberating RHEL server in Common Workflows 
   Guides (bsc#1250423)
-- Added information about pachage already being provided for
+- Added information about package already being provided for
   Inter-Server Synchronization v2 to Administration guide (bsc#1229977)
 - Added information about requesting access to PTFs (bsc#1213308)
 - Added steps for troubleshooting registering cloned clients to 
