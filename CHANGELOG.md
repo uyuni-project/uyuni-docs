@@ -1,3 +1,5 @@
+- Clarified server config option for spacemd in Refrence Guide
+  (bsc#1253197)
 - Clarified the instructions that needs to run in container 
   (bsc#1252680)
 - Improved CLM procedure in Administration Guide (bsc#1230876)
