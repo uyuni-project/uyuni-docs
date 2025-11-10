@@ -1,3 +1,5 @@
+- Changed the installation instructios to use product instead of packages 
+  (bsc#1249041)
 - Added instructions to clean unused container images after upgrade (bsc#1253022)
 - Clarified the instructions that needs to run in container (bsc#1252680)
 - Information about mirroring Ubuntu ESM packages will be limited to Uyuni.
