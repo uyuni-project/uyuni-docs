@@ -1,3 +1,5 @@
+- Clarified server config option for spacemd in Refrence Guide
+  (bsc#1253197)
 - Added instructions to clean unused container images after upgrad
   (bsc#1253022)
 - Clarified the instructions that needs to run in containeri
