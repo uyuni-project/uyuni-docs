@@ -1,3 +1,5 @@
+- Changed the installation instructions to use product instead of packages 
+  (bsc#1249041)
 - Added instructions to clean unused container images after upgrad
   (bsc#1253022)
 - Clarified the instructions that needs to run in containeri
