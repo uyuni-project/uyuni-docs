@@ -1,3 +1,5 @@
+- Fixed PAYG documentation to reflect the changes in providing support
+  (bsc#1252869)
 - Changed the installation instructions to use product instead of packages 
   (bsc#1249041)
 - Added instructions to clean unused container images after upgrade (bsc#1253022)
