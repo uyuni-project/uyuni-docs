@@ -1,3 +1,5 @@
+- Fixed PAYG documentation to reflect the changes in providing support
+  (bsc#1252869)
 - Added additional step for client deletion in Client Configuration
   Guide (bsc#1253249)
 - Fixed wrong --ssl-db-server-{cert|key} parameters in Specialized Guides
