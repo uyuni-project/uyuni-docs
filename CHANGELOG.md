@@ -1,3 +1,5 @@
+- Added additional step for client deletion in Client Configuration
+  Guide (bsc#1253249)
 - Fixed wrong --ssl-db-server-{cert|key} parameters in Specialized Guides
   (bsc#1249462)
 - Clarified server config option for spacemd in Refrence Guide
