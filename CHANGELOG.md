@@ -1,3 +1,5 @@
+- Added non-SUSE URLs to requirements in installation and Upgrade
+  Guide (bsc#1252665)
 - Added additional step for client deletion in Client Configuration
   Guide (bsc#1253249)
 - Fixed wrong --ssl-db-server-{cert|key} parameters in Specialized Guides
