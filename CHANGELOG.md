@@ -1,4 +1,5 @@
-- Fix wrong --ssl-db-server-{cert|key} parameters (bsc#1249462)
+- Fixed wrong --ssl-db-server-{cert|key} parameters in Specialized Guides
+  (bsc#1249462)
 - Clarified server config option for spacemd in Refrence Guide
   (bsc#1253197)
 - Changed the installation instructions to use product instead of packages 
