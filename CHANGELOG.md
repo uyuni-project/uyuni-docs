@@ -1,3 +1,5 @@
+- Addressed the issue about using third-party SLS certificates 
+  during migration (bsc#1253382)
 - Fixed typo for command options in Reference Guide (bsc#1253174)
 - Added additional step for client deletion in Client Configuration
   Guide (bsc#1253249)
