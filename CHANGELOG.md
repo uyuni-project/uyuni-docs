@@ -1,3 +1,4 @@
+- Fixed typo for command options in Reference Guide (bsc#1253174)
 - Added additional step for client deletion in Client Configuration
   Guide (bsc#1253249)
 - Clarified server config option for spacemd in Refrence Guide
