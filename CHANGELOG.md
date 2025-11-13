@@ -1,3 +1,4 @@
+- Fixed typo for command options in Reference Guide (bsc#1253174)
 - Fixed wrong --ssl-db-server-{cert|key} parameters in Specialized Guides
   (bsc#1249462)
 - Added additional step for client deletion in Client Configuration
