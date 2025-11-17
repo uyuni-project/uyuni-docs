@@ -1,0 +1,51 @@
+# tasks/Taskfile.translate.yml
+# Translation and localization tasks
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+tasks:
+  # ==============================================================================
+  # TRANSLATION TASKS
+  # ==============================================================================
+  
+  sync:
+    desc: Sync translations with Weblate/po4a
+    summary: |
+      Runs po4a to update translation files from .po files.
+      Run this after pulling Weblate updates.
+      
+      Variables:
+        LANG=en|ja|ko|zh_CN  (default: all languages)
+      
+      Examples:
+        task translate:sync               # Update all translations
+        task translate:sync LANG=ja       # Update only Japanese
+    cmds:
+      - python3 scripts/sync_translations.py {{.LANG | default "all"}}
+    sources:
+      - l10n-weblate/**/*.po
+      - l10n-weblate/**/*.cfg
+    generates:
+      - translations/{{.LANG}}/**/*.adoc
+
+  update-pot:
+    desc: Update POT template files from source
+    summary: |
+      Extracts translatable strings from AsciiDoc source files
+      and updates POT (translation template) files.
+      
+      Examples:
+        task translate:update-pot
+    cmds:
+      - bash make_pot.sh
+
+  push:
+    desc: Push updated POT files to Weblate
+    summary: |
+      Commits and pushes updated translation templates to Weblate.
+      
+      Examples:
+        task translate:push
+    cmds:
+      - cd l10n-weblate && git add *.pot && git commit -m "Update POT files" && git push

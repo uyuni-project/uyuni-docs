@@ -1,0 +1,403 @@
+# Taskfile.yml - Hybrid Build System (Transitional)
+# This version calls existing Make targets while we migrate to pure Task
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+# ==============================================================================
+# CONFIGURATION
+# ==============================================================================
+
+silent: false
+output: prefixed
+
+vars:
+  PRODUCT: '{{.PRODUCT | default "uyuni"}}'
+  LANG: '{{.LANG | default "en"}}'
+  LANGS_ALL: en ja ko zh_CN
+
+# ==============================================================================
+# MAIN TASKS - WRAPPING EXISTING MAKE TARGETS
+# ==============================================================================
+
+tasks:
+  default:
+    desc: Show help menu
+    cmds:
+      - task: help
+
+  help:
+    desc: Show detailed, colorized help menu
+    summary: |
+      Displays help for the build system.
+      
+      Examples:
+        task help              # Custom colored help
+        task --list            # List all tasks
+        make help              # Original Make help (still works!)
+    cmds:
+      - python3 scripts/show_help.py
+
+  # ==============================================================================
+  # CONFIGURATION
+  # ==============================================================================
+
+  configure:uyuni:
+    desc: Configure for Uyuni builds
+    summary: |
+      Configures the build system for Uyuni documentation.
+      Currently wraps: ./configure uyuni
+      
+      Example:
+        task configure:uyuni
+    cmds:
+      - echo "🔧 Configuring for Uyuni..."
+      - ./configure uyuni
+      - echo "✓ Configuration complete"
+
+  configure:mlm:
+    desc: Configure for SUSE Multi-Linux Manager builds  
+    summary: |
+      Configures the build system for MLM documentation.
+      Currently wraps: ./configure mlm
+      
+      Example:
+        task configure:mlm
+    cmds:
+      - echo "🔧 Configuring for MLM..."
+      - ./configure mlm
+      - echo "✓ Configuration complete"
+
+  # ==============================================================================
+  # HTML BUILDS (Fast development)
+  # ==============================================================================
+
+  html:
+    desc: Build HTML documentation (fast, no PDFs)
+    summary: |
+      Builds HTML documentation for specified product and language.
+      Currently wraps: make html-<product>-<lang>
+      
+      Variables:
+        PRODUCT=uyuni|mlm       (default: uyuni)
+        LANG=en|ja|ko|zh_CN     (default: en)
+      
+      Examples:
+        task html                    # Uyuni HTML (English)
+        task html LANG=ja            # Japanese
+        task html PRODUCT=mlm        # MLM instead
+    cmds:
+      - echo "🌐 Building HTML for {{.PRODUCT}} ({{.LANG}})..."
+      - make html-{{.PRODUCT}}-{{.LANG}}
+      - echo "✓ HTML build complete → build/{{.LANG}}"
+
+  html:all:
+    desc: Build HTML for ALL languages
+    summary: |
+      Builds HTML documentation for all configured languages.
+      
+      Variables:
+        PRODUCT=uyuni|mlm  (default: uyuni)
+      
+      Examples:
+        task html:all                # All languages
+        task html:all PRODUCT=mlm    # MLM all languages
+    cmds:
+      - echo "🌐 Building HTML for all languages..."
+      - for: {var: LANGS_ALL, split: ' '}
+        cmd: make html-{{.PRODUCT}}-{{.ITEM}}
+      - echo "✓ All HTML builds complete"
+
+  # ==============================================================================
+  # PDF BUILDS
+  # ==============================================================================
+
+  pdf:
+    desc: Build ALL PDF guides for a language
+    summary: |
+      Builds all PDF documentation guides.
+      Currently wraps: make pdf-all-<product>-<lang>
+      
+      Variables:
+        PRODUCT=uyuni|mlm       (default: uyuni)
+        LANG=en|ja|ko|zh_CN     (default: en)
+      
+      Examples:
+        task pdf                     # All Uyuni PDFs (English)
+        task pdf LANG=ja             # All Japanese PDFs
+        task pdf PRODUCT=mlm         # All MLM PDFs
+    cmds:
+      - echo "📄 Building PDFs for {{.PRODUCT}} ({{.LANG}})..."
+      - make pdf-all-{{.PRODUCT}}-{{.LANG}}
+      - echo "✓ PDF build complete → build/{{.LANG}}/pdf"
+
+  pdf:section:
+    desc: Build a single PDF guide
+    summary: |
+      Builds a single PDF guide for specified section.
+      Currently wraps: make pdf-<section>-<product>-<lang>
+      
+      Variables:
+        SECTION=<name>  (required)
+        PRODUCT=uyuni|mlm       (default: uyuni)
+        LANG=en|ja|ko|zh_CN     (default: en)
+      
+      Sections: installation-and-upgrade, client-configuration, administration,
+                reference, retail, common-workflows, specialized-guides, legal
+      
+      Examples:
+        task pdf:section SECTION=administration
+        task pdf:section SECTION=reference LANG=ja
+    requires:
+      vars: [SECTION]
+    cmds:
+      - echo "📄 Building {{.SECTION}} PDF for {{.PRODUCT}} ({{.LANG}})..."
+      - make pdf-{{.SECTION}}-{{.PRODUCT}}-{{.LANG}}
+      - echo "✓ PDF complete → build/{{.LANG}}/pdf/{{.SECTION}}_{{.PRODUCT}}_{{.LANG}}.pdf"
+
+  # ==============================================================================
+  # COMPLETE BUILDS
+  # ==============================================================================
+
+  build:
+    desc: Complete build - HTML and PDFs for a language
+    summary: |
+      Builds complete documentation set (HTML + all PDFs) for one language.
+      Currently wraps: make antora-<product>-<lang>
+      
+      Variables:
+        PRODUCT=uyuni|mlm       (default: uyuni)
+        LANG=en|ja|ko|zh_CN     (default: en)
+      
+      Examples:
+        task build                   # Complete Uyuni build (English)
+        task build LANG=ja           # Complete Japanese build
+        task build PRODUCT=mlm       # Complete MLM build
+    cmds:
+      - echo "🏗️  Complete build for {{.PRODUCT}} ({{.LANG}})..."
+      - make antora-{{.PRODUCT}}-{{.LANG}}
+      - echo "✓ Complete build finished → build/{{.LANG}}"
+
+  build:all:
+    desc: Complete build for ALL languages
+    summary: |
+      Builds complete documentation for all configured languages.
+      Currently wraps: make obs-packages-<product>
+      
+      Variables:
+        PRODUCT=uyuni|mlm  (default: uyuni)
+      
+      Examples:
+        task build:all               # Build everything (Uyuni)
+        task build:all PRODUCT=mlm   # Build everything (MLM)
+    cmds:
+      - echo "🏗️  Complete build for ALL languages..."
+      - make obs-packages-{{.PRODUCT}}
+      - echo "✓ All builds complete"
+
+  # ==============================================================================
+  # TRANSLATIONS
+  # ==============================================================================
+
+  translate:
+    desc: Sync translations with Weblate/po4a
+    summary: |
+      Runs po4a to update translation files from .po files.
+      Currently wraps: make translations
+      
+      Examples:
+        task translate               # Update all translations
+    cmds:
+      - echo "🌍 Syncing translations..."
+      - make translations
+      - echo "✓ Translations updated"
+
+  # ==============================================================================
+  # VALIDATION & QUALITY
+  # ==============================================================================
+
+  validate:
+    desc: Validate documentation structure and links
+    summary: |
+      Validates documentation using Antora's xref-validator.
+      Currently wraps: make validate-<product>-<lang>
+      
+      Variables:
+        PRODUCT=uyuni|mlm       (default: uyuni)
+        LANG=en|ja|ko|zh_CN     (default: en)
+      
+      Examples:
+        task validate
+        task validate PRODUCT=mlm LANG=ja
+    cmds:
+      - echo "✓ Validating {{.PRODUCT}} ({{.LANG}})..."
+      - make validate-{{.PRODUCT}}-{{.LANG}}
+      - echo "✓ Validation complete"
+
+  checkstyle:
+    desc: Check AsciiDoc style compliance
+    summary: |
+      Runs Vale linter to check documentation style.
+      
+      Examples:
+        task checkstyle
+    cmds:
+      - echo "📝 Checking style..."
+      - bash enforcing_checkstyle check
+
+  checkstyle:fix:
+    desc: Auto-fix AsciiDoc style issues
+    summary: |
+      Automatically fixes style issues where possible.
+      
+      Examples:
+        task checkstyle:fix
+    cmds:
+      - echo "📝 Fixing style issues..."
+      - bash enforcing_checkstyle fix
+      - echo "✓ Style fixes applied"
+
+  # ==============================================================================
+  # PACKAGING
+  # ==============================================================================
+
+  package:
+    desc: Create OBS packages for distribution
+    summary: |
+      Creates tarball packages for OpenBuildService distribution.
+      Currently wraps: make obs-packages-<product>-<lang>
+      
+      Variables:
+        PRODUCT=uyuni|mlm       (default: uyuni)
+        LANG=en|ja|ko|zh_CN     (default: en)
+      
+      Examples:
+        task package
+        task package LANG=ja
+        task package PRODUCT=mlm
+    cmds:
+      - echo "📦 Creating OBS packages for {{.PRODUCT}} ({{.LANG}})..."
+      - make obs-packages-{{.PRODUCT}}-{{.LANG}}
+      - echo "✓ Packages created"
+
+  package:all:
+    desc: Create OBS packages for ALL languages
+    summary: |
+      Creates packages for all languages - production release.
+      Currently wraps: make obs-packages-<product>
+      
+      Variables:
+        PRODUCT=uyuni|mlm  (default: uyuni)
+      
+      Examples:
+        task package:all
+        task package:all PRODUCT=mlm
+    cmds:
+      - echo "📦 Creating OBS packages for ALL languages..."
+      - make obs-packages-{{.PRODUCT}}
+      - echo "✓ All packages created"
+
+  # ==============================================================================
+  # CLEANUP
+  # ==============================================================================
+
+  clean:
+    desc: Remove build artifacts for a language
+    summary: |
+      Cleans build artifacts for specified language.
+      Currently wraps: make clean-<lang>
+      
+      Variables:
+        LANG=en|ja|ko|zh_CN  (default: en)
+      
+      Examples:
+        task clean
+        task clean LANG=ja
+    cmds:
+      - echo "🧹 Cleaning {{.LANG}} artifacts..."
+      - make clean-{{.LANG}}
+      - echo "✓ Clean complete"
+
+  clean:all:
+    desc: Remove ALL build artifacts
+    summary: |
+      Removes all build outputs and generated files.
+      Currently wraps: make clean
+      
+      Examples:
+        task clean:all
+    cmds:
+      - echo "🧹 Cleaning all artifacts..."
+      - make clean
+      - echo "✓ All artifacts removed"
+
+  clean:branding:
+    desc: Remove branding files
+    summary: |
+      Removes copied/generated branding files.
+      Currently wraps: make clean-branding
+      
+      Examples:
+        task clean:branding
+    cmds:
+      - echo "🧹 Cleaning branding files..."
+      - make clean-branding
+      - echo "✓ Branding files removed"
+
+  # ==============================================================================
+  # SHORTCUTS
+  # ==============================================================================
+
+  quick:
+    desc: Quick HTML-only build (alias for html)
+    cmds:
+      - task: html
+
+  full:
+    desc: Full HTML + PDF build (alias for build)
+    cmds:
+      - task: build
+
+  list:
+    desc: List all available tasks
+    cmds:
+      - task --list
+
+  # ==============================================================================
+  # CONTAINER SUPPORT (Future)
+  # ==============================================================================
+
+  container:build:
+    desc: Build the documentation container image
+    summary: |
+      Builds a Podman/Docker container with all build dependencies.
+      This will be the recommended way for contributors to build.
+      
+      Examples:
+        task container:build
+    cmds:
+      - echo "🐳 Building container image..."
+      - podman build -t uyuni-docs:latest -f Containerfile .
+      - echo "✓ Container image built"
+
+  container:shell:
+    desc: Open a shell in the build container
+    summary: |
+      Opens an interactive shell in the build container.
+      Mounts the current directory for live editing.
+      
+      Examples:
+        task container:shell
+    cmds:
+      - podman run --rm -it -v $(pwd):/workspace:Z -w /workspace uyuni-docs:latest bash
+
+  container:html:
+    desc: Build HTML in container
+    summary: |
+      Runs HTML build inside the container.
+      
+      Examples:
+        task container:html
+        task container:html LANG=ja
+    cmds:
+      - podman run --rm -v $(pwd):/workspace:Z -w /workspace uyuni-docs:latest task html LANG={{.LANG}}

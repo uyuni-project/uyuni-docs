@@ -1,0 +1,59 @@
+# tasks/Taskfile.dev.yml
+# Development helper tasks
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+tasks:
+  # ==============================================================================
+  # DEVELOPMENT TASKS
+  # ==============================================================================
+  
+  server:
+    desc: Start development server with live reload
+    summary: |
+      Starts a local development server with live reload.
+      Automatically rebuilds HTML on file changes.
+      
+      Variables:
+        PRODUCT=uyuni|mlm  (default: uyuni)
+        LANG=en|ja|ko|zh_CN  (default: en)
+        PORT=8000 (default: 8000)
+      
+      Examples:
+        task dev:server                     # Start Uyuni dev server
+        task dev:server PRODUCT=mlm         # Start MLM dev server
+        task dev:server PORT=3000           # Use different port
+    cmds:
+      - task: config:{{.PRODUCT}}
+      - python3 scripts/dev_server.py {{.PRODUCT}} {{.LANG}} {{.PORT | default "8000"}}
+
+  watch:
+    desc: Watch for changes and rebuild automatically
+    summary: |
+      Watches source files and triggers rebuild on changes.
+      Uses Task's watch mode: task --watch dev:watch
+      
+      Examples:
+        task --watch dev:watch
+        task --watch dev:watch PRODUCT=mlm
+    cmds:
+      - task: html:build
+    sources:
+      - modules/**/*.adoc
+      - parameters.yml
+      - site.yml
+    generates:
+      - build/{{.LANG}}/index.html
+
+  preview:
+    desc: Build and serve documentation locally
+    summary: |
+      Quick build + serve workflow for development.
+      
+      Examples:
+        task dev:preview
+        task dev:preview PORT=3000
+    cmds:
+      - task: html:build
+      - task: server

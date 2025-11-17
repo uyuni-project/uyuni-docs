@@ -1,0 +1,57 @@
+# tasks/Taskfile.html.yml
+# HTML documentation build tasks
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+tasks:
+  # ==============================================================================
+  # HTML BUILD TASKS
+  # ==============================================================================
+  
+  build:
+    desc: Build HTML documentation (fast, no PDFs)
+    summary: |
+      Builds HTML documentation for specified product and language(s).
+      This is the fastest build option - use for development/preview.
+      
+      Variables:
+        PRODUCT=uyuni|mlm  (default: uyuni)
+        LANG=en|ja|ko|zh_CN  (default: en)
+        LANGS="en ja ko"     (build multiple languages)
+      
+      Examples:
+        task html:build                    # Build Uyuni HTML (English)
+        task html:build LANG=ja            # Build Japanese
+        task html:build LANGS="en ja ko"   # Build multiple languages
+        task html:build PRODUCT=mlm        # Build MLM instead
+    cmds:
+      - task: config:{{.PRODUCT}}
+      - task: multi
+        vars:
+          LANGS: '{{.LANGS | default .LANG}}'
+
+  multi:
+    internal: true
+    desc: Build HTML for multiple languages
+    cmds:
+      - for: {var: LANGS, split: ' '}
+        task: lang
+        vars: {LANG: '{{.ITEM}}'}
+
+  lang:
+    internal: true
+    desc: Build HTML for a single language
+    deps:
+      - task: translate:sync
+        vars: {LANG: '{{.LANG}}'}
+    cmds:
+      - python3 scripts/build_html.py {{.PRODUCT}} {{.LANG}}
+    sources:
+      - modules/**/*.adoc
+      - translations/{{.LANG}}/**/*.adoc
+      - parameters.yml
+      - site.yml
+      - antora.yml
+    generates:
+      - build/{{.LANG}}/index.html

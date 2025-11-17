@@ -1,0 +1,417 @@
+# Taskfile.yml - Uyuni Documentation Build System
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+# Silent mode - set to true to suppress task names in output
+# You can override with: task --silent=false <command>
+silent: false
+
+# Color output - always enabled for better readability
+# Task automatically detects terminal capabilities
+output: prefixed
+
+vars:
+  PRODUCT: '{{.PRODUCT | default "uyuni"}}'
+  LANG: '{{.LANG | default "en"}}'
+
+tasks:
+  # ==============================================================================
+  # HELP & INFORMATION
+  # ==============================================================================
+
+  help:
+    desc: Show detailed, colorized help menu
+    summary: |
+      Displays a beautifully formatted help menu with colors and examples.
+      This is an alternative to 'task --list' with better visual organization.
+      
+      Examples:
+        task help                    # Show custom colorized help
+        task --list                  # Show standard Task list
+        task --summary <task>        # Show help for specific task
+    cmds:
+      - python3 scripts/show_help.py
+
+  # ==============================================================================
+  # CONFIGURATION
+  # ==============================================================================
+  
+  configure:uyuni:
+    desc: Configure for Uyuni builds
+    summary: |
+      Configures the build system for Uyuni documentation.
+      Sets up necessary files and validates configuration.
+      
+      Example:
+        task configure:uyuni
+    cmds:
+      - python3 scripts/setup.py uyuni
+
+  configure:mlm:
+    desc: Configure for SUSE Multi-Linux Manager builds
+    summary: |
+      Configures the build system for MLM documentation.
+      Sets up necessary files and validates configuration.
+      
+      Example:
+        task configure:mlm
+    cmds:
+      - python3 scripts/setup.py mlm
+
+  # ==============================================================================
+  # QUICK START - HTML ONLY (FAST)
+  # ==============================================================================
+
+  html:
+    desc: Build HTML documentation (fast, no PDFs)
+    summary: |
+      Builds HTML documentation for specified product and language(s).
+      This is the fastest build option - use for development/preview.
+      
+      Variables:
+        PRODUCT=uyuni|mlm  (default: uyuni)
+        LANG=en|ja|ko|zh_CN  (default: en)
+        LANGS="en ja ko"     (build multiple languages)
+      
+      Examples:
+        task html                    # Build Uyuni HTML (English)
+        task html LANG=ja            # Build Japanese
+        task html LANGS="en ja ko"   # Build multiple languages
+        task html PRODUCT=mlm        # Build MLM instead
+    cmds:
+      - task: configure:{{.PRODUCT}}
+      - task: html:multi
+        vars:
+          LANGS: '{{.LANGS | default .LANG}}'
+
+  html:multi:
+    internal: true
+    cmds:
+      - for: {var: LANGS, split: ' '}
+        task: html:lang
+        vars: {LANG: '{{.ITEM}}'}
+
+  html:lang:
+    internal: true
+    deps:
+      - task: translate
+        vars: {LANG: '{{.LANG}}'}
+    cmds:
+      - python3 scripts/build_html.py {{.PRODUCT}} {{.LANG}}
+    sources:
+      - modules/**/*.adoc
+      - translations/{{.LANG}}/**/*.adoc
+      - parameters.yml
+      - site.yml
+      - antora.yml
+    generates:
+      - build/{{.LANG}}/index.html
+
+  # ==============================================================================
+  # PDF BUILDS
+  # ==============================================================================
+
+  pdf:all:
+    desc: Build ALL PDF guides for a language
+    summary: |
+      Builds all PDF documentation guides for specified product and language.
+      
+      Variables:
+        PRODUCT=uyuni|mlm  (default: uyuni)
+        LANG=en|ja|ko|zh_CN  (default: en)
+      
+      Examples:
+        task pdf:all                 # All Uyuni PDFs (English)
+        task pdf:all LANG=ja         # All Japanese PDFs
+        task pdf:all PRODUCT=mlm     # All MLM PDFs
+    vars:
+      SECTIONS: installation-and-upgrade client-configuration administration reference retail common-workflows specialized-guides legal
+    cmds:
+      - task: configure:{{.PRODUCT}}
+      - for: {var: SECTIONS, split: ' '}
+        task: pdf:section
+        vars: {SECTION: '{{.ITEM}}'}
+
+  pdf:section:
+    desc: Build a single PDF guide
+    summary: |
+      Builds a single PDF guide for specified section, product, and language.
+      
+      Variables:
+        SECTION=<section-name>  (required)
+        PRODUCT=uyuni|mlm       (default: uyuni)
+        LANG=en|ja|ko|zh_CN     (default: en)
+      
+      Available sections:
+        - installation-and-upgrade
+        - client-configuration
+        - administration
+        - reference
+        - retail
+        - common-workflows
+        - specialized-guides
+        - legal
+      
+      Examples:
+        task pdf:section SECTION=administration
+        task pdf:section SECTION=reference LANG=ja
+    requires:
+      vars: [SECTION]
+    cmds:
+      - task: configure:{{.PRODUCT}}
+      - python3 scripts/build_pdf.py {{.PRODUCT}} {{.LANG}} {{.SECTION}}
+    sources:
+      - modules/{{.SECTION}}/**/*.adoc
+      - translations/{{.LANG}}/modules/{{.SECTION}}/**/*.adoc
+    generates:
+      - build/{{.LANG}}/pdf/{{.SECTION}}_{{.PRODUCT}}_{{.LANG}}.pdf
+
+  # ==============================================================================
+  # COMPLETE BUILDS (HTML + PDF)
+  # ==============================================================================
+
+  build:
+    desc: Complete build - HTML and PDFs for a language
+    summary: |
+      Builds complete documentation set (HTML + all PDFs) for one language.
+      This is equivalent to the old "antora-<product>-<lang>" target.
+      
+      Variables:
+        PRODUCT=uyuni|mlm       (default: uyuni)
+        LANG=en|ja|ko|zh_CN     (default: en)
+      
+      Examples:
+        task build                   # Complete Uyuni build (English)
+        task build LANG=ja           # Complete Japanese build
+        task build PRODUCT=mlm       # Complete MLM build
+    cmds:
+      - task: html
+      - task: pdf:all
+
+  build:all:
+    desc: Complete build for ALL languages
+    summary: |
+      Builds complete documentation for all configured languages.
+      This is equivalent to "obs-packages-<product>".
+      
+      Variables:
+        PRODUCT=uyuni|mlm  (default: uyuni)
+      
+      Examples:
+        task build:all               # Build everything (Uyuni)
+        task build:all PRODUCT=mlm   # Build everything (MLM)
+    vars:
+      LANGS: en ja ko zh_CN
+    cmds:
+      - for: {var: LANGS, split: ' '}
+        task: build
+        vars: {LANG: '{{.ITEM}}'}
+
+  # ==============================================================================
+  # TRANSLATIONS
+  # ==============================================================================
+
+  translate:
+    desc: Sync translations with Weblate/po4a
+    summary: |
+      Runs po4a to update translation files from .po files.
+      Run this after pulling Weblate updates.
+      
+      Variables:
+        LANG=en|ja|ko|zh_CN  (default: all languages)
+      
+      Examples:
+        task translate               # Update all translations
+        task translate LANG=ja       # Update only Japanese
+    cmds:
+      - python3 scripts/sync_translations.py {{.LANG | default "all"}}
+    sources:
+      - l10n-weblate/**/*.po
+      - l10n-weblate/**/*.cfg
+    generates:
+      - translations/{{.LANG}}/**/*.adoc
+
+  # ==============================================================================
+  # VALIDATION & QUALITY
+  # ==============================================================================
+
+  validate:
+    desc: Validate documentation structure and links
+    summary: |
+      Validates documentation using Antora's xref-validator.
+      Checks for broken links, missing pages, etc.
+      
+      Variables:
+        PRODUCT=uyuni|mlm       (default: uyuni)
+        LANG=en|ja|ko|zh_CN     (default: en)
+      
+      Examples:
+        task validate
+        task validate PRODUCT=mlm LANG=ja
+    cmds:
+      - task: configure:{{.PRODUCT}}
+      - python3 scripts/validate.py {{.PRODUCT}} {{.LANG}}
+
+  checkstyle:
+    desc: Check AsciiDoc style compliance
+    summary: |
+      Runs Vale linter to check documentation style.
+      
+      Examples:
+        task checkstyle
+    cmds:
+      - bash enforcing_checkstyle check
+
+  checkstyle:fix:
+    desc: Auto-fix AsciiDoc style issues
+    summary: |
+      Automatically fixes style issues where possible.
+      
+      Examples:
+        task checkstyle:fix
+    cmds:
+      - bash enforcing_checkstyle fix
+
+  # ==============================================================================
+  # PACKAGING
+  # ==============================================================================
+
+  package:
+    desc: Create OBS packages for distribution
+    summary: |
+      Creates tarball packages for OpenBuildService distribution.
+      This is equivalent to "obs-packages-<product>-<lang>".
+      
+      Variables:
+        PRODUCT=uyuni|mlm       (default: uyuni)
+        LANG=en|ja|ko|zh_CN     (default: en)
+      
+      Examples:
+        task package
+        task package LANG=ja
+        task package PRODUCT=mlm
+    deps: [build]
+    cmds:
+      - python3 scripts/package.py {{.PRODUCT}} {{.LANG}}
+
+  package:all:
+    desc: Create OBS packages for ALL languages
+    summary: |
+      Creates packages for all languages - production release.
+      
+      Variables:
+        PRODUCT=uyuni|mlm  (default: uyuni)
+      
+      Examples:
+        task package:all
+        task package:all PRODUCT=mlm
+    vars:
+      LANGS: en ja ko zh_CN
+    cmds:
+      - for: {var: LANGS, split: ' '}
+        task: package
+        vars: {LANG: '{{.ITEM}}'}
+
+  # ==============================================================================
+  # MAINTENANCE & CLEANUP
+  # ==============================================================================
+
+  clean:
+    desc: Remove build artifacts for a language
+    summary: |
+      Cleans build artifacts for specified language.
+      
+      Variables:
+        LANG=en|ja|ko|zh_CN  (default: en)
+      
+      Examples:
+        task clean
+        task clean LANG=ja
+    cmds:
+      - rm -rf build/{{.LANG}}
+      - rm -rf translations/{{.LANG}}
+      - find . -name "*pdf.{{.LANG}}.adoc" -type f -delete
+
+  clean:all:
+    desc: Remove ALL build artifacts
+    summary: |
+      Removes all build outputs and generated files.
+      
+      Examples:
+        task clean:all
+    cmds:
+      - rm -rf build/
+      - rm -rf translations/
+      - find . -name "*pdf.*.adoc" -type f -delete
+
+  clean:branding:
+    desc: Remove branding files
+    summary: |
+      Removes copied/generated branding files.
+      
+      Examples:
+        task clean:branding
+    cmds:
+      - rm -rf branding/supplemental-ui/*/generated/
+
+  # ==============================================================================
+  # DEVELOPMENT HELPERS
+  # ==============================================================================
+
+  dev:
+    desc: Start development server with live reload
+    summary: |
+      Starts a local development server with live reload.
+      Automatically rebuilds HTML on file changes.
+      
+      Variables:
+        PRODUCT=uyuni|mlm  (default: uyuni)
+        LANG=en|ja|ko|zh_CN  (default: en)
+        PORT=8000 (default: 8000)
+      
+      Examples:
+        task dev                     # Start Uyuni dev server
+        task dev PRODUCT=mlm         # Start MLM dev server
+        task dev PORT=3000           # Use different port
+    cmds:
+      - task: configure:{{.PRODUCT}}
+      - python3 scripts/dev_server.py {{.PRODUCT}} {{.LANG}} {{.PORT | default "8000"}}
+
+  list:
+    desc: List all available build targets
+    summary: |
+      Shows all available tasks with descriptions.
+      
+      Examples:
+        task list
+        task --list          # Alternative syntax
+        task --list-all      # Show internal tasks too
+    cmds:
+      - task --list
+
+  # ==============================================================================
+  # SHORTCUTS (Common workflows)
+  # ==============================================================================
+
+  quick:
+    desc: Quick HTML-only build for development (alias)
+    summary: |
+      Shortcut for "task html" - fastest build.
+      
+      Examples:
+        task quick
+        task quick LANG=ja
+    cmds:
+      - task: html
+
+  full:
+    desc: Full HTML + PDF build (alias)
+    summary: |
+      Shortcut for "task build" - complete build.
+      
+      Examples:
+        task full
+        task full PRODUCT=mlm
+    cmds:
+      - task: build

@@ -1,0 +1,170 @@
+# Taskfile.yml - Main Entry Point for Uyuni Documentation Build System
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+# ==============================================================================
+# GLOBAL CONFIGURATION
+# ==============================================================================
+
+# Silent mode - set to true to suppress task names in output
+silent: false
+
+# Color output - always enabled for better readability
+output: prefixed
+
+# Global variables available to all included Taskfiles
+vars:
+  PRODUCT: '{{.PRODUCT | default "uyuni"}}'
+  LANG: '{{.LANG | default "en"}}'
+  LANGS_ALL: en ja ko zh_CN
+
+# ==============================================================================
+# INCLUDED TASKFILES (Modular Organization)
+# ==============================================================================
+# Each module handles a specific aspect of the build system
+# Variables and tasks are inherited from this main file
+
+includes:
+  # Configuration and setup tasks
+  config:
+    taskfile: ./tasks/Taskfile.config.yml
+    dir: .
+    
+  # HTML build tasks
+  html:
+    taskfile: ./tasks/Taskfile.html.yml
+    dir: .
+    
+  # PDF build tasks  
+  pdf:
+    taskfile: ./tasks/Taskfile.pdf.yml
+    dir: .
+    
+  # Translation and localization
+  translate:
+    taskfile: ./tasks/Taskfile.translate.yml
+    dir: .
+    
+  # Validation and quality checks
+  quality:
+    taskfile: ./tasks/Taskfile.quality.yml
+    dir: .
+    
+  # Packaging and distribution
+  package:
+    taskfile: ./tasks/Taskfile.package.yml
+    dir: .
+    
+  # Cleanup tasks
+  clean:
+    taskfile: ./tasks/Taskfile.clean.yml
+    dir: .
+    
+  # Development helpers
+  dev:
+    taskfile: ./tasks/Taskfile.dev.yml
+    dir: .
+
+# ==============================================================================
+# TOP-LEVEL TASKS (High-level workflows)
+# ==============================================================================
+# These orchestrate multiple modules for common workflows
+
+tasks:
+  default:
+    desc: Show help menu
+    cmds:
+      - task: help
+  
+  help:
+    desc: Show detailed, colorized help menu
+    summary: |
+      Displays a beautifully formatted help menu with colors and examples.
+      This is an alternative to 'task --list' with better visual organization.
+      
+      Examples:
+        task help                    # Show custom colorized help
+        task --list                  # Show standard Task list
+        task --summary <task>        # Show help for specific task
+    cmds:
+      - python3 scripts/show_help.py
+
+  # ==============================================================================
+  # COMPLETE BUILD WORKFLOWS
+  # ==============================================================================
+  
+  build:
+    desc: Complete build - HTML and PDFs for a language
+    summary: |
+      Builds complete documentation set (HTML + all PDFs) for one language.
+      This is equivalent to the old "antora-<product>-<lang>" target.
+      
+      Variables:
+        PRODUCT=uyuni|mlm       (default: uyuni)
+        LANG=en|ja|ko|zh_CN     (default: en)
+      
+      Examples:
+        task build                   # Complete Uyuni build (English)
+        task build LANG=ja           # Complete Japanese build
+        task build PRODUCT=mlm       # Complete MLM build
+    cmds:
+      - task: html:build
+      - task: pdf:all
+
+  build:all:
+    desc: Complete build for ALL languages
+    summary: |
+      Builds complete documentation for all configured languages.
+      This is equivalent to "obs-packages-<product>".
+      
+      Variables:
+        PRODUCT=uyuni|mlm  (default: uyuni)
+      
+      Examples:
+        task build:all               # Build everything (Uyuni)
+        task build:all PRODUCT=mlm   # Build everything (MLM)
+    vars:
+      LANGS: '{{.LANGS_ALL}}'
+    cmds:
+      - for: {var: LANGS, split: ' '}
+        task: build
+        vars: {LANG: '{{.ITEM}}'}
+
+  # ==============================================================================
+  # SHORTCUTS (Common workflows)
+  # ==============================================================================
+
+  quick:
+    desc: Quick HTML-only build for development (alias)
+    summary: |
+      Shortcut for "task html:build" - fastest build.
+      
+      Examples:
+        task quick
+        task quick LANG=ja
+    cmds:
+      - task: html:build
+
+  full:
+    desc: Full HTML + PDF build (alias)
+    summary: |
+      Shortcut for "task build" - complete build.
+      
+      Examples:
+        task full
+        task full PRODUCT=mlm
+    cmds:
+      - task: build
+
+  list:
+    desc: List all available build targets
+    summary: |
+      Shows all available tasks with descriptions.
+      
+      Examples:
+        task list
+        task --list          # Alternative syntax
+        task --list-all      # Show internal tasks too
+    cmds:
+      - task --list

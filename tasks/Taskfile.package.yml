@@ -1,0 +1,58 @@
+# tasks/Taskfile.package.yml
+# Packaging and distribution tasks
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+tasks:
+  # ==============================================================================
+  # PACKAGING TASKS
+  # ==============================================================================
+  
+  obs:
+    desc: Create OBS packages for distribution
+    summary: |
+      Creates tarball packages for OpenBuildService distribution.
+      This is equivalent to "obs-packages-<product>-<lang>".
+      
+      Variables:
+        PRODUCT=uyuni|mlm       (default: uyuni)
+        LANG=en|ja|ko|zh_CN     (default: en)
+      
+      Examples:
+        task package:obs
+        task package:obs LANG=ja
+        task package:obs PRODUCT=mlm
+    deps:
+      - task: build
+    cmds:
+      - python3 scripts/package.py {{.PRODUCT}} {{.LANG}}
+
+  obs:all:
+    desc: Create OBS packages for ALL languages
+    summary: |
+      Creates packages for all languages - production release.
+      
+      Variables:
+        PRODUCT=uyuni|mlm  (default: uyuni)
+      
+      Examples:
+        task package:obs:all
+        task package:obs:all PRODUCT=mlm
+    vars:
+      LANGS: '{{.LANGS_ALL}}'
+    cmds:
+      - for: {var: LANGS, split: ' '}
+        task: obs
+        vars: {LANG: '{{.ITEM}}'}
+
+  tarball:
+    desc: Create tarball of build output
+    summary: |
+      Creates a compressed tarball of the build directory.
+      
+      Examples:
+        task package:tarball
+        task package:tarball LANG=ja
+    cmds:
+      - tar czf uyuni-docs-{{.PRODUCT}}-{{.LANG}}.tar.gz build/{{.LANG}}

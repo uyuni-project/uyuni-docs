@@ -1,0 +1,65 @@
+# tasks/Taskfile.pdf.yml
+# PDF documentation build tasks
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+tasks:
+  # ==============================================================================
+  # PDF BUILD TASKS
+  # ==============================================================================
+  
+  all:
+    desc: Build ALL PDF guides for a language
+    summary: |
+      Builds all PDF documentation guides for specified product and language.
+      
+      Variables:
+        PRODUCT=uyuni|mlm  (default: uyuni)
+        LANG=en|ja|ko|zh_CN  (default: en)
+      
+      Examples:
+        task pdf:all                 # All Uyuni PDFs (English)
+        task pdf:all LANG=ja         # All Japanese PDFs
+        task pdf:all PRODUCT=mlm     # All MLM PDFs
+    vars:
+      SECTIONS: installation-and-upgrade client-configuration administration reference retail common-workflows specialized-guides legal
+    cmds:
+      - task: config:{{.PRODUCT}}
+      - for: {var: SECTIONS, split: ' '}
+        task: section
+        vars: {SECTION: '{{.ITEM}}'}
+
+  section:
+    desc: Build a single PDF guide
+    summary: |
+      Builds a single PDF guide for specified section, product, and language.
+      
+      Variables:
+        SECTION=<section-name>  (required)
+        PRODUCT=uyuni|mlm       (default: uyuni)
+        LANG=en|ja|ko|zh_CN     (default: en)
+      
+      Available sections:
+        - installation-and-upgrade
+        - client-configuration
+        - administration
+        - reference
+        - retail
+        - common-workflows
+        - specialized-guides
+        - legal
+      
+      Examples:
+        task pdf:section SECTION=administration
+        task pdf:section SECTION=reference LANG=ja
+    requires:
+      vars: [SECTION]
+    cmds:
+      - task: config:{{.PRODUCT}}
+      - python3 scripts/build_pdf.py {{.PRODUCT}} {{.LANG}} {{.SECTION}}
+    sources:
+      - modules/{{.SECTION}}/**/*.adoc
+      - translations/{{.LANG}}/modules/{{.SECTION}}/**/*.adoc
+    generates:
+      - build/{{.LANG}}/pdf/{{.SECTION}}_{{.PRODUCT}}_{{.LANG}}.pdf
