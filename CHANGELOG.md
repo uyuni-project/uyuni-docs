@@ -1,5 +1,9 @@
 - Added missing options to command example in Installation and 
   Upgrade Guide (bsc#1252908)
+- Added non-SUSE URLs to requirements in installation and Upgrade
+  Guide (bsc#1252665)
+- Fixed PAYG documentation to reflect the changes in providing support
+  (bsc#1252869)
 - Fixed typo for command options in Reference Guide (bsc#1253174)
 - Added additional step for client deletion in Client Configuration
   Guide (bsc#1253249)
