@@ -1,3 +1,4 @@
+- Added missing step for generating proxy configuration (bsc#1249425)
 - Fixed typo for command options in Reference Guide (bsc#1253174)
 - Added additional step for client deletion in Client Configuration
   Guide (bsc#1253249)
