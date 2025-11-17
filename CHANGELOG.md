@@ -1,3 +1,5 @@
+- Added non-SUSE URLs to requirements in installation and Upgrade
+  Guide (bsc#1252665)
 - Fixed PAYG documentation to reflect the changes in providing support
   (bsc#1252869)
 - Fixed typo for command options in Reference Guide (bsc#1253174)
