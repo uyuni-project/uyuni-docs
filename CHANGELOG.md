@@ -1,3 +1,5 @@
+- Added missing options to command example in Installation and 
+  Upgrade Guide (bsc#1252908)
 - Fixed typo for command options in Reference Guide (bsc#1253174)
 - Added additional step for client deletion in Client Configuration
   Guide (bsc#1253249)
