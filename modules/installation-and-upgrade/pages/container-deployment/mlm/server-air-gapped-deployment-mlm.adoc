@@ -6,7 +6,7 @@ ifeval::[{uyuni-content} == true]
 :noindex:
 endif::[]
 
-== What is Air-gapped Deployment?
+== What is Air-gapped deployment?
 
 
 Air-gapped deployment refers to the setup and operation of any networked system that is physically isolated from insecure networks, especially the internet.
@@ -17,7 +17,6 @@ This type of deployment is commonly used in high-security environments such as m
 == Deployments
 
 {productname} supports two deployment variants.
-
 
 
 === Deploy with Virtual Machine
@@ -35,26 +34,38 @@ To upgrade {productname} Server, users should upgrade all packages in the system
 
 [NOTE]
 ====
-User should make the needed RPM available on the internal network. That can be done by using a second {productname} Server or an RMT server.
+User should make the needed RPM available on the internal network.
+That can be done by using a second {productname} Server or an RMT server.
 ====
 
-.Procedure: Install {productname} on {sl-micro} in Air-gapped
-. Install {sl-micro}
-. Update the system
-. Install tools packages and image packages (replace $ARCH$ with the correct architecture)
+.Procedure: Install {productname} on {sl-micro} in air-gapped deployment
+[role=procedure]
+____
+. Install {sl-micro}.
+
+. Update the system.
+
+. Install tools packages and image packages (replace $ARCH$ with the correct architecture).
+
 +
+
 [source,shell]
 ----
 transactional-update pkg install mgradm* mgrctl* suse-multi-linux-manager-5.1-$ARCH$-server-*
 ----
+
 +
+
 . Reboot.
+
 . Deploy {productname} with [command]``mgradm``.
 
+____
 
 For more detailed information about installing {productname} Server on {sl-micro}, see xref:container-deployment/mlm/server-deployment-mlm.adoc[Deploy Server as a Virtual Machine].
 
 To upgrade {productname} Server, users should upgrade all packages in the system and follow the procedures defined in xref:container-management/updating-server-containers.adoc[Server Upgrade].
+
 
 == PTFs
 
@@ -62,7 +73,10 @@ The PTF images are not available as packages.
 This means that they should be pulled using [command]``podman`` on a machine with internet access, then saved in an archive, transferred to the air-gapped machine and loaded there.
 
 .Procedure: Pulling the image on a machine with internet access
+[role=procedure]
+____
 . Install [command]``podman``.
+
 . Authenticate against the {suse} Registry using the SCC credentials:
 
 +
@@ -73,9 +87,14 @@ set +o history
 echo SCC_MIRRORING_PASSWORD | podman login -u "SCC_MIRRORING_USER" --password-stdin registry.suse.com
 set -o history
 ----
+
++
+
 . Create a [path]``/tmp/ptf-images`` temporary file with the URL of the PTF images, one per line.
   In most of the cases only the server image is needed and it can be created with a command like the following, after replacing the [command]``SCC_USERID`` and [command]``PTFID`` values.
+
 +
+
 [source,shell]
 ----
 SCC_USERID=aXXXX
@@ -96,8 +115,13 @@ podman save -o /tmp/ptf-images.tar `cat /tmp/ptf-images`
 ----
 . Transfer the [path]``/tmp/ptf-images.tar`` images archive on the server to patch.
 
+____
+
 .Procedure: Loading the images on the server to patch
+[role=procedure]
+____
 . Ensure the [path]``ptf-images.tar`` file is available on the server.
+
 . Load the images from the archive:
 
 +
@@ -106,5 +130,9 @@ podman save -o /tmp/ptf-images.tar `cat /tmp/ptf-images`
 ----
 podman load -i ptf-images.tar
 ----
+
++
+
 . Install the PTF using `mgradm support ptf podman` as would be done on a connected machine.
   Because the images are already loaded they will not be pulled.
+____
