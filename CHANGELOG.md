@@ -1,5 +1,3 @@
-- Added links to man pages for createrepo_c and reprepro to
-  Administration Guide (bsc#1237181)
 - Added missing options to command example in Installation and 
   Upgrade Guide (bsc#1252908)
 - Added non-SUSE URLs to requirements in installation and Upgrade
