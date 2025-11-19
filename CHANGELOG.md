@@ -1,3 +1,5 @@
+- Added links to man pages for createrepo_c and reprepro to
+  Administration Guide (bsc#1237181)
 - Added documentation for new spacecmd subcommand system_needrebootafterupdate
   to Reference Guide
 - Added missing options to command example in Installation and 
