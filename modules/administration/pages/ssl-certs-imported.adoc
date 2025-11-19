@@ -41,7 +41,7 @@ The server certificate file should contain the server certificate first, followe
 
 
 By default, {productname} uses a self-signed certificate.
-After you have completed the initial setup, you can replace the default certificate with an imported certificate.
+Certificates can be imported with third-party certificates at the installation time.
 
 .Procedure: Import Certificates on a New {productname} Server
 
@@ -69,9 +69,8 @@ The `--ssl-ca-intermediate` option can be specified multiple times.
 
 == Import Certificates for New Proxy Installations
 
-By default, {productname} Proxy uses a self-signed certificate.
-After you have completed the initial setup, you can replace the default certificate with an imported certificate.
-
+The proxy certificates are embedded in the generated configuration.
+In order to use a third-party certificate, it needs to be provided during the configuration.
 
 .Procedure: Import Certificates on a New {productname} Proxy
 
@@ -81,7 +80,7 @@ After you have completed the initial setup, you can replace the default certific
 
 [NOTE]
 ====
-Use the same certificate authority (CA) to sign all server certificates for servers and proxies.
+Use the same certificate authority (CA) to sign all certificates for servers and proxies.
 Certificates signed with different CAs do not match.
 ====
 
@@ -92,22 +91,44 @@ Certificates signed with different CAs do not match.
 
 
 You can replace active certificates on your {productname} installation with a new certificate.
-To replace the certificates, you can replace the installed CA certificate with the new CA, and then update the database.
+There are two cases to consider: replacing only the server or database certificate, and replacing the root CA.
 
+
+Replacing the root certificate requires more time and planning to avoid disruption as all the registered proxies and systems will need to have the new CA in their database before switching to it at the server level.
+
+When using third-party certificates signed by an intermediate CA, the intermediate CA certificates need to be appended to the server or database certificate file.
+
+The order is important: first comes the server certificate, then the CAs from the one which signed the certificate to the one signed by the root CA.
+The root CA certificate should not be appended to the server certificate file.
 
 .Procedure: Replacing All Existing Certificates
 
-. On the {productname} container host, at the command prompt, recreate podman certificate secrets:
+. The following considers that you have [litteral]``root-ca.pem``, [litteral]``intermediate-ca1.pem``, [litteral]``intermediate-ca2.pem``, [litteral]``server.pem`` and [litteral]``server.key`` files.
+  It may be different depending on the number of intermediate CAs in the server certificate signature chain.
+
+. Combine the intermediate CAs and server certificates.
+  Order matters, the server must be first and the intermediate CAs in order.
+  Do not add the root CA last into the chain as it will be passed separately to [litteral]``uyuni-ca`` and [litteral]``uyuni-db-ca`` secrets.
+  If there is no intermediate CA, then you can use the [litteral]``server.pem`` instead of the combined file in the next steps.
+
++
+[source,shell]
+----
+cat server.pem intermediate-ca1.pem intermediate-ca2.pem >combined-server.pem
+----
+
+. On the {productname} container host, at the command prompt, recreate podman certificate secrets passing the files paths:
 
 +
 
 [source,shell]
 ----
 podman secret create --replace uyuni-ca $path_to_ca_certificate
-podman secret create --replace uyuni-db-ca $path_to_database_ca_certificate
-podman secret create --replace uyuni-cert $path_to_server_certificate
+podman secret create --replace uyuni-cert $path_to_combined_server_certificate
 podman secret create --replace uyuni-key $path_to_server_key
-podman secret create --replace uyuni-db-cert $path_to_database_certificate
+
+podman secret create --replace uyuni-db-ca $path_to_database_ca_certificate
+podman secret create --replace uyuni-db-cert $path_to_combined_database_certificate
 podman secret create --replace uyuni-db-key $path_to_database_key
 ----
 
@@ -137,6 +158,7 @@ endif::[]
 
 
 If the Root CA was changed, it needs to get deployed to all the clients connected to {productname}.
+This is ideally done in advance to minimize the disruption.
 
 [NOTE]
 ====

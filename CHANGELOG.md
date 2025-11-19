@@ -1,3 +1,4 @@
+- Add precisions on the intermediate CA certificates (bsc#1253735)
 - Added documentation for new spacecmd subcommand system_needrebootafterupdate
   to Reference Guide
 - Added missing options to command example in Installation and 
