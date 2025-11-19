@@ -1,6 +1,11 @@
 - Improved procedure formatting for better clarity in Administration
   Guide (bsc#1253660)
 - Added missing options to command example in Installation and
+- Added links to man pages for createrepo_c and reprepro to
+  Administration Guide (bsc#1237181)
+- Added documentation for new spacecmd subcommand system_needrebootafterupdate
+  to Reference Guide
+- Added missing options to command example in Installation and 
   Upgrade Guide (bsc#1252908)
 - Added non-SUSE URLs to requirements in installation and Upgrade
   Guide (bsc#1252665)
