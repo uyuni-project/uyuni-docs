@@ -1,5 +1,3 @@
-- Improved procedure formatting for better clarity in Administration
-  Guide (bsc#1253660)
 - Added links to man pages for createrepo_c and reprepro to
   Administration Guide (bsc#1237181)
 - Added missing options to command example in Installation and 
