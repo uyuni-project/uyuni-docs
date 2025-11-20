@@ -1,3 +1,4 @@
+- Added precisions on the intermediate CA certificates to Administration Guide (bsc#1253735)
 - Improved procedure formatting for better clarity in Administration
   Guide (bsc#1253660)
 - Added missing options to command example in Installation and
