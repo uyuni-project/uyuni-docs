@@ -25,7 +25,30 @@ ifdef::backend-pdf[]
 include::../../../../../partials/snippet-ssl-requirements.adoc[leveloffset=+2]
 endif::[]
 
-During a migration the server SSL certificate and CA chain are copied from the source server, meaning that only the database certificates are required
+During a migration the server SSL certificate and CA chain are copied from the source server, meaning that only the database certificates are required.
+
+[NOTE]
+====
+{productname} 5.0 peripheral servers are always using third-party SSL certificates.
+If the hub server has generated the certificates for the peripheral server, it needs to generate the certificate for the peripheral database too.
+On the hub server, run the following command for each of the peripheral server to migrate.
+
+[source,shell]
+----
+mgrctl exec -ti -- rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
+  --set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
+  --set-org-unit="ORGANIZATION UNIT" --set-email="name@example.com" \
+  --set-hostname=<hostname>-reportdb --set-cname="example.com" --set-cname=db --set-cname=reportdb
+----
+
+The files to use will be inside the server container and need to be copied to the new peripheral server host:
+
+* [litteral]``/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT`` as the root CA,
+
+* [litteral]``/root/ssl-build/<hostname>-reportdb/server.crt`` as the db certificate and
+
+* [litteral]``/root/ssl-build/<hostname>-reportdb/server.key`` as the db certificate's key.
+====
 
 
 

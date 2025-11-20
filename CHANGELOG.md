@@ -1,3 +1,5 @@
+- Explained how to generate the DB certificate for the upgrade of a 5.0
+  peripheral server (bsc#1248282)
 - Fixed the issue with importing SSL certificates in Administration Guide 
   (bsc#1253382)
 - Added precisions on the intermediate CA certificates to Administration
