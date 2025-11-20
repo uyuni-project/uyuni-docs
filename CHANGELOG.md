@@ -1,3 +1,7 @@
+- Fixed the issue with importing SSL certificates in Administration Guide 
+  (bsc#1253382)
+- Added precisions on the intermediate CA certificates to Administration
+  Guide (bsc#1253735)
 - Added links to man pages for createrepo_c and reprepro to
   Administration Guide (bsc#1237181)
 - Added missing options to command example in Installation and 
