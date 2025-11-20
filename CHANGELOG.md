@@ -1,3 +1,4 @@
+- Added SLE16 and openSUSE Leap 16 as supported clients
 - Improved procedure formatting for better clarity in Administration
   Guide (bsc#1253660)
 - Added links to man pages for createrepo_c and reprepro to
