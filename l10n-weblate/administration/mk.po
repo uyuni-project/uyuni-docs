@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2025-11-20 08:36+0000\n"
+"POT-Creation-Date: 2025-11-20 14:04+0000\n"
 "PO-Revision-Date: 2025-08-21 09:40+0000\n"
 "Last-Translator: anonymous <noreply@weblate.org>\n"
 "Language-Team: Macedonian <https://l10n.opensuse.org/projects/uyuni/docs-administration-master/mk/>\n"
@@ -1949,7 +1949,7 @@ msgstr ""
 #: modules/administration/pages/auth-methods-sso.adoc:43
 #: modules/administration/pages/backup-restore.adoc:28
 #: modules/administration/pages/mirror-sources.adoc:9
-#: modules/administration/pages/ssl-certs-imported.adoc:32
+#: modules/administration/pages/ssl-certs-imported.adoc:39
 #: modules/administration/pages/troubleshooting/tshoot-salt-clients-down-and-dns.adoc:13
 #, no-wrap
 msgid "mgradm restart\n"
@@ -12593,7 +12593,7 @@ msgstr ""
 
 #. type: Plain text
 #: modules/administration/pages/ssl-certs-imported.adoc:14
-msgid "By default, {productname} uses a self-signed certificate.  After you have completed the initial setup, you can replace the default certificate with an imported certificate."
+msgid "By default, {productname} uses a self-signed certificate.  Certificates can be imported with third-party certificates at the installation time."
 msgstr ""
 
 #. type: Block title
@@ -12635,7 +12635,7 @@ msgstr ""
 
 #. type: Plain text
 #: modules/administration/pages/ssl-certs-imported.adoc:20
-msgid "By default, {productname} Proxy uses a self-signed certificate.  After you have completed the initial setup, you can replace the default certificate with an imported certificate."
+msgid "The proxy certificates are embedded in the generated configuration.  In order to use a third-party certificate, it needs to be provided during the configuration."
 msgstr ""
 
 #. type: Block title
@@ -12656,7 +12656,7 @@ msgstr ""
 
 #. type: delimited block =
 #: modules/administration/pages/ssl-certs-imported.adoc:24
-msgid "Use the same certificate authority (CA) to sign all server certificates for servers and proxies.  Certificates signed with different CAs do not match."
+msgid "Use the same certificate authority (CA) to sign all certificates for servers and proxies.  Certificates signed with different CAs do not match."
 msgstr ""
 
 #. type: Title ==
@@ -12667,112 +12667,149 @@ msgstr ""
 
 #. type: Plain text
 #: modules/administration/pages/ssl-certs-imported.adoc:26
-msgid "You can replace active certificates on your {productname} installation with a new certificate.  To replace the certificates, you can replace the installed CA certificate with the new CA, and then update the database."
+msgid "You can replace active certificates on your {productname} installation with a new certificate.  There are two cases to consider: replacing only the server or database certificate, and replacing the root CA."
 msgstr ""
 
-#. type: Block title
+#. type: Plain text
 #: modules/administration/pages/ssl-certs-imported.adoc:27
-#, no-wrap
-msgid "Procedure: Replacing All Existing Certificates"
+msgid "Replacing the root certificate requires more time and planning to avoid disruption as all the registered proxies and systems will need to have the new CA in their database before switching to it at the server level."
 msgstr ""
 
 #. type: Plain text
 #: modules/administration/pages/ssl-certs-imported.adoc:28
-msgid "On the {productname} container host, at the command prompt, recreate podman certificate secrets:"
+msgid "When using third-party certificates signed by an intermediate CA, the intermediate CA certificates need to be appended to the server or database certificate file."
 msgstr ""
 
-#. type: delimited block -
+#. type: Plain text
 #: modules/administration/pages/ssl-certs-imported.adoc:29
-#, no-wrap
-msgid ""
-"podman secret create --replace uyuni-ca $path_to_ca_certificate\n"
-"podman secret create --replace uyuni-db-ca $path_to_database_ca_certificate\n"
-"podman secret create --replace uyuni-cert $path_to_server_certificate\n"
-"podman secret create --replace uyuni-key $path_to_server_key\n"
-"podman secret create --replace uyuni-db-cert $path_to_database_certificate\n"
-"podman secret create --replace uyuni-db-key $path_to_database_key\n"
+msgid "The order is important: first comes the server certificate, then the CAs from the one which signed the certificate to the one signed by the root CA.  The root CA certificate should not be appended to the server certificate file."
 msgstr ""
 
 #. type: Block title
 #: modules/administration/pages/ssl-certs-imported.adoc:30
 #, no-wrap
-msgid "Procedure: Restarting the Server"
+msgid "Procedure: Replacing All Existing Certificates"
 msgstr ""
 
 #. type: Plain text
 #: modules/administration/pages/ssl-certs-imported.adoc:31
-msgid "On the container host, restart the server to pick up the changes:"
+msgid "The following considers that you have [litteral]``root-ca.pem``, [litteral]``intermediate-ca1.pem``, [litteral]``intermediate-ca2.pem``, [litteral]``server.pem`` and [litteral]``server.key`` files.  It may be different depending on the number of intermediate CAs in the server certificate signature chain."
 msgstr ""
 
 #. type: Plain text
+#: modules/administration/pages/ssl-certs-imported.adoc:32
+msgid "Combine the intermediate CAs and server certificates.  The order matters, the server must be first and the intermediate CAs in order.  Do not add the root CA last into the chain as it will be passed separately to [litteral]``uyuni-ca`` and [litteral]``uyuni-db-ca`` secrets.  If there is no intermediate CA, then you can use the [litteral]``server.pem`` instead of the combined file in the next steps."
+msgstr ""
+
+#. type: delimited block -
 #: modules/administration/pages/ssl-certs-imported.adoc:33
-msgid "If you are using a proxy, you need to generate a server certificate RPM for each proxy, using their hostnames and cnames.  Generate a new configuration tarball and deploy it."
+#, no-wrap
+msgid "cat server.pem intermediate-ca1.pem intermediate-ca2.pem >combined-server.pem\n"
 msgstr ""
 
 #. type: Plain text
 #: modules/administration/pages/ssl-certs-imported.adoc:34
+msgid "On the {productname} container host, at the command prompt, recreate podman certificate secrets passing the files paths:"
+msgstr ""
+
+#. type: delimited block -
+#: modules/administration/pages/ssl-certs-imported.adoc:35
+#, no-wrap
+msgid ""
+"podman secret create --replace uyuni-ca $path_to_ca_certificate\n"
+"podman secret create --replace uyuni-cert $path_to_combined_server_certificate\n"
+"podman secret create --replace uyuni-key $path_to_server_key\n"
+msgstr ""
+
+#. type: delimited block -
+#: modules/administration/pages/ssl-certs-imported.adoc:36
+#, no-wrap
+msgid ""
+"podman secret create --replace uyuni-db-ca $path_to_database_ca_certificate\n"
+"podman secret create --replace uyuni-db-cert $path_to_combined_database_certificate\n"
+"podman secret create --replace uyuni-db-key $path_to_database_key\n"
+msgstr ""
+
+#. type: Block title
+#: modules/administration/pages/ssl-certs-imported.adoc:37
+#, no-wrap
+msgid "Procedure: Restarting the Server"
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/ssl-certs-imported.adoc:38
+msgid "On the container host, restart the server to pick up the changes:"
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/ssl-certs-imported.adoc:40
+msgid "If you are using a proxy, you need to generate a server certificate RPM for each proxy, using their hostnames and cnames.  Generate a new configuration tarball and deploy it."
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/ssl-certs-imported.adoc:41
 msgid "For more information, see xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc#_generate_proxy_configuration[]."
 msgstr ""
 
 #. type: Plain text
-#: modules/administration/pages/ssl-certs-imported.adoc:35
+#: modules/administration/pages/ssl-certs-imported.adoc:42
 msgid "For more information, see xref:installation-and-upgrade:container-deployment/uyuni/proxy-deployment-uyuni.adoc#proxy-setup-containers-generate-config[].  proxy-deployment-uyuni.adoc"
 msgstr ""
 
 #. type: Plain text
-#: modules/administration/pages/ssl-certs-imported.adoc:36
-msgid "If the Root CA was changed, it needs to get deployed to all the clients connected to {productname}."
+#: modules/administration/pages/ssl-certs-imported.adoc:43
+msgid "If the Root CA was changed, it needs to get deployed to all the clients connected to {productname}.  This is ideally done in advance to minimize the disruption."
 msgstr ""
 
 #. type: delimited block =
-#: modules/administration/pages/ssl-certs-imported.adoc:37
+#: modules/administration/pages/ssl-certs-imported.adoc:44
 msgid "If the CA certificate was updated, a RPM file with Kiwi certificate needs to be repackaged."
 msgstr ""
 
 #. type: delimited block =
-#: modules/administration/pages/ssl-certs-imported.adoc:38
+#: modules/administration/pages/ssl-certs-imported.adoc:45
 msgid "On the {productname} Server container host, execute following command:"
 msgstr ""
 
 #. type: delimited block -
-#: modules/administration/pages/ssl-certs-imported.adoc:39
+#: modules/administration/pages/ssl-certs-imported.adoc:46
 #, no-wrap
 msgid "mgrctl exec mgr-package-rpm-certificate-osimage\n"
 msgstr ""
 
 #. type: Plain text
-#: modules/administration/pages/ssl-certs-imported.adoc:40
+#: modules/administration/pages/ssl-certs-imported.adoc:47
 msgid "Then apply highstate on the Image Build hosts to deploy the new certificates for Kiwi to use."
 msgstr ""
 
 #. type: Block title
-#: modules/administration/pages/ssl-certs-imported.adoc:41
+#: modules/administration/pages/ssl-certs-imported.adoc:48
 #, no-wrap
 msgid "Procedure: Deploying the Root CA on Clients"
 msgstr ""
 
 #. type: delimited block =
-#: modules/administration/pages/ssl-certs-imported.adoc:42
+#: modules/administration/pages/ssl-certs-imported.adoc:49
 msgid "In the {productname} {webui}, navigate to menu:Systems[Overview]."
 msgstr ""
 
 #. type: delimited block =
-#: modules/administration/pages/ssl-certs-imported.adoc:43
+#: modules/administration/pages/ssl-certs-imported.adoc:50
 msgid "Check all your clients to add them to the system set manager."
 msgstr ""
 
 #. type: delimited block =
-#: modules/administration/pages/ssl-certs-imported.adoc:44
+#: modules/administration/pages/ssl-certs-imported.adoc:51
 msgid "Navigate to menu:Systems[System Set Manager > Overview]."
 msgstr ""
 
 #. type: delimited block =
-#: modules/administration/pages/ssl-certs-imported.adoc:45
+#: modules/administration/pages/ssl-certs-imported.adoc:52
 msgid "In the [guimenu]``States`` field, click btn:[Apply] to apply the system states."
 msgstr ""
 
 #. type: delimited block =
-#: modules/administration/pages/ssl-certs-imported.adoc:46
+#: modules/administration/pages/ssl-certs-imported.adoc:53
 msgid "In the [guimenu]``Highstate`` page, click btn:[Apply Highstate] to propagate the changes to the clients."
 msgstr ""
 
