@@ -42,10 +42,11 @@ The server certificate file should contain the server certificate first, followe
 
 
 By default, {productname} uses a self-signed certificate.
-After you have completed the initial setup, you can replace the default certificate with an imported certificate.
+Certificates can be imported with third-party certificates at the installation time.
 
-.Procedure: Import Certificates on a New {productname} Server
-
+.Procedure: Importing certificates on a new {productname} server
+[role=procedure]
+____
 . Deploy the {productname} Server according to the instructions in xref:installation-and-upgrade:install-server.adoc[].
   Make sure to pass the correct files as parameters to [literal]``mgradm install podman``.
   The parameters are:
@@ -63,56 +64,89 @@ After you have completed the initial setup, you can replace the default certific
       --ssl-db-cert string             Database certificate path
       --ssl-db-key string              Database key path
 ----
+____
 
-Intermediate CAs can either be available in the file which is specified with `--ssl-ca-root` or specified as extra options with `--ssl-ca-intermediate`.
+Intermediate CAs can either be available in the file which is specified with `--ssl-ca-root`, or specified as extra options with `--ssl-ca-intermediate`.
 The `--ssl-ca-intermediate` option can be specified multiple times.
 
 
-== Import Certificates for New Proxy Installations
 
-By default, {productname} Proxy uses a self-signed certificate.
-After you have completed the initial setup, you can replace the default certificate with an imported certificate.
+== Import certificates for new proxy installations
 
+The proxy certificates are embedded in the generated configuration.
+In order to use a third-party certificate, it needs to be provided during the configuration.
 
-.Procedure: Import Certificates on a New {productname} Proxy
-
+.Procedure: Importing certificates on a new {productname} Proxy
+[role=procedure]
+____
 . Install the {productname} Proxy according to the instructions in xref:installation-and-upgrade:install-proxy.adoc[].
+
 . Follow the prompts to complete setup.
 
++
 
 [NOTE]
 ====
-Use the same certificate authority (CA) to sign all server certificates for servers and proxies.
+Use the same certificate authority (CA) to sign all certificates for servers and proxies.
 Certificates signed with different CAs do not match.
 ====
 
+____
 
 
 [[ssl-certs-import-replace]]
-== Replace Certificates
+== Replace certificates
 
 
 You can replace active certificates on your {productname} installation with a new certificate.
-To replace the certificates, you can replace the installed CA certificate with the new CA, and then update the database.
+There are two cases to consider: replacing only the server or database certificate, and replacing the root CA.
 
 
-.Procedure: Replacing All Existing Certificates
+Replacing the root certificate requires more time and planning to avoid disruption as all the registered proxies and systems will need to have the new CA in their database before switching to it at the server level.
 
-. On the {productname} container host, at the command prompt, recreate podman certificate secrets:
+When using third-party certificates signed by an intermediate CA, the intermediate CA certificates need to be appended to the server or database certificate file.
+
+The order is important: first comes the server certificate, then the CAs from the one which signed the certificate to the one signed by the root CA.
+The root CA certificate should not be appended to the server certificate file.
+
+
+.Procedure: Replacing all existing certificates
+[role=procedure]
+____
+. The following considers that you have [litteral]``root-ca.pem``, [litteral]``intermediate-ca1.pem``, [litteral]``intermediate-ca2.pem``, [litteral]``server.pem`` and [litteral]``server.key`` files.
+  It may be different depending on the number of intermediate CAs in the server certificate signature chain.
+
+. Combine the intermediate CAs and server certificates.
+  The order matters, the server must be first and the intermediate CAs in order.
+  Do not add the root CA last into the chain as it will be passed separately to [litteral]``uyuni-ca`` and [litteral]``uyuni-db-ca`` secrets.
+  If there is no intermediate CA, then you can use the [litteral]``server.pem`` instead of the combined file in the next steps.
+
++
+[source,shell]
+----
+cat server.pem intermediate-ca1.pem intermediate-ca2.pem >combined-server.pem
+----
+
+. On the {productname} container host, at the command prompt, recreate podman certificate secrets passing the files paths:
 
 +
 
 [source,shell]
 ----
 podman secret create --replace uyuni-ca $path_to_ca_certificate
-podman secret create --replace uyuni-db-ca $path_to_database_ca_certificate
-podman secret create --replace uyuni-cert $path_to_server_certificate
+podman secret create --replace uyuni-cert $path_to_combined_server_certificate
 podman secret create --replace uyuni-key $path_to_server_key
-podman secret create --replace uyuni-db-cert $path_to_database_certificate
+
+podman secret create --replace uyuni-db-ca $path_to_database_ca_certificate
+podman secret create --replace uyuni-db-cert $path_to_combined_database_certificate
 podman secret create --replace uyuni-db-key $path_to_database_key
 ----
+____
 
-.Procedure: Restarting the Server
+
+.Procedure: Restarting the server
+[role=procedure]
+____
 . On the container host, restart the server to pick up the changes:
 
 +
@@ -121,6 +155,7 @@ podman secret create --replace uyuni-db-key $path_to_database_key
 ----
 mgradm restart
 ----
+____
 
 
 If you are using a proxy, you need to generate a server certificate RPM for each proxy, using their hostnames and cnames.
@@ -138,6 +173,7 @@ endif::[]
 
 
 If the Root CA was changed, it needs to get deployed to all the clients connected to {productname}.
+This is ideally done in advance to minimize the disruption.
 
 [NOTE]
 ====
@@ -150,18 +186,21 @@ On the {productname} Server container host, execute following command:
 mgrctl exec mgr-package-rpm-certificate-osimage
 ----
 
-Then apply highstate on the Image Build hosts to deploy the new certificates for Kiwi to use.
+After that, apply highstate on the Image Build hosts to deploy the new certificates for Kiwi to use.
 ====
 
 
 
-.Procedure: Deploying the Root CA on Clients
-
+.Procedure: Deploying the root CA on clients
+[role=procedure]
+____
 . In the {productname} {webui}, navigate to menu:Systems[Overview].
+
 . Check all your clients to add them to the system set manager.
+
 . Navigate to menu:Systems[System Set Manager > Overview].
+
 . In the [guimenu]``States`` field, click btn:[Apply] to apply the system states.
+
 . In the [guimenu]``Highstate`` page, click btn:[Apply Highstate] to propagate the changes to the clients.
-
-
-
+____
