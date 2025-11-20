@@ -1,3 +1,5 @@
+- Fixed the issue with importing SSL certificates in Administration Guide 
+  (bsc#1253382)
 - Added precisions on the intermediate CA certificates to Administration Guide (bsc#1253735)
 - Improved procedure formatting for better clarity in Administration
   Guide (bsc#1253660)
