@@ -1,3 +1,5 @@
+- Explained how to generate the proxy certificates on a peripheral server 
+  (bsc#1249425)
 - Improved procedure formatting for better clarity in Administration
   Guide (bsc#1253660)
 - Added links to man pages for createrepo_c and reprepro to
