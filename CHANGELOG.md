@@ -1,3 +1,4 @@
+- Fixed issue for third-party certificates during migration (bsc#1253350)
 - Fixed the issue with importing SSL certificates in Administration Guide 
   (bsc#1253382)
 - Added precisions on the intermediate CA certificates to Administration
