@@ -1,3 +1,4 @@
+- Fixed issue for third-party certificates during migration (bsc#1253350)
 - Explained how to generate the proxy certificates on a peripheral server 
   (bsc#1249425)
 - Explained how to generate the DB certificate for the upgrade of a 5.0
