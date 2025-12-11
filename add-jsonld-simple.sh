@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Simple script to add JSON-LD metadata attributes
-# Processes one module at a time
+# Adds page-author, page-image, page-product-name, and page-product-version
 
 set -e
 
@@ -18,9 +18,9 @@ print_info() {
 BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "master")
 
 case "$BRANCH" in
-    manager-4.3*) PRODUCT_NAME="SUSE Manager"; PRODUCT_VERSION="4.3" ;;
-    manager-5.0*) PRODUCT_NAME="SUSE Manager"; PRODUCT_VERSION="5.0" ;;
-    manager-5.1*) PRODUCT_NAME="SUSE Multi-Linux Manager"; PRODUCT_VERSION="5.1" ;;
+    manager-4.3*|*-4.3-*|*-43-*) PRODUCT_NAME="SUSE Manager"; PRODUCT_VERSION="4.3" ;;
+    manager-5.0*|*-5.0-*|*-50-*) PRODUCT_NAME="SUSE Manager"; PRODUCT_VERSION="5.0" ;;
+    manager-5.1*|*-5.1-*|*-51-*) PRODUCT_NAME="SUSE Multi-Linux Manager"; PRODUCT_VERSION="5.1" ;;
     *) PRODUCT_NAME="SUSE Multi-Linux Manager"; PRODUCT_VERSION="5.2" ;;
 esac
 
@@ -38,8 +38,8 @@ for module_dir in modules/*/; do
         # Check if file needs updating
         if grep -q "^:page-author:" "$file" && \
            grep -q "^:page-image:" "$file" && \
-           grep -q "^:product-name:" "$file" && \
-           grep -q "^:product-version:" "$file"; then
+           grep -q "^:page-product-name:" "$file" && \
+           grep -q "^:page-product-version:" "$file"; then
             continue
         fi
         
@@ -53,16 +53,16 @@ for module_dir in modules/*/; do
         found_attrs==1 && inserted==0 && !/^:/ {
             if (!seen_author) print ":page-author: " author
             if (!seen_image) print ":page-image: " image
-            if (!seen_pname) print ":product-name: " pname
-            if (!seen_pversion) print ":product-version: " pversion
+            if (!seen_pname) print ":page-product-name: " pname
+            if (!seen_pversion) print ":page-product-version: " pversion
             inserted=1
             print
             next
         }
         /^:page-author:/ { seen_author=1 }
         /^:page-image:/ { seen_image=1 }
-        /^:product-name:/ { seen_pname=1 }
-        /^:product-version:/ { seen_pversion=1 }
+        /^:page-product-name:/ { seen_pname=1 }
+        /^:page-product-version:/ { seen_pversion=1 }
         { print }
         ' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
         

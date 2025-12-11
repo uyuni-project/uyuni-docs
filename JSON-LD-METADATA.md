@@ -21,9 +21,11 @@ The script adds the following attributes to each page:
 ```asciidoc
 :page-author: SUSE Product & Solution Documentation Team
 :page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
-:product-name: <PRODUCT_NAME>
-:product-version: <VERSION>
+:page-product-name: <PRODUCT_NAME>
+:page-product-version: <VERSION>
 ```
+
+**Note:** The `page-` prefix is required for custom attributes to be accessible in Antora UI templates.
 
 ## Product Names and Versions by Branch
 
