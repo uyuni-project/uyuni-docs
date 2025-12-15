@@ -1,3 +1,4 @@
+- Document openSUSE Leap 15.6 and SUSE Linux Enterprise 16 as supported clients
 - Fixed the path to the certificates in proxy deployment
 - Fixed issue for third-party certificates during migration (bsc#1253350)
 - Explained how to generate the DB certificate for the upgrade of a 5.0 peripheral server (bsc#1248282)
