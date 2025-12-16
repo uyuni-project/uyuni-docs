@@ -1,3 +1,4 @@
+- Added SLE16 and openSUSE Leap 16 as supported clients
 - Explained how to generate the proxy certificates on a peripheral server 
   (bsc#1249425)
 - Improved procedure formatting for better clarity in Administration
