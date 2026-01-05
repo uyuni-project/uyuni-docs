@@ -1,12 +1,16 @@
 - Updated HUB XML-RPC API to use SSL connection in Specialized Guides
-- Document openSUSE Leap 15.6 and SUSE Linux Enterprise 16 as supported clients
+- Documented openSUSE Leap 15.6 and SUSE Linux Enterprise 16 as supported
+  clients
 - Fixed the path to the certificates in proxy deployment
 - Fixed issue for third-party certificates during migration (bsc#1253350)
-- Explained how to generate the DB certificate for the upgrade of a 5.0 peripheral server (bsc#1248282)
-- Explained how to generate the proxy certificates on a peripheral server (bsc#1249425)
+- Explained how to generate the DB certificate for the upgrade of a 5.0
+  peripheral server (bsc#1248282)
+- Explained how to generate the proxy certificates on a peripheral server
+  (bsc#1249425)
 - Fixed the issue with importing SSL certificates in Administration Guide 
   (bsc#1253382)
-- Added precisions on the intermediate CA certificates to Administration Guide (bsc#1253735)
+- Added precisions on the intermediate CA certificates to Administration
+  Guide (bsc#1253735)
 - Improved procedure formatting for better clarity in Administration
   Guide (bsc#1253660)
 - Added missing options to command example in Installation and
@@ -29,7 +33,8 @@
   (bsc#1253197)
 - Changed the installation instructions to use product instead of packages 
   (bsc#1249041)
-- Added instructions to clean unused container images after upgrade (bsc#1253022)
+- Added instructions to clean unused container images after upgrade
+  (bsc#1253022)
 - Clarified the instructions that needs to run in container (bsc#1252680)
 - Information about mirroring Ubuntu ESM packages will be limited to Uyuni.
   This is to eliminate confusion about which features and packages are supported
@@ -37,34 +42,28 @@
 - Fixed the proxy timeout procedure in Administration Guide (bsc#1252020)
 - Fixed the file name in the provided example in Administration
   Guide (bsc#1252727)
-- Improved section about Saline deployment in Specialized
-  Guides (bsc#1252637)
+- Improved section about Saline deployment in Specialized Guides (bsc#1252637)
 - Fix volumes, ports and air-gapped install after database split
 - Added troubleshooting section for mass duplicate machine_id
-- Improved recommendation in Large Deployments Guide
-  (bsc#1252723)
+- Improved recommendation in Large Deployments Guide (bsc#1252723)
 - Added Tumbleweed migration for Uyuni
 - Updated and corrected the migration instructions for
   server and proxy in Installation and Upgrade Guide
 - Added SSL certificates requirement before migrations
 - Removed the option of editing the sshd_config file to
   enable root login (bsc#1252106)
-- Added conditional logic for Uyuni licensing.
-- Fixed unterminated listing blocks across multiple documents.
-- Corrected table formatting issues in both Korean and 
-  English versions.
+- Added conditional logic for Uyuni licensing
+- Fixed unterminated listing blocks across multiple documents
+- Corrected table formatting issues in both Korean and English versions
 - Moved snippets to the partials directory for proper inclusion 
-  and reuse.
-- Added instructions for firewall settings in Administration
-  Guide
-- Corected the procedure instruction in Administration Guide
-  (bsc#1252023)
-- Improved documentation about monitoring in Administration
-  Guide
+  and reuse
+- Added instructions for firewall settings in Administration Guide
+- Corected the procedure instruction in Administration Guide (bsc#1252023)
+- Improved documentation about monitoring in Administration Guide
 - Documented how to disable HSTS in Administration Guide
 - Removed virtualization from documentation (bsc#1246983)
 - Fixed instruction and command in Client Configuration Guide
-  (bsc#1248803) 
+  (bsc#1248803)
 - Added openSUSE Tumbleweed support for Uyuni
 - Documented the new autoinstallation snippets (bsc#1194792)
 - Improved the appearance of Web UI instructions in Administration
