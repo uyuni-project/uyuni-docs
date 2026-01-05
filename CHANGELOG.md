@@ -1,3 +1,4 @@
+- Changes example for the third-party repository GPG keys (bsc#1255857)
 - Updated HUB XML-RPC API to use SSL connection in Specialized Guides
 - Document openSUSE Leap 15.6 and SUSE Linux Enterprise 16 as supported clients
 - Fixed the path to the certificates in proxy deployment
