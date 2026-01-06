@@ -1,3 +1,5 @@
+- Documented Debian 13 as supported client
+- Document openSUSE Leap 15.6 and SUSE Linux Enterprise 16 as supported clients
 - Updated HUB XML-RPC API to use SSL connection in Specialized Guides
 - Documented openSUSE Leap 15.6 and SUSE Linux Enterprise 16 as supported
   clients
