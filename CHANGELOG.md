@@ -1,3 +1,4 @@
+- Added documentation for Access Group Management to Reference Guide
 - Updated HUB XML-RPC API to use SSL connection in Specialized Guides
 - Fixed issue for third-party certificates during migration (bsc#1253350)
 - Explained how to generate the proxy certificates on a peripheral server 
