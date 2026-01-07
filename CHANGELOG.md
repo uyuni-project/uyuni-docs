@@ -1,3 +1,4 @@
+- Added missing optional parameter in server rename command (bsc#1256066)
 - Updated HUB XML-RPC API to use SSL connection in Specialized Guides
 - Documented openSUSE Leap 15.6 and SUSE Linux Enterprise 16 as supported
   clients
