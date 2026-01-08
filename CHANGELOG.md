@@ -1,3 +1,4 @@
+- Added missing optional parameter in server rename command (bsc#1256066)
 - Changes example for the third-party repository GPG keys (bsc#1255857)
 - Added documentation for Access Group Management to Reference Guide
 - Updated HUB XML-RPC API to use SSL connection in Specialized Guides
