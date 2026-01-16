@@ -1,3 +1,4 @@
+- CIS removed from list of supported OpenSCAP profiles
 - Document openSUSE Leap 15.6 and SUSE Linux Enterprise 16 as supported clients
 - Added missing optional parameter in server rename command (bsc#1256066)
 - Changes example for the third-party repository GPG keys (bsc#1255857)
