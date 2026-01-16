@@ -1,3 +1,4 @@
+- CIS removed from list of supported OpenSCAP profiles
 - Changes example for the third-party repository GPG keys (bsc#1255857)
 - Added SLE16 and openSUSE Leap 16 as supported clients
 - Explained how to generate the proxy certificates on a peripheral server 
