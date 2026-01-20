@@ -1,3 +1,5 @@
+- Update and clarify Retail formulas page
+- Document formula images on air-gapped systems
 - CIS removed from list of supported OpenSCAP profiles
 - Added missing optional parameter in server rename command (bsc#1256066)
 - Changes example for the third-party repository GPG keys (bsc#1255857)
