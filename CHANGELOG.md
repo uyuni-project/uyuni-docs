@@ -1,3 +1,4 @@
+- Changed private to public key in Ansible procedure (bsc#1254585)
 - Documented SUSE Linux Micro 6.2 as supported clients
 - Removed CIS from list of supported OpenSCAP profiles
 - Documented openSUSE Leap 15.6 and SUSE Linux Enterprise 16 as supported clients
