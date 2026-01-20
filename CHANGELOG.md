@@ -1,3 +1,4 @@
+- Add 4.3 proxy and branch server migrations
 - Included global GPG decryption for pillar data in specialized guide (bsc#1255743)
 - Added separate procedure for reenabling router advertisements (bsc#1254259)
 - Changed instructions from provate to public key in Admintration Guide
