@@ -1,3 +1,4 @@
+- Added separate procedure for reenabling router advertisements (bsc#1254259)
 - Changed private to public key in Ansible procedure (bsc#1254585)
 - Documented SUSE Linux Micro 6.2 as supported clients
 - Removed CIS from list of supported OpenSCAP profiles
