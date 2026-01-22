@@ -6,16 +6,18 @@ ifeval::[{mlm-content} == true]
 :noindex:
 endif::[]
 
-== What is Air-gapped Deployment?
+== What is air-gapped deployment?
 
 
-Air-gapped deployment refers to the setup and operation of any networked system that is physically isolated from insecure networks, especially the internet. This type of deployment is commonly used in high-security environments such as military installations, financial systems, critical infrastructure, and anywhere sensitive data is handled and must be protected from external threats.
+Air-gapped deployment refers to the setup and operation of any networked system that is physically isolated from insecure networks, especially the internet.
+This type of deployment is commonly used in high-security environments such as military installations, financial systems, critical infrastructure, and anywhere sensitive data is handled and must be protected from external threats.
 
 You can easily pull container images using [systemitem]``Podman`` or [systemitem]``Docker`` on a machine with internet access. 
 
-.Procedure
+.Procedure: Pulling the images
 . Pull the desired images, then save the images as a [literal]``tar`` archive. 
-For example:
+  For example:
+
 +
 .Podman
 ----
@@ -36,6 +38,35 @@ docker save --output images.tar registry.opensuse.org/uyuni/server:latest regist
 podman load -i images.tar
 ----
 
+== Obtaining container images for {salt} formulas in air-gapped environments
+
+Some formulas, like Bind and DHCP (Kea), also use containers.
+If you plan to use them in an air-gapped environment, you need to pull their images, save them to an archive, and load them on your {productname} Proxy or another managed system.
+
+The images are available from `registry.opensuse.org`.
+
+.Procedure: Obtaining formula images for air-gapped environments
+. On a system with Internet access, pull the required images. For example:
++
+[source,shell]
+----
+podman pull registry.opensuse.org/opensuse/bind:latest
+podman pull registry.opensuse.org/opensuse/kea:latest
+----
+. Save the images to a TAR archive:
++
+[source,shell]
+----
+podman save -o formula-images.tar registry.opensuse.org/opensuse/bind:latest registry.opensuse.org/opensuse/kea:latest
+----
+. Transfer the `formula-images.tar` file to your air-gapped system.
+. Load the images on the air-gapped system:
++
+[source,shell]
+----
+podman load -i formula-images.tar
+----
+
 === Deploy {productname} on {opensuse} {tumbleweed}
 
 {productname} also provides all the needed container images in RPM packages that can be installed on the system.
@@ -45,7 +76,7 @@ podman load -i images.tar
 User should make the needed RPM available on the internal network. That can be done by using a second {productname} Server or any kind of mirror.
 ====
 
-.Procedure: Install {productname} on {opensuse} {tumbleweed} in Air-gapped
+.Procedure: Install {productname} on {opensuse} {tumbleweed} in air-gapped environment
 . Install {opensuse} {tumbleweed}.
 . Update the system.
 . Install tools packages and image packages (replace $ARCH$ with the correct architecture):
