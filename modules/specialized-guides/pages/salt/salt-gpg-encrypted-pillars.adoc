@@ -1,7 +1,7 @@
 [[salt-gpg-encrypted-pillars]]
 = GPG Encrypted Pillars
 :description: Configure and enable transparent decryption of GPG-encrypted Pillar data on the Salt Master using a specified GPG keyring, either located in /etc/salt/master
-:revdate: 2025-02-06
+:revdate: 2026-01-12
 :page-revdate: {revdate}
 :page-author: SUSE Product & Solution Documentation Team
 :page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
@@ -9,7 +9,7 @@
 :page-product-version: 5.1
 
 {salt} has support to transparently decrypt GPG-encrypted Pillar data built-in.
-The decryption happens on the {salt} Master.
+The decryption happens on the {salt} Master during Pillar rendering.
 
 
 == Generate GPG keyring for {salt} Master
@@ -59,18 +59,33 @@ systemctl reload-or-restart salt-master
 
 == Use GPG for encrypting Pillar secrets
 
-Salt GPG renderer decrypts GPG encrypted contents that are ASCI-armored. 
-To use the GPG renderer in a Pillar YAML file, change 
+Salt's GPG renderer decrypts GPG encrypted contents that are ASCII-armored.
+To use the GPG renderer in a single Pillar YAML file, change
 
 ----
-#!yaml
+#!jinja|yaml
 ----
 
-to 
+to
 
 ----
-#!yaml|gpg
+#!jinja|yaml|gpg
 ----
+
+To use Salt's GPG renderer globally, including for xref:client-configuration:custom-info.adoc[], configure Salt Master as follows
+
+----
+cat >/etc/salt/master.d/z-gpg-pillar.conf <<EOF
+ext_pillar:
+  - gpg: True
+EOF
+----
+
+[NOTE]
+====
+The filename should have a [literal]``z-`` prefix to ensure the GPG renderer runs after other configured pillar renderers.
+====
+
 
 Encrypting pillar secrets can be done anywhere as long as the GPG and the public key generated in <<proc-key-pair-generation>> are available. 
 
