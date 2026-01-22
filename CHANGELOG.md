@@ -1,3 +1,4 @@
+- Added separate procedure for reenabling router advertisements (bsc#1254259)
 - Update and clarify Retail formulas page
 - Document formula images on air-gapped systems
 - Changed private to public key in Ansible procedure (bsc#1254585)

@@ -45,9 +45,16 @@ This is needed for communication from the outside of the container.
 However, if your system previously had [literal]``/proc/sys/net/ipv6/conf/eth0/accept_ra`` set to [literal]``1``, it will stop using router advertisements.
 As a result, the routes are no longer obtained via router advertisements and the default IPv6 route is missing.
 
-To recover correct functioning of the IPv6 routing, follow the procedure:
+To recover correct functioning of the IPv6 routing, follow the procedure depending on whether:
 
-.Procedure: Reenabling router advertisements
+ * server and proxy are based on {bci-mlm} (without Network manager)
+
+ * server and proxy are based on {sl-micro} {microversion}} (with Network manager)
+
+
+.Procedure: Reenabling router advertisements without Network Manager
+[role=procedure]
+____
 . Create a file in [path]``/etc/sysctl.d``, for example [literal]``99-ipv6-ras.conf``.
 . Add the following parameter and value to the file:
 
@@ -56,6 +63,48 @@ To recover correct functioning of the IPv6 routing, follow the procedure:
 net.ipv6.conf.eth0.accept_ra = 2
 ----
 . Reboot.
+____
+
+
+.Procedure: Reenabling router advertisements with Network Manager
+[role=procedure]
+____
+. List your connections with [command]``nmcli connection show``.
+
+. Create or modify the file [path]``/etc/NetworkManager/system-connections/<name of connection>.nmconnection`` to add this setting:
+
++
+
+[source, shell]
+----
+[ipv6]
+addr-gen-mode=eui64
+----
+
+. Reboot.
+
+. The file should look similar to this:
+
++
+[source, shell]
+----
+[connection]
+id=Wired connection 1
+type=ethernet
+interface-name=eth0
+
+[ethernet]
+
+[ipv4]
+dns-priority=20
+method=auto
+
+[ipv6]
+addr-gen-mode=eui64
+method=auto
+
+----
+____
 
 
 == Deployment behind HTTP or HTTPS OSI level 7 proxy
