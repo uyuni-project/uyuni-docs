@@ -35,14 +35,14 @@ This is because the changes have not been made in the database, which prevents t
 
 
 
-== Rename Server
+== Rename server
 
 If you need to change the hostname of the {productname} Server, you can do so using the [command]``mgradm server rename`` command.
 This command updates the settings in the {postgresql} database and the internal structures of {productname}.
 
 
 
-=== Server Configuration
+=== Server configuration
 
 The command takes no mandatory parameter, but can take the new hostname if it is not the one from the container host.
 
@@ -51,19 +51,30 @@ In case any SSL certificate needs to be generated to match the new hostname, the
 This is safely achieved using a configuration file
 
 .Procedure: Prepare the configuration file for the SSL CA password
+[role=procedure]
+____
 . Write a [path]``config.yaml`` file with content like the following:
+
 +
+
 [source,shell]
 ----
 ssl:
-  password: "<THE CA PASSWORD>"
+  password: "<CA PASSWORD>"
 ----
+____
+
+This file will be used in the next procedure.
 
 .Procedure: Renaming {productname} Server
+[role=procedure]
+____
 . Change the network settings of the server on the system level locally and remotely at the DNS server.
     You also need to provide configuration settings for reverse name resolution.
     Changing network settings is done in the same way as with renaming any other system.
+
 . Reboot the {productname} Server to use the new network configuration and to ensure the hostname has changed.
+
 . On the container host, from the command line, execute the following command. Add [command]``-c config.yaml`` if you created the file to store the SSL CA password:
 
 +
@@ -77,6 +88,8 @@ mgradm server rename
 
 If the new hostname is not resolvable, the command fails.
 
+____
+
 The renaming procedure also takes place during the restart of the server container.
 The logs can be found by running this command:
 
@@ -88,13 +101,15 @@ mgrctl exec -ti -- journalctl -u uyuni-update-config
 Be aware that this command triggers a refresh of the pillar data for all {salt} clients when restarting the server container: the time it takes to run depends on the number of registered clients.
 
 
-=== Directly Managed Clients Reconfiguration
+=== Directly managed clients reconfiguration
 
 *Skip this procedure if clients are managed via a {productname} proxy.*
 
 With the following procedure, reconfigure directly managed clients to make them aware of the new hostname and IP address.
 
-.Procedure: Reconfiguring Directly Managed Clients
+.Procedure: Reconfiguring directly managed clients
+[role=procedure]
+____
 . On the every client, in the {salt} client configuration file, specify the name of the new {salt} master ({productname} Server).
   The filename is [path]``/etc/venv-salt-minion/minion.d/susemanager.conf`` or, if you do not use the {salt} bundle, [path]``/etc/salt-minion/minion.d/susemanager.conf``:
 
@@ -125,9 +140,10 @@ Or, if you do not use the {salt} bundle, run:
 systemctl restart salt-minion
 ----
 
+____
 
 
-=== Client Connection with Applying High State
+=== ClientcConnection with applying high state
 
 Finally, to fully propagate the hostname to the {salt} client configuration, apply the high state.
 Applying the high state will update the hostname in the repository URLs.
