@@ -1,3 +1,4 @@
+- Documented Raspberry Pi OS 13 (Uyuni only) as supported client
 - Included global GPG decryption for pillar data in specialized guide (bsc#1255743)
 - Added separate procedure for reenabling router advertisements (bsc#1254259)
 - Changed instructions from provate to public key in Admintration Guide
