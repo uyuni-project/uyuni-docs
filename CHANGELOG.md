@@ -1,5 +1,15 @@
 - Documented Debian 13 as supported client
 - Document openSUSE Leap 15.6 and SUSE Linux Enterprise 16 as supported clients
+- Included global GPG decryption for pillar data in specialized guide (bsc#1255743)
+- Added separate procedure for reenabling router advertisements (bsc#1254259)
+- Changed instructions from provate to public key in Admintration Guide
+  (bsc#1254585)
+- Update and clarify Retail formulas page
+- Document formula images on air-gapped systems
+- CIS removed from list of supported OpenSCAP profiles
+- Added missing optional parameter in server rename command (bsc#1256066)
+- Changes example for the third-party repository GPG keys (bsc#1255857)
+- Added documentation for Access Group Management to Reference Guide
 - Updated HUB XML-RPC API to use SSL connection in Specialized Guides
 - Documented openSUSE Leap 15.6 and SUSE Linux Enterprise 16 as supported
   clients
