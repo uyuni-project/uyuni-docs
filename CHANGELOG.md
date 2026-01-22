@@ -1,4 +1,6 @@
 - Added separate procedure for reenabling router advertisements (bsc#1254259)
+- Changed instructions from provate to public key in Admintration Guide
+  (bsc#1254585)
 - Update and clarify Retail formulas page
 - Document formula images on air-gapped systems
 - CIS removed from list of supported OpenSCAP profiles
