@@ -28,6 +28,13 @@ Depending on the host operating system:
 
 {productname} {smr} 5.1.2 includes automated backup-migration procedure for both kinds of {susemgrproxy} variants. This procedure collects all required data and uploads them to the {productname} Server. For {susemgrbranch} this tool also creates and migrates {saltboot} related entities.
 
+[NOTE]
+====
+Squid cache data and POS images are not backed up. Due to change in functionality these data are not migrated and instead redownloaded from the server.
+
+See xref:retail-deploy-terminals.adoc#_synchronize_images_to_the_branch_server[] how to warm up the cache.
+====
+
 There are multiple ways to initiate {susemgrbranch} 4.3 migration:
 
 * API call
@@ -35,18 +42,18 @@ There are multiple ways to initiate {susemgrbranch} 4.3 migration:
 Replace [literal]``$proxyid`` by a server id of the branch proxy, or multiple server ids separated by a comma.
 +
 [code]
-====
+----
 mgrctl api login
 mgrctl api post proxy/backupConfiguration '{"sids":[$proxyid]}'
-====
+----
 * {salt} call
 +
 Replace [literal]``$proxy`` in command below by branch proxy minion id or [literal]``-L proxyminionid1,proxyminionid2,...`` when addressing multiple branch proxies.
 +
 [code]
-====
+----
 salt $proxy proxy.backup
-====
+----
 
 [NOTE]
 ====
@@ -68,15 +75,15 @@ Backup/migration step will create new Saltboot objects:
 - New cobbler profile is created for the branch group:
 +
 [code]
-====
+----
 # mgrctl exec -- cobbler profile report --name $branchid:S:$orgid:$orgname
-====
+----
 - New cobbler systems are created for all assigned terminals:
 +
 [code]
-====
+----
 # mgrctl exec -- cobbler system find --kernel-options "MINION_ID_PREFIX=$branchid"
-====
+----
 
 == Migrate {susemgrbranch} host
 
@@ -97,12 +104,12 @@ As a profile use profile provided at https://github.com/SUSE/manager-build-profi
 - Once profile is created, switch to [menuitem]``Variables`` tab and fill in required variables:
 +
 [code]
-====
+----
 org='organization_id'
 distrotree='autoinstallation_distribution_label_from_previous_step'
 channel_prefix='clm_channel_prefix' or blank for SCC channels
 registration_key='activation_key_for_post_upgrade'
-====
+----
 - In tab [menuitem]``Autoinstallation File`` you can see complete rendered profile for additional inspection
 
 === Provision autoinstallation of the proxy
@@ -113,10 +120,10 @@ Schedule an autoinstallation on the old {susemgr} Branch Server 4.3 using the pr
 - Or use API call [command]``system/provisionSystem`` to schedule the migration. For example execute following snippet from the {productname} host:
 +
 [code]
-====
+----
 mgrctl api login
 mgrctl api post system/provisionSystem '{"sid":$proxyid,"profileName":"$profileName"}'
-====
+----
 
 == Validate proxy functionality
 
