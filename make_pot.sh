@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # You need po4a > 0.58, see https://github.com/mquinson/po4a/releases
 # There is no need of system-wide installation of po4a
 # Usage: PERLLIB=/path/to/po4a/lib make_pot.sh
