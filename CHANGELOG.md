@@ -1,3 +1,6 @@
+- Documented SUSE Linux Micro 6.2 as supported clients
+- Removed CIS from list of supported OpenSCAP profiles
+- Changed example for the third-party repository GPG keys (bsc#1255857)
 - Included global GPG decryption for pillar data in specialized guide (bsc#1255743)
 - CIS removed from list of supported OpenSCAP profiles
 - Changes example for the third-party repository GPG keys (bsc#1255857)
