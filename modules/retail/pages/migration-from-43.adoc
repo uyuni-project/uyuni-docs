@@ -1,0 +1,132 @@
+[[retail-migration-from-43]]
+= Migrating from {susemgrbranch} 4.3
+:revdate: 2026-01-19
+:page-revdate: {revdate}
+
+This guide describes how to migrate one or more {susemgrbranch} Servers from {susemgr} Branch Server 4.3 to the {susemgrbranch} 5.1
+
+== Overview
+
+* Synchronize {susemgrbranch} channels
+* Backup existing {productname} {smr} 4.3 Branch Server Proxy
+* Validate branch objects were created
+* Migrate Branch Server Proxy host
+* Validate proxy functionality
+
+image::4.3-branchserver-migration.svg[scaledwidth=80%]
+
+== Synchronize {susemgrbranch} channels
+
+See xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc[] how to synchronize product channels for a proxy systems.
+
+Depending on the host operating system:
+
+* [literal]``SUSE Linux Micro 6.1`` uses [literal]``SUSE Multi-Linux Manager Retail Branch Server Extension 5.1`` channels
+* [literal]``SUSE Linux Enterprise Server 15 SP7`` uses [literal]``SUSE Multi-Linux Manager Retail Branch Server Extension for SLE 5.1`` channels
+
+== Backup existing {susemgrbranch} 4.3
+
+{productname} {smr} 5.1.2 includes automated backup-migration procedure for both kinds of {susemgrproxy} variants. This procedure collects all required data and uploads them to the {productname} Server. For {susemgrbranch} this tool also creates and migrates {saltboot} related entities.
+
+[NOTE]
+====
+Squid cache data and POS images are not backed up. Due to change in functionality these data are not migrated and instead redownloaded from the server.
+
+See xref:retail-deploy-terminals.adoc#_synchronize_images_to_the_branch_server[] how to warm up the cache.
+====
+
+There are multiple ways to initiate {susemgrbranch} 4.3 migration:
+
+* API call
++
+Replace [literal]``$proxyid`` by a server id of the branch proxy, or multiple server ids separated by a comma.
++
+[code]
+----
+mgrctl api login
+mgrctl api post proxy/backupConfiguration '{\"sids\":[$proxyid]}'
+----
+* {salt} call
++
+Replace [literal]``$proxy`` in command below by branch proxy minion id or [literal]``-L proxyminionid1,proxyminionid2,...`` when addressing multiple branch proxies.
++
+[code]
+----
+salt $proxy proxy.backup
+----
+
+[NOTE]
+====
+It is recommended to do a manual backup of the proxy as well, particularly if there are custom modifications present.
+====
+
+[IMPORTANT]
+====
+{susemgrbranch} can still be used after backup step as before, however because some formulas were disabled by the backup/migration step, next highstate or image-sync state application will not work properly.
+
+Migrate the server host as soon as possible after backup step is performed.
+====
+
+== Validate branch objects were created for migrated branches
+
+Backup/migration step will create new Saltboot objects:
+
+- [literal]``Saltboot Group`` formula with settings from the original formulas is assigned to the branch group.
+- New cobbler profile is created for the branch group:
++
+[code]
+----
+# mgrctl exec -- cobbler profile report --name $branchid:S:$orgid:$orgname
+----
+- New cobbler systems are created for all assigned terminals:
++
+[code]
+----
+# mgrctl exec -- cobbler system find --kernel-options "MINION_ID_PREFIX=$branchid"
+----
+
+== Migrate {susemgrbranch} host
+
+Create and use AutoYAST profiles to migrate or reinstall the proxy host.
+
+=== Prepare autoinstallation distribution based on {sles} 15 SP7
+
+- Download or obtain {sles} 15 SP7 installation ISO to the server host
+- Use [literal]``mgradm distribution copy $path_to_the_iso`` to copy installation files to the container
+- Register the autoinstallation distribution, see xref:client-configuration:autoinst-distributions.adoc[].
+
+=== Prepare autoinstallation profile
+
+For more information, see xref:client-configuration:autoinst-profiles.adoc[].
+
+- Create an autoinstallation profile based previously created distribution.
+As a profile use profile provided at https://github.com/SUSE/manager-build-profiles/blob/master/AutoYaST/SUSE-Multi-Linux-Manager/SUSE%20Multi-Linux%20Manager%20Proxy/MLM_RBS-51-SLES-Upgrade.xml
+- Once profile is created, switch to [menuitem]``Variables`` tab and fill in required variables:
++
+[code]
+----
+org='organization_id'
+distrotree='autoinstallation_distribution_label_from_previous_step'
+channel_prefix='clm_channel_prefix' or blank for SCC channels
+registration_key='activation_key_for_post_upgrade'
+----
+- In tab [menuitem]``Autoinstallation File`` you can see complete rendered profile for additional inspection
+
+=== Provision autoinstallation of the proxy
+
+Schedule an autoinstallation on the old {susemgr} Branch Server 4.3 using the profile created in previous step.
+
+- Use Web UI interface [menuitem]``Provisioning`` tab at the [menuitem]``System`` view of migrating branch server
+- Or use API call [command]``system/provisionSystem`` to schedule the migration. For example execute following snippet from the {productname} host:
++
+[code]
+----
+mgrctl api login
+mgrctl api post system/provisionSystem '{\"sid\":$proxyid,\"profileName\":\"$profileName\"}'
+----
+
+== Validate proxy functionality
+
+After migration is finished and salt is started first time, backed up proxy configuration is automatically deployed during [literal]``Hardware Refresh`` step.
+
+After finishing all onboarding steps, validate required proxy functionality.
