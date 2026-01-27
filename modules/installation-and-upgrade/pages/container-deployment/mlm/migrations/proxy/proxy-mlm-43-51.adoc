@@ -10,7 +10,7 @@ endif::[]
 
 * To migrate a SUSE Manager 4.3 Proxy to {productname} {productnumber}, you require a new machine with {sl-micro} {microversion} or {sles} {bci-mlm} and [literal]``mgrpxy`` installed.
 
-* An in-place migration from SUSE Manager 4.3 to {productnumber} is not supported, regardless of whether the chosen host operating system is {sl-micro} {microversion} or {sles} {bci-mlm}.
+* An in-place migration from SUSE Manager 4.3 to {productnumber} requires host operating system reinstallation, regardless of whether the chosen host operating system is {sl-micro} {microversion} or {sles} {bci-mlm}.
 
 * Before migrating from SUSE Manager 4.3 to {productnumber}, any existing traditional clients including the traditional proxies must be migrated to {salt}.
 For more information about migrating traditional {productname} 4.3 clients to {salt} clients, see https://documentation.suse.com/suma/4.3/en/suse-manager/client-configuration/contact-methods-migrate-traditional.html.
@@ -23,56 +23,96 @@ needs to be migrated first, see xref:installation-and-upgrade:container-deployme
 
 == Introduction
 
-In {productname} 4.3, the proxy can be deployed using three different methods:
+In {productname} {productnumber}, the proxy can be deployed using two different methods:
 
-* RPM based
 * containerized running on Podman
 * containerized running on k3s
 
 In {productname} {productnumber}, RPM based support was removed, and only the containerized version running with podman or k3s is supported. 
-Furthermore, the management of the containerized proxy running with Podman was re-designed and made simpler with the [command]``mgrpxy`` tool.
+The management of the containerized proxy running with Podman is done using the [command]``mgrpxy`` tool.
 
+image::43-proxy-migration.mmaid.svg[scalewidth=80%]
 
-== Deploy a new {productname} {productnumber} proxy
+== Backup existing {susemgrproxy} data
 
+{productname} {smr} 5.1.2 includes automated backup-migration procedure for both kinds of {susemgrproxy} variants. This procedure collects all required data and uploads them to the {productname} Server. For {susemgrbranch} this tool also creates and migrates {saltboot} related entities, see xref:retail:migration-from-43.adoc[].
 
-Because an in-place migration is not supported, a deployment of a new {productname} proxy with a new FQDN is required. 
-For more information on deploying a new proxy on {sl-micro} {microversion} or {sles} {bci-mlm} see xref:installation-and-upgrade:install-proxy.adoc[] .
+There are multiple ways how to initiate {susemgrproxy} 4.3 migration:
 
+* API call
++
+Replace [literal]``$proxyid`` by a server id of the branch proxy, or multiple server ids separated by a comma.
++
+[code]
+----
+mgrctl api login
+mgrctl api post proxy/backupConfiguration '{"sids":[$proxyid]}'
+----
+* {salt} call
++
+Replace [literal]``$proxy`` in command below by branch proxy minion id or [literal]``-L proxyminionid1,proxyminionid2,...`` when addressing multiple branch proxies.
++
+[code]
+----
+salt $proxy proxy.backup
+----
 
-== Migrate clients to the new proxy
+[NOTE]
+====
+It is recommended to do a manual backup of the proxy as well, particularly if there are custom modifications present.
+====
 
 [IMPORTANT]
 ====
-Before migrating the clients, ensure that the new {productname} {productnumber} Proxy is already deployed and fully functional.
+{susemgrproxy} remain operational after backup step as before, however migrate the server host as soon as possible after backup step is performed to prevent potential inconsistencies.
 ====
 
-.Procedure: Migrating clients from the old to the new proxy
-[role=procedure]
-____
-. Log in to the {productname} Server {webui}.
+== Deploy a new {susemgrproxy}
 
-. From the left navigation, select menu:Systems[Systems List].
+{susemgrproxy} host operating system can be either {sles} 15 SP7 or {sl-micro} {microversion}.
+This guide however considers only {sles} 15 SP7 for AutoYAST based installation. {sl-micro} {microversion}  will require manual redeployment, see xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc[]
 
-. Navigate to the old 4.3 proxy page, and click the [guimenu]``Proxy`` tab.
+=== Prepare autoinstallation distribution based on {sles} 15 SP7
 
-. Select all systems to "SSM".
+- Download or obtain {sles} 15 SP7 installation ISO to the server host
+- Use [command]``mgradm distribution copy $path_to_the_iso`` to copy installation files to the container
+- Register the autoinstallation distribution, see xref:client-configuration:autoinst-distributions.adoc[].
 
-. From the left navigation, select menu:Systems[System Set Manager].
+=== Prepare autoinstallation profile
 
-. Select the sub-menu menu:Misc[Proxy].
+For more information, see xref:client-configuration:autoinst-profiles.adoc[].
 
-. From the drop-down select the new proxy to migrate to.
+- Create an autoinstallation profile based previously created distribution.
+As a profile use profile provided at https://github.com/SUSE/manager-build-profiles/blob/master/AutoYaST/SUSE-Multi-Linux-Manager/SUSE%20Multi-Linux%20Manager%20Proxy/MLM_Proxy-51-SLES-Install.xml
+- Once profile is created, switch to [menuitem]``Variables`` tab and fill in required variables:
++
+[code]
+----
+org='organization_id'
+distrotree='autoinstallation_distribution_label_from_previous_step'
+channel_prefix='clm_channel_prefix' or blank for SCC channels
+registration_key='activation_key_for_post_upgrade'
+----
+- In tab [menuitem]``Autoinstallation File`` you can see complete rendered profile for additional inspection
 
-. Click btn:[Change Proxy].
+=== Provision autoinstallation of the proxy
 
-____
+Schedule an autoinstallation on the old {susemgr} Proxy 4.3 using the profile created in previous step.
 
-All selected clients will now be migrated to the new proxy.
-You can check the schedule progress to verify if all clients were successfully migrated.
+- Use Web UI interface [menuitem]``Provisioning`` tab at the [menuitem]``System`` view of migrating branch server
+- Or use API call [command]``system/provisionSystem`` to schedule the migration. For example execute following snippet from the {productname} host:
++
+[code]
+----
+mgrctl api login
+mgrctl api post system/provisionSystem '{"sid":$proxyid,"profileName":"$profileName"}'
+----
 
-After a few minutes, the clients will start to show the new connection path.
-When all clients have the connection path under the new proxy, the old SUSE Manager 4.3 Proxy system is not needed anymore and can be removed.
+== Validate proxy functionality
+
+After migration is finished and salt is started first time, backed up proxy configuration is automatically deployed during [literal]``Hardware refresh`` step.
+
+After finishing all onboarding steps, validate required proxy functionality
 
 
 == TFTP files synchronization
