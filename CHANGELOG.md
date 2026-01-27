@@ -1,3 +1,5 @@
+- Added section about container-based Kiwi image build support to Administration
+  guide (bsc#1251865)
 - Included global GPG decryption for pillar data in specialized guide (bsc#1255743)
 - CIS removed from list of supported OpenSCAP profiles
 - Changes example for the third-party repository GPG keys (bsc#1255857)
