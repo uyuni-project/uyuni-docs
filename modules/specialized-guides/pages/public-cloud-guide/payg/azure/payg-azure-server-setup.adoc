@@ -53,28 +53,50 @@ If you want to manage systems in an already existing network, you must configure
 For more information, see link:https://learn.microsoft.com/en-us/azure/virtual-network/tutorial-connect-virtual-networks?tabs=portal#create-virtual-network-peer[Azure documentation].
 ====
 
-
 .Procedure: Network configuration
 [role=procedure]
 ____
-. Ensure the network configuration aligns such that `hostname -f` yields the identical name as the reverse DNS lookup of the private IP address. For instance, when executing `nslookup 10.0.0.X`.
+. Ensure the network configuration aligns such that `hostname -f` yields the identical name as the reverse DNS lookup of the private IP address, for instance, when executing `nslookup 10.0.0.X`.
 
-. Insert the private IP with its Fully Qualified Domain Name (FQDN) into `/etc/hosts`. 
-
-+
-
-For example: 
+. Insert the private IP with its Fully Qualified Domain Name (FQDN) into [path]``/etc/hosts``.
 
 +
 
-`10.0.0.4   _instancename.location_.internal.cloudapp.azure.com`
+For example:
 
-. Edit `/etc/sysconfig/network/config` and append `internal.cloudapp.azure.com` to `NETCONFIG_DNS_STATIC_SEARCHLIST`.
++
 
-. Execute `netconfig update`.
+----
+10.0.0.4   instancename.location.internal.cloudapp.azure.com
+----
 
-. Subsequently, `hostname -f` should return the same FQDN as obtained from `nslookup 10.0.0.X`.
+. Check the connection name with:
+
++
+
+----
+nmcli con show
+----
+
+. Modify the DNS search parameter using the connection name identified in the previous step with:
+
++
+
+----
+nmcli con mod <your_connection_name> ipv4.dns-search "internal.cloudapp.azure.com"
+----
+
+. Bring the connection up with:
+
++
+
+----
+nmcli con up <your_connection_name>
+----
+
+. Subsequently, [command]``hostname -f`` should return the same FQDN as obtained from [command]``nslookup 10.0.0.X``.
 ____
+
 
 [IMPORTANT]
 ====
