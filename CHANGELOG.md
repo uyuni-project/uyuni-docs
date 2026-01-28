@@ -1,3 +1,5 @@
+- Added section about container-based Kiwi image build support to Administration
+  guide (bsc#1251865)
 - Added 4.3 proxy and branch server migrations to Retail Guide
 - Fixed Proxy Migration 5.0 > 5.1 inconsistencies
 - Included global GPG decryption for pillar data in specialized guide (bsc#1255743)
