@@ -1,3 +1,4 @@
+- Add alert for NetworkManager requirement when migrating from 5.0 to 5.1 on micro (bsc#1257295)
 - Added section about container-based Kiwi image build support to Administration
   guide (bsc#1251865)
 - Fixed Proxy Migration 5.0 > 5.1 inconsistencies
