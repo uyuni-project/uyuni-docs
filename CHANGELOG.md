@@ -1,3 +1,4 @@
+- Added troubleshooting diskcheck configuration to Administration Guide
 - Added section about container-based Kiwi image build support to Administration
   guide (bsc#1251865)
 - Added 4.3 proxy and branch server migrations to Retail Guide
