@@ -1,3 +1,4 @@
+- Added a warning for all instances where mgradm upgrade podman is used. 
 - Added section about container-based Kiwi image build support to Administration
   guide (bsc#1251865)
 - Included global GPG decryption for pillar data in specialized guide (bsc#1255743)
