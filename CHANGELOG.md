@@ -1,3 +1,4 @@
+- Flipped the order of reboot/mgrxpy stop instructions during proxy migration
 - Added section about container-based Kiwi image build support to Administration
   guide (bsc#1251865)
 - Fixed Proxy Migration 5.0 > 5.1 inconsistencies
