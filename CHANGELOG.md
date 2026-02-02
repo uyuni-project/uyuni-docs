@@ -1,3 +1,4 @@
+- Flipped the order of reboot/mgrxpy stop instructions during proxy migration
 - Added section about container-based Kiwi image build support to Administration
   guide (bsc#1251865)
 - Added 4.3 proxy and branch server migrations to Retail Guide
