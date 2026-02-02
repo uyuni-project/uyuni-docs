@@ -1,5 +1,6 @@
 - Added instructions to install and enable Podman before running mgradm in
   Uyuni Server Deployment guide
+- Added a warning for all instances where mgradm upgrade podman is used.
 - Changed the order of reboot/mgrxpy stop instructions during proxy migration in Installation and Upgrade Guide
 - Added section about container-based Kiwi image build support to Administration
   guide (bsc#1251865)
