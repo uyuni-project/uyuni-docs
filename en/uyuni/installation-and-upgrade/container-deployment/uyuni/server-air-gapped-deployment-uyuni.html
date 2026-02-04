@@ -105,7 +105,7 @@
     <div class="panels">
 <div class="nav-panel-menu is-active" data-panel="menu">
   <nav class="nav-menu">
-    <h3 class="title"><a href="../../../index.html">Uyuni 2025.10</a></h3>
+    <h3 class="title"><a href="../../../index.html">Uyuni 2026.01</a></h3>
 <ul class="nav-list">
   <li class="nav-item" data-depth="0">
 <ul class="nav-list">
@@ -1068,6 +1068,9 @@
     <a class="nav-link" href="../../../reference/systems/system-details/sd-remote-command.html">Remote Command</a>
   </li>
   <li class="nav-item" data-depth="5">
+    <a class="nav-link" href="../../../reference/systems/system-details/sd-connection.html">Connection</a>
+  </li>
+  <li class="nav-item" data-depth="5">
     <a class="nav-link" href="../../../reference/systems/system-details/sd-reactivation.html">Reactivation</a>
   </li>
   <li class="nav-item" data-depth="5">
@@ -1377,6 +1380,9 @@
   </li>
   <li class="nav-item" data-depth="4">
     <a class="nav-link" href="../../../reference/admin/organizations.html">Organizations</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="../../../reference/admin/access-control.html">Access Group Management</a>
   </li>
   <li class="nav-item" data-depth="4">
     <a class="nav-link" href="../../../reference/admin/users.html">Users</a>
@@ -1923,12 +1929,12 @@
 </div>
 <div class="nav-panel-explore" data-panel="explore">
   <div class="context">
-    <span class="title">Uyuni 2025.10</span>
+    <span class="title">Uyuni 2026.01</span>
     <span class="version">default</span>
   </div>
   <ul class="components">
     <li class="component is-current">
-      <a class="title" href="../../../index.html">Uyuni 2025.10</a>
+      <a class="title" href="../../../index.html">Uyuni 2026.01</a>
       <ul class="versions">
         <li class="version is-current is-latest">
           <a href="../../../index.html">default</a>
@@ -1946,7 +1952,7 @@
   <a href="../../../index.html" class="home-link"></a>
 <nav class="breadcrumbs" aria-label="breadcrumbs">
   <ul>
-    <li><a href="../../../index.html">Uyuni 2025.10</a></li>
+    <li><a href="../../../index.html">Uyuni 2026.01</a></li>
     <li><a href="../../uyuni-installation-and-upgrade-overview.html">Installation and Upgrade Guide</a></li>
     <li>Deployment and Installation</li>
     <li><a href="../../install-server.html">Server</a></li>
@@ -1962,16 +1968,17 @@
 <article class="doc">
 <h1 class="page">Uyuni Server Air-gapped Deployment</h1>
 <div class="sect1">
-<h2 id="_what_is_air_gapped_deployment"><a class="anchor" href="#_what_is_air_gapped_deployment"></a><a class="link" href="#_what_is_air_gapped_deployment">1. What is Air-gapped Deployment?</a></h2>
+<h2 id="_what_is_air_gapped_deployment"><a class="anchor" href="#_what_is_air_gapped_deployment"></a><a class="link" href="#_what_is_air_gapped_deployment">1. What is air-gapped deployment?</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Air-gapped deployment refers to the setup and operation of any networked system that is physically isolated from insecure networks, especially the internet. This type of deployment is commonly used in high-security environments such as military installations, financial systems, critical infrastructure, and anywhere sensitive data is handled and must be protected from external threats.</p>
+<p>Air-gapped deployment refers to the setup and operation of any networked system that is physically isolated from insecure networks, especially the internet.
+This type of deployment is commonly used in high-security environments such as military installations, financial systems, critical infrastructure, and anywhere sensitive data is handled and must be protected from external threats.</p>
 </div>
 <div class="paragraph">
 <p>You can easily pull container images using <code class="systemitem">Podman</code> or <code class="systemitem">Docker</code> on a machine with internet access.</p>
 </div>
 <div class="olist arabic">
-<div class="title">Procedure</div>
+<div class="title">Procedure: Pulling the images</div>
 <ol class="arabic">
 <li>
 <p>Pull the desired images, then save the images as a <code class="literal">tar</code> archive.
@@ -2002,8 +2009,53 @@ docker save --output images.tar registry.opensuse.org/uyuni/server:latest regist
 </li>
 </ol>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_obtaining_container_images_for_salt_formulas_in_air_gapped_environments"><a class="anchor" href="#_obtaining_container_images_for_salt_formulas_in_air_gapped_environments"></a><a class="link" href="#_obtaining_container_images_for_salt_formulas_in_air_gapped_environments">2. Obtaining container images for Salt formulas in air-gapped environments</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Some formulas, like Bind and DHCP (Kea), also use containers.
+If you plan to use them in an air-gapped environment, you need to pull their images, save them to an archive, and load them on your Uyuni Proxy or another managed system.</p>
+</div>
+<div class="paragraph">
+<p>The images are available from <code>registry.opensuse.org</code>.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure: Obtaining formula images for air-gapped environments</div>
+<ol class="arabic">
+<li>
+<p>On a system with Internet access, pull the required images. For example:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-shell hljs" data-lang="shell">podman pull registry.opensuse.org/opensuse/bind:latest
+podman pull registry.opensuse.org/opensuse/kea:latest</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Save the images to a TAR archive:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-shell hljs" data-lang="shell">podman save -o formula-images.tar registry.opensuse.org/opensuse/bind:latest registry.opensuse.org/opensuse/kea:latest</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Transfer the <code>formula-images.tar</code> file to your air-gapped system.</p>
+</li>
+<li>
+<p>Load the images on the air-gapped system:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-shell hljs" data-lang="shell">podman load -i formula-images.tar</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
 <div class="sect2">
-<h3 id="_deploy_uyuni_on_opensuse_tumbleweed"><a class="anchor" href="#_deploy_uyuni_on_opensuse_tumbleweed"></a><a class="link" href="#_deploy_uyuni_on_opensuse_tumbleweed">1.1. Deploy Uyuni on openSUSE Tumbleweed</a></h3>
+<h3 id="_deploy_uyuni_on_opensuse_tumbleweed"><a class="anchor" href="#_deploy_uyuni_on_opensuse_tumbleweed"></a><a class="link" href="#_deploy_uyuni_on_opensuse_tumbleweed">2.1. Deploy Uyuni on openSUSE Tumbleweed</a></h3>
 <div class="paragraph">
 <p>Uyuni also provides all the needed container images in RPM packages that can be installed on the system.</p>
 </div>
@@ -2022,7 +2074,7 @@ docker save --output images.tar registry.opensuse.org/uyuni/server:latest regist
 </table>
 </div>
 <div class="olist arabic">
-<div class="title">Procedure: Install Uyuni on openSUSE Tumbleweed in Air-gapped</div>
+<div class="title">Procedure: Install Uyuni on openSUSE Tumbleweed in air-gapped environment</div>
 <ol class="arabic">
 <li>
 <p>Install openSUSE Tumbleweed.</p>
