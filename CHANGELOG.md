@@ -1,3 +1,5 @@
+- Added instructions for migrating Server and Proxy from 5.0 to 5.2 product
+  version to Installation and Upgrade Guide
 - Added instructions to install and enable Podman before running mgradm in
   Uyuni Server Deployment guide
 - Added a warning for all instances where mgradm upgrade podman is used.
