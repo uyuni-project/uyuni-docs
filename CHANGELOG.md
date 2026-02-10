@@ -1,3 +1,5 @@
+- Reformatted storage-scripts table to use plain paragraphs instead of bullet 
+  lists to fix po4a extraction issue causing missing bullets in CJK translations
 - Added a warning for all instances where mgradm upgrade podman is used. 
 - Changed the order of reboot/mgrxpy stop instructions during proxy migration in Installation and Upgrade Guide
 - Added section about container-based Kiwi image build support to Administration
