@@ -1,3 +1,5 @@
+- Reformatted storage-scripts table to use plain paragraphs instead of bullet 
+  lists to fix po4a extraction issue causing missing bullets in CJK translations
 - Added a warning for all instances where mgradm upgrade podman is used. 
 - Added section about container-based Kiwi image build support to Administration
   guide (bsc#1251865)
