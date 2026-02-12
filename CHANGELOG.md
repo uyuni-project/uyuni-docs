@@ -1,3 +1,5 @@
+
+- Updated the admin_* screenshots in multiple sections
 - Reformatted storage-scripts table to use plain paragraphs instead of bullet 
   lists to fix po4a extraction issue causing missing bullets in CJK translations
 - Change ISO creation instructions from using Salt to using cobbler (bsc#1257563)
