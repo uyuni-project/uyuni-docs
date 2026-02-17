@@ -1,3 +1,5 @@
+- Added instructions for migrating Server and Proxy from 5.1 to 5.2 product
+  version to Installation and Upgrade Guide
 - Added instructions for migrating Server and Proxy from 5.0 to 5.2 product
   version to Installation and Upgrade Guide
 - Reformatted storage-scripts table to use plain paragraphs instead of bullet 
