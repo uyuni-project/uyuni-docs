@@ -1,6 +1,7 @@
 
-- Add instructions for handling *.rpmnew and *.rpmsave files after update to
-  Server Upgrade and Proxy ugprade (bsc#1256953)
+- Added instructions for handling *.rpmnew and *.rpmsave files after update to
+  Server Upgrade and Proxy ugprade in Installation and Upgrade Guide (bsc#1256953)
+``
 - Updated the admin_* screenshots in multiple sections
 - Reformatted storage-scripts table to use plain paragraphs instead of bullet 
   lists to fix po4a extraction issue causing missing bullets in CJK translations
