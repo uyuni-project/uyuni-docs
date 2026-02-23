@@ -1,0 +1,51 @@
+name: Build the documentation from development branches
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout uyuni-docs-helper repository
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
+      with:
+        path: uyuni-docs-helper
+        repository: uyuni-project/uyuni-docs-helper
+
+    - name: Configure environment
+      run: |
+        alias docker='podman'
+        mkdir -p ${{ github.workspace }}/outputs/uyuni
+        mkdir -p ${{ github.workspace }}/outputs/mlm
+        chmod -R 777 outputs
+
+    - name: Build the Uyuni documentation
+      run: |
+        cd uyuni-docs-helper
+        ./uyuni-docs-helper -r "${{ github.event.pull_request.head.ref }}" -g "${{ github.event.pull_request.head.repo.clone_url }}" -o ${{ github.workspace }}/outputs/uyuni -c antora-uyuni-en -p uyuni
+
+    - name: Upload Uyuni Documentation
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f #v6.0.0
+      with:
+        name: uyuni-docs-html
+        path: outputs/uyuni/build
+        retention-days: 1
+
+    - name: Build the SUSE Multi-Linux Manager documentation
+      run: |
+        cd uyuni-docs-helper
+        ./uyuni-docs-helper -r "${{ github.event.pull_request.head.ref }}" -g "${{ github.event.pull_request.head.repo.clone_url }}" -o ${{ github.workspace }}/outputs/mlm -c antora-mlm-en -p mlm
+
+    - name: Upload SUSE Multi-Linux Manager Documentation
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f #v6.0.0
+      with:
+        name: mlm-docs-html
+        path: outputs/mlm/build
+        retention-days: 1
