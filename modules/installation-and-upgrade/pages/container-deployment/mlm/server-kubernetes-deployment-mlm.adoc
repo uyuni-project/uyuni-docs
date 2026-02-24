@@ -1,6 +1,6 @@
-[[deploy-mlm-server]]
+[[deploy-server-on-kubernetes]]
 = {productname} {productnumber} Server Deployment on {kube}
-:revdate: 2026-02-12
+:revdate: 2026-02-24
 :page-revdate: {revdate}
 ifeval::[{uyuni-content} == true]
 
@@ -8,6 +8,7 @@ ifeval::[{uyuni-content} == true]
 endif::[]
 
 This guide shows you how to install and configure a {productname} {productnumber} on {kube}  on {sl-micro} {microversion} or {sles} {bci-mlm}.
+
 
 // OM 2026-02-12
 // For the proposed structure, please add links in the 
@@ -18,37 +19,285 @@ This guide shows you how to install and configure a {productname} {productnumber
 
 == Overview
 
-* Briefly introduce the Helm chart for deploying the server on Kubernetes.
+
+* Introduce the Helm chart for deploying the server on Kubernetes.
 
 * Highlight the cleaner structure which now splits image definitions into components.
 
 
 == Prerequisites
 
+(This list will be removed once we have satisfactory chapters or docuemnt structure for each point.)
+
 * User's level of knowledge
 
-* *Storage*: 
-Explain that the new chart defines volumes as Persistent Volume Claims (PVCs). 
-Explicitly state that the creation of the underlying PVCsis now the responsibility of the cluster administrators.
+* *Storage*
+// Explain that the new chart defines volumes as Persistent Volume Claims (PVCs).
+// Explicitly state that the creation of the underlying PVCs is now the responsibility of the cluster administrators.
 
-* *SSL Certificates*:
-State that the Helm chart no longer handles SSL certificate generation. 
-Users must create Kubernetes secrets (e.g., Uyunivert and dbcert) containing the certificates prior to deployment
+* *Credentials / SSL Certificates*
+// State that the Helm chart no longer handles SSL certificate generation.
+// Users must create Kubernetes secrets (e.g., Uyunivert and dbcert) containing the certificates prior to deployment
+
+
+
+=== Credentials
+
+[literal]``server-helm`` installs {productname} server.
+The Helm chart does not handle SSL certificate generation.
+Instead, users must create {kube} secrets containing the certificates prior to deployment.
+
+The deployment requires four specific {kube} type secrets, each containing a username and a password key.
+
+* [literal]``db-admin-credentials``: PostgreSQL administrator credentials.
+
+* [literal]``db-credentials``: Credentials for the internal database user.
+
+* [literal]``reportdb-credentials``: Credentials for the report database user.
+
+* [literal]``admin-credentials``: Credentials for the server administrator.
+
+
+The following TLS secrets are expected:
+
+* [literal]``db-cert``: TLS certificate for the report database and needs to have the [literal]``db`` and [literal]``reportdb`` Subject Alternate Names, and the FQDN exposed to the outside world.
+
+* [literal]``uyuni-cert``: TLS certificate for the ingress rule and needs to have the public FQDN as Subject Alternate Name.
+
+
+=== ConfigMaps
+
+The Root CA certificates for [literal]``db-ca`` and [literal]``uyuni-ca`` are expected in ConfigMaps names [literal]``db-ca`` and [literal]``uyuni-ca`` with the certificate in the [literal]``ca.crt`` key.
+
+
+=== Storage
+
+The new chart defines volumes as Persistent Volume Claims (PVCs).
+
+[WARNING]
+====
+* The creation of the underlying PVCs is the responsibility of the cluster administrators.
+
+* The PVCs use the [literal]``ReadWriteOnce`` access mode.
+====
+
+The following PVCs will be created and will need to be bound to persistent volumes.
+
+[cols="1,1", options="header"]
+.Persistent Volume Claims
+|===
+
+| Persistent Volume
+| Default size
+
+|[literal]``ca-certs``
+|10MiB
+
+|[literal]``etc-apache2``
+|1MiB
+
+|[literal]``etc-cobbler``
+|1MiB
+
+|[literal]``etc-postfix``
+|1MiB
+
+|[literal]``etc-rhn``
+|1MiB
+
+|[literal]``etc-salt``
+|1MiB
+
+|[literal]``etc-sssd``
+|1MiB
+
+|[literal]``etc-sysconfig``
+|20M
+
+|[literal]``etc-systemd-multi``
+|1MiB
+
+|[literal]``etc-systemd-sockets``
+|1MiB
+
+|[literal]``etc-tomcat``
+|1MiB
+
+|[literal]``root``
+|1MiB
+
+|[literal]``run-salt-master``
+|10MiB
+
+|[literal]``srv-formulametadata``
+|10MiB
+
+|[literal]``srv-pillar``
+|10MiB
+
+|[literal]``srv-salt``
+|10MiB
+
+|[literal]``srv-spacewalk``
+|10MiB
+
+|[literal]``srv-susemanager``
+|1MiB
+
+|[literal]``srv-tftpboot``
+|300MiB
+
+|[literal]``srv-www``
+|100GiB
+
+|[literal]``var-cache``
+|10GiB
+
+|[literal]``var-cobbler``
+|10MiB
+
+|[literal]``var-log``
+|2GiB
+
+|[literal]``var-pgsql``
+|50GiB
+
+|[literal]``var-salt``
+|10MiB
+
+|[literal]``var-search``
+|10GiB
+
+|[literal]``var-spacewalk``
+|100GiB
+
+|===
+
+
+[IMPORTANT]
+====
+While the default sizes are provided, it is highly recommended to change them based on the distributions you plan to synchronize.
+
+For more information on storage requirments see xref:installation-and-upgrade:general-requirements.adoc[].
+====
+
+
+=== Exposing ports
+
+{productname} requires some TCP and UDP ports to be routed to its services. 
+Here is a list of the ports to map:
+
+[cols="1,1,1,1,3", options="header"]
+.List of ports
+|===
+
+| Protocol
+| Port
+| Service name
+| Service port
+| Additional comment
+
+| TCP
+| 5432
+| reportdb
+| 5432
+|
+
+| TCP
+| 4505	
+| {salt}	
+| 4505
+|
+
+| TCP
+| 4506
+| {salt}
+| 4506
+|
+
+| TCP	
+| 25151	
+| cobbler	
+| 25151
+|
+
+| TCP	
+| 9100	
+| tomcat	
+| 9100
+|
+
+| TCP
+| 5556	
+| taskomatic	
+| 5556	
+| Not if installed with enableMonitoring = false
+
+| TCP	
+| 5557	
+| tomcat	
+| 5557	
+| Not if installed with enableMonitoring = false
+
+| TCP	
+| 9187	
+| db	
+| 9187	
+| Not if installed with enableMonitoring = false
+
+| TCP
+| 9800
+| taskomatic
+| 9800
+| Not if installed with enableMonitoring = false
+
+| TCP
+| 8001	
+| taskomatic
+| 8001
+| Only if installed with exposeJavaDebug = true
+
+| TCP
+| 8002
+| search
+| 8002
+| Only if installed with exposeJavaDebug = true
+
+
+| TCP
+| 8003
+| tomcat
+| 8003
+| Only if installed with exposeJavaDebug = true
+
+|===
+
 
 
 == Instalation
+
+[NOTE]
+====
+What to add here:
 
 * Details about the installation process.
   (We'll address user profile, internal team members or external customers.)
 
 * Repository with examples of helm charts.
 
+  * [link]``https://github.com/uyuni-project/uyuni-charts``
 
-===  Configuration
+====
+
+Configuration
+
+(This is not the final version of the image.)
+
+image::server-kubernetes-design.png[]
 
 * *Core Components*: What they are / Instructions to configure the core server images. (i.e. Procedure)
 
-* *Optional Components*: What they are / Instructions (i.e.e procedure) for configuring sections related to optional tools such as the Hub API, CoCo, and Saline.
+* *Optional Components*: What they are / Instructions (i.e. procedure) for configuring sections related to optional tools such as the Hub API, CoCo, and Saline.
 
 
  
