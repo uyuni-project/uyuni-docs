@@ -5,7 +5,7 @@
 :page-revdate: {revdate}
 :page-author: SUSE Product & Solution Documentation Team
 :page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
-:page-product-name: SUSE Manager
+:page-product-name: SUSE Multi-Linux Manager
 :page-product-version: 5.1
 
 
@@ -13,7 +13,7 @@ During a network boot installation:
 
 . The client boots in PXE mode.
 
-. A DHCP server provides the client with an IP address and mask, the address of an installation server, and the name of a bootloader file on that server.
+. A Dhcpd server provides the client with an IP address and mask, the address of an installation server, and the name of a bootloader file on that server.
 
 . The client downloads the bootloader file via the TFTP protocol from the installation server and executes it.
 
@@ -31,9 +31,9 @@ During a network boot installation:
 image::cobbler_menu.png[scaledwidth=100%]
 
 The installation server can either be the {productname} Server or one of its proxies.
-To install from a proxy, you must synchronize the TFTP tree between the server and the proxy before you begin.
+// To install from a proxy, you must synchronize the TFTP tree between the server and the proxy before you begin.
 
-The DHCP server may also provide other configuration information to the client, like a host name, the address of a router and the address of a domain name server.
+The Dhcpd server may also provide other configuration information to the client, like a host name, the address of a router and the address of a domain name server.
 Some of this information might be needed for the autoinstallation, for example if you specify the installation server by its domain name.
 
 In the PXE boot menu, the first choice is [guimenu]``Local boot``.
@@ -49,7 +49,7 @@ This is called "unattended provisioning."
 .Procedure: Installing with PXE boot
 [role=procedure]
 ____
-. Prepare the DHCP server, see xref:client-configuration:autoinst-pxeboot.adoc#prepare-the-dhcp-server[Prepare the DHCP Server].
+. Prepare the Kea server, see xref:client-configuration:autoinst-pxeboot.adoc#prepare-the-dhcp-server[Prepare the Dhcpd Server].
 
 . Prepare an autoinstallable distribution, see xref:client-configuration:autoinst-distributions.adoc[Autoinstallable Distributions].
 
@@ -58,25 +58,26 @@ ____
 . Reboot the client, and chose a profile to install.
 ____
 
-
 Some other steps are optional. 
-To use a proxy as the installation server, see xref:client-configuration:autoinst-pxeboot.adoc#synchronize-the-tftp-tree-with-proxies[Synchronize the TFTP Tree with Proxies]. 
-For unattended provisioning, see xref:client-configuration:autoinst-unattended.adoc[Unattended Provisioning].
+
+To use a proxy as the installation server, see xref:client-configuration:autoinst-pxeboot.adoc#synchronize-the-tftp-tree-with-proxies[Synchronize the TFTP tree with proxies]. 
+For unattended provisioning, see xref:client-configuration:autoinst-unattended.adoc[Unattended provisioning].
 
 
 [[prepare-the-dhcp-server]]
-== Prepare the DHCP server
+== Prepare the Dhcpd server
 
-The PXE boot process uses DHCP to find the TFTP server.
+The PXE boot process uses Dhcpd to find the TFTP server.
 The {productname} Server or its proxies can act as such a TFTP server.
 
-You must have administrative access to the network’s DHCP server.
-Edit the DHCP configuration file so that it points to the installation server as the TFTP boot server.
+You must have administrative access to the network’s Dhcpd server.
+Edit the Dhcpd configuration file so that it points to the installation server as the TFTP boot server.
 
 
-.Example: Configuring the ISC DHCP Server
-. On the DHCP server, as root, open the [path]``/etc/dhcpd.conf`` file.
+.Example: Configuring the Kea Dhcpd server
+. On the Dhcpd server, as root, open the [path]``/etc/dhcpd.conf`` file.
 . Modify the declaration for your client:
++
 ----
   host myclient { (...)
                   next-server 192.168.2.1;
@@ -87,11 +88,11 @@ Edit the DHCP configuration file so that it points to the installation server as
 
 This example directs the PXE client ``myclient`` to the installation server at ``192.168.2.1`` and instructs it to retrieve the [path]``grub/grub.0`` bootloader file.
 
-Alternatively, if your DHCP server is registered at {productname}, you can configure it using the DHCPd formula instead:
+Alternatively, if your Dhcpd server is registered at {productname}, you can configure it using the Dhcpd formula instead:
 
 
-.Example: Configuring the ISC DHCP Server Using the DHCPd Formula
-. Navigate to menu:Systems[System List], select the client you want to change, and go to the [guimenu]``Formulas`` tab to enable the DHCPd formula.
+.Example: Configuring the Kea Dhcpd Server using the Dhcpd formula
+. Navigate to menu:Systems[System List], select the client you want to change, and go to the [guimenu]``Formulas`` tab to enable the Dhcpd formula.
 . Go to the formula's [guimenu]``Dhcpd`` tab, and in the [guimenu]``Next Server`` field, enter the hostname or IP address of the installation server.
 . In the [guimenu]``Filename EFI`` field, type [path]``grub/shim.efi`` to enable EFI PXE support.
 . In the [guimenu]``Filename`` field, type [path]``grub/grub.0`` to enable legacy BIOS support.
@@ -105,20 +106,21 @@ Alternatively, if your DHCP server is registered at {productname}, you can confi
 
 * For different architectures, see table <<grub-efi-arch>>.
 
-* Using {cobbler} managed DHCP is unsupported with {productname}.
+* Using {cobbler} managed Dhcpd is unsupported with {productname}.
 ====
 
 This sets up a global PXE server for all the hosts, you can also have per-host settings.
-For more information about the DHCPd formula, see xref:specialized-guides:salt/salt-formula-dhcpd.adoc[DHCPd Formula].
+For more information about the Dhcpd formula, see xref:specialized-guides:salt/salt-formula-dhcpd.adoc[Dhcpd Formula].
 
 
 
 [[synchronize-the-tftp-tree-with-proxies]]
 == Synchronize the TFTP tree with proxies
 
+There is no need to synchronize with {productname} 5.x proxies.
+
 You can synchronize the TFTP tree on the {productname} Server with the {productname} Proxy 4.3.
 For synchronization, HTTPS port 443 must be open.
-
 Every added proxy slows down the tree synchronization
 
 [WARNING]
