@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Find all .adoc files excluding Antora nav files (nav-*.adoc)
 find . -type f -name "*.adoc" ! -name "nav-*.adoc" | while read -r ADOC; do
