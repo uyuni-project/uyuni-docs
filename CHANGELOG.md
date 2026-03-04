@@ -1,4 +1,5 @@
-
+- Added admonition to network requirements about network management not
+  working without wicked (bsc#1240895)
 - Added instructions for handling *.rpmnew and *.rpmsave files after update to
   Server Upgrade and Proxy ugprade in Installation and Upgrade Guide (bsc#1256953)
 - Updated the admin_* screenshots in multiple sections
