@@ -1,3 +1,5 @@
+- Added admonition to network requirements about network management not
+  working without wicked (bsc#1240895)
 - Document Raspberry Pi OS 13 (Uyuni only)
 - Added instructions for migrating Server and Proxy from 5.1 to 5.2 product
   version to Installation and Upgrade Guide
