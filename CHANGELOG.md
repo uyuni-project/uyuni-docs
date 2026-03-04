@@ -1,3 +1,4 @@
+- Remove port 25151 from the requirements
 - Document Raspberry Pi OS 13 (Uyuni only)
 - Added instructions for migrating Server and Proxy from 5.1 to 5.2 product
   version to Installation and Upgrade Guide
@@ -29,7 +30,7 @@
 - Updated HUB XML-RPC API to use SSL connection in Specialized Guides
 - Documented openSUSE Leap 15.6 and SUSE Linux Enterprise 16 as supported
   clients
-- Fixed the path to the certificates in proxy deployment
+- Fixed the path to the certificates in proxy deployment
 - Fixed issue for third-party certificates during migration (bsc#1253350)
 - Explained how to generate the DB certificate for the upgrade of a 5.0
   peripheral server (bsc#1248282)
