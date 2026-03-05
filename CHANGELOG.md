@@ -1,4 +1,4 @@
-
+- Removed port 25151 from the network requirements in Installation and Upgrade Guide
 - Added instructions for handling *.rpmnew and *.rpmsave files after update to
   Server Upgrade and Proxy ugprade in Installation and Upgrade Guide (bsc#1256953)
 - Updated the admin_* screenshots in multiple sections
