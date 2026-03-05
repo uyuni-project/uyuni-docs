@@ -1,4 +1,4 @@
-- Remove port 25151 from the requirements
+- Removed port 25151 from the network requirements in Installation and Upgrade Guide
 - Document Raspberry Pi OS 13 (Uyuni only)
 - Added instructions for migrating Server and Proxy from 5.1 to 5.2 product
   version to Installation and Upgrade Guide
