@@ -1,5 +1,5 @@
-
-Added instructions for handling *.rpmnew and *.rpmsave files after update to
+- Fixed command for replacing self-signed certificates (bsc#1258106)
+- Added instructions for handling *.rpmnew and *.rpmsave files after update to
   Server Upgrade and Proxy ugprade (bsc#1256953)
 - Updated the admin_* screenshots in multiple sections
 - Reformatted storage-scripts table to use plain paragraphs instead of bullet 
