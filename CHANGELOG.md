@@ -1,3 +1,4 @@
+- Corrected comamnds for repository meta data (bsc#1259316)
 - Added admonition to network requirements about network management not
   working without wicked (bsc#1240895)
 - Removed port 25151 from the network requirements in Installation and Upgrade Guide
