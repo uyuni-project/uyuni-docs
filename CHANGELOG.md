@@ -1,3 +1,5 @@
+- Added admonition to network requirements about network management not
+  working without wicked (bsc#1240895)
 - Removed port 25151 from the network requirements in Installation and Upgrade Guide
 - Document Raspberry Pi OS 13 (Uyuni only)
 - Added instructions for migrating Server and Proxy from 5.1 to 5.2 product
