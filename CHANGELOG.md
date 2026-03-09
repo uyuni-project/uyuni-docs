@@ -1,3 +1,4 @@
+- Corrected comamnds for repository meta data (bsc#1259316)
 - Removed port 25151 from the network requirements in Installation and Upgrade Guide
 - Document Raspberry Pi OS 13 (Uyuni only)
 - Added instructions for migrating Server and Proxy from 5.1 to 5.2 product
