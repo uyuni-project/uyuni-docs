@@ -11,6 +11,7 @@
 - Fixed disk space management instructions in Administration Guide (bsc#1253144)
 - Corrected comamnds for repository meta data (bsc#1259316)
 - Fixed command for replacing self-signed certificates (bsc#1258106)
+- Added warning to use original media to Registering SUSE Libery Clients in Client Configuration Guide (bsc#1254427)
 - Added admonition to network requirements about network management not
   working without wicked (bsc#1240895)
 - Removed port 25151 from the network requirements in Installation and Upgrade Guide
