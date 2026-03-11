@@ -1,3 +1,5 @@
+- Added warning for the proxy key creation and limitations around assigning 
+  cloned channels (bsc#1257823)
 - Corrected comamnds for repository meta data (bsc#1259316)
 - Fixed command for replacing self-signed certificates (bsc#1258106)
 - Added admonition to network requirements about network management not
