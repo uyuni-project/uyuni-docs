@@ -1,3 +1,6 @@
+- Documented SUSE Linux Micro 6.2 as supported clients
+- Removed CIS from list of supported OpenSCAP profiles
+- Changed example for the third-party repository GPG keys (bsc#1255857)
 - Fixed command for replacing self-signed certificates (bsc#1258106)
 - Added admonition to network requirements about network management not
   working without wicked (bsc#1240895)
