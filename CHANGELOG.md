@@ -1,5 +1,5 @@
 - Added warning for the proxy key creation and limitations around assigning 
-  CLM channels (bsc#1257823)
+  cloned channels (bsc#1257823)
 - Updated the admin_* screenshots in multiple sections
 - Reformatted storage-scripts table to use plain paragraphs instead of bullet 
   lists to fix po4a extraction issue causing missing bullets in CJK translations
