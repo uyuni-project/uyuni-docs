@@ -1,5 +1,12 @@
 - Added warning for the proxy key creation and limitations around assigning 
   cloned channels (bsc#1257823)
+- Corrected comamnds for repository meta data (bsc#1259316)
+- Fixed command for replacing self-signed certificates (bsc#1258106)
+- Added admonition to network requirements about network management not
+  working without wicked (bsc#1240895)
+- Removed port 25151 from the network requirements in Installation and Upgrade Guide
+- Added instructions for handling *.rpmnew and *.rpmsave files after update to
+  Server Upgrade and Proxy ugprade in Installation and Upgrade Guide (bsc#1256953)
 - Updated the admin_* screenshots in multiple sections
 - Reformatted storage-scripts table to use plain paragraphs instead of bullet 
   lists to fix po4a extraction issue causing missing bullets in CJK translations
