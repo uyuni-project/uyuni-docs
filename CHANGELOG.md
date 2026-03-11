@@ -1,6 +1,18 @@
 - Documented SUSE Linux Micro 6.2 as supported clients
 - Removed CIS from list of supported OpenSCAP profiles
 - Changed example for the third-party repository GPG keys (bsc#1255857)
+- Fixed command for replacing self-signed certificates (bsc#1258106)
+- Added admonition to network requirements about network management not
+  working without wicked (bsc#1240895)
+- Fixed missing content from Administration Guide (bsc#1258109)
+- Added instructions for handling *.rpmnew and *.rpmsave files after update to
+  Server Upgrade and Proxy ugprade (bsc#1256953)
+- Updated the admin_* screenshots in multiple sections
+- Reformatted storage-scripts table to use plain paragraphs instead of bullet 
+  lists to fix po4a extraction issue causing missing bullets in CJK translations
+- Added a warning for all instances where mgradm upgrade podman is used. 
+- Added section about container-based Kiwi image build support to Administration
+  guide (bsc#1251865)
 - Included global GPG decryption for pillar data in specialized guide (bsc#1255743)
 - CIS removed from list of supported OpenSCAP profiles
 - Changes example for the third-party repository GPG keys (bsc#1255857)
