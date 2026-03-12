@@ -1,4 +1,5 @@
 - Fixed typo in EOL Clients partial
+- Fixed disk space management instructions in Administration Guide (bsc#1253144)
 - Corrected comamnds for repository meta data (bsc#1259316)
 - Fixed command for replacing self-signed certificates (bsc#1258106)
 - Added admonition to network requirements about network management not
