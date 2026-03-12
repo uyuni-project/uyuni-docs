@@ -487,6 +487,37 @@ Disk space depends on the actual size of the image.
 For more information, see the documentation of the underlying system.
 ====
 
+=== Accessing Git repositories via an HTTP/HTTPS proxy when building images
+
+When a build host (for example a Kiwi build host started via Salt) needs to fetch sources from a git repository that is only reachable through an HTTP/HTTPS proxy, you may see git timeouts during the build because the git client invoked by the Salt state does not always pick up system-wide proxy settings (for example /etc/sysconfig/proxy or environment variables).
+
+To make git use the proxy for non-interactive builds create /etc/gitconfig with an http.proxy entry:
+
+[source,console]
+----
+# /etc/gitconfig
+[http]
+    proxy = http://proxy.example.com:3128
+# or for HTTPS
+[http]
+    proxy = https://proxy.example.com:3128
+----
+
+If the proxy requires authentication, prefer a credential helper or use a credential store instead of embedding credentials in the URL.
+
+Automating with Salt
+You can render /etc/gitconfig from pillar data (for example expose the proxy in a build_server:git_proxy pillar or custom_info field) so build hosts are configured automatically. Example Salt state:
+
+```yaml name=salt/kiwi_build_gitproxy.sls
+/etc/gitconfig:
+  file.managed:
+    - user: root
+    - group: root
+    - mode: '0644'
+    - contents: |
+        [http]
+            proxy = {{ salt['pillar.get']('build_server:git_proxy', 'http://proxy.example.com:3128') }}
+```
 
 [[container.based.kiwi.image.build.support]]
 === Container-based Kiwi image build support

@@ -1,3 +1,4 @@
+- Added instructions about accessing git repos when building images
 - Added warning for the proxy key creation and limitations around assigning 
   cloned channels (bsc#1257823)
 - Fixed typo in EOL Clients partial
