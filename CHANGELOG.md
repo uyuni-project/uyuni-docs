@@ -1,3 +1,5 @@
+- Added warning for the proxy key creation and limitations around assigning 
+  cloned channels (bsc#1257823)
 - Fixed typo in EOL Clients partial
 - Fixed disk space management instructions in Administration Guide (bsc#1253144)
 - Corrected comamnds for repository meta data (bsc#1259316)
