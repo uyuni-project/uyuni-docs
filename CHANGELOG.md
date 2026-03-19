@@ -1,3 +1,4 @@
+- Added online database backup instructions
 - Added warning for the proxy key creation and limitations around assigning 
   cloned channels (bsc#1257823)
 - Fixed disk space management instructions in Administration Guide (bsc#1253144)
