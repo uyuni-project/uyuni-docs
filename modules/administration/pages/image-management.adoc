@@ -499,6 +499,48 @@ For more information, see the documentation of the underlying system.
 ====
 
 
+
+=== Accessing Git repositories via an HTTP/HTTPS proxy when building images
+
+When a build host needs to fetch sources from a git repository that is only reachable through an HTTP/HTTPS proxy, you may see git timeouts during the build because the git client invoked by the {salt} state does not always pick up system-wide proxy settings (for example /etc/sysconfig/proxy or environment variables).
+
+To make git use the proxy for non-interactive builds create /etc/gitconfig with an http.proxy entry:
+
+[source,console]
+----
+# /etc/gitconfig
+[http]
+    proxy = http://proxy.example.com:3128
+# or for HTTPS
+[http]
+    proxy = https://proxy.example.com:3128
+----
+
+If the proxy requires authentication, prefer a credential helper or use a credential store instead of embedding credentials in the URL.
+
+
+
+==== Automating with {salt}
+
+You can manage [path]`/etc/gitconfig` on build hosts through Configuration Management, the same way as on any other managed system.
+Create a {salt} state file and assign it to the build host via a config channel, then apply a highstate from the Uyuni UI.
+
+If you want to source the proxy address from a System Custom Info field, use the `custom_info:` pillar prefix:
+
+[source,yaml]
+----
+/etc/gitconfig:
+  file.managed:
+    - user: root
+    - group: root
+    - mode: '0644'
+    - contents: |
+        [http]
+            proxy = {{ salt['pillar.get']('custom_info:build_server:git_proxy', 'http://proxy.example.com:3128') }}
+----
+
+
+
 [[container.based.kiwi.image.build.support]]
 === Container-based Kiwi image build support
 
