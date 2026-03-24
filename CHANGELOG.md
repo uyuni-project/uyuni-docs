@@ -1,6 +1,9 @@
 - Added instructions about accessing git repositories when building images 
   to Administration Guide
 - Added online database backup instructions to Administration Guide
+- Fixed comamnd for product deployment in Installation and Upgrade Guide
+  (bsc#1259479)
+- Added online database backup instructions
 - Added warning for the proxy key creation and limitations around assigning 
   cloned channels (bsc#1257823)
 - Fixed disk space management instructions in Administration Guide (bsc#1253144)
