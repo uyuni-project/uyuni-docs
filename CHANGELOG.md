@@ -1,3 +1,5 @@
+- Fixed comamnd for product deployment in Installation and Upgrade Guide
+  (bsc#1259479)
 - Added warning for the proxy key creation and limitations around assigning 
   cloned channels (bsc#1257823)
 - Fixed typo in EOL Clients partial
