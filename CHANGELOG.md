@@ -1,4 +1,6 @@
-- Documented SUSE Linux Micro 6.2 as supported clients
+- Added instructions about accessing git repositories when building images to 
+  Administration Guide
+- Documented SUSE Linux Micro 6.2 as supported client
 - Removed CIS from list of supported OpenSCAP profiles
 - Changed example for the third-party repository GPG keys (bsc#1255857)
 - Fixed command for replacing self-signed certificates (bsc#1258106)
