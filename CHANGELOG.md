@@ -1,3 +1,4 @@
+- Added instructions about accessing git repositories when building images to Administration Guide
 - Fixed comamnd for product deployment in Installation and Upgrade Guide
   (bsc#1259479)
 - Added warning for the proxy key creation and limitations around assigning 
