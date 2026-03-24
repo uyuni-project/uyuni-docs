@@ -1,3 +1,6 @@
+- Added instructions about accessing git repositories when building images 
+  to Administration Guide
+- Added online database backup instructions to Administration Guide
 - Fixed comamnd for product deployment in Installation and Upgrade Guide
   (bsc#1259479)
 - Added online database backup instructions
@@ -16,7 +19,8 @@
   lists to fix po4a extraction issue causing missing bullets in CJK translations
 - Change ISO creation instructions from using Salt to using cobbler (bsc#1257563)
 - Added a warning for all instances where mgradm upgrade podman is used. 
-- Changed the order of reboot/mgrxpy stop instructions during proxy migration in Installation and Upgrade Guide
+- Changed the order of reboot/mgrxpy stop instructions during proxy migration in
+  Installation and Upgrade Guide
 - Added section about container-based Kiwi image build support to Administration
   guide (bsc#1251865)
 - Added 4.3 proxy and branch server migrations to Retail Guide
