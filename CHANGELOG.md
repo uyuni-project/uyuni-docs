@@ -1,3 +1,4 @@
+- SUSE Multi-Linux Support does not support autoinstallation (bsc#1259261)
 - Added instructions about accessing git repositories when building images to 
   Administration Guide
 - Documented SUSE Linux Micro 6.2 as supported client
