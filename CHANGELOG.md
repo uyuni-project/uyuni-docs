@@ -1,6 +1,8 @@
 - SUSE Multi-Linux Support does not support autoinstallation (bsc#1259261)
+- Extended the list of URLs required for client registration and updates in
+  Installation and Upgrade Guide (bsc#1260520)
 - Added instructions about accessing git repositories when building images to Administration Guide
-- Fixed comamnd for product deployment in Installation and Upgrade Guide
+- Fixed command for product deployment in Installation and Upgrade Guide
   (bsc#1259479)
 - Added warning for the proxy key creation and limitations around assigning 
   cloned channels (bsc#1257823)
