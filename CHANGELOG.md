@@ -4,6 +4,7 @@
 - Removed CIS from list of supported OpenSCAP profiles
 - Changed example for the third-party repository GPG keys (bsc#1255857)
 - Fixed command for replacing self-signed certificates (bsc#1258106)
+- Added warning to use original media to Registering SUSE Libery Clients in Client Configuration Guide (bsc#1254427)
 - Added admonition to network requirements about network management not
   working without wicked (bsc#1240895)
 - Fixed missing content from Administration Guide (bsc#1258109)
