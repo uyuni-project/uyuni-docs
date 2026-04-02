@@ -1,3 +1,4 @@
+- Clarify hoy to get PTF images in air-gapped setup (bsc#1261307)
 - Extended the list of URLs required for client registration and updates in
   Installation and Upgrade Guide (bsc#1260520)
 - Added instructions about accessing git repositories when building images to Administration Guide
