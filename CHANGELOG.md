@@ -1,3 +1,4 @@
+- Added reference guide for new Enhanced SCAP Auditing pages
 - Added documentation for Enhanced SCAP Auditing (Beta) to Administration Guide
 - Clarified how to get PTF images in air-gapped setup in Installation and Upgrade Guide (bsc#1261307)
 - SUSE Multi-Linux Support does not support autoinstallation (bsc#1259261)
