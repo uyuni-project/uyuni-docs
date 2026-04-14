@@ -1,3 +1,4 @@
+- Updated table to include OES 25.04 support
 - Added reference guide for new Enhanced SCAP Auditing pages
 - Added documentation for Enhanced SCAP Auditing (Beta) to Administration Guide
 - Clarified how to get PTF images in air-gapped setup in Installation and Upgrade Guide (bsc#1261307)
