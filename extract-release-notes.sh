@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Path to the changelog file
 CHANGELOG_FILE="CHANGELOG.md"

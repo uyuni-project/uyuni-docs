@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # You need po4a > 0.58, see https://github.com/mquinson/po4a/releases
 # There is no need of system-wide installation of po4a
 # Usage: PERLLIB=/path/to/po4a/lib make_pot.sh
@@ -34,7 +34,7 @@ fi
 #######################################################################
 
 for f in `ls $CURRENT_DIR/$PO_DIR/*.cfg`; do
-    po4a -v --srcdir $CURRENT_DIR --destdir $CURRENT_DIR -k 0 -M utf-8 -L utf-8 --no-translations -o nolinting $f
+    po4a -v --srcdir $CURRENT_DIR --destdir $CURRENT_DIR -k 0 -M UTF-8 -L UTF-8 --no-translations -o nolinting $f
 done
 
 

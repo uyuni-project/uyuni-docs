@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # You need po4a > 0.54, see https://github.com/mquinson/po4a/releases
 # There is no need of system-wide installation of po4a
 # Usage: PERLLIB=/path/to/po4a/lib use_po.sh
@@ -53,7 +53,7 @@ fi
 #######################################################################
 
 for f in $(ls $CURRENT_DIR/$PO_DIR/*.cfg); do
-    po4a --srcdir $CURRENT_DIR --destdir $CURRENT_DIR -k $TRANSLATION_THRESHOLD_PERCENTAGE -M utf-8 -L utf-8 --no-update -o nolinting $f
+    po4a --srcdir $CURRENT_DIR --destdir $CURRENT_DIR -k $TRANSLATION_THRESHOLD_PERCENTAGE -M UTF-8 -L UTF-8 --no-update -o nolinting $f
 done
 
 
