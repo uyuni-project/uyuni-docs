@@ -1,3 +1,4 @@
+- Added alert for NetworkManager requirement when migrating from 5.0 to 5.1 on micro (bsc#1257295)
 - Added reference guide for new Enhanced SCAP Auditing pages
 - Added documentation for Enhanced SCAP Auditing (Beta) to Administration Guide
 - Clarified how to get PTF images in air-gapped setup in Installation and Upgrade Guide (bsc#1261307)
