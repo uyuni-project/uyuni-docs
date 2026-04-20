@@ -1,3 +1,4 @@
+- Added support for Open Enterprise Server 25.4
 - Clarified how to get PTF images in air-gapped setup in Installation and 
   Upgrade Guide (bsc#1261307)
 - SUSE Multi-Linux Support does not support autoinstallation (bsc#1259261)
