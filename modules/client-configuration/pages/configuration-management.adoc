@@ -1,7 +1,7 @@
 [[configuration-management]]
 = Configuration Management
 :description: Manage centrally distributed configuration files for your clients with SUSE Multi-Linux Manager and YaST tools
-:revdate: 2024-03-05
+:revdate: 2026-04-20
 :page-revdate: {revdate}
 :page-author: SUSE Product & Solution Documentation Team
 :page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
@@ -14,23 +14,13 @@ You can use configuration files and channels to manage configuration for your cl
 Configuration parameters are scripted and stored in configuration files.
 You can write configuration files directly using the {productname} {webui}, or you can upload or link to files that exist in other locations.
 
-Configuration files can be centrally managed.
-Centrally managed configuration files are provided by global configuration channels and can be applied to any client subscribed to the {productname} Server.
-
-////
-// 2023-10, julio: such features are somehow covered by salt. Is dedicated documentation
-// for this required?
-Locally managed configuration files are used to override centrally managed configuration settings.
-They are especially useful for {productname} users who do not have configuration administration privileges, but need to make changes to the clients that they manage.
-////
-
 Configuration channels are used to organize configuration files.
 You can subscribe clients to configuration channels, and deploy configuration files as required.
 
 Configuration files are version-controlled, so you can add configuration settings, test them on your clients, and roll back to a previous revision as required.
 When you have created your configuration channels, you can also perform comparisons between various configuration files, and between revisions of the same configuration file.
 
-Centrally managed configuration files are provided by global configuration channels.
+Configuration files are provided through Configuration Channels or State Channels.
 
 This table shows the supported features, where:
 
@@ -46,7 +36,10 @@ This table shows the supported features, where:
 | Feature
 | Status
 
-| Global Configuration Channels
+| Config Channels
+| {check}
+
+| State Channels
 | {check}
 
 | Deploying Files
@@ -54,12 +47,6 @@ This table shows the supported features, where:
 
 | Comparing Files
 | {question}
-
-| Locally Managed Files
-| {check} (with {salt} features)
-
-| Sandbox Files
-| {cross}
 
 | Applying the Highstate
 | {check}
@@ -70,80 +57,110 @@ This table shows the supported features, where:
 | Jinja Templating
 | {check}
 
-| Configuration Macros
-| {check} (with {salt} features: grains, pillar data, etc.)
-
 |===
 
 
 
-== Create Configuration Channels
+== Create configuration channels
 
 
-=== Central Configuration Channel
+=== Configuration channel
 
-To create a new central configuration channel:
+To create a new configuration channel:
 
-.Procedure: Creating Central Configuration Channel
+.Procedure: Creating a configuration channel
+[role=procedure]
+____
 . In the {productname} {webui}, navigate to menu:Configuration[Channels], and click btn:[Create Config Channel].
+
 . Type a name for the channel.
+
 . Type a label for the channel.
     This field must contain only letters, numbers, hyphens (``-``) and underscores (``_``).
+
 . Type a description for the channel that allows you to distinguish it from other channels.
+
 . Click btn:[Create Config Channel] to create the new channel.
+____
 
 
 
-=== Salt State Channel
+=== State channel
 
-You can also use a configuration channel to manage {salt} states on clients:
+State channels use {salt} states on clients:
 
-.Procedure: Creating a {salt} State Channel
+.Procedure: Creating a {salt} state channel
+[role=procedure]
+____
 . In the {productname} {webui}, navigate to menu:Configuration[Channels], and click btn:[Create State Channel].
+
 . Type a name for the channel.
+
 . Type a label for the channel.
     This field must contain only letters, numbers, hyphens (``-``) and underscores (``_``).
+
 . Type a description for the channel that allows you to distinguish it from other channels.
+
 . Type the [guimenu]``SLS Contents`` for the [path]``init.sls`` file.
-. Click btn:[Create Config Channel] to create the new channel.
+
+. Click btn:[Create Config State Channel] to create the new channel.
+____
 
 
-
-== Add Configuration Files, Directories, or Symbolic Links
+== Add configuration files, directories, or symbolic links
 
 When you have created a configuration channel you can add a configuration file, directory, or symbolic link:
 
-.Procedure: Adding a Configuration File, Directory, or Symbolic Link
+.Procedure: Adding a configuration file, directory, or symbolic link
+[role=procedure]
+____
 . In the {productname} {webui}, navigate to menu:Configuration[Channels], and click the name of the configuration channel that you want to add a configuration file to, and navigate to the menu:Add Files[Create File] subtab.
+
 . In the [guimenu]``File Type`` field, choose whether you want to create a text file, directory, or symbolic link.
 . In the [path]``Filename/Path`` field, type the absolute path to the location where the file should be deployed.
+
 . If you are creating a symbolic link, type the target file and path in the [guimenu]``Symbolic Link Target Filename/Path`` field.
+
 . Type the [guimenu]``User name`` and [guimenu]``Group name`` for the file in the [guimenu]``Ownership`` field, and the [guimenu]``File Permissions Mode``.
+
 . If the client has SELinux enabled, you can configure [guimenu]``SELinux contexts`` to enable the required file attributes (for example: user, role, and file type).
-. If the configuration file includes a macro, enter the symbol that marks the beginning and end of the macro.
+. You can use Jinja templating with grains or pillar data instead of legacy macro delimiters.
+
 . Enter the configuration file contents in the [guimenu]``File Contents`` text box, using the script drop-down box to choose the appropriate scripting language.
+
 . Click btn:[Create Configuration File].
 
+____
 
 
-== Subscribe Clients to Configuration Channels
+== Subscribe clients to configuration channels
 
 You can subscribe individual clients to configuration channels by navigating to menu:Systems[System List], selecting the client you want to subscribe, and navigating to the [guimenu]``Configuration`` tab.
 To subscribe multiple clients to a configuration channel, you can use the system set manager (SSM).
 
-.Procedure: Subscribing Multiple Clients to Configuration Channels
+
+.Procedure: Subscribing multiple clients to configuration channels
+[role=procedure]
+____
 . In the {productname} {webui}, navigate to menu:Systems[Systems List] and select the clients you want to work with.
+
 . Navigate to menu:Systems[System Set Manager], and go to the menu:Configuration[Subscribe to Channels] subtab to see the list of available configuration channels.
+
 . OPTIONAL: Click the number in the [guimenu]``Systems currently subscribed`` column to see which clients are currently subscribed to the configuration channel.
+
 . Check the configuration channels you want to subscribe to, and click btn:[Continue].
+
 . Rank the configuration channels using the up and down arrows.
     Where settings conflicts occur between configuration channels, channels closer to the top of the list take precedence.
+
 . Determine how the channels are applied to the selected clients.
     Click btn:[Subscribe With Lowest Priority] to add the new channels at a lower priority than currently subscribed channels.
     Click btn:[Subscribe with Highest Priority] to add the new channels at a higher priority than currently subscribed channels.
     Click btn:[Replace Existing Subscriptions] to remove existing channels and replace them with the new channels.
+
 . Click btn:[Apply Subscriptions].
 
+____
 
 [NOTE]
 ====
@@ -152,16 +169,21 @@ If the client's configuration priorities are going to be reordered by an action,
 ====
 
 
-== Compare Configuration Files
+== Compare configuration files
 
 You can also use the system set manager (SSM) to compare the configuration file deployed on clients with the configuration file stored on the {productname} Server.
 
-.Procedure: Comparing Configuration Files
+.Procedure: Comparing configuration files
+[role=procedure]
+____
 . In the {productname} {webui}, navigate to menu:Systems[Systems List] and select the clients subscribed to the configuration files you want to compare.
-. Navigate to menu:Systems[System Set Manager], and go to the menu:Configuration[Compare Files] subtab to the list of available configuration files.
-. OPTIONAL: Click the number in the [guimenu]``Systems`` column to see which clients are currently subscribed to the configuration file.
-. Check the configuration files to compare, and click btn:[Schedule File Comparison].
 
+. Navigate to menu:Systems[System Set Manager], and go to the menu:Configuration[Compare Files] subtab to the list of available configuration files.
+
+. OPTIONAL: Click the number in the [guimenu]``Systems`` column to see which clients are currently subscribed to the configuration file.
+
+. Check the configuration files to compare, and click btn:[Schedule File Comparison].
+____
 
 
 == Jinja templating on clients
