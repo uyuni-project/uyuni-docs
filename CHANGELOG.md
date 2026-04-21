@@ -1,4 +1,3 @@
-- Added online database backup instructions to Administration Guide
 - Added support for Open Enterprise Server 25.4
 - Added alert for NetworkManager requirement when migrating from 5.0 to 5.1 on micro (bsc#1257295)
 - Added reference guide for new Enhanced SCAP Auditing pages
