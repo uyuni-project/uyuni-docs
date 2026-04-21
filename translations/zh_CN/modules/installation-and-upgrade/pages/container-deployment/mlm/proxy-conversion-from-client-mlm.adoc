@@ -1,0 +1,190 @@
+[[proxy-conversion-from-client-mlm]]
+= 将客户端转换为 MLM 代理
+
+== 概述
+
+本章介绍如何通过 {webui} 将客户端系统转换为 {productname} 代理。
+
+本文假设代理主机系统已完成引导、已订阅基础操作系统通道（如 {sles} 15 SP7 或 {sl-micro} 6.1）以及代理扩展通道。
+
+有关客户端初始配置的详细信息，请参见 xref:client-configuration:registration-overview.adoc[]。
+
+== 要求
+
+开始转换前，请确保满足以下要求。
+
+
+=== 支持的系统
+
+目前仅支持以下操作系统进行代理转换：
+
+* {sles} 15 SP7
+
+* {sl-micro} 6.1
+
+=== 客户端需满足的条件
+
+* 已在 {productname} 中完成初始配置
+
+* 可通过网络访问
+
+* 已订阅相应的代理扩展通道：
+
+** {productname} Proxy Extension 5.1（需匹配体系结构）
+
+
+== 准备工作
+
+进行代理转换前，请完成以下准备工作，以免转换过程中出现中断。
+
+=== SSL 证书
+
+为确保代理与其他组件之间的通信安全，需要具备有效的 SSL 证书。
+
+您需要准备：
+
+* 为 {productname} 服务器证书签名的证书颁发机构 (CA) 的公共证书。
+
+* 代理专用证书。
+
+* 代理证书对应的私用密钥。
+
+[NOTE]
+====
+如果您的 CA 使用中间证书链，还必须包含所有中间证书。
+====
+
+如果不使用第三方证书，可在 {productname} 容器内通过 `rhn-ssl-tool` 生成证书。
+
+.生成代理证书
+
+. 在 {productname} 服务器主机上运行以下命令：
+
++
+
+[source, shell]
+----
+mgrctl exec -ti -- rhn-ssl-tool --gen-server \
+  --set-hostname="<PROXY-FQDN>" \
+  --dir="/root/ssl-build"
+----
+
++
+
+有关其他参数的详细信息，请参见 xref:administration:ssl-certs-selfsigned.adoc[]。
+
++
+
+. 将证书传输至 {productname} 服务器主机
+
++
+
+[source, shell]
+----
+mgrctl cp server:/root/ssl-build/<PROXY-FQDN>/server.crt /root/proxycert.pem
+mgrctl cp server:/root/ssl-build/<PROXY-FQDN>/server.key /root/proxykey.pem
+mgrctl cp server:/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT /root/rootca.pem
+----
+
++
+
+[NOTE]
+====
+如需确认证书和密钥文件的具体生成目录，可以执行以下命令列出相关目录：
+----
+mgrctl exec -ti -- ls -ltd /root/ssl-build/*/
+----
+====
+
+. 将证书从 {productname} 服务器主机传输至本地计算机或其他目标系统：
+
++
+
+[source, shell]
+----
+scp <MLM-FQDN>:/root/proxycert.pem ./
+scp <MLM-FQDN>:/root/proxykey.pem ./
+scp <MLM-FQDN>:/root/rootca.pem ./
+----
+
+=== 软件包准备
+
+建议以 RPM 软件包形式部署容器映像。请确保客户端上已安装以下软件包：
+
+* suse-multi-linux-manager-5.1-<体系结构>-proxy-httpd-image
+
+* suse-multi-linux-manager-5.1-<体系结构>-proxy-salt-broker-image
+
+* suse-multi-linux-manager-5.1-<体系结构>-proxy-squid-image
+
+* suse-multi-linux-manager-5.1-<体系结构>-proxy-ssh-image
+
+* suse-multi-linux-manager-5.1-<体系结构>-proxy-tftpd-image
+
+您可通过 {webui} 安装这些软件包：导航到[literal]``软件`` > [literal]``软件包`` > [literal]``安装``选项卡，然后搜索上述软件包并完成安装。
+
+有关隔离部署的详细信息，请参见 xref:installation-and-upgrade:container-deployment/mlm/proxy-air-gapped-deployment-mlm.adoc[]。
+
+== 设置代理客户端
+
+. 导航到客户端的[literal]``概览``页面。
+
+. 单击 btn:[转换为代理] 按钮。
+
++
+
+确认您已重定向至代理配置表单。
+
++
+
+以后可通过[literal]``细节`` > [literal]``代理`` > [literal]``配置``选项卡访问该页面。
+
+. 在 {webui} 中，导航到menu:代理[配置]，并填写所需数据：
+
++
+
+.过程：配置代理
+
+.. 在[guimenu]``父 FQDN`` 字段中，键入父服务器或代理的完全限定域名。
+
+.. 在[guimenu]``代理 SSH 端口``字段中，键入 {productname} 代理上 SSH 服务的监听端口。建议保留默认值 8022。
+
+.. 在[guimenu]``最大 Squid 缓存大小``字段中，键入允许的最大 Squid 缓存大小（以 GB 为单位）。
+
+.. 在[guimenu]``代理管理员电子邮件``字段中，键入管理员的电子邮件地址。
+
+.. 在[literal]``证书``部分，提供在进行准备时获取的 {productname} 代理证书。
+
+.. 在[literal]``源``部分，选择以下两个选项之一：[literal]``RPM`` 或[literal]``仓库``。
+
++
+
+* 对于隔离或受限环境，建议使用 [literal]``RPM`` 选项。
+
+* The [literal]``Registry`` option can be used if connectivity to the container image registry is available.
+
++
+
+If selected, you will be prompted to choose between two sub-options: [literal]``Simple`` or [literal]``Advanced``.
+
++
+
+** 如果选择[literal]``简单``，需要在[literal]``仓库 URL`` 和 [literal]``容器标记``字段中输入对应值。
+
+*** 在[literal]``仓库 URL`` 中填写 [literal]``registry.suse.com/suse/multi-linux-manager/5.1/x86_64``。
+
+*** 从下拉列表中选择标记。
+
+** 如果选择[literal]``高级``，表单会显示一个额外的部分：
+
+*** 对于每个独立容器的 URL 字段，均需填写仓库地址 [literal]``registry.suse.com/suse/multi-linux-manager/5.1/x86_64``，并添加对应的后缀（例如 `_proxy-httpd_` 或 `_salt-broker_`）。
+
+*** 从下拉列表中选择标记。
+
+. 填写完所有字段后，单击 btn:[应用] 按钮保存配置并调度代理安装任务。
+
+== 校验代理激活状态
+
+查看客户端的事件历史记录，确认任务执行成功。
+
+（可选）访问代理的 HTTP 端点，验证其是否显示欢迎页面。

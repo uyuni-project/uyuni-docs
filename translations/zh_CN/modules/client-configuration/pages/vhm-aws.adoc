@@ -1,0 +1,99 @@
+[[vhm-aws]]
+= 虚拟主机管理器和 Amazon Web Services
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+
+// 2024-04-04 OM: It had been decided in the conversation with the mlm PO 
+// that this Public Cloud related file can stay in the Uyuni books
+
+
+您可以使用虚拟主机管理器 (VHM) 收集 Amazon Web Services (AWS) 中的实例。
+
+VHM 允许 {productname} 获取并报告有关您的群集的信息。有关 VHM 的详细信息，请参见 xref:client-configuration:vhm.adoc[]。
+
+
+
+== 创建 Amazon EC2 VHM
+
+
+
+虚拟主机管理器 (VHM) 在 {productname} 服务器上运行。
+
+确保您已在 {productname} 服务器上安装 [systemitem]``virtual-host-gatherer-libcloud`` 软件包。
+
+
+.过程：创建 Amazon EC2 VHM
+
+. 在 {productname} {webui} 中，导航到menu:系统[虚拟主机管理器]。
+. 单击 btn:[创建] 并从下拉菜单中选择 [guimenu]``Amazon EC2``。
+. 在[guimenu]``添加 Amazon EC2 虚拟主机管理器``部分，使用以下参数：
+* 在[guimenu]``标签``字段中，为 VHM 键入自定义名称。
+* 在[guimenu]``访问密钥 ID`` 字段中，键入 Amazon 提供的访问密钥 ID。
+* 在[guimenu]``机密访问密钥``字段中，键入与 Amazon 实例关联的机密访问密钥。
+* 在[guimenu]``地区``字段中，键入要使用的地区。
+* 在[guimenu]``区域``字段中，键入您的 VM 所在的区域。要使订阅匹配功能正常工作，就必须提供此信息。有关设置地区和区域的详细信息，请参见 <<susesupport_and_vm_zones>>。
+. 单击 btn:[创建] 保存更改并创建 VHM。
+. 在[guimenu]``虚拟主机管理器``页面中，选择新 VHM。
+. 在[guimenu]``属性``页面中，单击 btn:[刷新数据] 以清点新 VHM。
+
+要查看已清点的对象和资源，请导航到menu:系统[系统列表 > 虚拟系统]。
+
+
+在 Amazon 公有云上运行的实例会向 {productname} 服务器报告 UUID，其格式为一个 ``i`` 后跟 17 个十六进制数字：
+
+----
+I1234567890abcdef0
+----
+
+
+ifeval::[{mlm-content} == true]
+
+[[susesupport_and_vm_zones]]
+== SUSE 支持和 VM 区域
+
+公有云提供商使用地区来定义提供虚拟机的数据中心的实际地理位置。例如，[systemitem]``美国东部``或[systemitem]``亚洲``。
+
+地区又可以划分为多个区域。例如，[systemitem]``美国东部``地区可能包含 [systemitem]``us-east-2a`` 和 [systemitem]``us-east-2b`` 等多个区域。
+
+{suse} 使用虚拟机的区域来确定要提供的适当订阅。如果您的所有 VM 均由同一区域提供，您便符合 ``1-2 虚拟机``订阅的条款和条件。
+
+如果您的 VM 是由不同区域提供的，那么即使它们在同一地区内，您可能也不符合 ``1-2 虚拟机``订阅的条件。在这种情况下，请仔细检查您的订阅。
+
+[NOTE]
+====
+对于 {byos} 实例 ({byoslongform})，所有安装的产品均会传递给订阅匹配器。如果您的公有云实例为 {payg} ({payglongform}) 类型，订阅匹配器计算中将会排除这些实例的基础产品。
+
+计算实例是 {payg} 还是 {byos} 类型的过程在注册时或执行硬件刷新操作时完成。
+====
+
+有关详细信息，请参见 https://www.suse.com/products/terms_and_conditions.pdf 或联系 {suse}。
+
+endif::[]
+
+
+
+
+== 虚拟主机管理器的 AWS 权限
+
+出于安全原因，请始终为要执行的任务授予尽可能最小的权限。不建议对连接到 AWS 的用户使用具有过高权限的访问密钥。
+
+为了让 {productname} 从 AWS 收集所需的信息，VHM 需要相应权限来说明 EC2 实例和地址。一种收集此信息的方法是专门为此任务创建一个新的 IAM 用户（Identity and Access Management，身份和访问权限管理），并且创建如下策略并关联到该用户：
+
+----
+{
+    "Version": "2012-10-17",
+    "Statement":[
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:DescribeAddresses",
+                "ec2:DescribeInstances"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+----
+
+
+您可以通过限制对特定地区的访问来对权限施加更多限制。有关详细信息，请参见 https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ExamplePolicies_EC2.html#iam-example-read-only[]。

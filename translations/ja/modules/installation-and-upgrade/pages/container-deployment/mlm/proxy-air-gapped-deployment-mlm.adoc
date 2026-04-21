@@ -1,0 +1,100 @@
+= {productname}プロキシのAir-gapped配備
+:revdate: 2025-04-28
+:page-revdate: {revdate}
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+== Air-gapped配備とは
+
+
+Air-gapped配備とは、安全ではないネットワーク、特にインターネットから物理的に隔離されたネットワークシステムをセットアップおよび運用することです。この種の配備は、一般的に高度なセキュリティ環境で使用されます。たとえば、軍事施設、金融システム、重要インフラストラクチャ、機密データを取り扱っていて外部の脅威から保護する必要がある場所などです。
+
+[NOTE]
+====
+現時点では、Air-gapped配備は{sl-micro}でのみ利用可能です。
+====
+
+
+== 仮想マシンでの配備
+
+推奨されるインストール方法は、提供されている{productname}の仮想マシンイメージオプションを使用する方法です。必要なツールとコンテナイメージがすべてプリロードされていて、すぐに動作するためです。
+
+{productname}プロキシ仮想マシンのインストールの詳細については、xref:container-deployment/mlm/proxy-deployment-vm-mlm.adoc[仮想マシンとしてのプロキシの配備]を参照してください。
+
+{productname}プロキシをアップグレードするには、xref:container-management/updating-proxy-containers.adoc[プロキシのアップグレード]で定義されている手順に従う必要があります。
+
+
+== {sl-micro}に{productname}を配備する
+
+{productname}では、必要なコンテナイメージはすべてRPMでも提供されており、このイメージをシステムにインストールすることができます。
+
+.プロシージャ: Air-gappedで{sl-micro}に{productname}をインストールする
+[role=procedure]
+____
+. {sl-micro}をインストールします。
+
+. {productname}サーバ上のクライアントとしてプロキシホストOSをブートストラップします。
+
+. システムを更新します。
+
+. ツールのパッケージとイメージパッケージをインストールします($ARCH$は適切なアーキテクチャと置き換えます)。
+
++
+
+[source, shell]
+----
+transactional-update pkg install mgrpxy* mgrctl* suse-multi-linux-manager-5.1-$ARCH$-proxy-*
+----
+
+. 再起動します。
+
+. mgrpxyを使用して{productname}を配備します。
+____
+
+
+{sl-micro}に{productname}プロキシをインストールする方法の詳細については、xref:container-deployment/mlm/proxy-deployment-mlm.adoc[仮想マシンとしてのプロキシの配備]を参照してください。
+
+{productname}プロキシをアップグレードするには、xref:container-management/updating-proxy-containers.adoc[プロキシのアップグレード]で定義されている手順に従う必要があります。
+
+
+== Formulaイメージ
+
+BindやDHCP (Kea)などの一部のformulaもコンテナを使用します。 これらをAir-gapped環境で使用する予定の場合は、イメージをプルして、アーカイブに保存し、{productname}プロキシまたは別の管理対象システムにロードする必要があります。
+
+イメージは`registry.suse.com`から入手できます。
+
+.プロシージャ: Air-gapped環境におけるformulaイメージの取得
+[role=procedure]
+____
+. インターネットにアクセスできるシステムで、必要なイメージをプルします。
+
++
+
+[source, shell]
+----
+podman pull registry.suse.com/suse/bind:latest
+podman pull registry.suse.com/suse/kea:2.6
+----
+
+. イメージをTARアーカイブに保存します。
+
++
+
+[source, shell]
+----
+podman save -m -o formula-images.tar registry.suse.com/suse/bind:latest registry.suse.com/suse/kea:2.6
+----
+
+. `formula-images.tar`ファイルをAir-gappedシステムに転送します。
+
+. Air-gappedシステムにイメージをロードします。
+
++
+
+[source, shell]
+----
+podman load -i formula-images.tar
+----
+____

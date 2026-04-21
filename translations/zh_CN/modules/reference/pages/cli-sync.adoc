@@ -1,0 +1,166 @@
+[[ref-cli-sync]]
+= Synchronization CLI Tools
+:revdate: 2024-11-29
+:page-revdate: {revdate}
+
+[IMPORTANT]
+====
+要在服务器容器内访问外壳，请在容器主机上运行 [literal]``mgrctl term``。在该主机上，可以像往常一样运行 CLI 工具。
+====
+
+There are two tools for synchronizing clients to the server. For clients that are connected to the {scclongform}, use ``mgr-sync``. For all other clients, use ``spacewalk-repo-sync``.
+
+
+
+== Synchronize {scc} Repositories With mgr-sync
+
+
+//This content is the same as the content at modules/administration/pages/mgr-sync.adoc Perhaps we should snippet it? --LKB 2020-10-09
+
+The primary use of ``mgr-sync`` is to connect to the {scclongform}, retrieve product and package information, and prepare channels for synchronization with the {productname} Server.
+
+此工具应与 {suse} 支持订阅配合使用。{opensuse}、{centos} 和 {ubuntu} 等开源发行套件不需要此工具。
+
+下表中列出了 ``mgr-sync`` 的可用命令和参数。请对 ``mgr-sync`` 命令使用以下语法：
+
+----
+mgr-sync [-h] [--version] [-v] [-s] [-d {1,2,3}] {list,add,refresh,delete}
+----
+
+
+[[mgr-sync-commands]]
+[cols="1,1,1", options="header"]
+.mgr-sync 命令
+|===
+| 命令 | 说明 | 示例用法
+| list | 列出通道、组织身份凭证或产品 | ``mgr-sync list channels``
+| add | 添加通道、组织身份凭证或产品 | ``mgr-sync add channel <channel_name>``
+| refresh | 刷新产品、通道和订阅的本地副本 | ``mgr-sync refresh``
+| delete | 从本地系统中删除现有的 {scc} 组织身份凭证 | ``mgr-sync delete credentials``
+| sync | 同步指定的通道，如果将通道名称留空，则请求提供名称| ``mgr-sync sync channel <channel_name>``
+|===
+
+
+要查看特定于某个命令的完整选项列表，请使用以下命令：
+
+----
+mgr-sync <命令> --help
+----
+
+
+
+[[mgr-sync-optional-args]]
+[cols="1,1,1,1", options="header"]
+.mgr-sync 可选参数
+|===
+| 选项 | 选项缩写 | 说明 | 示例用法
+| help | ``h`` | 显示命令用法和选项 | ``mgr-sync --help``
+| version | 不适用 | 显示当前安装的 ``mgr-sync`` 版本 | ``mgr-sync --version``
+| verbose | ``v`` | 提供详细输出 | ``mgr-sync --verbose refresh``
+| store-credentials | ``s`` | 将身份凭证存储在本地隐藏文件中 | ``mgr-sync --store-credentials``
+| debug | ``d`` | 记录附加调试信息。需要指定级别 1、2、3。3 提供的调试信息量最多 | ``mgr-sync -d 3 refresh``
+| no-sync | 不适用 | 与 ``add`` 命令结合使用，以添加产品或通道，而无需开始同步 | ``mgr-sync --no-sync add <通道名称>``
+|===
+
+
+``mgr-sync`` 的日志位于：
+
+* [path]``/var/log/rhn/mgr-sync.log``
+* [path]``/var/log/rhn/rhn_web_api.log``
+
+
+
+== Synchronize Repositories with spacewalk-repo-sync
+
+The [command]``spacewalk-repo-sync`` tool synchronizes software repositories into {productname} channels. In most cases, this happens automatically, but you can use the tool to run it manually if required.
+
+The [command]``spacewalk-repo-sync`` tool has these primary commands:
+
+[[spacewalk-repo-sync-options]]
+[cols="1,1,1", options="header"]
+.spacewalk-repo-sync Options
+|===
+
+| Option
+| Description
+| Example Use
+
+| list
+| List all custom channels and the repositories assigned to them.
+| ``spacewalk-repo-sync --list``
+
+| channel
+| Synchronize a single channel to all repositories assigned to it.
+| ``spacewalk-repo-sync  --channel <custom-channel>``
+
+| deep-verify
+| ignore cached package checksums.
+| ``spacewalk-repo-sync --deep-verify``
+
+| force-all-errata
+| force re-importing all the patches.
+| ``spacewalk-repo-sync --deep-verify``
+
+| no-packages
+| excludes packages from the operation.
+| ``spacewalk-repo-sync --deep-verify --no-packages``
+
+|===
+
+For a complete list of options, see the ``spacewalk-repo-sync`` manpage:
+
+----
+man spacewalk-repo-sync
+----
+
+
+
+== 同步查错
+
+If you are having trouble synchronizing with ``spacewalk-repo-sync`` you can find out more by watching the HTTP log as the command runs.
+
+
+
+.Procedure: Troubleshooting Synchronization Problems
+. Log the HTTP output into [path]``/var/log/zypper.log``:
++
+----
+ZYPP_MEDIA_CURL_DEBUG=2 spacewalk-repo-sync --channel <channel-label>
+----
+. Export the setting:
++
+----
+export URLGRABBER_DEBUG=DEBUG
+----
+. Start the synchronization:
++
+----
+/usr/bin/spacewalk-repo-sync --channel <channel-label> --type yum
+----
+  You can increase the debug level, by adding the [option]``-vvv`` option to the command.
+. When the complete completes, or fails, disable debug mode:
++
+----
+unset URLGRABBER_DEBUG
+----
+
+
+
+=== Add Custom Extra HTTP Headers
+
+You can add custom HTTP headers to the requests made by [command]``spacewalk-repo-sync`` at the time of synchronization. The custom HTTP headers are defined in the [path]``/etc/rhn/spacewalk-repo-sync/extra_headers.conf`` configuration file. The headers can be defined by repository name or channel label. You can also define global headers by putting them in the ``main`` section. For example:
+
+----
+[testchannel]
+X-MY-HEADER-1=VALUE
+X-MY-HEADER-2=VALUE
+
+[mychannel]
+X-MY-HEADER-3=VALUE
+X-MY-HEADER-4=VALUE
+
+[main]
+X-MYGLOBAL-HEADER=VALUE
+----
+
+This can be particularly useful when dealing with Red Hat Update Infrastructure (RHUI) repositories in the public cloud.

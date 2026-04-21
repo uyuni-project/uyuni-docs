@@ -1,0 +1,333 @@
+[[registering.clients.bootstrap]]
+= Register Clients With a Bootstrap Script
+:revdate: 2025-06-10
+:page-revdate: {revdate}
+
+== Introduction
+
+
+Registering clients with a bootstrap script gives you control over parameters, and can help if you have to register a large number of clients at once.
+
+To register clients using a bootstrap script, we recommend you create a template bootstrap script to begin, which can then be copied and modified.
+The bootstrap script you create is executed on the client when it is registered, and ensures all the necessary packages are deployed to the client.
+Some parameters in the bootstrap script ensure the client system can be assigned to its base channel, using activation key and GPG key.
+
+It is important that you check the repository information carefully, to ensure it matches the base channel repository.
+If the repository information does not match exactly, the bootstrap script cannot download the correct packages.
+
+Additional considerations:
+
+* All clients need a bootstrap repository.
+  It is automatically created and regenerated on the {productname} Server when products are synchronized.
+  A bootstrap repository includes packages for installing {salt} on clients, and for registering clients.
+  For more information about creating a bootstrap repository, see xref:client-configuration:bootstrap-repository.adoc[].
+
+* openSUSE Leap 15 and SLE 15 use Python 3 by default.
+  Bootstrap scripts based on Python 2 must be re-created for openSUSE Leap 15 and SLE 15 systems.
+  If you register openSUSE Leap 15 or SLE 15 systems using Python 2, the bootstrap script fails.
+
+
+ifeval::[{uyuni-content} == true]
+
+[IMPORTANT]
+.GPG keys and Uyuni client tools
+====
+The GPG key used by Uyuni Client Tools is not trusted by default.
+When you create your bootstrap script, add a path to the file containing the public key fingerprint with the [systemitem]``ORG_GPG_KEY`` parameter.
+====
+
+endif::[]
+
+
+ifeval::[{mlm-content} == true]
+
+[IMPORTANT]
+====
+After migrating from an older version of {productname} to a newer version, we strongly recommend re-generating the bootstrap scripts before onboarding new systems to prevent any potential issues.
+====
+
+endif::[]
+
+[IMPORTANT]
+====
+To access a shell inside the server container run [literal]``mgrctl term`` on the container host. 
+From there, one can run the CLI tools as usual.
+====
+
+
+[[registering.clients.bootstrap.mgr-bootstrap]]
+== Create a bootstrap script with [command]``mgr-bootstrap``
+
+The [command]``mgr-bootstrap`` command generates custom bootstrap scripts.
+A bootstrap script is used by {productname} client systems for simplifying their initial registration and configuration.
+
+The arguments [option]``--activation-keys`` and [option]``--script``, are the only mandatory arguments.
+On the {productname} Server, as root at the command line execute it with the mandatory arguments.
+Replace [systemitem]``<ACTIVATION_KEY`` and [systemitem]``<EDITED_NAME>`` with your values:
+
+. From the command prompt of the {productname} container host, run the following command as the root user to enter the server container:
+
++
+----
+mgrctl term
+----
++
+. Execute the following command (adjust the values as needed)
++
+----
+mgr-bootstrap --activation-keys=<ACTIVATION_KEY> --script=bootstrap-<EDITED_NAME>.sh
+----
+
+The [command]``mgr-bootstrap`` command offers several other options, including the ability to set a specific hostname, set specific GPG keys, and set the registration method (salt-minion or salt-bundle).
+
+[NOTE]
+====
+
+* If you wish to create a bootstrap script to register against the Proxy, you can do so by using the following command from the Server container:
+
++ 
+
+----
+mgr-boostrap --hostname <PROXY_FQDN>
+----
+
++ 
+
+This command will create a new bootstrap script with default name [literal]``bootstrap.sh`` and it will overwrite the existing [literal]``bootstrap.sh`` file which is used for the Server.
+
+
+* To specify a different script, use the following comamnd:
+
++
+
+----
+mgr-bootstrap --hostname <PROXY_FQDN> --script=boostrap-<PROXY-SCRIPT>.sh
+----
+
+====
+
+For more information, see the [literal]``mgr-bootstrap`` man page, or run [command]``mgr-bootstrap --help``.
+
+
+
+== Create a bootstrap script from {webui}
+
+You can use the {productname} {webui} to create an editable bootstrap script.
+
+// 2022-10-26, ke: In step 2, check whether we can use {productname} macro.
+
+.Procedure: Creating a bootstrap script
+[role=procedure]
+_____
+
+. In the {productname} {webui}, navigate to menu:Admin[Manager Configuration > Bootstrap Script].
+
+. The required fields are pre-populated with values derived from previous installation steps.
+  For details on each setting, see xref:reference:admin/bootstrap-script.adoc[].
+
+. Click btn:[Update] to create the script.
+
+. The bootstrap script is generated and stored on the server in the [path]``/srv/www/htdocs/pub/bootstrap`` directory.
+  Alternatively, you can access the bootstrap script over HTTPS.
+  Replace [literal]``<example.com>`` with the host name of your {productname} Server:
+
++
+
+----
+https://<example.com>/pub/bootstrap/bootstrap.sh
+----
+
+_____
+
+
+[IMPORTANT]
+====
+Do not disable SSL in your bootstrap script.
+Ensure that [guimenu]``Enable SSL`` is checked in the {webui}, or that the setting `USING_SSL=1` exists in the bootstrap script.
+If you disable SSL, the registration process requires custom SSL certificates.
+
+For more information about custom certificates, see xref:administration:ssl-certs.adoc[].
+====
+
+
+
+[[modify.bootstrap.script]]
+== Edit a bootstrap script
+
+You can copy and modify the template bootstrap script you created to customize it.
+A minimal requirement when modifying a bootstrap script for use with {productname} is the inclusion of an activation key.
+Most packages are signed with GPG, so you also need to have trusted GPG keys on your system to install them.
+
+In this procedure, you need to know the exact name of your activation keys.
+Navigate to menu:Home[Overview] and, in the [guimenu]``Tasks`` box, click [guimenu]``Manage Activation Keys``.
+All keys created for channels are listed on this page.
+You must enter the full name of the key you wish to use in the bootstrap script exactly as presented in the key field.
+For more information about activation keys, see xref:client-configuration:activation-keys.adoc[].
+
+
+
+.Procedure: Modifying a bootstrap script
+[role=procedure]
+_____
+
+. From the command prompt of the {productname} container host, run the following command as the root user to enter the server container:
++
+
+----
+mgrctl term
+----
++
+
+. On your {productname} Server, as root at the command line change to the bootstrap directory with:
+
++
+
+----
+cd /srv/www/htdocs/pub/bootstrap/
+----
+
+. Create and rename two copies of the template bootstrap script for use with each of your clients.
+
++
+
+----
+cp bootstrap.sh bootstrap-sles12.sh
+cp bootstrap.sh bootstrap-sles15.sh
+----
+
+. Open [path]``bootstrap-sles15.sh`` for modification.
+    Scroll down until you can see the text shown below.
+    If ``exit 1`` exists in the file, comment it out by typing a hash or pound sign  (&#35;) at the beginning of the line.
+    This activates the script.
+    Enter the name of the key for this script in the ``ACTIVATION_KEYS=`` field:
+
++
+
+----
+echo "Enable this script: comment (with #'s) this block (or, at least just"
+echo "the exit below)"
+echo
+#exit 1
+
+# can be edited, but probably correct (unless created during initial install):
+# NOTE: ACTIVATION_KEYS *must* be used to bootstrap a client machine.
+ACTIVATION_KEYS=1-sles15
+ORG_GPG_KEY=
+----
+
++
+
+[NOTE]
+====
+Instead of editing the script manually, user can pass the following environment variables at runtime:
+
+- `ACTIVATION_KEYS`: Activation keys to use for registration
+- `ORG_GPG_KEY`: Path or identifier of the GPG key
+- `REACTIVATION_KEY`: Reactivation key for previously registered systems
+- `MGR_SERVER_HOSTNAME`: Hostname of the Server or Proxy to register the client against
+
+Using environment variables allows dynamic input at runtime and makes it easier to reuse the same bootstrap script across different systems or environments.
+====
+
++
+
+. When you have finished, save the file, and repeat this procedure for the second bootstrap script.
+
+_____
+
+
+[NOTE]
+====
+By default, bootstrap script will try to install [package]``venv-salt-minion`` if it is available in the bootstrap repository and [package]``salt-minion`` if there is no {salt} bundle in the bootstrap repository.
+It is possible to avoid installing {salt} bundle and keep using [package]``salt-minion`` if you need it for some reason.
+
+For more information, see xref:client-configuration:contact-methods-saltbundle.adoc[Salt Bundle].
+====
+
+
+
+[[registering.clients.bootstrap.register]]
+== Register clients running the bootstrap script
+
+When you have finished creating your script, you can use it to register clients.
+
+
+.Procedure: Running the bootstrap script
+[role=procedure]
+_____
+
+. From the command prompt of the {productname} container host, run the following command as the root user to enter the server container:
++
+
+----
+mgrctl term
+----
++
+
+. On the {productname} Server, change to the bootstrap directory:
+
++
+
+----
+cd /srv/www/htdocs/pub/bootstrap/
+----
+
++
+
+. Run this command to execute the bootstrap script on the client; replace [systemitem]``EXAMPLE.COM`` with the host name of your client:
+
++
+
+----
+cat bootstrap-sles15.sh | ssh root@EXAMPLE.COM /bin/bash
+----
+
++
+
+. Alternatively, on the client, run this command:
+
++
+
+----
+ACTIVATION_KEYS="17-someactivationkey" \
+MGR_SERVER_HOSTNAME="proxy.example.com" \
+ORG_GPG_KEY="mykey" \
+REACTIVATION_KEY=my-reactivation-key \
+curl -Sks https://server_hostname/pub/bootstrap/bootstrap.sh | /bin/bash
+----
+
++
+
+If you do not need to override any values, you can omit the environment variables entirely:
+
++
+
+----
+curl -Sks https://server_hostname/pub/bootstrap/bootstrap.sh | /bin/bash
+----
+
++
+
+[IMPORTANT]
+====
+To avoid problems, make sure the bootstrap script is executed using [command]``bash``.
+====
+
++
+
+This script downloads the required dependencies located in the repositories directory you created earlier.
+
++
+
+. When the script has finished running, you can check that the client is registered correctly.
+  Open the {productname} {webui} and navigate to menu:Systems[Overview] to ensure the new client is listed.
+  If the client is not listed, in the {productname} {webui} navigate to menu:Salt[Keys] and check whether the client key is accepted.
+
+_____
+
+[WARNING]
+====
+When new packages or updates are installed on the client using {productname}, any end user license agreements (EULAs) are automatically accepted.
+To review a package EULA, open the package detail page in the {webui}.
+====
+

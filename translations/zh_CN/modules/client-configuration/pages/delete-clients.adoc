@@ -1,0 +1,167 @@
+[[delete.clients]]
+= 客户端删除
+:description: Delete clients in your SUSE Multi-Linux Manager Server either via the Web UI or command-line options
+:revdate: 2025-11-12
+:page-revdate: {revdate}
+
+// FIXME: where do we need to add warnings (suse clients only, all clients)
+
+如果需要从 {productname} 服务器中去除客户端，您可以：
+
+* 使用 {webui} 将其删除
+* 从命令行去除客户端。
+
+// can also be done manually.
+// FIXME: Why Manual Cleanup is necessary sometimes.
+
+
+
+[[delete.clients.webui]]
+== 使用 {webui} 删除客户端
+
+
+.过程：删除客户端
+[role=procedure]
+____
+. 在 {productname} {webui}中，导航到menu:系统[系统列表]，然后选择要删除的客户端。
+
+. 单击 btn:[删除系统]。
+
+. 检查细节并单击 btn:[删除配置文件] 确认。
+
+. 对于 {salt} 客户端，{productname} 会尝试清理其他配置。如果无法联系客户端，您可以选择取消删除，或者仅删除客户端而不清理配置文件。
+
+____
+
+还可以使用系统集管理器删除多个客户端。有关系统集管理器的详细信息，请参见 xref:client-configuration:system-set-manager.adoc[]。
+
+[IMPORTANT]
+====
+清理客户端只会禁用 {salt} 并停止服务（如果可能）。此操作不会卸装软件包。
+====
+
+
+
+== 在命令行上删除客户端（通过 API 调用）
+
+.过程：从服务器上删除客户端
+[role=procedure]
+____
+. 使用 FQDN（完全限定的域名）删除客户端：
+
++
+
+----
+spacecmd system_delete FQDN
+----
+____
+
+[command]``spacecmd system_delete`` 还可删除 {salt} 密钥。
+
+[command]``system_delete`` 提供以下选项：
+
+
+----
+usage: system_delete [选项] <系统>
+
+    选项：
+          -c TYPE - 可能的值：
+             *  'FAIL_ON_CLEANUP_ERR' - 如果发生清理错误则失败，
+             *  'NO_CLEANUP' - 不清理，仅删除，
+             *  'FORCE_DELETE' - 先尝试清理，但在发生错误时仍会
+	        删除服务器
+----
+
+////
+// move to Trouble Shooting and link from here
+Sometimes a new registration of a deleted (unregistered) client might not be possible.
+To solve this issue, some Salt cache files should be deleted on the {productname} Server (Salt master) before trying to re-register again:
+
+----
+rm /var/cache/salt/master/thin/version
+rm /var/cache/salt/master/thin/thin.tgz
+----
+////
+
+
+
+[[delete.clients.commandline]]
+== 从命令行删除客户端
+
+[IMPORTANT]
+====
+此过程仅适用于 {productname} 客户端。请勿在 {productname} 服务器上运行。
+====
+
+[WARNING]
+====
+请勿在运行 {rhel}、{debian} 或克隆的客户端上执行以下过程，而是应使用与 [command]``zypper`` 效果相同的打包器命令，例如 [command]``yum``、[command]``dnf`` 或 [command]``apt``。
+====
+
+.过程：删除 SLES 12 和 15 客户端
+[role=procedure]
+____
+. 停止 salt-minion 服务：
+
++
+
+[source, shell]
+----
+systemctl stop salt-minion
+----
+
++
+
+. 去除储存库和配置文件：
+
++
+
+[source, shell]
+----
+rm -f /etc/zypp/repos.d/susemanager\:bootstrap.repo
+rm -f /etc/zypp/repos.d/susemanager\:channels.repo
+rm -r /etc/sysconfig/rhn/
+rm -r /etc/salt/
+----
+
++
+
+. 去除客户端软件包：
+
++
+
+[source, shell]
+----
+zypper rm salt salt-minion python*-salt sle-manager-tools-release
+----
+
+____
+
+
+.过程：{salt} 捆绑包客户端 - 手动进行注册清理
+[role=procedure]
+____
+. 要取消注册，请运行以下命令：
+
++
+
+[source, shell]
+----
+systemctl stop venv-salt-minion
+zypper rm -y venv-salt-minion sle-manager-tools-release
+rm -f /etc/zypp/repos.d/susemanager\:bootstrap.repo
+rm -f /etc/zypp/repos.d/susemanager\:channels.repo
+rm -r /etc/venv-salt-minion/*
+----
+
+. 去除客户端计算机 ID：
+
++
+
+----
+rm /etc/sysconfig/rhn/systemid
+----
+
+____
+
+有关 {salt} 捆绑包的信息，请参见 xref:client-configuration:contact-methods-saltbundle.adoc[]。

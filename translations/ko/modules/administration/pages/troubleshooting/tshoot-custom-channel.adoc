@@ -1,0 +1,62 @@
+[[troubleshooting-customchannel]]
+= 충돌하는 패키지가 포함된 사용자 정의 채널 문제 해결
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+////
+Cause: Conflicting packages in custom channel
+Consequence: Creating bootstrap repo can fail
+Fix: Separate trees from each other
+Result: Clean and functional boostrap repo will be created
+////
+
+부트스트랩 리포지토리 생성과 같은 충돌하는 패키지 기능으로 사용자 정의 채널을 설정할 때 정의되지 않은 동작이 발생하고 클라이언트 등록이 실패할 수 있습니다.
+
+예를 들어, 버전 번호가 더 높은 충돌하는 패키지가 부트스트랩 리포지토리에 포함될 수 있습니다. 이러한 패키지(예: [package]``python3-zmq`` 또는 [package]``zeromq``)는 부트스트랩 리포지토리의 생성을 손상시키거나 클라이언트 부트스트랩 중에 문제를 일으킬 수 있습니다.
+
+When the custom channel (for example, an EPEL channel) is added below the parent vendor channel, issues with conflicting packages cannot be solved directly. The way how to solve this is to separate the custom channel from the vendor channel. The custom channel needs to be created in a separate tree. In case that the custom channel needs to be delivered as a child, such environment can be created using Content Lifecycle Management (CLM). Sources in a CLM project can be added there from different trees. Using such an approach, the custom channel stays below the parent within the built environment. However, the vendor channel tree stays without the custom channel and the bootstrap repository. Then registering clients works correctly.
+
+충돌하는 패키지(salt, zeromq 등)가 포함된 사용자 정의 채널이 하위 채널로 생성되는 경우 다음 단계를 통해 문제를 방지할 수 있습니다.
+
+.절차: 사용자 정의 채널에서 패키지 충돌 방지
+
+. 상위 채널에서 하위 채널로 사용자 정의 채널을 제거합니다. 자세한 내용은 xref:administration:custom-channels.adoc#_manage_custom_channels[]에서 확인할 수 있습니다.
+. 별도의 트리에 사용자 정의 채널을 생성합니다. 자세한 내용은 xref:administration:custom-channels.adoc#_creating_custom_channels_and_repositories[]에서 확인할 수 있습니다.
+CLM(컨텐트 라이프싸이클 관리)에서 사용자 정의 채널을 하위 채널로 임포트하려면 다음을 실행합니다.
++
+* {productname} {webui}에서 menu:컨텐트 라이프싸이클[]로 이동하고 btn:[프로젝트 생성]을 클릭합니다. [guimenu]``이름`` 및 [guimenu]``레이블``을 입력합니다.
+* 프로젝트에 소스를 연결합니다. 필요한 벤더 채널과 사용자 정의 채널을 사용합니다. (CentOS8을 사용한 공유 예제)
+* 프로젝트에 환경을 추가합니다. 예를 들어, CentOS8을 사용합니다.
+* 환경을 빌드하려면 btn:[빌드] 버튼을 클릭합니다. 이 작업을 수행하면 활성화 키와 연결되고 클라이언트를 부트스트랩하기 위해 사용할 수 있는 벤더 및 사용자 정의 채널이 포함된 환경이 생성됩니다.
+. 중요 참고: CLM 프로젝트에서, 문제가 있거나 충돌하는 패키지를 제외하는 필터를 추가하는 것이 좋습니다. 그렇지 않으면 클라이언트 업데이트 중에 버전 번호가 더 높은 충돌하는 패키지가 설치됩니다. 필터링에 대한 자세한 내용은 xref:administration:content-lifecycle-examples.adoc#exclude-higher-kernel-version[]에서 확인할 수 있습니다.
+. CLM 환경(벤더 및 사용자 정의 채널 포함)에 최신 패치를 패치하려면 프로젝트에서 btn:[빌드] 버튼을 클릭합니다. 이는 환경을 다시 빌드하기 위해 필요합니다.
+
+* CLM에 대한 자세한 내용은 xref:administration:content-lifecycle.adoc[]에서 확인할 수 있습니다.
+
+ifeval::[{mlm-content} == true]
+
+[NOTE]
+====
+Extra Packages for Enterprise Linux(EPEL)를 {rhel} 클라이언트(또는 호환 가능: {sll}, {centos}, {oracle} 등)에서 직접 사용하면 EPEL의 {salt} 패키지가 설치되며, 여기에는 {productname} 제공 {salt} 패키지에서 제공되는 일부 기능이 누락됩니다. 이는 SUSE가 아닌 {salt} 패키지가 포함된 부트스트랩 리포지토리를 생성하므로 중요한 사항입니다. 따라서 이 시나리오는 지원되지 않습니다.
+
+EPEL 리포지토리를 활성화해야 하는 경우 미리 EPEL에서 {salt} 패키지를 필터링해야 합니다(예: menu:소프트웨어[관리 > 채널 > EPEL > 패키지]에서 {salt} 패키지 제거).
+====
+endif::[]

@@ -1,0 +1,71 @@
+[[installation-proxy-containers-k3s]]
+= K3sへの{productname} {productnumber}プロキシの配備
+:revdate: 2025-06-26
+:page-revdate: {revdate}
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+
+[[installation-proxy-containers-k3s-k3s]]
+== K3sのインストール
+
+
+[NOTE]
+====
+{productname}プロキシは、シングルノードクラスタの{sl-micro}上で実行されるk3sでサポートされます。他のKubernetes環境に配備する必要がある場合は、サポートに連絡して評価を依頼してください。
+====
+
+コンテナホストマシンに[literal]``K3s``をインストールします([literal]``<K3S_HOST_FQDN>``はK3sホストのFQDNに置き換えます)。
+
+[source, shell]
+----
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--tls-san=<K3S_HOST_FQDN>" sh -
+----
+
+[[installation-proxy-containers-k3s-helm]]
+== ツールのインストール
+
+インストールには[literal]``mgrpxy``パッケージと[literal]``helm``パッケージが必要です。
+
+[literal]``mgrpxy``および``helm``パッケージは{productname}プロキシの製品リポジトリで利用可能です。
+
+. インストールするには、次のコマンドを実行します。
+
++
+
+[source, shell]
+----
+transactional-update pkg install helm mgrpxy
+----
+
+. 再起動
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-generate_proxy_config.adoc[tags=generate-proxy-config-section]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-generate_proxy_config.adoc[tags=generate-proxy-config-section]
+endif::[]
+
+
+[[installation-proxy-containers-k3s-deploy]]
+== {productname}プロキシHelmチャートの配備
+
+{productname}プロキシポッドで使用するボリュームのストレージを設定するには、次のクレームに対して永続ボリュームを定義します。ストレージ設定をカスタマイズしない場合は、K3sによって自動的にストレージボリュームが作成されます。
+
+永続ボリュームのクレームの名前は次のとおりです。
+
+* [literal]``squid-cache-pv-claim``
+* [literal]``package-cache-pv-claim``
+* [literal]``tftp-boot-pv-claim``
+
+xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc[]に記載されているように、{productname}プロキシの設定を作成します。設定[literal]``tar.gz``ファイルをコピーしてインストールします。
+
+----
+mgrpxy install kubernetes /path/to/config.tar.gz
+----
+
+詳細については、link:https://kubernetes.io/docs/concepts/storage/persistent-volumes/[] (kubernetes)またはlink:https://rancher.com/docs/k3s/latest/en/storage/[] (K3s)のドキュメントを参照してください。

@@ -1,0 +1,263 @@
+[[deploy-mlm-server]]
+= {productname} {productnumber}サーバの配備
+:revdate: 2025-07-09
+:page-revdate: {revdate}
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+このガイドでは、 {sl-micro} {microversion}または{sles} {bci-mlm}に{productname} {productnumber}コンテナをインストールして設定する方法について説明します。
+
+// Link to hardware requirements do not show them here. We list them on other pages.
+// Done within next section.
+
+== {productname}のハードウェア要件
+
+次の表に、{productname}サーバをベースメタルマシンに配備するためのソフトウェアおよびハードウェアの要件を示します。このガイドの目的のためには、マシンに16 GBのRAMと200 GB以上のディスク容量が必要です。ディスク容量に関する背景情報については、xref:installation-and-upgrade:hardware-requirements.adoc[]を参照してください。
+
+[cols="1,1", options="header"]
+.ソフトウェアおよびハードウェアの要件
+|===
+| ソフトウェアおよびハードウェア  | 推奨
+| オペレーティングシステム      | {sl-micro} {microversion}またはr
+ 
+                           {sles} {bci-mlm}
+| アーキテクチャ           | {x86_64}、{arm}、{s390x}、{ppc64le}
+| プロセッサ(CPU)        | 最低4つの64ビットCPUコア
+| RAM                    | 16 GB
+| ディスク容量             | 200GB
+| チャンネル要件  | SUSEまたはopenSUSE製品では50GB
+                          
+                           Red Hat製品では360GB
+| スワップ容量:            | 8～12GB
+|===
+
+.サーバコンテナホストでサポートされるオペレーティングシステム
+[NOTE]
+====
+コンテナホストでサポートされているオペレーティングシステムは{sl-micro} {microversion}または{sles} {bci-mlm}です。
+
+コンテナホスト::
+コンテナホストは、コンテナを管理および配備できる[systemitem]``Podman``などのコンテナエンジンを搭載したサーバです。これらのコンテナは、アプリケーションと、ライブラリなどの重要な部品を保持していますが、完全なオペレーティングシステムは保持しないため軽量です。このセットアップにより、アプリケーションは異なる環境でも同じように動作します。CPU、メモリ、ストレージなど、これらのコンテナに必要なリソースはコンテナホストが提供します。
+====
+
+
+[IMPORTANT]
+====
+サーバの配備では、必ず完全修飾ドメイン名(FQDN)を使用する必要があります。ルータまたはネットワークにFQDNのDNSの自動プロビジョニング機能がない場合は、配備プロセスは正常に続行されません。FQDNは通常、<host>.<domain>.comの形式に従います。
+
+例:
+
+* [literal]``mlm.example.com``
+* [literal]``mlm.container.lab``
+
+詳細については、xref:installation-and-upgrade:network-requirements.adoc[]のネットワーク要件のセクションを参照してください。
+====
+
+== 永続ボリューム
+
+// This sections needs to be run by devs. How would a customer use custom storage? How do we set this up with mgradm?
+
+{productname} {productnumber}では、必要な永続ボリュームがデフォルトで定義されます。これらのボリュームは、まだ存在しない場合、[command]``mgradm``ツールによってインストール中に作成されます。
+
+これらのボリュームは[path]``/var/lib/containers/storage/volumes/``に作成されます。[systemitem]``Podman``はボリュームをデフォルトでここに保存します。
+
+.推奨事項
+[NOTE]
+====
+外部ストレージデバイスをこのディレクトリにマウントすると、ストレージを簡単に利用できます。ここには、{postgresql}データベース、リポジトリのバイナリパッケージ、キャッシュ、オペレーティングシステムのイメージ、自動インストールディストリビューション、および設定ファイルが保存されるため、次の3つの推奨事項があります。
+
+高速なストレージ::
+このマウントポイントはNVMeまたはSSDクラスのデバイスにするのが理想的です。低速なストレージは{productname}のパフォーマンスに悪影響を及ぼします。
+
+大容量::
+管理するLinuxディストリビューションまたはアーキテクチャが複数ある場合、このディレクトリの推奨最小サイズは300 GB以上です。
+
+推奨されるファイルシステム::
+XFS (ただし、{sl-micro} {microversion}でサポートされているファイルシステムであればどれでも動作可能)。
+
+オプション::
+ボリュームのカスタムストレージを提供できます。そのためには、[path]``/var/lib/containers/storage/volumes/var-spacewalk``など、ボリューム内の予期されるボリュームパスにディスクをマウントします。これにより、{productname}の配備の複雑さが増し、推奨されるデフォルトのストレージで提供される回復性に影響する可能性があります。
+
+====
+
+
+コンテナ内の永続ボリュームのリストについては、xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]を参照してください。
+
+
+
+
+[[deploy-mlm-server-host]]
+==  {productname}サーバホストの準備
+
+{productname}は{sl-micro} {microversion}または{sles} {bci-mlm}に配備できます。{sl-micro}はトランザクションシステムであり、{sles}はフルサーバオペレーティングシステムです。
+
+決定に応じて、xref:installation-and-upgrade:container-deployment/mlm/server-deployment-mlm.adoc#deploy-mlm-server-micro[]またはxref:installation-and-upgrade:container-deployment/mlm/server-deployment-mlm.adoc#deploy-mlm-server-sles[]を続行し、選択されていないセクションをスキップしてください。
+
+
+
+[[deploy-mlm-server-micro]]
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-prepare-micro-host.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-prepare-micro-host.adoc[leveloffset=+1]
+endif::[]
+
+配備を続行するには、xref:installation-and-upgrade:container-deployment/mlm/server-deployment-mlm.adoc#deploy-mlm-server-persistent-storage[]を参照してください。
+
+[[deploy-mlm-server-sles]]
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-prepare-sles-host.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-prepare-sles-host.adoc[leveloffset=+1]
+endif::[]
+
+配備を続行するには、xref:installation-and-upgrade:container-deployment/mlm/server-deployment-mlm.adoc#deploy-mlm-server-persistent-storage[]を参照してください。
+
+
+
+
+[[deploy-mlm-server-persistent-storage]]
+== カスタム永続ストレージの設定
+
+永続ストレージの設定はオプションですが、コンテナのディスクがいっぱいになった状態での深刻な問題を回避する唯一の方法です。[command]``mgr-storage-server``ツールを使用してカスタム永続ストレージを設定することを強くお勧めします。
+
+詳細については、[command]``mgr-storage-server --help``を参照してください。このツールを使用すると、コンテナストレージとデータベースボリュームの作成が容易になります。
+
+このコマンドは次のように使用します。
+
+[source, shell]
+----
+mgr-storage-server <storage-disk-device> [<database-disk-device>]
+----
+
+例:
+
+----
+mgr-storage-server /dev/nvme1n1 /dev/nvme2n1
+----
+
+[NOTE]
+====
+このコマンドは、[path]``/var/lib/containers/storage/volumes``に永続ストレージを作成します。
+
+詳細については、以下を参照してください。
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+====
+
+
+[[deploy-mlm-server-mgradm]]
+== [literal]``mgradm``を使用した{productname}の配備
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-note-deploy-certs.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-note-deploy-certs.adoc[]
+endif::[]
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+.プロシージャ: [literal]``mgradm``を使用して{productname} {productnumber}を配備する
+. rootとしてログインします。
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-step-deploy-podman-certs.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-step-deploy-podman-certs.adoc[]
+endif::[]
+
++
+
+[IMPORTANT]
+====
+実行したコマンドが失敗する場合は、{productname} {productnumber}が登録済みであることを確認してください。インストール時に登録をスキップし、ここでコマンドラインから登録する必要がある場合は、次のステップに従ってレジストリにログインします。
+
+include::../../../partials/snippet-login-into-suse-registry.adoc[]
+
+入力を求められたら、{productname} {productnumber}の登録キーを使用します。
+====
+
+. 入力を求められたら、CAキー(認証局)と管理者アカウントのパスワードを入力します。
++
+
+[NOTE]
+====
+管理者アカウントのパスワードは長さ5文字以上、48文字未満である必要があります。
+====
++
+
+. btn:[Enter (入力)]を押します。
+. 管理者アカウントの電子メールアドレスを入力します。btn:[Enter (入力)]を押します。
+. 配備が完了するまで待ちます。
+. ブラウザを開き、サーバのFQDNに進みます。
+. ユーザ名(デフォルトは[literal]``admin``)と、配備プロセス中に設定したパスワードを入力します。
+
+このガイドでは、{productname} {productnumber}サーバをコンテナとして配備します。次のセクションに進み、{scclongform}と同期するために組織の資格情報を追加します。
+
+
+== {scclongform}への{productname} {productnumber}の接続
+
+このセクションでは、{webui}から{scc}と同期を取り、最初のクライアントチャンネルを追加する方法について説明します。
+
+[[proc-admin-organization-credentials]]
+.プロシージャ: 組織の資格情報の入力
+. ブラウザを開き、サーバのFQDNに進みます。
+. ユーザ名(デフォルトは[literal]``admin``)と、配備プロセス中に設定したパスワードを入力します。
+. {productname}の{webui}で、menu:管理[セットアップウィザード]を選択します。
+. ［[guimenu]``セットアップウィザード``］ページから、btn:[組織の資格情報]タブを選択します。
+. btn:[Add a new credential]（新しい資格情報の追加）をクリックします。
+. ブラウザで{scclongform}にアクセスします。
+. 左側のナビゲーションから自分の組織を選択します。
+. ページの上部から［ユーザ］タブを選択し、btn:[組織の資格情報]を選択します。
+. **ミラーリング資格情報**をメモします。
+. {productname}の{webui}に戻り［[guimenu]``ユーザ名``］と［[guimenu]``パスワード``］に入力し、btn:[保存]を押して確定します。
+
+緑色のチェックマークアイコンで資格情報を確認したら、<<proc-quickstart-first-channel-sync>>に進みます。
+
+
+[[proc-quickstart-first-channel-sync]]
+.プロシージャ: {scclongform}と同期する
+. {webui}で、menu:管理[セットアップウィザード]に移動します。
+. ［[guimenu]``セットアップウィザード``］ページから［[guimenu]``SUSE製品``］タブを選択します。以前に{scclongform}で登録したことがある場合、製品の一覧が表に入力され始めます。この操作には数分かかる場合があります。右側の［``{scclongform}から製品カタログを更新``］セクションで、操作の進行状況を監視できます。この表は、アーキテクチャ、チャンネル、状態の各情報を一覧表示します。詳細については、xref:reference:admin/setup-wizard.adoc[ウィザード]を参照してください。
++
+image::admin_suse_products.png[scaledwidth=80%]
+. 表示されている製品のリストをフィルタするには、［``製品説明でフィルタ``］および［``アーキテクチャでフィルタ``］を使用します。btn:[製品]ページに一覧表示されたチャンネルによって、クライアントのリポジトリが提供されます。
++
+
+* 各チャンネルの左側にあるチェックボックスをオンにして、チャンネルを{productname}に追加します。説明の左にある矢印をクリックして、製品を展開し、使用できるモジュールを一覧表示します。
+* ページの上部のbtn:[製品の追加]をクリックして、製品の同期を開始します。
+
+チャンネルを追加した後、{productname}は、チャンネルの同期をスケジュールします。この処理には時間がかかる場合があります。その理由は、{scclongform}にある{suse}リポジトリからサーバのローカル[path]``/var/lib/containers/storage/volumes/var-spacewalk/``ディレクトリにチャンネルソフトウェアソースを{productname}でコピーするためです。
+
+チャンネルが完全に同期されると、そのブートストラップリポジトリが自動的に生成されます。このステップは、クライアントを正常にブートストラップし、チャンネルの同期と配布がクライアント側で正常に機能していることを確認するために非常に重要です。これで、{productname}のインストールと設定、およびクライアントのブートストラップに必要なチャンネルの準備は完了です。
+
+チャンネル同期プロセスが完了したら、{productname} {productnumber}プロキシまたは他のクライアントの登録に進むことができます。
+
+詳細手順については、xref:client-configuration:registration-overview.adoc[]を参照してください。
+
+
+
+== 管理のためにコンテナに移動する
+
+コンテナ内のシェルに移動するには、コンテナホストで次のコマンドを実行します。
+----
+mgrctl term
+----

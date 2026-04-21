@@ -1,0 +1,139 @@
+[[contact-methods-saltssh]]
+= SSH Push接続メソッド
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+
+
+SSH Push ([literal]``ssh-push``)は、Saltクライアントが{productname}サーバに直接アクセスできない環境で使用されます。この環境では、DMZと呼ばれるファイアウォール保護ゾーンにクライアントはあります。内部ネットワークとの接続を開くことを認可されているシステム({productname}サーバなど)はDMZ内にはありません。
+
+SSH Pushは、{productname}からクライアントにのみトンネルを開きますが、リバースチャンネルは直接接続されます。 このようなシナリオは、どこでも機能するわけではありません。 そのため、接続メソッドとしてSSH Push (トンネル使用)も利用できます。 これにより、リバーストンネルも開くため、クライアントからサーバへの接続をブロックする可能性のあるすべてのファイアウォールを介して通信することができます。
+
+SSH Pushは、デーモンエージェントをクライアントにインストールできない場合にも使用されます。
+
+[WARNING]
+====
+SSH Pushメソッドには重大な制限があります。SSH Pushは適切にスケールせず、標準のSaltメソッド([literal]``default``)よりも多くのサーバリソースとネットワーク帯域幅を消費します。Push SSHメソッドは、大規模なセットアップ(1000クライアント以上)では一切サポートされません。
+====
+
+サーバは、SSH Pushを使用して、定期的にクライアントに接続し、チェックインし、スケジュールされたアクションおよびイベントを実行します。
+
+[IMPORTANT]
+====
+プロビジョニングモデルを使用したシステムの再インストールは、SSH Pushで管理されているクライアントでは現在サポートされていません。
+====
+
+次のイメージは、SSH Pushプロセスのパスを示しています。[systemitem]``Taskomatic``ブロックの左側のアイテムはすべて、{productname}クライアントで実行されるプロセスを表します。
+
+image::salt-ssh-contact-taigon.png[scaledwidth=80%]
+
+
+SSH Pushを使用するには、SSHデーモンがクライアントで動作していて、{productname}サーバで動作している[systemitem]``salt-api``デーモンによって接続できる必要があります。また、必須のPythonバージョンを{salt} Bundleとともにクライアントシステムに配備する必要があります。
+
+次の登録手順を開始する前に、SSH Push接続メソッドが設定された状態でアクティベーションキーを定義します。このメソッドでは、HTTPSでのサーバとの直接接続が存在する必要があります。
+
+{webui}またはAPIを使用して、これらのクライアントを{productname}サーバに登録する必要があります。次のプロシージャまたは例を参照してください。
+
+.プロシージャ: SSH Pushを使用したクライアントの登録
+. {productname}の{webui}で、menu:システム[ブートストラップ]に移動し、該当するフィールドに入力します。
+. SSH Push接続メソッドが設定された状態でアクティベーションキーを選択します。アクティベーションキーの詳細については、xref:client-configuration:activation-keys.adoc[]を参照してください。
+. ［[systemitem]``Manage System Completely via SSH``］（SSHでシステムを完全に管理する）チェックボックスにチェックを付けます。
+. btn:[ブートストラップ]をクリックして、登録を開始します。
+. menu:システム[概要]に移動して、システムが正しく登録されたことを確認します。
+
+
+
+.例: SSHでのプッシュへのAPIアクセス
+
+APIを使用して、使用する接続メソッドを管理できます。 このPythonコードの例では、接続メソッドが``ssh-push``に設定されます。
+
+有効な値は次のとおりです。
+
+* `default` (pull)
+* `ssh-push`
+* `ssh-push-tunnel`
+
+----
+client = xmlrpclib.Server(MLM_HOST + "/rpc/api", verbose=0)
+key = client.auth.login(MLM_LOGIN, MLM_PASSWORD)
+client.system.setDetails(key, 1000012345, {'contact_method' : 'ssh-push'})
+----
+
+
+== 使用可能なパラメータ
+
+
+SSH Pushを設定している場合、ホスト、アクティベーションキー、パスワードなど、システムを登録するときに使用するパラメータを変更できます。このパスワードはブートストラップでのみ使用し、どこにも保存されません。今後のSSHセッションではすべて、キー/証明書のペアで認可されます。これらのパラメータはmenu:システム[ブートストラップ]で設定されます。
+
+rootとしてではなく非特権ユーザとしてシステムにアクセスするためのsudoユーザなど、システム全体で使用される永続パラメータを設定することもできます。
+
+
+[IMPORTANT]
+====
+サーバコンテナでステップを実行する前に、[literal]``mgrctl term``を使用します。
+====
+
+.プロシージャ: 非特権SSHアクセスの設定
+. 最新の[path]``spacewalk-taskomatic``パッケージおよび[path]``spacewalk-certs-tools``パッケージが{productname}サーバにインストールされていることを確認してください。
+. それぞれのクライアントシステムで、適切な非特権ユーザを作成します。
+. 各クライアントシステムで、[filename]``sudoers``ファイルを編集します。
++
+----
+sudo visudo
+----
+. この行を[filename]``sudoers``ファイルの末尾に追加して[command]``sudo``アクセス権をユーザに付与します。 {webui}でクライアントをブートストラップしているユーザの名前で[systemitem]``<user>``を置き換えます。
++
+----
+<user>  ALL=NOPASSWD: /usr/bin/python3, /var/tmp/venv-salt-minion/bin/python
+----
++
+[NOTE]
+====
+このプロシージャによりrootアクセス権が付与されます。クライアントの登録に必要なパスワードは不要です。 クライアントは正常にインストールされると、root特権で実行されるため、アクセス権は不要です。 クライアントを正しくインストールした後、[path]``sudoers``ファイルからこの行を削除することをお勧めします。
+====
+
+. {productname}サーバコンテナ内で、[path]``/etc/rhn/rhn.conf``設定ファイルを編集して、次の行を追加または修正して、非特権ユーザ名を含めます。
++
+----
+ssh_push_sudo_user = <user>
+----
++
+. この設定パラメータを変更した後、[systemitem]``salt-secrets-config.service``、[systemitem]``tomcat.service``、[systemitem]``taskomatic.service``などのサービスを再起動する必要があります。
+ 必要なサービスすべてを対象とするには、{productname}サーバをrootとして再起動することをお勧めします。コンテナの外部、コンテナホストから、次のように入力します。
++
+----
+mgradm restart
+----
+
+
+
+== アクションの実行
+
+SSH Push機能は、taskomaticを使用し、[command]``salt-ssh``を使用してスケジュールされたアクションを実行します。taskomaticジョブは、スケジュールされたアクションを定期的に確認して実行します。SSH Push機能は、スケジュールされたアクションに基づいて、完全な[command]``salt-ssh``コールを実行します。
+
+デフォルトでは、20個のSalt SSHアクションを同時に実行できます。 同時実行できるアクションの個数を増やすことができます。そのためには、次の行を設定ファイルに追加し、``parallel_threads``の値を調整します。 問題の発生を回避するために、同時実行アクション数を低い値に保つことをお勧めします。
+
+----
+taskomatic.sshminion_action_executor.parallel_threads = <number>
+org.quartz.threadPool.threadCount = <value of parallel_threads + 20>
+----
+
+1つのクライアントで同時実行できるアクションの個数とtaskomaticで使用されるワーカスレッドの合計数が調整されます。 複数のクライアントでアクションを実行する必要がある場合、アクションは常に各クライアントで順次実行されます。
+
+クライアントがプロキシ経由で接続されている場合、プロキシの``MaxSessions``設定を調整する必要があります。 この場合、平行接続数を総クライアント数の3倍に設定します。
+
+
+
+// FIXME: 2024-01-23, ke: to be deleted?
+== 今後の機能
+
+SSH Pushでサポートされていない機能があります。これらの機能はSalt SSHクライアント上では動作しません。
+
+* OpenSCAPの監査
+* ビーコン。次の結果になります。
+** [command]``zypper``を使用してシステムのパッケージをインストールしても、パッケージ更新が呼び出されません。
+** 仮想ホストシステムがSalt SSHベースの場合、仮想ホスト関数(たとえば、ゲストへのホスト)が動作しません。
+
+詳細情報:
+
+* Salt SSH全般については、xref:specialized-guides:salt/salt-ssh.adoc[] and https://docs.saltproject.io/en/latest/topics/ssh/[]を参照してください。
+* SSHキーのローテーションについては、xref:specialized-guides:salt/salt-ssh.adoc#salt.ssh.key_rotation[]を参照してください。

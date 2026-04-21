@@ -1,0 +1,68 @@
+[[troubleshooting-iss]]
+= 서버 간 동기화 문제 해결
+:revdate: 2024-05-15
+:page-revdate: {revdate}
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+////
+Cause: Caches on the ISS slave and master can contain old or out-of-date entries.
+Consequence: Synchronizing fails, with ``ERROR: Encountered IntegrityError``.
+Fix: Delete the cache on the slave and the master
+Result: Synchronization completes successfully.
+////
+
+
+서버 간 동기화는 캐시를 사용하여 ISS 마스터 및 슬레이브를 관리합니다. 이러한 캐시에서는 잘못된 항목을 생성하는 버그가 발생하기 쉽습니다. 이 경우 캐시가 여전히 잘못된 항목을 사용하고 있기 때문에 버그를 해결하는 버전으로 업데이트한 후에도 버그가 발생할 수 있습니다. ISS의 새 버전으로 업그레이드했지만, 여전히 문제가 발생하면 모든 캐시를 제거하여 문제가 발생하는 이전 항목이 모두 제거되어야 합니다.
+
+캐시 오류는 다양한 오류와 함께 동기화 실패로 이어질 수 있지만, 오류 메시지는 일반적으로 다음과 같은 항목을 보고합니다.
+
+----
+/var/cache/rhn/satsync/*에서 satellite-sync 캐시를 제거하고 동일한 옵션으로 satellite-sync를 다시 실행합니다.
+----
+
+ISS 마스터 및 ISS 슬레이브에서 캐시를 삭제하여 이 문제를 해결할 수 있으므로 동기화가 성공적으로 완료됩니다.
+
+[IMPORTANT]
+====
+서버 컨테이너 내부의 셸에 액세스하려면 컨테이너 호스트에서 [literal]``mgrctl term``을 실행합니다.
+====
+
+
+.절차: ISS 캐싱 오류 해결
+. ISS 마스터의 명령 프롬프트에서 루트 권한으로 마스터에 대한 캐시 파일을 삭제합니다.
++
+----
+rm -rf /var/cache/rhn/xml-*
+----
+. 서비스를 다시 시작합니다.
++
+----
+rcapache2 restart
+----
+. ISS 마스터의 명령 프롬프트에서 루트 권한으로 슬레이브에 대한 캐시 파일을 삭제합니다.
++
+----
+rm -rf /var/cache/rhn/satsync/*
+----
+. 서비스를 다시 시작합니다.
++
+----
+rcapache2 restart
+----

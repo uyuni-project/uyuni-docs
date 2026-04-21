@@ -1,0 +1,349 @@
+= Distribution Upgrade and Server Migration from 5.1 to 5.2
+:revdate: 2026-02-17
+:page-revdate: {revdate}
+
+
+[IMPORTANT]
+====
+* {productname} 5.1 must be stopped before the upgrade.
+====
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-hardened-tmpdir.adoc[leveloffset=+2]
+include::installation-and-upgrade:partial$snippet-ssl-requirements.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-hardened-tmpdir.adoc[leveloffset=+2]
+include::../../../../../partials/snippet-ssl-requirements.adoc[leveloffset=+1]
+endif::[]
+
+During a migration the server SSL certificate and CA chain are copied from the source server, meaning that only the database certificates are required.
+
+
+== {sl-micro} 6.1 to {sl-micro} 6.2
+
+
+
+This document provides the tested procedure to upgrade a {sl-micro} 6.1 host deployed with {productname} 5.1 Server to {sl-micro} 6.2 and migrate to {productname} {productnumber}.
+
+
+=== Prerequisites
+
+* {productname} 5.1 is installed and running on {sl-micro} 6.1.
+* System is registered and has active subscriptions with {scc}.
+
+
+=== Distribution upgrade and server migration
+
+.Procedure: Migration from {productname} 5.1 to {productname} {productnumber}
+[role=procedure]
+____
+
+. Verify current product status.
+
++
+
+[source, console]
+----
+SUSEConnect --status-text
+----
+
++
+
+Confirm:
+
+* Base OS: `SL Micro 6.1`
+* Extension: `SUSE Multi-Linux Manager Server 5.1 Extension`
+
++
+
+. Ensure the system is updated.
+
++
+
+[source, console]
+----
+transactional-update patch
+----
+
++
+
+--
+
+* If patches were applied, stop the server and then reboot the system before proceeding to migration:
+
++
+
+[source, console]
+----
+mgradm stop
+reboot
+----
+
+* If no updates were found, you can proceed directly to the migration step.
+
+--
+
++
+
+. Start the migration.
+
++
+
+[source, console]
+----
+transactional-update migration --auto-agree-with-licenses --gpg-auto-import-keys
+----
+
++
+
+Follow the prompts and select the available migration to **SUSE Linux Micro 6.2** and **{productname} Server Extension {productnumber}**.
+
++
+
+. Stop the server and then reboot to apply changes.
+
++
+
+[source, console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. Perform post-reboot checks.
+
++
+
+Verify {productname} extension and {productname} version:
+
++
+
+[source, console]
+----
+SUSEConnect --status-text
+mgradm --version
+----
+
++
+
+Expected output:
+
+* Extension: [literal]``SUSE Multi-Linux Manager Server {productnumber} Extension``
+* Version: [literal]``mgradm version 5.2.0`` or higher
+
++
+
+. Verify PostgreSQL database version.
+
++
+
+[source, console]
+----
+podman ps
+----
+
++
+
+Expected output:
+
+* [literal]``server:5.2.0`` or higher
+* [literal]``server-postgresql:5.2.0`` or higher
+
++
+
+. Verify running containers:
+
++
+
+[source, console]
+----
+podman ps
+----
+
++
+
+You should see all the expected server containers are up and running.
+
+____
+
+
+=== Migration complete
+
+The server host system is now running {sl-micro} 6.2 with updated {productname} {productnumber} Server packages.
+
+If you have a {productname} 5.1 proxy connected to this server, proceed to the xref:installation-and-upgrade:container-deployment/mlm/migrations/proxy/proxy-mlm-51-52.adoc[Proxy Migration 5.1 > 5.2] guide to upgrade the proxy host.
+
+Validate your setup before resuming production operations.
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+
+== {sles} 15 SP7
+
+This document provides the procedure to upgrade a {sles} 15 SP7 host deployed with {productname} 5.1 Server to {productname} {productnumber}.
+
+
+=== Prerequisites
+
+* {productname} 5.1 is installed and running on {sles} 15 SP7.
+* System is registered and has active subscriptions with {scc}.
+
+
+=== Server package update and migration
+
+.Procedure: Update {productname} components on {sles} 15 SP7
+[role=procedure]
+____
+
+. Verify current product status.
+
++
+
+[source, console]
+----
+SUSEConnect --status-text
+----
+
++
+
+Confirm:
+
+* Base OS: `SUSE Linux Enterprise Server 15 SP7`
+* Extension: `SUSE Multi-Linux Manager Server 5.1 Extension`
+
++
+
+. Ensure the system is updated.
+
++
+
+[source, console]
+----
+zypper patch
+----
+
++
+
+If patches were applied, stop the server and then reboot before proceeding:
+
++
+
+[source, console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. Perform the migration to {productname} {productnumber}.
+
++
+
+[source, console]
+----
+zypper migration
+----
+
++
+
+Select to migrate to:
+
+* `{productname} Server Extension {productnumber}`
+
++
+
+. Stop the server and reboot.
+
++
+
+[source, console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. Perform post-reboot checks.
+
++
+
+Verify {productname} extension:
+
++
+
+[source, console]
+----
+SUSEConnect --status-text
+----
+
++
+
+Expected output:
+
+* Extension: [literal]``SUSE Multi-Linux Manager Server {productnumber} Extension``
+
++
+
+. Verify {productname} version.
+
++
+
+[source, console]
+----
+mgradm --version
+----
+
++
+
+Expected output:
+
+* Version: [literal]``mgradm version 5.2.0`` or higher
+
++
+
+. Verify containers:
+
++
+
+[source, console]
+----
+podman ps
+----
+
++
+
+Expected output:
+
+* [literal]``server:5.2.0`` or higher
+* [literal]``server-postgresql:5.2.0`` or higher
+
+____
+
+
+=== Migration complete
+
+The server host system is now running {sles} 15 SP7 with updated {productname} {productnumber} Server packages.
+
+If you have a {productname} 5.1 proxy connected to this server, proceed to the xref:installation-and-upgrade:container-deployment/mlm/migrations/proxy/proxy-mlm-51-52.adoc[Proxy Migration 5.1 > 5.2] guide to upgrade the proxy host.
+
+Validate your setup before resuming production operations.
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]

@@ -1,0 +1,64 @@
+[[ssl-certs]]
+= SSL 证书
+:revdate: 2025-05-08
+:page-revdate: {revdate}
+
+{productname} 使用 SSL 证书来确保客户端注册到正确的服务器。
+
+每个使用 SSL 注册到 {productname} Server 的客户端将通过验证服务器证书来检查它是否连接到正确的服务器。此过程称为 SSL 握手。
+
+在 SSL 握手期间，客户端将检查服务器证书中的主机名是否与预期相符。客户端还需要检查服务器证书是否受信任。
+
+//Every {productname} Server that uses SSL requires an SSL server certificate.
+//Provide the path to the server certificate using the ``SERVER_CERT`` environment variable during setup, or with the ``--from-server-cert`` option of the [command]``rhn-ssl-tool`` command.
+
+证书颁发机构 (CA) 是用于为其他证书签名的证书。所有证书必须由证书颁发机构 (CA) 签名，只有这样，才会将它们视为有效，并且客户端才能成功地匹配它们。
+
+//When an organization signs its own certificate, the certificate is considered self-signed.
+//A self-signed certificate is straight-forward to set up, and does not cost any money, but they are considered less secure.
+//If you are using a self-signed certificate, you have a root CA that is signed with itself.
+//When you look at the details of a root CA, you can see that the subject has the same value as the issuer.
+//Provide the path to your root CA certificate using the ``CA_CERT`` environment variable during setup, or with the ``--ca-cert`` option of the [command]``rhn-ssl-tool`` command.
+
+为使 SSL 身份验证能够正常进行，客户端必须信任根 CA。这意味着必须在每个客户端上安装根 CA。
+
+默认的 SSL 身份验证方法是让 {productname} 使用自我签名证书。在这种情况下，{productname} 已生成所有证书，并且根 CA 已直接为服务器证书签名。
+
+另一种方法是使用中间 CA。在这种情况下，根 CA 为中间 CA 签名。然后中间 CA 可为任意数量的其他中间 CA 签名，而最后一个中间 CA 为服务器证书签名。这称为链式证书。
+
+如果您在链式证书中使用中间 CA，则根 CA 将安装在客户端上，而服务器证书则安装在服务器上。在 SSL 握手期间，客户端必须能够校验根 CA 与服务器证书之间的整个中间证书链，因此它们必须能够访问所有中间证书。
+
+可以通过两种主要方式实现此目的。在较旧版本的 {productname} 中，所有中间 CA 默认都安装在客户端上。不过，您也可以在服务器上配置服务以将其提供给客户端。在这种情况下，在 SSL 握手期间，服务器会提供服务器证书以及所有中间 CA。此机制现已用作默认配置。
+
+//Whichever method you choose, you must ensure that the ``CA_CERT`` environment variable points to the root CA, and all intermediate CAs.
+//It should not contain the server certificate.
+//The server certificate must be defined at the ``SERVER_CERT`` environment variable.
+
+{productname} 默认使用没有中间 CA 的自我签名证书。为了提高安全性，您可以安排一个第三方 CA 来为您的证书签名。第三方 CA 执行检查以确保证书中包含的信息正确。他们通常针对此项服务收取年费。使用第三方 CA 可以提高证书的伪造难度，并为安装提供附加的保护。如果您的证书已由第三方 CA 签名，您可以将其导入 {productname} 安装中。
+
+本手册分 2 步介绍 SSL 证书的用法：
+
+1. 如何使用 {productname} 工具创建自我签名证书
+2. 如何在 {productname} Server 或 Proxy 上部署证书
+
+如果证书由第三方实例（例如自有或外部的 PKI）提供，则可以跳过步骤 1。
+
+* 有关如何创建自我签名证书的详细信息，请参见 xref:administration:ssl-certs-selfsigned.adoc[]。
+* 有关如何导入证书的详细信息，请参见 xref:administration:ssl-certs-imported.adoc[]。
+
+== 为 {productname} 容器提供 SSL 证书
+
+
+=== Podman
+
+SSL 证书以 Podman 机密的形式存储并会分配给相应容器。Podman SSL 机密包括：
+
+* CA 证书
+  - uyuni-ca
+  - uyuni-db-ca
+* 服务器证书和密钥
+  - uyuni-cert
+  - uyuni-key
+* 数据库证书和密钥
+  - uyuni-db-cert
+  - uyuni-db-key

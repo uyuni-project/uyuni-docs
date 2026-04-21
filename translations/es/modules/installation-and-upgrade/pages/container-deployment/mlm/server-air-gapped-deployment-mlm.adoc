@@ -1,0 +1,149 @@
+= {productname} Server Air-gapped Deployment
+:revdate: 2025-05-14
+:page-revdate: {revdate}
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+== What is Air-gapped deployment?
+
+
+Air-gapped deployment refers to the setup and operation of any networked system that is physically isolated from insecure networks, especially the internet. This type of deployment is commonly used in high-security environments such as military installations, financial systems, critical infrastructure, and anywhere sensitive data is handled and must be protected from external threats.
+
+
+
+== Deployments
+
+{productname} supports two deployment variants.
+
+
+=== Deploy with Virtual Machine
+
+The recommended installation method is using the provided {productname} Virtual Machine Image option, since all the needed tools and container images are pre-loaded and will work out of the box.
+
+For more information about installing {productname} Server Virtual Machine, see xref:container-deployment/mlm/server-deployment-vm-mlm.adoc[Deploy Server as a Virtual Machine].
+
+To upgrade {productname} Server, users should upgrade all packages in the system and follow the procedures defined in xref:container-management/updating-server-containers.adoc[Server Upgrade].
+
+
+=== Deploy {productname} on {sl-micro}
+
+{productname} also provides all the needed container images in RPM's that can be installed on the system.
+
+[NOTE]
+====
+User should make the needed RPM available on the internal network. That can be done by using a second {productname} Server or an RMT server.
+====
+
+.Procedure: Install {productname} on {sl-micro} in air-gapped deployment
+[role=procedure]
+____
+. Install {sl-micro}.
+
+. Update the system.
+
+. Install tools packages and image packages (replace $ARCH$ with the correct architecture).
+
++
+
+[source, shell]
+----
+transactional-update pkg install mgradm* mgrctl* suse-multi-linux-manager-5.1-$ARCH$-server-*
+----
+
++
+
+. Reboot.
+
+. Deploy {productname} with [command]``mgradm``.
+
+____
+
+For more detailed information about installing {productname} Server on {sl-micro}, see xref:container-deployment/mlm/server-deployment-mlm.adoc[Deploy Server as a Virtual Machine].
+
+To upgrade {productname} Server, users should upgrade all packages in the system and follow the procedures defined in xref:container-management/updating-server-containers.adoc[Server Upgrade].
+
+
+== PTFs
+
+The PTF images are not available as packages. This means that they should be pulled using [command]``podman`` on a machine with internet access, then saved in an archive, transferred to the air-gapped machine and loaded there.
+
+.Procedure: Pulling the image on a machine with internet access
+[role=procedure]
+____
+. Install [command]``podman``.
+
+. Authenticate against the {suse} Registry using the SCC credentials:
+
++
+
+include::../../../partials/snippet-login-into-suse-registry.adoc[]
+
++
+
+. Run the following commands in a shell.
+
++
+
+[NOTE]
+====
+This example assumes that the PTF is for the [path]``server`` image, adjust the example if the PTF concerns another image.
+====
+
++
+
+[source, shell]
+----
+SCC_USERID=aXXXX
+PTFID=12345
+echo "registry.suse.com/a/$SCC_USERID/$PTFID/suse/multi-linux-manager/5.1/x86_64/server:latest-ptf-$PTFID" >>/tmp/ptf-images
+----
+
+
+. Verify that the file contains the full path to the PTF image. If needed, other images full paths can be added to the file, one per line.
+
+. Pull each of the container images of the PTF and save them in a tar archive by running the following commands.
+
++
+
+[source, shell]
+----
+for image in `cat /tmp/ptf-images`; do
+    podman pull $image
+done
+podman save -o /tmp/ptf-images.tar $(cat /tmp/ptf-images)
+----
+. Transfer the [path]``/tmp/ptf-images.tar`` images archive on the server to patch.
+
+____
+
+.Procedure: Loading the images on the server to patch
+[role=procedure]
+____
+. Ensure the [path]``ptf-images.tar`` file is available on the server.
+
+. Load the images from the archive:
+
++
+
+[source, shell]
+----
+podman load -i ptf-images.tar
+----
+
++
+
+. Install the PTF as it would be done on a connected machine, using command:
+
++
+
+[shell, source]
+----
+mgradm support ptf podman [--test|--ptf] NUMBER --user SCC_ACCOUNT
+----
+
++
+
+Because the images are already loaded they will not be pulled.
+____

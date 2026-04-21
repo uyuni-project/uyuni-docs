@@ -1,0 +1,130 @@
+[[confidential_computing]]
+= 机密计算
+:revdate: 2025-07-17
+:page-revdate: {revdate}
+
+借助{CoCo}技术，可以使用基于硬件的可信执行环境 (TEE) 来保护使用中的数据，这种环境提供更高的安全级别来确保数据完整性、数据机密性和代码完整性。
+
+
+== {productname} 的{CoCo}
+
+
+TEE 的可信度已通过认证流程进行检查。{productname} 可用作其中已注册系统的认证服务器。它会针对此模式下运行的系统生成报告页面。需要定期对这些系统进行认证和检查。还可以存储并按请求提供以往的检查历史记录。
+
+{CoCo}认证取决于所用的硬件以及要认证的系统运行所在的环境。
+
+[IMPORTANT]
+====
+{CoCo}认证仅适用于 x86_64 体系结构。
+====
+
+
+
+== 要求
+
+可以在具有以下特征的环境中设置{CoCo}：
+
+* 要认证的系统（虚拟机）为 SLES15 SP6 并且已引导至 {productname}
+* 硬件必须搭载 [literal]``AMD EPYC Milan CPU`` 或 [literal]``AMD EPYC Genoa CPU``
+* 必须将 BIOS 配置为允许{CoCo}认证
+* 主机操作系统和虚拟化软件（KVM 和 libvirt）必须支持{CoCo}。
+
+
+== 限制
+
+* SLES15 SP6 以技术预览的形式提供{CoCo}认证。
+* {productname} 以技术预览的形式提供{CoCo}认证。
+* 安全引导已经认证。但是，KVM 安全引导和 SNP Guest 目前无法一起运行。
+
+
+== 使用 {productname} 中的{CoCo}
+
+[IMPORTANT]
+====
+有关在主机上设置和配置{CoCo}的具体步骤，请参见操作系统供应商文档。
+====
+
+.过程：在安装 {productname} 期间启用认证容器
+[role=procedure]
+. 在使用 [literal]``mgradm install podman`` 安装 {productname} 期间启用认证容器。
+. 将以下内容添加到 [literal]``mgradm.yaml`` 文件中。
+//I need full path to this file.
++
+----
+coco:
+    replicas: 1
+----
+
+
+.过程：在安装 {productname} 之后启用认证容器
+[role=procedure]
+. 要在安装后启用认证容器，请使用命令行参数 [literal]``mgradm``。
+. 运行命令
++
+----
+mgradm scale uyuni-server-attestation --replicas 1
+----
+// (PLACEHOLDER): In the future instead of number 1, it should be possible to allow more then one container replica.
+
+
+.过程：在安装 {productname} 后禁用认证容器
+[role=procedure]
+. 要禁用已启用的认证容器，请运行以下命令：
++
+----
+mgradm scale uyuni-server-attestation --replicas 0
+----
+
+
+.过程：启用认证
+[role=procedure]
+. 对于选定的系统，转到选项卡menu:审计[机密计算 > 设置]。
+. 通过选择切换按钮来启用认证。
+. 在字段[literal]``环境类型``中，从下拉列表中选择正确的选项。
+//. (PLACEHOLDER) Enable the automatic attestaion at reboot by selecting the toggle button [literal]``Execution``.
+. 单击 btn:[保存] 按钮保存更改。
+
+.过程：安排新认证
+[role=procedure]
+. 对于选定的系统，转到选项卡menu:审计[机密计算 > 列出认证]。
+. 单击 btn:[安排认证]。此时会打开新窗体。
+. 在字段[literal]``最早``中选择运行认证的时间。
+. 如果需要，可以通过选择[literal]``添加到``选项将新建的认证添加到操作链中。
+. 单击 btn:[日程安排] 保存新认证并安排其执行。
+
+.过程：从“系统细节”界面查看认证报告
+[role=procedure]
+. 对于选定的系统，转到选项卡menu:审计[机密计算 > 列出认证]。
+. 查找并选择要查看的报告。
+. 单击所选的认证报告后，[literal]``概览``选项卡即会打开。
+. 转到下一个选项卡 [literal]``SEV-SNP``。
+. 最后，转到下一个选项卡[literal]``安全引导``。
+
+
+.过程：从“审计”界面查看认证报告
+[role=procedure]
+. 从导航栏中选择menu:审计[机密计算]。
+. 所有认证的列表将显示在主面板中。
++
+. 查找并选择要查看的报告。
+
+
+
+=== 报告状态
+
+认证报告处于下列状态之一：
+
+待处理::
+这是已安排的认证的默认状态。报告仍不可用，原因是认证过程尚未开始或完成。
+
+成功::
+当安排的认证创建可查看的报告时，过程状态将变为[literal]``成功``。
+
+失败::
+当安排的认证失败并且因此未创建报告时，过程状态将变为[literal]``失败``。
+
+
+
+== 相关主题
+
+有关 {CoCo} 的详细信息，请参见link:https://www.fortanix.com/platform/confidential-computing-manager/what-is-confidential-computing[此处]。

@@ -1,0 +1,139 @@
+[[contact-methods-saltssh]]
+= SSH Push Contact Method
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+
+
+SSH Push ([literal]``ssh-push``) is used in environments where Salt clients cannot reach the {productname} Server directly. In this environment, clients are located in a firewall-protected zone called a DMZ. No system within the DMZ is authorized to open a connection to the internal network where the {productname} Server is located.
+
+SSH Push opens a tunnel only from {productname} to the client, but the reverse channel goes directly. Such a scenario might not work everywhere. Therefore also SSH Push (with tunnel) is available as contact method. That also opens a reverse tunnel and thus you can communicate through all firewalls which otherwise might block the connection from client to server.
+
+SSH Push is also to use if installing a daemon agent on clients is not possible.
+
+[WARNING]
+====
+The SSH Push method has serious limitations. It does not scale well, and consumes more Server resources and network bandwidth than the plain Salt method ([literal]``default``). The Push SSH method is not at all supported with large setups (1000 clients and more).
+====
+
+The server uses the SSH Push to contact the clients at regular intervals, checking in and performing scheduled actions and events.
+
+[IMPORTANT]
+====
+Re-installing systems using the provisioning model is not currently supported on clients managed with SSH Push.
+====
+
+This image demonstrates the SSH Push process path. All items left of the [systemitem]``Taskomatic`` block represent processes running on the {productname} client.
+
+image::salt-ssh-contact-taigon.png[scaledwidth=80%]
+
+
+To use SSH Push, you must have the SSH daemon running on the client, and reachable by the [systemitem]``salt-api`` daemon running on the {productname} Server. Additionally, the required Python version will be deployed with the {salt} Bundle on the client system.
+
+Before beginning with the following registering procedure, define an activation key with the SSH Push contact method configured. This method expects that there is a direct connection with HTTPS to the Server.
+
+You need to use the {webui} or API to register these clients with the {productname} Server. See the following procedure or example.
+
+.Procedure: Registering Clients With SSH Push
+. In the {productname} {webui}, navigate to menu:Systems[Bootstrapping] and complete the appropriate fields.
+. Select an activation key with the SSH Push contact method configured. For more information about activation keys, see xref:client-configuration:activation-keys.adoc[].
+. Check the [systemitem]``Manage system completely via SSH`` checkbox.
+. Click btn:[Bootstrap] to begin registration.
+. Confirm that the system has been registered correctly by navigating to menu:Systems[Overview].
+
+
+
+.Example: API Access to Push via SSH
+
+You can use the API to manage which contact method to use. This example Python code sets the contact method to ``ssh-push``.
+
+Valid values are:
+
+* `default` (pull)
+* `ssh-push`
+* `ssh-push-tunnel`
+
+----
+client = xmlrpclib.Server(MLM_HOST + "/rpc/api", verbose=0)
+key = client.auth.login(MLM_LOGIN, MLM_PASSWORD)
+client.system.setDetails(key, 1000012345, {'contact_method' : 'ssh-push'})
+----
+
+
+== Available Parameters
+
+
+When you are configuring SSH Push, you can modify parameters that are used when a system is registered, including the host, activation key, and password. The password is used only for bootstrapping, it is not saved anywhere. All future SSH sessions are authorized via a key/certificate pair. These parameters are configured in menu:Systems[Bootstrapping].
+
+You can also configure persistent parameters that are used system-wide, including the sudo user to access the system as an unprivileged user instead of as root.
+
+
+[IMPORTANT]
+====
+Use [literal]``mgrctl term`` before running steps inside the server container.
+====
+
+.Procedure: Configuring Unprivileged SSH Access
+. Ensure you have the latest [path]``spacewalk-taskomatic`` and [path]``spacewalk-certs-tools`` packages installed on the {productname} Server.
+. On each client system, create an appropriate unprivileged user.
+. On each client system, edit the [filename]``sudoers`` file:
++
+----
+sudo visudo
+----
+. Grant [command]``sudo`` access to the user by adding this line at the end of the [filename]``sudoers`` file. Replace [systemitem]``<user>`` with the name of the user that is bootstrapping the client in the {webui}:
++
+----
+<user>  ALL=NOPASSWD: /usr/bin/python3, /var/tmp/venv-salt-minion/bin/python
+----
++
+[NOTE]
+====
+This procedure grants root access without requiring a password, which is required for registering the client. When the client is successfully installed it runs with root privileges, so the access is no longer required. We recommend that you remove the line from the [path]``sudoers`` file after the client has been successfully installed.
+====
+
+. Inside the {productname} Server container, edit the [path]``/etc/rhn/rhn.conf`` configuration file, and add or amend this line to include the unprivileged username:
++
+----
+ssh_push_sudo_user = <user>
+----
++
+. After changing this configuration parameter you must restart services such as [systemitem]``salt-secrets-config.service``, [systemitem]``tomcat.service``, and [systemitem]``taskomatic.service``.
+ To cover all needed services, it is the best to restart the {productname} Server as root. Outside of the container, from the container host, enter:
++
+----
+mgradm restart
+----
+
+
+
+== Action Execution
+
+The SSH Push feature uses taskomatic to execute scheduled actions using [command]``salt-ssh``. The taskomatic job periodically checks for scheduled actions and executes them. The SSH Push feature executes a complete [command]``salt-ssh`` call based on the scheduled action.
+
+By default, twenty Salt SSH actions can be executed at a time. You can increase the number of actions that can be executed in parallel, by adding these lines to your configuration file, and adjusting the value of ``parallel_threads`` upwards. We recommend you keep the number of parallel actions low, to avoid problems:
+
+----
+taskomatic.sshminion_action_executor.parallel_threads = <number>
+org.quartz.threadPool.threadCount = <value of parallel_threads + 20>
+----
+
+This adjusts the number of actions that can run in parallel on any one client and the total number of worker threads used by taskomatic. If actions needs to be run on multiple clients, actions are always executed sequentially on each client.
+
+If the clients are connected through a proxy, you need to adjust the ``MaxSessions`` settings on the proxy. In this case, set the number of parallel connections to be three times the total number of clients.
+
+
+
+// FIXME: 2024-01-23, ke: to be deleted?
+== Future Features
+
+There are some features that are not yet supported on SSH Push. These features do not work on Salt SSH clients:
+
+* OpenSCAP auditing
+* Beacons, resulting in:
+** Installing a package on a system using [command]``zypper`` does not invoke the package refresh.
+** Virtual Host functions (for example, a host to guests) does not work if the virtual host system is Salt SSH-based.
+
+For more information:
+
+* about Salt SSH in general, see xref:specialized-guides:salt/salt-ssh.adoc[] and https://docs.saltproject.io/en/latest/topics/ssh/.
+* about SSH key rotation, see xref:specialized-guides:salt/salt-ssh.adoc#salt.ssh.key_rotation[].

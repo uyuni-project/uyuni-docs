@@ -1,0 +1,319 @@
+[[backup-restore]]
+= 백업 및 복구
+:revdate: 2025-06-23
+:page-revdate: {revdate}
+
+이 장에는 백업해야 할 파일에 대한 정보가 포함되어 있습니다. 기본 제공 백업 및 복원 솔루션([command]``mgradm backup``)을 사용하여 {productname}의 백업을 생성하십시오. 이 장은 시스템 장애 발생 시 백업에서 복원하는 방법에 대한 정보로 마무리됩니다.
+
+{productname}에서는 설치된 프로그램 및 구성뿐만 아니라 데이터베이스를 활용하므로 설치의 모든 구성 요소를 백업하는 것이 중요합니다. 데이터 손실을 방지하고 빠르게 복구할 수 있도록 {productname} 설치를 정기적으로 백업하십시오.
+
+[IMPORTANT]
+====
+백업 방법과 관계없이 현재 설치 작업 중 사용하는 공간의 세 배 이상을 사용할 수 있어야 합니다. 공간이 부족하면 백업이 실패할 수 있으므로 수시로 확인하십시오.
+====
+
+
+
+[[backup-restore-old]]
+== smdba를 사용하여 기존 방법 비활성화
+
+
+
+{productname} {productnumber} 제품을 처음부터 설치했다면 이 섹션을 건너뛰십시오.
+
+[NOTE]
+====
+기본 제공 솔루션이 도입되어 [command]``smdba`` 백업 도구를 사용하는 기존 방식은 더 이상 사용되지 않습니다. [command]``smdba``를 사용하던 기존 시스템에서 새 솔루션으로 마이그레이션한 경우, 기존 기능을 비활성화하고 기존 백업 아카이브를 제거해야 합니다.
+====
+
+[command]``smdba``를 비활성한 후에 마이그레이션(권장)하거나, 마이그레이션된 {productname} {productnumber} 시스템에서 나중에 비활성화하십시오.
+
+
+.절차: 마이그레이션 이전에 설치된 smdba를 사용한 기존 방법 비활성화
+[role=procedure]
+____
+
+이 절차는 smdba가 아직 설치된 상태에서만 작동합니다.
+
+ifeval::[{mlm-content} == true]
+
+SUSE Manager 4.3(비컨테이너화 설치) 또는 SUSE Manager 5.0(컨테이너화 설치)에서는 명령이 다릅니다(따라서 5.0 또는 마이그레이션 이전에 4.3 사용).
+
+SUSE Manager 4.3::
+명령줄에서 루트 권한으로 다음을 실행합니다.
+
+[source, shell]
+----
+smdba backup-hot --enable=off
+----
+
+SUSE Manager 5.0::
+컨테이너 호스트의 명령줄에서 루트 권한으로 다음을 실행합니다.
+
+[source, shell]
+----
+mgrctl exec -- smdba backup-hot --enable=off
+----
+
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+. 컨테이너 호스트의 명령줄에서 루트 권한으로 다음을 실행합니다.
++
+[source, shell]
+----
+mgrctl exec -- smdba backup-hot --enable=off
+----
+
+endif::[]
+
+
+이 작업을 수행하면 [path]``/var/lib/pgsql/data/postgresql.conf`` 내의 [option]``archive_command``가 다음과 같이 변경됩니다.
+
+----
+archive_command = '/bin/true'
+----
+
+____
+
+이제 기존 시스템을 {productname} {productnumber}(으)로 마이그레이션할 준비가 되었습니다.
+
+
+.절차: 마이그레이션 후 {productname} {productnumber}에서 기존 방법 비활성화
+[role=procedure]
+____
+이 절차는 마이그레이션 후 smdba를 더 이상 사용할 수 없는 경우에 사용하십시오.
+
+. 컨테이너 호스트에서 루트 권한으로 [path]``/var/lib/containers/storage/volumes/var-pgsql/_data/postgresql.conf`` 파일을 편집하고 다음 옵션을 설정합니다.
++
+----
+archive_mode = off
+archive_command = '/bin/true'
+----
+
+. 컨테이너를 재시작합니다.
++
+[source, shell]
+----
+mgradm restart
+----
+____
+
+
+
+[[backup-product]]
+== {productname} 백업
+
+
+{productname} 설치를 가장 포괄적으로 백업하는 방법은 [command]``mgradm backup create`` 명령을 사용하는 것입니다. 이 방법을 사용하면 백업 관리 시간을 절약할 수 있으며 오류가 발생한 경우 더 빠르게 다시 설치 및 동기화할 수 있습니다. 그러나 이 방법은 상당히 큰 규모의 디스크 공간이 필요하고 백업을 수행하는 데 시간이 오래 걸릴 수 있습니다.
+
+[command]``mgradm backup create`` 명령은 디렉토리에 백업을 수행합니다. 이 디렉토리는 로컬 저장소 또는 마운트된 원격 저장소일 수 있습니다.
+
+[command]``mgradm backup create`` 명령을 사용하면 백업 내용을 다양하게 사용자 정의할 수 있습니다. 사용 가능한 모든 옵션은 [command]``mgradm backup create --help``를 참조하십시오.
+
+
+=== {productname} 전체 백업
+
+{productname}의 전체 백업은 다음 구성 요소를 백업하는 것으로 구성됩니다.
+
+- {productname} 볼륨
+- 데이터베이스 볼륨
+- podman 네트워크 구성
+- podman 비밀
+- {productname} systemd 서비스
+- {productname} 컨테이너 이미지
+
+[WARNING]
+====
+{productname} 서비스는 전체 백업을 생성하는 데 소요되는 시간 동안 자동으로 중지됩니다. 다운타임이 상당할 수 있습니다. 백업이 완료되면 서비스가 자동으로 다시 시작됩니다.
+====
+
+.절차: [command]``mgradm backup create``로 전체 백업 만들기
+[role=procedure]
+____
+. 컨테이너 호스트에서 루트 권한으로 다음을 통해 백업:
+
++
+
+[source, shell]
+----
+mgradm backup create $path
+----
+
++
+
+[literal]``$path``를 백업 위치의 경로로 바꿉니다.
+____
+
+=== {productname} 부분 백업
+
+[command]``mgradm backup create`` 도구를 사용하면 부분 백업을 생성할 수 있습니다. 개별 볼륨 또는 전체 볼륨을 건너뛰고, 데이터베이스 백업 및 이미지를 건너뛸 수 있습니다.
+
+특히 데이터베이스 백업을 건너뛰는 경우 백업은 {productname} 서비스를 중단하지 않고 생성되며, 2단계 백업 절차 중 1단계로 작동할 수 있습니다.
+
+[WARNING]
+====
+부분 백업은 데이터의 일부만을 고려하며, 백업되지 않았을 수 있는 다른 부분과의 잠재적인 종속성을 고려하지 않습니다. 따라서 백업/복원의 일관성을 보장할 수 없습니다.
+====
+
+.절차: 데이터베이스 백업을 건너뛰어 부분 백업 만들기
+[role=procedure]
+____
+. 컨테이너 호스트에서 루트 권한으로 다음을 통해 백업:
+
++
+[source, shell]
+----
+mgradm backup create --skipdatabase $path
+----
++
+[literal]``$path``를 백업 위치의 경로로 바꿉니다.
+____
+
+.절차: 볼륨을 건너뛰어 부분 백업 만들기
+[role=procedure]
+____
+. 컨테이너 호스트에서 루트 권한으로 다음을 통해 백업:
+
++
+
+[source, shell]
+
+----
+mgradm backup create --skipvolumes $volumes $path
+----
+
++
+
+[literal]``$path``를 백업 위치의 경로로 바꿉니다.
+
++
+
+[literal]``$volumes``을 백업에서 제외할 볼륨 이름의 이름 또는 포함시킬 쉼표로 구분된 볼륨 목록으로 바꿉니다.
+
++
+
+데이터베이스 볼륨을 제외한 모든 볼륨을 건너뛰려면 [literal]``all``을 사용합니다.
+____
+
+
+=== 추가 볼륨 백업
+
+[command]``mgradm backup`` 명령은 {productname} 볼륨의 내부 목록을 사용합니다. 설치 중에 추가 볼륨을 구성했거나 백업에 추가 볼륨을 추가해야 하는 경우, [command]``--extravolumes $volumes``를 사용하여 볼륨을 지정해야 합니다.
+
+.절차: 추가 사용자 지정 볼륨으로 백업 만들기
+[role=procedure]
+____
+. 컨테이너 호스트에서 루트 권한으로 다음을 통해 백업:
+
++
+
+[source, shell]
+----
+mgradm backup create --extravolumes $volume $path
+----
+
++
+
+[literal]``$path``를 백업 위치의 경로로 바꿉니다.
+
++
+
+[literal]``$volumes``를 백업에 포함시킬 볼륨 이름의 이름으로 바꾸거나 포함시킬 쉼표로 구분된 볼륨 목록으로 바꿉니다.
+
+____
+
+
+=== 수동 데이터베이스 백업 수행
+
+.절차: 수동 데이터베이스 백업 수행
+[role=procedure]
+____
+. 백업에 사용할 영구 저장소 공간을 할당합니다.
+
+. {productname} 컨테이너 호스트의 명령 프롬프트에서 루트 권한으로 다음을 사용:
+
++
+
+[source, shell]
+----
+mgradm backup create --skipvolumes all --skipconfig --skipimages $path
+----
+____
+
+
+[[restore-product]]
+== 기존 백업에서 {productname} 복원
+
+기존 백업에서 {productname}을(를) 복원하면 복원할 볼륨, 이미지, 구성에 대한 백업이 열거됩니다. 백업 생성의 경우와 달리 복원 작업에서는 내부 볼륨 목록을 사용하지 않고, 백업에 있는 모든 볼륨 또는 이미지를 자동으로 감지합니다.
+
+복원할 항목 목록이 수집된 후에는 존재 여부 및 무결성 검사가 수행됩니다. 존재 여부 검사는 백업 복원이 실수로 기존 볼륨, 이미지 또는 구성을 덮어쓰지 않도록 보장합니다. 무결성 검사는 백업 항목 체크섬을 계산하여 수행됩니다.
+
+두 검사가 모두 성공하면 실제 백업 복원이 수행됩니다.
+
+[IMPORTANT]
+====
+{productname} 서비스는 백업 복원이 완료된 후에 자동으로 시작되지 않습니다.
+====
+
+.절차: 기존 백업에서 복원
+[role=procedure]
+____
+. 컨테이너 호스트에서 루트 권한으로 다음을 사용하여 {productname} 서버 다시 배포:
+
++
+
+[source, shell]
+----
+mgradm stop
+mgradm backup restore $path
+mgradm start
+----
+
++
+
+[literal]``$path``를 백업 위치의 경로로 바꿉니다.
+____
+
+백업 확인은 시간이 오래 소요되는 작업일 수 있습니다. 다른 방법으로 백업 무결성이 보장되는 경우에는 [command]``--skipverify`` 옵션을 사용하여 확인을 건너뛸 수 있습니다.
+
+어떤 이유로 백업에서 볼륨 복원을 건너뛰어야 하는 경우, [command]``--skipvolumes $volumes`` 옵션을 사용하면 됩니다.
+
+
+
+=== 백업 복원 이후의 권장 단계
+
+.절차: {productname} 복원 이후의 권장 단계
+[role=procedure]
+____
+
+. {productname} {webui}를 사용하거나 컨테이너의 명령 프롬프트에서 [command]``mgr-sync`` 도구를 사용하여 {productname} 리포지토리를 다시 동기화하십시오. 제품을 다시 등록하거나 등록 및 SSL 인증서 생성 섹션을 건너뛸 수 있습니다.
+
+. On the container host, check whether you need to restore [path]``/var/lib/containers/storage/volumes/var-spacewalk/_data/packages/``. If [path]``/var/lib/containers/storage/volumes/var-spacewalk/_data/packages/`` was not in your backup, you need to restore it. If the source repository is available, you can restore [path]``/var/lib/containers/storage/volumes/var-spacewalk/_data/packages/`u with a complete channel synchronization:
+
++
+
+[source, shell]
+----
+mgrctl exec -ti -- mgr-sync refresh --refresh-channels
+----
+
+. [command]``rhn-search`` 서비스가 다음에 시작될 때 검색 인덱스의 재생성을 예약하십시오.
+
++
+
+이 명령어는 디버그 메시지만 생성하며, 오류 메시지는 생성하지 않습니다.
+
++
+
+컨테이너 호스트에서 다음을 입력합니다.
+
++
+
+[source, shell]
+----
+mgrctl exec -ti -- rhn-search cleanindex
+----
+
+____

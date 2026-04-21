@@ -1,0 +1,473 @@
+= 将代理从 5.0 迁移到 5.1
+:revdate: 2025-10-19
+:page-revdate: {revdate}
+
+== 简介
+
+
+本文提供了经过测试和验证的步骤，专门针对部署了 **{productname} 代理 5.0** 的系统，在 **{productname}** 管理的环境中迁移**主机操作系统**和**代理扩展**。
+
+涵盖的升级场景包括：
+
+* 从 **SUSE Linux Enterprise Micro (SLE Micro) 5.5** 迁移到 **SLE Micro 6.1**
+* 从 **SUSE Linux Enterprise Server (SLES) 15 SP6** 迁移到 **SLES 15 SP7**
+* 将 **{productname} 代理扩展**从 **5.0 版本**升级到 **{productnumber} 版本**
+
+[IMPORTANT]
+====
+在迁移代理前，需要先将 SUSE Manager 5.0 服务器迁移至 {productname} {productnumber}。
+====
+
+
+== 从 {sle-micro} 5.5 迁移到 {sl-micro} 6.1
+
+本节提供了经过测试的步骤，用于将部署了 {productname} 5.0 代理的 {sle-micro} 5.5 主机升级到部署了 {productname} {productnumber} 代理的 {sl-micro} 6.1。
+
+
+=== 先决条件
+
+* {productname} 5.0 代理已在 {sle-micro} 5.5 上安装并运行。
+* 已在 {productname} 服务器中注册代理系统。
+
+
+=== 发行套件升级和代理迁移
+
+.过程：将 {productname} 5.0 代理迁移到 {productname} {productnumber} 代理
+[role=procedure]
+____
+
+. 校验系统和 {productname} 工具版本。
+
++
+
+[source, console]
+----
+cat /etc/os-release
+mgrpxy --version
+----
+
++
+
+确认以下信息：
+
+* 操作系统：[literal]``SLE Micro 5.5``
+* 工具版本：[literal]``mgrpxy version 0.1.29`` 或更高版本
+
++
+
+. 检查正在运行的容器。
+
++
+
+[source, console]
+----
+podman ps
+----
+
++
+
+确保以下容器正在运行：
+
+- `proxy-squid`
+- `proxy-ssh`
+- `proxy-httpd`
+- `proxy-tftpd`
+- `proxy-salt-broker`
+
++
+
+. 在 {productname} 服务器中同步新代理产品。有关详细信息，请参见 xref:client-configuration:products.adoc[]。
+
++
+
+使用 Web UI 进行同步：
+
+* [literal]``SUSE Linux Micro 6.1``
+* [literal]``{productname} Proxy Extension {productnumber}``
+
++
+
+. 执行代理产品迁移。有关详细信息，请参见 xref:client-configuration:client-upgrades-product-migration.adoc[]。
+
++
+
+导航至代理系统，选择menu:系统[概览] > menu:软件[产品迁移]。
+
++
+
+将
+
+* [lteral]``SLE Micro 5.5`` + [literal]``SUSE Manager Proxy 5.0 Extension``
+
++
+
+迁移到
+
+* [literal]``SL Micro 6.1`` + [literal]``{productname} Proxy Extension {productnumber}``
+
++
+
+[IMPORTANT]
+====
+出现提示时，**请勿选择**可选通道，除非您已确认必须使用这些通道。
+====
+
++
+
+[NOTE]
+====
+建议在执行实际迁移前先进行试运行。
+====
+
++
+
+. 监控迁移操作。
+
++
+
+您可在 {webui} 的menu:系统[细节 > 事件]选项卡中查看流程进度。
+
++
+
+. After the upgrade completes, reboot the system and then stop the proxy container.
+
++
+
+[source, console]
+----
+reboot
+mgrpxy stop
+----
+
++
+
+. 执行重引导后的检查。
+
++
+
+校验升级后的操作系统和 {productname} 扩展：
+
++
+
+[source, console]
+----
+cat /etc/os-release
+SUSEConnect --status-text
+----
+
++
+
+. 校验 {productname} 工具版本。
+
++
+
+[source, console]
+----
+mgrpxy --version
+----
+
++
+
+预期输出：
+
+- `mgrpxy version 5.1.11` 或更高版本
+
++
+
+. 启用 root SSH 访问权限（_如果需要_）。SL Micro 6.1 默认会禁用 root 登录。请编辑 `/etc/ssh/sshd_config.d/sshd.conf`：
+
++
+
+[source, console]
+----
+PermitRootLogin yes
+----
+
++
+
+重启该服务：
+
++
+
+[source, shell]
+----
+systemctl restart sshd
+----
+
++
+
+有关详细信息，请参见 xref:administration:troubleshooting/tshoot-remote-root-on-micro.adoc[]。
+
+
+. 以 RPM 软件包形式安装新的代理容器映像。
+
++
+
+[source, shell]
+----
+transactional-update pkg install suse-multi-linux-manager-5.1-<arch>-proxy*
+----
+
+. 重引导代理。
+
+. 升级代理容器并重启。
+
++
+
+[source, console]
+----
+mgrpxy start
+mgrpxy upgrade podman
+----
+
++
+
+. 确认代理容器可正常运行。
+
++
+
+[source, console]
+----
+podman ps
+----
+
++
+
+所有预期的代理容器均应正常启动并运行：
+
+- `proxy-salt-broker`
+- `proxy-httpd`
+- `proxy-squid`
+- `proxy-tftpd`
+- `proxy-ssh`
+
+____
+
+
+=== 迁移完成
+
+代理主机系统现已运行 {sl-micro} {microversion}，并配备了更新后的 {productname} {productnumber} 代理软件包及已同步的产品通道。
+
+
+== 从 {sles} 15 SP6 升级到 15 SP7
+
+本节提供了经过测试的步骤，用于将部署了 {productname} 5.0 代理的 {sles} SP6 主机升级到部署了 {productname} {productnumber} 代理的 {sles} {sp-version}。
+
+
+=== 先决条件
+
+* {productname} 5.0 代理已在 {sles} 15 SP6 上安装并运行。
+* 已在 {productname} 服务器中注册代理系统。
+
+
+=== 发行套件升级和代理迁移
+
+.过程：在 {sles} 15 SP6 上更新 {productname} 代理组件
+[role=procedure]
+____
+
+. 校验操作系统和 {productname} 工具版本。
+
++
+
+[source, console]
+----
+cat /etc/os-release
+mgrpxy --version
+----
+
++
+
+确认以下信息：
+
+* 操作系统：[literal]``SUSE Linux Enterprise Server 15 SP6``
+* 工具版本：[literal]``mgrpxy version 0.1.29`` 或更高版本
+
+
++
+
+. 列出正在运行的代理容器。
+
++
+
+[source, console]
+----
+podman ps
+----
+
++
+
+校验以下容器是否正在运行：
+
+- `proxy-salt-broker`
+- `proxy-httpd`
+- `proxy-squid`
+- `proxy-tftpd`
+- `proxy-ssh`
+- 支撑性基础架构容器
+
++
+
+. 在 {productname} 服务器中同步新代理产品。有关详细信息，请参见 xref:client-configuration:products.adoc[]。
+
++
+
+通过 {webui} 同步以下产品：
+
+* [literal]``SUSE Linux Enterprise Server 15 SP7``
+- [literal]``{productname} Proxy Extension for SLE 5.1``
+
++
+
+[NOTE]
+====
+代理扩展列于 [literal]``Basesystem Module 15 SP7`` > ``Containers Module 15 SP7`` 下。
+====
+
++
+
+. 执行代理产品迁移。有关详细信息，请参见 xref:client-configuration:client-upgrades-product-migration.adoc[]。
+
++
+
+导航至代理系统，选择menu:系统[概览 > 软件 > 产品迁移]。
+
++
+
+将
+
++
+
+* [literal]``SUSE Linux Enterprise Server 15 SP6`` + [literal]``SUSE Manager Proxy Extension 5.0``
+
++
+
+迁移到
+
++
+
+* [literal]``SUSE Linux Enterprise Server 15 SP7`` + [literal]``{productname} Proxy Extension for SLE 5.1``
+
++
+
+[IMPORTANT]
+====
+出现提示时，**请勿选择**可选通道，除非您已确认必须使用这些通道。
+====
+
++
+
+[NOTE]
+====
+建议在执行实际迁移前先进行试运行。
+====
+
++
+
+. 监控迁移操作。
+
++
+
+您可在 {webui} 的menu:系统[细节 > 事件]选项卡中查看流程进度。
+
++
+
+. After the upgrade completes, reboot the system and then stop the proxy container.
+
++
+
+[source, console]
+----
+reboot
+mgrpxy stop
+----
+
++
+
+. 执行重引导后的检查：
+
++
+
+校验升级后的操作系统和 {productname} 扩展。
+
++
+
+[source, console]
+----
+cat /etc/os-release
+SUSEConnect --status-text
+----
+
++
+
+您应看到以下内容：
+
+* [literal]``PRETTY_NAME="SUSE Linux Enterprise Server 15 SP7"``
+* [literal]``SUSE Multi-Linux Manager Proxy 5.1 Extension for SLE``
+
++
+
+. 校验 {productname} 工具版本。
+
++
+
+[source, console]
+----
+mgrpxy --version
+----
+
++
+
+预期输出：
+
+* [literal]``mgrpxy version 5.1.11`` 或更高版本
+
+
++
+
+. 以 RPM 软件包形式安装新的代理容器映像。
+
++
+
+[source, shell]
+----
+zypper install suse-multi-linux-manager-5.1-x86_64-proxy*
+----
+
+. 升级代理容器并重启。
+
++
+
+[source, console]
+----
+mgrpxy start
+mgrpxy upgrade podman
+----
+
++
+
+. 确认代理容器可正常运行。
+
++
+
+[source, console]
+----
+podman ps
+----
+
++
+
+所有预期的代理容器均应正常启动并运行：
+
+- `proxy-salt-broker`
+- `proxy-httpd`
+- `proxy-squid`
+- `proxy-tftpd`
+- `proxy-ssh`
+
+____
+
+
+=== 迁移完成
+
+代理主机系统现已运行 {sles} 15 SP7，且配备了更新后的 {productname} {productnumber} 代理软件包及已同步的产品通道。

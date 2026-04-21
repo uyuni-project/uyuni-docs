@@ -1,0 +1,66 @@
+[[script-client-proxy]]
+= 使用引导脚本将客户端注册到代理
+:revdate: 2025-03-20
+:page-revdate: {revdate}
+
+
+可以使用引导脚本通过 {productname} 代理注册客户端。这大致相当于直接将客户端注册到 {productname} 服务器。
+
+在 {productname} 服务器容器中使用 [command]``mgr-bootstrap`` 命令行工具创建引导脚本。[command]``mgr-bootstrap`` 需要您提供一些参数，例如代理的完全限定域名 (FQDN)、激活密钥或 GPG 密钥。代理 FQDN 是强制性参数，所有其他参数是否需要提供则取决于具体设置。
+
+
+然后，引导脚本会将所有必要信息部署到客户端。
+
+
+
+.过程：使用引导脚本将客户端注册到代理
+
+. 在 {productname} 服务器上，使用 {webui} 创建客户端激活密钥。有关详细信息，请参见 xref:client-configuration:activation-keys.adoc[]。
+. 在服务器的容器主机上，在容器内启动终端：
+
++
+
+[source, shell]
+----
+mgrctl term
+----
+
++
+
+--
+.. 在容器中，执行 [command]``mgr-bootstrap`` 命令创建引导脚本，例如使用以下选项来创建：
+
++
+
+[source, shell]
+----
+mgr-bootstrap --hostname=MLM_PROXY --activation-keys=ACTIVATION_KEY \
+  --script bootstrap-MLM_PROXY.sh
+----
+
++
+
+请将 [literal]``MLM_PROXY`` 替换为代理的主机名。
+
++
+使用 [option]``--script`` 选项可以用描述性名称保存引导脚本。
+   如果需要，可使用其他命令行工具选项自定义引导脚本。
+   要查看可用的选项，请在命令行中键入 [command]``mgr-bootstrap --help``。
+
+.. 可选：编辑生成的引导脚本。
+--
+
+. 执行引导脚本。可以通过两种方式来执行：
+
++
+
+* 将脚本传输到客户端并直接在客户端上运行。由于代理会将请求转发到服务器，客户端也可以从 http://MLM_PROXY/pub/bootstrap-MLM_PROXY.sh[] 下载该脚本。需要将 [literal]``MLM_PROXY`` 替换为代理的主机名。
+
+* 在代理上使用 [command]``ssh`` 来执行该脚本。需要将 [literal]``MLM_PROXY`` 替换为代理的主机名，并将 [systemitem]``<client.example.com>`` 替换为客户端的主机名：
+
++
+
+[source, shell]
+----
+cat /srv/www/htdocs/pub/bootstrap/bootstrap-MLM_PROXY.sh | ssh root@<client.example.com> /bin/bash
+----

@@ -1,0 +1,172 @@
+= 将旧版代理迁移到容器
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+容器化代理现在通过一组 systemd 服务进行管理。要管理容器化代理，请使用 [command]``mgrpxy`` 工具。
+
+本节内容将介绍如何使用 [command]``mgrpxy`` 工具从旧版 [systemitem]``systemd`` 代理迁移。
+
+[IMPORTANT]
+====
+由于主机操作系统已从 {leap} 更改为 {leapmicro}，因此不支持从旧版 {productname} 就地迁移到 {productnumber}。
+
+{productname} {productnumber} 及更高版本不再支持传统联系协议。从旧版 {productname} 迁移到 {productnumber} 之前，必须将所有现有的传统客户端（包括传统代理）迁移到 {salt}。
+====
+
+
+
+== 使用 Systemd 从旧版迁移到容器化代理
+
+
+=== 生成代理配置
+
+.过程：生成代理配置
+. 登录到 {productname} 服务器 {webui}。
+. 在左侧导航栏中，选择menu:系统[代理配置]。
+. 输入您的代理 FQDN。使用与原始代理主机相同的 FQDN。
+. 输入您的服务器 FQDN。
+. 输入代理端口号。__建议使用默认端口 8022。__
+. 证书和私用密钥位于服务器容器主机上的 `/var/lib/containers/storage/volumes/root/_data/ssl-build/` 中。
+  * RHN-ORG-TRUSTED-SSL-CERT
+  * RHN-ORG-PRIVATE-SSL-KEY
+. 使用以下命令将证书和密钥复制到您的计算机：
++
+
+----
+scp root@uyuni-server-example.com:/root/ssl-build/RHN-ORG-PRIVATE-SSL-KEY
+scp root@uyuni-server-example.com:/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT
+----
+
+. 选择 btn:[选择文件] 并在本地计算机上通过浏览找到证书。
+. 选择 btn:[选择文件] 并在本地计算机上通过浏览找到私用密钥。
+. 输入 CA 口令。
+. 单击 btn:[生成]。
+
+
+=== 将代理配置传输到新主机
+
+.过程：传输代理配置
+. 在服务器中，将生成的包含代理配置的 tar.gz 文件传输到新代理主机：
++
+----
+scp config.tar.gz <uyuni 代理 FQDN>:/root/
+----
+
+. 在执行下一步之前，请先禁用旧版代理：
++
+----
+spacewalk-proxy stop
+----
+. 使用以下命令部署新代理：
++ 
+----
+systemctl start uyuni-proxy-pod
+----
+. 使用以下命令启用新代理：
++ 
+----
+systemctl enable --now uyuni-proxy-pod
+----
+. 运行 ``podman ps`` 来校验所有容器是否存在并正在运行：
++
+----
+proxy-salt-broker
+proxy-httpd
+proxy-tftpd
+proxy-squid
+proxy-ssh
+----
+
+
+
+== 将 {productname} 代理迁移到 {productname} {productnumber} 容器化代理
+
+.过程：将 {productname} 容器化代理迁移到 {productname} {productnumber} 新容器化代理
+. 引导新计算机，然后开始安装 {leapmicro} {microversion}。
+. 完成安装。
+. 更新系统：
++
+----
+transactional-update --continue
+----
+. 安装 [command]``mgrpxy``，并根据需要安装 [command]``mgrpxy-bash-completion``：
++
+----
+transactional-update pkg install mgrpxy mgrpxy-bash-completion 
+----
++
+. 重引导。
+
+. 将 [literal]``tar.gz`` 代理配置复制到主机。
+
+
+
+== 使用 {webui} 安装软件包
+
+在受控端已引导并已注册到服务器后，还可以通过 Web UI 安装 [package]``mgrpxy`` 和 [package]``mgrpxy-bash-completion`` 软件包。
+
+.过程：使用 {webui} 安装软件包
+. 安装后，确保在menu:管理[安装向导 -> 产品]页面中添加并同步 {sle-micro} {microversion} 父通道和代理子通道。
+. 在 {webui} 中，转到menu:系统[激活密钥]，并创建一个与已同步 {sle-micro} {microversion} 通道关联的激活密钥。
+. 使用menu:系统[引导]页面将系统作为受控端进行引导。
+. 在初始配置新计算机并且其显示在系统列表中后，选择系统并导航到menu:系统细节[安装软件包]页面。
+. 安装软件包 [package]``mgrpxy`` 和 [package]``mgrpxy-bash-completion``。
+. 重引导系统。
+
+
+== 使用 [literal]``spacecmd`` 和自我签名证书生成代理配置
+
+可以使用 spacecmd 生成代理配置。
+
+.过程：使用 [literal]``spacecmd`` 和自我签名证书生成代理配置
+. 通过 SSH 连接到您的容器主机。
+. 执行以下命令（替换其中的服务器和代理 FQDN）：
++
+----
+mgrctl exec -ti 'spacecmd proxy_container_config_generate_cert -- dev-pxy.example.com dev-srv.example.com 2048 email@example.com -o /tmp/config.tar.gz'
+----
+. 将生成的配置复制到代理：
++
+----
+mgrctl cp server:/tmp/config.tar.gz
+----
+. 使用以下命令部署代理：
++ 
+----
+mgrpxy install podman config.tar.gz
+----
+
+
+== 使用 [literal]``spacecmd`` 和自定义证书生成代理配置
+
+可以使用 [literal]``spacecmd`` 为自定义证书（而不是默认的自我签名证书）生成代理配置。
+
+[NOTE]
+====
+2 GB 表示默认的代理 squid 缓存大小。需要根据您的环境调整此大小。
+====
+
+.过程：使用 [literal]``spacecmd`` 和自定义证书生成代理配置
+. 通过 SSH 连接到您的服务器容器主机。
+. 执行以下命令（替换其中的服务器和代理 FQDN）：
++
+----
+for f in ca.crt proxy.crt proxy.key; do
+  mgrctl cp $f server:/tmp/$f
+done
+mgrctl exec -ti 'spacecmd proxy_container_config -- -p 8022 pxy.example.com srv.example.com 2048 email@example.com /tmp/ca.crt /tmp/proxy.crt /tmp/proxy.key -o /tmp/config.tar.gz'
+----
+. 将生成的配置复制到代理：
++
+----
+mgrctl cp server:/tmp/config.tar.gz
+----
+. 使用以下命令部署代理：
++ 
+----
+mgrpxy install podman config.tar.gz
+----

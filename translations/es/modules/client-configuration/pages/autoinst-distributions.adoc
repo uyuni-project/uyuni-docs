@@ -1,0 +1,183 @@
+[[autoinst-distributions]]
+= Autoinstallable Distributions
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+
+The autoinstallation process relies on an several files to initiate the installation. These files include the Linux kernel, an initial RAM disk, and other files required to boot the operating system in installation mode.
+
+{productname} uses the [systemitem]``mgradm`` tool to copy the installation file from the source to the server container.
+
+You can extract the needed files from a DVD image. For information, see xref:client-configuration:autoinst-distributions.adoc#based-on-iso-image[Distribution Based on an ISO Image].
+
+Alternatively, you can install the [package]``tftpboot-installation`` package. For information, see xref:client-configuration:autoinst-distributions.adoc#based-on-rpm-package[Distribution Based on a RPM Package].
+
+You must also have a base channel synchronized on your {productname} Server for the same operating system version as those files.
+
+When you have the files ready, and the base channel synchronized, you need to declare the distribution. This operation associates the installation files to the base channel. The distribution can be referred to by one or more installation profiles. For information, see xref:client-configuration:autoinst-distributions.adoc#declare-distribution[Declare an Autoinstallable Distribution].
+
+
+
+[[based-on-iso-image]]
+== Distribution Based on an ISO Image
+
+
+This method assumes you have installation media for the operating system you want to install on the clients. This is usually a DVD [path]``.iso`` image that contains the Linux kernel, an [path]``initrd`` file, and other files required to boot the operating system in installation mode.
+
+
+
+.Procedure: Importing Files from Installation Media
+. Use [command]``mgradm`` to import installation data from the ISO image:
++
+----
+# mgradm distribution copy <image_name>.iso <image_name>
+----
++
+. Take a note of the distribution path reported by [command]``mgradm``. You will need it when you declare the distribution to {productname}.
+  
+  
+
+=== Distribution autodetection and registration
+
+[systemitem]``mgradm`` is able to automatically detect distribution name and register it to the server. Provided ISO image needs to contain a [path]``.treeinfo`` file.
+
+.Procedure: Import distribution file with autodetection and registration
+. Use [command]``mgradm``:
++
+----
+# mgradm distribution copy --api-user <username> --api-password <password> <image_name>.iso
+----
+
+
+[[based-on-rpm-package]]
+== Distribution Based on a RPM Package
+
+This method works on {suse} systems. It is simpler than importing contents from an installation media, because it uses prepackaged files for your installation system.
+
+
+
+.Procedure: Extracting Files from an Installation Package
+. On the {productname} Server, install the package whose name starts with [package]``tftpboot-installation``. You can determine its exact name with the command [command]``zypper se tftpboot-installation``
+. You can install the package to different root to avoid need for restart using following command:
++
+----
+# mkdir /opt/tftpinstall
+# zypper --installroot /opt/tftpinstall install tftpboot-installation-SLE-Micro-5.5-x86_64
+----
+. Find the installation files with the command [command]``ls -d /opt/tftpinstall/usr/share/tftpboot-installation/*``.
+. Copy installation files using [command]``mgradm``:
++
+----
+# mgradm distribution copy /opt/tftpinstall/usr/share/tftpboot-installation/SLE-Micro-5.5-x86_64 SLE-Micro-5.5-x86_64
+----
+. Take a note of the distribution path reported by [systemitem]``mgradm`` tool. You will need it when you declare the distribution to {productname}.
+. After [systemitem]``mgradm`` tool finishes, you can remove [path]``/opt/tftpinstall`` directory.
+
+This procedure prepares the installation of the same operating system version as the one that powers your {productname} Server. If you want to install a different operating system or version on the client, you need to manually get the package [package]``tftpboot-installation-*`` from the distribution it belongs to. In the [menu]``Package Search`` input box {productname}, search the packages whose names start with [package]``tftpboot-installation``, then look at the package's details. They show the local path below [path]``/var/spacewalk/``.
+
+
+
+[[declare-distribution]]
+== Declare an Autoinstallable Distribution
+
+The next step after extracting the autoinstallation files is to declare an autoinstallable distribution.
+
+
+
+.Procedure: Declaring an Autoinstallable Distribution
+. In the {productname} {webui}, navigate to menu:Systems[Autoinstallation > Distributions].
+. Click [guimenu]``Create Distribution``, and complete these fields:
++
+* In the [guimenu]``Distribution Label`` field, enter a name to identify your autoinstallable distribution.
+* In the [guimenu]``Tree Path`` field, enter the path to the installation media saved on your {productname} Server.
+* Select the matching [guimenu]``Base Channel``. This must match the installation media.
+* Select the [guimenu]``Installer Generation``. This must match the installation media.
+* OPTIONAL: Specify kernel options to use when booting this distribution. There are multiple ways to provide kernel options. Only add options here that are generic for the distribution.
+. Click btn:[Create Autoinstallable Distribution].
+
+The installation files that you prepared might not contain the packages you need to install. If they are not included, add [option]``useonlinerepo=1`` to the [guimenu]``Kernel Options`` field.
+
+The package repositories contain metadata that can be unsigned. If the metadata is unsigned, add [option]``insecure=1`` to the [guimenu]``Kernel Options`` field, or use your own GPG key as explained in xref:client-configuration:autoinst-owngpgkey.adoc[Use Your Own GPG Key].
+
+These kernel options are needed for example when you use the "online installer" ISO images instead of the full DVD, or when you use the [package]``tpboot-installation`` package.
+
+Navigate to menu:Systems[Autoinstallation > Distributions] to manage your autoinstallable distributions.
+
+ifeval::[{mlm-content} == true]
+[NOTE]
+====
+You can autoinstall {productname} Proxy 4.3 in the same way as {sle} clients. Make sure you use the {sle} installation media, and choose the [guimenu]``SLE-Product-SUSE-Manager-Proxy-4.3-Pool for x86_64`` base channel.
+====
+endif::[]
+
+== Handling Kernel Options for Distributions and Profiles
+
+{productname} is able to combine the kernel options that you assign. This is done using a special inheritance logic. There are three object types that are relevant for this:
+
+. Distributions (or short "Distros")
+. Profiles
+. Systems
+
+As a fourth special point of influence on the final kernel options is the Cobbler settings file [path]``/etc/cobbler/settings.yaml``. The Cobbler settings file defines default kernel options for all distributions. This is not supported in the context of {productname}.
+
+Understanding raw and resolved values is crucial for managing kernel options effectively.
+
+. **Raw values**: These refer to values attached directly to a specific Cobbler item and stored as-is in Cobbler's internal database.
+. **Resolved values**: These values are dynamically generated at runtime, respecting the inheritance hierarchy of Cobbler items.
+
+If you prefix an option with [literal]``!`` then the option will be removed from the final kernel command line.
+
+{productname} will manage the kernel options for both Profiles and Systems for you. As such you may only edit the kernel options for Distros.
+
+=== Examples
+
+==== Basic Inheritance Example
+
+Distribution raw value
+
+----
+install=http://uyuni.server/ks/dist/SLES15SP4 self_update=0
+----
+
+Profile raw value
+
+----
+console=tty1
+----
+
+System raw value
+
+----
+console=ttyS0
+----
+
+*Resolved* value for a system inheriting this profile
+
+----
+install=http://uyuni.server/ks/dist/SLES15SP4 self_update=0 console=ttyS0
+----
+
+==== Option Removal Example
+
+Distribution raw value
+
+----
+install=http://uyuni.server/ks/dist/SLES15SP4 self_update=0
+----
+
+Profile raw value
+
+----
+console=tty1
+----
+
+System raw value
+
+----
+!self_update
+----
+
+*Resolved* value for a system inheriting this profile
+
+----
+install=http://uyuni.server/ks/dist/SLES15SP4 console=ttyS0
+----

@@ -1,0 +1,263 @@
+[[deploy-mlm-server]]
+= {productname} {productnumber} 服务器部署
+:revdate: 2025-07-09
+:page-revdate: {revdate}
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+本指南介绍如何在 {sl-micro} {microversion} 或 {sles} {bci-mlm} 上安装和配置 {productname} {productnumber} 容器。
+
+// Link to hardware requirements do not show them here. We list them on other pages.
+// Done within next section.
+
+== {productname} 的硬件要求
+
+下表显示了在裸机上部署 {productname} 服务器所要满足的软件和硬件要求。在本指南中，您的计算机应具有 16 GB RAM 和至少 200 GB 磁盘空间。有关磁盘空间的背景信息，请参见 xref:installation-and-upgrade:hardware-requirements.adoc[]。
+
+[cols="1,1", options="header"]
+.软件和硬件要求
+|===
+| 软件和硬件  | 建议
+| 操作系统       | {sl-micro} {microversion} 或
+
+                           {sles} {bci-mlm}
+| 体系结构           | {x86_64}、{arm}、{s390x}、{ppc64le}
+| 处理器 (CPU)：       | 至少四 (4) 个 64 位 CPU 核心
+| RAM：                   | 16 GB
+| 磁盘空间：            | 200 GB
+| 通道要求   | 为每个 SUSE 或 openSUSE 产品提供 50 GB 空间
+                          
+                           为每个 Red Hat 产品提供 360 GB 空间
+| 交换空间：            | 8 到 12 GB
+|===
+
+.服务器容器主机支持的操作系统
+[NOTE]
+====
+容器主机支持的操作系统为 {sl-micro} {microversion} 和 {sles} {bci-mlm}。
+
+容器主机::
+容器主机是配备了容器引擎（例如 [systemitem]``Podman``）的服务器，可用于管理和部署容器。这些容器包含应用程序及其必备组件（例如库），但不包含完整的操作系统，因此体量很小。此设置可确保应用程序能够在不同环境中以一致的方式运行。容器主机为这些容器提供必要的资源，例如 CPU、内存和存储空间。
+====
+
+
+[IMPORTANT]
+====
+必须使用完全限定的域名 (FQDN) 才能完成服务器部署。如果您的路由器或网络无法为 FQDN 提供自动 DNS 置备，则部署过程将无法成功进行。FQDN 通常采用 <主机>.<域>.com 格式。
+
+例如：
+
+* [literal]``mlm.example.com``
+* [literal]``mlm.container.lab``
+
+有关详细信息，请参见 xref:installation-and-upgrade:network-requirements.adoc[] 中有关网络要求的章节。
+====
+
+== 永久性卷
+
+// This sections needs to be run by devs. How would a customer use custom storage? How do we set this up with mgradm?
+
+{productname} {productnumber} 默认会定义所需的永久性存储卷。如果尚不存在，在安装期间 [command]``mgradm`` 工具将创建这些卷。
+
+将在 [path]``/var/lib/containers/storage/volumes/`` 中创建这些卷，默认情况下，[systemitem]``Podman`` 也会将其卷存储到此路径。
+
+.建议
+[NOTE]
+====
+您可以通过将外部存储设备挂载到此目录来利用存储的简便性。由于这样会存储 {postgresql} 数据库、储存库的二进制软件包、缓存、操作系统映像、自动安装发行套件和配置文件，我们提出了三项建议：
+
+快速存储::
+此挂载点最好是 NVMe 或 SSD 级设备。较慢的存储会对 {productname} 性能产生不利影响。
+
+大容量::
+建议的最小容量为 300 GB，如果需要管理多个 Linux 发行套件或体系结构，则应提供更多容量。
+
+建议的文件系统::
+XFS（不过也可以使用 {sl-micro} {microversion} 支持的任何文件系统）。
+
+可选::
+可以通过将磁盘挂载到文件系统中的预期卷路径（例如 [path]``/var/lib/containers/storage/volumes/var-spacewalk``）来为卷提供自定义存储。这样会增大 {productname} 部署复杂性，并且可能会影响建议的默认存储配置所提供的弹性。
+
+====
+
+
+有关容器中所有永久性卷的列表，请参见 xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]。
+
+
+
+
+[[deploy-mlm-server-host]]
+==  准备 {productname} 服务器主机
+
+您可以在 {sl-micro} {microversion} 或 {sles} {bci-mlm} 上部署 {productname}。{sl-micro} 是事务性系统，而 {sles} 则是完整的服务器操作系统。
+
+根据您的决定，继续按照 xref:installation-and-upgrade:container-deployment/mlm/server-deployment-mlm.adoc#deploy-mlm-server-micro[] 或 xref:installation-and-upgrade:container-deployment/mlm/server-deployment-mlm.adoc#deploy-mlm-server-sles[] 中的说明操作，并跳过未选择的部分。
+
+
+
+[[deploy-mlm-server-micro]]
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-prepare-micro-host.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-prepare-micro-host.adoc[leveloffset=+1]
+endif::[]
+
+要继续部署，请参见 xref:installation-and-upgrade:container-deployment/mlm/server-deployment-mlm.adoc#deploy-mlm-server-persistent-storage[]。
+
+[[deploy-mlm-server-sles]]
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-prepare-sles-host.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-prepare-sles-host.adoc[leveloffset=+1]
+endif::[]
+
+要继续部署，请参见 xref:installation-and-upgrade:container-deployment/mlm/server-deployment-mlm.adoc#deploy-mlm-server-persistent-storage[]。
+
+
+
+
+[[deploy-mlm-server-persistent-storage]]
+== 配置自定义永久性存储
+
+配置永久性存储空间并非强制性要求，但这是唯一可避免在容器全盘空间用尽的情况下出现严重问题的方法。强烈建议您使用 [command]``mgr-storage-server`` 工具来配置自定义永久性存储空间。
+
+有关详细信息，请参见 [command]``mgr-storage-server --help``。此工具可以简化容器存储和数据库卷的创建。
+
+如下所示使用命令：
+
+[source, shell]
+----
+mgr-storage-server <storage-disk-device> [<database-disk-device>]
+----
+
+例如：
+
+----
+mgr-storage-server /dev/nvme1n1 /dev/nvme2n1
+----
+
+[NOTE]
+====
+此命令将在 [path]``/var/lib/containers/storage/volumes`` 中创建永久性存储卷。
+
+有关详细信息，请参见
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+====
+
+
+[[deploy-mlm-server-mgradm]]
+== 使用 [literal]``mgradm`` 部署 {productname}
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-note-deploy-certs.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-note-deploy-certs.adoc[]
+endif::[]
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+.过程：使用 [literal]``mgradm`` 部署 {productname} {productnumber}
+. 以 root 身份登录。
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-step-deploy-podman-certs.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-step-deploy-podman-certs.adoc[]
+endif::[]
+
++
+
+[IMPORTANT]
+====
+如果执行的命令失败，请确保已注册 {productname} {productnumber}。如果您在安装期间跳过了注册，则现在需要从命令行注册。按照以下步骤登录仓库：
+
+include::../../../partials/snippet-login-into-suse-registry.adoc[]
+
+根据提示使用 {productname} {productnumber} 注册密钥。
+====
+
+. 根据提示输入 CA 密钥（证书颁发机构）和管理员帐户口令。
++
+
+[NOTE]
+====
+管理员帐户口令长度必须至少为 5 个字符且不超过 48 个字符。
+====
++
+
+. 按 btn:[Enter]。
+. 输入管理帐户的电子邮件地址。按 btn:[Enter]。
+. 等待部署完成。
+. 打开浏览器并访问您的服务器 FQDN。
+. 输入您的用户名（默认为 [literal]``admin``）以及在部署过程中设置的口令。
+
+在本指南中，您已将 {productname} {productnumber} 服务器部署为容器。请继续阅读下一节来添加您的组织身份凭证，以便与 {scclongform} 同步。
+
+
+== 将 {productname} {productnumber} 连接到 {scclongform}
+
+本节介绍如何通过 {webui} 与 {scc} 同步，以及如何添加第一个客户端通道。
+
+[[proc-admin-organization-credentials]]
+.过程：输入组织身份凭证
+. 打开浏览器并访问您的服务器 FQDN。
+. 输入您的用户名（默认为 [literal]``admin``）以及在部署过程中设置的口令。
+. 在 {productname} {webui} 中，选择menu:管理[安装向导]。
+. 在[guimenu]``安装向导``页中，选择 btn:[组织身份凭证] 选项卡。
+. 单击 btn:[添加新身份凭证]。
+. 在浏览器中访问 {scclongform}。
+. 在左侧导航栏中选择您的组织。
+. 在页面顶部选择用户选项卡，然后单击 btn:[组织身份凭证]。
+. 记下您的**镜像身份凭证**。
+. 返回 {productname} {webui}，输入[guimenu]``用户名``和[guimenu]``口令``，然后单击 btn:[保存] 确认。
+
+在系统以绿色打勾图标的形式确认身份凭证后，请继续执行<<proc-quickstart-first-channel-sync>>。
+
+
+[[proc-quickstart-first-channel-sync]]
+.过程：与 {scclongform} 同步
+. 在 {webui} 中，导航到menu:管理[安装向导]。
+. 在[guimenu]``安装向导``页面中选择 [guimenu]``SUSE 产品``选项卡。如果您最近在 {scclongform} 中注册过产品，则表格中将开始填充产品列表。此操作可能需要几分钟时间才会完成。您可在右侧的``从 {scclongform} 刷新产品目录``部分监控该操作的进度。该产品表格会列出体系结构、通道和状态信息。有关详细信息，请参见 xref:reference:admin/setup-wizard.adoc[向导]。
++
+image::admin_suse_products.png[scaledwidth=80%]
+. 使用``按产品说明过滤``和``按体系结构过滤``来过滤显示的产品列表。btn:[产品] 页面上列出的通道将为客户端提供储存库。
++
+
+* 选中每个通道左侧的复选框将相应通道添加到 {productname}。单击说明左侧的箭头符号可以展开产品并列出可用模块。
+* 单击页面顶部的 btn:[添加产品] 开始产品同步。
+
+添加通道后，{productname} 将安排该通道的同步。这可能需要较长时间，因为 {productname} 会将通道软件源从 {scclongform} 中的 {suse} 储存库复制到您服务器本地的 [path]``/var/lib/containers/storage/volumes/var-spacewalk/`` 目录。
+
+通道完全同步后，将自动为其生成引导储存库。此步骤对于成功引导客户端至关重要，可确保通道同步和分发能够在客户端正常运行。{productname} 的安装和配置，以及为引导客户端准备所需通道的过程到此完成。
+
+通道同步过程完成后，可以继续注册 {productname} {productnumber} 代理或其他客户端。
+
+有关详细说明，请参见 xref:client-configuration:registration-overview.adoc[]。
+
+
+
+== 进入容器进行管理
+
+要在容器内访问外壳，请在容器主机上运行以下命令：
+----
+mgrctl term
+----

@@ -1,0 +1,467 @@
+= Proxy Migration from 5.0 to 5.2
+:revdate: 2026-02-09
+:page-revdate: {revdate}
+
+== 소개
+
+
+이 문서는 {productname}(으)로 관리되는 환경에서 **호스트 운영 체제** 및 **프록시 확장**을 마이그레이션하기 위한 검증된 절차를 제공하며, 특히 {productname} Proxy 5.0이 배포된 시스템을 대상으로 합니다.
+
+업그레이드 시나리오에는 다음이 포함됩니다.
+
+* Migrating from **SUSE Linux Enterprise Micro (SLE Micro) 5.5** to **SL Micro 6.2**
+* **SUSE Linux Enterprise Server (SLES) 15 SP6**에서 **SLES 15 SP7**으로 마이그레이션
+* **{productname} 프록시 확장**을 **버전 5.0**에서 **버전 {productnumber}**(으)로 업그레이드
+
+[IMPORTANT]
+====
+프록시를 마이그레이션하기 전에 먼저 SUSE Manager 5.0 서버를 {productname} {productnumber}(으)로 마이그레이션해야 합니다.
+====
+
+
+== {sle-micro} 5.5 to {sl-micro} 6.2
+
+This section provides the tested procedure to upgrade a {sle-micro} 5.5 host deployed with {productname} 5.0 Proxy to {sl-micro} 6.2 with {productname} {productnumber} Proxy.
+
+
+=== 선행 조건
+
+* {sle-micro} 5.5.에서 {productname} 5.0 프록시 설치 및 실행
+* 프록시 시스템은 {productname} 서버에 등록되어 있습니다.
+
+
+=== 배포판 업그레이드 및 프록시 마이그레이션
+
+.절차: {productname} 5.0 프록시를 {productname} {productnumber} 프록시로 마이그레이션
+[role=procedure]
+____
+
+. 시스템 및 {productname} 도구 버전을 확인합니다.
+
++
+
+[source, console]
+----
+cat /etc/os-release
+mgrpxy --version
+----
+
++
+
+확인:
+
+* 운영 체제: [literal]``SLE Micro 5.5``
+* 도구 버전: [literal]``mgrpxy version 0.1.29`` 이상
+
++
+
+. 실행 중인 컨테이너를 확인합니다.
+
++
+
+[source, console]
+----
+podman ps
+----
+
++
+
+다음 컨테이너가 실행 중인지 확인합니다.
+
+- ``proxy-squid``
+- ``proxy-ssh``
+- ``proxy-httpd``
+- ``proxy-tftpd``
+- ``proxy-salt-broker``
+
++
+
+. {productname} 서버에서 새로운 프록시 제품을 동기화합니다. 자세한 내용은 xref:client-configuration:products.adoc[]에서 확인할 수 있습니다.
+
++
+
+웹 UI를 사용하여 동기화:
+
+* [literal]``SL Micro 6.2``
+* [literal]``{productname} Proxy Extension {productnumber}``
+
++
+
+. 자세한 내용은 xref:client-configuration:clients-opensuseleap.adoc[]에서 참조하십시오.
+
++
+
+프록시 시스템으로 이동하여 menu:시스템[개요] > menu:소프트웨어[제품 마이그레이션]을 선택합니다.
+
++
+
+마이그레이션 출처
+
+* [literal]``SLE Micro 5.5`` + [literal]``SUSE Manager Proxy 5.0 Extension``
+
++
+
+대상
+
+* [literal]``SL Micro 6.2`` + [literal]``{productname} Proxy Extension {productnumber}``
+
++
+
+[IMPORTANT]
+====
+필수 채널인지 확인하지 않은 경우, 메시지가 표시될 때 선택 채널을 **선택하지 마십시오**.
+====
+
++
+
+[NOTE]
+====
+실제 마이그레이션을 수행하기 전에 먼저 테스트를 실행해 보는 것이 좋습니다.
+====
+
++
+
+. 마이그레이션 작업을 모니터링합니다.
+
++
+
+{webui}의 menu:시스템[세부 정보 > 이벤트] 탭에서 해당 절차를 확인할 수 있습니다.
+
++
+
+. After the upgrade completes, stop the proxy container and then reboot the system.
+
++
+
+[source, console]
+----
+reboot
+mgrpxy stop
+----
+
++
+
+. 재부팅 후 점검을 수행합니다.
+
++
+
+업그레이드된 OS 및 {productname} 확장 확인:
+
++
+
+[source, console]
+----
+cat /etc/os-release
+SUSEConnect --status-text
+----
+
++
+
+. {productname} 도구 버전을 확인합니다.
+
++
+
+[source, console]
+----
+mgrpxy --version
+----
+
++
+
+예상 출력:
+
+- `mgrpxy version 5.2` or higher
+
++
+
+. Enable Root SSH Access (_if required_). SL Micro 6.2 disables root login via SSH by default. Edit `/etc/ssh/sshd_config.d/sshd.conf`:
+
++
+
+[source, console]
+----
+PermitRootLogin yes
+----
+
++
+
+서비스를 다시 시작합니다.
+
++
+
+[source, shell]
+----
+systemctl restart sshd
+----
+
++
+
+자세한 내용은 xref:administration:troubleshooting/tshoot-remote-root-on-micro.adoc[]에서 확인할 수 있습니다.
+
+
+. 새 프록시 컨테이너 이미지를 RPM 패키지로 설치합니다.
+
++
+
+[source, shell]
+----
+transactional-update pkg install suse-multi-linux-manager-5.2-<arch>-proxy*
+----
+
+. 프록시를 재부팅합니다.
+
+. 프록시 컨테이너를 업그레이드하고 다시 시작합니다.
+
++
+
+[source, console]
+----
+mgrpxy upgrade podman
+mgrpxy stop
+mgrpxy start
+----
+
++
+
+. 프록시 컨테이너가 정상 작동하는지 확인합니다.
+
++
+
+[source, console]
+----
+podman ps
+----
+
++
+
+예상되는 모든 프록시 컨테이너가 작동 중이어야 합니다.
+
+- ``proxy-salt-broker``
+- ``proxy-httpd``
+- ``proxy-squid``
+- ``proxy-tftpd``
+- ``proxy-ssh``
+
+____
+
+
+=== 마이그레이션 완료
+
+The proxy host system is now running {sl-micro} 6.2 with updated {productname} {productnumber} Proxy packages and synchronized product channels.
+
+
+== {sles} 15 SP6에서 15 SP7으로
+
+이 섹션에서는 {productname} 5.0 프록시가 배포된 {sles} SP6 호스트를 {productname} {productnumber} 프록시가 포함된 {sles} {sp-version}(으)로 업그레이드하는 절차를 설명합니다.
+
+
+=== 선행 조건
+
+* {productname} 프록시 5.0이 {sles} 15 SP6에 설치되어 실행 중입니다.
+* 프록시 시스템은 {productname} 서버에 등록되어 있습니다.
+
+
+=== 배포판 업그레이드 및 프록시 마이그레이션
+
+.절차: {sles} 15 SP6에서 {productname} 프록시 구성 요소 업데이트
+[role=procedure]
+____
+
+. 운영 체제 및 {productname} 도구 버전을 확인합니다.
+
++
+
+[source, console]
+----
+cat /etc/os-release
+mgrpxy --version
+----
+
++
+
+확인:
+
+* 운영 체제: [literal]``SUSE Linux Enterprise Server 15 SP6``
+* 도구 버전: [literal]``mgrpxy version 0.1.29`` 이상
+
+
++
+
+. 실행 중인 프록시 컨테이너를 나열합니다.
+
++
+
+[source, console]
+----
+podman ps
+----
+
++
+
+다음 컨테이너가 실행 중인지 확인합니다.
+
+- ``proxy-salt-broker``
+- ``proxy-httpd``
+- ``proxy-squid``
+- ``proxy-tftpd``
+- ``proxy-ssh``
+
++
+
+. Synchronize the new Products in {productname} Server using the Web UI.
+
++
+
+For more information, see xref:client-configuration:products.adoc[].
+
++
+
+Synchronize:
+
+* [literal]``{sles} {sp-version}``
+* [literal]``{productname} Proxy Extension {productnumber}``
+
++
+
+. Perform proxy product migration.
+
++
+
+For more information, see xref:client-configuration:client-upgrades-product-migration.adoc[].
+
++
+
+프록시 시스템으로 이동하여 menu:시스템[개요] > menu:소프트웨어[제품 마이그레이션]을 선택합니다.
+
++
+
+Migrate from:
+
+* [literal]``{sles} 15 SP6`` + [literal]``SUSE Manager Proxy 5.0 Extension``
+
++
+
+to:
+
+* [literal]``{sles} {sp-version}`` + [literal]``{productname} Proxy Extension {productnumber}``
+
++
+
+[IMPORTANT]
+====
+필수 채널인지 확인하지 않은 경우, 메시지가 표시될 때 선택 채널을 **선택하지 마십시오**.
+====
+
++
+
+[NOTE]
+====
+실제 마이그레이션을 수행하기 전에 먼저 테스트를 실행해 보는 것이 좋습니다.
+====
+
++
+
+. 마이그레이션 작업을 모니터링합니다.
+
++
+
+You can follow the process under menu:Systems[Details > Events] in the {webui}.
+
++
+
+. After the upgrade completes, stop the proxy container and then reboot the system.
+
++
+
+[source, console]
+----
+mgrpxy stop
+reboot
+----
+
++
+
+. 재부팅 후 점검을 수행합니다.
+
++
+
+Verify the OS and {productname} extension version:
+
++
+
+[source, console]
+----
+cat /etc/os-release
+SUSEConnect --status-text
+----
+
++
+
+. {productname} 도구 버전을 확인합니다.
+
++
+
+[source, console]
+----
+mgrpxy --version
+----
+
++
+
+예상 출력:
+
+- `mgrpxy version 5.2` or higher
+
++
+
+. 새 프록시 컨테이너 이미지를 RPM 패키지로 설치합니다.
+
++
+
+[source, shell]
+----
+zypper install suse-multi-linux-manager-5.2-<arch>-proxy*
+----
+
++
+
+. 프록시를 재부팅합니다.
+
+. 프록시 컨테이너를 업그레이드하고 다시 시작합니다.
+
++
+
+[source, console]
+----
+mgrpxy upgrade podman
+mgrpxy stop
+mgrpxy start
+----
+
++
+
+. 프록시 컨테이너가 정상 작동하는지 확인합니다.
+
++
+
+[source, console]
+----
+podman ps
+----
+
++
+
+예상되는 모든 프록시 컨테이너가 작동 중이어야 합니다.
+
+- ``proxy-salt-broker``
+- ``proxy-httpd``
+- ``proxy-squid``
+- ``proxy-tftpd``
+- ``proxy-ssh``
+
+____
+
+
+=== 마이그레이션 완료
+
+The proxy host system is now running {sles} {sp-version} with updated {productname} {productnumber} Proxy packages and synchronized product channels.

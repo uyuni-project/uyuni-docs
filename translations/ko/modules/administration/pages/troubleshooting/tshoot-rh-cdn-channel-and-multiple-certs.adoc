@@ -1,0 +1,38 @@
+[[troubleshooting-rh-cdn-channel-and-multiple-certs]]
+= 문제 해결 Red Hat CDN 채널 및 다중 인증서
+:revdate: 2022-10-18
+:page-revdate: {revdate}
+
+{redhat} 컨텐트 제공 네트워크(CDN) 채널은 경우에 따라 여러 인증서를 제공하지만 {productname} {webui}는 한 개의 인증서만 임포트할 수 있습니다. CDN이 {productname} {webui}에서 알고 있는 인증서와 다른 인증서를 제공하는 경우, 인증서가 올바르더라도 유효성 검사에 실패하고 리포지토리에 대한 액세스가 거부됩니다. 수신되는 오류 메시지는 다음과 같습니다.
+
+----
+[error]
+Repository '<repo_name>' is invalid.
+<repo.pem> Valid metadata not found at specified URL
+History:
+ - [|] Error trying to read from '<repo.pem>'
+ - Permission to access '<repo.pem>' denied.
+이 리포지토리에 대해 정의된 URI가 유효한 리포지토리를 가리키고 있는지 확인하십시오.
+위의 오류로 인해 '<repo_name>' 리포지토리를 건너뛰었습니다.
+오류로 인해 리포지토리를 새로 고칠 수 없습니다.
+HH:MM:SS RepoMDError: 리포지토리에 액세스할 수 없습니다. 리포지토리 GPG 키를 가져오지 못했을 수 있습니다.
+----
+
+이 문제를 해결하려면 유효한 모든 인증서를 단일 ``.pem`` 파일로 병합한 후 {productname}에서 사용하도록 인증서를 다시 빌드하십시오.
+
+
+
+.절차: 여러 {redhat} CDN 인증서 해결
+. {redhat} 클라이언트의 명령 프롬프트에서, 루트 권한으로 단일 ``rh-cert.pem`` 파일의 ``/etc/pki/entitlement/``에서 모든 현재 인증서를 수집합니다.
++
+----
+cat 866705146090697087.pem 3539668047766796506.pem redhat-entitlement- authority.pem > rh-cert.pem
+----
+. 단일 ``rh-key. pem`` 파일의 ``/etc/pki/entitlement/``에서 모든 현재 키를 수집합니다.
++
+----
+cat 866705146090697087-key.pem 3539668047766796506-key.pem > rh-key.pem
+----
+
+xref:client-configuration:clients-rh-cdn.adoc[]의 지침에 따라 이제 새 인증서를 {productname} 서버로 임포트할 수 있습니다.
+

@@ -1,0 +1,92 @@
+[[auth-methods-pam]]
+= PAM으로 인증
+:revdate: 2025-01-08
+:page-revdate: {revdate}
+
+{productname}은(는) SSSD를 사용하는 플러그형 인증 모듈(PAM)을 사용하여 네트워크 기반 인증 시스템을 지원합니다. PAM은 {productname}을(를) 중앙집중식 인증 메커니즘과 통합할 수 있는 라이브러리 모음으로, 여러 개의 비밀번호를 기억할 필요가 없습니다. {productname}은(는) LDAP, Kerberos 및 기타 네트워크 기반 인증을 지원합니다.
+
+
+== SSSD 구성
+
+
+.절차: SSSD 구성
+. {productname} {webui}에서 menu:사용자[사용자 생성]으로 이동하고 새로운 또는 기존 사용자를 활성화하여 PAM으로 인증합니다.
++
+[NOTE]
+====
+사용자 이름에는 영숫자 외에 [literal]``-``, [literal]``_``, [literal]``.``, [literal]``@``을 사용할 수 있습니다.
+====
+. [guimenu]``PAM(Pluggable Authentication Modules)`` 확인란을 선택하십시오.
+. 서버 컨테이너에서 SSSD를 구성하십시오. {productname} 컨테이너 호스트의 명령 프롬프트에서 루트 권한으로 서버 컨테이너를 입력하십시오.
++
+
+----
+mgrctl term
+----
+
+. 컨테이너 내에서 다음 단계를 실행하십시오.
++
+.. 구성에 따라 [path]``/etc/sssd/sssd.conf``를 편집합니다. 예제는 xref:administration:auth-methods-pam.adoc#auth-methods-pam-ad[]에서 확인할 수 있습니다.
+.. 완료하면 컨테이너를 종료:
++
+----
+exit
+----
+. 다음을 사용하여 {productname}을(를) 다시 시작합니다.
++
+----
+mgradm restart
+----
+
+
+
+[IMPORTANT]
+====
+{productname} {webui}에서 비밀번호를 변경하면 {productname} 서버의 로컬 비밀번호만 변경됩니다. 해당 사용자에 대해 PAM이 활성화된 경우 로컬 비밀번호가 사용되지 않을 수 있습니다. 예를 들어, 위의 예에서 Kerberos 비밀번호는 변경되지 않습니다. 이러한 사용자의 경우 네트워크 서비스의 비밀번호 변경 메커니즘을 사용하여 비밀번호를 변경하십시오.
+====
+
+
+PAM 구성에 대한 자세한 내용은 {sles} 보안 가이드를 참조하십시오. 이 보안 가이드에는 다른 네트워크 기반 인증 방법에도 적용되는 일반적인 예제도 포함되어 있습니다. 또한 AD(Active Directory) 서비스를 구성하는 방법도 설명합니다. 자세한 내용은 {sles-base-os-documentation}/part-auth.html[]을 참조하십시오.
+
+
+
+[[auth-methods-pam-ad]]
+=== Active Directory와 LDAP 통합 예제
+
+Active Directory와 LDAP를 직접 통합하려면 다음 예제를 사용하면 됩니다.
+
+코드 조각에서 사용자 환경에 따라 다음 자리 표시자를 변경합니다.
+
+[literal]``$domain``::
+도메인 이름
+[literal]``$ad_server``::
+[literal]``$domain`` [literal]``$uyuni-hostname``에서 자동 감지되지 않는 경우 AD 서버의 FQDN입니다. 이는 이 AD 클라이언트가 알아야 하는 컴퓨터의 이름입니다. 설정하지 않으면 [literal]``uyuni-server.mgr.internal``로 설정됩니다.
+
+
+[path]``/etc/sssd/sssd.conf``에 대한 예시 코드 조각:
+
+----
+[sssd]
+config_file_version = 2
+services = nss, pam
+domains = $domain
+
+[nss]
+
+[pam]
+
+[domain/$domain]
+id_provider = ad
+chpass_provider = ad
+access_provider = ad
+auth_provider = ad
+
+ad_domain = $domain
+ad_server = $ad_server
+ad_hostname = $uyuni-hostname
+
+ad_gpo_map_network = +susemanager
+
+krb5_keytab = FILE:/etc/rhn/krb5.conf.d/krb5.keytab
+krb5_ccname_template = FILE:/tmp/krb5cc_%{uid}
+----

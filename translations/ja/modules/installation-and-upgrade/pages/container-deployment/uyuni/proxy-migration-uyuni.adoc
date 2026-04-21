@@ -1,0 +1,172 @@
+= レガシプロキシからコンテナへの移行
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+コンテナ化されたプロキシは、systemdのサービスセットによって管理されるようになりました。コンテナ化されたプロキシの管理には、[command]``mgrpxy``ツールを使用してください。
+
+このセクションは、[command]``mgrpxy``ツールを使用してレガシ[systemitem]``systemd``プロキシを移行するのに役立ちます。
+
+[IMPORTANT]
+====
+ホストOSが{leap}から{leapmicro}に変更されたため、{productname}の以前のリリースから{productnumber}へのインプレース移行は今後もサポートされないままです。
+
+従来の接続プロトコルは{productname} {productnumber}以降ではサポートされなくなりました。以前の{productname}リリースから{productnumber}に移行する前に、従来のプロキシを含む既存の従来のクライアントを{salt}に移行する必要があります。
+====
+
+
+
+== Systemdを使用したレガシプロキシからコンテナ化されたプロキシへの移行
+
+
+=== プロキシ設定の生成
+
+.プロシージャ: プロキシ設定の生成
+. {productname}サーバの{webui}にログインします。
+. 左側のナビゲーションから、menu:システム[プロキシの設定]を選択します。
+. プロキシのFQDNを入力します。元のプロキシホストと同じFQDNを使用します。
+. サーバのFQDNを入力します。
+. プロキシのポート番号を入力します。__デフォルトのポート8022を使用することをお勧めします。__
+. 証明書と機密鍵は、サーバコンテナホストの`/var/lib/containers/storage/volumes/root/_data/ssl-build/`にあります。
+  * RHN-ORG-TRUSTED-SSL-CERT
+  * RHN-ORG-PRIVATE-SSL-KEY
+. 次のコマンドを使用して証明書と鍵をマシンにコピーします。
++
+
+----
+scp root@uyuni-server-example.com:/root/ssl-build/RHN-ORG-PRIVATE-SSL-KEY .
+scp root@uyuni-server-example.com:/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT .
+----
+
+. btn:[Choose File]を選択して、ローカルマシンを参照して証明書を選択します。
+. btn:[Choose File]を選択して、ローカルマシンを参照して機密鍵を選択します。
+. CAのパスワードを入力します。
+. btn:[生成]をクリックします。
+
+
+=== 新しいホストへのプロキシ設定の転送
+
+.プロシージャ: プロキシ設定を転送する
+. サーバから、プロキシ設定が含まれる、生成されたtar.gzファイルを新しいプロキシホストに転送します。
++
+----
+scp config.tar.gz <uyuni-proxy-FQDN>:/root/
+----
+
+. 次のステップを実行する前に、レガシプロキシを無効にします。
++
+----
+spacewalk-proxy stop
+----
+. 次のコマンドを使用して新しいプロキシを配備します。
++ 
+----
+systemctl start uyuni-proxy-pod
+----
+. 次のコマンドを使用して新しいプロキシを有効にします。
++ 
+----
+systemctl enable --now uyuni-proxy-pod
+----
+. `podman ps`を実行して、すべてのコンテナが存在していて実行されていることを確認します。
++
+----
+proxy-salt-broker
+proxy-httpd
+proxy-tftpd
+proxy-squid
+proxy-ssh
+----
+
+
+
+== {productname}プロキシを{productname} {productnumber}コンテナ化プロキシに移行する
+
+.プロシージャ: {productname}コンテナ化プロキシを{productname} {productnumber}の新しいコンテナ化プロキシに移行する
+. 新しいマシンをブートし、{leapmicro} {microversion}のインストールを開始します。
+. インストールを完了します。
+. システムを更新します。
++
+----
+transactional-update --continue
+----
+. [command]``mgrpxy``と、オプションで[command]``mgrpxy-bash-completion``をインストールします。
++
+----
+transactional-update pkg install mgrpxy mgrpxy-bash-completion 
+----
++
+. 再起動します。
+
+. [literal]``tar.gz``プロキシ設定をホストにコピーします。
+
+
+
+== {webui}を使用したパッケージのインストール
+
+[package]``mgrpxy``パッケージと[package]``mgrpxy-bash-completion``パッケージは、Minionがブートストラップされてサーバに登録された後にWeb UIでインストールすることもできます。
+
+.プロシージャ: {webui}を使用したパッケージのインストール
+. インストール後、menu:管理[セットアップウィザード -> 製品]ページから、{sle-micro} {microversion}親チャンネルとプロキシの子チャンネルが追加および同期されていることを確認します。
+. {webui}で、menu:システム[アクティベーションキー]に移動し、同期された{sle-micro} {microversion}チャンネルにリンクされているアクティベーションキーを作成します。
+. menu:システム[ブートストラップ]ページを使用して、システムをMinionとしてブートストラップします。
+. 新しいマシンがオンボーディングされてシステムリストに表示されたら、システムを選択して、menu:システムの詳細[Install Package (パッケージのインストール)]ページに移動します。
+. パッケージ[package]``mgrpxy``および[package]``mgrpxy-bash-completion``をインストールします。
+. システムを再起動します。
+
+
+== [literal]``spacecmd``と自己署名証明書を使用したプロキシ設定の生成
+
+spacecmdを使用してプロキシ設定を生成できます。
+
+.プロシージャ: [literal]``spacecmd`と自己署名証明書を使用したプロキシ設定の生成
+. SSHでコンテナホストに接続します。
+. 次のコマンドを実行してサーバとプロキシFQDNを置き換えます。
++
+----
+mgrctl exec -ti 'spacecmd proxy_container_config_generate_cert -- dev-pxy.example.com dev-srv.example.com 2048 email@example.com -o /tmp/config.tar.gz'
+----
+. 生成された設定をプロキシにコピーします。
++
+----
+mgrctl cp server:/tmp/config.tar.gz .
+----
+. 次のコマンドを使用してプロキシを配備します。
++ 
+----
+mgrpxy install podman config.tar.gz
+----
+
+
+== [literal]``spacecmd``とカスタム証明書を使用したプロキシ設定の生成
+
+デフォルトの自己署名証明書ではなくカスタム証明書に対して[literal]``spacecmd``を使用して、プロキシ設定を生成できます。
+
+[NOTE]
+====
+2 GBはプロキシSquidのデフォルトのキャッシュサイズを表します。これは、環境に合わせて調整する必要があります。
+====
+
+.プロシージャ: [literal]``spacecmd``とカスタム証明書を使用したプロキシ設定の生成
+. サーバコンテナホストにSSHで接続します。
+. 次のコマンドを実行してサーバとプロキシFQDNを置き換えます。
++
+----
+for f in ca.crt proxy.crt proxy.key; do
+  mgrctl cp $f server:/tmp/$f
+done
+mgrctl exec -ti 'spacecmd proxy_container_config -- -p 8022 pxy.example.com srv.example.com 2048 email@example.com /tmp/ca.crt /tmp/proxy.crt /tmp/proxy.key -o /tmp/config.tar.gz'
+----
+. 生成された設定をプロキシにコピーします。
++
+----
+mgrctl cp server:/tmp/config.tar.gz .
+----
+. 次のコマンドを使用してプロキシを配備します。
++ 
+----
+mgrpxy install podman config.tar.gz
+----

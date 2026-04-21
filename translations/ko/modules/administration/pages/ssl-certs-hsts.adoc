@@ -1,0 +1,73 @@
+[[ssl-certs-hsts]]
+= HTTP Strict Transport Security
+:revdate: 2024-07-31
+:page-revdate: {revdate}
+
+HTTP Strict Transport Security(https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security[HSTS])는 프로토콜 다운그레이드 공격 및 쿠키 하이재킹과 같은 가로채기 공격으로부터 웹 사이트를 보호하는 데 도움이 되는 정책 메커니즘입니다.
+
+{productname}에서는 HSTS가 기본적으로 활성화되어 있습니다. 서버에서 HSTS를 비활성화해야 하는 경우 다음 절차를 따르십시오.
+
+
+
+.절차: 서버에서 HSTS 비활성화
+[role=procedure]
+_____
+. 서버 컨테이너 호스트에서 루트 권한으로 다음 명령을 실행하여 [literal]``max-age=0`` 설정이 포함된 새 구성 파일을 생성합니다.
+
++
+
+[source, shell]
+----
+mgrctl exec -- \
+  echo 'Header always set Strict-Transport-Security "max-age=0; includeSubDomains"' \
+  > /etc/apache2/conf.d/zz-spacewalk-www-hsts.conf
+----
+
+. 다음 명령으로 Apache를 재시작합니다.
+
++
+
+[source, shell]
+----
+mgrctl exec -- systemctl restart apache2
+----
+
+_____
+
+프록시에서 이를 비활성화해야 하는 경우 다음 절차를 따르십시오.
+
+.절차: 프록시에서 HSTS 비활성화
+[role=procedure]
+_____
+. 서버 컨테이너 호스트에서 루트 권한으로 다음 명령을 실행하여 [literal]``max-age=0`` 설정이 포함된 새 구성 파일을 생성합니다.
+
++
+
+[source, shell]
+----
+echo 'Header always set Strict-Transport-Security "max-age=0; includeSubDomains' \
+  > /etc/uyuni/custom-httpd.conf
+----
+
+. 다음 명령 실행:
+
++
+
+[source, shell]
+----
+mgrpxy install podman --tuning-httpd /etc/uyuni/custom-httpd.conf config.tar.gz
+----
+
+_____
+
+
+[WARNING]
+====
+새 설정 파일의 이름을 [literal]``<filename>.conf``로 지정하는 경우 적절한 타이밍에 로드되어야 합니다. 예를 들어, [literal]``spacewalk-www.conf``에 정의된 항목을 재정의하려면 이 파일 뒤에 새 파일을 알파벳순으로 붙여야 합니다. Apache가 파일을 로드하는 방법에 대한 자세한 내용은 https://httpd.apache.org/docs[]에서 확인할 수 있습니다.
+====
+
+
+[IMPORTANT]
+====
+{productname}에서 생성한 기본 SSL 인증서 또는 자체 서명된 인증서를 사용하는 동안 HSTS가 활성화되면 해당 인증서에 서명하기 위해 사용된 CA가 브라우저에서 신뢰하는 경우를 제외하고 브라우저는 HTTPS를 통한 연결을 거부합니다. {productname}에서 생성한 SSL 인증서를 사용하는 경우, ``http://<SERVER-HOSTNAME>/pub/RHN-ORG-TRUSTED-SSL-CERT``에 있는 파일을 모든 사용자의 브라우저로 임포트하여 신뢰할 수 있습니다.
+====

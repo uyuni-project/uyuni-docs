@@ -1,0 +1,72 @@
+オペレーティング システムは、独自のGPGキーを直接信頼するか、少なくとも最小限のシステムでインストールされて出荷されます。 ただし、別のGPGキーで署名されたサードパーティのパッケージは手動で処理する必要があります。 クライアントは、GPGキーを信頼していなくても正常にブートストラップできます。 ただし、キーが信頼されるまで、新しいクライアントツールパッケージをインストールしたり、更新したりできません。
+
+クライアントは、ソフトウェアチャンネルに入力されたGPGキーの情報を使用して信頼済みのキーを管理するようになります。GPGキーの情報が含まれるソフトウェアチャンネルをクライアントに割り当てると、チャンネルを更新したとき、またはこのチャンネルから最初のパッケージをインストールしたときに、そのキーが信頼されます。
+
+ソフトウェアチャンネルページのGPGキーのURLには、「空白」で区切られた複数のキーのURLを含めることができます。 ファイルURLの場合は、ソフトウェアチャンネルを使用する前に、GPGキーファイルをクライアントに配備する必要があります。
+
+{redhat}ベースのクライアントのクライアントツールチャンネル用GPG キーは、クライアントの[path]``/etc/pki/rpm-gpg/``に配備され、ファイルURLで参照できます。
+
+// SUSE Liberty Linux not available at Uyuni for now
+
+ifeval::[{mlm-content} == true]
+{sll}クライアントのGPGキーの場合も同様です。
+endif::[]
+
+ソフトウェアチャンネルがクライアントに割り当てられている場合にのみ、システムによってインポートされて信頼されます。
+
+[NOTE]
+====
+Debianベースのシステムはメタデータのみに署名するため、単一チャンネルに追加のキーを指定する必要はありません。 xref:administration:repo-metadata.adoc[]の「独自のGPGキーを使用する」で説明されているように、ユーザが独自のGPGキーを設定してメタデータに署名すると、そのキーの配備と信頼が自動的に実行されます。
+====
+
+
+== ユーザ定義のGPGキー
+
+ユーザは、クライアントに配備するカスタムのGPGキーを定義できます。
+
+いくつかのpillarデータを提供し、{salt}ファイルシステムにGPGキーファイルを提供することで、自動的にクライアントに配備されます。
+
+これらのキーは、RPMベースのオペレーティングシステムでは[path]``/etc/pki/rpm-gpg/``に、Debianシステムでは[path]``/usr/share/keyrings/``に配備されます。
+
+キーを配備するクライアントのpillarキー[literal]``custom_gpgkeys``を定義し、キーファイルの名前を一覧にします。
+// I think the cat command is here to show the contents of the file.
+// In this case, the cat is superfluous.
+----
+cat /srv/pillar/mypillar.sls
+custom_gpgkeys:
+  - my_first_gpg.key
+  - my_second_gpgkey.gpg
+----
+
+さらに、{salt}ファイルシステムでは、[path]``gpg``という名前のディレクトリを作成し、[literal]``custom_gpgkeys`` pillarデータで指定された名前のGPGキーファイルを保存します。
+// I think the ls command is here to show the contents of the directory.
+// In this case, the ls is superfluous.
+
+----
+ls -la /srv/salt/gpg/
+/srv/salt/gpg/my_first_gpg.key
+/srv/salt/gpg/my_second_gpgkey.gpg
+----
+
+キーは[path]``/etc/pki/rpm-gpg/my_first_gpg.key``および[path]``/etc/pki/rpm-gpg/my_second_gpgkey.gpg``でクライアントに配備されます。
+
+最後のステップでは、ソフトウェアチャンネルのGPGキーのURLフィールドにURLを追加します。 menu:ソフトウェア[管理 > チャンネル]に移動し、変更するチャンネルを選択します。 ［[guimenu]``GPGキーのURL``］に値[literal]``file:///etc/pki/rpm-gpg/my_first_gpg.key``を追加します。
+
+
+== ブートストラップスクリプトのGPGキー
+
+.プロシージャ: ブートストラップスクリプトを使用してクライアントでGPGキーを信頼する
+. {productname}サーバのコマンドプロンプトで、[path]``/srv/www/htdocs/pub/``ディレクトリの内容を確認します。 このディレクトリには、使用できるすべての公開鍵が含まれています。 登録クライアントに割り当てるチャンネルに適用するキーをメモします。
+. 関連するブートストラップスクリプトを開き、[systemitem]``ORG_GPG_KEY=``パラメータを見つけて、必要なキーを追加します。 次に例を示します。
++
+----
+uyuni-gpg-pubkey-0d20833e.key
+----
++
+以前保存したキーを削除する必要はありません。
+
+
+[IMPORTANT]
+====
+クライアントのセキュリティにとってGPGキーを信頼することは重要です。 必要かつ信頼できるキーを決定するのは管理者のタスクです。 GPGキーが信頼されていない場合、ソフトウェアチャンネルをクライアントに割り当てることはできません。
+====

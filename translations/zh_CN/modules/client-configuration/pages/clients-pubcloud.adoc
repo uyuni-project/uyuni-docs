@@ -1,0 +1,78 @@
+[[clients-pubcloud]]
+= 在公有云上注册客户端
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+
+
+// 2024-04-04 OM: It had been decided in the conversation with the MLM PO 
+// that this Public Cloud related file can stay in the Uyuni books
+
+设置好 {productname} 服务器后，您便可开始注册客户端。
+
+
+
+== 添加产品并同步储存库
+
+
+确保您已添加客户端的对应产品并已将储存库同步到 {productname}。要创建用于注册客户端的引导储存库，必须执行此操作。
+
+有关详细信息，请参见 xref:specialized-guides:public-cloud-guide/overview.adoc[]。
+
+
+
+== 准备按需映像
+
+使用 {suse} 提供的按需映像开始的实例会自动进行注册，并且更新基础结构和 {sle} 模块均已激活。要使用按需映像作为 {productname} 客户端，您需要在开始前禁用此自动功能。
+
+
+
+.过程：准备按需映像
+. 登录到按需实例。
+. 在命令提示符处，以 root 身份去除注册数据和储存库：
++
+----
+registercloudguest --clean
+----
+. 去除自动注册的触发服务：
++
+----
+systemctl disable guestregister.service
+----
+. 在 Microsoft Azure 中，还需要禁用另一项服务：
++
+----
+systemctl disable regionsrv-enabler-azure.timer
+----
+
+
+
+== 注册客户端
+
+在 {productname} {webui} 中，导航到menu:系统[引导]，然后填写``主机``、``SSH 端口``、``用户``和``口令``字段。请确保为``主机``字段使用稳定的 FQDN，否则，如果公有云为您分配一个不同的临时 FQDN，{productname} 将找不到您的主机。
+
+公有云映像通常不允许使用用户名和口令进行 SSH 登录，仅允许通过证书进行 SSH 登录。如果您要从 {webui} 中使用引导，则需启用通过用户名和 SSH 密钥进行 SSH 登录的功能。您可以通过导航到menu:系统[引导]并更改身份验证方法来启用此功能。
+
+如果您的云提供商是 Microsoft Azure，您可以通过用户名和口令登录。要实现此目的，您需要允许 AzureUser 以 root 身份无口令运行命令。为此，请打开 [path]``/etc/sudoers.d/waagent`` 文件，并添加或编辑下面一行：
+
+----
+AzureUser ALL=(ALL) NOPASSWD: ALL
+----
+
+[WARNING]
+====
+允许 AzureUser 以 root 身份无口令运行命令会带来安全风险。请仅将此方法用于测试目的， 不要用于生产系统。
+====
+
+引导过程成功完成时,您的客户端即会列在menu:系统[系统列表]中。
+
+* 如果您想更好地控制注册过程或必须注册许多客户端，请创建引导脚本。有关详细信息，请参见 xref:client-configuration:registration-bootstrap.adoc[]。
+* 如果要注册 Salt 客户端而且想更好地控制注册过程，在命令行上执行单个命令较为合适。有关详细信息，请参见 xref:client-configuration:registration-cli.adoc[]。
+* 注册从公有云映像（例如 AWS AMI）启动的客户端时，需要进行额外的配置以防它们彼此重写。有关注册克隆客户端的详细信息，请参见 xref:administration:troubleshooting/tshoot-registerclones.adoc[]。
+
+
+
+== 激活密钥
+
+激活密钥用于确保客户端拥有正确的软件权利、可连接到适当的通道以及订阅相关的组。每个激活密钥都绑定到一个组织，您可以在创建密钥时设置此项。
+
+有关激活密钥的详细信息，请参见 xref:client-configuration:activation-keys.adoc[]。

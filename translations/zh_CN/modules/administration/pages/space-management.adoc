@@ -1,0 +1,71 @@
+[[space-management]]
+= 磁盘空间管理
+:revdate: 2026-03-10
+:page-revdate: {revdate}
+
+磁盘空间不足可能会对 {productname} 数据库和文件结构造成严重影响，在某些情况下，这种影响不可恢复。
+
+{productname} 会监控某些目录的可用磁盘空间。您可以修改受监控的目录和创建的警告。所有设置都在 [path]``/etc/rhn/rhn.conf`` 配置文件中配置。
+
+当某个受监控目录的可用空间低于警告阈值时，会向配置的电子邮件地址发送一条消息，并在登录页面顶部显示一条通知。
+
+
+
+== Monitored directories
+
+
+{productname} 默认监控以下目录：
+
+* [path]``/var/spacewalk``
+* [path]``/var/cache``
+* [path]``/srv``
+
+您可以使用 [systemitem]``spacecheck_dirs`` 参数更改受监控的目录。可以指定多个目录并用空格将其分隔。
+
+例如：
+
+----
+spacecheck_dirs = /var/spacewalk /var/cache /srv
+----
+
+有关卷的详细信息，请参见 xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]。
+
+== 阈值
+
+默认情况下，当受监控目录的可用空间少于总可用空间的 10% 时，{productname} 会创建警告。当受监控目录的可用空间低于总可用空间的 5% 时，将创建关键警报。
+
+您可以使用 [systemitem]``spacecheck_free_alert`` 和 [systemitem]``spacecheck_free_critical`` 参数更改这些警报阈值。
+
+例如：
+
+----
+spacecheck_free_alert = 10
+spacecheck_free_critical = 5
+----
+
+
+
+== Shut down services
+
+默认情况下，当达到关键警报阈值时，{productname} 会关闭 spacewalk 服务。
+
+您可以使用 [systemitem]``spacecheck_shutdown`` 参数更改此行为。``true`` 值启用关闭功能。任何其他值禁用关闭功能。
+
+例如：
+
+----
+spacecheck_shutdown = true
+----
+
+
+
+== Disable space checking
+
+默认已启用空间检查工具。您可以使用以下命令完全禁用此工具：
+
+----
+systemctl stop spacewalk-diskcheck.timer
+systemctl disable spacewalk-diskcheck.timer
+----
+
+禁用 [literal]``spacewalk-diskcheck.timer`` 后，如果达到警报阈值，将停止发送定期电子邮件警报，但警告通知仍会显示在登录页面的顶部。

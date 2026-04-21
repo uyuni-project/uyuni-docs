@@ -1,0 +1,68 @@
+[[installation-proxy-containers-k3s-uyuni]]
+= 在 K3s 上部署 {productname} 代理
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+
+[[installation-proxy-containers-k3s-k3s]]
+== 安装 K3s
+
+
+在容器主机计算机上，安装 [literal]``K3s``（请将 [literal]``<K3S_HOST_FQDN>`` 替换为 k3s 主机的 FQDN）：
+
+----
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--tls-san=<K3S_HOST_FQDN>" sh -
+----
+
+
+[[installation-proxy-containers-k3s-helm]]
+== 安装工具
+
+在安装时需要提供 [literal]``mgrpxy`` 和 [literal]``helm`` 软件包。
+
+使用安装程序脚本安装 Helm：
+----
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
+----
+
+有关详细信息，请参见 https://helm.sh/docs/intro/install/#from-script[]。
+
+[literal]``mgrpxy`` 软件包可从容器实用程序储存库中获取。请在 https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable:/ContainerUtils/ 中选择与发行套件匹配的软件包。
+
+.过程
+. 要在 Leap Micro 上安装软件包，请运行以下命令：
++
+----
+transactional-update pkg install mgrpxy
+----
+. 重引导。
+
+
+
+[[installation-proxy-containers-k3s-deploy]]
+== 部署 {productname} 代理 helm 图表
+
+要配置 {productname} 代理 Pod 使用的卷存储空间，请为以下声明定义永久性卷。如果您未自定义存储配置，K3s 将自动为您创建存储卷。
+
+永久性卷声明已命名为：
+
+* [literal]``squid-cache-pv-claim``
+* [literal]``/package-cache-pv-claim``
+* [literal]``/tftp-boot-pv-claim``
+
+按照 xref:installation-and-upgrade:container-deployment/uyuni/proxy-container-setup-uyuni.adoc[] 中所述创建 {productname} 代理的配置。复制 [literal]``tar.gz`` 配置文件，然后安装：
+
+----
+mgrpxy install kubernetes /path/to/config.tar.gz
+----
+
+有关详细信息，请参见：
+
+* link:https://kubernetes.io/docs/concepts/storage/persistent-volumes/[] (Kubernetes)
+* link:https://rancher.com/docs/k3s/latest/en/storage/[] (K3s) 文档

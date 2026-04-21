@@ -1,0 +1,172 @@
+[[delete.clients]]
+= Client Deletion
+:description: Delete clients in your SUSE Multi-Linux Manager Server either via the Web UI or command-line options
+:revdate: 2025-11-12
+:page-revdate: {revdate}
+
+// FIXME: where do we need to add warnings (suse clients only, all clients)
+
+If you need to remove a client from your {productname} Server, you can:
+
+* use the {webui} to delete it
+* remove a client from the command line.
+
+// can also be done manually.
+// FIXME: Why Manual Cleanup is necessary sometimes.
+
+
+
+[[delete.clients.webui]]
+== Delete a Client with the {webui}
+
+
+.Procedure: Deleting a client
+[role=procedure]
+____
+. In the {productname} {webui}, navigate to menu:Systems[System List] and select the client to delete.
+
+. Click btn:[Delete System].
+
+. Check the details and click btn:[Delete Profile] to confirm.
+
+. For {salt} clients, {productname} attempts to clean up additional configuration.
+  If the client cannot be contacted, you are given the option to cancel the deletion, or delete the client without cleaning up the configuration files.
+
+____
+
+You can also delete multiple clients using the System Set Manager.
+For more information about the System Set Manager, see xref:client-configuration:system-set-manager.adoc[].
+
+[IMPORTANT]
+====
+Cleaning up a client only disables {salt} and stops the service if possible.
+It does not uninstall the package.
+====
+
+
+
+== Delete a client on the command line (with API call)
+
+.Procedure: Deleting a client from the server
+[role=procedure]
+____
+. Delete the client with the FQDN (Fully Qualified Domain Name):
+
++
+
+----
+spacecmd system_delete FQDN
+----
+____
+
+[command]``spacecmd system_delete`` also deletes the {salt} key.
+
+[command]``system_delete`` offers the following options:
+
+
+----
+usage: system_delete [options] <SYSTEMS>
+
+    options:
+          -c TYPE - Possible values:
+             *  'FAIL_ON_CLEANUP_ERR' - fail in case of cleanup error,
+             *  'NO_CLEANUP' - do not cleanup, just delete,
+             *  'FORCE_DELETE' - try cleanup first but delete server anyway
+	        in case of error
+----
+
+////
+// move to Trouble Shooting and link from here
+Sometimes a new registration of a deleted (unregistered) client might not be possible.
+To solve this issue, some Salt cache files should be deleted on the {productname} Server (Salt master) before trying to re-register again:
+
+----
+rm /var/cache/salt/master/thin/version
+rm /var/cache/salt/master/thin/thin.tgz
+----
+////
+
+
+
+[[delete.clients.commandline]]
+== Delete client from the command line
+
+[IMPORTANT]
+====
+This process is for {productname} clients only.
+Do not run it on the {productname} Server itself.
+====
+
+[WARNING]
+====
+You must not execute the following procedure on clients running {rhel}, {debian}, or clones.
+Instead of [command]``zypper`` use equivalent packager commands such as [command]``yum``, [command]``dnf``, or [command]``apt``.
+====
+
+.Procedure: Deleting SLES 12 and 15 clients
+[role=procedure]
+____
+. Stop the salt-minion service:
+
++
+
+[source,shell]
+----
+systemctl stop salt-minion
+----
+
++
+
+. Remove the repositories and configuration files:
+
++
+
+[source,shell]
+----
+rm -f /etc/zypp/repos.d/susemanager\:bootstrap.repo
+rm -f /etc/zypp/repos.d/susemanager\:channels.repo
+rm -r /etc/sysconfig/rhn/
+rm -r /etc/salt/
+----
+
++
+
+. Remove Client Packages:
+
++
+
+[source,shell]
+----
+zypper rm salt salt-minion python*-salt sle-manager-tools-release
+----
+
+____
+
+
+.Procedure: {salt} bundle client - manual registration cleanup
+[role=procedure]
+____
+. To unregister, run:
+
++
+
+[source,shell]
+----
+systemctl stop venv-salt-minion
+zypper rm -y venv-salt-minion sle-manager-tools-release
+rm -f /etc/zypp/repos.d/susemanager\:bootstrap.repo
+rm -f /etc/zypp/repos.d/susemanager\:channels.repo
+rm -r /etc/venv-salt-minion/*
+----
+
+. Remove client machine ID:
+
++
+
+----
+rm /etc/sysconfig/rhn/systemid
+----
+
+____
+
+For information about the {salt} bundle, see xref:client-configuration:contact-methods-saltbundle.adoc[].

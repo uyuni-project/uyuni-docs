@@ -1,0 +1,318 @@
+[[clients-ubuntu]]
+= {ubuntu}クライアントの登録
+:revdate: 2025-03-13
+:page-revdate: {revdate}
+
+このセクションでは、{ubuntu}オペレーティングシステムを実行しているクライアントの登録について説明します。
+
+ifeval::[{mlm-content} == true]
+
+// Use list format: repository URLs / packages and metadata / version info
+[IMPORTANT]
+====
+* パッケージおよびメタデータは{suse}ではなくUbuntuから提供されます。
+* サポートされている製品については、xref:client-configuration:supported-features-ubuntu.adoc[]にあるリリースノートとサポートテーブルを参照してください。
+====
+endif::[]
+
+ifeval::[{mlm-content} == true]
+
+{productname}は、{salt}を使用する{ubuntu} 20.04 LTSおよび22.04 LTSクライアントをサポートしています。
+endif::[]
+
+ブートストラップは、リポジトリの設定やプロファイルの更新の実行など、{ubuntu}クライアントの起動および初期状態の実行のためにサポートされています。 ただし、{ubuntu}のrootユーザはデフォルトで無効になっているため、ブートストラップを使用するには、Pythonの[command]``sudo``特権がある既存ユーザが必要です。
+
+[IMPORTANT]
+====
+Canonicalは、{productname}を保証またはサポートしていません。
+====
+
+== ソフトウェアチャンネルの追加
+
+
+{ubuntu}クライアントを{productname}サーバに登録する前に、必要なソフトウェアチャンネルを追加して同期する必要があります。
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$arch-other-note.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/arch-other-note.adoc[]
+endif::[]
+
+ifeval::[{mlm-content} == true]
+
+このプロシージャで必要な製品は次のとおりです。
+
+[[ubuntu-channels-wizard]]
+[cols="1,1", options="header"]
+.Ubuntu製品 - WebUI
+|===
+
+| OSバージョン     | 製品名
+| {ubuntu} 24.04 | Ubuntu 24.04
+| {ubuntu} 22.04 | Ubuntu 22.04
+|===
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$addchannels_vendor_webui.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/addchannels_vendor_webui.adoc[]
+endif::[]
+
+または、コマンドプロンプトでチャンネルを追加できます。 このプロシージャで必要なチャンネルは次のとおりです。
+
+[[ubuntu-channels-cli]]
+[cols="1,1", options="header"]
+.Ubuntuチャンネル - CLI
+|===
+
+| OSバージョン     | ベースチャンネル
+| {ubuntu} 24.04 | ubuntu-2404-amd64-main-amd64
+| {ubuntu} 22.04 | ubuntu-2204-amd64-main-amd64
+|===
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$addchannels_vendor_cli.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/addchannels_vendor_cli.adoc[]
+endif::[]
+
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+このプロシージャで必要なチャンネルは次のとおりです。
+
+[[ubuntu-channels-cli-uyuni]]
+[cols="1,1,1,1,1,1", options="header"]
+.Ubuntuチャンネル - CLI
+|===
+
+| OS Version | Base Channel | Main Channel | Updates Channel | Security Channel | Client Channel
+
+| {ubuntu} 24.04 | ubuntu-2404-pool-amd64-uyuni | ubuntu-2404-amd64-main-uyuni | ubuntu-2404-amd64-main-updates-uyuni | ubuntu-2404-amd64-main-security-uyuni | ubuntu-2404-amd64-uyuni-client
+| {ubuntu} 22.04 | ubuntu-2204-pool-amd64-uyuni | ubuntu-2204-amd64-main-uyuni | ubuntu-2204-amd64-main-updates-uyuni | ubuntu-2204-amd64-main-security-uyuni | ubuntu-2204-amd64-uyuni-client
+|===
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$addchannels_novendor_cli.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/addchannels_novendor_cli.adoc[]
+endif::[]
+
+[IMPORTANT]
+====
+Ubuntuクライアントをブートストラップする前に、新しいチャンネルはすべて完全に同期されている必要があります。
+====
+
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+
+== Ubuntu ESMパッケージのミラーリング
+
+Canonicalは、link:https://ubuntu.com/pro[Ubuntu Pro]のユーザと顧客向けにlink:https://ubuntu.com/security/esm[Expanded Security Maintenance] (**ESM**)パッケージを提供しています。これらのパッケージは、複数のオペレーティングシステムコンポーネントと選択したアプリケーションを対象として、より長期のメンテナンス(_10～12 年_) を提供します。
+
+これらのリポジトリは、Ubuntu Proに登録されているシステムから必要な**GPGキー**と個人用**ベアラートークン**を抽出すれば、{productname}内でも同期できます。
+
+
+=== GPGキーとベアラートークンの抽出
+
+UbuntuホストをUbuntu Proに登録します。個人用登録トークンは、link:https://ubuntu.com/pro/dashboard[Ubuntu Proダッシュボード]で確認できます。このためにはlink:https://login.ubuntu.com/[Ubuntu Oneアカウント]が必要です。
+
+----
+sudo apt-get install ubuntu-advantage-tools
+sudo pro attach <perosnal_token>
+----
+
+登録後、ファイル``/etc/apt/auth.conf.d/90ubuntu-advantage``でベアラートークンを確認できます。
+
+----
+machine esm.ubuntu.com/apps/ubuntu/ login bearer password <token>  # ubuntu-pro-client
+machine esm.ubuntu.com/infra/ubuntu/ login bearer password <token>  # ubuntu-pro-client
+----
+
+[NOTE]
+====
+リポジトリごとに1つの専用のベアラートークンが使用されます。
+====
+
+{productname}内で次のリポジトリを設定します。
+
+=== Ubuntu ESMリポジトリの設定
+
+リポジトリを作成するには、次のURLを使用します。
+
+[[ubuntu-esm-repositories]]
+[cols="1,1", options="header"]
+.Ubuntu ESMリポジトリ
+|===
+
+| URL     | 説明
+| https://bearer:<token>@esm.ubuntu.com/infra/ubuntu/dists/<release>-infra-updates/main/binary-<arch>/ | オペレーティングシステムの機能更新
+| https://bearer:<token>@esm.ubuntu.com/infra/ubuntu/dists/<release>-infra-security/main/binary-<arch>/ | オペレーティングシステムのセキュリティ更新
+| https://bearer:<token>@esm.ubuntu.com/apps/ubuntu/dists/<release>-apps-updates/main/binary-<arch>/ | アプリケーションの機能更新
+| https://bearer:<token>@esm.ubuntu.com/apps/ubuntu/dists/<release>-apps-security/main/binary-<arch>/ | アプリケーションのセキュリティ更新
+|===
+
+``<token>``は個人用ベアラートークンに置き換えてください。また、``arch``および``release``も次のいずれかの値に置き換える必要があります。
+
+[[ubuntu-esm-archs-releases]]
+[cols="1,1", options="header"]
+.Ubuntu ESMのアーキテクチャとリリース
+|===
+
+| アーキテクチャ | リリース
+| `amd64`、`arm64`、`armel`、`armhf`、`i386`、`powerpc`、`ppc64el`、`s390x` | `bionic`、`focal`、`jammy`、`noble`、`trusty`、`xenial`
+|===
+
+{productname}でリポジトリを同期するには、対応するGPGキー(`ubuntu-advantage-esm-infra-trusty.gpg`、`ubuntu-advantage-esm-apps.gpg`)をインポートする必要があります。これらのキーは、Ubuntu Proに登録されているシステムの``/etc/apt/trusted.gpg.d``にあります。これらのファイルをコピーして{productname}システムにコピーし、次のようにインポートします。
+
+----
+mgradm gpg add /path/to/gpg.key
+----
+
+すでに同期済みの{ubuntu}親チャンネルの下に適切な子チャンネルを作成します。その後、リポジトリを同期できます。
+
+[IMPORTANT]
+====
+ここで説明する手順を使用するとサブスクリプションの制限を回避できますが、これはサービス利用規約に違反し、**法的な結果**を招く場合があります。常に、使用するシステムの数に対して十分な数のサブスクリプションが存在する必要があります。
+====
+
+endif::[]
+
+== 同期ステータスの確認
+
+ifeval::[{mlm-content} == true]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_webui_mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_webui_mlm.adoc[]
+endif::[]
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_webui_uyuni.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_webui_uyuni.adoc[]
+endif::[]
+
+endif::[]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_cli.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_cli.adoc[]
+endif::[]
+
+[NOTE]
+====
+{ubuntu}チャンネルは非常に大きいことがあります。 同期に数時間かかる場合があります。
+====
+
+
+
+== GPGキーの管理
+
+クライアントではGPGキーを使用して、ソフトウェアパッケージをインストールする前にパッケージ認証の確認が行われます。 信頼されているソフトウェアのみクライアントにインストールできます。
+
+[IMPORTANT]
+====
+クライアントのセキュリティにとってGPGキーを信頼することは重要です。 必要かつ信頼できるキーを決定するのは管理者のタスクです。 GPGキーが信頼されていない場合、ソフトウェアチャンネルは使用できないため、クライアントにチャンネルを割り当てるかどうかは、キーを信頼するかどうかによって決まります。
+====
+
+GPGキーの詳細については、xref:client-configuration:gpg-keys.adoc[]を参照してください。
+
+
+== rootアクセス
+
+{ubuntu}のrootユーザはデフォルトでSSHアクセスが無効になっています。
+
+標準ユーザを使用してオンボードできるようにするには、[filename]``sudoers``ファイルを編集する必要があります。
+
+[NOTE]
+====
+この問題は、自己インストールされたバージョンの{ubuntu}で発生します。インストール時にデフォルトのユーザが管理特権を付与されている場合、[command]``sudo``を使用して特権エスカレーションを実行するにはパスワードが必要です。クラウドインスタンスでは、[command]``cloud-init``が[path]``/etc/sudoers.d``の下にファイルを自動的に作成し、パスワードを必要とせずに[command]``sudo``を介して特権エスカレーションを付与するため、この問題は発生しません。
+====
+
+
+
+=== rootユーザアクセスの許可
+
+.プロシージャ: rootユーザアクセスの許可
+
+. クライアントで、[filename]``sudoers``ファイルを編集します。
++
+----
+sudo visudo
+----
++
+この行を[filename]``sudoers``ファイルの末尾に追加して[command]``sudo``アクセス権をユーザに付与します。 {webui}でクライアントをブートストラップしているユーザの名前で[systemitem]``<user>``を置き換えます。
++
+----
+<user>  ALL=NOPASSWD: /usr/bin/python, /usr/bin/python2, /usr/bin/python3, /var/tmp/venv-salt-minion/bin/python
+----
+
+[NOTE]
+====
+このプロシージャによりrootアクセス権が付与されます。クライアントの登録に必要なパスワードは不要です。 クライアントは正常にインストールされると、root特権で実行されるため、アクセス権は不要です。 クライアントを正しくインストールした後、[path]``sudoers``ファイルからこの行を削除することをお勧めします。
+====
+
+
+
+=== SSH経由でインストール時に作成されたユーザとしてブートストラップする
+
+SSH経由でUbuntuクライアントをブートストラップするには、インストール時に作成されたユーザをsudoグループに追加する必要があります。 次にクライアントからブートストラップスクリプトを実行します。
+
+.プロシージャ: インストール時に作成されたユーザのsudoグループへの追加とSSH経由でのブートストラップ
+
+. クライアントで、rootとしてコマンドラインから実行します([literal]``<username>``をインストール時に作成されたユーザの名前に置き換えます)。
++
+
+----
+sudo usermod -aG sudo <username>
+----
+
+. コマンドラインからクライアントシステムをブートストラップします([literal]``<SERVER_FQDN>``を{productname}サーバの完全修飾ドメイン名に置き換えます)。
++
+
+----
+sudo su -
+curl -Sks https://<SERVER_FQDN>/pub/bootstrap/bootstrap-script.sh | /bin/bash
+----
+
+[IMPORTANT]
+====
+{ubuntu}は上記のように[command]``sudo su -``を発行した後に、クライアントシステムのコマンドラインから実行される対応する{ubuntu}ブートストラップスクリプトを使用してのみブートストラップできます。 {ubuntu}ではデフォルトでrootユーザが無効になっており、{webui}が{ubuntu}のインストール時に作成されたユーザ特権昇格を許可していないため、{productname} {webui}経由でブートストラップできません。
+====
+
+
+
+== クライアントの登録
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$create_bootstrap_repo_register.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/create_bootstrap_repo_register.adoc[]
+endif::[]
+

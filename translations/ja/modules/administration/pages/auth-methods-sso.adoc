@@ -1,0 +1,101 @@
+[[auth-methods-sso]]
+= シングルサインオン(SSO)による認証
+:revdate: 2024-05-06
+:page-revdate: {revdate}
+
+{productname}は、Security Assertion Markup Language (SAML){nbsp}2プロトコルを実装することで、シングルサインオン(SSO)をサポートしています。
+
+シングルサインオンは、ユーザが1組の資格情報を使用して複数のアプリケーションにアクセスできるようにする認証プロセスです。 SAMLは、認証および許可データを交換するためのXMLベースの規格です。 SAML IDサービスプロバイダ(IdP)は、{productname}などのサービスプロバイダ(SP)に認証および許可サービスを提供します。 {productname}は、シングルサインオンを有効にする必要がある3つのエンドポイントを公開します。
+
+{productname}のSSOは以下をサポートします。
+
+* SSOを使用したログイン。
+* サービスプロバイダが開始したシングルログアウト(SLO)、およびIDサービスプロバイダのシングルログアウトサービス(SLS)を使用してログアウトする。
+* アサーションとnameIdの暗号化。
+* アサーションの署名。
+* AuthNRequest、LogoutRequest、およびLogoutResponderによるメッセージ署名。
+* アサーションコンシューマサービスエンドポイントの有効化。
+* シングル ログアウト サービス エンドポイントの有効化。
+* SPメタデータ(署名可能)の発行。
+
+{productname}のSSOは以下をサポートしません。
+
+* IDサービスプロバイダ(IdP)の製品の選択と実装。
+* 他の製品のSAMLサポート(各製品のドキュメントで確認してください)。
+
+SSOの実装例については、xref:administration:auth-methods-sso-example.adoc[]を参照してください。
+
+
+[IMPORTANT]
+====
+デフォルトの認証方法からシングルサインオンに変更する場合、新しいSSO資格情報は{webui}にのみ適用されます。 ``mgr-sync``や``spacecmd``などのクライアントツールは、引き続きデフォルトの認証方式でのみ動作します。
+====
+
+
+
+== 前提条件
+
+
+開始する前に、これらのパラメータを使用して外部IDサービスプロバイダを設定しておく必要があります。 手順については、IdPのドキュメントを確認してください。
+
+
+[IMPORTANT]
+====
+IdPユーザと{productname}ユーザのマッピングはSAML:Attributeで指定します。SAML:AttributeはIdPで指定し、SAML認証時に{productname}に渡す必要があります。この属性には``uid``という名前を付け、ログイン後にマップされた{productname}ユーザを含める必要があります。シングルサインオンを有効にする前に、{productname}が作成されている必要があります。
+====
+
+
+以下のエンドポイントが必要です。
+
+* アサーションコンシューマサービス(ACS): SAMLメッセージを受け入れてサービスプロバイダへのセッションを確立するエンドポイント。
+    {productname}のACSのエンドポイントはlink:https://server.example.com/rhn/manager/sso/acs[]です
+* シングルログアウトサービス(SLS): IdPからログアウト要求を開始するエンドポイント。
+    {productname}のSLSのエンドポイントはlink:https://server.example.com/rhn/manager/sso/sls[]です
+* メタデータ: SAMLの{productname}メタデータを取得するエンドポイント。
+    {productname}のメタデータのエンドポイントはlink:https://server.example.com/rhn/manager/sso/metadata[]です
+
+ユーザ``orgadmin``を使用したIdPによる認証が成功した後で、``orgadmin``ユーザが{productname}に存在する場合は、``orgadmin``ユーザとして{productname}にログインします。
+
+
+
+== SSOの有効化
+
+[NOTE]
+====
+SSOの使用は、他のタイプの認証と相互に排他的であり、有効か無効のいずれかです。 SSOはデフォルトで無効になっています。
+====
+
+[IMPORTANT]
+====
+サーバコンテナでステップを実行する前に、[literal]``mgrctl term``を使用します。
+====
+
+.プロシージャ: SSOの有効化
+
+. ユーザがまだ{productname}に存在しない場合は、まず作成してください。
+. [path]``/etc/rhn/rhn.conf``を編集して、次の行をファイルの最後に追加します。
++
+----
+java.sso = true
+----
+. [path]``/usr/share/rhn/config-defaults/rhn_java_sso.conf``で、カスタマイズするパラメータを見つけます。
+    カスタマイズするパラメータを[path]``/etc/rhn/rhn.conf``に挿入し、それらのパラメータの前に[literal]``java.sso``を付けます。 たとえば、[path]``/usr/share/rhn/config-defaults/rhn_java_sso.conf``で以下を見つけます。
++
+----
+onelogin.saml2.sp.assertion_consumer_service.url = https://YOUR-PRODUCT-HOSTNAME-OR-IP/rhn/manager/sso/acs
+----
++
+カスタマイズするには、オプション名の前に``java.sso.``を付けて、対応するオプションを[path]``/etc/rhn/rhn.conf``に作成します。
++
+----
+java.sso.onelogin.saml2.sp.assertion_consumer_service.url = https://YOUR-PRODUCT-HOSTNAME-OR-IP/rhn/manager/sso/acs
+----
++
+変更する必要があるすべての出現を見つけるには、プレースホルダ[literal]``YOUR-PRODUCT``および[literal]``YOUR-IDP-ENTITY``をファイル内で検索します。 すべてのパラメータには、その意味についての簡単な説明が含まれています。
+. spacewalkサービスを再起動して変更を取得します。
++
+----
+mgradm restart
+----
+
+{productname}のURLにアクセスすると、認証を要求されたSSO用IdPにリダイレクトされます。 認証に成功すると、{productname} {webui}にリダイレクトされ、認証されたユーザとしてログインします。 SSOを使用したログインで問題が発生した場合は、{productname}のログで詳細情報を確認してください。

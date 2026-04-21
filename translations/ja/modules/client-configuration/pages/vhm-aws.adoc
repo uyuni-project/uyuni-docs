@@ -1,0 +1,99 @@
+[[vhm-aws]]
+= 仮想ホストマネージャおよびAmazon Web Services
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+
+// 2024-04-04 OM: It had been decided in the conversation with the mlm PO 
+// that this Public Cloud related file can stay in the Uyuni books
+
+
+仮想ホストマネージャ(VHM)を使用して、Amazon Web Services (AWS)からインスタンスを収集できます。
+
+VHMを使用すると、{productname}は、クラスタに関する情報を取得して報告できます。 VHMの詳細については、xref:client-configuration:vhm.adoc[]を参照してください。
+
+
+
+== Amazon EC2 VHMの作成
+
+
+
+仮想ホストマネージャ(VHM)は{productname}サーバ上で動作します。
+
+[systemitem]``virtual-host-gatherer-libcloud``パッケージを{productname}サーバにインストール済みであることを確認してください。
+
+
+.プロシージャ: Amazon EC2 VHMの作成
+
+. {productname}の{webui}で、menu:システム[仮想ホストマネージャ]に移動します。
+. btn:[作成]をクリックし、ドロップダウンメニューから［[guimenu]``Amazon EC2``］を選択します。
+. ［[guimenu]``Add an Amazon EC2 Virtual Host Manager``］（Amazon EC2仮想ホストマネージャの追加）セクションで、次のパラメータを使用します。
+* ［[guimenu]``ラベル``］フィールドにVHMのカスタム名を入力します。
+* ［[guimenu]``Access Key ID``］（アクセスキーID）フィールドに、Amazonが提供するアクセスキーIDを入力します。
+* ［[guimenu]``Secret Access Key``］（秘密アクセス鍵）フィールドに、Amazonインスタンスに関連付けられた秘密アクセス鍵を入力します。
+* ［[guimenu]``Region``］（リージョン）フィールドに、使用するリージョンを入力します。
+* ［[guimenu]``Zone``］（ゾーン）フィールドに、VMが存在するゾーンを入力します。 これは、サブスクリプションマッチングを動作させるために必要です。 リージョンおよびゾーンの設定の詳細については、<<susesupport_and_vm_zones>>を参照してください。
+. btn:[作成]をクリックして変更を保存し、VHMを作成します。
+. ［[guimenu]``仮想ホストマネージャ``］ページで、新しいVHMを選択します。
+. ［[guimenu]``プロパティ``］ページで、btn:[データの更新]をクリックし、新しいVHMを評価します。
+
+評価されたオブジェクトおよびリソースを表示するには、menu:システム[システム一覧 > 仮想システム]に移動します。
+
+
+Amazonパブリッククラウドで動作しているインスタンスは、UUIDを{productname}サーバに報告します。その際のフォーマットは、``i``に17桁の16進数をつなげたものです。
+
+----
+I1234567890abcdef0
+----
+
+
+ifeval::[{mlm-content} == true]
+
+[[susesupport_and_vm_zones]]
+== SUSEのサポートとVMゾーン
+
+パブリッククラウドプロバイダは、リージョンを使用して、仮想マシンを提供しているデータセンターにおける地理上の物理的場所を定義します。 たとえば、[systemitem]``米国東部``や[systemitem]``アジア``です。
+
+リージョンがさらにゾーンに分割されます。 たとえば、[systemitem]``米国東部``リージョンには、[systemitem]``us-east-2a``、[systemitem]``us-east-2b``などが含まれる場合があります。
+
+{suse}は、仮想マシンのゾーンを使用して、提供する適切なサブスクリプションを決定します。 すべてのVMが同じゾーンで提供される場合、``1-2仮想マシン``サブスクリプションの条件になります。
+
+VMが異なるゾーンで提供される場合、それらが同じリージョン内であっても、``1-2仮想マシン``サブスクリプションの条件を満たさない場合があります。 この場合、サブスクリプションを注意深く確認してください。
+
+[NOTE]
+====
+{byos}インスタンス({byoslongform})の場合、インストールされているすべての製品がサブスクリプションマッチャに渡されます。パブリッククラウドのインスタンスが{payg} ({payglongform})の場合、そのベース製品はサブスクリプションマッチャのカウントから除外されます。
+
+インスタンスが {payg}か{byos}かの計算は、登録時またはハードウェア更新アクション実行時に行われます。
+====
+
+詳細については、link:https://www.suse.com/products/terms_and_conditions.pdf[]を参照するか、{suse}にお問い合わせください。
+
+endif::[]
+
+
+
+
+== 仮想ホストマネージャのAWS許可
+
+セキュリティ上の理由から、タスクを実行するために可能な限り最小限の権限を常に付与してください。 AWSに接続するユーザに過度な許可を持つアクセスキーを使用することはお勧めしません。
+
+{productname}がAWSから必要な情報を収集するには、VHMにEC2インスタンスとアドレスを記述する許可が必要です。これを許可する1つの方法は、このタスクに固有の新しいIAMユーザ(IDおよびアクセス管理)を作成し、次のようにポリシーを作成して、ユーザにアタッチすることです。
+
+----
+{
+    "Version": "2012-10-17",
+    "Statement":[
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:DescribeAddresses",
+                "ec2:DescribeInstances"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+----
+
+
+特定のリージョンへのアクセスを制限することで、許可をさらに制限できます。 詳細については、link:https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ExamplePolicies_EC2.html#iam-example-read-only[]を参照してください。

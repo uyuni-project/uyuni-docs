@@ -1,0 +1,94 @@
+[[workflow-removing-channel]]
+= 채널 제거
+:revdate: 2025-01-23
+:page-revdate: {revdate}
+
+
+이 장에서는 수명이 종료된 제품을 정리하거나 공간을 확보하거나 기타 목적으로 {productname}에서 {suse} 제공 채널을 수동으로 제거하는 방법을 설명합니다.
+
+
+
+
+[[preparing-to-remove-channel]]
+== 채널 제거 준비
+
+
+채널을 제거하기 전에 제거할 채널의 레이블을 파악해야 합니다. 이 작업은 {webui}을(를) 사용하거나 명령줄에서 수행할 수 있습니다.
+
+[IMPORTANT]
+====
+* 시스템이 현재 구독 중이거나 시스템을 구독할 예정인 채널을 제거하지 않도록 주의하십시오.
+* 삭제할 채널에 현재 구독 중인 시스템이 있는 경우 해당 시스템을 업그레이드하거나 구독을 취소할 때까지 채널을 제거하지 않아야 합니다.
+====
+
+
+=== 채널 레이블 식별
+
+.절차: {webui}를 사용하여 채널 레이블 식별
+[role=procedure]
+. {productname} {webui}에서 menu:소프트웨어[채널 목록 > 전체]로 이동합니다.
+. 이 페이지에는 [label]``채널 이름``이 표시됩니다. 채널 이름에 대한 링크를 선택하면 [literal]``채널 레이블`` 필드가 표시됩니다.
+. 제거할 채널과 하위 채널을 식별합니다.
+
+
+.절차: 명령줄을 사용하여 채널 레이블 식별
+[role=procedure]
+
+. {productname} 컨테이너 호스트에세 다음 명령을 실행하여 채널 목록을 확인할 수 있습니다.
++
+----
+mgrctl exec -ti -- spacewalk-remove-channel -l
+----
+
+
+===  채널 시스템 구독 확인
+
+.절차: {webui}를 사용하여 채널 시스템 구독 확인
+
+. {productname} {webui}에서 menu:소프트웨어[채널 목록 > 전체]로 이동합니다.
+. 오른쪽에서 [literal]``시스템`` 열을 찾습니다.
+. 제거할 채널 또는 하위 채널의 [literal]``시스템`` 열을 확인합니다.
+
+
+.절차: 명령줄을 사용하여 채널 시스템 구독 확인
+
+. {productname} 컨테이너 호스트에서 다음 명령 실행:
++
+----
+mgrctl exec -ti -- 'spacecmd -- softwarechannel_listsystems <Channel Label>'
+----
+
+
+[[removing-channel]]
+== 채널 제거
+
+메타데이터가 있는 채널은 명령줄 도구로만 제거할 수 있습니다. [command]``spacewalk-remove-channel`` 명령은 다른 채널에서 더 이상 참조하지 않는 경우 소프트웨어 패키지를 자동으로 제거합니다. 따라서 데이터베이스에서 메타데이터를 제거하고 스토리지 매체에서 파일을 제거합니다.
+
+
+
+=== 하위 채널 제거
+
+.절차: 명령 줄을 사용한 하위 채널 제거
+
+. 개별 채널을 제거하려면 {productname} 컨테이너 호스트에서 다음 명령을 실행합니다.
++
+----
+mgrctl exec -ti -- spacewalk-remove-channel -c channel-label
+----
++
+. 여러 채널을 동시에 제거하려면 각 채널에 [literal]``-c`` 플래그를 사용한 다음 [literal]``channel-label``을 사용합니다. 예:
++
+----
+mgrctl exec -ti -- spacewalk-remove-channel -c channel-label1 -c channel-label2
+----
+
+
+=== 상위 및 모든 하위 채널 제거
+
+.절차: 상위 및 모든 하위 채널 제거
+. 모든 하위 채널이 있는 상위 채널을 제거하려면 [command]``spacewalk-remove-channel``을 [option]``-a`` 옵션으로 실행하고 [literal]``parent-channel-label``을 [literal]``sles12-sp5-pool-x86_64``와 같은 채널 레이블로 바꿉니다.
++
+----
+mgrctl exec -ti -- spacewalk-remove-channel -a parent-channel-label
+----
+

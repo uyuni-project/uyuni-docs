@@ -1,0 +1,143 @@
+[[client-upgrades-major]]
+= 主要版本升级
+:revdate: 2024-06-12
+:page-revdate: {revdate}
+
+客户端必须有所安装操作系统的最新可用服务包 (SP) 且已应用所有最新更新。开始前，请确保系统是最新的，并且已成功安装所有更新。
+
+升级由 {yast} 和 {ay} 控制，该过程不使用 Zypper。
+
+
+
+== 准备迁移
+
+
+需要先完成以下步骤，才能将客户端从 SLE{nbsp}12 迁移到 SLE{nbsp}15：
+
+. 准备安装媒体
+. 声明自动安装发行套件
+. 创建激活密钥
+. 创建自动安装配置文件
+
+
+
+=== 准备安装媒体
+
+.过程：准备安装媒体
+. 在容器主机上，下载包含安装源的 ISO 映像。
+
+. 使用 [command]``mgradm`` 从 ISO 映像导入安装数据：
++
+----
+mgradm distribution copy <映像名称>.iso <映像名称>
+----
+
+. 记下 [command]``mgradm`` 报告的发行套件路径。向 {productname} 声明发行套件时需要提供该路径。
+
+
+[NOTE]
+====
+此映像可用于多个自动安装发行套件。
+====
+
+有关详细信息，请参见 xref:client-configuration:autoinst-distributions.adoc[]。
+
+
+
+=== 声明自动安装发行套件
+
+.过程：声明自动安装发行套件
+. 在 {productname} {webui} 中，导航到menu:系统[自动安装 > 发行套件]。
+. 单击[guimenu]``创建发行套件``，并填写以下字段：
++
+在[guimenu]``发行套件标签``字段中，输入用于标识自动安装发行套件的名称。
+  例如 ``sles15sp6-x86_64``。
+* 在[guimenu]``树路径``字段中，输入已保存的安装媒体的路径。
+* 选择匹配的[guimenu]``基础通道``。
+  所选值必须与安装媒体相匹配。
+* 选择[guimenu]``安装程序代系``。
+  所选值必须与安装媒体相匹配。
+* 可选：指定引导此发行套件时要使用的内核选项。
+  可以通过多种方式来提供内核选项。
+  此处仅添加了发行套件通用的选项。
+. 单击 btn:[创建可自动安装的发行套件]。
+
+
+=== 创建激活密钥
+
+例如，要从旧 SLE{nbsp}12 基础通道切换到新的 SLE{nbsp}15 通道，需要有激活密钥。
+
+
+.过程：创建激活密钥
+. 在 {productname} 服务器 {webui} 中，导航到menu:系统[激活密钥]，然后单击[guimenu]``创建密钥``。
+. 输入密钥说明。
+. 输入密钥或将其留空以生成自动密钥。
+. 可选：如果您要限制使用次数，请在[guimenu]``使用``文本字段中输入值。
+. 选择 [systemitem]``SLE-Product-SLES15-SP6-Pool for x86_64`` 基础通道。
+. 可选：选择任何[guimenu]``附加系统类型``。
+    有关详细信息，请参见 link:{sles-base-os-documentation}/article-modules.html[]。
+. 单击 btn:[创建激活密钥]。
+. 单击[guimenu]``子通道``选项卡，然后选择所需通道。
+. 单击 btn:[更新密钥]。
+
+
+
+=== 创建自动安装配置文件
+
+自动安装配置文件包含安装系统所需的所有安装和配置数据，还包含在完成安装后需要执行的脚本。例如，可用作着手点的脚本，请参见 link:https://github.com/SUSE/manager-build-profiles/tree/master/AutoYaST[]。
+
+有关有效的 {ay} 升级设置，请参见 link:https://doc.opensuse.org/projects/autoyast/#CreateProfile-upgrade[]。
+
+
+.过程：创建自动安装配置文件
+. 在 {productname} {webui} 中，导航到menu:系统[自动安装 > 配置文件]，然后上载自动安装配置文件脚本。
++
+有关可用作着手点的示例脚本，请参见：
++
+link:https://github.com/SUSE/manager-build-profiles/tree/master/AutoYaST[]。
+
+. 在``内核选项``字段中，键入 ``autoupgrade=1``。
++
+（可选）您也可以包含 ``Y2DEBUG=1`` 选项。调试设置不是必需的设置，不过此设置有助于对您未来可能遇到的任何问题进行查错。
++
+
+[IMPORTANT]
+====
+在 Azure 云中运行的客户端必须将 ``textmode=1 console=ttyS0`` 添加到``内核选项``中。
+====
+
+. 粘贴自动安装配置文件或使用文件上载字段。
+. 单击 btn:[创建] 保存设置。
+. 如果需要为上载的配置文件设置变量，请导航到menu:系统[自动安装 > 配置文件]，选择要编辑的配置文件，然后导航到[guimenu]``变量``选项卡。
++
+使用以下格式指定所需的变量：
++
+----
+<key>=<value>
+----
+
+
+
+== 迁移
+
+在开始前，需检查自动安装配置文件中引用的所有通道是否可用并已完全同步。
+
+您可以在 [path]``/var/log/rhn/reposync/<channel-label>.log`` 中监控镜像进度。
+
+
+.过程：迁移
+. 在 {productname} 服务器 {webui} 中，导航到[guimenu]``系统``，然后选择要升级的客户端。
+. 导航到[guimenu]``置备``选项卡，然后选择上载的自动安装配置文件。
+. 单击 btn:[安排自动安装并完成]。系统会下载所需的文件，更改引导加载程序项，重引导并开始升级。
+
+
+客户端下次与 {productname} 服务器同步时，会收到重新安装作业。重新安装作业会提取新内核和 initrd 软件包，还会写入新的 [path]``/boot/grub/menu.lst`` (GRUB Legacy) 或 [path]``/boot/grub2/grub.cfg`` (GRUB 2)，包含指向新内核和 initrd 软件包的指针。
+
+客户端下次引导时，会使用 grub 来引导新内核及其 initrd。此过程中不会使用 PXE 引导。
+
+提取作业约 3 分钟后，客户端会关闭以重引导。
+
+[NOTE]
+====
+对于客户端，请在迁移完成后使用 ``spacewalk/minion_script`` 代码段再次注册客户端。
+====

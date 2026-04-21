@@ -1,0 +1,45 @@
+[[tuning-changelogs]]
+= 변경 로그 튜닝
+:revdate: 2024-05-10
+:page-revdate: {revdate}
+
+일부 패키지의 경우 변경 로그 항목 목록이 깁니다. 이 데이터는 기본적으로 다운로드되지만, 유지하는 것이 항상 유용한 정보는 아닙니다. 다운로드되는 변경 로그 메타데이터의 양을 제한하고 디스크 공간을 절약하기 위해 디스크에 유지할 항목 수를 제한할 수 있습니다.
+
+[IMPORTANT]
+====
+서버 컨테이너 내에서 단계를 실행하기 전에 [literal]``mgrctl term``을 사용합니다.
+====
+
+이 구성 옵션은 [filename]``/etc/rhn/rhn.conf`` 구성 파일에 있습니다. 파라미터의 기본값은 [systemitem]``20``입니다. 이 값을 [systemitem]``0``으로 변경하면 항목 수가 무제한으로 표시됩니다.
+
+----
+java.max_changelog_entries = 20
+----
+
+이 파라미터를 설정하면 새 패키지가 동기화될 때에만 적용됩니다.
+
+이 파라미터를 변경한 후 ``mgradm restart``로 서비스를 재시작합니다.
+
+캐시된 데이터를 삭제하고 재생성하여 오래된 데이터를 제거할 수 있습니다.
+
+[IMPORTANT]
+====
+캐시된 데이터를 삭제 및 재생성하기 위해서는 시간이 오래 걸릴 수 있습니다. 보유하고 있는 채널 수와 삭제할 데이터의 양에 따라 몇 시간이 걸릴 수 있습니다. 작업은 Taskomatic에 의해 백그라운드에서 실행되므로 작업이 완료되는 동안 {productname}을 계속 사용할 수 있지만 성능이 약간 손실될 수 있습니다.
+====
+
+명령줄에서 캐시된 데이터를 삭제하고 재생성을 요청합니다.
+
+----
+spacewalk-sql -i
+----
+그런 다음 SQL 데이터베이스 프롬프트에 다음을 입력합니다.
+----
+DELETE FROM rhnPackageRepodata;
+INSERT INTO rhnRepoRegenQueue (id, CHANNEL_LABEL, REASON, FORCE)
+(SELECT sequence_nextval('rhn_repo_regen_queue_id_seq'),
+        C.label,
+        'cached data regeneration',
+        'Y'
+        FROM rhnChannel C);
+\q
+----

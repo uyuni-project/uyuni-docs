@@ -1,0 +1,78 @@
+[[clients-pubcloud]]
+= 공용 클라우드에서 클라이언트 등록
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+
+
+// 2024-04-04 OM: It had been decided in the conversation with the MLM PO 
+// that this Public Cloud related file can stay in the Uyuni books
+
+{productname} 서버를 설정한 후에는 클라이언트 등록을 시작할 수 있습니다.
+
+
+
+== 제품 추가 및 리포지토리 동기화
+
+
+클라이언트에 해당하는 제품을 이미 추가했고 리포지토리를 {productname}에 동기화했는지 확인하십시오. 클라이언트 등록에 사용되는 부트스트랩 리포지토리를 생성하려면 이 작업은 필수입니다.
+
+자세한 내용은 xref:specialized-guides:public-cloud-guide/overview.adoc[]에서 확인할 수 있습니다.
+
+
+
+== 온디맨드 이미지 준비
+
+{suse}가 제공한 온디맨드 이미지에서 시작된 인스턴스는 자동으로 등록되고 업데이트 인프라 및 {sle} 모듈이 활성화됩니다. 온디맨드 이미지를 {productname} 클라이언트로 사용하려면 이 자동화를 비활성화한 후에 시작해야 합니다.
+
+
+
+.절차: 온디맨드 이미지 준비
+. 온디맨드 인스턴스에 로그인합니다.
+. 명령 프롬프트에서 루트 권한으로 등록 데이터 및 리포지토리를 제거합니다.
++
+----
+registercloudguest --clean
+----
+. 자동 등록을 위한 트리거 서비스 제거:
++
+----
+systemctl disable guestregister.service
+----
+. Microsoft Azure에서는 비활성화해야 하는 추가 서비스가 있습니다.
++
+----
+systemctl disable regionsrv-enabler-azure.timer
+----
+
+
+
+== 클라이언트 등록
+
+{productname} {webui}에서 menu:시스템[부트스트래핑]으로 이동하여 ``호스트``, ``SSH 포트``, ``사용자`` 및 ``암호`` 필드를 입력합니다. ``호스트`` 필드에서 안정적인 FQDN을 사용할 수 있는지 확인합니다. 그렇지 않으면 {productname}가 공용 클라우드에서 다른 일시적인 FQDNS를 제공하는 경우 호스트를 찾을 수 없습니다.
+
+일반적으로 공용 클라우드 이미지는 사용자 이름 및 암호를 사용한 SSH 로그인을 허용하지 않고 인증서가 있는 SSH만 허용합니다. {webui}에서 부트스트랩하려면 사용자 이름 및 SSH 키를 사용하여 SSH 로그인을 활성화해야 합니다. 이 작업은 menu:시스템[부트스트랩]으로 이동한 후 권한 부여 방법을 변경하여 수행할 수 있습니다.
+
+클라우드 공급자가 Microsoft Azure인 경우 사용자 이름 및 비밀번호를 사용하여 로그인할 수 있습니다. 이렇게 하려면 AzureUser가 비밀번호를 사용하지 않고 루트 권한으로 명령을 실행할 수 있도록 허용해야 합니다. 이 작업을 수행하려면 [path]``/etc/sudoers.d/waagent`` 파일을 열고 다음 줄을 추가하거나 편집합니다.
+
+----
+AzureUser ALL=(ALL) NOPASSWD: ALL
+----
+
+[WARNING]
+====
+AzureUser가 암호를 사용하지 않고 루트 권한으로 명령을 실행할 수 있도록 허용하면 보안 위험이 발생합니다. 테스트 목적으로만 이 방법을 사용하십시오. 프로덕션 시스템에서는 이 기능을 사용하지 마십시오.
+====
+
+부트스트랩 프로세스가 완료된 후에는 클라이언트가 menu:시스템[시스템 목록]에 나열됩니다.
+
+* 프로세스에 대한 더 많은 제어 권한을 원하거나 여러 클라이언트를 등록해야 하거나 기존 클라이언트를 등록하려면 부트스트랩 스크립트를 생성합니다. 자세한 내용은 xref:client-configuration:registration-bootstrap.adoc[]에서 확인할 수 있습니다.
+* Salt 클라이언트와 프로세스에 대한 더 많은 제어 권한을 위해서는 명령줄에서 단일 명령을 실행하면 도움이 될 수 있습니다. 자세한 설명은 xref:client-configuration:registration-cli.adoc[]를 참조하십시오.
+* 공용 클라우드 이미지(예: AWS AMI)에서 실행된 클라이언트를 등록하는 경우에는 몇 가지 추가 구성을 수행하여 서로 덮어쓰지 않도록 해야 합니다. 복제 클라이언트 등록에 대한 자세한 내용은 xref:administration:troubleshooting/tshoot-registerclones.adoc[]에서 확인할 수 있습니다.
+
+
+
+== 활성화 키
+
+활성화 키는 고객에게 적합한 소프트웨어 자격이 있는지, 적절한 채널에 연결되었는지, 관련 그룹에 가입되어 있는지를 확인하는 데 사용됩니다. 각 활성화 키는 키를 생성할 때 설정할 수 있는 조직에 바인딩됩니다.
+
+활성화 키에 대한 자세한 설명은 xref:client-configuration:activation-keys.adoc[]에서 참조하십시오.

@@ -1,0 +1,83 @@
+[[live-patching-channel-setup]]
+= 设置实时修补通道
+:revdate: 2025-06-30
+:page-revdate: {revdate}
+
+每次更新完整的内核软件包后都需要重引导。因此，必须确保使用实时修补的客户端在它们所指派到的通道中没有可用的更新内核。使用实时修补的客户端包含实时修补通道中正在运行的内核的更新。
+
+可通过两种方式管理实时修补通道：
+
+使用内容生命周期管理克隆产品树，并去除比正在运行的版本更新的内核版本。xref:administration:content-lifecycle-examples.adoc#enhance-project-with-livepatching[] 中介绍了此过程。这是建议的解决方法。
+
+或者，可以使用 `spacewalk-manage-channel-lifecycle` 工具。此过程更偏向于手动操作，需要使用命令行工具以及 {webui}。本节针对 SLES{nbsp}15 SP5 介绍了此过程，但内容同样适用于 SLE{nbsp}12 SP4 或更高版本。
+
+
+
+== 为实时修补使用 spacewalk-manage-channel-lifecycle
+
+
+[IMPORTANT]
+====
+spacewalk-manage-channel-lifecycle 已弃用，并将在后续版本中去除。建议用户改用功能更丰富且受官方支持的内容生命周期管理 (CLM) API。
+====
+
+克隆的供应商通道应该带有前缀 ``dev``（表示开发）、``testing`` 或 ``prod``（表示生产）。在此过程中，您将创建一个 ``dev`` 克隆通道，然后将该通道升级为 ``testing``。
+
+
+
+.过程：克隆实时修补通道
+
+. 在客户端上的命令提示符下，以 root 身份获取当前软件包通道树：
++
+
+[subs=attributes]
+----
+# spacewalk-manage-channel-lifecycle --list-channels
+Spacewalk Username: admin
+Spacewalk Password:
+Channel tree:
+
+ 1. sles15-{sp-vert}-pool-x86_64
+      \__ sle-live-patching15-pool-x86_64-{sp-vert}
+      \__ sle-live-patching15-updates-x86_64-{sp-vert}
+      \__ sle-manager-tools15-pool-x86_64-{sp-vert}
+      \__ sle-manager-tools15-updates-x86_64-{sp-vert}
+      \__ sles15-{sp-vert}-updates-x86_64
+----
+
+. 结合 [option]``init`` 参数使用 [command]``spacewalk-manage-channel`` 命令自动创建原始供应商通道的新开发克隆版本：
++
+[subs=attributes]
+----
+spacewalk-manage-channel-lifecycle --init -c sles15-{sp-vert}-pool-x86_64
+----
+[subs=attributes]
+. 检查通道列表中是否提供了 [systemitem]``dev-sles15-{sp-vert}-updates-x86_64``。
+
+检查创建的 ``dev`` 克隆通道，并去除任何需要重引导的内核更新。
+
+
+
+.过程：从克隆的通道中去除非在线内核补丁
+. 从menu:系统[系统列表]中选择客户端以检查当前内核版本，并记下[guimenu]``内核``字段中显示的版本。
+. 在 {productname} {webui} 中，从menu:系统[概述]中选择客户端，导航到menu:软件[管理 > 通道]选项卡，然后选择 [systemitem]``dev-sles15-{sp-vert}-updates-x86_64``。
+      导航到[guimenu]``补丁``选项卡，然后单击 btn:[列出/去除补丁]。
+. 在搜索栏中键入[systemitem]``内核``，并识别与您的客户端当前使用的内核匹配的内核版本。
+. 去除所有比当前安装的内核更新的内核版本。
+
+现已为您的通道设置了实时修补，可将其升级为 ``testing``。在此过程中，您还将随时可应用的实时修补子通道添加到了客户端。
+
+
+
+.过程：升级实时修补通道
+. 在客户端上的命令提示符下，以 `root` 身份将 `dev-sles15-{sp-vert}-pool-x86_64` 通道升级并克隆到新的 ``testing`` 通道：
++
+[subs=attributes]
+----
+# spacewalk-manage-channel-lifecycle --promote -c dev-sles15-{sp-vert}-pool-x86_64
+----
+. 在 {productname} {webui} 中，从menu:系统[概览]中选择客户端，然后导航到menu:软件[软件通道]选项卡。
+. 选中新的 [systemitem]``test-sles15-{sp-vert}-pool-x86_64`` 自定义通道以更改基础通道，并选中两个相应的实时修补子通道。
+. 单击 btn:[下一步]，确认细节正确，然后单击 btn:[确认] 以保存更改。
+
+现在可以选择和查看可用的 CVE 补丁，并通过实时修补应用这些重要的内核更新。

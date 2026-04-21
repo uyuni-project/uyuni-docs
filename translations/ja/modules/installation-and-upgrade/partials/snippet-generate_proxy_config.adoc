@@ -1,0 +1,156 @@
+== プロキシ設定の生成
+
+
+{productname}プロキシの設定アーカイブは{productname}サーバによって生成されます。追加のプロキシごとに専用の設定アーカイブが必要です。
+
+コンテナ化された{productname}プロキシの場合、変更を有効にするには、新しいプロキシ設定ファイルを構築してから、コンテナを再配備する必要があります。 これは、SSL証明書を含む、設定を更新するためのプロセスです。
+
+//[NOTE]
+//====
+//2 GB represents the default proxy squid cache size.
+//This will need to be adjusted for your environment.
+//====
+
+[IMPORTANT]
+====
+Podmanの配備では、このプロキシ設定を生成する前に、{productname}プロキシのコンテナホストを{productname}サーバにクライアントとして登録する必要があります。
+====
+
+プロキシFQDNを使用して、登録済みのクライアントではないプロキシコンテナ設定を生成すると(Kubernetesのユースケースと同様)、新しいシステムエントリがシステム一覧に表示されます。この新しいエントリは、以前に入力されたプロキシFQDN値の下に表示され、[literal]``外部``システムタイプになります。
+
+[NOTE]
+====
+Peripheral servers are always using third-party SSL certificates. If the hub server has generated the certificates for the peripheral server, it needs to generate the certificate of each proxy too.
+
+On the hub server, run the following command.
+
+[source, shell]
+----
+mgrctl exec -ti -- rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
+  --set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
+  --set-org-unit="ORGANIZATION UNIT" --set-email="name@example.com" \
+  --set-hostname=PROXY --set-cname="proxy.example.com"
+----
+
+使用するファイルは、
+
+. ルートCAとして、[litteral]``/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT``
+. プロキシ証明書として[litteral]``/root/ssl-build/<hostname>/server.crt``、
+. プロキシ証明書のキーとして[litteral]``/root/ssl-build/<hostname>/server.key``です。
+====
+
+// tag::generate-proxy-config-section[]
+=== {webui}を使用したプロキシ設定の生成
+
+.プロシージャ: {webui}を使用してプロキシコンテナ設定を生成する
+[role=procedure]
+_____
+
+. {webui}で、menu:システム[プロキシの設定]に移動し、必要なデータを入力します。
+
+. ［[guimenu]``プロキシFQDN``］フィールドに、プロキシの完全修飾ドメイン名を入力します。
+
+. ［[guimenu]``親FQDN``］フィールドに、{productname}サーバまたは別の{productname}プロキシの完全修飾ドメイン名を入力します。
+
+. ［[guimenu]``プロキシSSHポート``］フィールドに、SSHサービスが{productname}プロキシでリスンしているSSHポートを入力します。デフォルトの8022を維持することをお勧めします。
+
+. In the [guimenu]``Max Squid cache size [MB]`` field type maximal allowed size for Squid cache. Recommended is to use at most 80% of available storage for the containers.
+
++
+
+[NOTE]
+====
+2 GBはプロキシSquidのデフォルトのキャッシュサイズを表します。これは、環境に合わせて調整する必要があります。
+====
+
++
+
+［[guimenu]``SSL証明書``］選択リストで、{productname}プロキシ用に新しいサーバ証明書を生成するか、既存のサーバ証明書を使用するかを選択します。 生成された証明書は、{productname}組み込みの(自己署名)証明書とみなすことができます。
+
++
+
+選択に応じて、新しい証明書を生成するための署名CA証明書へのパス、またはプロキシ証明書として使用される既存の証明書とそのキーへのパスのいずれかを指定します。
+
++
+
+サーバによって生成されたCA証明書は、[path]``/var/lib/containers/storage/volumes/root/_data/ssl-build``ディレクトリに保存されます。
+
++
+
+既存の証明書またはカスタム証明書、および企業証明書と中間証明書の概念の詳細については、xref:administration:ssl-certs-imported.adoc[]を参照してください。
+
+. btn:[生成]をクリックして、{productname}サーバに新しいプロキシFQDNを登録し、コンテナホストの詳細を含む設定アーカイブ([filename]``config.tar.gz``)を生成します。
+
+. しばらくすると、ダウンロードするファイルが表示されます。このファイルをローカルに保存します。
+
+_____
+
+
+=== [literal]``spacecmd``と自己署名証明書を使用したプロキシ設定の生成
+
+[literal]``spacecmd``を使用してプロキシ設定を生成できます。
+
+.プロシージャ: spacecmdと自己署名証明書を使用してプロキシ設定を生成する
+[role=procedure]
+_____
+
+. SSHでコンテナホストに接続します。
+
+. 次のコマンドを実行してサーバとプロキシFQDNを置き換えます。
+
++
+
+----
+mgrctl exec -ti 'spacecmd proxy_container_config_generate_cert -- dev-pxy.example.com dev-srv.example.com 2048 email@example.com -o /tmp/config.tar.gz'
+----
+
+. 生成された設定をサーバコンテナからコピーします。
+
++
+
+----
+mgrctl cp server:/tmp/config.tar.gz .
+----
+
+_____
+
+
+
+=== [literal]``spacecmd``とカスタム証明書を使用したプロキシ設定の生成
+
+デフォルトの自己署名証明書ではなくカスタム証明書に対して[literal]``spacecmd``を使用して、プロキシ設定を生成できます。
+
+.プロシージャ: spacecmdとカスタム証明書を使用してプロキシ設定を生成する
+[role=procedure]
+_____
+
+. サーバコンテナホストにSSHで接続します。
+
+. Execute the following commands, replacing the Server and Proxy FQDN:
+
++
+----
+for f in ca.crt proxy.crt proxy.key; do
+  mgrctl cp $f server:/tmp/$f
+done
+mgrctl exec -ti 'spacecmd proxy_container_config -- -p 8022 pxy.example.com srv.example.com 2048 email@example.com /tmp/ca.crt /tmp/proxy.crt /tmp/proxy.key -o /tmp/config.tar.gz'
+----
+
++
+. 設定で中間CAを使用する場合は、それもコピーし、``-i``オプション付きでコマンドに含めます(必要に応じて複数回指定できます)。
+
++
+----
+mgrctl cp intermediateCA.pem server:/tmp/intermediateCA.pem
+mgrctl exec -ti 'spacecmd proxy_container_config -- -p 8022 -i /tmp/intermediateCA.pem pxy.example.com srv.example.com 2048 email@example.com /tmp/ca.crt /tmp/proxy.crt /tmp/proxy.key -o /tmp/config.tar.gz'
+----
+
+. 生成された設定をサーバコンテナからコピーします。
++
+----
+mgrctl cp server:/tmp/config.tar.gz .
+----
+
+_____
+
+// end::generate-proxy-config-section[]

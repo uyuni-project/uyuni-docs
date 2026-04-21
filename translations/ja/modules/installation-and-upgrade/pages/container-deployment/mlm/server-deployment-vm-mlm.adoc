@@ -1,0 +1,221 @@
+[[install-vm-kvm]]
+= 仮想マシンとしての{productname} {productnumber}サーバの配備 - KVM
+:revdate: 2025-07-09
+:page-revdate: {revdate}
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+この章では、{productname} {productnumber}をイメージとして配備するために必要な仮想マシン設定について説明します。このインストールでは、KVMを仮想マシンマネージャ(_virt-manager_)と組み合わせてサンドボックスとして使用します。
+
+
+
+// FIXME: make this section a snippet or move it to a general intro for both,
+//        KVM and VMware
+== 利用可能なイメージ
+
+
+[IMPORTANT]
+====
+{productname} {productnumber}サーバを配備する際に推奨される方法は、利用可能な次のイメージの1つを使用することです。これらのイメージにはすべてのツールが含まれており、配備が大幅に容易になります。
+====
+
+{productname} {productnumber}のイメージはlink:https://www.suse.com/download/suse-manager/[{productname} {productnumber} VM images]で入手できます。
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-warn-images-sl-micro.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-warn-images-sl-micro.adoc[]
+endif::[]
+
+////
+// FIXME: For the moment, disable misleading info about raw image here.
+// [NOTE]
+// ====
+// For more information on preparing raw images, see:
+//
+// * link:https://documentation.suse.com/en-us/sle-micro/5.5/single-html/SLE-Micro-deployment/#sec-raw-preparation[]
+// * link:https://documentation.suse.com/en-us/sle-micro/5.5/single-html/SLE-Micro-deployment/#cha-images-procedure[]
+
+Remember to resize the default size of the partition before deploying.
+For more information on preparing raw images, see https://documentation.suse.com/sle-micro/6.1/html/Micro-deployment-raw-images-virtual-machines/index.html#deployment-preparing-configuration-device[].
+// For the 5.0 backport:
+// For more information on preparing raw images, see link:https://documentation.suse.com/en-us/sle-micro/5.5/single-html/SLE-Micro-deployment/#sec-raw-preparation[].
+
+For additional information on the self install images, see https://documentation.suse.com/sle-micro/6.1/html/Micro-deployment-selfinstall-images/index.html
+// ====
+////
+
+.利用可能なサーバイメージ
+[cols="3, 3", options="header"]
+|===
+| アーキテクチャ | イメージの形式
+
+| aarch64| qcow2、vmdk
+
+| x86_64  | qcow2、vmdk、raw、セルフインストーラ
+
+| ppc64le | raw、セルフインストーラ
+
+| s390x * | qcow2、raw
+|===
+
+__* s390xでは、CDL DASDとFBAの2つのストレージオプションが利用可能です。__
+
+
+[[quickstart.sect.kvm.settings]]
+== 仮想マシンマネージャ(virt-manager)の設定
+
+**virt-manager**を使用して、新しい仮想マシンを作成するときに、次の設定を入力します。
+
+[NOTE]
+====
+次の表は、最低要件を指定しています。これらは、クライアントが1つある1つのサーバなど、テスト用の簡易的なインストールに適しています。運用環境を使用する場合、ディスク容量に関する背景情報が必要な場合は、xref:installation-and-upgrade:hardware-requirements.adoc[]を参照してください。
+====
+
+
+[cols="1,1", options="header"]
+|===
+2+<| KVMの設定
+| インストール方法 | 既存のディスクイメージのインポート
+| OS:                 | Linux
+| バージョン:            | {productname}-Server.x86_64-{productnumber}.*.qcow2
+| メモリ:             | 最小*)
+| CPU:              | 最小*)
+| ストレージフォーマット:     | _.qcow2_ 40 GB (デフォルト)ルートパーティション
+| 名前:               | test-setup
+| ネットワーク             | Bridge _br0_
+|===
+
+*) 最小値については、xref:installation-and-upgrade:hardware-requirements.adoc#server-hardware-requirements[]を参照してください。
+
+
+[[minimmal.kvm.settings]]
+== KVMの初期セットアップ
+
+.プロシージャ: 初期セットアップを作成する
+. ダウンロードした{minimal} KVMイメージを使用して新しい仮想マシンを作成し、［[guimenu]``Import existing disk image ``］（既存のディスクイメージをインポート）を選択します。
+. RAMおよびCPU数を設定します。
+. KVMマシンに名前を付けます。
+. btn:[Begin Installation]（インストールの開始）をクリックし、イメージからブートします。
+. ［JeOS Firstboot］の画面で、［Start］を選択して続行します。
++
+
+image::jeos-firstboot.png[]
+
+. キーボードレイアウトを選択します。
++
+
+image::select-keyboard.png[]
+
+.  ライセンス契約に同意します。
++
+
+image::accept-license-agreement.png[]
+
+. タイムゾーンを選択します。
++
+
+image::enter-timezone.png[]
+
+. rootのパスワードを入力します。
++
+
+image::root-password.png[]
+
+. インストールが完了したら、rootとしてログインします。
+
+. 次のセクションに進みます。
+
+
+
+== {sl-micro}および{productname} {productnumber}サーバの登録
+
+// note for 5.0 backport: 5.0 should have sle-micro
+
+[NOTE]
+====
+{sl-micro} {microversion}エンタイトルメントは、{productname}エンタイトルメント内に含まれているため、別途登録コードは必要ありません。
+====
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+.プロシージャ: {sl-micro}および{productname} {productnumber}を登録する
+. 仮想マシンをブートします。
+. ``root``としてログインします。
++
+// note for 5.0 backport: 5.0 should have sle-micro
+. SCCで{sl-micro}を登録します。
++
+
+----
+transactional-update register -r <REGCODE> -e <your_email>
+----
+
+. 再起動します。
+
+. {scclongform}で{productname} {productnumber}を登録します。
++
+
+----
+transactional-update register -p Multi-Linux-Manager-Server/5.1/x86_64 -r <REGCODE>
+----
+
+. 再起動します。
+
+. システムを更新します。
++
+
+----
+transactional-update
+----
+
+. 更新が適用されていた場合は再起動します。
+
+. このステップはオプションです。ただし、ご使用のインフラストラクチャでカスタム永続ストレージが必要な場合は、[command]``mgr-storage-server``ツールを使用します。
+
++
+
+詳細については、[command]``mgr-storage-server --help``を参照してください。このツールを使用すると、コンテナストレージとデータベースボリュームの作成が容易になります。次のようにコマンドを使用します。
+
++
+
+----
+mgr-storage-server <storage-disk-device> [<database-disk-device>]
+----
++
+例:
++
+
+----
+mgr-storage-server /dev/nvme1n1 /dev/nvme2n1
+----
+
++
+[NOTE]
+====
+このコマンドは、[path]``/var/lib/containers/storage/volumes``にある永続ストレージボリュームを指定されたストレージデバイスに移動します。
+
+詳細については、以下を参照してください。
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+====
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-step-deploy-podman-certs.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-step-deploy-podman-certs.adoc[]
+endif::[]

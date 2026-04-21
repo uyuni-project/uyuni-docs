@@ -1,0 +1,752 @@
+[[monitoring]]
+= Prometheus 및 Grafana를 사용한 모니터링
+:revdate: 2025-07-08
+:page-revdate: {revdate}
+
+Prometheus 및 Grafana를 사용하여 {productname} 환경을 모니터링할 수 있습니다. {productname} 서버 및 프록시는 자체 상태 메트릭을 제공할 수 있습니다. 또한, Salt 클라이언트에서 여러 Prometheus 엑스포트를 설치 및 관리할 수 있습니다.
+
+
+
+[[monitoring-requirements]]
+== 요구사항
+
+
+Prometheus 및 Grafana 패키지가 {productname} 클라이언트 도구에 포함된 대상은 다음과 같습니다.
+
+ifeval::[{mlm-content} == true]
+
+* {sle}{nbsp}12
+* {sle}{nbsp}15
+* openSUSE Leap 15.x
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+* {sle}{nbsp}12
+* {sle}{nbsp}15
+* openSUSE Leap 15.x
+
+endif::[]
+
+[NOTE]
+====
+위에 나열된 클라이언트만 모니터링 서버로 지원됩니다.
+====
+
+{productname} 서버와 별도의 시스템에 Prometheus 및 Grafana를 설치해야 합니다. 관리형 Salt {suse} 클라이언트를 모니터링 서버로 사용하는 것이 좋습니다.
+
+Prometheus는 풀 방식을 사용하여 메트릭을 가져오므로 서버는 모니터링되는 클라이언트에 대한 TCP 연결을 설정할 수 있어야 합니다. 클라이언트에는 해당하는 열린 포트가 있어야 하며 네트워크를 통해 연결할 수 있어야 합니다. 또는, 역방향 프록시를 사용하여 연결을 설정할 수 있습니다.
+
+
+ifeval::[{mlm-content} == true]
+[NOTE]
+====
+모니터링할 각 클라이언트에 대한 모니터링 추가 기능 구독이 있어야 합니다. {productname} 구독을 관리하려면 {scclongform}을(를) 방문하십시오.
+====
+endif::[]
+
+
+
+== Prometheus 및 Grafana
+
+
+=== Prometheus
+
+Prometheus는 시계열 데이터베이스에 실시간 메트릭을 기록하기 위해 사용되는 오픈 소스 모니터링 도구입니다. 메트릭은 HTTP를 통해 끌어오며, 고성능과 확장성을 가능하게 합니다.
+
+Prometheus 메트릭은 시계열 데이터 또는 동일한 그룹 또는 차원에 속하는 타임스탬프 값입니다. 메트릭은 이름과 레이블 집합으로 고유하게 식별됩니다.
+
+// TODO:: This should be an actual image.
+
+----
+   메트릭 이름               레이블                 타임스탬프     값
+┌────────┴───────┐  ┌───────────┴───────────┐    ┌──────┴──────┐  ┌─┴─┐
+http_requests_total{status="200", method="GET"}  @1557331801.111  42236
+----
+
+모니터링되는 각 애플리케이션 또는 시스템은 코드 계측 또는 Prometheus 엑스포트를 통해 위의 형식으로 메트릭을 노출해야 합니다.
+
+
+=== Prometheus 엑스포트
+
+엑스포트는 타사 시스템의 메트릭을 Prometheus 메트릭으로 엑스포트할 때 유용하게 사용할 수 있는 라이브러리입니다. 엑스포트는 Prometheus 메트릭을 사용하여 특정 애플리케이션 또는 시스템을 직접 계측하는 것이 불가능할 때마다 유용합니다. 모니터링되는 호스트에서 여러 엑스포트를 실행하여 로컬 메트릭을 엑스포트할 수 있습니다.
+
+Prometheus 커뮤니티는 공식 엑스포트 목록을 제공하며, 커뮤니티 기여를 통해 더욱 추가될 것입니다. 자세한 내용과 광범위한 엑스포트 목록은 link:https://prometheus.io/docs/instrumenting/exporters/[]에서 확인할 수 있습니다.
+
+
+=== Grafana
+
+Grafana는 데이터 시각화, 모니터링 및 분석을 위한 도구입니다. 그리고 일정 기간 동안 특정 메트릭을 나타내는 패널이 포함된 대시보드를 생성하기 위한 용도로 사용됩니다. 일반적으로 Grafana는 Prometheus와 함께 사용되지만, ElasticSearch, MySQL, PostgreSQL 및 Influx DB와 같은 다른 데이터 소스도 지원합니다. Grafana에 대한 자세한 내용은 link:https://grafana.com/docs/[]에서 확인할 수 있습니다.
+
+
+
+== 모니터링 서버 설정
+
+모니터링 서버를 설정하려면 Prometheus와 Grafana를 설치 및 구성해야 합니다.
+
+[NOTE]
+====
+{suse} 클라이언트만 모니터링 서버로 지원됩니다. 전체 목록은 xref:administration:monitoring.adoc#monitoring-requirements[]에서 확인할 수 있습니다.
+====
+
+
+=== Prometheus 설치
+
+모니터링 서버가 Salt 클라이언트인 경우 {productname} {webui}를 사용하여 Prometheus 패키지를 설치할 수 있습니다. 그렇지 않으면 모니터링 서버에 패키지를 수동으로 다운로드하여 설치할 수 있습니다. Prometheus 소프트웨어는 {productname} 프록시 및 {productname} {smr} 분기 서버에서도 사용할 수 있습니다.
+
+[IMPORTANT]
+====
+* {productname} 서버 컨테이너 내부의 셸에 액세스하려면 컨테이너 호스트에서 [literal]``mgrctl term``을 실행하거나, 단일 명령을 실행하려면 [literal]``mgrctl exec <options> -- <command>``를 실행하십시오.
+
+* 컨테이너 내부에서 컨테이너 호스트로 파일을 복사하려면 [literal]``mgrctl cp``를 사용합니다.
+====
+
+[NOTE]
+====
+데이터를 저장하려면 Prometheus에 POSIX 파일 시스템이 필요합니다. POSIX 호환 파일 시스템이 아닌 파일 시스템은 지원되지 않습니다. NFS 파일 시스템은 지원되지 않습니다.
+====
+
+.절차: {webui}를 사용한 Prometheus 설치
+[role=procedure]
+____
+. {productname} {webui}에서 Prometheus를 설치할 시스템의 세부 사항 페이지를 열고 [guimenu]``수식`` 탭으로 이동합니다.
+
+. [guimenu]``Prometheus`` 확인란을 선택하여 모니터링 수식을 활성화하고 btn:[저장]을 클릭합니다.
+
+. 상단 메뉴의 ``Prometheus`` 탭으로 이동합니다.
+
+. ``{productname} 서버`` 섹션에 유효한 {productname} API 자격 증명을 입력합니다.
+    입력한 자격 증명이 모니터링 대상 시스템 집합에 대한 액세스를 허용하는지 확인합니다.
+
+. 필요에 따라 기타 구성 옵션을 사용자 정의합니다.
+
+. btn:[수식 저장]을 클릭합니다.
+
+. highstate를 적용하고 성공적으로 완료되었는지 확인합니다.
+
+. Prometheus 인터페이스를 올바르게 로드했는지 확인합니다. 브라우저에서 9090 포트 Prometheus가 설치된 서버의 URL(예: [literal]``http://example.com:9090``)로 이동합니다.
+
+____
+
+수식 모니터링에 대한 자세한 내용은 xref:specialized-guides:salt/salt-formula-monitoring.adoc[]에서 참조하십시오.
+
+
+
+.절차: 수동으로 Prometheus 설치 및 구성
+[role=procedure]
+____
+
+. 모니터링 서버에서 [package]``golang-github-prometheus-prometheus`` 패키지 설치:
+
++
+
+[source, shell]
+----
+zypper in golang-github-prometheus-prometheus
+----
+
+. Prometheus 서비스를 활성화합니다.
+
++
+
+[source, shell]
+----
+systemctl enable --now prometheus
+----
+
+. Prometheus 인터페이스를 올바르게 로드했는지 확인합니다. 브라우저에서 9090 포트 Prometheus가 설치된 서버의 URL(예: [literal]``http://example.com:9090``)로 이동합니다.
+
+. [path]``/etc/prometheus/prometheus.yml``의 구성 파일을 열고 이 구성 정보를 추가하십시오. ``server.url``을 {productname} 서버 URL로 바꾸고 {productname} 자격 증명과 일치하도록 ``사용자 이름`` 및 ``비밀번호`` 필드를 조정합니다.
+
++
+
+----
+# {productname} self-health metrics
+scrape_configs:
+- job_name: 'mgr-server'
+  static_configs:
+    - targets:
+      - 'server.url:9100'  # Node exporter
+      - 'server.url:9187'  # PostgreSQL exporter
+      - 'server.url:5556'  # JMX exporter (Tomcat)
+      - 'server.url:5557'  # JMX exporter (Taskomatic)
+      - 'server.url:9800'  # Taskomatic
+    - targets:
+      - 'server.url:80'    # Message queue
+      labels:
+        __metrics_path__: /rhn/metrics
+
+# 관리되는 시스템 메트릭:
+- job_name: 'mgr-clients'
+  uyuni_sd_configs:
+   - server: "http://server.url"
+     username: "admin"
+     password: "admin"
+  relabel_configs:
+   - source_labels: [__meta_uyuni_exporter]
+     target_label: exporter
+   - source_labels: [__address__]
+     replacement: "No group"
+     target_label: groups
+   - source_labels: [__meta_uyuni_groups]
+     regex: (.+)
+     target_label: groups
+   - source_labels: [__meta_uyuni_minion_hostname]
+     target_label: hostname
+   - source_labels: [__meta_uyuni_primary_fqdn]
+     regex: (.+)
+     target_label: hostname
+   - source_labels: [hostname, __address__]
+     regex: (.*);.*:(.*)
+     replacement: ${1}:${2}
+     target_label: __address__
+   - source_labels: [__meta_uyuni_metrics_path]
+     regex: (.+)
+     target_label: __metrics_path__
+   - source_labels: [__meta_uyuni_proxy_module]
+     target_label: __param_module
+   - source_labels: [__meta_uyuni_scheme]
+     target_label: __scheme__
+----
+
+. 구성 파일을 저장합니다.
+
+. Prometheus 서비스를 재시작합니다.
+
++
+
+[source, shell]
+----
+systemctl restart prometheus
+----
+
+____
+
+Prometheus 구성 옵션에 대한 자세한 내용은 link:https://prometheus.io/docs/prometheus/latest/configuration/configuration/[]의 공식 Prometheus 설명서에서 확인할 수 있습니다.
+
+
+
+=== Grafana 설치
+
+모니터링 서버가 {productname}에서 관리하는 클라이언트인 경우 {productname} {webui}를 사용하여 Grafana 패키지를 설치할 수 있습니다. 그렇지 않으면 모니터링 서버에 패키지를 수동으로 다운로드하여 설치할 수 있습니다.
+
+[NOTE]
+====
+Grafana는 {productname} 프록시에서 사용할 수 없습니다.
+====
+
+.절차: {webui}를 사용한 Grafana 설치
+[role=procedure]
+____
+
+. {productname} {webui}에서 Grafana를 설치할 시스템의 세부 사항 페이지를 열고 [guimenu]``수식`` 탭으로 이동합니다.
+
+. 모니터링 수식을 활성화하려면 [guimenu]``Grafana`` 확인란을 선택하고 btn:[저장]을 클릭합니다.
+
+. 상단 메뉴의 ``Grafana`` 탭으로 이동합니다.
+
+. ``Grafana 활성화 및 구성`` 섹션에서 Grafana에 로그인하기 위해 사용할 관리자 자격 증명을 입력합니다.
+
+. ``데이터 소스`` 섹션에서 Prometheus URL 필드가 Prometheus를 실행 중인 시스템을 가리키는지 확인합니다.
+
+. 필요에 따라 기타 구성 옵션을 사용자 정의합니다.
+
+. btn:[수식 저장]을 클릭합니다.
+
+. highstate를 적용하고 성공적으로 완료되었는지 확인합니다.
+
+. Grafana 인터페이스를 올바르게 로드했는지 확인합니다. 브라우저에서 3000 포트 Grafana가 설치된 서버의 URL(예: [literal]``http://example.com:3000``)로 이동합니다.
+
+* Grafana에 액세스할 수 있으려면 방화벽에서 포트 3000이 열려 있어야 합니다.
+
+____
+
+
+[NOTE]
+====
+{productname}는 서버 자체 상태, 기본 클라이언트 모니터링 등을 위해 사전 빌드된 대시보드를 제공합니다. 수식 구성 페이지에서 프로비저닝할 대시보드를 선택할 수 있습니다.
+====
+
+
+.절차: Grafana 수동 설치
+[role=procedure]
+____
+
+. [package]``grafana`` 패키지를 설치합니다.
+
++
+
+[source, shell]
+----
+zypper in grafana
+----
+
+. Grafana 서비스를 활성화합니다.
+
++
+
+[source, shell]
+----
+systemctl enable --now grafana-server
+----
+
+. 브라우저에서 3000 포트 Grafana가 설치된 서버의 URL(예: [literal]``http://example.com:3000``)로 이동합니다.
+
+* Grafana에 액세스할 수 있으려면 방화벽에서 포트 3000이 열려 있어야 합니다.
+
+. 로그인 페이지에서 사용자 이름과 비밀번호에 ``admin``을 입력합니다.
+
+. btn:[로그인]을 클릭합니다. 로그인에 성공하면 비밀번호를 변경하라는 메시지가 표시됩니다.
+
+. 메시지가 표시되면 btn:[확인]을 클릭한 후 비밀번호를 변경합니다.
+
+. 구성 옵션이 표시되는 사이드 메뉴의 톱니바퀴 아이콘으로 커서를 이동합니다.
+
+. btn:[데이터 소스]를 클릭합니다.
+
+. 지원되는 모든 데이터 소스 목록을 확인하려면 btn:[데이터 소스 추가]를 클릭합니다.
+
+. Prometheus 데이터 소스를 선택합니다.
+
+. Prometheus 서버의 올바른 URL을 지정해야 합니다.
+
+. btn:[저장 및 테스트]를 클릭합니다.
+
+. 대시보드를 임포트하려면 사이드 메뉴에서 btn:[+] 아이콘을 클릭한 후 btn:[임포트]를 클릭합니다.
+
+. {productname} 서버 개요의 경우 대시보드 ID: ``17569``를 로드합니다.
+
+. {productname} 클라이언트 개요의 경우 대시보드 ID: ``17570``을 로드합니다.
+
++
+
+image::monitoring_grafana_example.png[scaledwidth=80%]
+
+____
+
+[NOTE]
+====
+* 수식 모니터링에 대한 자세한 내용은 xref:specialized-guides:salt/salt-formula-monitoring.adoc[]에서 참조하십시오.
+* Grafana의 수동 설치 및 구성 방법에 대한 자세한 내용은 link:https://grafana.com/docs[]에서 확인할 수 있습니다.
+====
+
+== {productname} 모니터링 구성
+
+{productname}{nbsp}4 이상을 사용하면 서버가 Prometheus 자체 상태 메트릭을 노출하도록 설정하고 클라이언트 시스템에 엑스포트를 설치 및 구성할 수도 있습니다.
+
+
+
+=== 서버 자체 모니터링
+
+서버 자체 상태 메트릭에는 하드웨어, 운영 체제 및 {productname} 내부가 포함됩니다. 이러한 메트릭은 Prometheus 엑스포트와 결합된 Java 애플리케이션의 계측을 통해 사용할 수 있습니다.
+
+{productname} 서버와 함께 제공되는 엑스포터는 다음과 같습니다.
+
+* 노드 엑스포트: [systemitem]``golang-github-prometheus-node_exporter``.
+** link:https://github.com/prometheus/node_exporter[]를 참조하십시오.
+* PostgreSQL 엑스포트: [systemitem]``prometheus-postgres_exporter``.
+** link:https://github.com/wrouesnel/postgres_exporter[]를 참조하십시오.
+* JMX 엑스포트: [systemitem]``prometheus-jmx_exporter``.
+** link:https://github.com/prometheus/jmx_exporter[]를 참조하십시오.
+
+{productname} 프록시와 함께 제공되는 엑스포트 패키지:
+
+* 노드 엑스포트: [systemitem]``golang-github-prometheus-node_exporter``.
+** link:https://github.com/prometheus/node_exporter[]를 참조하십시오.
+* Squid 엑스포트: [systemitem]``golang-github-boynux-squid_exporter``.
+** link:https://github.com/boynux/squid-exporter[]를 참조하십시오.
+
+엑스포터는 {productname} 서버 및 프록시에 미리 설치되어 있지만, 각 systemd 데몬은 기본적으로 비활성화되어 있습니다.
+
+
+
+.절차: 자체 모니터링 활성화
+[role=procedure]
+____
+
+. {productname} {webui}에서 menu:관리자[관리자 구성 > 모니터링]으로 이동합니다.
+
+. btn:[서비스 활성화]를 클릭합니다.
+
+. Tomcat 및 Taskomatic을 재시작합니다.
+
+. 9090 포트 Prometheus 서버의 URL(예: [literal]``http://example.com:9090``)로 이동합니다.
+
+. Prometheus UI에서 menu:상태[대상]으로 이동하여 ``mgr-server`` 그룹의 모든 엔드포인트가 작동 중인지 확인합니다.
+
+. {webui}와 함께 Grafana도 설치한 경우 {productname} 서버 대시보드의 menu:관리자[관리자 구성 > 모니터링]에서 서버 인사이트를 볼 수 있습니다.
+
+____
+
+[IMPORTANT]
+====
+{webui}를 사용하여 서버 자체 상태 모니터링만 활성화할 수 있습니다. Prometheus는 프록시에 대한 메트릭을 자동으로 수집하지 않습니다. 프록시에서 자체 상태 모니터링을 활성화하려면 엑스포트를 수동으로 설치 및 활성화해야 합니다.
+====
+
+{productname} 서버에서 수집되는 관련 메트릭은 다음과 같습니다.
+
+.서버 통계(포트 80)
+[cols="40,15,45"]
+|===
+|메트릭 |유형 | 설명
+
+|uyuni_all_systems
+|게이지
+|전체 시스템 수
+
+|uyuni_virtual_systems
+|게이지
+|가상 시스템 수
+
+|uyuni_inactive_systems
+|게이지
+|비활성 시스템 수
+
+|uyuni_outdated_systems
+|게이지
+|오래된 패키지가 있는 시스템 수
+|===
+
+.PostgreSQL 엑스포트(9187 포트)
+[cols="45,15,40"]
+|===
+|메트릭 |유형 | 설명
+
+|pg_stat_database_tup_fetched
+|counter
+|쿼리에 의해 패치되는 행의 수
+
+|pg_stat_database_tup_inserted
+|counter
+|쿼리에 의해 삽입되는 행의 수
+
+|pg_stat_database_tup_updated
+|counter
+|쿼리에 의해 업데이트되는 행의 수
+
+|pg_stat_database_tup_deleted
+|counter
+|쿼리에 의해 삭제되는 행의 수
+
+|mgr_serveractions_completed
+|gauge
+|완료된 작업의 수
+
+|mgr_serveractions_failed
+|gauge
+|실패한 작업의 수
+
+|mgr_serveractions_picked_up
+|gauge
+|선택된 작업의 수
+
+|mgr_serveractions_queued
+|gauge
+|대기열에 추가된 작업의 수
+|===
+
+.JMX 엑스포트(Tomcat 포트 5556, Taskomatic 포트 5557)
+[cols="45,15,40"]
+|===
+|메트릭 |유형 | 설명
+
+|java_lang_Threading_ThreadCount
+|gauge
+|활성 스레드의 수
+
+|java_lang_Memory_HeapMemoryUsage_used
+|gauge
+|현재 힙 메모리 사용량
+|===
+
+.서버 메시지 대기열(포트 80)
+[cols="40,15,45"]
+|===
+|메트릭 |유형 | 설명
+
+|message_queue_thread_pool_threads
+|counter
+|생성된 메시지 대기열 스레드의 수
+
+|message_queue_thread_pool_threads_active
+|gauge
+|현재 활성 메시지 대기열 스레드의 수
+
+|message_queue_thread_pool_task_count
+|counter
+|제출된 태스크의 수
+
+|message_queue_thread_pool_completed_task_count
+|counter
+|완료된 태스크의 수
+|===
+
+.Salt 대기열(포트 80)
+[cols="40,15,45"]
+|===
+|메트릭 |유형 | 설명
+
+|salt_queue_thread_pool_size
+|gauge
+|{salt} 대기열 당 생성된 스레드의 수
+
+|salt_queue_thread_pool_active_threads
+|gauge
+|대기열 당 현재 활성 {salt} 스레드의 수
+
+|salt_queue_thread_pool_task_total
+|counter
+|대기열당 제출된 태스크의 수
+
+|salt_queue_thread_pool_completed_task_total
+|counter
+|대기열당 완료된 태스크의 수
+
+|===
+
+모든 salt_queue 값에는 대기열 번호를 값으로 갖는 ``queue``라는 레이블이 있습니다.
+
+
+.Taskomatic Scheduler(포트 9800)
+[cols="40,15,45"]
+|===
+|메트릭 |유형 | 설명
+
+|taskomatic_scheduler_threads
+|counter
+|생성된 스케줄러 스레드의 수
+
+|taskomatic_scheduler_threads_active
+|gauge
+|현재 활성 스케줄러 스레드의 수
+
+|taskomatic_scheduler_completed_task_count
+|counter
+|완료된 태스크의 수
+|===
+
+
+=== 관리되는 시스템 모니터링
+
+Prometheus 메트릭 엑스포트는 수식을 사용하여 {salt} 클라이언트에 설치 및 구성할 수 있습니다. 패키지는 {productname} 클라이언트 도구 채널에서 사용할 수 있으며 {productname} {webui}에서 직접 활성화 및 구성할 수 있습니다.
+
+다음 엑스포트는 관리되는 시스템에 설치할 수 있습니다.
+
+* 노드 엑스포트: [systemitem]``golang-github-prometheus-node_exporter``.
+** link:https://github.com/prometheus/node_exporter[]를 참조하십시오.
+* PostgreSQL 엑스포트: [systemitem]``prometheus-postgres_exporter``.
+** link:https://github.com/wrouesnel/postgres_exporter[]를 참조하십시오.
+* Apache 엑스포트: [systemitem]``golang-github-lusitaniae-apache_exporter``.
+** link:https://github.com/Lusitaniae/apache_exporter[]를 참조하십시오.
+
+[NOTE]
+====
+{sl-micro}에서는 Node 엑스포터와 Blackbox 엑스포터만 사용할 수 있습니다.
+====
+
+엑스포트를 설치 및 구성한 후에는 Prometheus를 사용하여 모니터링되는 시스템에서 메트릭 수집을 시작할 수 있습니다. 모니터링 서버를 {webui}로 구성한 경우 메트릭 수집이 자동으로 수행됩니다.
+
+
+
+.절차: 클라이언트에서 Prometheus 엑스포트 구성
+[role=procedure]
+____
+
+. {productname} {webui}에서 모니터링할 클라이언트의 세부 사항 페이지를 열고 menu:수식[] 탭으로 이동합니다.
+
+. ``Prometheus 엑스포트`` 수식에서 [guimenu]``활성화됨`` 확인란을 선택합니다.
+
+. btn:[저장]을 클릭합니다.
+
+. menu:수식[Prometheus 엑스포트] 탭으로 이동합니다.
+
+. 활성화할 엑스포트를 선택하고 필요에 따라 인수를 사용자 정의합니다.
+    [guimenu]``주소`` 필드에는 콜론이 앞에 오는 포트 번호(``:9100``) 또는 완전히 확인할 수 있는 주소(``example:9100``)를 사용할 수 있습니다.
+
+. btn:[수식 저장]을 클릭합니다.
+
+. highstate를 적용합니다.
+
+____
+
+[IMPORTANT]
+====
+다음 포트는 방화벽에 의해 차단되지 않고 활성화되어야 합니다.
+
+* 모니터: 9090/tcp
+
+* 모니터링되는 시스템: 9100/tcp, 9117/tcp 및 9187/tcp
+====
+
+[NOTE]
+====
+해당 그룹 내의 개별 시스템에 사용된 동일한 구성을 적용하여 시스템 그룹에 대한 모니터링 수식을 구성할 수도 있습니다.
+====
+
+수식 모니터링에 대한 자세한 내용은 xref:specialized-guides:salt/salt-formula-monitoring.adoc[]에서 참조하십시오.
+
+
+=== Grafana 비밀번호 변경
+
+Grafana 비밀번호를 변경하려면 Grafana 설명서에 설명된 단계를 따릅니다.
+
+* https://grafana.com/docs/grafana/latest/administration/user-management/user-preferences/#change-your-grafana-password
+
+Grafana 관리자 비밀번호를 분실한 경우 다음 명령을 사용하여 [literal]``root``로 재설정할 수 있습니다.
+----
+grafana-cli --configOverrides cfg:default.paths.data=/var/lib/grafana --homepath /usr/share/grafana admin reset-admin-password <new_password>
+----
+
+
+== 네트워크 경계
+
+Prometheus는 풀 방식을 사용하여 메트릭을 가져오므로 서버는 모니터링되는 클라이언트에 TCP 연결을 설정할 수 있어야 합니다. 기본적으로 Prometheus에서 사용되는 포트입니다.
+
+* 노드 엑스포트: 9100
+* PostgreSQL 엑스포트: 9187
+* Apache 엑스포트: 9117
+
+추가적으로, Prometheus를 실행하는 호스트가 아닌 호스트에서 경고 관리자를 실행하는 경우에는 포트 9093도 열어야 합니다. 경고 관리자는 Prometheus 솔루션의 일부입니다. 경고 관리자는 Prometheus 서버 인스턴스와 같은 클라이언트 애플리케이션에서 보내는 경고를 처리합니다. 경고 관리자에 대한 자세한 내용은 https://prometheus.io/docs/alerting/latest/alertmanager/[]에서 확인할 수 있습니다.
+
+클라우드 인스턴스에 설치된 클라이언트의 경우 모니터링 서버에 대한 액세스 권한이 있는 보안 그룹에 필요한 포트를 추가할 수 있습니다.
+
+또는 엑스포트의 로컬 네트워크에 Prometheus 인스턴스를 배포하고 페더레이션을 구성할 수 있습니다. 이를 통해 기본 모니터링 서버가 로컬 Prometheus 인스턴스에서 시계열을 스크랩할 수 있습니다. 이 방법을 사용하는 경우 Prometheus API 포트인 9090 포트만 열면 됩니다.
+
+Prometheus 페더레이션에 대한 자세한 내용은 link:https://prometheus.io/docs/prometheus/latest/federation/[]에서 확인할 수 있습니다.
+
+네트워크 경계를 통해 요청을 프록시할 수도 있습니다. PushProx와 같은 도구는 네트워크 장벽의 양쪽에 프록시와 클라이언트를 배포하고 Prometheus가 NAT와 같은 네트워크 토폴로지에서 작동할 수 있도록 합니다.
+
+PushProx에 대한 자세한 내용은 link:https://github.com/RobustPerception/PushProx[]에서 확인할 수 있습니다.
+
+
+
+=== 역방향 프록시 설정
+
+Prometheus는 풀 방식을 사용하여 메트릭을 가져오므로, 서버는 모니터링되는 클라이언트의 각 엑스포트에 대한 TCP 연결을 설정할 수 있어야 합니다. 방화벽 구성을 단순화하기 위해 엑스포트에 역방향 프록시를 사용하여 단일 포트의 모든 메트릭을 노출할 수 있습니다.
+
+// Probably a diagram here. --LKB 2020-08-11
+
+
+
+.절차: 역방향 프록시를 사용하여 Prometheus 엑스포터 설치하기
+[role=procedure]
+____
+
+. {productname} {webui}에서 모니터링할 시스템의 세부 사항 페이지를 열고 [guimenu]``수식`` 탭으로 이동합니다.
+
+. [guimenu]``Prometheus 엑스포트`` 확인란을 선택하여 엑스포트 수식을 활성화하고 btn:[저장]을 클릭합니다.
+
+. 상단 메뉴에서 ``Prometheus 엑스포트`` 탭으로 이동합니다.
+
+. [guimenu]``역방향 프록시 활성화`` 옵션을 확인하고 유효한 역방향 프록시 포트 번호를 입력합니다.
+
+* 방화벽에서 포트 9999/tcp가 열려 있는지 확인합니다.
+
+. 필요에 따라, 다른 엑스포트를 사용자 정의합니다.
+
+. btn:[수식 저장]을 클릭합니다.
+
+. highstate를 적용하고 성공적으로 완료되었는지 확인합니다.
+
+____
+
+수식 모니터링에 대한 자세한 내용은 xref:specialized-guides:salt/salt-formula-monitoring.adoc[]에서 참조하십시오.
+
+
+
+== 보안
+
+Prometheus 서버 및 Prometheus 노드 엑스포트는 TLS 암호화 및 인증으로 엔드포인트를 보호하는 기본 제공 방법을 제공합니다. {productname} {webui}는 관련된 모든 구성요소의 구성을 간소화합니다. TLS 인증서는 사용자가 제공하고 배포해야 합니다. {productname}에서 지원하는 보안 모델은 다음과 같습니다.
+
+* 노드 엑스포트: TLS 암호화 및 클라이언트 인증서 기반 인증
+* Prometheus: TLS 암호화 및 기본 인증
+
+사용 가능한 모든 옵션 구성에 대한 자세한 내용은 xref:specialized-guides:salt/salt-formula-monitoring.adoc[]에서 확인할 수 있습니다.
+
+
+=== TLS 인증서 생성
+
+기본적으로 {productname}는 모니터링 구성을 보호하기 위한 인증서를 제공하지 않습니다. 보안을 제공하기 위해 자체 서명되거나 타사 인증 기관(CA)에서 서명한 사용자 지정 인증서를 생성하거나 임포트할 수 있습니다.
+
+이 섹션에서는 {productname} CA를 사용하여 자체 서명된 Prometheus 및 노드 엑스포트 미니언에 대한 클라이언트/서버 인증서를 생성하는 방법을 설명합니다.
+
+.절차: 서버/클라이언트 TLS 인증서 생성
+[role=procedure]
+____
+
+. {productname} 컨테이너 호스트의 명령 프롬프트에서 루트 권한으로 다음 명령을 실행합니다.
+
++
+
+.. 인증서 파일을 생성하려면 다음 명령을 실행합니다.
+
++
+
+Ensure that the [systemitem]``set-cname`` parameter is the fully qualified domain name (FQDN) of your {salt} client. You can use the [systemitem]``set-cname`` parameter multiple times if you require multiple aliases:
+
++
+
+[source, shell]
+----
+rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
+--set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
+--set-org-unit="ORGANIZATION UNIT" --set-email="name@example.com" \
+--set-hostname="minion.example.com" --set-cname="minion.example.com" --no-rpm
+----
+
++
+
+결과:
+
++
+
+----
+웹 서버의 SSL 개인 키 생성: /root/ssl-build/minion/server.key
+웹 서버의 SSL 인증서 요청 생성: /root/ssl-build/minion/server.csr
+웹 서버의 SSL 인증서 생성/서명: server.crt
+----
+
++
+
+.. 서버 컨테이너에서 호스트로 [path]``server.crt`` 및 [path]``server.key`` 파일을 복사합니다.
+
++
+
+----
+mgrctl cp 서버: /root/ssl-build/minion/server.key server.key
+mgrctl cp 서버: /root/ssl-build/minion/server.crt server.crt
+----
+
++
+
+.. 호스트에서 모니터링 클라이언트로 [path]``server.crt`` 및 [path]``server.key`` 파일을 복사합니다.
+
++
+
+----
+ssh minion.example.com 'mkdir /etc/ssl/mlm-server-certs'
+scp /root/server.* minion.example.com:/etc/ssl/mlm-server-certs
+ssh minion.example.com 'chmod go+r /etc/ssl/mlm-server-certs/server.*; ls -la /etc/ssl/mlm-server-certs'
+----
+
++
+
+. {salt} 양식을 구성하려면 이전 단계에서 지정한 디렉토리 이름을 입력합니다.
+
++
+
+.. formular server
+
++
+
+----
+Server Certificate /etc/ssl/mlm-server-certs/server.crt
+Server Key /etc/ssl/mlm-server-certs/server.key
+----
+
++
+
+.. formular 미니언
+
+____

@@ -1,0 +1,244 @@
+= レガシ{productname}サーバからコンテナへの移行
+:revdate: 2025-07-30
+:page-revdate: {revdate}
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+レガシ{productname}サーバをコンテナに移行するには、新しいマシンが必要です。
+
+この移行のコンテキストでは、レガシ{productname}サーバ(RPMインストール)は_古いサーバ_とも呼ばれます。
+
+
+== 要件と考慮事項
+
+
+
+=== ホスト名
+
+インプレース移行は不可能であるだけでなく、現在の移行プロシージャではホスト名の名前変更機能も許可されていません。
+
+そのため、新しいサーバの完全修飾ドメイン名(FQDN)はレガシサーバのFQDNと同じままです。
+
+[IMPORTANT]
+====
+移行後、新しいサーバを指すようにDHCPおよびDNSレコードを更新する必要があります。
+
+詳細については、<<migration-finalization>>を参照してください。
+====
+
+
+=== SSL certificates
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ssl-requirements.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-ssl-requirements.adoc[leveloffset=+1]
+endif::[]
+
+During a migration, the server SSL certificate and CA chain are copied from the source server, meaning that only the database certificates are required
+
+
+== GPGキー
+
+* 自己信頼GPGキーは移行されません。
+* RPMデータベースで信頼されているGPGキーのみが移行されます。したがって、[command]``spacewalk-repo-sync``でチャンネルを同期すると失敗する可能性があります。
+* 管理者は、実際のサーバ移行後にこれらのキーをレガシ{productname}インストールからコンテナホストに手動で移行する必要があります。
+
+
+.プロシージャ: GPGキーの新しいサーバへの手動移行
+. レガシUyuniサーバから新しいサーバのコンテナホストにキーをコピーします。
+. その後、コマンド[command]``mgradm gpg add <PATH_TO_KEY_FILE>``を使用して、移行したサーバに各キーを追加します。
+
+
+=== レガシサーバでの初期準備
+
+移行には、複製が必要なデータの量によって、非常に長い時間がかかることがあります。ダウンタイムを短縮するには、レガシサーバ上のすべてのサービスを稼働させたまま、_初期複製_、_再複製_、_最終複製と切り替え_のプロセスで移行を複数回実行することができます。
+
+最終的な移行中にのみ、レガシサーバ上のプロセスを停止する必要があります。
+
+最終複製以外のすべてに対して、パラメータ[command]``--prepare``を追加し、レガシサーバ上のサービスが自動的に停止するのを防止します。例:
+
+[source, shell]
+----
+mgradm migrate podman <oldserver.fqdn> --prepare
+----
+
+
+.プロシージャ: レガシサーバでの初期準備
+
+. {productname}サービスを停止します。
++
+----
+spacewalk-service stop
+----
+. PostgreSQLサービスを停止します。
++
+----
+systemctl stop postgresql
+----
+
+
+=== SSH接続の準備
+
+.プロシージャ: SSH接続を準備する
+. 新しい{productnumber}サーバに[systemitem]``root``用のSSHキーが存在することを確認します。キーが存在しない場合は、次のコマンドで作成します。
++
+----
+ssh-keygen -t rsa
+----
+. レガシサーバへの接続にパスワードを要求しないように、新しいサーバホストでSSH設定とエージェントの準備ができている必要があります。
++
+----
+eval $(ssh-agent); ssh-add
+----
++
+[NOTE]
+====
+パスワードを要求しない接続を確立するために、移行スクリプトは、新しいサーバで実行されているSSHエージェントに依存します。このエージェントがまだアクティブではない場合は、[command]``eval $(ssh-agent)``を実行して開始します。その後、[command]``ssh-add``に機密鍵のパスを指定して、実行中のエージェントにSSHキーを追加します。このプロセス中に、機密鍵のパスワードの入力を求められます。
+====
+
+. [command]``ssh-copy-id``を使用して、SSH公開鍵をレガシ{productname}サーバ([literal]``<oldserver.fqdn>``)にコピーします。[literal]``<oldserver.fqdn>``は、レガシサーバのFQDNに置き換えてください。
++
+----
+ssh-copy-id <oldserver.fqdn>
+----
++
+SSHキーは、レガシサーバの[path]``~/.ssh/authorized_keys``ファイルにコピーされます。 詳細については、[literal]``ssh-copy-id``のマニュアルページを参照してください。
+. 新しいサーバからレガシ{productname}サーバへのSSH接続を確立し、パスワードが不要であることを確認します。また、ホストの指紋に問題があってはなりません。問題がある場合は、[path]``~/.ssh/known_hosts``ファイルから古い指紋を削除してから、再試行してください。指紋はローカル[path]``~/.ssh/known_hosts``ファイルに保存されます。
+
+
+
+=== 移行の実行
+
+レガシ{productname}からコンテナ化された{productname}への移行を計画する際は、ターゲットのインスタンスがレガシ設定の仕様を満たしているか、上回っていることを確認します。これには、メモリ(RAM)、CPUコア、ストレージ、ネットワーク帯域幅などが含まれますが、これらに限定されません。
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../installation-and-upgrade/partials/snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+
+// Unify the following with matching MLM section and => snippet
+
+==== カスタム永続ストレージの設定
+
+永続ストレージの設定はオプションですが、コンテナのディスクがいっぱいになった状態での深刻な問題を回避する唯一の方法です。[command]``mgr-storage-server``ツールを使用してカスタム永続ストレージを設定することを強くお勧めします。
+
+詳細については、[command]``mgr-storage-server --help``を参照してください。このツールを使用すると、コンテナストレージとデータベースボリュームの作成が容易になります。
+
+このコマンドは次のように使用します。
+
+[source, shell]
+----
+mgr-storage-server <storage-disk-device> [<database-disk-device>]
+----
+
+[NOTE]
+====
+デバイスにはファイルシステムが存在してはなりません。ファイルシステムがストレージデバイスに存在する場合、コマンドは中止されます。
+====
+
+例:
+
+[source, shell]
+----
+mgr-storage-server /dev/nvme1n1 /dev/nvme2n1
+----
+
+[NOTE]
+====
+このコマンドは、[path]``/var/lib/containers/storage/volumes``に永続ストレージを作成します。
+
+詳細については、以下を参照してください。
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+====
+
+
+==== 移行の実行
+
+
+. 次のコマンドを実行して、新しい{productname}サーバをインストールします。[literal]``<oldserver.fqdn>``は、レガシサーバのFQDN に置き換えます。
++
+----
+mgradm migrate podman <oldserver.fqdn>
+----
+. 信頼されているSSL CA証明書を移行します。
+
+
+==== 証明書の移行
+
+RPMの一部としてインストールされ、レガシ{productname}の[path]``/usr/share/pki/trust/anchors/``ディレクトリに保存されている信頼済みSSL CA証明書は移行されません。{suse}はRPMパッケージをコンテナ内にインストールしないため、管理者はこれらの証明書ファイルを移行後にレガシインストールから手動で移行する必要があります。
+
+.プロシージャ: 証明書の移行
+. ファイルをレガシサーバから新しいサーバにコピーします。
+   たとえば、[path]``/local/ca.file``です。
+. 次のコマンドを使用してファイルをコンテナにコピーします。
++
+----
+mgrctl cp /local/ca.file server:/etc/pki/trust/anchors/
+----
+
+
+
+[[migration-finalization]]
+==== 移行を完了する
+
+[IMPORTANT]
+====
+[command]``mgradm migrate``コマンドを正常に実行した後で、すべてのクライアントの{salt}セットアップが依然としてレガシサーバを指します。
+
+新しい{productnumber}サーバにリダイレクトするには、新しいサーバの名前をインフラストラクチャレベル(DHCPおよびDNS)で変更して、レガシサーバと同じFQDNとIPアドレスを使用する必要があります。
+====
+
+
+[IMPORTANT]
+====
+移行中に問題が発生した場合は、古いシステムを再起動できます。rootとして、以下のコマンドを実行して{postgresql}とspacewalkサービスを再起動してください。
+
+[source, shell]
+----
+service postgresql start
+spacewalk-service start
+----
+
+====
+
+
+
+// FIXME: check the following!  Partially probably already covered above.!
+== Kubernetesの準備
+
+特に移行ジョブはコンテナを最初から開始することを考慮して、[command]``mgradm migrate``コマンドを使用して移行を実行する前に、**永続ボリューム**を事前定義する必要があります。
+
+詳細については、xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]にあるこれらのボリュームの準備に関するインストールセクションを参照してください。
+
+
+
+== 移行
+
+次のコマンドを実行して、新しい{productname}サーバをインストールします。**<oldserver.fqdn>**はレガシサーバの適切なFQDNに置き換えます。
+
+----
+mgradm migrate podman <oldserver.fqdn>
+----
+
+または
+
+----
+mgradm migrate kubernetes <oldserver.fqdn>
+----
+
+[IMPORTANT]
+====
+
+[command]``mgradm migrate``コマンドが正常に実行された後も、すべてのクライアントの{salt}の設定はまだレガシサーバを指したままです。新しいサーバにリダイレクトするには、新しいサーバの名前をインフラストラクチャレベル(DHCPおよびDNS)で変更して、レガシサーバと同じFQDNとIPアドレスを使用する必要があります。
+====

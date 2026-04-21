@@ -1,0 +1,94 @@
+[[workflow-removing-channel]]
+= Removing Channel
+:revdate: 2025-01-23
+:page-revdate: {revdate}
+
+
+This chapter describes how to manually remove {suse} provided channels from {productname} and clean up end-of-life products, to reclaim space or for other purposes.
+
+
+
+
+[[preparing-to-remove-channel]]
+== Prepare to Remove a Channel
+
+
+Before removing a channel, you must identify the label for the channel to be removed. It can be done with {webui} or on the command line.
+
+[IMPORTANT]
+====
+* Be careful not to remove channels that systems are currently subscribed to, or that you are planning on subscribing a system to.
+* If there are systems that are currently subscribed to a channel that you want to delete, do not remove the channel until those systems are upgraded or unsubscribed.
+====
+
+
+=== Identify Channel Labels
+
+.Procedure: Identifying Channel Labels Using {webui}
+[role=procedure]
+. In the {productname} {webui}, navigate to menu:Software[Channel List > All].
+. This page displays the [label]``Channel Name``. If you select the link for a channel name, you will see the field for [literal]``Channel Label``.
+. Identify the channel, and child channels, to be removed.
+
+
+.Procedure: Identifying Channel Labels Using the Command Line
+[role=procedure]
+
+. You can get a list of channels by running the following command on the {productname} container host:
++
+----
+mgrctl exec -ti -- spacewalk-remove-channel -l
+----
+
+
+===  Verify Channel System Subscriptions
+
+.Procedure: Verifying Channel System Subscriptions Using {webui}
+
+. In the {productname} {webui}, navigate to menu:Software[Channel List > All].
+. Locate [literal]``Systems`` column on the right.
+. Check the [literal]``Systems`` column for the channel, or any child channels, that you want to remove.
+
+
+.Procedure: Verifying Channel System Subscriptions Using the Command Line
+
+. Run the following command on the {productname} container host:
++
+----
+mgrctl exec -ti -- 'spacecmd -- softwarechannel_listsystems <Channel Label>'
+----
+
+
+[[removing-channel]]
+== Remove Channel
+
+A channel, with its metadata, can be removed with command line tools only. The [command]``spacewalk-remove-channel`` command automatically removes the software packages, if they are not referenced anymore by other channels. Thus it removes the metadata from the database and the files from the storage medium.
+
+
+
+=== Remove a Child Channel
+
+.Procedure: Removing a Child Channel Using the Command Line
+
+. To remove an individual channel run the following command on the {productname} container host:
++
+----
+mgrctl exec -ti -- spacewalk-remove-channel -c channel-label
+----
++
+. To remove multiple channels at the same time, use [literal]``-c`` flag for each channel, followed by the [literal]``channel-label``. For example:
++
+----
+mgrctl exec -ti -- spacewalk-remove-channel -c channel-label1 -c channel-label2
+----
+
+
+=== Remove a Parent and All Its Child Channels
+
+.Procedure: Removing a Parent and All Its Child Channels
+. To remove a parent channel with all of the child channels run [command]``spacewalk-remove-channel`` with the [option]``-a`` option and replace [literal]``parent-channel-label`` with a channel label such as [literal]``sles12-sp5-pool-x86_64``:
++
+----
+mgrctl exec -ti -- spacewalk-remove-channel -a parent-channel-label
+----
+

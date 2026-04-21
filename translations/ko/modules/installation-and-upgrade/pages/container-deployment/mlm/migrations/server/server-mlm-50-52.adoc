@@ -1,0 +1,371 @@
+= Distribution Upgrade and Server Migration from 5.0 to 5.2
+:revdate: 2026-02-09
+:page-revdate: {revdate}
+
+
+[IMPORTANT]
+====
+* {productname} 5.0은 업그레이드 전에 중지해야 합니다.
+====
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-hardened-tmpdir.adoc[leveloffset=+2]
+include::installation-and-upgrade:partial$snippet-ssl-requirements.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-hardened-tmpdir.adoc[leveloffset=+2]
+include::../../../../../partials/snippet-ssl-requirements.adoc[leveloffset=+1]
+endif::[]
+
+마이그레이션 중에 서버 SSL 인증서와 CA 체인은 소스 서버에서 복사되므로, 데이터베이스 인증서만 필요합니다.
+
+[NOTE]
+====
+{productname} 5.0 peripheral servers are always using third-party SSL certificates. If the hub server has generated the certificates for the peripheral server, it needs to generate the certificate for the peripheral database too.
+
+On the hub server, run the following command for each of the peripheral server to migrate.
+
+[source, shell]
+----
+mgrctl exec -ti -- rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="국가" \
+  --set-state="주/도" --set-city="도시" --set-org="조직" \
+  --set-org-unit="조직 단위" --set-email="name@example.com" \
+  --set-hostname=<hostname>-reportdb --set-cname="example.com" --set-cname=db --set-cname=reportdb
+----
+
+사용할 파일은 서버 컨테이너 내에 있으며, 새로운 주변기기 서버 호스트로 복사해야 합니다.
+
+. 루트 CA로 [litteral]``/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT``,
+. DB 인증서로 [litteral]``/root/ssl-build/<hostname>-reportdb/server.crt``,
+. DB 인증서의 키로
+====
+
+
+== {sle-micro} 5.5 to {sl-micro} 6.2
+
+
+
+This document provides the tested procedure to upgrade a {sle-micro} 5.5 host deployed with {productname} 5.0 Server to {sl-micro} 6.2 and migrate to {productname} {productnumber}.
+
+
+=== 선행 조건
+
+* {productname} 5.0은 {sle-micro} 5.5에 설치되어 실행 중입니다.
+* 시스템은 {scc}에 등록되어 있으며 활성 구독을 보유하고 있습니다.
+
+
+=== 배포판 업그레이드 및 서버 마이그레이션
+
+.절차: {productname} 5.0에서 {productname} {productnumber}(으)로 마이그레이션
+[role=procedure]
+____
+
+. 현재 제품 상태를 확인합니다.
+
++
+
+[source, console]
+----
+SUSEConnect --status-text
+----
+
++
+
+확인:
+
+* 기본 OS: `SUSE Linux Enterprise Micro 5.5`
+* 확장: `SUSE Manager Server 5.0 Extension`
+
++
+
+. 시스템이 업데이트되었는지 확인합니다.
+
++
+
+[source, console]
+----
+transactional-update patch
+----
+
++
+
+--
+
+* 패치가 적용된 경우 마이그레이션을 진행하기 전에 서버를 중지한 다음 시스템을 재부팅합니다.
+
++
+
+[source, console]
+----
+mgradm stop
+reboot
+----
+
+* 업데이트가 없는 경우, 마이그레이션 단계로 바로 진행할 수 있습니다.
+
+--
+
++
+
+. 마이그레이션을 시작합니다.
+
++
+
+[source, console]
+----
+transactional-update migration --auto-agree-with-licenses --gpg-auto-import-keys
+----
+
++
+
+Follow the prompts and select the available migration to **SUSE Linux Micro 6.2** and **{productname} Server Extension {productnumber}**.
+
++
+
+. 서버를 중지한 다음 재부팅하여 변경 사항을 적용합니다.
+
++
+
+[source, console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. 재부팅 후 점검을 수행합니다.
+
++
+
+Verify {productname} extension and {productname} version:
+
++
+
+[source, console]
+----
+SUSEConnect --status-text
+mgradm --version
+----
+
++
+
+예상 출력:
+
+* Extension: [literal]``SUSE Multi-Linux Manager Server {productnumber} Extension``
+* Version: referencing [literal]``5.2.0`` or higher
+
++
+
+. Verify PostgreSQL database version.
+
++
+
+[source, console]
+----
+podman ps
+----
+
++
+
+예상 출력:
+
+* [literal]``server:5.2.0`` or higher
+* [literal]``server-postgresql:5.2.0`` or higher
+
++
+
+. Verify running containers:
+
++
+
+[source, console]
+----
+podman ps
+----
+
++
+
+You should see all the expected server containers are up and running.
+
+____
+
+
+=== 마이그레이션 완료
+
+The server host system is now running {sl-micro} 6.2 with updated {productname} {productnumber} Server packages.
+
+If you have a {productname} 5.0 proxy connected to this server, proceed to the xref:installation-and-upgrade:container-deployment/mlm/migrations/proxy/proxy-mlm-50-52.adoc[Proxy Migration 5.0 > 5.2] guide to upgrade the proxy host.
+
+Validate your setup before resuming production operations.
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+
+== {sles} 15 SP6에서 15 SP7으로
+
+This document provides the procedure to upgrade a {sles} 15 SP6 host deployed with {productname} 5.0 Server to {sles} 15 SP7 and migrate to {productname} {productnumber}.
+
+
+=== 선행 조건
+
+* {productname} 5.0 is installed and running on {sles} 15 SP6.
+* 시스템은 {scc}에 등록되어 있으며 활성 구독을 보유하고 있습니다.
+
+
+=== 배포판 업그레이드 및 서버 마이그레이션
+
+.Procedure: Upgrade and Migrate {productname} on {sles} 15 SP6
+[role=procedure]
+____
+
+. 현재 제품 상태를 확인합니다.
+
++
+
+[source, console]
+----
+SUSEConnect --status-text
+----
+
++
+
+확인:
+
+* Base OS: `SUSE Linux Enterprise Server 15 SP6`
+* 확장: `SUSE Manager Server 5.0 Extension`
+
++
+
+. 시스템이 업데이트되었는지 확인합니다.
+
++
+
+[source, console]
+----
+zypper patch
+----
+
++
+
+If patches were applied, stop the server and then reboot before proceeding:
+
++
+
+[source, console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. Perform the migration to SP7 and {productname} {productnumber}.
+
++
+
+[source, console]
+----
+zypper migration
+----
+
++
+
+Select to migrate to:
+
+* `{sles} 15 SP7`
+* `{productname} Server Extension {productnumber}`
+
++
+
+. Stop the server and reboot.
+
++
+
+[source, console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. 재부팅 후 점검을 수행합니다.
+
++
+
+Verify {productname} extension:
+
++
+
+[source, console]
+----
+SUSEConnect --status-text
+----
+
++
+
+예상 출력:
+
+* Extension: [literal]``SUSE Multi-Linux Manager Server {productnumber} Extension``
+
++
+
+. Verify {productname} version.
+
++
+
+[source, console]
+----
+mgradm --version
+----
+
++
+
+예상 출력:
+
+* Version: referencing [literal]``5.2.0`` or higher
+
++
+
+. Verify containers:
+
++
+
+[source, console]
+----
+podman ps
+----
+
++
+
+예상 출력:
+
+* [literal]``server:5.2.0`` or higher
+* [literal]``server-postgresql:5.2.0`` or higher
+
+____
+
+
+=== 마이그레이션 완료
+
+The server host system is now running {sles} 15 SP7 with updated {productname} {productnumber} Server packages.
+
+If you have a {productname} 5.0 proxy connected to this server, proceed to the xref:installation-and-upgrade:container-deployment/mlm/migrations/proxy/proxy-mlm-50-52.adoc[Proxy Migration 5.0 > 5.2] guide to upgrade the proxy host.
+
+Validate your setup before resuming production operations.
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]

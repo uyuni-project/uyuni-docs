@@ -1,0 +1,60 @@
+[[registering.clients.webui]]
+= 使用 {webui} 注册客户端
+:revdate: 2025-07-09
+:page-revdate: {revdate}
+
+== 简介
+
+
+使用 {webui} 引导客户端时，会使用 xref:specialized-guides:salt/salt-ssh.adoc[Salt SSH] 在客户端上执行引导过程。Salt SSH 使用 Salt 捆绑包及其包含的 Python 解释器。因此，不需要在客户端上安装其他 Python 解释器。
+
+由于 Salt 捆绑包随引导储存库一起提供，因此在启动客户端的引导过程前，必须创建该储存库。有一个外壳脚本会使用与引导脚本相同的逻辑检测客户端上的操作系统，并部署来自适当引导储存库的 Salt 捆绑包。
+
+有关详细信息，请参见xref:client-configuration:bootstrap-repository.adoc#_prepare_to_create_a_bootstrap_repository[准备创建引导储存库]。
+
+[IMPORTANT]
+====
+请不要将 {productname} 服务器注册到其自身。必须单独管理 {productname} 服务器，或者使用另一个独立的 {productname} 服务器来管理它。有关使用多个服务器的详细信息，请参见 xref:specialized-guides:large-deployments/hub-multi-server.adoc[]。
+====
+
+== 使用 {webui} 注册客户端
+
+.过程：使用 {webui} 注册客户端
+
+. 在 {productname} {webui} 中，导航到menu:系统[引导]。
+. 在[guimenu]``主机``字段中，键入要引导的客户端的完全限定域名 (FQDN)。
+. 在 [guimenu]``SSH 端口``字段中，键入用于连接和引导客户端的 SSH 端口号。
+    SSH 端口默认为 [systemitem]``22``。
+. 在[guimenu]``用户``字段中，键入用于登录客户端的用户名。
+    用户名默认为 [systemitem]``root``。
+. 选择[guimenu]``身份验证``方法：
+.. 要使用 SSH 密钥引导客户端，请在[guimenu]``身份验证``字段中选中 [guimenu]``SSH 私用密钥``，并上载用于登录客户端的 SSH 私用密钥。
+    如果您的 SSH 私用密钥需要通行口令，请在 [guimenu]``SSH 私用密钥通行口令``字段中键入通行口令。如果不需要，则将该字段留空。
+.. 要使用口令引导客户端，请在[guimenu]``身份验证``字段中选中[guimenu]``口令``，并键入用于登录客户端的口令。
+. 在[guimenu]``激活密钥``字段中，选择与您要用于引导客户端的软件通道关联的激活密钥。
+    有关详细信息，请参见 xref:client-configuration:activation-keys.adoc[]。
+. 可选：在[guimenu]``代理``字段中，选择要将客户端注册到的代理。
+. 默认会选中[guimenu]``禁用 SSH 严格密钥主机检查`` 复选框。
+    如此可让引导过程自动接受 SSH 主机密钥，而无需您手动进行身份验证。
+. 可选：选中[guimenu]``完全通过 SSH 管理系统`` 复选框。
+    如果您选中此选项，客户端将会配置为使用 SSH 来连接服务器，且不再配置其他联系方法。
++
+有关联系方法的详细信息，请参见 xref:client-configuration:activation-keys.adoc[]。
+. 单击 btn:[Bootstrap] 开始注册。
+. 引导过程完成时,您的客户端即会列在menu:系统[系统列表]中。
+
+
+[IMPORTANT]
+====
+* SSH 私用密钥仅在引导过程期间存储，引导完成后，将会立即从 {productname} 服务器删除。
+* 使用 {productname} 在客户端上安装新的软件包或更新时，会自动接受所有最终用户许可协议 (EULA)。 要查看软件包 EULA，请打开 {webui} 中的软件包细节页面。
+====
+
+
+== 处理本地指派的储存库
+
+直接将储存库指派给客户端而不通过 {productname} 提供这种使用情形不常见。这样可能会导致出现问题。因此通过 Salt 引导会在引导过程开始时禁用所有本地储存库。
+
+以后在每次使用通道状态时（例如执行 Highstate 或软件包安装时），所有本地指派的储存库会再次禁用。
+
+客户端上使用的所有软件包均应来自 {productname} 提供的通道。有关如何创建自定义通道的详细信息，请参见 xref:administration:custom-channels.adoc[] 中的``自定义通道``。

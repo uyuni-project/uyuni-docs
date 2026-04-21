@@ -1,0 +1,38 @@
+[[contact-methods-salt]]
+= 默认联系方法
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+
+除非有特殊需求，否则建议使用协议为 {salt} 的默认联系方法。默认会部署 {salt} 捆绑包实现 ([package]``venv-salt-minion``)。有关 {salt} 的其他一般信息，请参见 xref:specialized-guides:salt/salt-overview.adoc[]。
+
+ifeval::[{mlm-content} == true]
+
+默认联系方法（[literal]``默认``）是最佳的缩放方法。支持所有新的 {productname} 功能。
+
+[IMPORTANT]
+====
+{productname} 5.0 及更高版本不再支持所谓的传统联系协议。在从 {productname} 4 升级到 5 之前，必须将所有现有的传统客户端（包括传统代理）迁移到 {salt}，或将其替换为 {salt} 代理。
+
+有关将传统 {productname} 4 客户端迁移到 {salt} 客户端的详细信息，请参见 https://documentation.suse.com/suma/4.3/en/suse-manager/client-configuration/contact-methods-migrate-traditional.html
+====
+
+endif::[]
+
+软件更新通常从服务器推送到客户端。连接将从客户端发起。这意味着，您必须在服务器而不是客户端上打开端口。{salt} 客户端也称为 {salt} 受控端。{productname} 服务器将在每个客户端上安装守护程序。
+
+如果您需要在断开连接的设置中使用 {salt} 客户端，可以配置 SSH 推送作为联系方法。如果使用此联系方法，可将客户端定位在防火墙保护的区域（称为 DMZ）中。有关 SSH 推送的详细信息，请参见 xref:client-configuration:contact-methods-saltssh.adoc[]。
+
+
+
+[[onboarding-details]]
+== 初始配置细节
+
+
+{salt} 有自身的数据库用于保存受控端的密钥。此数据库需与 {productname} 数据库保持同步。一旦 {salt} 中接受了密钥，{productname} 中的初始配置过程即会开始。
+
+初始配置过程通过搜索 ``minion_id`` 和 ``machine-id`` 在 {productname} 数据库中查找现有系统。根据搜索结果，可能会出现以下情况：
+
+* 如果未找到任何系统，则会创建新系统。
+* 如果找到包含 ``minion_id`` 或 ``machine-id`` 的项，则会迁移该系统以与新系统匹配。
+* 如果找到匹配这两项的系统，并且它们不是同一个系统，则会中止初始配置并显示错误。
+* 在这种情况下，管理员需要至少去除一个系统来解决冲突。

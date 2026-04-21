@@ -1,0 +1,232 @@
+[[client-upgrades-spmigration]]
+= 製品移行
+:revdate: 2025-03-10
+:page-revdate: {revdate}
+
+== 概要
+
+
+製品を移行すると、SLEベースのクライアントシステムをサービスパック(SP)レベルから最新版にアップグレードできます。 たとえば、{sles}{nbsp}15{nbsp}SP5を{sles}{nbsp}15{nbsp}SP6に移行できます。 {rhel}や{centos}などのクライアントを{sll}にアップグレードすることもできます。
+
+[IMPORTANT]
+====
+製品移行では、クライアント上で有効化され、移行される必要のあるすべてのリポジトリが有効である必要があります。有効でない場合、移行は中止されます。
+====
+
+{productname}は、以下の移行パスをサポートしています。
+
+=== 同じメジャーバージョン内での移行
+
+製品の移行は、同じメジャーバージョン内でアップグレードするためのものです。 {sles}{nbsp}12から{sles}{nbsp}15への移行には、製品の移行は使用できません。 メジャーアップグレードの詳細については、xref:client-configuration:client-upgrades-major.adoc[]を参照してください。
+
+
+=== {leap}から以降のマイナーバージョンまたは対応する{sles} SPへの移行
+
+{leap}を新しいマイナーバージョンまたは対応する{sles} SPレベルに移行することもできます。次に例を示します。
+
+* {leap} 15.5から15.6
+* {leap} 15.6から{sles} 15 SP6
+
+
+=== {sles}から対応する{slesforsap} SPへの移行
+
+{sles}を対応する{slesforsap} SPレベルに移行することもできます。例:
+
+* {sles} 15 SP5から{slesforsap} 15 SP5
+
+
+{sles}{nbsp}12以降では、{scclongform}がサービスパックを提供している場合、{suse}はサービスパックのスキップをサポートしています。 たとえば、{sles}{nbsp}15からSP2にアップグレードできます。SP1はインストールされません。
+
+サポートされている{sles}アップグレードパスについては、link:https://documentation.suse.com/en-us/sles/15-SP6/html/SLES-all/cha-upgrade-paths.html#sec-upgrade-paths-supported[]を参照してください。
+
+
+[NOTE]
+====
+* すべての推奨される拡張機能は、移行時に自動的に有効になります。
+
+* 移行中、{productname}は、インストール前に必要なライセンス(EULA)を自動的に受け入れます。
+====
+
+
+
+== 単一システムの移行
+
+製品の移行を開始する前に:
+
+* 保留中の更新やパッチがないことを確認してください。 クライアントシステムのmenu:詳細[概要]ページの［[guimenu]``システムステータス`` ］を確認し、提供されているすべての更新またはパッチをインストールします。 クライアントシステムが最新でない場合、製品移行が失敗する可能性があります。
+* ターゲット製品のすべてのチャンネルが完全に同期されていることを確認してください。 {webui}で同期ステータスを確認するには、menu:管理[セットアップウィザード > 製品]ページに移動します。
+* 万一に備えて、作業システムのバックアップを用意してください。 製品の移行にはロールバック機能はありません。 移行プロシージャが始まると、ロールバックできません。
+
+
+.プロシージャ: 単一システムの移行の実行
+. menu:システム[概要]ページからクライアントを選択します。
+. クライアントのシステム詳細ページから、menu:ソフトウェア[製品移行]タブに移動します。
+. ターゲットの移行パスを選択し、btn:[チャンネルの選択]をクリックします。
+. ［[guimenu]``製品移行 - チャンネル``］ページから、正しいベースチャンネルを選択し、``必須の子チャンネル``および追加の``オプション子チャンネル``を含めます。
+. オプション: ［[guimenu]``ベンダー変更を許可する``］にチェックを付け、ベンダを変更したパッケージをインストールできるようにします。 チェックを付けると、移行の開始前に詳細を示す通知が表示されます。
++
+[IMPORTANT]
+====
+openSUSE Leapを{sles}に移行するには、［[guimenu]``ベンダー変更を許可する``］オプションにチェックを付ける必要があります。
+====
+. チャンネルを正しく設定したらbtn:[移行のスケジュール]をクリックします。
+
+
+
+== 製品の大量移行
+
+多数のクライアントを次のSPバージョンに移行する場合、{productname} APIコールを使用できます。
+
+[command]``spacecmd``コマンドラインツールは、[systemitem]``system_scheduleproductmigration``サブコマンドを提供します。 このコマンドを使用して、多数のクライアントの次のマイナーバージョンへの移行をスケジュールできます。
+
+
+
+=== 製品の大量移行の実行
+
+[WARNING]
+====
+製品の大量移行操作は危険です。 プロセスは徹底的にテストする必要があります。 少なくとも、最初に予行演習を行ってください。
+
+システムを意図せずにアップグレードしないように注意してください。
+====
+
+.プロシージャ: 製品の大量移行の実行
+. 実行可能な移行ターゲットをリストし、移行するシステムIDをメモします。
++
+----
+spacecmd api -- system.listMigrationTargets -A 1000010001
+----
+. それぞれのシステムIDに対して、[systemitem]``listMigrationTarget``を呼び出し、目的の製品が使用可能であることを確認します。
++
+* システムIDに使用可能なターゲットがある場合は、[systemitem]``system.scheduleProductMigration``を呼び出します。
+* 目的のターゲットを使用できない場合、そのシステムをスキップします。
++
+. 次のテンプレートを環境に合わせます。
++
+----
+target = '[....]'
+basechannel = 'channel-label'
+ system_ids = [1, 2, 3]
+
+session = auth.login(user, pass)
+for system in system_ids
+  if system.listMigrationTargets(session, system).ident == target
+    system.scheduleProductMigration(session, system, target, basechannel, [], False, <now>)
+  else
+    print "Cannot migrate to requested target -- skipping system"
+  endif
+endfor
+----
+
+
+=== 例: SLES 15 SP2からSLES 15 SP3
+
+この例では、大量移行を容易にするためにグループが一時的に作成されます。
+
+.プロシージャ: 製品の大量移行グループの作成
+. {productname}の{webui}で、menu:システム[システムグループ]に移動し、btn:[グループの作成]をクリックします。
+. グループに[literal]``mpm-target-sles15sp3``という名前を付けます。
++
+* 同じベースチャンネルにサブスクライブしているシステムのみを、作成したグループに追加する必要があります。 この例では、[literal]``SLE-Product-SLES15-SP2-Pool for x86_64``にサブスクライブされているシステムのみをグループに追加する必要があります。
++
+グループへのクライアントの追加の詳細については、xref:client-configuration:system-groups.adoc[]を参照してください。
+
+////
+Note or warning about taking normal precautions (backups, make sure fully patched, etc)
+////
+
+.プロシージャ: グループへのシステムの追加
+. 次のコマンドを実行して、グループ内のすべてのシステムのターゲットを取得します。
++
+----
+spacecmd -- system_listmigrationtargets group:mpm-target-sles15sp3
+----
++
+. コマンドは「ID」の文字列を出力します。
+  * *すべての* システムについて報告されるターゲットのみを選択してください。
+  * 文字列は、他のコマンドの[literal]``MIGRATIONTARGET``の識別子です。
++
+[IMPORTANT]
+====
+[command]``spacecmd``サブコマンド[literal]``system_scheduleproductmigration``と[command]``system_listmigrationtargets``は、グループの一部であるすべてのシステムをループしています。
+
+グループに100台のシステムがある場合は、100個のスケジュールされたアクションが表示されます。
+
+グループ内のすべてのシステムは同じ移行ターゲットをサポートする必要があります。
+====
+
+
+
+.プロシージャ: 大量移行コマンドの実行
+
+. [command]``system_scheduleproductmigration``コマンドの構文は次のとおりです。
++
+----
+spacecmd -- system_scheduleproductmigration <SYSTEM> <BASE_CHANNEL_LABEL> \
+    <MIGRATION_TARGET> [options]
+----
+. この例では、グループ[literal]``mpm-target-sles15sp3``内のすべてのシステムをSLES 12 SP2からSLES 15 SPにアップグレードするには、コマンドラインで次のように入力します。
++
+----
+spacecmd -- system_scheduleproductmigration group:mpm-target-sles15sp3 \
+    sle-product-sles15-sp3-pool-x86_64 "[190,203,195,1242]" -d
+----
+
+
+==== 必須の構文の説明
+
+[command]``system_scheduleproductmigration``の構文の使用方法とオプションを表示するには、次のコマンドを実行します。
+
+----
+spacecmd system_scheduleproductmigration help
+----
+
+<SYSTEM>::
+この例では、作成したグループを使用して、そのグループからすべてのシステムを選択します。
++
+----
+group:mpm-target-sles15sp3
+----
+
+<BASE_CHANNEL_LABEL>::
+これは、ターゲットベースチャンネルのラベルです。 この場合、システムはSLES 15 SP3にアップグレードされており、ラベルは[literal]``sle-product-sles15-sp3-pool-x86_64``です。
++
+現在ミラーリングされているすべてのベースチャンネルのリストを表示するには、次のコマンドを実行します。
++
+----
+spacecmd softwarechannel_listbasechannels
+----
++
+現在のベースチャンネルで使用可能なターゲットでない限り、チャンネルにアップグレードできないことに注意してください。
+
+<MIGRATION_TARGET>::
+グループ[literal]``group:mpm-target-sles15sp3``内のシステムのこの値を特定するには、次のコマンドを実行します。
++
+----
+spacecmd -- system_listmigrationtargets group:mpm-target-sles15sp3
+----
++
+[literal]``MIGRATION_TARGET``パラメータは、次の形式で渡す必要があります。角括弧の副次作用を防ぐために、シェルの引用符が必要であることに注意してください。
++
+----
+"[190,203,195,1242]"
+----
+
+オプション::
+
+* [literal]``-s`` START_TIME
+* [literal]``-d`` 予行演習モード(実際には処理を行わない) (実際の移行の前に予行演習を行うことを推奨)
+* [literal]``-c`` (子チャンネル) (カンマ区切りで子チャンネルのラベルを指定する 。空白は使用しないこと)
++
+この場合、[literal]``-d``オプションが含まれています。このオプションは予行演習が成功した後に削除できます。
+
+成功した場合、スケジュールされたシステムごとのコマンド出力は次のようになります。
+----
+Scheduling Product migration for system mpm-sles152-1
+Scheduled action ID: 66
+----
+
+グループ内の特定のシステムの{webui}で、アクション(この場合は予行演習)を追跡することもできます。クライアントのシステム詳細ページから、menu:イベント[履歴]に移動します。予行演習中に障害が発生した場合は、システムを調査する必要があります。
+
+すべて問題がなければ、コマンドから[literal]``-d``オプションを削除して、実際の移行を実行できます。移行が完了したら、{productname} {webui}からシステムを再起動できます。
+

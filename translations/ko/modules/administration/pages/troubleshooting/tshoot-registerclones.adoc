@@ -1,0 +1,167 @@
+[[troubleshooting-register-clones]]
+= 문제 해결 복제된 클라이언트 등록
+:revdate: 2025-04-24
+:page-revdate: {revdate}
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+
+{productname}를 사용하여 가상 머신을 관리하는 경우 VM의 클론을 생성하는 것이 유용할 수 있습니다. 클론은 기존 디스크의 복사본인 기본 디스크를 사용하는 VM입니다.
+
+VM을 복제하면 시간을 크게 절약할 수 있지만, 디스크에 중복된 식별 정보가 있으면 문제가 발생할 수 있습니다.
+
+이미 등록된 클라이언트가 있는 경우 해당 클라이언트의 클론을 생성한 후 클론을 등록하고, {productname}를 두 개의 개별 클라이언트로 등록하고자 할 수 있습니다. 그러나 원본 클라이언트와 클론의 머신 ID가 동일한 경우 {productname}는 두 클라이언트를 하나의 시스템으로 등록하고 기존 클라이언트 데이터를 클론의 데이터로 덮어씁니다.
+
+이는 {productname}가 클론을 서로 다른 클라이언트 두 개로 인식하도록 클론의 머신 ID를 변경하면 해결할 수 있습니다.
+
+[NOTE]
+====
+이 절차의 각 단계는 복제된 클라이언트에서 수행됩니다. 이 절차는 {productname}에 등록된 상태로 남아 있는 원래 클라이언트를 조작하지 않습니다.
+====
+
+
+
+.절차: 복제된 Salt 클라이언트에서 중복 머신 ID 해결
+[role=procedure]
+____
+
+. *초기 시스템 구성*
+
+
+.. 복제된 머신에서 호스트 이름과 IP 주소를 변경합니다.
+    [path]``/etc/hosts``에 변경사항과 올바른 호스트 항목이 포함되어 있는지 확인합니다.
+
+
+. *중복 머신 ID 해결*
+
+.. _systemd를 지원하는 배포판의 경우:_
+
+...   머신의 머신 ID가 동일한 경우, 복제된 각 클라이언트에서 루트 권한으로 파일을 삭제하고 다시 생성합니다.
+
++
+
+----
+rm /etc/machine-id
+rm /var/lib/dbus/machine-id
+rm /var/lib/zypp/AnonymousUniqueId
+dbus-uuidgen --ensure
+systemd-machine-id-setup
+----
+
++
+
+... 복제된 시스템에도 [path]``/var/log/journal/``에 폴더가 있는 경우 새 시스템 ID에 따라 이름을 변경해야 합니다. 이름이 일치하지 않으면 [command]``journalctl``은 로그를 검색할 수 없으며 [command]``podman logs``는 아무 내용도 표시하지 않습니다.
+
++
+
+----
+mv /var/log/journal/* /var/log/journal/$(cat /etc/machine-id)
+----
+
++
+
+.. _systemd를 지원하지 않는 배포판의 경우:_
+  
+...  루트 권한으로 dbus에서 머신 ID를 생성합니다.
+
++
+
+----
+rm /var/lib/dbus/machine-id
+rm /var/lib/zypp/AnonymousUniqueId
+dbus-uuidgen --ensure
+----
+
++ 
+
+[IMPORTANT]
+====
+
+* 나중에 {sll}로 전환될 {rhel} 8.10 서버를 복제하는 경우, 커널 구성 파일을 수정하기 위한 추가 단계를 수행해야 합니다.
+
+
+{rhel}는 머신 ID를 사용하여 [path]``/boot/loader/entries``에 커널 항목을 생성합니다. 이 단계를 수행하지 않으면 전환 후 {sll} 커널이 기존 항목을 대체하지 않고 새 항목을 생성하므로, 기존 및 새 커널 항목이 혼재된 상태가 됩니다.
+
+
+* 머신 ID 변경 후 전환하기 전에 다음 명령을 실행하십시오.
+
++
+
+----
+sudo rm -rf /boot/loader/entries/
+sudo for ver in $(rpm -q kernel --qf '%{VERSION}-%{RELEASE}.%{ARCH}\n'); do echo "Reinstalling kernel $ver..."; sudo kernel-install add $ver /lib/modules/$ver; done
+sudo grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg
+----
+
+* {rhel} 8.10 서버의 보안 부팅 해제에 대한 자세한 정보와 예시는 xref:common-workflows:workflow-liberate-rhel-with-secureboot.adoc[]에서 확인할 수 있습니다.
+
+====
+
+. *{salt} 클라이언트 재구성*
+
+.. 클라이언트에 여전히 동일한 Salt 클라이언트 ID가 있는 경우 각 클라이언트에서 [path]``minion_id`` 파일을 삭제합니다(FQDN은 클라이언트를 재시작할 때 재생성 시 사용됨).
+
+...  Salt 미니언 클라이언트의 경우:
+
++
+
+----
+rm /etc/salt/minion_id
+rm -rf /etc/salt/pki
+----
+
++
+
+... Salt 번들 클라이언트의 경우 다음과 같습니다.
+
++
+
+----
+rm /etc/venv-salt-minion/minion_id
+rm -rf /etc/venv-salt-minion/pki
+----
+
++
+
+.. 온보딩 페이지에서 승인된 키를 삭제하고 {productname}에서 시스템 프로파일을 삭제한 후 다음을 사용하여 클라이언트를 재시작합니다.
+
+... Salt 미니언 클라이언트의 경우:
+
++
+
+----
+service salt-minion restart
+----
+
++
+
+... Salt 번들 클라이언트의 경우 다음과 같습니다.
+
+
++
+
+----
+service venv-salt-minion restart
+----
+
++
+
+.. 클라이언트를 다시 등록합니다. 이제 각 클라이언트는 서로 다른 [path]``/etc/machine-id``를 가지며, [guimenu]``시스템 개요`` 페이지에 올바르게 표시되어야 합니다.
+
+____

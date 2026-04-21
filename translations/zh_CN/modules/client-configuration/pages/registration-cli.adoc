@@ -1,0 +1,167 @@
+[[registering-clients-cli]]
+= 在命令行上注册客户端
+:revdate: 2025-03-28
+:page-revdate: {revdate}
+
+
+//== Manual Client Registration
+
+== 简介
+
+
+在大多数情况下，使用默认的引导方法即可正确注册 {salt} 客户端。
+
+不过，您可以使用 {salt} 手动将客户端注册到 {productname} 服务器，方法是编辑客户端上的 {salt} 受控端文件，并提供服务器的完全限定域名 (FQDN)。
+
+使用此方法需满足以下要求：
+ 
+* 使用服务器的入站端口 4505 和 4506。
+* 除了确保这些端口是开放的之外，不需要在 {productname} 服务器上进行任何配置。
+* 需要在注册前于 Salt 客户端上安装 [package]``venv-salt-minion``（Salt 捆绑包）或 [package]``salt-minion`` 软件包。两种安装会使用位于不同位置但文件名相同的配置文件。[literal]``systemd`` 服务文件名不同。
+
+[WARNING]
+====
+只有在您使用属于客户端工具通道或正式 {suse} 发行套件一部分的 [package]``salt-minion`` 时，才能以这种方式引导。
+====
+
+== {salt} 捆绑包配置
+
+{salt} 捆绑包 ([package]``venv-salt-minion``)::
+
++
+
+* [path]``/etc/venv-salt-minion/``
+* [path]``/etc/venv-salt-minion/minion``
+* [path]``/etc/venv-salt-minion/minion.d/NAME.conf``
+* systemd 服务文件：[path]``venv-salt-minion.service``
+
++
+
+有关 Salt 捆绑包的详细信息，请参见 xref:client-configuration:contact-methods-saltbundle.adoc[Salt 捆绑包]。
+
+.过程：使用 Salt 捆绑包配置文件注册客户端
+. 在 Salt 客户端上，打开 [literal]``minion`` 配置文件。配置文件位于以下位置：
+
++
+
+.配置文件
+[source, Shell]
+----
+/etc/venv-salt-minion/minion
+----
+
++
+
+或：
+
++
+
+.配置文件
+[source, Shell]
+----
+/etc/venv-salt-minion/minion.d/NAME.conf
+----
+. 在文件中添加或编辑 {productname} 服务器或代理的 FQDN 以及激活密钥（如果有）。另外请添加以下其他配置参数。
+
++
+
+.配置参数
+[source, YAML]
+----
+master: SERVER.EXAMPLE.COM
+
+grains:
+  susemanager:
+    activation_key: "<Activation_Key_Name>"
+
+server_id_use_crc: adler32
+enable_legacy_startup_events: False
+enable_fqdns_grains: False
+----
+
+
+. 重启 [systemitem]``venv-salt-minion`` 服务：
+
++
+
+[source, Shell]
+----
+systemctl restart venv-salt-minion
+----
+
+. 在 {productname} 服务器上，接受新客户端密钥（将 [systemitem]``<client>`` 替换为您客户端的名称）：
+
++
+
+----
+salt-key -a '<客户端>'
+----
+
+
+== 客户端配置
+
+客户端 ([package]``salt-minion``)::
++
+* [path]``/etc/salt/``
+* [path]``/etc/salt/minion``
+* [path]``/etc/salt/minion.d/NAME.conf``
+* systemd 服务文件：[path]``salt-minion.service``
+
+.过程：使用 Salt 受控端配置文件注册客户端
+. 在 Salt 客户端上，打开 [literal]``minion`` 配置文件。配置文件位于以下位置：
+
++
+
+[source, Shell]
+----
+/etc/salt/minion
+----
+
++
+
+或：
+
++
+
+[source, Shell]
+----
+/etc/salt/minion.d/NAME.conf
+----
+
+. 在文件中添加或编辑 {productname} 服务器或代理的 FQDN 以及激活密钥（如果有）。另请添加下列其他配置参数。
+
++
+
+[source, YAML]
+----
+master: SERVER.EXAMPLE.COM
+
+grains:
+  susemanager:
+    activation_key: "<Activation_Key_Name>"
+
+server_id_use_crc: adler32
+enable_legacy_startup_events: False
+enable_fqdns_grains: False
+----
+
+. 重启 [systemitem]``salt-minion`` 服务：
+
++
+
+[source, Shell]
+----
+systemctl restart salt-minion
+----
+
+. 在 {productname} 服务器上，接受新客户端密钥（将 [systemitem]``<client>`` 替换为您客户端的名称）：
+
++
+
+[source, Shell]
+----
+salt-key -a '<客户端>'
+----
+
+有关 {salt} 受控端配置文件的详细信息，请参见 https://docs.saltproject.io/en/latest/ref/configuration/minion.html[配置 Salt 受控端]。
+

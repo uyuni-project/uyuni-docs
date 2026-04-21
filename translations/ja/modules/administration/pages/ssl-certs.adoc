@@ -1,0 +1,64 @@
+[[ssl-certs]]
+= SSL証明書
+:revdate: 2025-05-08
+:page-revdate: {revdate}
+
+{productname}では、SSL証明書を使用して、クライアントが正しいサーバに登録されていることを確認します。
+
+SSLを使用して{productname}サーバに登録するすべてのクライアントは、サーバ証明書に対して検証することにより、適切なサーバに接続していることを確認します。 このプロセスはSSLハンドシェークと呼ばれます。
+
+SSLハンドシェーク中に、クライアントはサーバ証明書のホスト名が予期しているホスト名と一致することを確認します。 クライアントは、サーバ証明書が信頼できるかどうかも確認する必要があります。
+
+//Every {productname} Server that uses SSL requires an SSL server certificate.
+//Provide the path to the server certificate using the ``SERVER_CERT`` environment variable during setup, or with the ``--from-server-cert`` option of the [command]``rhn-ssl-tool`` command.
+
+認証局(CA)は、他の証明書に署名するために使用される証明書です。 証明書が有効であるとみなされ、クライアントが証明書と正常に照合できるようにするには、すべての証明書が認証局(CA)によって署名されている必要があります。
+
+//When an organization signs its own certificate, the certificate is considered self-signed.
+//A self-signed certificate is straight-forward to set up, and does not cost any money, but they are considered less secure.
+//If you are using a self-signed certificate, you have a root CA that is signed with itself.
+//When you look at the details of a root CA, you can see that the subject has the same value as the issuer.
+//Provide the path to your root CA certificate using the ``CA_CERT`` environment variable during setup, or with the ``--ca-cert`` option of the [command]``rhn-ssl-tool`` command.
+
+SSL認証が正しく機能するためには、クライアントがルートCAを信頼する必要があります。 これは、ルートCAがすべてのクライアントにインストールされる必要があることを意味します。
+
+SSL認証のデフォルトの方法は、{productname}で自己署名証明書を使用することです。 この場合、{productname}はすべての証明書を生成し、ルートCAはサーバ証明書に直接署名しています。
+
+別の方法は、中間CAを使用する方法です。 この場合、ルートCAは中間CAに署名します。 中間CAは任意の数の他の中間CAに署名することができ、最後のCAはサーバ証明書に署名します。 これはチェーン証明書と呼ばれます。
+
+チェーン証明書で中間CAを使用している場合は、ルートCAがクライアントにインストールされ、サーバ証明書がサーバにインストールされます。 SSLハンドシェーク中に、クライアントはルートCAとサーバ証明書の間の中間証明書のチェーン全体を検証できる必要があります。そのため、クライアントはすべての中間証明書にアクセスできる必要があります。
+
+これを実現するには、主に2つの方法があります。 以前のバージョンの{productname}では、デフォルトですべての中間CAがクライアントにインストールされます。 ただし、サーバ上でサービスを設定してクライアントに提供することも可能です。 この場合、SSLハンドシェーク中に、サーバはサーバ証明書とすべての中間CAを提示します。 このメカニズムは現在、デフォルト設定として使用されています。
+
+//Whichever method you choose, you must ensure that the ``CA_CERT`` environment variable points to the root CA, and all intermediate CAs.
+//It should not contain the server certificate.
+//The server certificate must be defined at the ``SERVER_CERT`` environment variable.
+
+デフォルトでは、{productname}は中間CAなしの自己署名証明書を使用します。 セキュリティを強化するために、サードパーティのCAを手配して証明書に署名できます。 サードパーティのCAは、証明書に含まれる情報が正しいことを確認するためにチェックを実行します。 通常、このサービスには年会費がかかります。 サードパーティのCAを使用すると、証明書のスプーフィングが難しくなり、インストールに対する保護が強化されます。 サードパーティのCAによって署名された証明書がある場合は、{productname}のインストール環境にインポートできます。
+
+このマニュアルでは、SSL証明書の使用について2つのステップで説明します。
+
+1. {productname}ツールを使用して自己署名証明書を作成する方法
+2. {productname}サーバまたはプロキシに証明書を配備する方法
+
+証明書が独自のPKIや外部PKIなどのサードパーティのインスタンスによって提供されている場合は、ステップ1をスキップできます。
+
+* 自己署名証明書の作成の詳細については、xref:administration:ssl-certs-selfsigned.adoc[]を参照してください。
+* 証明書のインポートの詳細については、xref:administration:ssl-certs-imported.adoc[]を参照してください。
+
+== {productname}コンテナへのSSL証明書の提供
+
+
+=== Podman
+
+SSL証明書はpodmanシークレットとして保存され、それぞれのコンテナに割り当てられます。 Podman SSLシークレットは次のとおりです。
+
+* CA証明書
+  - uyuni-ca
+  - uyuni-db-ca
+* サーバ証明書とキー
+  - uyuni-cert
+  - uyuni-key
+* データベース証明書とキー
+  - uyuni-db-cert
+  - uyuni-db-key

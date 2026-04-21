@@ -1,0 +1,67 @@
+[[install-pubcloud-requirements]]
+= Požadavky na veřejný cloud
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+
+Tato sekce obsahuje požadavky na instalaci {productname} do infrastruktury veřejného cloudu. Tento návod jsme testovali na Amazon EC2, Google Compute Engine a Microsoft Azure, ale měl by s nějakými variacemi fungovat i pro jiné poskytovatele.
+
+Několik úvah, než začnete:
+
+* Procedura nastavení {productname} si předem zjišťuje, zda uspěje reverzní vyhledávání DNS. To musí proběhnout úspěšně, aby bylo dokončeno nastavení a aby produkt {productname} fungoval podle očekávání. Před nastavením produktu {productname} je důležité provést konfiguraci názvu hostitele a adresy IP.
+* Instance serveru a proxy {productname} musí běžet v síťové konfiguraci, v níž můžete ovládat položky DNS, ale nelze k nim přistupovat z obecného internetu.
+* V rámci této konfigurace sítě musí být poskytnuto rozlišení DNS: `hostname -f` musí vrátit plně kvalifikovaný doménový název (FQDN).
+* Rozřešení DNS je také důležité pro připojení klientů.
+* DNS závisí na Vámi zvoleném cloudovém rámci. Podrobné pokyny najdete v dokumentaci poskytovatele cloudu.
+* Doporučujeme vyhledat úložiště softwaru, databázi serveru a mezipaměť proxy squid na externím virtuálním disku. To zabrání ztrátě dat, pokud je instance neočekávaně ukončena. Tato část obsahuje pokyny pro nastavení externího virtuálního disku.
+
+
+
+== Požadavky na síť
+
+
+Když používáte {productname} na veřejném cloudu, musíte použít neveřejnou síť. Doporučujeme použít soukromou podsíť VPC s příslušným nastavením brány firewall. K instanci musí mít přístup pouze stroje ve vašich zadaných rozsazích IP adres.
+
+[WARNING]
+====
+Running {productname} on the public cloud means implementing robust security measures. It is essential to limit, filter, monitor, and audit access to the instance. {SUSE} strongly advises against a globally accessible {productname} instance that lacks adequate perimeter security.
+====
+
+Chcete-li získat přístup k {productname} {webui}, povolte HTTPS při konfiguraci řízení přístupu k síti. To Vám umožní dostat se k {productname} {webui}.
+
+V EC2 a Azure vytvořte novou skupinu zabezpečení a přidejte příchozí a odchozí pravidla pro HTTPS. V GCE zkontrolujte možnost ``Allow HTTPS traffic`` v sekci ``Firewall``.
+
+
+
+== Prepare Storage Volumes
+
+We recommend that the repositories and the database for {productname} are stored on separate storage devices from the root volume. This will help to avoid data loss and possibly increase performance.
+
+The {productname} container utilizes default storage locations. These locations should be configured prior to deployment for custom storage. For more information see xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[Persistent container volumes]
+
+[IMPORTANT]
+====
+Do not use logical volume management (LVM) for public cloud installations.
+====
+
+
+Velikost disku pro paměti úložišť závisí na počtu distribucí a kanálů, které chcete spravovat v {productname}. Když připojíte virtuální disky, zobrazí se ve vaší instanci jako uzly zařízení Unix. Názvy uzlů zařízení se budou lišit v závislosti na poskytovateli a vybraném typu instance.
+
+Ujistěte se, že kořenový svazek serveru {productname} je aspoň 100{nbsp}GB. Přidejte další úložný disk aspoň 500{nbsp}GB a zvolte pokud možno SSD. Cloudové obrazy {productname} Serveru používají skript pro přiřazení tohoto samostatného svazku při spouštění Vaší instance.
+
+Po spuštění své instance se můžete přihlásit k {productname} Serveru a vyhledat všechna dostupná úložná zařízení příkazem:
+
+----
+hwinfo --disk | grep -E "Device File:"
+----
+
+Pokud si nejste jisti, které zařízení zvolíte, použijte příkaz [command]``lsblk`` pro zobrazení názvu a velikosti každého zařízení. Vyberte název, který odpovídá velikosti virtuálního disku, který hledáte.
+
+You can set up the external disk with the [command]``mgr-storage-server`` command. This creates an XFS partition mounted at ``/manager_storage`` and uses it as the location for the database and repositories:
+
+----
+/usr/bin/mgr-storage-server <devicename>
+----
+
+ifeval::[{mlm-content} == true]
+For more information about setting up storage volumes and partitions, including recommended minimum sizes, see xref:installation-and-upgrade:hardware-requirements.adoc[].
+endif::[]

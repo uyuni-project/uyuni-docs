@@ -1,0 +1,68 @@
+[[troubleshooting-iss]]
+= 服务器间同步查错
+:revdate: 2024-05-15
+:page-revdate: {revdate}
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+////
+Cause: Caches on the ISS slave and master can contain old or out-of-date entries.
+Consequence: Synchronizing fails, with ``ERROR: Encountered IntegrityError``.
+Fix: Delete the cache on the slave and the master
+Result: Synchronization completes successfully.
+////
+
+
+服务器间同步使用缓存来管理 ISS 主服务器和从属服务器。这些缓存容易出现 bug，导致创建无效的项。在这种情况下，即使更新到解决了 bug 的版本，这些 bug 也还可能出现，因为缓存仍在使用无效的项。如果您升级到新版 ISS 后仍然遇到问题，请清除所有缓存，以确保不再有旧项造成问题。
+
+缓存错误可能导致同步失败并出现各种错误，但错误消息通常会报告如下内容：
+
+----
+考虑去除 /var/cache/rhn/satsync/* 中的 satellite-sync 缓存并使用相同的选项重新运行 satellite-sync。
+----
+
+可以通过删除 ISS 主服务器和 ISS 从属服务器上的缓存来解决此问题，这样，同步即可成功完成。
+
+[IMPORTANT]
+====
+要在服务器容器内访问外壳，请在容器主机上运行 [literal]``mgrctl term``。
+====
+
+
+.过程：解决 ISS 缓存错误
+. 在 ISS 主服务器上的命令提示符下，以 root 身份删除主服务器的缓存文件：
++
+----
+rm -rf /var/cache/rhn/xml-*
+----
+. 重启该服务：
++
+----
+rcapache2 restart
+----
+. 在 ISS 主服务器上的命令提示符下，以 root 身份删除从属服务器的缓存文件：
++
+----
+rm -rf /var/cache/rhn/satsync/*
+----
+. 重启该服务：
++
+----
+rcapache2 restart
+----

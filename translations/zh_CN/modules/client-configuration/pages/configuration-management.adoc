@@ -1,0 +1,157 @@
+[[configuration-management]]
+= 配置管理
+:revdate: 2026-04-08
+:page-revdate: {revdate}
+
+
+您可以使用配置文件和通道管理客户端的配置，而无需手动配置每个客户端。
+
+配置参数编写在脚本中并存储在配置文件中。您可以使用 {productname} {webui} 直接写入配置文件，也可以上载或关联到其他位置存在的文件。
+
+配置通道用于组织配置文件。您可以为客户端订阅配置通道，并根据需要部署配置文件。
+
+配置文件有版本控制，因此您可以添加配置设置，在您的客户端上对其进行测试，并根据需要将其回滚到之前的修订版。如果您已创建配置通道，还可以在不同的配置文件以及同一配置文件的不同修订版之间进行比较。
+
+Configuration files are provided through Configuration Channels or State Channels.
+
+下表显示了支持的功能，其中：
+
+* {check} 功能受 {suse} 支持
+* {cross} 功能不受 {suse} 支持
+* {question} 功能正在考虑之中，日后可能受支持，也可能不受支持。
+
+
+.配置管理支持的功能
+[cols="1,1", options="header"]
+|===
+
+| Feature
+| Status
+
+| Config Channels
+| {check}
+
+| State Channels
+| {check}
+
+| Deploying Files
+| {check}
+
+| Comparing Files
+| {question}
+
+| Applying the Highstate
+| {check}
+
+| File Import from a Client
+| {cross}
+
+| Jinja Templating
+| {check}
+
+|===
+
+
+
+== 创建配置通道
+
+
+=== Configuration Channel
+
+To create a new configuration channel:
+
+.Procedure: Creating a Configuration Channel
+. 在 {productname} {webui} 中，导航到menu:配置[通道]，然后单击 btn:[创建配置通道]。
+. 键入通道的名称。
+. 键入通道的标签。
+    此字段只能包含字母、数字、连字符 (``-``) 和下划线 (``_``)。
+. 键入用于与其他通道进行区分的通道说明。
+. 单击 btn:[创建配置通道] 以创建新通道。
+
+
+
+=== State Channel
+
+State Channels use {salt} states on clients:
+
+.过程：创建 {salt} 状态通道
+. 在 {productname} {webui} 中，导航到menu:配置[通道]，然后单击 btn:[创建状态通道]。
+. 键入通道的名称。
+. 键入通道的标签。
+    此字段只能包含字母、数字、连字符 (``-``) 和下划线 (``_``)。
+. 键入用于与其他通道进行区分的通道说明。
+. 为 [path]``init.sls`` 文件键入 [guimenu]``SLS 内容``。
+. Click btn:[Create Config State Channel] to create the new channel.
+
+
+
+== 添加配置文件、目录或符号链接
+
+如果您已创建配置通道，则可以添加配置文件、目录或符号链接：
+
+.过程：添加配置文件、目录或符号链接
+. 在 {productname} {webui} 中，导航到menu:配置[通道]，单击要向其添加配置文件的配置通道的名称，然后导航到menu:添加文件[创建文件]子选项卡。
+. 在[guimenu]``文件类型``字段中，选择是要创建文本文件、目录还是符号链接。
+. 在[path]``文件名/路径``字段中，键入应部署文件的位置的绝对路径。
+. 如果您要创建符号链接，请在[guimenu]``符号链接目标文件名/路径``字段中键入目标文件和路径。
+. 在[guimenu]``所有权``字段中键入该文件的[guimenu]``用户名``和[guimenu]``组名称``，以及[guimenu]``文件权限模式``。
+. 如果客户端启用了 SELinux，您可以配置 [guimenu]``SELinux 上下文``以启用所需的文件属性（例如用户、角色和文件类型）。
+. You can use Jinja templating with grains or pillar data instead of legacy macro delimiters.
+. 在[guimenu]``文件内容``文本框中，使用脚本下拉框选择相应的脚本语言输入配置文件内容。
+. 单击 btn:[创建配置文件]。
+
+
+
+== 为客户端订阅配置通道
+
+您可以为单个客户端订阅配置通道，方法是导航到menu:系统[系统列表]，选择要使用的客户端，然后导航到[guimenu]``配置``选项卡。要为多个客户端订阅配置通道，可以使用系统集管理器 (SSM)。
+
+.过程：为多个客户端订阅配置通道
+. 在 {productname} {webui} 中，导航到menu:系统[系统列表]，然后选择要使用的客户端。
+. 导航到menu:系统[系统集管理器]，然后转到menu:配置[订阅通道]子选项卡，以查看可用配置通道的列表。
+. 可选：单击[guimenu]``目前订阅的系统``列中的数字以查看目前订阅了配置通道的客户端。
+. 选中要订阅的配置通道，然后单击 btn:[继续]。
+. 使用向上和向下箭头对配置通道排名。
+    两个配置通道之间的设置发生冲突时，系统会优先使用更靠近列表顶部的通道。
+. 确定通道应用到所选客户端的方式。
+    单击 btn:[订阅为最低优先级] 可将新通道添加为比目前订阅的通道都低的优先级。单击 btn:[订阅为最高优先级] 可将新通道添加为比目前订阅的通道都高的优先级。单击 btn:[替换现有订阅] 可去除现有通道并将其替换为新通道。
+. 单击 btn:[应用订阅]。
+
+
+[NOTE]
+====
+如果新配置通道优先级与现有通道冲突，系统会去除重复的通道并根据新优先级进行替换。如果某个操作要对客户端的配置优先级重新排序，{webui} 会要求您在继续之前先确认更改。
+====
+
+
+== 比较配置文件
+
+您也可以使用系统集管理器 (SSM) 将客户端上部署的配置文件与存储在 {productname} 服务器上的配置文件进行比较。
+
+.过程：比较配置文件
+. 在 {productname} {webui} 中，导航到menu:系统[系统列表]，然后选择订阅了要比较的配置文件的客户端。
+. 导航到menu:系统[系统集管理器]，然后转到menu:配置[比较文件]子选项卡，以查看可用配置文件的列表。
+. 可选：单击[guimenu]``系统``列中的数字以查看目前订阅了配置文件的客户端。
+. 选中要比较的配置文件，然后单击 btn:[安排文件比较]。
+
+
+
+== 在客户端上建立 Jinja 模板
+
+在 {salt} 客户端上可以建立 Jinja 模板。Jinja 通过 pillar 或 grain 提供变量。它们可用于配置文件或 {salt} 状态中。
+
+有关详细信息，请参见 https://docs.saltproject.io/salt/user-guide/en/latest/topics/jinja.html[]，该页面包含以下示例：
+
+----
+{% if grains.os_family == 'RedHat' %}
+  {% set dns_cfg = '/etc/named.conf' %}
+{% elif grains.os_family == 'Debian' %}
+  {% set dns_cfg = '/etc/bind/named.conf' %}
+{% else %}
+  {% set dns_cfg = '/etc/named.conf' %}
+{% endif %}
+dns_conf:
+  file.managed:
+    - name: {{ dns_cfg }}
+    - source: salt://dns/files/named.conf
+----

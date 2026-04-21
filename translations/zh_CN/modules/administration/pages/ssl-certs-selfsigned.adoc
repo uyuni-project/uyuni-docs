@@ -1,0 +1,96 @@
+[[ssl-certs-selfsigned]]
+= 自我签名 SSL 证书
+:revdate: 2025-05-08
+:page-revdate: {revdate}
+
+
+{productname} 默认使用自我签名证书。在这种情况下，证书由 {productname} 创建和签名。此方法不使用独立证书颁发机构来保证证书的细节正确无误。第三方 CA 将会执行检查，以确保证书中包含的信息正确无误。
+
+* 有关第三方 CA 的详细信息，请参见 xref:administration:ssl-certs-imported.adoc[]。
+* 有关如何替换证书的详细信息，请参见 xref:administration:ssl-certs-imported.adoc#ssl-certs-import-replace[]。
+
+本节介绍如何在新安装或现有安装中创建或重新创建自我签名证书。
+
+SSL 密钥和证书的主机名必须与其部署到的计算机的完全限定主机名相匹配。
+
+
+== 重新创建现有的服务器证书
+
+
+如果您的现有证书已失效或出于任何原因而不再正常工作，您可以从现有 CA 生成新的服务器证书。
+
+.过程：重新创建现有服务器证书
+
+. 在 {productname} 容器主机的命令提示符处，重新生成服务器证书：
+
++
+
+[source, shell]
+----
+mgrctl exec -ti -- 'rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
+--set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
+--set-org-unit="ORGANIZATION UNIT" --set-email="name@example.com" \
+--set-hostname="susemanager.example.com" --set-cname="example.com"'
+----
+
++
+
+确保 [systemitem]``set-cname`` 参数是您的 {productname} 服务器的完全限定域名。如果需要多个别名，可以多次使用 [systemitem]``set-cname`` 参数。
+
+私用密钥和服务器证书可以在服务器容器的 [path]``/root/ssl-build/susemanager/`` 目录中找到，其文件名为 `server.key` 和 `server.crt`。最后一个目录的名称取决于与 `--set-hostname` 选项结合使用的主机名。
+
+请通过更新容器的主机 Podman 机密来部署或导入新证书和密钥。有关如何导入刚才生成的证书的详细信息，请参见 xref:administration:ssl-certs-imported.adoc#ssl-certs-import-replace[]。
+
+
+
+[[ssl-certs-selfsigned-create-replace]]
+== 创建新的 CA 证书和服务器证书
+
+[IMPORTANT]
+====
+替换根 CA 时请小心。这可能会破坏服务器与客户端之间的信任链。如果发生这种情况，需要让某个管理用户登录到每个客户端并直接部署 CA。
+====
+
+
+.过程：创建新证书
+
+. 在 {productname} 容器主机的命令提示符处，将旧证书目录移到新位置：
+
++
+
+[source, shell]
+----
+mgrctl exec -- mv /root/ssl-build /root/old-ssl-build
+----
+
+. 生成新的 CA 证书：
+
++
+
+[source, shell]
+----
+mgrctl exec -ti -- 'rhn-ssl-tool --gen-ca --dir="/root/ssl-build" --set-country="COUNTRY" \
+--set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
+--set-org-unit="ORGANIZATION UNIT" --set-common-name="SUSE Manager CA Certificate" \
+--set-email="name@example.com"'
+----
+
++
+
+. 生成新的服务器证书：
+
++
+
+[source, shell]
+----
+mgrctl exec -ti -- 'rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
+--set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
+--set-org-unit="ORGANIZATION UNIT" --set-email="name@example.com" \
+--set-hostname="susemanager.example.top" --set-cname="example.com"'
+----
+
++
+
+确保 [systemitem]``set-cname`` 参数是您的 {productname} 服务器的完全限定域名。如果需要多个别名，可以多次使用 [systemitem]``set-cname`` 参数。
++
+还需要使用代理的主机名和 cname 为每个代理生成服务器证书。

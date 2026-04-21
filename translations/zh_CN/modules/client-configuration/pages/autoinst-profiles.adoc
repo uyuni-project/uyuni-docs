@@ -1,0 +1,258 @@
+[[autoinst-profiles]]
+= 自动安装配置文件
+:revdate: 2025-07-08
+:page-revdate: {revdate}
+
+在 {productname} 中，您可以使用两种不同的配置文件，具体取决于您要安装的客户端的操作系统：
+
+* 对于 {sle} 或 {opensuse} 客户端，请使用 {ay}。
+* 对于 {rhel} 客户端，请使用 {kickstart}。
+
+自动安装配置文件决定了如何安装操作系统。例如，您可以指定更多要传递给安装程序的内核参数。
+
+配置文件最重要的部分是**自动安装文件**。当您手动执行安装操作时，必须向安装程序提供相关信息，例如分区配置、网络配置信息以及用户详细信息等。自动安装文件是一种以脚本形式提供此类信息的方式。这类文件有时也被称为**应答文件**。
+
+如果您要安装具有不同操作系统的客户端，可以使用 {ay} 和 {kickstart} 配置文件。
+
+* 有关如何声明配置文件的信息，请参见xref:client-configuration:autoinst-profiles.adoc#declare-profile[声明配置文件]
+* 有关 {ay} 配置文件的信息，请参见 xref:client-configuration:autoinst-profiles.adoc#autoyast[{ay} 配置文件]。
+* 有关 {kickstart} 配置文件的信息，请参见 xref:client-configuration:autoinst-profiles.adoc#kickstart[Kickstart 配置文件]。
+
+配置文件中包含的自动安装文件可以包含变量和代码段。有关变量和代码段的信息，请参见xref:client-configuration:autoinst-profiles.adoc#templates-syntax[模板语法]。
+
+
+
+[[declare-profile]]
+== 声明配置文件
+
+
+准备好自动安装文件和发行套件后，您可以创建配置文件来管理 {productname} 服务器上的自动安装。配置文件会决定如何安装您选择的此发行套件。创建配置文件的其中一个方式是上载 {ay} 或 {kickstart} 文件。或者，您也可以使用 {webui} 向导（仅针对 {kickstart}）。
+
+
+
+.过程：通过上载创建自动安装配置文件
+
+. 在 {productname} {webui} 中，导航到menu:系统[自动安装 > 配置文件]。
+
+. 单击 btn:[上载 Kickstart/{ay} 文件]。
+
+. 在[guimenu]``标签``字段中，键入配置文件的名称。不要使用空格。
+
+. 在[guimenu]``自动安装树``字段中，选择要用于此配置文件的可自动安装的发行套件。
+
+. 在[guimenu]``虚拟化类型``字段中，选择要用于此配置文件的虚拟化类型，或选择``无``（如果您不想使用此配置文件创建新的虚拟机）。
+
+. 将自动安装文件的内容复制到[guimenu]``文件内容``字段，或使用[guimenu]``要上载的文件``字段直接上载文件。
++
+
+有关此处要包含的细节的详细信息，请参见 xref:client-configuration:autoinst-profiles.adoc#autoyast[{ay} 配置文件] 或 xref:client-configuration:autoinst-profiles.adoc#kickstart[Kickstart 配置文件]。
+
+. 单击 btn:[创建] 以创建配置文件。
+
+
+
+.过程：通过向导创建 {kickstart} 配置文件
+
+. 在 {productname} {webui} 中，导航到menu:系统[自动安装 > 配置文件]。
+
+. 单击 btn:[创建 Kickstart 配置文件]。
+
+. 在[guimenu]``标签``字段中，键入配置文件的名称。不要使用空格。
+
+. 在[guimenu]``基础通道``字段中，选择要用于此配置文件的基础通道。系统会根据可用的发行套件填充此字段。如果您需要的基础通道不可用，请检查您是否正确创建了发行套件。
+
+. 在[guimenu]``虚拟化类型``字段中，选择要用于此配置文件的虚拟化类型，或选择``无``（表示不进行虚拟化）。
+
+. 单击 btn:[下一步]。
+
+. 在[guimenu]``发行套件文件位置``中，键入 {productname} 服务器上安装的安装媒体的路径。
+
+. 单击 btn:[下一步]。
+
+. 提供客户端上 root 用户的口令。
+
+. 单击 btn:[完成]。
+
+. 查看新配置文件的细节，并视需要进行自定义。
+
+创建自动安装配置文件时，您可以选中[guimenu]``始终为此基础通道使用最新的树``。此设置可让 {productname} 自动提取与指定基础通道关联的最新发行套件。如果您以后添加新发行套件，{productname} 会使用最近创建或修改的发行套件。
+
+更改[guimenu]``虚拟化类型``通常需要更改配置文件加载程序和分区选项。这会重写您的自定义设置。请在保存前导航到[guimenu]``分区``选项卡校验新的或更改后的设置。
+
+来自发行套件和配置文件的内核选项会进行合并。
+
+您可以更改自动安装配置文件的细节和设置，方法是导航到menu:系统[自动安装 > 配置文件]，然后单击要编辑的配置文件的名称。或者，可导航到menu:系统[系统列表]，选择要置备的客户端，然后导航到menu:置备[自动安装]子选项卡。
+
+
+
+[[autoyast]]
+== {ay} 配置文件
+
+{ay} 配置文件由标识该配置文件的[guimenu]``标签``、指向可自动安装的发行套件的[guimenu]``自动安装树``、各种选项以及最重要的 {ay} 安装文件组成。
+
+{ay} 安装文件是一个 XML 文件，用于向 {ay} 安装程序提供指示。{ay} 将其称为“控制文件”。有关 {ay} 安装文件的完整语法，请参见 link:https://doc.opensuse.org/projects/autoyast/#cha-configuration-installation-options[]。
+
+{suse} 提供了 {ay} 安装文件模板，您可以基于它们创建自己的自定义文件。您可在 https://github.com/SUSE/manager-build-profiles 上的 [path]``AutoYast`` 目录中找到这些模板。使用前，需要为其中的每个配置文件设置一些变量。请参见脚本随附的 [path]``README`` 文件确定您需要的变量。有关在 {ay} 脚本中使用变量的详细信息，请参见xref:client-configuration:autoinst-profiles#variables[变量]。
+
+[IMPORTANT]
+====
+提供的 {ay} 模板未设置任何用户口令。建议您配置 root 帐户及其他用户帐户并设置口令，或采用其他身份验证方式。有关 {ay} 配置文件中用户帐户的详细信息，请参见 https://doc.opensuse.org/projects/autoyast/#Configuration-Security-users-and-groups[]。
+====
+
+在 {ay} 安装文件中，用于通过 {productname} 安装的最重要的部分如下：
+
+* ``<add-on>`` 用于向安装添加子通道。有关示例，请参见 link:https://doc.opensuse.org/projects/autoyast/#Software-Selections-additional[]。
++
+* ``<general>$SNIPPET('spacewalk/sles_no_signature_checks')</general>`` 禁用签名检查
+
+* ``<software>`` 用于为 {unifiedinstaller} 指定产品
+** 请参见 link:https://doc.opensuse.org/projects/autoyast/#CreateProfile-Software[]，其中包含“<software>”示例
++
+* ``<init-scripts config:type="list">$SNIPPET('spacewalk/minion_script')</init-scripts>`` 用于将客户端作为 Salt 客户端注册到 {productname}。
++
+* ``<pre-scripts config:type="list">$SNIPPET('spacewalk/root_ca')</pre-scripts>`` will copy and deploy the server SSL CA certificate on the new machine.
++
+``<add-on><add_on_products config:type="list">$SNIPPET('spacewalk/autoyast_channels')</add_on_products></add-on>`` automatically adds all the channels of the selected distribution as sources. For more information about {ay}, see https://doc.opensuse.org/projects/autoyast/.
+
+近期一个基于 {salt} 的方案 Yomi 可替代 {ay}。有关 Yomi 的信息，请参见 xref:specialized-guides:salt/salt-yomi.adoc[使用 Yomi 安装]。
+
+
+
+[[kickstart]]
+== Kickstart 配置文件
+
+{kickstart} 配置文件提供了大量配置选项。要创建这些配置文件，您可以上载它们，也可以使用专用向导。
+
+{kickstart} 配置文件允许您使用文件保留列表。如果您有许多自定义配置文件位于要使用 {kickstart} 重新安装的客户端上，则可以将它们保存为列表，并将该列表与 {kickstart} 配置文件相关联。
+
+
+
+.过程：创建文件保留列表
+
+. 在 {productname} {webui} 中，导航到menu:系统[自动安装 > 文件保留]，然后单击 btn:[创建文件保留列表]。
+
+. 输入适当的标签，并列出要保存的所有文件和目录的绝对路径。
+
+. 单击 btn:[创建列表]。
+
+. 将该文件保留列表包含到 {kickstart} 配置文件中。
+
+. 导航到menu:系统[自动安装 > 配置文件]，选择要编辑的配置文件，转到menu:系统细节[文件保留]子选项卡，然后选择要包含的文件保留列表。
+
+[NOTE]
+====
+文件保留列表总大小上限为 1{nbsp}MB。[path]``/dev/hda1`` 和 [path]``/dev/sda1`` 等特殊设备无法保留。只能使用文件名和目录名，不能使用正则表达式通配符。
+====
+
+有关 Kickstart 的详细信息，请参见 Red Hat 文档。
+
+
+
+[[templates-syntax]]
+== 模板语法
+
+安装文件的部分内容在安装过程中会被替换。变量会被替换为相应的单个值，代码段会被替换为整段文本。转义符或转义部分不会被替换。
+
+名为 Cheetah 的模板引擎允许 {cobbler} 进行这些替换。利用此机制，您在重新安装大量系统时就无需为每个系统手动创建配置文件。
+
+您可以在 {productname} {webui} 中创建自动安装变量和代码段。在配置文件中，[guimenu]``自动安装文件``选项卡可让您查看替换的结果。
+
+* 有关变量的信息，请参见xref:client-configuration:autoinst-profiles#variables[变量]。
+* 有关代码段的信息，请参见xref:client-configuration:autoinst-profiles#code-snippets[代码段]。
+* 有关转义符或文本块的信息，请参见xref:client-configuration:autoinst-profiles#escaping[转义]。
+
+
+
+[[variables]]
+=== 变量
+
+可以使用自动安装变量来替换 {kickstart} 和 {ay} 配置文件中的值。要定义变量，请从配置文件中导航到[guimenu]``变量``子选项卡，然后在文本框中创建 [replaceable]``name=value`` 对。
+
+例如，您可以创建一个变量来存储客户端的 IP 地址，创建另一个变量来存储其网关的地址。然后可以为通过同一配置文件安装的所有客户端定义这些变量。要执行此操作，请将下面几行添加到[guimenu]``变量``文本框中：
+
+----
+ipaddr=192.168.0.28
+gateway=192.168.0.1
+----
+
+要使用变量，请在配置文件中附加一个 [option]``$`` 符号来替换相应值。例如，{kickstart} 文件的 [option]``network`` 部分可能如下所示：
+
+----
+network --bootproto=static --device=eth0 --onboot=on --ip=$ipaddr \
+  --gateway=$gateway
+----
+
+[option]``$ipaddr`` 会解析为 ``192.168.0.28``，[option]``$gateway`` 会解析为 ``192.168.0.1``。
+
+在安装文件中，变量使用层次结构。系统变量优先于配置文件变量，而配置文件变量优先于发行套件变量。
+
+
+
+[[code-snippets]]
+=== 代码段
+
+{productname} 附带了大量预定义的代码段。导航到menu:系统[自动安装 > 自动安装代码段]，以查看现有代码段列表。
+
+通过在自动安装文件中插入 [option]``$SNIPPET()`` 宏来使用代码段。例如，在 {kickstart} 中，插入该宏：
+
+----
+$SNIPPET('spacewalk/redhat_register_using_salt')
+----
+
+或者，在 {ay} 中，插入该宏：
+
+----
+<init-scripts config:type="list">
+  $SNIPPET('spacewalk/minion_script')
+</init-scripts>
+----
+
+宏会经过 {cobbler} 的分析，并会替换为代码段的内容。您还可以存储自己的代码段，以供日后在自动安装文件中使用。单击 btn:[创建代码段] 以创建新代码段。
+
+下面的示例设置了通用硬盘分区配置的 {kickstart} 代码段：
+
+----
+clearpart --all
+part /boot --fstype ext3 --size=150 --asprimary
+part / --fstype ext3 --size=40000 --asprimary
+part swap --recommended
+
+part pv.00 --size=1 --grow
+
+volgroup vg00 pv.00
+logvol /var --name=var vgname=vg00 --fstype ext3 --size=5000
+----
+
+下面是使用该代码段的一个示例：
+
+----
+$SNIPPET('my_partition')
+----
+
+
+
+[[escaping]]
+=== 转义
+
+如果自动安装文件包含 ``$(example)`` 这样的外壳脚本变量，则需要使用反斜杠对内容进行转义：``\$(example)``。对 ``$`` 符号进行转义可防止模板引擎将该符号评估为内部变量。
+
+// FIXME 2023-09-12, ke: "#raw" or "#end raw"?
+可以使用 ``\#raw`` 和 ``\#end raw`` 指令封装代码段或脚本等文本块，从而对其转义。例如：
+
+// FIXME 2023-09-12, ke: "#raw" or "#end raw"?
+----
+#raw
+#!/bin/bash
+for i in {0..2}; do
+ echo "$i - Hello World!"
+done
+#end raw
+----
+
+所有包含 ``#`` 符号后接空格的行均视为注释行，因此不会对其进行评估。例如：
+
+----
+# start some section（此为注释）
+echo "Hello, world"
+# end some section（此为注释）
+----

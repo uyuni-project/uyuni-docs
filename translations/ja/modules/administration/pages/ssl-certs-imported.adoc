@@ -1,0 +1,182 @@
+[[ssl-certs-import]]
+= SSL証明書のインポート
+:revdate: 2025-06-20
+:page-revdate: {revdate}
+
+//By default, {productname} uses a self-signed certificate.
+//For additional security, you can import a custom certificate, signed by a third party certificate authority (CA).
+
+このセクションでは、新しい{productname}のインストールにSSL証明書を設定する方法、および既存の証明書を置き換える方法について説明します。
+
+開始する前に、以下があることを確認します。
+
+* 認証局(CA) SSLパブリック証明書。 CAチェーンを使用している場合は、すべての中間CAも利用できる必要があります。
+* SSLサーバ秘密鍵
+* SSLサーバ証明書
+* SSLデータベース機密鍵
+* SSLデータベース証明書
+
+すべてのファイルがPEM形式である必要があります。
+
+SSLサーバ証明書のホスト名は、配備先マシンの完全修飾ホスト名と一致している必要があります。 ホスト名は、証明書の[literal]``X509v3 Subject Alternative Name``セクションで設定できます。 環境で必要な場合は、複数のホスト名を一覧にすることもできます。 サポートされているキーの種類は、[literal]``RSA``と[literal]``EC`` (Elliptic Curve)です。
+
+[IMPORTANT]
+====
+データベースSSL証明書では、[literal]``reportdb``と[literal]``db``が[literal]``Subject Alternative Name``として必要です。
+====
+
+サードパーティの機関は通常、中間CAを使用して、要求されたサーバ証明書に署名します。 この場合、チェーン内のすべてのCAが使用できる必要があります。 [literal]``mgrdadm``コマンドは証明書の順序付けを行います。 理想的には、ルートCAを独自のファイルに格納する必要があります。 サーバ証明書ファイルには、まずサーバ証明書、次にすべての中間CA証明書が順番に含まれている必要があります。
+
+
+
+== 新しいインストール用証明書のインポート
+
+
+デフォルトで、{productname}は自己署名証明書を使用します。 インストール時にサードパーティ証明書をインポートすることもできます。
+
+.プロシージャ: 新しい{productname}サーバへの証明書のインポート
+[role=procedure]
+____
+. xref:installation-and-upgrade:install-server.adoc[]の手順に従って{productname}サーバを配備します。必ず、正しいファイルをパラメータとして[literal]``mgradm install podman``に渡してください。パラメータは次のとおりです。
+
++
+
+----
+サードパーティSSL証明書フラグ:
+      --ssl-ca-intermediate文字列   中間CA証明書のパス
+      --ssl-ca-root文字列            ルートCA証明書のパス
+      --ssl-server-cert文字列        サーバ証明書のパス
+      --ssl-server-key文字列         サーバキーのパス
+      --ssl-db-ca-intermediate文字列 データベースの中間CA証明書のパス(サーバの証明書と異なる場合)
+      --ssl-db-ca-root文字列          データベースのルートCA証明書のパス(サーバの証明書と異なる場合)
+      --ssl-db-cert string             データベース証明書のパス
+      --ssl-db-key string              データベースキーのパス
+----
+____
+
+中間CAは、``--ssl-ca-root``で指定されたファイルで使用することも、``--ssl-ca-intermediate``で追加オプションとして指定することもできます。 ``--ssl-ca-intermediate``オプションは複数回指定できます。
+
+
+
+== 新しいプロキシインストール用の証明書のインポート
+
+プロキシ証明書は生成された設定に埋め込まれます。 サードパーティ証明書を使用するには、設定中に提供される必要があります。
+
+.プロシージャ: 新しい{productname}プロキシへの証明書のインポート
+[role=procedure]
+____
+. xref:installation-and-upgrade:install-proxy.adoc[]の手順に従って、{productname}プロキシをインストールします。
+
+. プロンプトに従ってセットアップを完了します。
+
++
+
+[NOTE]
+====
+サーバとプロキシのすべての証明書に署名するには、同じ認証局(CA)を使用します。 異なるCAで署名された証明書は一致しません。
+====
+
+____
+
+
+[[ssl-certs-import-replace]]
+== 証明書を置き換える
+
+
+{productname}インストール環境にあるアクティブな証明書を新しい証明書に置き換えることができます。 考慮すべきケースは2つあります。サーバまたはデータベース証明書のみを置き換える場合と、ルートCAを置き換える場合です。
+
+
+ルート証明書を置き換えるには、すべての登録済みプロキシとシステムで、サーバレベルで切り替える前にデータベースに新しいCAを登録しておく必要があるため、中断を回避するためのより多くの時間と計画が必要となります。
+
+中間CAで署名されたサードパーティ証明書を使用する場合は、中間CA証明書をサーバまたはデータベースの証明書ファイルに追加する必要があります。
+
+順番が重要です: 最初にサーバ証明書、次に証明書に署名したCAから、ルートCAによって署名されたCAまでを順番に配置します。 ルートCA証明書はサーバ証明書ファイルに追加しないでください。
+
+
+.プロシージャ: 既存の証明書をすべて置き換える
+[role=procedure]
+____
+. 以下は、[litteral]``root-ca.pem``、[litteral]``intermediate-ca1.pem``、[litteral]``intermediate-ca2.pem``、[litteral]``server.pem``、 [litteral]``server.key``ファイルが存在することを前提としています。 サーバ証明書署名チェーン内の中間CAの数によって異なる場合があります。
+
+. 中間CAとサーバ証明書を結合します。 順番が重要です。最初にサーバ証明書、次に中間CAを順番に配置する必要があります。 ルートCAをチェーンの最後に追加しないでください。ルートCAは[litteral]``uyuni-ca``と [litteral]``uyuni-db-ca``シークレットに個別の渡されるためです。 中間CAが存在しない場合、次のステップでは結合ファイルではなく、[litteral]``server.pem``を使用できます。
+
++
+[source, shell]
+----
+cat server.pem intermediate-ca1.pem intermediate-ca2.pem >combined-server.pem
+----
+
+. {productname}コンテナホストのコマンドプロンプトで、以下のファイルパスを渡してpodman証明書シークレットを再作成します。
+
++
+
+[source, shell]
+----
+podman secret create --replace uyuni-ca $path_to_ca_certificate
+podman secret create --replace uyuni-cert $path_to_combined_server_certificate
+podman secret create --replace uyuni-key $path_to_server_key
+
+podman secret create --replace uyuni-db-ca $path_to_database_ca_certificate
+podman secret create --replace uyuni-db-cert $path_to_combined_database_certificate
+podman secret create --replace uyuni-db-key $path_to_database_key
+----
+____
+
+
+.プロシージャ: サーバの再起動
+[role=procedure]
+____
+. コンテナホストで、サーバを再起動して変更を取得します。
+
++
+
+[source, shell]
+----
+mgradm restart
+----
+____
+
+
+プロキシを使用している場合は、各プロキシのホスト名とcnameを使用して、各プロキシ用のサーバ証明書RPMを生成する必要があります。 新しい設定tarballを生成して配備します。
+
+ifeval::[{mlm-content} == true]
+詳細については、xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc#_generate_proxy_configuration[]を参照してください。
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+詳細については、xref:installation-and-upgrade:container-deployment/uyuni/proxy-deployment-uyuni.adoc#proxy-setup-containers-generate-config[]を参照してください。 proxy-deployment-uyuni.adoc
+endif::[]
+
+
+
+ルートCAが変更された場合は、{productname}に接続されているすべてのクライアントに配備する必要があります。 中断を最小限に抑えるため、事前に実行しておくことをお勧めします。
+
+[NOTE]
+====
+CA証明書が更新された場合、Kiwi証明書を含むRPMファイルを再パッケージ化する必要があります。
+
+{productname}サーバのコンテナホストで、次のコマンドを実行します。
+
+[source, shell]
+----
+mgrctl exec mgr-package-rpm-certificate-osimage
+----
+
+その後、イメージビルドホストにhighstateを適用し、kiwiが使用する新しい証明書を配備します。
+====
+
+
+
+.プロシージャ: クライアント上のルートCAの配備
+[role=procedure]
+____
+. {productname} {webui}で、menu:システム[概要]に移動します。
+
+. すべてのクライアントをチェックして、システムセットマネージャに追加します。
+
+. menu:システム[システムセットマネージャ > 概要]に移動します。
+
+. ［[guimenu]``状態``］フィールドで、btn:[適用]をクリックして、システムの状態を適用します。
+
+. ［[guimenu]``highstate``］ページで、btn:[highstateの適用]をクリックして、クライアントに変更を伝播します。
+____

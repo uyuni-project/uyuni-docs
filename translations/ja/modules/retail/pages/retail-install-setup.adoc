@@ -1,0 +1,174 @@
+[[retail-install-setup]]
+= Set Up the {productname} {smr} Environment
+:revdate: 2025-01-21
+:page-revdate: {revdate}
+
+// 2020-08-27, ke: We must settle on one term: "POS images" or "terminal images"
+
+To set up the {productname} {smr} environment, you will need to have already installed and configured:
+
+* {productname}サーバ
+* one or more {productname} {smr} branch server containerized proxy
+* one or more {productname} build hosts
+* network stack depending on selected network architecture, see xref:retail:retail-network-arch.adoc[]
+
+This section covers how to configure your {productname} {smr} environment, including:
+
+* Prepare POS images
+* Prepare system groups for {saltboot}
+* Configure services for {saltboot}
+
+The very first time you set up the {productname} {smr} environment, you will need to perform all configuration steps in order. You will need to revisit some of these steps later on as you are working with {productname} {smr}.
+
+For example, the first time you configure the branch server group, you will need to have images prepared already. If you are configuring more than one branch server, the same images are reused across different branch server groups.
+
+If you have an existing environment, and need to build new images, you do not need to re-initialize the branches.
+
+
+== Prepare and Build Terminal Images
+
+
+For information about {productname} image building, see xref:administration:image-management.adoc[].
+
+{productname} {smr} POS images are images specifically tailored for {productname} {smr} environment and designed to be deployed using PXE booting mechanism.
+
+
+=== POS Image Templates
+
+As starting point, {suse} provides basic templates at https://github.com/SUSE/manager-build-profiles/tree/master/OSImage[]. These templates need to be adapted for specific usecases, for example by including specific applications, configuration settings, and users.
+
+[IMPORTANT]
+====
+POS image templates and resulting images do not set a system user password. You will not be able to login as a system user to a system that has been installed with a {suse} provided template without customization. However you can use Salt to manage clients without a system user password. You can use {salt} to set up a system user password after the terminal has been deployed.
+====
+
+=== Validate POS Image Registration
+
+After POS image is successfully built and inspected by {productname}, you can validate that POS boot image was correctly registered by following procedure.
+
+.Procedure Validate POS boot image
+
+. On {productname} command line execute following command:
++
+----
+mgrctl exec cobbler distro list
+----
+. Your POS image should be listed with an organization name appended after it.
+
+== Branch Identification
+
+For every branch server choose its [systemitem]``branch id``.
+
+As a [systemitem]``branch id`` select any alphanumerical string with up to 64 characters.
+
+
+== Required System Groups
+
+{productname} {smr} requires:
+
+- branch system group for every branch server proxy, using [systemitem]``branch id`` as its name
+- hardware type system group for every used hardware type, using [systemitem]``HWTYPE:`` prefix in its name
+
+For more information about hardware type groups, see xref:retail:retail-deploy-terminals.adoc[].
+
+
+[WARNING]
+====
+Missing mandatory system group will cause terminal bootstrap to fail.
+====
+
+{productname} {smr} also recognizes two optional groups for better overview:
+
+- [systemitem]``TERMINALS``
+- [systemitem]``SERVERS``
+
+
+You can create system groups using the {productname} {webui}. Navigate to menu:Systems[System Groups] and click btn:[Create System Group].
+
+システムグループの詳細については、xref:reference:systems/system-groups.adoc[]を参照してください。
+
+During terminal bootstrap, terminal automatically joins:
+
+- branch system group based on received [systemitem]``branch_id``. This will make branch group formulas available to the terminal.
+- HWType group based on SMBios information received from terminal. This will make {saltboot} partitioning pillar available to the terminal.
+- [systemitem]``TERMINALS`` if this group exists.
+
+
+[NOTE]
+====
+In case you plan to use the branch server container host as a monitoring server with Prometheus, be aware that Prometheus demands additional hardware resources. For more information about installing Prometheus, see xref:administration:monitoring.adoc[].
+====
+
+[NOTE]
+====
+In case you plan to use the branch server container host with Ansible software, be aware that Ansible demands additional hardware resources. For more information about installing Ansible, see xref:administration:ansible-integration.adoc[].
+====
+
+=== {saltboot} group
+
+[IMPORTANT]
+====
+Before configuring {saltboot} group, make sure you already have at least one POS image available.
+====
+
+Containerized {productname} {smr} is configured using so called [systemitem]``Saltboot Group``.
+
+{saltboot} groups are branch groups, system group with [systemitem]``branch id`` as its name created in previous step, with [systemitem]``Saltboot Group`` formula enabled.
+
+[systemitem]``Saltboot Group`` formula is a successor of [systemitem]``Branch Network formula``, [systemitem]``PXE formula`` and [systemitem]``TFTP formula`` previously used in {productname} {smr} setups.
+
+To connect [systemitem]``Saltboot Group`` with containerized proxy fill [systemitem]``Image Download Server`` entry with Fully Qualified Domain Name ([literal]``FQDN``) of the containerized proxy.
+
+
+== Configure Network Services for {saltboot}
+
+{saltboot} technology is used to deploy POS images to the terminals. {saltboot} consists of saltboot enabled initrd (build as part of POS images) and saltboot {salt} states.
+
+This section covers general information about generic {saltboot} requirements. For configuration examples, see xref:retail:example-configurations.adoc[].
+
+
+=== Enable PXE Network Boot in the Terminal Network
+
+{saltboot} is usually used in network boot environment. For this to work [systemitem]``DHCP`` service for the network terminal is connected to must have [systemitem]``PXE`` or sometimes called [systemitem]``BOOTP`` support enabled.
+
+.Example of ISC DHCP server configuration with PXE booting enabled
+
+----
+  if substring (option vendor-class-identifier, 0, 10) = "HTTPClient" {
+    option vendor-class-identifier "HTTPClient";
+    filename "<FQDN of branch server proxy>/saltboot/shim.efi";
+  }
+  else {
+    if option arch = 00:07 {
+       filename "grub/shim.efi";
+       next-server <IP address of branch server proxy>;
+    }
+    else {
+      filename "grub/grub.0";
+      next-server <IP address of branch server proxy>;
+    }
+  }
+----
+
+Notice two important options, [systemitem]``next-server`` which is set to the branch server IP address and [systemitem]``filename`` set to the [systemitem]``pxelinux.0`` for BIOS based system and [systemitem]``grub/shim.efi`` for UEFI systems with SecureBoot support.
+
+[IMPORTANT]
+====
+{productname} {smr} branch proxy uses different [systemitem]``filename`` then previous non-containerized branch server.
+
+For containerized branch proxy set [systemitem]``filename`` to the [systemitem]``pxelinux.0`` for BIOS based system and [systemitem]``grub/shim.efi`` for UEFI systems with SecureBoot.
+====
+
+
+== Terminal Partitioning and Image Selection
+
+{saltboot} requires instructions how to partitioning terminal harddisk and what image to deploy. This is done individually for each hardware type of terminals. For more information about hardware types and partitioning, see xref:retail:retail-deploy-terminals.adoc[].
+
+Above mentioned steps are mandatory minimum for successful {saltboot} deployment. For configuration examples, see xref:retail:example-configurations.adoc[].
+
+
+== Synchronize Images to the Branch Server
+
+{productname} {smr} {productnumber} no longer need manual image synchronization, all images are available to all clients automatically.
+
+This may not be always desired, for example to allow images gradual deployments across all branches. For a way how to limit image deployment, see xref:retail:retail-best-practices.adoc[].

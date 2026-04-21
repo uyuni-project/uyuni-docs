@@ -1,0 +1,388 @@
+[[clients-rh-rhui]]
+= 使用 RHUI 注册 {rhel} 客户端
+:revdate: 2026-03-17
+:page-revdate: {revdate}
+
+// SUSE Liberty Linux not available at Uyuni for now
+
+// 2024-04-04 OM: It had been decided in the conversation with the mlm PO 
+// that this Public Cloud related file can stay in the Uyuni books
+
+
+本节包含有关使用 {redhat} 更新基础架构 (RHUI) 注册运行 {rhel} 操作系统的客户端的信息。
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$rhel10_cpu_architecture_warning.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/rhel10_cpu_architecture_warning.adoc[]
+endif::[]
+
+ifeval::[{mlm-content} == true]
+
+如果您是直接运行 {rhel} 客户端而不是使用 {sleses} 来运行，则需要使用 Red Hat 来源检索并更新软件包。
+endif::[]
+
+如果您在公有云（例如 Amazon EC2）中运行客户端，请使用此方法。
+
+可以将 RHUI 与 {redhat} 内容分发网络 (CDN) 搭配使用来管理您的 {rhel} 订阅。有关使用 {redhat} CDN 的信息，请参见 xref:client-configuration:clients-rh-cdn.adoc[]。
+
+[IMPORTANT]
+====
+
+// SUSE Liberty Linux not available at Uyuni for now
+
+ifeval::[{mlm-content} == true]
+
+{rhel} 客户端基于 {redhat}，与 {sleses}、RES 或 {sles} 不相关。
+endif::[]
+
+您需负责将 {productname} 服务器连接到 {redhat} 更新基础结构。所有使用此 RHUI 证书进行更新的客户端都需要获得正确许可，有关详细信息，请咨询您的云服务提供商，并查看服务的 {redhat} 条款。
+====
+
+[NOTE]
+====
+当使用 RHUI 注册的 {rhel} 客户端关闭时，{redhat} 可能会声称证书无效。在此情况下，您需要再次打开客户端，或获取新的 RHUI 证书。
+====
+
+
+
+== 导入权利和证书
+
+
+过去，必须手动将证书和权利数据导入到 {productname} 服务器。如今，该任务已实现自动化，采用的机制与 SUSE {payg} 实例所用机制相同。有关详细信息，请参见 xref:specialized-guides:public-cloud-guide/payg/payg-overview.adoc[]。
+
+本指南将介绍注册到 {redhat} 更新基础结构 (RHUI) 的客户端。您至少须有一个注册到 RHUI 的系统并拥有授权订阅，以获得储存库内容。
+
+而有关使用 {redhat} 内容分发网络 (CDN) 的信息，请参见 xref:client-configuration:clients-rh-cdn.adoc[]。
+
+
+[IMPORTANT]
+====
+要为客户端系统使用从属证书，必须有从属服务器和订阅。{productname} 服务器不支持使用从属证书的客户端。
+====
+
+
+[IMPORTANT]
+====
+{payg} 连接会定期与客户端通信以获取最新的身份验证数据。请务必将客户端保持运行状态并定期更新。如果不这样，储存库同步有时将会失败，并显示身份验证错误。
+====
+
+
+[NOTE]
+====
+请在连接任何 {redhat} 7 实例前先将其更新。
+====
+
+
+// mc: this depends on the version of Jsch we use. The current version 0.1.55 only support rsa-ssh auth
+//     which is forbidden with the DEFAULT policy. If we decide to switch to a different implementation
+//     of Jsch (0.2.9 or higher) this limitation is gone and the note can be removed
+[NOTE]
+====
+要连接到 {redhat} 9 实例，必须已为其配置加密策略 [literal]``LEGACY``。请执行 [command]``sudo update-crypto-policies --set LEGACY`` 进行相应配置。
+====
+
+
+== 连接到 {redhat} 更新基础结构
+
+[[proc-connecting-new-rhui]]
+.过程：连接新的 {redhat} 实例
+[role=procedure]
+. 在 {productname} {webui} 中，导航到menu:管理[安装向导 > {payg}]，然后单击 btn:[添加 {payg}]。
+. 从页面的 [guimenu]``{payg} 连接说明``部分开始。
+. 在[guimenu]``说明``字段中添加说明。
+. 转移到页面的[guimenu]``实例 SSH 连接数据``部分。
+. 在[guimenu]``主机``字段中，键入要从 {productname} 连接的实例 DNS 或 IP 地址。
+. 在 [guimenu]``SSH 端口``字段中输入端口号或使用默认值 22。
+. 在[guimenu]``用户``字段中输入云中指定的用户名。
+. 在[guimenu]``口令``字段中输入口令。
+. 在[guimenu]``SSH 私用密钥``字段中输入实例密钥。
+. 在[guimenu]``SSH 私用密钥通行口令``字段中输入密钥通行口令。
+
+
+[IMPORTANT]
+====
+身份验证密钥必须采用 PEM 格式。
+====
+
+
+如果您要通过 SSH 堡垒连接实例而不是直接连接，请执行<<proc-adding-ssh-bastion-connection-data>>。
+
+否则，请执行<<proc-finishing-rhui-connecting>>。
+
+
+[[proc-adding-ssh-bastion-connection-data]]
+.过程：添加 SSH 堡垒连接数据
+[role=procedure]
+. 导航到页面的[guimenu]``堡垒 SSH 连接数据``部分。
+. 在[guimenu]``主机``字段中输入堡垒主机名。
+. 在[guimenu]``SSH 端口``字段中输入堡垒端口号。
+. 在[guimenu]``用户``字段中输入堡垒用户名。
+. 在[guimenu]``口令``字段中输入堡垒口令。
+. 在[guimenu]``SSH 私用密钥``字段中输入堡垒密钥。
+. 在[guimenu]``SSH 私用密钥通行口令``字段中输入堡垒密钥通行口令。
+
+执行<<proc-finishing-rhui-connecting>>完成设置。
+
+
+[[proc-finishing-rhui-connecting]]
+.过程：完成 {redhat} 连接
+[role=procedure]
+. 要完成添加新 {redhat} 连接数据的过程，请单击 btn:[创建]。
+. 返回 {payg} 连接数据[guimenu]``细节``页面。
+    顶部的[guimenu]``信息``部分会显示更新的连接状态。
+. [guimenu]``管理 > 安装向导 > Pay-as-you-go`` 屏幕中也会显示连接状态。
+. 如果实例的身份验证数据正确无误，[guimenu]``状态``列会显示[literal]``已成功更新身份凭证``。
+
+
+[IMPORTANT]
+====
+如果在任何时间输入了无效数据，[guimenu]``管理 > 安装向导 > {payg}`` 中会显示新创建的实例，同时[guimenu]``状态``列会显示错误消息。
+====
+
+
+当服务器上有可用的身份验证数据后，系统会立即为已连接实例上所有可用的储存库添加储存库。您可以在[guimenu]``软件 > 管理 > 储存库``中查看储存库
+
+
+[IMPORTANT]
+====
+{redhat} 连接会创建默认由组织 1 拥有的自定义储存库。如果应由另一个组织拥有自动生成的储存库，请在 ``/etc/rhn/rhn.conf`` 中配置 [systemitem]``java.rhui_default_org_id``。
+====
+
+此设置仅可定义和更新储存库。如果您想对受管客户端使用某个储存库，则需要指定软件通道并将储存库关联到该软件通道。
+
+
+== 添加软件通道
+
+// 2022-04-21, ke:
+// Section sequence according to https://github.com/uyuni-project/uyuni-docs/pull/1535
+
+将 {redhat} 客户端注册到您的 {productname} 服务器之前，您需要添加所需的软件通道，并同步这些通道。
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$arch-other-note.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/arch-other-note.adoc[]
+endif::[]
+
+
+ifeval::[{mlm-content} == true]
+
+拥有 {susemgr} 订阅，您便能使用 {sleses}（也称为 {redhat} 扩展支持或 RES）的工具通道。必须使用客户端工具通道来创建引导储存库。此过程适用于 Salt 客户端。
+endif::[]
+
+
+ifeval::[{mlm-content} == true]
+
+此过程所需的产品包括：
+
+[[redhat-rhui-channels-wizard]]
+[cols="1,1", options="header"]
+.Red Hat 产品 - WebUI
+|===
+
+// SUSE Liberty Linux not available at Uyuni for now
+| OS Version | Product Name | {redhat} 10 | RHEL and Liberty 10 Base | {redhat} 9 | RHEL and Liberty 9 Base | {redhat} 8 | RHEL or SLES ES or CentOS 8 Base | {redhat} 7 | RHEL7 Base x86_64
+
+|===
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$addchannels_vendor_webui.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/addchannels_vendor_webui.adoc[]
+endif::[]
+
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+
+此过程所需的通道包括：
+
+[[redhat-rhui-channels-cli]]
+[cols="1,1,1,1", options="header"]
+.Red Hat 通道 - CLI
+|===
+
+| OS Version
+| Base Channel
+| Client Channel
+| Tools Channel
+
+| {redhat} 7
+| rhel7-pool-uyuni
+| -
+| rhel7-uyuni-client
+
+| {redhat} 8
+| rhel8-pool-uyuni
+| -
+| rhel8-uyuni-client
+
+| {redhat} 9
+| rhel9-pool-uyuni
+| -
+| rhel9-uyuni-client
+
+| {redhat} 10
+| rhel10-pool-uyuni
+| -
+| rhel10-uyuni-client
+
+|===
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$addchannels_novendor_cli_multiarch.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/addchannels_novendor_cli_multiarch.adoc[]
+endif::[]
+
+
+[NOTE]
+====
+[command]``spacewalk-common-channels`` 提供的客户端工具通道来自 {uyuni} 而非 {suse}。
+====
+
+endif::[]
+
+
+== 准备自定义通道
+
+要从 RHUI 镜像软件，您需要在 {productname} 中创建关联到自动生成的储存库的自定义通道。
+
+此过程所需的通道包括：
+
+[[redhat-rhui-channels-custom]]
+
+ifeval::[{mlm-content} == true]
+[cols="1,1,1", options="header"]
+.Red Hat 自定义通道
+|===
+
+// SUSE Liberty Linux not available at Uyuni for now
+| OS Version  | Base Product                     | Base Channel
+| {redhat} 10 | RHEL and Liberty 10 Base         | el10-pool-x86_64
+| {redhat} 9  | RHEL and Liberty 9 Base          | el9-pool-x86_64
+| {redhat} 8  | RHEL or SLES ES or CentOS 8 Base | rhel8-pool-x86_64
+| {redhat} 7  | RHEL7 Base x86_64                | rhel7-pool-x86_64
+
+|===
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+// SUSE Liberty Linux not available at Uyuni for now
+[cols="1,1", options="header"]
+.Red Hat 自定义通道
+|===
+
+| OS Version  | Base Channel
+| {redhat} 7  | rhel7-pool-uyuni
+| {redhat} 8  | rhel8-pool-uyuni
+| {redhat} 9  | rhel9-pool-uyuni
+| {redhat} 10 | rhel10-pool-uyuni
+
+|===
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$manual_channels.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/manual_channels.adoc[]
+endif::[]
+
+
+[IMPORTANT]
+====
+对于 {redhat} 9 和 {redhat} 8 客户端，请添加基础通道和 AppStream 通道。您需要来自这两个通道的软件包。如果未添加这两个通道，将会因缺少软件包而无法创建引导储存库。
+====
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$manual_associate.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/manual_associate.adoc[]
+endif::[]
+
+
+
+== 检查同步状态
+
+ifeval::[{mlm-content} == true]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_webui_mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_webui_mlm.adoc[]
+endif::[]
+
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_webui_uyuni.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_webui_uyuni.adoc[]
+endif::[]
+
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_cli.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_cli.adoc[]
+endif::[]
+
+
+[NOTE]
+====
+{rhel} 通道可能非常大。同步所需的时间可能长达数小时。
+====
+
+
+== 管理 GPG 密钥
+
+安装软件包之前，客户端会使用 GPG 密钥检查这些软件包的真实性。只有可信软件才能安装在客户端上。
+
+[IMPORTANT]
+====
+信任 GPG 密钥对于客户端的安全非常重要。由管理员来决定需要哪些密钥，可以信任哪些密钥。这是因为如果不信任 GPG 密钥，便无法使用软件通道，是否将通道指派给客户端取决于是否信任密钥。
+====
+
+有关 GPG 密钥的详细信息，请参见 xref:client-configuration:gpg-keys.adoc[]。
+
+
+== 注册客户端
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$create_bootstrap_repo_register.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/create_bootstrap_repo_register.adoc[]
+endif::[]
+

@@ -1,0 +1,119 @@
+[[infra-maintenance]]
+= インフラストラクチャ保守タスク
+:revdate: 2025-05-27
+:page-revdate: {revdate}
+
+スケジュールされたダウンタイム期間で作業する場合、{productname}サーバの重要なダウンタイムの前、その最中、およびその後に行う必要があるすべての作業を覚えておくことが困難な場合があります。 サーバ間同期スレーブサーバや{productname}プロキシなどの{productname}サーバ関連のシステムも影響を受けるため、考慮する必要があります。
+
+{suse}では、常に{productname}インフラストラクチャを更新し続け続けることをお勧めします。 これには、サーバ、プロキシ、構築ホストが含まれます。 {productname}サーバを更新し続けないと、必要な場合に環境の一部を更新できない場合があります。
+
+このセクションには、ダウンタイム期間のチェックリストと、各ステップの実行に関する詳細情報へのリンクが含まれています。
+
+
+
+== サーバ
+
+
+.プロシージャ: サーバの確認
+[role=procedure]
+____
+. 最新の更新を適用します。
+
+. 必要に応じて、最新のサービスパックにアップグレードします。
+
+. Run [command]``podman ps`` and check whether all required services are up and running.
+____
+
+On {sles} {bci-mlm}, you can install updates using a package manager:
+
+* {yast}の詳細については、link:{sles-base-os-documentation}/cha-onlineupdate-you.html[]を参照してください。
+* zypperの設定の詳細については、link:{sles-base-os-documentation}/cha-sw-cl.html#sec-zypper[]を参照してください。
+
+On {sl-micro} {microversion}, you can install updates using the [command]``transactional-update`` command. For information on using [command]``transactional-update``, see https://documentation.suse.com/sle-micro/6.1/html/Micro-transactional-updates/transactional-updates.html.
+
+
+デフォルトでは、{productname}サーバに対していくつかの更新チャンネルが設定され、有効になっています。 新規および更新されたパッケージは自動的に使用可能になります。
+
+
+ifeval::[{mlm-content} == true]
+
+{susemgr}を最新のままにするには、{scclongform}に直接接続するか、{rmtool} (RMT)を使用します。 RMTは、切断された環境のローカルインストールソースとして使用できます。
+
+endif::[]
+
+
+ifeval::[{mlm-content} == true]
+
+次のコマンドを使用して、更新チャンネルがご使用のシステムで使用できることを確認できます。
+
+----
+zypper lr
+----
+
+出力は次のようになります。
+
+----
+Name                                                   | Enabled | GPG Check | Refresh
+-------------------------------------------------------+---------+-----------+--------
+SLE-Module-Basesystem15-SP7-Pool                       | Yes     | (r ) Yes  | No
+SLE-Module-Basesystem15-SP7-Updates                    | Yes     | (r ) Yes  | Yes
+SLE-Module-Containers15-SP7-Pool                       | Yes     | (r ) Yes  | No
+SLE-Module-Containers15-SP7-Updates                    | Yes     | (r ) Yes  | Yes
+SLE-Module-Python3-15-SP7-Pool                         | Yes     | (r ) Yes  | No
+SLE-Module-Python3-15-SP7-Updates                      | Yes     | (r ) Yes  | Yes
+SLE-Product-SLES15-SP7-Pool                            | Yes     | (r ) Yes  | No
+SLE-Product-SLES15-SP7-Updates                         | Yes     | (r ) Yes  | Yes
+SUSE-Multi-Linux-Manager-Server-SLE-5.2-Pool           | Yes     | (r ) Yes  | No
+SUSE-Multi-Linux-Manager-Server-SLE-5.2-Updates        | Yes     | (r ) Yes  | Yes
+SLE-Module-Server-Applications15-SP7-Pool              | Yes     | (r ) Yes  | No
+SLE-Module-Server-Applications15-SP7-Updates           | Yes     | (r ) Yes  | Yes
+SLE-Module-Systems-Management-15-SP7-Pool              | Yes     | (r ) Yes  | No
+SLE-Module-Systems-Management-15-SP7-Updates           | Yes     | (r ) Yes  | Yes
+----
+
+endif::[]
+
+
+ifeval::[{mlm-content} == true]
+
+{productname} releases maintenance updates (MUs) to provide newer packages. Maintenance updates are indicated with a new version number. For example, the major release 5.2 is incremented to 5.2.1 when an MU is released.
+
+{webui}のナビゲーションバーの下部を参照して、実行中のバージョンを確認できます。 [literal]``api.getVersion()`` XMLRPC APIコールでバージョン番号をフェッチすることもできます。
+
+endif::[]
+
+
+
+=== クライアントツール
+
+サーバを更新する際には、クライアント上の一部のツールも更新することを検討してください。 クライアント上で [package]``venv-salt-minion``、[package]``zypper``、およびその他の関連する管理パッケージを更新することは厳密な要件ではありませんが、一般的にはベストプラクティスです。 たとえば、サーバの保守更新では、メジャーな新しいSaltバージョンが導入される場合があります。 その後、Saltクライアントは引き続き動作しますが、後で問題が発生する可能性があります。 これを回避するため、{suse}は、[package]``venv-salt-minion``が常に安全に更新されるようにします。
+
+
+
+== サーバ間同期スレーブサーバ
+
+サーバ間同期スレーブサーバを使用している場合は、{productname}サーバ更新が完了した後で更新してください。
+
+詳細については、xref:specialized-guides:large-deployments/iss_v2.adoc[サーバ間同期 - バージョン2]を参照してください。
+
+
+
+== モニタリングサーバ
+
+Prometheusにモニタリングサーバを使用している場合は、{productname}サーバの更新が完了した後で更新してください。
+
+モニタリングの詳細については、xref:administration:monitoring.adoc[]を参照してください。
+
+
+
+== プロキシ
+
+プロキシは、{productname}サーバの更新が完了したらすぐに更新する必要があります。
+
+一般的に、別のバージョンのサーバに接続されたプロキシの実行はサポートされていません。 唯一の例外は、サーバが最初に更新されることが予想される更新期間の場合で、プロキシは以前のバージョンを一時的に実行できます。
+
+
+[WARNING]
+====
+常に、最初にサーバをアップグレードしてから任意のプロキシをアップグレードしてください。
+====

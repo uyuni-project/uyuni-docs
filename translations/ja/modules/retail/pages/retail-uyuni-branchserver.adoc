@@ -1,0 +1,164 @@
+[[retail-branchserver]]
+= Retail Uyuni Branch Server
+:revdate: 2025-06-24
+:page-revdate: {revdate}
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+This section covers {productname} {smr} Branch Server installation and setup, using these procedures:
+
+* ソフトウェアチャンネルの追加
+* 同期ステータスの確認
+* クライアントでGPGキーを信頼する
+* Register the Branch Server and Terminals as Clients
+
+The {productname} {smr} Branch Server is a {productname} Proxy with additional Retail features. For proxy installation procedures, see xref:installation-and-upgrade:container-deployment/uyuni/proxy-container-setup-uyuni.adoc[].
+
+Then continue with the following sections.
+
+
+
+== ソフトウェアチャンネルの追加
+
+
+Before you register {productname} branch servers and terminals to your {productname} Server, check that you have the {opensuse} product enabled, and the required channels are fully synchronized.
+
+このプロシージャで必要な製品は次のとおりです。
+
+[[opensuse-leap-retail-channels-cli]]
+[cols="1,1", options="header"]
+.{opensuse}チャンネル - CLI
+|===
+
+| OS Version               | {opensuse} Leap 15.4
+| Base Channel		   | opensuse_leap15_4
+| Client Channel	   | opensuse_leap15_4-uyuni-client
+| Updates Channel	   | opensuse_leap15_4-updates
+| Non-OSS Channel	   | opensuse_leap15_4-non-oss
+| Non-OSS Updates Channel  | opensuse_leap15_4-non-oss-updates
+| Backports Updates Channel| opensuse_leap15_4-backports-updates
+| SLE Updates Channel	   | opensuse_leap15_4-sle-updates
+
+|===
+
+ifndef::backend-pdf[]
+include::retail:partial$add_channels_cli.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/add_channels_cli.adoc[]
+endif::[]
+
+
+
+== 同期ステータスの確認
+
+ifndef::backend-pdf[]
+include::retail:partial$check_sync_webui_uyuni.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_webui_uyuni.adoc[]
+endif::[]
+
+ifndef::backend-pdf[]
+include::retail:partial$check_sync_cli.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_cli.adoc[]
+endif::[]
+
+[IMPORTANT]
+====
+{opensuse}チャンネルは非常に大きいことがあります。 同期に数時間かかる場合があります。
+====
+
+
+
+== クライアントでGPGキーを信頼する
+
+ifndef::backend-pdf[]
+include::retail:partial$trust_gpg.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/trust_gpg.adoc[]
+endif::[]
+
+
+
+// FIXME Starting from here, everything is preliminary
+// Feedback provided by Lukas
+== Create Activation Key for a Branch Server and the Retail Terminal Images
+
+The branch server is based on the {productname} Proxy. Its activation key must contain these child channels:
+
+* openSUSE Leap {opensuse-version} Updates (x86_64)
+* Uyuni Client Tools for openSUSE Leap {opensuse-version} (x86_64)
+* Uyuni Proxy Stable for openSUSE Leap {opensuse-version} (x86_64)
+
+The activation key for retail terminal images based on openSUSE Leap {opensuse-version} must contain these child channels:
+
+* openSUSE Leap {opensuse-version} Updates (x86_64)
+* Uyuni Client Tools for openSUSE Leap {opensuse-version} (x86_64)
+
+アクティベーションキーの作成の詳細については、xref:client-configuration:activation-keys.adoc[]を参照してください。
+
+
+
+== Register the Branch Server and Terminals as Clients
+
+You register both the branch server and the terminals as openSUSE clients. To register your openSUSE clients, you need a bootstrap repository. By default, bootstrap repositories are automatically created, and regenerated daily for all synchronized products. You can manually create the bootstrap repository from the command prompt, using this command:
+
+----
+mgr-create-bootstrap-repo --with-custom-channels
+----
+
+クライアントの登録については、xref:client-configuration:registration-overview.adoc[]を参照してください。
+
+
+
+=== Register the Branch Server
+
+A retail branch server is registered as an openSUSE proxy. The proxy can be bootstrapped using the {webui}, or at the command prompt. Ensure you use the activation key you created for the proxy.
+
+* For more information about proxies, see xref:installation-and-upgrade:container-deployment/uyuni/proxy-container-setup-uyuni.adoc[].
+* For more information about activation keys, see xref:client-configuration:activation-keys.adoc[].
+
+
+
+.Procedure: Setting Up the Uyuni Proxy
+. Check that the ``Uyuni Proxy Stable for openSUSE Leap {opensuse-version} (x86_64)`` channel is assigned to the proxy on the system profile page.
+
+. At the command prompt on the proxy, as root, install the proxy pattern:
++
+
+----
+zypper in -t pattern uyuni_proxy
+----
+
+. Finalize the proxy setup:
++
+----
+configure-proxy.sh
+----
++
+  [command]``configure-proxy.sh`` is an interactive script.
+
+. OPTIONAL: If you want to use the same system also as a build host, navigate to the client's system profile and check [systemitem]``OS Image Build Host`` as a [guimenu]``Add-On System Types``.
+
+. Configure the proxy to become a branch server. On the {productname} {smr} Server, for example, run:
++
+----
+retail_branch_init <branch_server_minion_id> --dedicated-nic eth1 \
+    --branch-ip 192.168.7.5 \
+    --netmask 255.255.255.0 \
+    --dyn-range 192.168.7.100 192.168.7.200 \
+    --server-domain branch.example.org \
+    --branch-prefix uyuni
+----
++
+  For additional options,  use the [command]``retail_branch_init --help`` command.

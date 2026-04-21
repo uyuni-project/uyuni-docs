@@ -1,0 +1,497 @@
+= Distribution Upgrade and Server Migration
+:revdate: 2025-10-19
+:page-revdate: {revdate}
+
+
+[IMPORTANT]
+====
+* {productname} 5.0 must be stopped before the upgrade.
+* {productname} 5.0 is not supported on top of {sl-micro} 6.1 & {sles} 15 SP7 as host OS.
+====
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-hardened-tmpdir.adoc[leveloffset=+2]
+include::installation-and-upgrade:partial$snippet-ssl-requirements.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-hardened-tmpdir.adoc[leveloffset=+2]
+include::../../../../../partials/snippet-ssl-requirements.adoc[leveloffset=+1]
+endif::[]
+
+During a migration the server SSL certificate and CA chain are copied from the source server, meaning that only the database certificates are required
+
+[NOTE]
+====
+{productname} 5.0 peripheral servers are always using third-party SSL certificates. If the hub server has generated the certificates for the peripheral server, it needs to generate the certificate for the peripheral database too.
+
+On the hub server, run the following command for each of the peripheral server to migrate.
+
+[source, shell]
+----
+mgrctl exec -ti -- rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
+  --set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
+  --set-org-unit="ORGANIZATION UNIT" --set-email="name@example.com" \
+  --set-hostname=<hostname>-reportdb --set-cname="example.com" --set-cname=db --set-cname=reportdb
+----
+
+The files to use will be inside the server container and need to be copied to the new peripheral server host:
+
+. [literal]``/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT`` as the root CA
+
+. [literal]``/root/ssl-build/<hostname>-reportdb/server.crt`` as the db certificate
+
+. [literal]``/root/ssl-build/<hostname>-reportdb/server.key`` as the db certificate's key.
+====
+
+
+== Client tools rebranding
+
+{productname} {productnumber} introduces a rebranded set of client tools for all supported operating systems. This transition is seamless, and users performing a new product synchronization should only notice the updated channel names.
+
+Channels named [literal]``SUSE Manager Client Tools for XYZ``, used by clients previously registered with {productname} 4.3 or 5.0, are no longer available in version 5.1 and will no longer receive updates in 5.1.
+
+Although the legacy channels remain assigned to existing clients after migration, the corresponding repositories have been removed.
+
+To ensure continued updates, users must:
+
+* Mirror the new [literal]``SUSE Multi-Linux Manager Client Tools for XYZ`` channels for the relevant products and assign them to the appropriate clients.
+* Unassign the outdated [literal]``SUSE Manager Client Tools for XYZ`` channels.
+
+This also means that any CLM projects based on the old client tools must be adjusted accordingly.
+
+For example workflow, see xref:common-workflows:workflow-switch-to-new-client-tools-channels.adoc[].
+
+
+
+== {sle-micro} 5.5 to {sl-micro} 6.1
+
+
+
+This document provides the tested procedure to upgrade a {sle-micro} 5.5 host deployed with {productname} 5.0 Server to {sl-micro} 6.1 and migrate to {productname} {productnumber}.
+
+
+=== Prerequisites
+
+[IMPORTANT]
+====
+{sl-micro} 6.1 uses NetworkManager as the network managing service. If your server is using wicked as the network manager it **must** be migrated to NetworkManager before upgrading the Operating System. For more information on migrating to NetworkManager see: https://documentation.suse.com/sle-micro.
+
+* {productname} 5.0 is installed and running on {sle-micro} 5.5.
+
+* System is registered and has active subscriptions with {scc}.
+* NetworkManager as the network managing service
+
+====
+
+
+=== Distribution upgrade and server migration
+
+.Procedure: Migration from {productname} 5.0 to {productname} {productnumber}
+[role=procedure]
+____
+
+. Verify current product status.
+
++
+
+[source, console]
+----
+SUSEConnect --status-text
+----
+
++
+
+Confirm:
+
+* Base OS: `SUSE Linux Enterprise Micro 5.5`
+
+* Extension: `SUSE Manager Server 5.0 Extension`
+
++
+
+. Ensure the system is updated.
+
++
+
+[source, console]
+----
+transactional-update patch
+----
+
++
+
+--
+
+* If patches were applied, stop the server and then reboot the system before proceeding to migration:
+
++
+
+[source, console]
+----
+mgradm stop
+reboot
+----
+
+* If no updates were found, you can proceed directly to the migration step.
+
+--
+
++
+
+. Start the migration.
+
++
+
+[source, console]
+----
+transactional-update migration --auto-agree-with-licenses --gpg-auto-import-keys
+----
+
++
+
+Follow the prompts and select the available migration to **SUSE Linux Micro 6.1** and **{productname} Server Extension 5.1**.
+
++
+
+. Stop the server and then reboot to apply changes.
+
++
+
+[source, console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. Perform post-reboot checks.
+
++
+
+Verify upgraded OS and {productname} extension:
+
++
+
+[source, console]
+----
+cat /etc/os-release
+SUSEConnect --status-text
+----
+
++
+
+You should see:
+
+* [literal]``PRETTY_NAME="SUSE Linux Micro 6.1"``
+
+* [literal]``SUSE Multi-Linux Manager Server 5.1 Extension``
+
++
+
+. Enable root SSH access (_if required_).
++
+SL Micro 6.1 disables root login via SSH by default.
++
+Edit `/etc/ssh/sshd_config.d/sshd.conf`:
+
++
+
+[source, console]
+----
+PermitRootLogin yes
+----
+
++
+
+And restart the service:
+
++
+
+[source, shell]
+----
+systemctl restart sshd
+----
+
++
+
+For more information, see xref:administration:troubleshooting/tshoot-remote-root-on-micro.adoc[].
+
++
+
+. Verify {productname} tools
+
++
+
+[source, console]
+----
+mgradm --version
+----
+
++
+
+Expected output:
+
++
+
+* Version [literal]``5.1.11`` or higher
+
+* References [literal]``5.1.0`` or higher
+
+. Upgrade server containers.
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
++
+
+[source, console]
+----
+mgradm start
+mgradm upgrade podman
+----
+
++
+
+Follow the prompts to pull and configure the new 5.1.0 containers.
+
+
+. Check the running containers:
+
++
+
+[source, console]
+----
+podman ps
+----
+
++
+
+You should see:
+
+* [literal]``server:5.1.0`` or higher
+
+* [literal]``server-postgresql:5.1.0`` or higher
+
+____
+
+
+[NOTE]
+====
+Errors for missing services like [literal]``uyuni-db`` or [litarl]``saline`` during upgrade can be ignored if not installed previously.
+====
+
+
+=== Migration complete
+
+The system is now running {productname} 5.1 on SL Micro 6.1. Validate your setup before resuming production operations. If you have a {productname} 5.0 proxy connected to this server, proceed to the xref:installation-and-upgrade:container-deployment/mlm/migrations/proxy/proxy-mlm-50-51.adoc[] guide to upgrade the proxy host.
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+
+
+== {sles} 15 SP6 to 15 SP7
+
+This document provides the tested procedure to upgrade a SUSE Linux Enterprise Server 15 SP6 host deployed with SUSE Multi-Linux Manager 5.0 Server to SUSE Linux Enterprise Server 15 SP7 with SUSE Multi-Linux Manager 5.1.
+
+
+=== Prerequisites
+
+* SUSE Multi-Linux Manager 5.0 is installed and running on SUSE Linux Enterprise Server 15 SP6.
+* The system is registered and has valid subscriptions in SUSE Customer Center (SCC).
+* Ensure backups are created before proceeding.
+
+
+
+=== Distribution upgrade and server migration
+
+.Procedure:  Migration from {productname} 5.0 to {productname} {productnumber}
+[role=procedure]
+____
+
+. Verify current product status.
+
++
+
+[source, console]
+----
+SUSEConnect --status-text
+----
+
++
+
+Confirm:
+
++
+
+* Base OS: [literal]``SUSE Linux Enterprise Server 15 SP6``
+
+* Extension: [literal]``SUSE Manager Server 5.0 Extension``
+
++
+
+. Apply all system patches.
+
++
+
+[source, console]
+----
+zypper patch
+----
+
++
+
+. Stop the server, and then reboot if the update stack was updated.
+
++
+
+[source, console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. Launch the Zypper migration tool.
+
++
+
+[source, console]
+----
+zypper migration
+----
+
++
+
+Zypper will show the possible migration targets with detailed summaries.
+
++
+
+. Select the appropriate target, and follow the prompts to complete the migration.
+
+. After the migration completes, stop the server and then reboot the system.
+
++
+
+[source, console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. Perform post-reboot checks:
+
++
+
+Verify upgraded OS and {productname} extension.
++
+
+[source, console]
+----
+cat /etc/os-release
+SUSEConnect --status-text
+----
+
++
+
+You should see:
+
+* [literal]``VERSION="15-SP7"``
+
+* [literal]``SUSE Multi-Linux Manager Server 5.1 Extension for SLE``
+
++
+
+. Verify {productname} tools version.
+
++
+
+[source, console]
+----
+mgradm --version
+----
+
++
+
+Expected output:
+
+* Version [literal]``5.1.11`` or higher
+
+* Image tag [literal]``5.1.0`` or higher
+
++
+
+. Upgrade the server containers.
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
++
+
+[source, console]
+----
+mgradm start
+mgradm upgrade podman
+----
+
++
+
+Follow prompts to pull the new container images and reconfigure the environment.
+
++
+
+. Check the running containers.
+
++
+
+[source, console]
+----
+podman ps
+----
+
++
+
+Expected containers:
+
+* [literal]``server:5.1.0`` or higher
+
+* [literal]``server-postgresql:5.1.0`` or higher
+
+____
+
+
+=== Migration complete
+
+The system is now running {productname} 5.1 on SUSE Linux Enterprise Server 15 SP7. Validate your setup before resuming production operations. If you have a {productname} 5.0 proxy connected to this server, proceed with xref:installation-and-upgrade:container-deployment/mlm/migrations/proxy/proxy-mlm-50-51.adoc[].
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]

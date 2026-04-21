@@ -1,0 +1,45 @@
+[[tuning-changelogs]]
+= 変更ログの調整
+:revdate: 2024-05-10
+:page-revdate: {revdate}
+
+一部のパッケージには、変更ログエントリの長いリストがあります。 このデータはデフォルトでダウンロードされますが、必ずしも保持すべき役立つ情報とは限りません。 ダウンロードする変更ログのメタデータ量を制限し、ディスク容量を節約するために、ディスクに保持するエントリ数を制限できます。
+
+[IMPORTANT]
+====
+サーバコンテナでステップを実行する前に、[literal]``mgrctl term``を使用します。
+====
+
+この設定オプションは、[filename]``/etc/rhn/rhn.conf``設定ファイルにあります。パラメータのデフォルトは[systemitem]``20``です。この値を[systemitem]``0``に変更すると、無制限の数のエントリが提供されます。
+
+----
+java.max_changelog_entries = 20
+----
+
+このパラメータを設定すると、新しいパッケージが同期されるときにのみ有効になります。
+
+このパラメータを変更した後で、``mgradm restart``を使用してサービスを再起動します。
+
+キャッシュされたデータを削除して再生成し、古いデータを削除したい場合があります。
+
+[IMPORTANT]
+====
+キャッシュされたデータの削除と再生成には時間がかかる場合があります。 使用するチャンネル数と削除するデータ量に応じて、数時間かかる可能性があります。 タスクはTaskomaticによってバックグラウンドで実行されるため、操作が完了するまで{productname}を使用し続けることができますが、多少のパフォーマンスの低下が予想されます。
+====
+
+コマンドラインからキャッシュされたデータを削除して、再生成を要求できます。
+
+----
+spacewalk-sql -i
+----
+次に、SQLデータベースプロンプトで、次のように入力します。
+----
+DELETE FROM rhnPackageRepodata;
+INSERT INTO rhnRepoRegenQueue (id, CHANNEL_LABEL, REASON, FORCE)
+(SELECT sequence_nextval('rhn_repo_regen_queue_id_seq'),
+        C.label,
+        'cached data regeneration',
+        'Y'
+        FROM rhnChannel C);
+\q
+----

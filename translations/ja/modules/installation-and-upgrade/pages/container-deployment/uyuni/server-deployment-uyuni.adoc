@@ -1,0 +1,206 @@
+= {productname} Server Deployment on {opensuse} {tumbleweed}
+:revdate: 2025-10-08
+:page-revdate: {revdate}
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+
+== 配備の準備
+
+
+このセクションでは、{productname}サーバのセットアップと配備に関する専門知識を身に付けることができます。このプロセスには、[command]``Podman``と[systemitem]``Uyuniコンテナユーティリティ``のインストール、配備、および[command]``mgrctl``を使用したコンテナとの対話の開始が含まれます。
+
+[NOTE]
+====
+This section assumes you have already configured an {opensuse} {tumbleweed} host server, whether it is running on a physical machine or within a virtual environment.
+
+https://download.opensuse.org/tumbleweed/
+====
+
+
+== コンテナホストの一般的な要件
+
+一般的な要件については、xref:installation-and-upgrade:general-requirements.adoc[一般的な要件]を参照してください。
+
+An {opensuse} {tumbleweed} server should be installed from installation media.
+
+https://download.opensuse.org/tumbleweed/
+
+このプロシージャは以下で説明されます。
+
+[[installation-server-containers-requirements]]
+== コンテナホストの要件
+
+CPU、RAM、およびストレージの要件については、xref:installation-and-upgrade:hardware-requirements.adoc[ハードウェア要件]を参照してください。
+
+
+[IMPORTANT]
+====
+クライアントがFQDNドメイン名を解決できることを保証するには、コンテナ化されたプロキシとホストマシンの両方が、機能しているDNSサーバにリンクされている必要があります。さらに、リバース参照が正しく設定されていることを確認することも重要です。
+====
+
+
+== コンテナで使用するためにUyuniツールをインストールする
+
+
+.Procedure: Installing Uyuni Tools on {opensuse} {tumbleweed}
+[role="procedure"]
+____
+
+. On your local host, open a terminal window and log in.
+. Add the following repository to your {opensuse} {tumbleweed} server. You might need to use `sudo` for the following commands.
+
++
+
+----
+zypper ar https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable/images/repo/Uyuni-Server-POOL-$(arch)-Media1/ uyuni-server-stable
+----
+
++
+
+. Refresh the repository list and import the key:
+
++
+
+----
+zypper ref
+----
+
++
+
+When prompted, trust and import the new repository GPG key.
+
++
+
+. コンテナツールをインストールします。
+
++
+
+[source, shell]
+----
+zypper in mgradm mgrctl mgradm-bash-completion mgrctl-bash-completion uyuni-storage-setup-server
+----
+
+____
+
+Uyuniコンテナユーティリティの詳細については、link:https://build.opensuse.org/repositories/systemsmanagement:Uyuni:Stable:ContainerUtils[Uyuniコンテナユーティリティ]を参照してください。
+
+
+== カスタム永続ストレージの設定
+
+このステップはオプションです。ただし、ご使用のインフラストラクチャでカスタム永続ストレージが必要な場合は、[command]``mgr-storage-server``ツールを使用します。
+
+詳細については、[command]``mgr-storage-server --help``を参照してください。このツールを使用すると、コンテナストレージとデータベースボリュームの作成が容易になります。
+
+このコマンドは次のように使用します。
+----
+mgr-storage-server <storage-disk-device> [<database-disk-device>]
+----
+
+例:
+----
+mgr-storage-server /dev/nvme1n1 /dev/nvme2n1
+----
+
+[NOTE]
+====
+このコマンドは、[path]``/var/lib/containers/storage/volumes``に永続ストレージを作成します。
+
+詳細については、xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]を参照してください。
+====
+
+
+== Install and Enable Podman
+
+Before deploying {productname}, you must install and enable [package]``podman``.
+
+.Procedure: Installing and Enabling Podman
+[role=procedure]
+____
+
+. Log in as root and install podman:
++
+[source, shell]
+----
+zypper in podman
+----
+
+. Start and enable the Podman service:
++
+[source, shell]
+----
+systemctl enable --now podman.service
+----
+
+____
+
+
+== Podmanを使用したUyuniコンテナの配備
+
+=== [command]``mgradm``の概要
+
+{productname}は、[command]``mgradm``ツールを使用してコンテナとして配備します。{productname}サーバをコンテナとして配備する方法は2つあります。このセクションでは、基本的なコンテナ配備に焦点を当てます。
+
+カスタム設定ファイルを使用した配備の詳細については、xref:installation-and-upgrade:container-management/mgradm-yaml-custom-configuration.adoc[]を参照してください。
+
+他の情報が必要な場合は、コマンドラインから[command]``mgradm --help``を実行すると、詳しい情報を確認できます。
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../installation-and-upgrade/partials/snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+.プロシージャ: Podmanを使用してUyuniコンテナを配備する
+. 端末から、sudoユーザまたはrootとして次のコマンドを実行します。
++
+[source, shell]
+----
+sudo mgradm install podman
+----
++
+[IMPORTANT]
+====
+コンテナはsudoまたはrootとして配備する必要があります。このステップを省略すると、端末に次のエラーが表示されます。
+
+[source, shell]
+----
+INF Setting up uyuni network
+9:58AM INF Enabling system service
+9:58AM FTL Failed to open /etc/systemd/system/uyuni-server.service for writing 
+error="open /etc/systemd/system/uyuni-server.service: permission denied"
+----
+====
+
+. 配備が完了するまで待ちます。
+. ブラウザを開き、サーバのFQDNに進みます。
+
+//In this section you learned how to deploy an {productname} Server container.
+
+
+
+=== 永続ボリューム
+
+多くのユーザが永続ボリュームの場所を指定したいと考えています。
+
+[NOTE]
+====
+{productname}をテストしている場合は、これらのボリュームを指定する必要はありません。[command]``mgradm``によって正しいボリュームがデフォルトでセットアップされます。
+
+ボリュームの場所の指定は一般的に、大規模な運用配備で使用されます。
+====
+
+デフォルトでは、[command]``podman``はそのボリュームを[path]``/var/lib/containers/storage/volumes/``に保存します。
+
+ディスクをこのパスにマウントするか、またはその内部の想定されるボリュームパス([path]``/var/lib/containers/storage/volumes/var-spacewalk``など)にマウントすることで、ボリュームにカスタムストレージを指定できます。これは特にデータベースとパッケージのミラーで重要です。
+
+コンテナ内のすべての永続ボリュームのリストについては、以下を参照してください。
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+
+

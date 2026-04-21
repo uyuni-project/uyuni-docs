@@ -1,0 +1,38 @@
+[[troubleshooting-rh-cdn-channel-and-multiple-certs]]
+= Red Hat CDNチャンネルと複数の証明書のトラブルシューティング
+:revdate: 2022-10-18
+:page-revdate: {revdate}
+
+{redhat}コンテンツデリバリネットワーク(CDN)チャンネルは複数の証明書を提供することがありますが、{productname} {webui}は単一の証明書しかインポートできません。 CDNが{productname} {webui}で認識されている証明書とは異なる証明書を提示した場合、証明書が正確であっても検証が失敗し、リポジトリへのアクセスパーミッションが拒否されます。 次のようなエラーメッセージが生じます。
+
+----
+[error]（[エラー]）
+Repository '<repo_name>' is invalid.（リポジトリ'<repo_name>'は無効です。）
+<repo.pem> Valid metadata not found at specified URL（有効なメタデータが指定されているURLで見つかりませんでした）
+History:（履歴:）
+ - [|] Error trying to read from '<repo.pem>'（'<repo.pem>'からの読み込み時にエラーが発生しました）
+ - Permission to access '<repo.pem>' denied.（'<repo.pem>'へのアクセスが拒否されました。）
+Please check if the URIs defined for this repository are pointing to a valid repository.（このリポジトリ用に定義されているURIが有効なリポジトリを指しているかどうかを確認してください。）
+Skipping repository '<repo_nam' because of the above error.（上記エラーのため、リポジトリ'<repo_name>'をスキップします。）
+Could not refresh the repositories because of errors.（エラーが発生したため、リポジトリを更新できませんでした。）
+HH:MM:SS RepoMDError: Cannot access repository. Maybe repository GPG keys are not imported（HH:MM:SS RepoMDError: リポジトリにアクセスできません。リポジトリGPGキーがインポートされていない可能性があります）
+----
+
+この問題を解決するには、すべての有効な証明書を1つの``.pem``ファイルにマージし、{productname}で使用する証明書を再作成します。
+
+
+
+.手順: 複数の{redhat} CDN証明書の解決
+. {redhat} クライアントのコマンドプロンプトで、rootとして、``/etc/pki/entitlement/``からすべての現行の証明書を単一の ``rh-cert.pem``ファイルに収集します。
++
+----
+cat 866705146090697087.pem 3539668047766796506.pem redhat-entitlement-authority.pem > rh-cert.pem
+----
+. ``/etc/pki/entitlement/``からすべての現行のキーを単一の``rh-key. pem``ファイルに収集します。
++
+----
+cat 866705146090697087-key.pem 3539668047766796506-key.pem > rh-key.pem
+----
+
+次に、xref:client-configuration:clients-rh-cdn.adoc[]の手順に従って、新しい証明書を{productname}サーバにインポートできます。
+

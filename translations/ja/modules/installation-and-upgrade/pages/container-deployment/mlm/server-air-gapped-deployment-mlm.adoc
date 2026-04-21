@@ -1,0 +1,149 @@
+= {productname}サーバのAir-gapped配備
+:revdate: 2025-05-14
+:page-revdate: {revdate}
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+== Air-gapped配備とは
+
+
+Air-gapped配備とは、安全ではないネットワーク、特にインターネットから物理的に隔離されたネットワークシステムをセットアップおよび運用することです。この種の配備は、一般的に高度なセキュリティ環境で使用されます。たとえば、軍事施設、金融システム、重要インフラストラクチャ、機密データを取り扱っていて外部の脅威から保護する必要がある場所などです。
+
+
+
+== 配備
+
+{productname}は2つの配備バリアントをサポートしています。
+
+
+=== 仮想マシンでの配備
+
+推奨されるインストール方法は、提供されている{productname}の仮想マシンイメージオプションを使用する方法です。必要なツールとコンテナイメージがすべてプリロードされていて、すぐに動作するためです。
+
+{productname}サーバ仮想マシンのインストールの詳細については、xref:container-deployment/mlm/server-deployment-vm-mlm.adoc[仮想マシンとしてのサーバの配備]を参照してください。
+
+{productname}サーバをアップグレードするには、システム内のすべてのパッケージをアップグレードし、 xref:container-management/updating-server-containers.adoc[サーバのアップグレード]で定義されている手順に従う必要があります。
+
+
+=== {sl-micro}に{productname}を配備する
+
+{productname}では、必要なコンテナイメージはすべてRPMでも提供されており、このイメージをシステムにインストールすることができます。
+
+[NOTE]
+====
+ユーザは必要なRPMを内部ネットワーク上で利用できるようにする必要があります。そのためには、2つ目の{productname}サーバまたはRMTサーバを使用します。
+====
+
+.プロシージャ: Air-gapped配備で{sl-micro}に{productname}をインストールする
+[role=procedure]
+____
+. {sl-micro}をインストールします。
+
+. システムを更新します。
+
+. ツールのパッケージとイメージパッケージをインストールします($ARCH$は適切なアーキテクチャと置き換えます)。
+
++
+
+[source, shell]
+----
+transactional-update pkg install mgradm* mgrctl* suse-multi-linux-manager-5.1-$ARCH$-server-*
+----
+
++
+
+. 再起動します。
+
+. [command]``mgradm``を使用して{productname}を配備します。
+
+____
+
+{sl-micro}に{productname}サーバをインストールする方法の詳細については、xref:container-deployment/mlm/server-deployment-mlm.adoc[仮想マシンとしてのサーバの配備]を参照してください。
+
+{productname}サーバをアップグレードするには、システム内のすべてのパッケージをアップグレードし、 xref:container-management/updating-server-containers.adoc[サーバのアップグレード]で定義されている手順に従う必要があります。
+
+
+== PTF
+
+PTFイメージはパッケージとして利用できません。 つまり、インターネットアクセスが可能なマシンで [command]``podman``を使用してイメージをプルしてから、アーカイブに保存し、エアギャップマシンに転送して、そこでロードする必要があります。
+
+.プロシージャ: インターネットアクセスが可能なマシン上でイメージをプルする
+[role=procedure]
+____
+. [command]``podman``をインストールします。
+
+. SCC資格情報を使用して、{suse}レジストリに対して認証します。
+
++
+
+include::../../../partials/snippet-login-into-suse-registry.adoc[]
+
++
+
+. Run the following commands in a shell.
+
++
+
+[NOTE]
+====
+This example assumes that the PTF is for the [path]``server`` image, adjust the example if the PTF concerns another image.
+====
+
++
+
+[source, shell]
+----
+SCC_USERID=aXXXX
+PTFID=12345
+echo "registry.suse.com/a/$SCC_USERID/$PTFID/suse/multi-linux-manager/5.1/x86_64/server:latest-ptf-$PTFID" >>/tmp/ptf-images
+----
+
+
+. Verify that the file contains the full path to the PTF image. If needed, other images full paths can be added to the file, one per line.
+
+. Pull each of the container images of the PTF and save them in a tar archive by running the following commands.
+
++
+
+[source, shell]
+----
+for image in `cat /tmp/ptf-images`; do
+    podman pull $image
+done
+podman save -o /tmp/ptf-images.tar $(cat /tmp/ptf-images)
+----
+. パッチを適用するサーバに[path]``/tmp/ptf-images.tar``イメージアーカイブを転送します。
+
+____
+
+.プロシージャ: パッチを適用するサーバにイメージをロードする
+[role=procedure]
+____
+. [path]``ptf-images.tar``ファイルがサーバで利用可能であることを確認します。
+
+. アーカイブからイメージをロードします。
+
++
+
+[source, shell]
+----
+podman load -i ptf-images.tar
+----
+
++
+
+. 接続されたマシンで実行する場合と同様に、次のコマンドを使用してPTFをインストールします。
+
++
+
+[shell, source]
+----
+mgradm support ptf podman [--test|--ptf] NUMBER --user SCC_ACCOUNT
+----
+
++
+
+イメージはすでにロードされているため、プルされません。
+____

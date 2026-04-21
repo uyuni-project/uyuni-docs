@@ -1,0 +1,94 @@
+[[workflow-removing-channel]]
+= 去除通道
+:revdate: 2025-01-23
+:page-revdate: {revdate}
+
+
+本节介绍如何从 {productname} 中手动去除 {suse} 提供的通道、清理生命周期已结束的产品、回收空间或执行其他操作。
+
+
+
+
+[[preparing-to-remove-channel]]
+== 准备去除通道
+
+
+在去除通道之前，必须识别要去除的通道的标签。可以使用 {webui} 或命令行进行识别。
+
+[IMPORTANT]
+====
+* 注意不要去除系统当前已订阅的通道，或者您打算为系统订阅的通道。
+* 如果系统当前已订阅了您想要删除的通道，请先升级这些系统或取消其订阅，然后再去除该通道。
+====
+
+
+=== 识别通道标签
+
+.过程：使用 {webui} 识别通道标签
+[role=procedure]
+. 在 {productname} {webui} 中，导航到menu:软件[通道列表 > 所有]。
+. 此页面会显示[label]``通道名称``。如果您选择通道名称对应的链接，将会看到[literal]``通道标签``字段。
+. 识别要去除的通道和子通道。
+
+
+.过程：使用命令行识别通道标签
+[role=procedure]
+
+. 可在 {productname} 容器主机上运行以下命令获取通道列表：
++
+----
+mgrctl exec -ti -- spacewalk-remove-channel -l
+----
+
+
+===  校验通道系统订阅
+
+.过程：使用 {webui} 校验通道系统订阅
+
+. 在 {productname} {webui} 中，导航到menu:软件[通道列表 > 所有]。
+. 在右侧找到[literal]``系统``列。
+. 检查要去除的通道或任何子通道对应的[literal]``系统``列。
+
+
+.过程：使用命令行校验通道系统订阅
+
+. 在 {productname} 容器主机上运行以下命令：
++
+----
+mgrctl exec -ti -- 'spacecmd -- softwarechannel_listsystems <Channel Label>'
+----
+
+
+[[removing-channel]]
+== 去除通道
+
+您只能通过命令行工具去除通道及其元数据。[command]``spacewalk-remove-channel`` 命令会自动去除相应软件包，前提是其他通道不再引用这些软件包。此命令会从数据库中去除相关元数据，并从存储媒体中去除相关文件。
+
+
+
+=== 去除子通道
+
+.过程：使用命令行去除子通道
+
+. 要去除单个通道，请在 {productname} 容器主机上运行以下命令：
++
+----
+mgrctl exec -ti -- spacewalk-remove-channel -c channel-label
+----
++
+. 要同时去除多个通道，请对每个通道使用 [literal]``-c`` 标志，后接 [literal]``channel-label``。例如：
++
+----
+mgrctl exec -ti -- spacewalk-remove-channel -c channel-label1 -c channel-label2
+----
+
+
+=== 去除父通道及其所有子通道
+
+.过程：去除父通道及其所有子通道
+. 要去除父通道及其所有子通道，请运行 [command]``spacewalk-remove-channel`` 并指定 [option]``-a`` 选项，同时将 [literal]``parent-channel-label`` 替换为通道标签，例如 [literal]``sles12-sp5-pool-x86_64``：
++
+----
+mgrctl exec -ti -- spacewalk-remove-channel -a parent-channel-label
+----
+

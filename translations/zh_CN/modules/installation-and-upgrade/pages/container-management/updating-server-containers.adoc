@@ -1,0 +1,166 @@
+= {productname} 服务器升级
+:revdate: 2025-07-29
+:page-revdate: {revdate}
+
+运行升级命令前，需要更新主机操作系统。更新主机操作系统时，{productname} 相关工具（如 [literal]``mgradm``）也会同步更新。
+
+.过程：升级服务器
+[role=procedure]
+____
+. 使用 [command]``zypper`` 刷新软件储存库：
+
++
+
+[source, shell]
+----
+zypper ref
+----
+
+ifeval::[{mlm-content} == true]
+
+. 根据主机操作系统执行以下步骤：
+
++
+
+对于 {sl-micro} 等事务性系统： ::
+
++
+
+--
+
+. 使用 [command]``transactional-update`` 应用可用的更新:
+
++
+
+[source, shell]
+----
+transactional-update
+----
+
+. 如果已应用更新，请[literal]``重引导``。
+
+--
+
++
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+. 使用 [command]``transactional-update`` 应用可用的更新:
+
++
+
+[source, shell]
+----
+transactional-update
+----
+
+. 如果已应用更新，请[literal]``重引导``。
+
+endif::[]
+
+ifeval::[{mlm-content} == true]
+
+对于 {sles}： ::
+
++
+
+--
+
+使用 [command]``zypper`` 更新安装的软件：
+
+[source, shell]
+----
+zypper up
+----
+
+--
+
+endif::[]
+
++
+
+. 可使用以下命令更新 {productname} 服务器容器：
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
++
+
+[source, shell]
+----
+mgradm upgrade podman
+----
+
++
+
+此命令可使容器保持最新状态并重启服务器。
+
++
+
+. 清理未使用的容器映像以释放磁盘空间：
+
++
+
+[source, shell]
+----
+podman image prune -a
+----
+
+____
+
+.使用第三方 SSL 证书升级
+[IMPORTANT]
+====
+如果您使用第三方证书，数据库容器需配备包含以下主体备用名称 (SAN) 的 SSL 证书：
+
+* [literal]``db``
+* [literal]``reportdb``
+* 对外提供服务的完全限定域名
+
+同一证书可同时用于主容器与数据库容器，但需包含上述 SAN。
+
+In order to pass the new certificate to the upgrade command, use the [command]``--ssl-db-ca-root``, [command]``--ssl-db-cert`` and [command]``--ssl-db-key`` parameters.
+====
+
+.升级到特定版本
+[NOTE]
+====
+如果未指定标记参数，则默认会升级到最新版本。要升级到特定版本，请为标记参数提供所需的映像标记。
+====
+
+要查看 upgrade 命令及其参数的详细信息，请使用以下命令：
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
+[source, shell]
+----
+mgradm upgrade podman -h
+----
+
+
+对于隔离的安装，请先升级容器 RPM 软件包，然后运行 [literal]``mgradm`` 命令。
+
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-database-backup-volume.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../partials/snippet-database-backup-volume.adoc[leveloffset=+1]
+endif::[]

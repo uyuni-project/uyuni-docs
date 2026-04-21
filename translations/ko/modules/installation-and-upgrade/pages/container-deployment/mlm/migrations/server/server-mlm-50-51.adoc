@@ -1,0 +1,497 @@
+= 배포 업그레이드 및 서버 마이그레이션
+:revdate: 2025-10-19
+:page-revdate: {revdate}
+
+
+[IMPORTANT]
+====
+* {productname} 5.0은 업그레이드 전에 중지해야 합니다.
+* {productname} 5.0은 {sl-micro} 6.1 및 {sles} 15 SP7에서 호스트 OS로 지원되지 않습니다.
+====
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-hardened-tmpdir.adoc[leveloffset=+2]
+include::installation-and-upgrade:partial$snippet-ssl-requirements.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-hardened-tmpdir.adoc[leveloffset=+2]
+include::../../../../../partials/snippet-ssl-requirements.adoc[leveloffset=+1]
+endif::[]
+
+마이그레이션 중에 서버 SSL 인증서와 CA 체인은 소스 서버에서 복사되므로, 데이터베이스 인증서만 필요합니다.
+
+[NOTE]
+====
+{productname} 5.0 peripheral servers are always using third-party SSL certificates. If the hub server has generated the certificates for the peripheral server, it needs to generate the certificate for the peripheral database too.
+
+On the hub server, run the following command for each of the peripheral server to migrate.
+
+[source, shell]
+----
+mgrctl exec -ti -- rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="국가" \
+  --set-state="주/도" --set-city="도시" --set-org="조직" \
+  --set-org-unit="조직 단위" --set-email="name@example.com" \
+  --set-hostname=<hostname>-reportdb --set-cname="example.com" --set-cname=db --set-cname=reportdb
+----
+
+사용할 파일은 서버 컨테이너 내에 있으며, 새로운 주변기기 서버 호스트로 복사해야 합니다.
+
+. [literal]``/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT`` as the root CA
+
+. [literal]``/root/ssl-build/<hostname>-reportdb/server.crt`` as the db certificate
+
+. [literal]``/root/ssl-build/<hostname>-reportdb/server.key`` as the db certificate's key.
+====
+
+
+== 클라이언트 도구 리브랜딩
+
+{productname} {productnumber}은(는) 지원되는 모든 운영 체제를 위한 클라이언트 도구 세트를 다시 출시했습니다. 이 전환은 원활하게 이루어지며, 새 제품 동기화를 수행하는 사용자는 업데이트된 채널 이름만 확인할 수 있습니다.
+
+버전 5.1에서는 {productname} 4.3 또는 5.0에 이전에 등록된 클라이언트가 사용하던 [literal]``SUSE Manager Client Tools for XYZ`` 채널을 더 이상 사용할 수 없으며, 버전 5.1에서는 더 이상 업데이트를 수신하지 않습니다.
+
+이전 채널은 마이그레이션 후에도 기존 고객에게 할당된 상태로 유지되지만, 해당 리포지토리는 제거되었습니다.
+
+지속적인 업데이트를 보장하기 위해 사용자는 다음을 수행해야 합니다.
+
+* 관련 제품의 새 [literal]``SUSE Multi-Linux Manager Client Tools for XYZ`` 채널을 미러링하고 적절한 클라이언트에 할당합니다.
+* 사용 중지된 [literal]``SUSE Manager Client Tools for XYZ`` 채널의 할당을 해제합니다.
+
+이는 또한 기존 클라이언트 도구를 기반으로 한 모든 CLM 프로젝트도 이에 맞춰 조정되어야 함을 의미합니다.
+
+예시 워크플로는 xref:common-workflows:workflow-switch-to-new-client-tools-channels.adoc[]에서 확인할 수 있습니다.
+
+
+
+== {sle-micro} 5.5에서 {sl-micro} 6.1로
+
+
+
+이 문서는 {productname} 5.0 서버로 배포된 {sle-micro} 5.5 호스트를 {sl-micro} 6.1로 업그레이드하고 {productname} {productnumber}(으)로 마이그레이션하기 위한 검증된 절차를 제공합니다.
+
+
+=== 선행 조건
+
+[IMPORTANT]
+====
+{sl-micro} 6.1 uses NetworkManager as the network managing service. If your server is using wicked as the network manager it **must** be migrated to NetworkManager before upgrading the Operating System. For more information on migrating to NetworkManager see: https://documentation.suse.com/sle-micro.
+
+* {productname} 5.0은 {sle-micro} 5.5에 설치되어 실행 중입니다.
+
+* 시스템은 {scc}에 등록되어 있으며 활성 구독을 보유하고 있습니다.
+* NetworkManager as the network managing service
+
+====
+
+
+=== 배포판 업그레이드 및 서버 마이그레이션
+
+.절차: {productname} 5.0에서 {productname} {productnumber}(으)로 마이그레이션
+[role=procedure]
+____
+
+. 현재 제품 상태를 확인합니다.
+
++
+
+[source, console]
+----
+SUSEConnect --status-text
+----
+
++
+
+확인:
+
+* 기본 OS: `SUSE Linux Enterprise Micro 5.5`
+
+* 확장: `SUSE Manager Server 5.0 Extension`
+
++
+
+. 시스템이 업데이트되었는지 확인합니다.
+
++
+
+[source, console]
+----
+transactional-update patch
+----
+
++
+
+--
+
+* 패치가 적용된 경우 마이그레이션을 진행하기 전에 서버를 중지한 다음 시스템을 재부팅합니다.
+
++
+
+[source, console]
+----
+mgradm stop
+reboot
+----
+
+* 업데이트가 없는 경우, 마이그레이션 단계로 바로 진행할 수 있습니다.
+
+--
+
++
+
+. 마이그레이션을 시작합니다.
+
++
+
+[source, console]
+----
+transactional-update migration --auto-agree-with-licenses --gpg-auto-import-keys
+----
+
++
+
+안내에 따라 **SUSE Linux Micro 6.1** 및 **{productname} Server Extension 5.1**로 가능한 마이그레이션을 선택합니다.
+
++
+
+. 서버를 중지한 다음 재부팅하여 변경 사항을 적용합니다.
+
++
+
+[source, console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. 재부팅 후 점검을 수행합니다.
+
++
+
+업그레이드된 OS 및 {productname} 확장 확인:
+
++
+
+[source, console]
+----
+cat /etc/os-release
+SUSEConnect --status-text
+----
+
++
+
+다음을 참조해야 합니다.
+
+* [literal]``PRETTY_NAME="SUSE Linux Micro 6.1"``
+
+* [literal]``SUSE Multi-Linux Manager Server 5.1 Extension``
+
++
+
+. Enable root SSH access (_if required_).
++
+SL Micro 6.1 disables root login via SSH by default.
++
+Edit `/etc/ssh/sshd_config.d/sshd.conf`:
+
++
+
+[source, console]
+----
+PermitRootLogin yes
+----
+
++
+
+그리고 서비스 다시 시작:
+
++
+
+[source, shell]
+----
+systemctl restart sshd
+----
+
++
+
+자세한 내용은 xref:administration:troubleshooting/tshoot-remote-root-on-micro.adoc[]에서 확인할 수 있습니다.
+
++
+
+. {productname} 도구 확인
+
++
+
+[source, console]
+----
+mgradm --version
+----
+
++
+
+예상 출력:
+
++
+
+* 버전 [literal]``5.1.11`` 이상
+
+* [literal]``5.1.0`` 이상 참조
+
+. 서버 컨테이너를 업그레이드합니다.
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
++
+
+[source, console]
+----
+mgradm start
+mgradm upgrade podman
+----
+
++
+
+프롬프트에 따라 새 5.1.0 컨테이너를 가져오고 구성합니다.
+
+
+. 실행 중인 컨테이너 확인:
+
++
+
+[source, console]
+----
+podman ps
+----
+
++
+
+다음을 참조해야 합니다.
+
+* [literal]``server:5.1.0`` 이상
+
+* [literal]``server-postgresql:5.1.0`` 이상
+
+____
+
+
+[NOTE]
+====
+이전에 설치하지 않은 경우 업그레이드 중 [literal]``uyuni-db`` 또는 [litarl]``saline`` 같은 서비스 누락 오류를 무시할 수 있습니다.
+====
+
+
+=== 마이그레이션 완료
+
+시스템은 현재 SL Micro 6.1에서 {productname} 5.1을 실행 중입니다. 프로덕션 운영을 재개하기 전에 설정을 확인하십시오. 이 서버에 {productname} 5.0 프록시가 연결된 경우, 프록시 호스트를 업그레이드하려면 xref:installation-and-upgrade:container-deployment/mlm/migrations/proxy/proxy-mlm-50-51.adoc[] 안내서를 참조하십시오.
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+
+
+== {sles} 15 SP6에서 15 SP7으로
+
+이 문서는 SUSE Multi-Linux Manager 5.0 Server가 배포된 SUSE Linux Enterprise Server 15 SP6 호스트를 SUSE Multi-Linux Manager 5.1이 포함된 SUSE Linux Enterprise Server 15 SP7로 업그레이드하기 위한 검증된 절차를 제공합니다.
+
+
+=== 선행 조건
+
+* SUSE Multi-Linux Manager 5.0이 SUSE Linux Enterprise Server 15 SP6에 설치되어 실행 중입니다.
+* 해당 시스템은 SUSE 고객 센터(SCC)에 등록되어 있으며 유효한 구독을 보유하고 있습니다.
+* 계속하기 전에 백업이 생성되었는지 확인하십시오.
+
+
+
+=== 배포판 업그레이드 및 서버 마이그레이션
+
+.절차: {productname} 5.0에서 {productname} {productnumber}(으)로 마이그레이션
+[role=procedure]
+____
+
+. 현재 제품 상태를 확인합니다.
+
++
+
+[source, console]
+----
+SUSEConnect --status-text
+----
+
++
+
+확인:
+
++
+
+* 기본 OS: [literal]``SUSE Linux Enterprise Server 15 SP6``
+
+* 확장: [literal]``SUSE Manager Server 5.0 Extension``
+
++
+
+. 모든 시스템 패치를 적용합니다.
+
++
+
+[source, console]
+----
+zypper patch
+----
+
++
+
+. 서버를 중지한 후, 업데이트 스택이 업데이트된 경우 재부팅합니다.
+
++
+
+[source, console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. Zypper 마이그레이션 도구를 실행합니다.
+
++
+
+[source, console]
+----
+zypper migration
+----
+
++
+
+Zypper에 가능한 마이그레이션 대상과 함께 자세한 요약 정보가 표시됩니다.
+
++
+
+. 적절한 대상을 선택하고 프롬프트를 따라 마이그레이션을 완료합니다.
+
+. 마이그레이션이 완료된 후에는 서버를 중지한 후 시스템을 재부팅합니다.
+
++
+
+[source, console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. 재부팅 후 점검 수행:
+
++
+
+업그레이드된 운영 체제와 {productname} 확장을 확인합니다.
++
+
+[source, console]
+----
+cat /etc/os-release
+SUSEConnect --status-text
+----
+
++
+
+다음을 참조해야 합니다.
+
+* [literal]``VERSION="15-SP7"``
+
+* [literal]``SUSE Multi-Linux Manager Server 5.1 Extension for SLE``
+
++
+
+. {productname} 도구 버전을 확인합니다.
+
++
+
+[source, console]
+----
+mgradm --version
+----
+
++
+
+예상 출력:
+
+* 버전 [literal]``5.1.11`` 이상
+
+* 이미지 태그 [literal]``5.1.0`` 이상
+
++
+
+. 서버 컨테이너를 업그레이드합니다.
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
++
+
+[source, console]
+----
+mgradm start
+mgradm upgrade podman
+----
+
++
+
+안내에 따라 새 컨테이너 이미지를 가져오고 환경을 재구성합니다.
+
++
+
+. 실행 중인 컨테이너를 확인합니다.
+
++
+
+[source, console]
+----
+podman ps
+----
+
++
+
+필요한 컨테이너:
+
+* [literal]``server:5.1.0`` 이상
+
+* [literal]``server-postgresql:5.1.0`` 이상
+
+____
+
+
+=== 마이그레이션 완료
+
+시스템은 현재 SUSE Linux Enterprise Server 15 SP7에서 {productname} 5.1을 실행 중입니다. 프로덕션 운영을 재개하기 전에 설정을 검증하십시오. 이 서버에 {productname} 5.0 프록시가 연결된 경우, xref:installation-and-upgrade:container-deployment/mlm/migrations/proxy/proxy-mlm-50-51.adoc[]를 진행하십시오.
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]

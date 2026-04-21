@@ -1,0 +1,128 @@
+[[troubleshooting-high-sync-times-over-wan]]
+= WAN接続を介した{productname}サーバとプロキシ間の長い同期時間に関するトラブルシューティング
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure.
+
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+
+
+
+WebUIで、あるいはディストリビューションまたはシステム設定へのAPIコールを介して実行される変更によっては、{productname}サーバから{productname}プロキシシステムにファイルを転送するために、[literal]``cobbler sync``コマンドが必要になる場合があります。これを実現するために、{cobbler}は[literal]``/etc/cobbler/settings``で指定されたプロキシのリストを使用します。
+
+[command]``cobbler sync``は、その設計上、変更されたファイルや最近追加されたファイルのみを同期することはできません。
+
+代わりに、[command]``cobbler sync``を実行すると、[literal]``/etc/cobbler/settings``で設定された指定のすべてのプロキシに[literal]``/srv/tftpboot``ディレクトリの完全同期がトリガされます。また、関連するシステム間のWAN接続の遅延によっても影響を受けます。
+
+[literal]``/var/log/cobbler/``のログによると、同期のプロセスが完了するまでにかなりの時間がかかる場合があります。
+
+たとえば、次の日時に開始したとします。
+
+----
+Thu Jun  3 14:47:35 2021 - DEBUG | running python triggers from /var/lib/cobbler/triggers/task/sync/pre/*
+Thu Jun  3 14:47:35 2021 - DEBUG | running shell triggers from /var/lib/cobbler/triggers/task/sync/pre/*
+----
+
+そして、次の日時に終了したとします。
+
+----
+Thu Jun  3 15:18:49 2021 - DEBUG | running shell triggers from /var/lib/cobbler/triggers/task/sync/post/*
+Thu Jun  3 15:18:49 2021 - DEBUG | shell triggers finished successfully
+----
+
+転送量は約1.8GBでした。 転送には30分ほどかかりました。
+
+比較すると、[literal]``/srv/tftboot``と同じサイズの大きな単一ファイルのコピーは、数分以内に完了します。
+
+
+//== Resolution and analysis
+
+{productname}サーバとプロキシ間でファイルをコピーするために[literal]``rsync``ベースのアプローチに切り替えると、転送時間と待機時間を短縮できる場合があります。
+
+このタスクを実行するためのスクリプトは、link:https://suse.my.salesforce.com/sfc/p/1i000000gLOd/a/1i000000ll5B/B2AmvIJN2_JsAyjTQzCVP_x5ioVgd0bYN9X9NpMugS8[]でダウンロードできます。
+
+このスクリプトはコマンドラインオプションを受け入れません。 スクリプトを実行する前に、手動で編集し、[literal]``MLMHOSTNAME``、[literal]``MLMIP``、および[literal]``MLMPROXY1``変数を正しく設定して、スクリプトが正しく機能するようにする必要があります。
+
+[WARNING]
+====
+スクリプトの個々の調整に利用可能なサポートはありません。 スクリプトと内部のコメントは、プロセスの概要と考慮すべきステップを提供することを目的としています。 さらにサポートが必要な場合は、SUSEコンサルティングにお問い合わせください。
+====
+
+
+スクリプトを使用した提案されるアプローチは、次の環境で役立ちます。
+
+* {productname}プロキシシステムがWAN接続を介して接続されている。
+* [literal]``/srv/tftboot``に多数のディストリビューション用ファイルおよびクライアントPXEブートファイル(合計数千ファイル)が含まれている。
+* [literal]``/etc/cobbler/settings``の任意のプロキシは無効になっているが、それ以外の場合、{productname}は引き続きプロキシとコンテンツを同期する。
++
+----
+#proxies:
+# - "MLMproxy.MLMproxy.test"
+# - "MLMproxy2.MLMproxy.test"
+----
+
+
+.プロシージャ: 新しい同期速度の分析
+
+. {productname}と関連するシステム間のTCPトラフィックのダンプを取得します。
+* {productname}サーバの場合:
++
+----
+tcpdump -i ethX -s 200 host <ip-address-of-susemanagerproxy> and not ssh
+----
++
+* {productname}プロキシの場合:
++
+----
+tcpdump -i ethX -s 200 host <ip-address-of-susemanager> and not ssh
+----
++
+* これにより、分析を実行するのに十分な200のパッケージサイズのみがキャプチャされます。
+* プロキシと通信するために{productname}が使用する各ネットワークインタフェースにehtXを調整します。
+* 最後に、さらにパッケージ数を削減するため、ssh通信はキャプチャされません。
+. [command]``cobbler sync``を開始します。
+* 同期を強制するため、最初に{cobbler} jsonキャッシュファイルを削除してから、[command]``cobbler sync``を発行します。
++
+----
+rm /var/lib/cobbler/pxe_cache.json
+cobbler sync
+----
++
+. [command]``cobbler sync``が終了したら、TCPdumpsを停止します。
+. Wiresharkを使用してTCPdumpsを開き、［[guimenu]``Statistics（統計） > Conversations（対話）``］に移動して、ダンプが分析されるのを待ちます。
+. TCPタブに切り替えます。 このタブに表示される数は、{productname}サーバと{productname}プロキシ間でキャプチャされた合計対話数を示しています。
+. ［[guimenu]``Duration``］（期間）列を探します。
+* 昇順にソートして開始し、ファイルの転送にかかった最小時間を確認します。
+* 降順にソートして続行し、カーネルやinitrdの転送など、大きなファイルの最大値を確認します。
++
+[NOTE]
+====
+ポート4505と4506はSalt通信に使用されるため無視してください。
+====
+
+
+//=== Conclusion 
+
+TCPdumpsの分析では、{productname}サーバからプロキシへの、サイズが約1800バイトの小さなファイルの転送に約0.3秒かかったことを示しています。
+
+大きなファイルは多くありませんでしたが、小さなファイルの数が多いため、転送されるファイルごとに新しいTCP接続が作成され、確立された接続数が多くなりました。
+
+したがって、最小転送時間と必要な接続数(たとえば、約5000)がわかれば、転送時間全体の概算推定時間が得られます(5000 * 0.3 / 60 = 25分)。
+

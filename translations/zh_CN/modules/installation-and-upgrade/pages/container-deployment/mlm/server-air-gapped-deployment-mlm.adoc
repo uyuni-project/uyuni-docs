@@ -1,0 +1,149 @@
+= {productname} 服务器隔离的部署
+:revdate: 2025-05-14
+:page-revdate: {revdate}
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+== 什么是隔离的部署？
+
+
+隔离部署是指设置和操作与不安全网络（尤其是互联网）隔离的任何联网系统。这种部署通常用于军事设施、金融系统、关键基础架构等高安全性环境，以及处理敏感数据，因而必须防范其受到外部威胁的任何位置。
+
+
+
+== 部署
+
+{productname} 支持两种部署变体。
+
+
+=== 通过虚拟机部署
+
+建议的安装方法是使用所提供的 {productname} 虚拟机映像选项，因为所需的全部工具和容器映像都已预先加载并且随时可用。
+
+有关安装 {productname} 服务器虚拟机的详细信息，请参见xref:container-deployment/mlm/server-deployment-vm-mlm.adoc[将服务器部署为虚拟机]。
+
+要升级 {productname} 服务器，用户应升级系统中的所有软件包，并按照xref:container-management/updating-server-containers.adoc[服务器升级]中定义的过程操作。
+
+
+=== 在 {sl-micro} 上部署 {productname}
+
+{productname} 还在 RPM 中提供了可在系统上安装的所需的全部容器映像。
+
+[NOTE]
+====
+用户应在内部网络中提供所需的 RPM。这可以通过使用第二台 {productname} 服务器或 RMT 服务器来实现。
+====
+
+.过程：在隔离部署环境中的 {sl-micro} 上安装 {productname}
+[role=procedure]
+____
+. 安装 {sl-micro}。
+
+. 更新系统。
+
+. 安装工具软件包和映像软件包（将 $ARCH$ 替换为适当的体系结构）。
+
++
+
+[source, shell]
+----
+transactional-update pkg install mgradm* mgrctl* suse-multi-linux-manager-5.1-$ARCH$-server-*
+----
+
++
+
+. 重引导。
+
+. 使用 [command]``mgradm`` 部署 {productname}。
+
+____
+
+有关在 {sl-micro} 上安装 {productname} 服务器的详细信息，请参见xref:container-deployment/mlm/server-deployment-mlm.adoc[将服务器部署为虚拟机]。
+
+要升级 {productname} 服务器，用户应升级系统中的所有软件包，并按照xref:container-management/updating-server-containers.adoc[服务器升级]中定义的过程操作。
+
+
+== PTF
+
+PTF 映像不以软件包形式提供。这意味着需在连接到互联网的计算机上使用 [command]``podman ``拉取映像，然后将其保存为归档，传输至隔离的计算机并在该计算机上加载。
+
+.过程：在连接到互联网的计算机上拉取映像
+[role=procedure]
+____
+. 安装 [command]``podman``。
+
+. 使用 SCC 身份凭证向 {suse} 仓库进行身份验证：
+
++
+
+include::../../../partials/snippet-login-into-suse-registry.adoc[]
+
++
+
+. Run the following commands in a shell.
+
++
+
+[NOTE]
+====
+This example assumes that the PTF is for the [path]``server`` image, adjust the example if the PTF concerns another image.
+====
+
++
+
+[source, shell]
+----
+SCC_USERID=aXXXX
+PTFID=12345
+echo "registry.suse.com/a/$SCC_USERID/$PTFID/suse/multi-linux-manager/5.1/x86_64/server:latest-ptf-$PTFID" >>/tmp/ptf-images
+----
+
+
+. Verify that the file contains the full path to the PTF image. If needed, other images full paths can be added to the file, one per line.
+
+. Pull each of the container images of the PTF and save them in a tar archive by running the following commands.
+
++
+
+[source, shell]
+----
+for image in `cat /tmp/ptf-images`; do
+    podman pull $image
+done
+podman save -o /tmp/ptf-images.tar $(cat /tmp/ptf-images)
+----
+. 将 [path]``/tmp/ptf-images.tar`` 映像归档传输到要修补的服务器上。
+
+____
+
+.过程：在要修补的服务器上加载映像
+[role=procedure]
+____
+. 确保 [path]``ptf-images.tar`` 文件在服务器上。
+
+. 从归档中加载映像：
+
++
+
+[source, shell]
+----
+podman load -i ptf-images.tar
+----
+
++
+
+. 按照联网环境的操作方式安装 PTF，使用以下命令：
+
++
+
+[shell, source]
+----
+mgradm support ptf podman [--test|--ptf] NUMBER --user SCC_ACCOUNT
+----
+
++
+
+由于映像已加载，系统不会再次拉取映像。
+____

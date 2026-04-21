@@ -1,0 +1,83 @@
+[[live-patching-channel-setup]]
+= ライブパッチ処理用のチャンネルの設定
+:revdate: 2025-06-30
+:page-revdate: {revdate}
+
+完全なカーネルパッケージを更新するたびに再起動が必要です。 したがって、ライブパッチ処理を使用しているクライアントは、割り当てられているチャンネルで新しいカーネルを使用できないことが重要です。 ライブパッチ処理を使用しているクライアントは、ライブパッチ処理チャンネルで実行中のカーネルの更新を取得します。
+
+ライブパッチ処理用のチャンネルを管理するには次の2つの方法があります。
+
+コンテンツライフサイクル管理を使用して製品ツリーのクローンを作成し、実行中のバージョンより新しいカーネルバージョンを削除します。 このプロシージャは、xref:administration:content-lifecycle-examples.adoc#enhance-project-with-livepatching[]で説明されています。 これは推奨される解決策です。
+
+または、``spacewalk-manage-channel-lifecycle``ツールを使用します。 このプロシージャはより手動であり、{webui}と同様にコマンドラインツールが必要です。 このプロシージャはSLES{nbsp}15 SP5のこのセクションで説明されていますが、SLE{nbsp}12 SP4以降でも機能します。
+
+
+
+== ライブパッチ処理用のspacewalk-manage-channel-lifecycleを使用する
+
+
+[IMPORTANT]
+====
+spacewalk-manage-channel-lifecycleは廃止され、今後のリリースで削除される予定です。代わりに、サポート対象で機能豊富なコンテンツライフサイクル管理(CLM) APIに切り替えることをお勧めします。
+====
+
+複製されたベンダチャンネルは、開発の場合は``dev``、運用の場合は``testing``または``prod``で始まる必要があります。 このプロシージャでは``dev``クローンチャンネルを作成し、そのチャンネルを``testing``にプロモートさせます。
+
+
+
+.プロシージャ: ライブパッチ処理チャンネルの複製
+
+. クライアントのコマンドプロンプトで、rootとして、現在のパッケージチャンネルツリーを取得します。
++
+
+[subs=attributes]
+----
+# spacewalk-manage-channel-lifecycle --list-channels
+Spacewalk Username: admin
+Spacewalk Password:
+Channel tree:
+
+ 1. sles15-{sp-vert}-pool-x86_64
+      \__ sle-live-patching15-pool-x86_64-{sp-vert}
+      \__ sle-live-patching15-updates-x86_64-{sp-vert}
+      \__ sle-manager-tools15-pool-x86_64-{sp-vert}
+      \__ sle-manager-tools15-updates-x86_64-{sp-vert}
+      \__ sles15-{sp-vert}-updates-x86_64
+----
+
+. [command]``spacewalk-manage-channel``コマンド に[option]``init``引数を指定して、元のベンダチャンネルの新しい開発クローンを自動的に作成します。
++
+[subs=attributes]
+----
+spacewalk-manage-channel-lifecycle --init -c sles15-{sp-vert}-pool-x86_64
+----
+[subs=attributes]
+. [systemitem]``dev-sles15-{sp-vert}-updates-x86_64``がチャンネルリストで使用できることを確認します。
+
+作成した``dev``クローンチャンネルを確認し、再起動が必要なカーネル更新をすべて削除します。
+
+
+
+.プロシージャ: クローンチャンネルから非ライブカーネルパッチを削除する
+. menu:システム[システム一覧]からクライアントを選択し、［[guimenu]``カーネル``］フィールドに表示されるバージョンをメモして、現在のカーネルバージョンを確認します。
+. {productname} {webui}で、menu:システム[概要]からクライアントを選択し、menu:ソフトウェア[管理 > チャンネル]タブに移動して、[systemitem]``dev-sles15-{sp-vert}-updates-x86_64``を選択します。
+      ［[guimenu]``パッチ``］タブに移動して、btn:[パッチの一覧表示／削除]をクリックします。
+. 検索バーに「[systemitem]``カーネル``」と入力し、クライアントが現在使用しているカーネルに一致するカーネルバージョンを特定します。
+. 現在インストールされているカーネルより新しいすべてのカーネルバージョンを削除します。
+
+これでチャンネルにライブパッチ処理を適用するように設定され、``testing``にプロモートできるようになりました。 このプロシージャでは、ライブパッチ処理の子チャンネルもクライアントに追加し、適用できるように準備します。
+
+
+
+.プロシージャ: ライブパッチ処理チャンネルのプロモート
+. クライアントのコマンドプロンプトで、``root``として、``dev-sles15-{sp-vert}-pool-x86_64``チャンネルを新しい``testing``チャンネルにプロモートして複製します。
++
+[subs=attributes]
+----
+# spacewalk-manage-channel-lifecycle --promote -c dev-sles15-{sp-vert}-pool-x86_64
+----
+. {productname} {webui}で、menu:システム[概要]からクライアントを選択し、menu:ソフトウェア[ソフトウェアチャンネル]タブに移動します。
+. 新しい[systemitem]``test-sles15-{sp-vert}-pool-x86_64``カスタムチャンネルを確認してベースチャンネルを変更し、両方の対応するライブパッチ処理の子チャンネルを確認します。
+. btn:[次へ]をクリックして、詳細が正しいことを確認して、btn:[確認]をクリックして、変更を保存します。
+
+これで、使用できるCVEパッチを選択して表示し、ライブパッチ処理でこれらの重要なカーネル更新を適用できるようになりました。

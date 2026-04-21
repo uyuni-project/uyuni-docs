@@ -1,0 +1,255 @@
+[[installation-proxy-containers]]
+= {productname} {productnumber} 代理部署
+:revdate: 2025-06-26
+:page-revdate: {revdate}
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+
+本指南将简要介绍在 {sl-micro} {microversion} 或 {sles} {bci-mlm} 上部署 {productname} {productnumber} 代理容器的过程，并假定您已成功部署 {productname} {productnumber} 服务器。
+
+[IMPORTANT]
+====
+目前，{sl-micro} 仅支持作为常规的受控端（[systemitem]``默认``联系方法）。我们正力求让其也能作为 Salt SSH 客户端（[systemitem]``salt-ssh`` 联系方法）进行管理。
+====
+
+
+要成功完成部署，请执行以下操作：
+
+
+// Add certificate tasks item
+.过程：部署代理
+[role=procedure]
+_____
+. 查看硬件要求。
+
+. 在服务器上同步 {sl-micro} {microversion} 或 {sles} {bci-mlm} 父通道和代理扩展子通道。
+
+. 在裸机上安装 {sl-micro} 或 {sles}。
+
+. Create a {salt} activation key with Proxy Extension.
+
+. 使用 [systemitem]``default`` 连接方法将代理作为客户端引导。
+
+. 生成代理配置。
+
+. 将服务器中的代理配置传输到代理。
+
+. 在代理上安装软件包。
+
+. 使用代理配置将客户端作为代理注册到 {productname}。
+
+_____
+
+
+.代理容器主机支持的操作系统
+[NOTE]
+====
+容器主机支持的操作系统为 {sl-micro} {microversion} 和 {sles} {bci-mlm}。
+
+容器主机::
+容器主机是配备了容器引擎（例如 Podman）的服务器，可用于管理和部署容器。这些容器包含应用程序及其必备组件（例如库），但不包含完整的操作系统，因此体量很小。此设置可确保应用程序能够在不同环境中以一致的方式运行。容器主机为这些容器提供必要的资源，例如 CPU、内存和存储。
+====
+
+
+== 代理的硬件要求
+
+
+有关部署 {productname} 代理的硬件要求，请参见 xref:installation-and-upgrade:hardware-requirements.adoc#proxy-hardware-requirements[]。
+
+
+
+== 同步父通道和代理扩展子通道
+
+本节假定您已在服务器 {webui} 中的menu:管理[安装向导 > 组织身份凭证]下输入了组织身份凭证。产品列在menu:管理[安装向导 > 产品]页面上。必须在服务器上完全同步此通道，并选择子通道[systemitem]``代理``作为扩展选项。
+
+
+.过程：同步父通道和代理扩展
+[role=procedure]
+_____
+
+. 在 {productname} {webui} 中，选择menu:管理[产品]。
+
+. 在产品页面上的过滤字段中输入 {sl-micro} 或 {sles}。
+
+. 接下来，在下拉列表中选择所需的体系结构，在本示例中为 {x86_64}。
+
+. 在[systemitem]``产品说明``字段中，选中 {sl-micro} {microversion} 或 {sles} {bci-mlm} 对应的复选框，然后在下拉列表中选择 [systemitem]``{productname} Proxy Extension 5.1 x86_64`` 扩展。
+
+. 单击 btn:[添加产品] 按钮。
+
+. 等待同步完成。
+
+_____
+
+
+[[deploy-mlm-proxy-host]]
+==  准备 {productname} 代理主机
+
+在下面的小节中，您需要准备 {sle-micro} 或 {sles} 代理主机。
+
+[[deploy-mlm-proxy-micro]]
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-prepare-micro-proxy-host.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-prepare-micro-proxy-host.adoc[leveloffset=+1]
+endif::[]
+
+要继续部署，请参见 xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc#deploy-mlm-proxy-persistent-storage[]。
+
+
+
+[[deploy-mlm-proxy-sles]]
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-prepare-sles-proxy-host.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-prepare-sles-proxy-host.adoc[leveloffset=+1]
+endif::[]
+
+要继续部署，请参见 xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc#deploy-mlm-proxy-persistent-storage[]。
+
+
+
+[[deploy-mlm-proxy-persistent-storage]]
+== 配置自定义永久性存储
+
+配置永久性存储空间并非强制性要求，但这是唯一可避免在容器全盘空间用尽的情况下出现严重问题的方法。如果您的体系结构要求使用自定义永久性存储空间，请使用 [command]``mgr-storage-proxy`` 工具。
+
+有关详细信息，请参见 [command]``mgr-storage-proxy --help``。此工具可以简化容器存储和 Squid 缓存卷的创建。
+
+如下所示使用命令：
+
+[source, shell]
+----
+mgr-storage-proxy <存储磁盘设备>
+----
+
+例如：
+
+[source, shell]
+----
+mgr-storage-proxy /dev/nvme1n1
+----
+
+
+
+[NOTE]
+====
+此命令将在 [path]``/var/lib/containers/storage/volumes`` 中创建永久性存储卷。
+
+有关详细信息，请参见
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+====
+
+// Snippet for creating activation key only
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-actkey-bootstrap-proxy-mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-actkey-bootstrap-proxy-mlm.adoc[]
+endif::[]
+
+// (New) Snippet for bootsrapping the proxy
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-bootstrap-proxy-client.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-bootstrap-proxy-client.adoc[]
+endif::[]
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-generate_proxy_config.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-generate_proxy_config.adoc[]
+endif::[]
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-transfer_proxy_config.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-transfer_proxy_config.adoc[]
+endif::[]
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ensure-proxy-prerequisites.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../partials/snippet-ensure-proxy-prerequisites.adoc[]
+endif::[]
+
+
+
+[[proxy-setup-containers-transfer-start]]
+== 启动 {productname} 代理
+
+现在可以使用 [literal]`mgrpxy` 命令启动容器：
+
+[[proc-setup-containers-setup-start]]
+.过程：启动代理并检查状态
+[role=procedure]
+_____
+
+. 调用以下命令启动代理：
+
++
+
+----
+mgrpxy start
+----
+
+. 调用以下命令检查容器状态：
+
++
+
+----
+mgrpxy status
+----
+
++
+
+应该会显示以下五个 {productname} 代理容器，并且它们应该是 [literal]``proxy-pod`` 容器 Pod 的一部分：
+
+* proxy-salt-broker
+* proxy-httpd
+* proxy-tftpd
+* proxy-squid
+* proxy-ssh
+
+_____
+
+
+== 为服务使用自定义容器映像
+
+默认情况下，{productname} 代理套件配置为针对其每个服务使用相同的映像版本和仓库路径。但是，可以使用以 [literal]``-tag`` 和 [literal]``-image`` 结尾的 install 参数覆盖特定服务的默认值。
+
+例如：
+
+[source, shell]
+----
+mgrpxy install podman --httpd-tag 0.1.0 --httpd-image registry.opensuse.org/uyuni/proxy-httpd /path/to/config.tar.gz
+----
+
+该命令会在重启 httpd 服务之前调整其配置文件。其中 [path]``registry.opensuse.org/uyuni/proxy-httpds`` 是要使用的映像，[literal]``0.1.0`` 是版本标记。
+
+要重置为默认值，请再次运行 install 命令但不要指定这些参数：
+
+[source, shell]
+----
+mgrpxy install podman /path/to/config.tar.gz
+----
+
+此命令首先将所有服务的配置重置为全局默认值，然后重新装载配置。

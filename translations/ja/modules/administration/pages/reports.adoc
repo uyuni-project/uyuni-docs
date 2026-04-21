@@ -1,0 +1,127 @@
+[[reports]]
+= レポートの生成
+:revdate: 2024-05-08
+:page-revdate: {revdate}
+
+{productname}では、ユーザがさまざまなレポートを作成できます。 これらのレポートはサブスクライブしたシステム、ユーザ、および組織のインベントリを取得するのに役立ちます。 レポートの使用は、特に多数のシステムを管理している場合は、{productname} {webui}から手動で情報を収集するより簡単な場合が多いです。
+
+コマンドラインツール[command]``spacewalk-report``を使用して事前設定されたレポートを生成することができますが、xref:specialized-guides:large-deployments/hub-reporting.adoc[Hub Reporting]を導入することで、完全にカスタマイズされたレポートを生成することもできます。 これは、SQL言語をサポートする任意のレポーティングツールをレポーティングデータベースに接続し、データを直接抽出することで実現できます。 データの可用性と構造の詳細については、レポーティングデータベーススキーマのドキュメントを参照してください。
+
+== ``spacewalk-report``の使用
+
+
+[IMPORTANT]
+====
+サーバコンテナでステップを実行する前に、[literal]``mgrctl term``を使用します。
+====
+
+レポートを生成するには、[package]``spacewalk-reports``パッケージをインストールしている必要があります。 [command]``spacewalk-report``コマンドを使用すると、{productname}全体のコンテンツ、システム、およびユーザリソースに関するレポートを整理して表示できます。
+
+[IMPORTANT]
+====
+xref:specialized-guides:large-deployments/hub-reporting.adoc[Hub Reporting]の導入により、[command]``spacewalk-report``はデフォルトでレポーティングデータベースからデータを収集するようになりました。 詳細については<<spacewalk-report-reporting-db>>を参照してください。
+====
+
+次に関するレポートを生成できます。
+
+システムインベントリ::
+{productname}に登録されているすべてのシステムを一覧にします。
+
+パッチ::  登録されているシステムに関連するすべてのパッチを一覧にします。重大度、および特定のパッチに適用されるシステムでパッチをソートできます。
+
+ユーザー::  すべての登録済みユーザおよび特定のユーザに関連するすべてのシステムを一覧にします。
+
+CSV形式でレポートを取得するには、サーバのコマンドプロンプトで次のコマンドを実行します。
+
+[source]
+----
+spacewalk-report <report_name>
+----
+
+[[spacewalk-report-reporting-db]]
+== ``spacewalk-report``およびレポーティングデータベース
+
+[command]``spacewalk-report``は、デフォルトで新しいレポーティングデータベースを使用してデータを抽出します。 これは、新しく生成されたレポートには、データの構造と形式にいくつかの相違があることを意味します。 すべてのレポートに共通する相違点は次のとおりです。
+
+- レポートデータはリアルタイムでは変更されず、スケジュールされたタスクの実行によってのみ更新されます。
+- データの重複が削除され、以前は「多値」とみなされていた列には、``;``で区切られた複数の値が含まれるようになりました。 これはまた、コマンドラインオプション``--multival-on-rows``と ``--multival-separator``が新しいレポートには適用されなくなったことも意味します。これは、これらの動作がデフォルトになったためです。
+- すべてのレポートで、新しい列の``mgm_id``と``synced_date``が導入され、ハブシナリオの管理サーバと、アプリケーションデータベースから情報が最後に更新された時刻を識別します。
+- すべてのブール値は、``1``/``0``値ではなく、``True``/``False``で表されるようになりました。
+- 列``org_id``は、数値識別子ではなく組織名を含む、``organization`` に置き換えられました。
+- 「サーバ」という用語は「システム」に置き換えられました。 したがって、たとえば、列``server_id`` は``system_id``と呼ばれるようになりました。
+
+レポート固有の変更については、<<report-list>>を参照してください。
+
+[IMPORTANT]
+====
+この変更された動作によって問題が発生した場合、新しいオプション``--legacy-report``を使用して、アプリケーションデータベースに対して実行される古いレポートにフォールバックできます。
+====
+
+hubレポートの詳細については、xref:specialized-guides:large-deployments/hub-reporting.adoc[] を参照してください。
+
+[[report-list]]
+== 使用可能なレポートのリスト
+
+この表は、使用可能なレポートを一覧表示します。
+
+
+[[tab.bp.troubleshooting.spacewalk-report]]
+.[command]``spacewalk-report``レポート
+[cols="1,1,1,1,1", options="header"]
+|===
+|Report | Invoked as | Description | Uses reporting database | Specific differences
+| Actions | [command]``actions`` | All actions. | Yes | The column ``id`` is now called ``action_id``
+| Activation Keys | [command]``activation-keys`` | All activation keys, and the entitlements, channels, configuration channels, system groups, and packages associated with them. | No |
+| Activation Keys: Channels | [command]``activation-keys-channels`` | All activation keys and the entities associated with each key. | No |
+| Activation Keys: Configuration | [command]``activation-keys-config`` | All activation keys and the configuration channels associated with each key. | No |
+| Activation Keys: Server Groups | [command]``activation-keys-groups`` | All activation keys and the system groups associated with each key. | No |
+| Activation Keys: Packages | [command]``activation-keys-packages`` | All activation keys and the packages each key can deploy. | No |
+| Channel Packages | [command]``channel-packages`` | All packages in a channel. | Yes |
+| Channel Report | [command]``channels`` | Detailed report of a given channel. | Yes |
+| Cloned Channel Report | [command]``cloned-channels`` | Detailed report of cloned channels. | Yes |
+| Configuration Files | [command]``config-files`` | All configuration file revisions for all organizations, including  file contents and file information. | No |
+| Latest Configuration Files | [command]``config-files-latest`` | The most recent configuration file revisions for all organizations, including  file contents and file information. | No |
+| Custom Channels | [command]``custom-channels`` | Channel metadata for all channels owned by specific organizations. | Yes | The column ``id`` is now called ``channel_id``
+| Custom Info | [command]``custom-info`` | Client custom information. | Yes |
+| Patches in Channels | [command]``errata-channels`` | All patches in channels. | Yes |
+| Patches Details | [command]``errata-list`` | All patches that affect registered clients. | Yes |
+| All patches | [command]``errata-list-all`` | All patches. | No |
+| Patches for Clients | [command]``errata-systems`` | Applicable patches and any registered clients that are affected. | Yes |
+| Host Guests | [command]``host-guests`` | Host and guests mapping. | Yes |
+| Inactive Clients | [command]``inactive-systems`` | Inactive clients. | Yes | The mandatory parameter is now called ``threshold``.
+| System Inventory | [command]``inventory`` | Clients registered to the server, together with hardware and software information. | Yes | The column ``osad_status`` has been removed.
+| Kickstart Scripts | [command]``kickstart-scripts`` | All kickstart scripts, with details. | No |
+| Kickstart Trees | [command]``kickstartable-trees`` | Kickstartable trees. | No |"
+| All Upgradable Versions | [command]``packages-updates-all`` | All newer package versions that can be upgraded. | Yes |
+| Newest Upgradable Version | [command]``packages-updates-newest`` | Newest package versions that can be upgraded. | Yes |
+| Proxy Overview | [command]``proxies-overview`` | All proxies and the clients registered to each. | Yes |
+| Repositories | [command]``repositories`` | All repositories, with their associated SSL details, and any filters. | No |
+| Result of SCAP | [command]``scap-scan`` | Result of OpenSCAP ``sccdf`` evaluations. | Yes |
+| Result of SCAP | [command]``scap-scan-results`` | Result of OpenSCAP ``sccdf`` evaluations, in a different format. | Yes |
+| System Data | [command]``splice-export`` | Client data needed for splice integration. | No |
+| System Currency | [command]``system-currency`` | Number of available patches for each registered client. | No |
+| System Extra Packages | [command]``system-extra-packages`` | All packages installed on all clients that are not available from channels the client is subscribed to. | Yes |
+| System Groups | [command]``system-groups`` | System groups. | Yes |
+| Activation Keys for System Groups | [command]``system-groups-keys`` | Activation keys for system groups. | No |
+| Systems in System Groups | [command]``system-groups-systems`` | Clients in system groups. | Yes |
+| System Groups Users | [command]``system-groups-users`` | System groups and users that have permissions on them. | No |
+| System Hardware | [command]``system-hardware`` | System hardware information. | No |
+| History: System | [command]``system-history`` | Event history for each client. | Yes |
+| History: Channels | [command]``system-history-channels`` | Channel event history. | Yes |
+| History: Configuration | [command]``system-history-configuration`` | Configuration event history. | Yes | The column ``created_date`` has been removed.
+| History: Entitlements | [command]``system-history-entitlements`` | System entitlement event history. | Yes |
+| History: Errata | [command]``system-history-errata`` | Errata event history. | Yes | The column ``created_date`` has been removed.
+| History: Kickstart | [command]``system-history-kickstart`` | Kickstart event history. | Yes | The column ``created_date`` has been removed.
+| History: Packages | [command]``system-history-packages`` | Package event history.  | Yes | The column ``created_date`` has been removed.
+| History: SCAP | [command]``system-history-scap`` | OpenSCAP event history.  | Yes | The column ``created_date`` has been removed.
+| MD5 Certificates | [command]``system-md5-certificates`` | All registered clients using certificates with an MD5 checksum. | No |
+| Installed Packages | [command]``system-packages-installed`` | Packages installed on clients.  | Yes |
+| System Profiles | [command]``system-profiles`` | All clients registered to the server, with software and system group information. | No |
+| Users | [command]``users`` | All users registered to {productname}. | Yes | The column ``organization_id`` has been removed.
+| MD5 Users | [command]``users-md5`` | All users for all organizations using MD5 encrypted passwords, with their details and roles. | Yes | The column ``organization_id`` has been removed.
+| Systems administered | [command]``users-systems`` | Clients that individual users can administer. | Yes | The column ``organization_id`` has been removed.
+|===
+
+個々のレポートに関する詳細については、オプション[option]``--info``または[option]``--list-fields-info``およびレポート名を指定して、[command]``spacewalk-report``を実行します。 これにより、レポートに使用可能なフィールドの説明とリストが表示されます。
+
+プログラムの呼び出しとオプションの詳細については、[literal]``spacewalk-report(8)``マニュアルページ、および[command]``spacewalk-report``コマンドの[option]``--help``パラメータを参照してください。

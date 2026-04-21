@@ -1,0 +1,232 @@
+[[client-upgrades-spmigration]]
+= 产品迁移
+:revdate: 2025-03-10
+:page-revdate: {revdate}
+
+== 简介
+
+
+通过产品迁移，您可以将基于 SLE 的客户端系统从服务包 (SP) 级别升级到更高级别。例如，可以将 {sles}{nbsp}15{nbsp}SP5 升级到 {sles}{nbsp}15{nbsp}SP6。您还可以将 {rhel} 或 {centos} 等客户端升级到 {sll}。
+
+[IMPORTANT]
+====
+要进行产品迁移，客户端上启用的以及应该迁移的所有储存库都必须有效，否则迁移将会中止。
+====
+
+{productname} 支持以下迁移路径：
+
+=== 在同一主要版本中迁移
+
+产品迁移用于在同一主要版本内升级。您无法通过产品迁移从 {sles}{nbsp}12 迁移到 {sles}{nbsp} 15。有关主要升级的详细信息，请参见 xref:client-configuration:client-upgrades-major.adoc[]。
+
+
+=== 将 {leap} 迁移到后续次要版本或对应的 {sles} SP
+
+您还可以将 {leap} 迁移到更高的次要版本或对应的 {sles} SP 级别，例如：
+
+* 从 {leap} 15.5 迁移到 15.6
+* 从 {leap} 15.6 迁移到 {sles} 15 SP6
+
+
+=== 将 {sles} 迁移到对应的 {slesforsap} SP
+
+您还可以将 {sles} 迁移到对应的 {slesforsap} SP 级别，例如：
+
+* 将 {sles} 15 SP5 迁移到 {slesforsap} 15 SP5
+
+
+在 {sles} 12 及更高版本中，{suse} 支持跳过服务包（如果 {scclongform} 提供该服务包）。例如，您可以从 {sles} 15 升级到 SP2，而无需安装 SP1。
+
+有关支持的 {sles} 升级路径，请参见 link:https://documentation.suse.com/en-us/sles/15-SP6/html/SLES-all/cha-upgrade-paths.html#sec-upgrade-paths-supported[]。
+
+
+[NOTE]
+====
+* 迁移时会自动启用所有建议的扩展。
+
+* 迁移期间，{productname} 会在安装前自动接受任何必要的许可协议 (EULA)。
+====
+
+
+
+== 单系统迁移
+
+开始迁移产品之前：
+
+* 确保没有待处理更新或补丁。请检查客户端系统menu:细节[概览]页面上的[guimenu]``系统状态``，然后安装提供的所有更新或补丁。如果您的客户端系统不是最新的，产品迁移可能会失败。
+* 确保目标产品的所有通道都已完全同步。要在 {webui} 中检查同步状态，请导航到menu:管理[安装向导 > 产品]页面。
+* 请确保您具有有效的系统备份，以防万一。产品迁移没有回滚功能。迁移过程一旦开始，就无法回滚。
+
+
+.过程：执行单系统迁移
+. 从menu:系统[概览]页面中，选择一个客户端。
+. 从客户端的系统细节页面，导航到menu:软件[产品迁移]选项卡。
+. 选择目标迁移路径，然后单击 btn:[选择通道]。
+. 从[guimenu]``产品迁移 - 通道``页面选择正确的基础通道，包括``必需的子通道``和任何其他``可选的子通道``。
+. 可选：选中[guimenu]``允许供应商更改``，以允许安装供应商发生更改的软件包。如果发生此情况，开始迁移前会显示一条包含相关细节的通知。
++
+[IMPORTANT]
+====
+要将 openSUSE Leap 迁移到 {sles}，必须选中[guimenu]``允许更改供应商``选项。
+====
+. 正确配置您的通道后，单击 btn:[安排迁移]。
+
+
+
+== 产品大量迁移
+
+如果您要将大量客户端迁移到下一 SP 版本，可以使用 {productname} API 调用。
+
+[command]``spacecmd`` 命令行工具提供了 [systemitem]``system_scheduleproductmigration`` 子命令，可用于安排将大量客户端迁移到下一次要版本。
+
+
+
+=== 执行产品大量迁移
+
+[WARNING]
+====
+产品大量迁移操作非常危险，该过程应经过全面测试。至少应先进行试运行。
+
+请务必小心，不要无意中升级系统。
+====
+
+.过程：执行产品大量迁移
+. 列出可用的迁移目标，并记下要迁移的系统 ID：
++
+----
+spacecmd api -- system.listMigrationTargets -A 1000010001
+----
+. 针对每个系统 ID 调用 [systemitem]``listMigrationTarget``，并查看所需的目标产品是否可用。
++
+* 如果系统 ID 有可用目标，则调用 [systemitem]``system. scheduleProductMigration``。
+* 如果所需目标不可用，则跳过该系统。
++
+. 根据您的环境调整以下模板：
++
+----
+target = '[....]'
+basechannel = 'channel-label'
+system_ids = [1, 2, 3]
+
+session = auth.login(user, pass)
+for system in system_ids
+   if system.listMigrationTargets(session, system).ident == target
+     system.scheduleProductMigration(session, system, target, basechannel, [] , False, <now>)
+   else
+     print "无法迁移到请求的目标 -- 正在跳过系统"
+   endif
+endfor
+----
+
+
+=== 示例：从 SLES 15 SP2 迁移到 SLES 15 SP3
+
+对于此示例，将会创建一个组，以便于进行大量迁移。
+
+.过程：创建大量产品迁移组
+. 在 {productname} {webui} 中，导航到menu:系统[系统组]，然后单击 btn:[创建组]。
+. 将该组命名为 [literal]``mpm-target-sles15sp3``。
++
+* 您应该仅将订阅了相同基础通道的系统添加到创建的组中。本示例只会将订阅了 [literal]``SLE-Product-SLES15-SP2-Pool for x86_64`` 的系统添加到该组中。
++
+有关将客户端添加到组的详细信息，请参见 xref:client-configuration:system-groups.adoc[]。
+
+////
+Note or warning about taking normal precautions (backups, make sure fully patched, etc)
+////
+
+.过程：将系统添加到组
+. 运行以下命令，以获取该组中所有系统的目标：
++
+----
+spacecmd -- system_listmigrationtargets group:mpm-target-sles15sp3
+----
++
+. 命令的输出为由多个 ID 组成的字符串。
+  * 请只选择一个目标，这样为**所有**系统报告的就是该目标。
+  * 该字符串是另一个命令的 [literal]``MIGRATIONTARGET`` 的标识符。
++
+[IMPORTANT]
+====
+[command]``spacecmd`` 的子命令 [literal]``system_scheduleproductmigration`` 和 [command]``system_listmigrationtargets`` 会遍历该组中的所有系统。
+
+如果该组中有 100 个系统，您会发现安排了 100 个操作。
+
+该组中的所有系统都必须支持相同的迁移目标。
+====
+
+
+
+.过程：运行大量迁移命令
+
+. [command]``system_scheduleproductmigration`` 命令的语法如下：
++
+----
+spacecmd -- system_scheduleproductmigration <SYSTEM> <BASE_CHANNEL_LABEL> \
+    <MIGRATION_TARGET> [选项]
+----
+. 对于此示例，要将 [literal]``mpm-target-sles15sp3`` 组中的所有系统从 SLES 12 SP2 升级到 SLES 15 SP3，请在命令行上输入以下命令：
++
+----
+spacecmd -- system_scheduleproductmigration group:mpm-target-sles15sp3 \
+    sle-product-sles15-sp3-pool-x86_64 "[190,203,195,1242]" -d
+----
+
+
+==== 命令语法说明
+
+要查看 [command]``system_scheduleproductmigration`` 的语法和选项，请运行以下命令：
+
+----
+spacecmd system_scheduleproductmigration help
+----
+
+<SYSTEM>::
+对于此示例，我们将使用我们创建的组选择该组中的所有系统：
++
+----
+group:mpm-target-sles15sp3
+----
+
+<BASE_CHANNEL_LABEL>::
+这是目标基础通道的标签。在本例中，系统将升级到 SLES 15 SP3，且标签为 [literal]``sle-product-sles15-sp3-pool-x86_64``。
++
+要查看当前镜像的所有基础通道的列表，请运行以下命令：
++
+----
+spacecmd softwarechannel_listbasechannels
+----
++
+请注意，除非通道是当前基础通道的可用目标，否则您无法升级到该通道。
+
+<MIGRATION_TARGET>::
+要为 [literal]``group:mpm-target-sles15sp3`` 组中的系统确定此值，请运行以下命令：
++
+----
+spacecmd -- system_listmigrationtargets group:mpm-target-sles15sp3
+----
++
+必须采用以下格式传递 [literal]``MIGRATION_TARGET`` 参数；请注意需要使用引号将其括住以防中括号会产生问题：
++
+----
+"[190,203,195,1242]"
+----
+
+选项::
+
+* [literal]``-s`` START_TIME
+* [literal]``-d`` 如果您要执行试运行，请传递此标志（建议在实际执行迁移前执行试运行）
+* [literal]``-c`` CHILD_CHANNELS（逗号分隔的子通道标签（不带空格））
++
+在本例中，我们包含了 [literal]``-d`` 选项，在成功执行试运行后可以将其去除。
+
+如果成功，安排的每个系统的命令输出将如下所示：
+----
+正在为以下系统安排产品迁移 mpm-sles152-1
+已安排操作 ID：66
+----
+
+可以在 {webui} 中跟踪该组中某个指定系统的操作，在本例中即为试运行。从客户端的系统细节页面导航到menu:事件[历史]。如果试运行期间出现任何失败，应对系统进行调查。
+
+如果一切正常，则可从命令中去除 [literal]``-d`` 选项，以运行实际的迁移。完成迁移后，可以从 {productname} {webui} 中重引导系统。
+

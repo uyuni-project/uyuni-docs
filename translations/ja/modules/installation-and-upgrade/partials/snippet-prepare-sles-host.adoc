@@ -1,0 +1,187 @@
+== {sles} {bci-mlm}ホストの準備
+
+
+または、{sles} {bci-mlm}に{productname}を配備することもできます。
+
+次のプロシージャでは、インストールプロセスの主なステップについて説明します。
+
+
+=== {sles}に{productname}拡張機能をインストールする
+
+.プロシージャ: {sles}に{productname}拡張機能をインストールする
+[role=procedure]
+____
+
+. link:https://www.suse.com/download/sles/[]で{sles} {bci-mlm} [literal]``.iso``を見つけてダウンロードします。
+
+. ホストオペレーティングシステム({sles} {bci-mlm})と拡張機能の両方の登録コードがあることを確認します。
+
+. {sles} {bci-mlm}のインストールを開始します。
+
+.. [literal]``Language, Keyboard and Product Selection``（言語、キーボードおよび製品の選択）で、インストールする製品を選択します。
+
+.. [literal]``ライセンス契約``で契約を読み、［[guimenu]``I Agree to the License Terms``（ ライセンス条項に同意します）にチェックを付けます。
+
+. 登録方法を選択します。この例では、SUSEカスタマーセンターにサーバを登録します。
+
+. {scclongform}の電子メールアドレスを入力します。
+
+. {sles} {bci-mlm}の登録コードを入力します。
+
+. [systemitem]``次へ``をクリックして続行します。
+
++
+
+[IMPORTANT]
+====
+{sles} {bci-mlm}には、有効な{sles}サブスクリプションと対応する登録コードが必要であり、この画面で入力する必要があることに注意してください。以下で{productname}拡張機能の登録コードを入力する必要があります。
+====
+
+. [literal]``拡張とモジュールの選択``で、以下にチェックを付けます。
+
++
+
+  * サーバをインストールするには{productname}サーバ拡張機能を選択し、プロキシをインストールするには{productname}プロキシ拡張機能を選択します。
+  * ベースシステムモジュール
+  * Containersモジュール
+
+. [systemitem]``次へ``をクリックして続行します。
+
+. {productname} {productnumber}拡張機能の登録コードを入力します。
+
+. btn:[次へ]をクリックして続行します。
+
+. インストールを完了します。
+
+. インストールが完了したら、rootとして新しくインストールしたサーバにログインします。
+
+. システムを更新します(オプション。インストール時にシステムが更新をダウンロードするように設定されていない場合)。
+
++
+
+[source, shell]
+----
+zypper up
+----
+
+. 再起動します。
+
+____
+
+
+=== オプション: コマンドラインからの登録
+
+{sles}インストール時に{productname} {productnumber}を拡張機能として追加した場合、このプロシージャはスキップできます。
+
+ただし、オプションで、btn:[登録を行なわずに次へ進む]ボタンを選択することにより、{sles}のインストール中に登録をスキップできます。このセクションでは、{sles}のインストール後に製品を登録するステップについて説明します。
+
+[NOTE]
+====
+次のステップでは、{productname} {productnumber}拡張機能を{x86_64}アーキテクチャに登録します。そのため、{x86_64}アーキテクチャの登録コードが必要になります。
+
+{arm}または{s390x}アーキテクチャを登録する場合は、正しい登録コードを使用してください。
+====
+
+
+.プロシージャ: コマンドラインからの登録
+[role=procedure]
+____
+
+. 次のコマンドで利用可能な拡張機能を一覧表示します。
+
++
+
+[source, shell]
+----
+SUSEConnect --list-extensions
+----
+
++
+
+. From the list of available extensions, select the one you wish to install.
+
++
+
+* If installing the Server, use your {productname} Server Extension {productnumber} x86_64 registration code.
+
++
+
+For example for {sle} 15 SP7, use the following commands:
+
++
+
+[source, shell]
+----
+SUSEConnect -r <regcode>
+SUSEConnect -p sle-module-containers/15.7/x86_64
+SUSEConnect -p Multi-Linux-Manager-Server-SLE/5.1/x86_64 -r <regcode>
+----
+
++
+
+* プロキシをインストールする場合は、次のコマンドで{productname} Proxy Extension {productnumber} x86_64の登録コードを使用します。
+
++
+
+----
+SUSEConnect -p Multi-Linux-Manager-Proxy-SLE/5.1/x86_64 -r <regcode>
+----
+
+____
+
+
+
+=== [package]``podman``をインストールおよび有効にする
+
+.プロシージャ: [package]``podman``のインストール
+[role=procedure]
+____
+
+. rootとしてログインし、製品パッケージをインストールします。
+
++
+
+
+* サーバ上:
+
++
+
+[source, shell]
+----
+zypper in podman
+zypper in -t product Multi-Linux-Manager-Server-SLE
+----
+
+* プロキシ上:
+
++
+
+[source, shell]
+----
+zypper in podman
+zypper in -t product Multi-Linux-Manager-Proxy-SLE
+----
+
+
++
+
+[IMPORTANT]
+====
+Before continuing, make sure that these packages are installed on the target system:
+* [package]``podman``
+** server: [package]``mgradm``, [package]``mgradm-bash-completion``
+** proxy: [package]``mgrpxy``, [package]``mgrpxy-bash-completion``
+====
+
++
+
+. システムを再起動するか、次のコマンドを実行してPodmanサービスを起動します。
+
++
+
+[source, shell]
+----
+systemctl enable --now podman.service
+----
+
+____

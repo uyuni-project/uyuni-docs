@@ -1,0 +1,153 @@
+[[retail-server-setup]]
+= Retail Uyuni Server Setup
+:revdate: 2025-02-26
+:page-revdate: {revdate}
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+This section covers {productname} {smr} Server setup, using these procedures:
+
+* 使用 {yast} 安装 {productname}}
+* Create the main administration account
+* 添加软件通道
+* 检查同步状态
+* 在客户端上信任 GPG 密钥
+* Register the Branch Server and Terminals as Clients
+
+
+
+[[retail-server-setup-yast]]
+== 使用 {yast} 安装 {productname}}
+
+
+This section guides you through {productname} setup procedures.
+
+.过程：{productname} 安装
+. On the {productname} Server, at the command prompt, as root, start {yast}:
++
+----
+yast2
+----
+
+. Navigate to menu:Network Services[Uyuni Setup] to begin set up.
+
+. From the introduction screen, select menu:Uyuni Setup[Set up Uyuni from scratch] and click btn:[Next] to continue.
+
+. Type an email address to receive status notifications and click btn:[Next] to continue. {productname} can sometimes send a large volume of notification emails. You can disable email notifications in the {webui} after setup, if you need to.
+
+. Type your certificate information and provide a password. Passwords must be at least seven characters in length, and must not contain spaces, single or double quotation marks (``'`` or ``"``), exclamation marks (``!``), or dollar signs (``$``). Always store your passwords in a secure location. You must have the certificate password to set up the {productname} Proxy.
++
+  Click btn:[Next] to continue.
+
+. Navigate to menu:Uyuni Setup[Database Settings] screen, type a database username and password, and click btn:[Next] to continue. Passwords must be at least seven characters in length, and must not contain spaces, single or double quotation marks (``'`` or ``"``), exclamation marks (``!``), or dollar signs (``$``). Always store your passwords in a secure location.
++
+  Click btn:[Next] to continue.
+
+. Click btn:[Yes] to begin the setup process.
+
+. When setup is complete, click btn:[Next] to continue. Take note of the address to access the {productname} {webui}.
+
+. 单击 btn:[完成] 以完成 {productname} 安装。
+
+
+
+== 创建主管理帐户
+
+本节介绍如何创建组织的 {productname} 主管理帐户。
+
+[WARNING]
+====
+The main administration account has the highest authority within {productname}. Ensure you keep access information for this account secure. We recommend that you create lower level administration accounts for organizations and groups. Do not share the main administration access details.
+====
+
+
+.过程：设置主管理帐户
+
+. In your web browser, enter the address for the {productname} {webui}. This address was provided after you completed setup. For more information, see xref:retail:retail-uyuni-server-setup.adoc#retail-server-setup-yast[].
+
+. Sign in to the {webui}, navigate to the menu:Create Organization[Organization Name] field, and enter your organization name.
+
+. 在menu:创建组织[所需的登录名]和menu:创建组织[所需的口令]字段中，输入您的用户名和口令。
+
+. Complete the ``Account Information`` fields, including an email for system notifications.
+
+. 单击 btn:[创建组织] 以完成管理帐户的创建。
+
+完成 {productname} {webui} 安装后，您将转到menu:主页[概览]页。
+
+
+
+////
+// Old text, to be superseded by the standard phrases above.
+Before you begin, ensure you have access to the ``opensuse_leap15_2`` parent channel.
+
+// Use [command]``spacewalk-common-channels`` to obtain all needed channels:
+
+.Procedure: Synchronizing Software Channels
+
+. On the {productname} Server, at the command prompt, as root, register the parent channel:
++
+----
+spacewalk-common-channels opensuse_leap15_2
+----
+
+. Enable the child channels:
++
+----
+spacewalk-common-channels opensuse_leap15_2-updates
+spacewalk-common-channels uyuni-proxy-stable-leap-152
+spacewalk-common-channels opensuse_leap15_2-uyuni-client
+----
++
+  If registration is successful, this message is shown:
++
+----
+# Base channel 'openSUSE Leap {opensuse-version} (x86_64)' - exists
+----
+
+. Synchronize all repositories, which will take a lot of time to finish:
++
+----
+spacewalk-repo-sync -c opensuse_leap15_2-x86_64
+spacewalk-repo-sync -c opensuse_leap15_2-x86_64-updates
+spacewalk-repo-sync -c opensuse_leap15_2-uyuni-client-x86_64
+spacewalk-repo-sync -c uyuni-proxy-stable-leap-152-x86_64
+----
+
+// Trouble shooting:
+If you do not enable the ``opensuse_leap15_2`` parent channel first, you will see the following error:
+
+----
+# ERROR: opensuse_leap15_2-x86_64 could not be found at the server
+# ERROR: opensuse_leap15_2-uyuni-client-x86_64: redstone.xmlrpc.XmlRpcFault: unhandled internal exception: User 1 does not have access to channel opensuse_leap15_2-x86_64 or the channel does not exist
+----
+////
+
+////
+FIXME, ke: we should think about this later:
+
+Next we need to adapt kiwi profile for Leap {opensuse-version}, it is possible to simply modify JeOS7 for SLE15SP2 by
+dropping few SLE specific packages and directives:
+
+         <bootsplash-theme>SLE</bootsplash-theme>
+         <bootloader-theme>SLE</bootloader-theme>
+         <package name="grub2-branding-SLE" bootinclude="true"/>
+         <package name="SUSEConnect"/>
+         <package name="suse-build-key"/>
+         <package name="plymouth-branding-SLE"/>
+         <package name="sles-release"/>
+         <package name="rhn-org-trusted-ssl-cert-osimage"/>
+
+Side note: I plan to publish modified profile somewhere, but I haven't decided where yet as it is uyuni and
+feature without support.
+
+Then it is possible to build the image using modified kiwi profile and deploy it to terminal as usual (there is
+nothing specific for Uuyni).
+
+The rest of things ({saltboot} formula and formula for image syncing works just the same way as MLM.)
+
+Only thing that behaves differently is naming of terminals, for some reason dashes are used instead of
+HWTYPE (for example). But fortunately it has no impact on (at least basic) functionality of terminal.
+////

@@ -1,0 +1,110 @@
+[[contact-methods-pushssh]]
+= SSH Push (トンネル使用)接続メソッド
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+
+
+SSH Push (トンネル使用)は、クライアントで{productname}サーバに直接接続できない環境で使用されます。この環境では、DMZと呼ばれるファイアウォール保護ゾーンにクライアントはあります。内部ネットワークとの接続を開くことを認可されているシステム({productname}サーバなど)はDMZ内にはありません。
+
+// CHECKIT: Maybe, we can delete the following sentence.  It is already
+// described in the second "important" admonition
+つまり、SSH Push (トンネル使用)は、サーバからクライアントへのリバーストンネルだけでなく、クライアントから{productname}サーバへのリバーストンネルも作成します。
+
+サーバは、SSHを使用して、定期的にクライアントに接続し、チェックインし、スケジュールされたアクションおよびイベントを実行します。
+
+[IMPORTANT]
+====
+プロビジョニングモデルを使用したシステムの再インストールは、SSH Pushで管理されているクライアントでは現在サポートされていません。
+====
+
+
+[IMPORTANT]
+====
+トンネルを使用して、暗号化されたトンネルを介したサーバへのアクセスを提供します。SSH Pushクライアント(トンネル使用)に割り当てられたリポジトリは、このトンネルを介してのみ提供されます。したがって、リポジトリを利用できるのはトンネルの動作中だけであるため、クライアントシステムから直接、パッケージマネージャツールを使用することはできません。つまり、セッションがサーバによって開始された場合にのみ、アクセスが可能です。クライアント上でのすべてのパッケージ管理操作はサーバ側からのみ実行できます。
+====
+
+
+[IMPORTANT]
+====
+サーバコンテナでステップを実行する前に、[literal]``mgrctl term``を使用します。
+====
+
+SSHでのトンネル接続では、HTTPS経由のトンネル用のポート番号が必要です。デフォルトで使用されるポート番号は[literal]``1233``です。この番号を上書きするには、コンテナ内で1024よりも大きいカスタムポート番号を[path]``/etc/rhn/rhn.conf``に追加します。
+
+----
+ssh_push_port_https = high_port
+----
+
+この設定パラメータを変更した後、[systemitem]``salt-secrets-config.service``、[systemitem]``tomcat.service``、[systemitem]``taskomatic.service``などのサービスを再起動する必要があります。必要なサービスすべてを対象とするには、{productname}サーバをrootとして再起動することをお勧めします。コンテナの外部、コンテナホストから、次のように入力します。
+
+----
+mgradm restart
+----
+
+
+////
+[IMPORTANT]
+====
+Use [literal]``mgrctl term`` before running steps inside the server container.
+====
+////
+
+セキュリティ上の理由から、SSHでsudoを使用して、rootとしてではなく非特権ユーザとしてシステムにアクセスする必要がある場合があります。
+
+
+.プロシージャ: 非特権SSHアクセスの設定
+. それぞれのクライアントシステムで、適切な非特権ユーザを作成します。
+. 各クライアントシステムで、[filename]``sudoers``ファイルを編集します。
++
+----
+sudo visudo
+----
+. この行を[filename]``sudoers``ファイルの末尾に追加して[command]``sudo``アクセス権をユーザに付与します。 {webui}でクライアントをブートストラップしているユーザの名前で[systemitem]``<user>``を置き換えます。
++
+----
+<user>  ALL=NOPASSWD: /usr/bin/python3, /var/tmp/venv-salt-minion/bin/python
+----
++
+[NOTE]
+====
+このプロシージャによりrootアクセス権が付与されます。クライアントの登録に必要なパスワードは不要です。 クライアントは正常にインストールされると、root特権で実行されるため、アクセス権は不要です。 クライアントを正しくインストールした後、[path]``sudoers``ファイルからこの行を削除することをお勧めします。
+====
+
+. {productname}サーバコンテナ内で、[path]``/etc/rhn/rhn.conf``設定ファイルを編集して、次の行を追加または修正して、非特権ユーザ名を含めます。
++
+----
+ssh_push_sudo_user = <user>
+----
+
+
+この設定パラメータを変更した後、[systemitem]``salt-secrets-config.service``、[systemitem]``tomcat.service``、[systemitem]``taskomatic.service``などのサービスを再起動する必要があります。必要なサービスすべてを対象とするには、{productname}サーバをrootとして再起動することをお勧めします。コンテナの外部、コンテナホストから、次のように入力します。
+
+----
+mgradm restart
+----
+
+{webui}またはAPIを使用して、これらのクライアントを{productname}サーバに登録する必要があります。
+
+始める前に、SSHトンネルに使用するポートを指定済みであることを確認する必要があります。ポート番号を変更する前にクライアントを登録した場合、再アクティベーションキーを使用して再登録する必要があります。
+
+* ブートストラップの詳細については、xref:client-configuration:registration-bootstrap.adoc[]を参照してください。
+* ブートストラップの詳細については、xref:client-configuration:activation-keys.adoc#activation-keys-reactivation[]を参照してください。
+
+
+
+.例: SSH Push (トンネル使用)へのAPIアクセス
+
+APIを使用して、使用する接続メソッドを管理できます。このPythonコードの例では、接続メソッドが``ssh-push-tunnel``に設定されます。
+
+----
+client = xmlrpclib.Server(MLM_HOST + "/rpc/api", verbose=0)
+key = client.auth.login(MLM_LOGIN, MLM_PASSWORD)
+client.system.setDetails(key, 1000012345, {'contact_method' : 'ssh-push-tunnel'})
+----
+
+有効な値は次のとおりです。
+
+* `default` (pull)
+* `ssh-push`
+* `ssh-push-tunnel`
+

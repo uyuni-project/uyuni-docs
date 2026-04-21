@@ -1,0 +1,149 @@
+= {productname} 서버 air-gapped 배포
+:revdate: 2025-05-14
+:page-revdate: {revdate}
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+== air-gapped 배포란?
+
+
+air-gapped 배포란 안전하지 않은 네트워크, 특히 인터넷으로부터 물리적으로 격리된 네트워크 시스템을 설정하고 운영하는 것을 의미합니다. 이러한 유형의 배포는 일반적으로 군사 설치, 금융 시스템, 중요 인프라 및 민감한 데이터를 처리하고 외부 위협으로부터 보호해야 하는 모든 곳에서 보안 수준이 높은 환경에서 사용됩니다.
+
+
+
+== 배포
+
+{productname}은(는) 두 가지 배포 방식을 지원합니다.
+
+
+=== 가상 머신으로 배포
+
+필요한 모든 도구 및 컨테이너 이미지가 미리 로드되어 있고 즉시 작동하므로, 제공되는 {productname} 가상 머신 이미지 옵션을 사용하여 설치하는 방법을 권장합니다.
+
+{productname} 서버 가상 머신 설치에 대한 자세한 내용은 xref:container-deployment/mlm/server-deployment-vm-mlm.adoc[서버를 가상 머신으로 배포]에서 확인할 수 있습니다.
+
+{productname} 서버를 업그레이드하려면 시스템의 모든 패키지를 업그레이드하고 xref:container-management/updating-server-containers.adoc[서버 업그레이드]에 정의된 절차를 따릅니다.
+
+
+=== {sl-micro}에 {productname} 배포
+
+또한 {productname}은(는) 필요한 모든 컨테이너 이미지를 시스템에 설치할 수 있는 RPM으로 제공합니다.
+
+[NOTE]
+====
+사용자는 필요한 RPM을 내부 네트워크에서 사용할 수 있도록 설정해야 합니다. 이 작업은 보조 {productname} 서버 또는 RMT 서버를 사용하여 수행할 수 있습니다.
+====
+
+.절차: air-gapped 배포로 {sl-micro}에 {productname} 설치
+[role=procedure]
+____
+. {sl-micro}를 설치합니다.
+
+. 시스템을 업데이트합니다.
+
+. 도구 패키지 및 이미지 패키지 설치($ARCH$를 올바른 아키텍처로 바꿈)
+
++
+
+[source, shell]
+----
+transactional-update pkg install mgradm* mgrctl* suse-manager-5.0-$ARCH$-server-*
+----
+
++
+
+. 재부팅합니다.
+
+. [command]``mgradm``을 사용하여 {productname}을(를) 배포합니다.
+
+____
+
+{productname} 서버를 {sl-micro}에 설치하는 방법에 대한 자세한 내용은 xref:container-deployment/mlm/server-deployment-mlm.adoc[가상 머신으로 서버 배포]에서 확인할 수 있습니다.
+
+{productname} 서버를 업그레이드하려면 시스템의 모든 패키지를 업그레이드하고 xref:container-management/updating-server-containers.adoc[서버 업그레이드]에 정의된 절차를 따릅니다.
+
+
+== PTF
+
+PTF 이미지는 패키지로 제공되지 않습니다. 이는 인터넷에 연결된 시스템에서 [command]``podman``을 사용하여 이미지를 당겨온 후 아카이브에 저장하고, air-gapped 시스템으로 전송하여 해당 시스템에서 로드해야 함을 의미합니다.
+
+.절차: 인터넷에 액세스할 수 있는 컴퓨터에서 이미지 가져오기
+[role=procedure]
+____
+. [command]``podman``을 설치합니다.
+
+. SCC 자격 증명을 사용하여 {suse} 레지스트리에 대해 인증합니다.
+
++
+
+include::../../../partials/snippet-login-into-suse-registry.adoc[]
+
++
+
+. Run the following commands in a shell.
+
++
+
+[NOTE]
+====
+This example assumes that the PTF is for the [path]``server`` image, adjust the example if the PTF concerns another image.
+====
+
++
+
+[source, shell]
+----
+SCC_USERID=aXXXX
+PTFID=12345
+echo "registry.suse.com/a/$SCC_USERID/$PTFID/suse/multi-linux-manager/5.1/x86_64/server:latest-ptf-$PTFID" >>/tmp/ptf-images
+----
+
+
+. Verify that the file contains the full path to the PTF image. If needed, other images full paths can be added to the file, one per line.
+
+. Pull each of the container images of the PTF and save them in a tar archive by running the following commands.
+
++
+
+[source, shell]
+----
+for image in `cat /tmp/ptf-images`; do
+    podman pull $image
+done
+podman save -o /tmp/ptf-images.tar $(cat /tmp/ptf-images)
+----
+. 서버의 [path]``/tmp/ptf-images.tar`` 이미지 아카이브를 패치 대상으로 전송합니다.
+
+____
+
+.절차: 패치할 이미지를 서버에 로드
+[role=procedure]
+____
+. 서버에 [path]``ptf-images.tar`` 파일이 있는지 확인하십시오.
+
+. 아카이브에서 이미지를 로드합니다.
+
++
+
+[source, shell]
+----
+podman load -i ptf-images.tar
+----
+
++
+
+. 연결된 시스템에서 수행하는 것과 동일한 방식으로 다음 명령을 사용하여 PTF를 설치합니다.
+
++
+
+[shell, source]
+----
+mgradm support ptf podman [--test|--ptf] NUMBER --user SCC_ACCOUNT
+----
+
++
+
+이미지가 이미 로드되었기 때문에 다시 당겨오지 않습니다.
+____
