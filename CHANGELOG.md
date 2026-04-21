@@ -1,10 +1,22 @@
 - Added online database backup instructions to Administration Guide
+- Added support for Open Enterprise Server 25.4
+- Added alert for NetworkManager requirement when migrating from 5.0 to 5.1 on micro (bsc#1257295)
+- Added reference guide for new Enhanced SCAP Auditing pages
+- Added documentation for Enhanced SCAP Auditing (Beta) to Administration Guide
+- Clarified how to get PTF images in air-gapped setup in Installation and Upgrade Guide (bsc#1261307)
+- SUSE Multi-Linux Support does not support autoinstallation (bsc#1259261)
+- Extended the list of URLs required for client registration and updates in
+  Installation and Upgrade Guide (bsc#1260520)
+- Added instructions about accessing git repositories when building images to Administration Guide
+- Fixed command for product deployment in Installation and Upgrade Guide
+  (bsc#1259479)
 - Added warning for the proxy key creation and limitations around assigning 
   cloned channels (bsc#1257823)
 - Fixed typo in EOL Clients partial
 - Fixed disk space management instructions in Administration Guide (bsc#1253144)
 - Corrected comamnds for repository meta data (bsc#1259316)
 - Fixed command for replacing self-signed certificates (bsc#1258106)
+- Added warning to use original media to Registering SUSE Libery Clients in Client Configuration Guide (bsc#1254427)
 - Added admonition to network requirements about network management not
   working without wicked (bsc#1240895)
 - Removed port 25151 from the network requirements in Installation and Upgrade Guide
