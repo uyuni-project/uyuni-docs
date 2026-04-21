@@ -1,0 +1,172 @@
+= 레거시 프록시를 컨테이너로 마이그레이션
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+컨테이너화된 프록시는 이제 일련의 systemd 서비스로 관리됩니다. 컨테이너화된 프록시를 관리하려면 [command]``mgrpxy`` 도구를 사용하십시오.
+
+이 섹션에서는 [command] ``mgrpxy`` 도구를 사용하여 레거시 [systemitem]``systemd`` 프록시로부터 마이그레이션하는 데 도움을 줍니다.
+
+[IMPORTANT]
+====
+{productname}의 이전 버전에서 {productnumber}(으)로의 인플레이스 마이그레이션은 호스트 OS가 {leap}에서 {leapmicro}로 변경됨에 따라 계속해서 지원되지 않습니다.
+
+기존 연락 프로토콜은 {productname} {productnumber} 이상에서 더 이상 지원되지 않습니다. 기존 프록시를 포함한 모든 기존 클라이언트를 {salt}로 마이그레이션한 후 이전 {productname} 릴리스에서 {productnumber}(으)로 마이그레이션해야 합니다.
+====
+
+
+
+== Systemd를 사용하여 레거시 프록시에서 컨테이너화된 프록시로 마이그레이션
+
+
+=== 프록시 구성 생성
+
+.절차: 프록시 구성 생성
+. {productname} 서버 {webui}에 로그인합니다.
+. 왼쪽 탐색에서 menu:시스템[프록시 구성]을 선택합니다.
+. 프록시 FQDN을 입력합니다. 원래 프록시 호스트와 동일한 FQDN을 사용합니다.
+. 서버 FQDN을 입력합니다.
+. 프록시 포트 번호를 입력합니다. __기본 포트인 8022를 사용하는 것이 좋습니다.__
+. 인증서와 개인 키는 서버 컨테이너 호스트의 `/var/lib/containers/storage/volumes/root/_data/ssl-build/`에 있습니다.
+  * RHN-ORG-TRUSTED-SSL-CERT
+  * RHN-ORG-PRIVATE-SSL-KEY
+. 다음을 사용하여 인증서와 키를 컴퓨터로 복사합니다.
++
+
+----
+scp root@uyuni-server-example.com:/root/ssl-build/RHN-ORG-PRIVATE-SSL-KEY .
+scp root@uyuni-server-example.com:/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT .
+----
+
+. btn:[파일 선택]을 선택하고 로컬 컴퓨터에서 인증서를 찾습니다.
+. btn:[파일 선택]을 선택하고 로컬 컴퓨터에서 개인 키를 찾습니다.
+. CA 비밀번호를 입력합니다.
+. btn:[생성]을 클릭합니다.
+
+
+=== 프록시 구성을 새 호스트로 전송
+
+.절차: 프록시 구성 이전
+. 서버에서 프록시 구성이 포함된 생성된 tar.gz 파일을 새 프록시 호스트로 전송합니다.
++
+----
+scp config.tar.gz <uyuni-proxy-FQDN>:/root/
+----
+
+. 다음 단계를 실행하기 전에 레거시 프록시를 비활성화합니다.
++
+----
+spacewalk-proxy stop
+----
+. 다음을 사용하여 새 프록시를 배포합니다.
++ 
+----
+systemctl start uyuni-proxy-pod
+----
+. 다음을 사용하여 새 프록시를 활성화합니다.
++ 
+----
+systemctl enable --now uyuni-proxy-pod
+----
+. `podman ps`를 실행하여 모든 컨테이너가 있고 실행 중인지 확인합니다.
++
+----
+proxy-salt-broker
+proxy-httpd
+proxy-tftpd
+proxy-squid
+proxy-ssh
+----
+
+
+
+== {productname} 프록시를 {productname} {productnumber} 컨테이너화된 프록시로 마이그레이션
+
+.절차: {productname} 컨테이너화된 프록시를 {productname} {productnumber} 새 컨테이너화된 프록시로 마이그레이션
+. 새 시스템을 부팅하고 {leapmicro} {microversion} 설치를 시작합니다.
+. 설치를 완료합니다.
+. 시스템 업데이트:
++
+----
+transactional-update --continue
+----
+. [command]``mgrpxy``와 선택적으로 [command]``mgrpxy-bash-completion``을 설치합니다.
++
+----
+transactional-update pkg install mgrpxy mgrpxy-bash-completion 
+----
++
+. 재부팅합니다.
+
+. [literal]``tar.gz`` 프록시 구성을 호스트에 복사합니다.
+
+
+
+== {webui}를 사용하여 패키지 설치
+
+[package]``mgrpxy`` 및 [package]``mgrpxy-bash-completion`` 패키지는 미니언이 부트스트랩되어 서버에 등록된 후 웹 UI를 통해 설치할 수도 있습니다.
+
+.절차: {webui}를 사용하여 패키지 설치
+. 설치가 완료되면 menu:관리자[설정 마법사 -> 제품] 페이지에서 {sle-micro} {microversion} 상위 채널과 프록시 하위 채널을 추가하고 동기화합니다.
+. {webui}에서 menu:시스템[활성화 키]로 이동하여 동기화된 {sle-micro} {microversion} 채널에 연결된 활성화 키를 만듭니다.
+. menu:시스템[부트스트랩] 페이지를 사용하여 시스템을 미니언으로 부트스트랩합니다.
+. 새 머신이 온보딩되어 시스템 목록에 표시되면 시스템을 선택하고 menu:시스템 세부 정보[패키지 설치] 페이지로 이동합니다.
+. [package]``mgrpxy`` 및 [package]``mgrpxy-bash-completion`` 패키지를 설치합니다.
+. 시스템을 재부팅합니다.
+
+
+== [literal]``spacecmd`` 및 자체 서명 인증서를 사용하여 프록시 구성 생성
+
+spacecmd를 사용하여 프록시 구성을 생성할 수 있습니다.
+
+.절차: [literal]``spacecmd`` 및 자체 서명 인증서를 사용하여 프록시 구성 생성
+. 컨테이너 호스트에 SSH로 연결합니다.
+. 서버 및 프록시 FQDN을 바꾸는 다음 명령을 실행합니다.
++
+----
+mgrctl exec -ti 'spacecmd proxy_container_config_generate_cert -- dev-pxy.example.com dev-srv.example.com 2048 email@example.com -o /tmp/config.tar.gz'
+----
+. 생성된 구성을 프록시에 복사합니다.
++
+----
+mgrctl cp server:/tmp/config.tar.gz .
+----
+. 다음을 사용하여 프록시를 배포합니다.
++ 
+----
+mgrpxy install podman config.tar.gz
+----
+
+
+== [literal]``spacecmd`` 및 사용자 지정 인증서를 사용하여 프록시 구성 생성
+
+[literal]``spacecmd``를 사용하여 기본 자체 서명 인증서가 아닌 사용자 정의 인증서에 대해 프록시 구성을 생성할 수 있습니다.
+
+[NOTE]
+====
+2GB는 기본 프록시 squid 캐시 크기입니다. 사용자의 환경에 적합하도록 조정해야 합니다.
+====
+
+.절차: [literal]``spacecmd`` 및 사용자 정의 인증서를 사용하여 프록시 구성 생성
+. 서버 컨테이너 호스트에 SSH로 연결합니다.
+. 서버 및 프록시 FQDN을 바꾸는 다음 명령을 실행합니다.
++
+----
+for f in ca.crt proxy.crt proxy.key; do
+  mgrctl cp $f server:/tmp/$f
+done
+mgrctl exec -ti 'spacecmd proxy_container_config -- -p 8022 pxy.example.com srv.example.com 2048 email@example.com /tmp/ca.crt /tmp/proxy.crt /tmp/proxy.key -o /tmp/config.tar.gz'
+----
+. 생성된 구성을 프록시에 복사합니다.
++
+----
+mgrctl cp server:/tmp/config.tar.gz .
+----
+. 다음을 사용하여 프록시를 배포합니다.
++ 
+----
+mgrpxy install podman config.tar.gz
+----

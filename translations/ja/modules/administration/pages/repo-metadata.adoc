@@ -1,0 +1,125 @@
+[[security-repo-metadata]]
+= リポジトリメタデータ
+:revdate: 2024-12-16
+:page-revdate: {revdate}
+
+リポジトリメタデータを署名できるようにするにはカスタムGPGキーが必要です。
+
+[IMPORTANT]
+====
+サーバコンテナ内でシェルにアクセスするには、コンテナホストで[literal]``mgrctl term``を実行します。
+====
+
+.Procedure: Generating a custom GPG key
+[role=procedure]
+____
+. rootユーザとして、[command]``gpg``コマンドを使用して、新しいキーを生成します。
+
++
+----
+mgrctl exec -it -- gpg --full-generate-key
+----
+
+. プロンプトが表示されたら、サイズが2048ビットの[systemitem]``RSA``をキータイプとして選択し、キーの適切な有効期限を選択します。
+    新しいキーの詳細を確認して、「[systemitem]``y``」と入力して確定します。
+
+. プロンプトが表示されたら、キーに関連付けられた名前と電子メールアドレスを入力します。
+    必要に応じて、キーの識別に役立つコメントを追加することもできます。 ユーザIDに問題がなければ、「[systemitem]``O`` 」と入力して確定します。
+
+. プロンプトが表示されたら、キーを保護するパスフレーズを入力します。
+
+. キーは自動的にキーリングに追加されます。
+    キーリングにキーを一覧表示して確認できます。
+
++
+----
+mgrctl exec -- gpg --list-keys
+----
+
+. テキストエディタでファイルを開き、次の行を追加して、キーリングのパスワードを [filename]``/etc/rhn/signing.conf``設定ファイルに追加します。
+
++
+----
+GPGPASS="password"
+----
+____
+
+
+GPGキーの更新については、xref:administration:troubleshooting/tshoot-sync.adoc[]を参照してください。
+
+
+[command]``mgr-sign-metadata-ctl``コマンドを使用してコマンドラインでメタデータ署名を管理できます。
+
+
+.Procedure: Enabling metadata signing
+[role=procedure]
+____
+. 使用するキーの短い識別子を知っている必要があります。
+    使用可能な公開鍵を短い形式で一覧表示できます。
+
++
+----
+mgrctl exec -- gpg --keyid-format short --list-keys
+...
+pub   rsa4096/3E7BFE0A 2019-04-02 [SC] [expires: 2029-04-01]
+      A43F9EC645ED838ED3014B035CFA51BF3E7BFE0A
+uid         [ultimate] SUSE Manager
+sub   rsa4096/118DE7FF 2019-04-02 [E] [expires: 2029-04-01]
+----
+
++
+
+. [command]``mgr-sign-metadata-ctl``コマンドを使用してメタデータ署名を有効化します。
+
++
+----
+mgrctl exec -- mgr-sign-metadata-ctl enable 3E7BFE0A
+OK. Found key 3E7BFE0A in keyring.
+DONE. Set key 3E7BFE0A in /etc/rhn/signing.conf.
+DONE. Enabled metadata signing in /etc/rhn/rhn.conf.
+DONE. Exported key 3E7BFE0A to /srv/susemanager/salt/gpg/mgr-keyring.gpg.
+DONE. Exported key 3E7BFE0A to /var/spacewalk/gpg/<KEY_NAME>.key.
+NOTE. For the changes to become effective run:
+   mgr-sign-metadata-ctl regen-metadata
+----
+
+. このコマンドを使用して設定が正しいことを確認できます。
+
++
+----
+mgrctl exec -- mgr-sign-metadata-ctl check-config
+----
+
+. Restart the container for the configuration changes to be detected.
+
++
+----
+mgradm restart
+----
+
++
+. Schedule metadata regeneration to replace all metadata with new signed versions.
+
++
+----
+mgrctl exec -- mgr-sign-metadata-ctl regen-metadata
+----
+____
+
+
+[command]``mgr-sign-metadata-ctl``コマンドを使用して他のタスクを実行することもできます。 [command]``mgr-sign-metadata-ctl --help``を使用して、完全なリストを表示します。
+
+リポジトリメタデータ署名はグローバルオプションです。 有効にすると、サーバ上のすべてのソフトウェアチャンネルで有効になります。 これは、サーバに接続されているすべてのクライアントが、パッケージをインストールまたは更新できるようにするために、新しいGPGキーを信頼する必要があることを意味します。
+
+
+
+.Procedure: Importing GPG keys on clients
+[role=procedure]
+____
+. GPGキーをクライアントに配備すると、salt状態で動作します。
+
+. {productname} {webui}を使用してhighstateを適用します。
+
+____
+
+GPGキーのトラブルシューティングの詳細については、xref:administration:troubleshooting/tshoot-sync.adoc[]を参照してください。

@@ -1,0 +1,161 @@
+[[tshoot-hostname-rename]]
+= {productname}サーバの名前変更のトラブルシューティング
+:revdate: 2025-02-18
+:page-revdate: {revdate}
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+////
+Showing my working. --LKB 2020-06-22
+
+Cause: Renaming the hostname
+Consequence: Changes not picked up by db, clients and proxies
+Fix: Use the [command]``spacewalk-hostname-rename`` script to update the settings in the PostgreSQL database and the internal structures of {productname}.
+Result: Renaming is successfully propagated
+////
+
+{productname}サーバのホスト名をローカルで変更する場合は、{productname}インストールが適切に機能しなくなります。 これは、変更がデータベースで行われていないため、変更がクライアントとプロキシに伝播されないためです。
+
+
+
+== サーバの名前変更
+
+{productname}サーバのホスト名を変更する必要がある場合は、[command]``mgradm server rename``コマンドを使用して変更できます。 このコマンドは{postgresql}データベースの設定と{productname}の内部構造を更新します。
+
+
+
+=== サーバ設定
+
+コマンドは必須パラメータを取りませんが、コンテナホストのホスト名とは異なる場合は、新しいホスト名を受け取ることができます。
+
+
+新しいホスト名に一致するようにSSL証明書を生成する必要がある場合は、SSL CAパスワードを提供する必要があります。 これは、設定ファイルを使用して安全に実行されます
+
+.プロシージャ: SSL CAパスワード用の設定ファイルの準備
+[role=procedure]
+____
+. [path]``config.yaml``ファイルを次のような内容で作成します。
+
++
+
+[source, shell]
+----
+ssl:
+  password: "<CA PASSWORD>"
+----
+____
+
+このファイルは次のプロシージャで使用されます。
+
+.プロシージャ: {productname}サーバの名前変更
+[role=procedure]
+____
+. システムレベルのサーバのネットワーク設定を、DNSサーバでローカルおよびリモートで変更します。
+    逆引き名前解決のための設定を指定する必要もあります。 ネットワーク設定の変更は、他のシステムの名前変更と同じ方法で実行されます。
+
+. {productname}サーバを再起動して、新しいネットワーク構成を使用し、ホスト名が変更されていることを確認します。
+
+. コンテナホストで、コマンドラインから、次のコマンドを実行します。SSL CAパスワードを保存するファイルを作成した場合は、[command]``-c config.yaml``を追加します。
+
++
+
+[source, shell]
+----
+mgradm server rename
+----
+
++
+
+新しいホスト名が解決できない場合、コマンドは失敗します。
+
+____
+
+名前変更のプロシージャは、サーバコンテナの再起動中にも実行されます。 次のコマンドを実行して、ログを確認できます。
+
+[source, shell]
+----
+mgrctl exec -ti -- journalctl -u uyuni-update-config
+----
+
+サーバコンテナを再起動する際に、このコマンドがすべての{salt}クライアントのpillarデータの更新をトリガすることに注意してください。実行にかかる時間は登録済みクライアントの数によって異なります。
+
+
+=== 直接管理されているクライアントの再設定
+
+*クライアントが{productname}プロキシを介して管理されている場合は、この手順をスキップします。*
+
+次のプロシージャを使用して、直接管理されているクライアントを再設定し、新しいホスト名とIPアドレスを認識させるようにします。
+
+.プロシージャ: 直接管理されているクライアントの再設定
+[role=procedure]
+____
+. すべてのクライアントの{salt}クライアント設定ファイルで、新しい{salt}マスター({productname}サーバ)の名前を指定します。 ファイル名は [path]``/etc/venv-salt-minion/minion.d/susemanager.conf``です。{salt} Bundleを使用しない場合は、[path]``/etc/salt-minion/minion.d/susemanager.conf``です。
+
++
+
+----
+master: <new_hostname>
+----
+
+. すべてのクライアントで、{salt}サービスを再起動します。 次コマンドを実行します。
+
++
+
+[source, shell]
+----
+systemctl restart venv-salt-minion
+----
+
++
+
+または、{salt} Bundleを使用しない場合は、次のコマンドを実行します。
+
++
+
+[source, shell]
+----
+systemctl restart salt-minion
+----
+
+____
+
+
+=== ClientcConnection with applying high state
+
+最後に、ホスト名が{salt}クライアント設定に完全に伝播されるようにするには、highstateを適用します。 highstateを適用すると、リポジトリURLのホスト名が更新されます。
+
+
+
+== プロキシの再設定
+
+すべてのプロキシを再設定する必要があります。 新しいサーバ証明書とキーをプロキシにコピーする必要があります。 詳細については、xref:installation-and-upgrade:install-proxy.adoc[]を参照してください。
+
+
+[IMPORTANT]
+====
+プロキシ経由でPXEブートを使用する場合は、プロキシの設定を確認する必要があります。 コンテナ化されていない{productname}プロキシ4.3経由でPXEブートを使用する場合は、[systemitem]``tftpsync``を再設定する必要があります。
+
+コンテナホストで、次のコマンドを実行します。
+
+[source, shell]
+----
+mgrctl exec -ti -- configure-tftpsync.sh
+----
+
+====

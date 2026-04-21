@@ -1,0 +1,96 @@
+= {productname} 服务器隔离的部署
+:revdate: 2025-07-25
+:page-revdate: {revdate}
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+== 什么是隔离的部署？
+
+
+隔离部署是指设置和操作与不安全网络（尤其是互联网）隔离的任何联网系统。这种部署通常用于军事设施、金融系统、关键基础架构等高安全性环境，以及处理敏感数据，因而必须防范其受到外部威胁的任何位置。
+
+您可在能够访问互联网的计算机上，通过 [systemitem]``Podman`` 或 [systemitem]``Docker`` 轻松拉取容器映像。
+
+.过程：拉取映像
+. 拉取所需映像，然后将其保存为 [literal]``tar`` 归档。例如：
+
++
+.Podman
+----
+podman pull registry.opensuse.org/uyuni/server:latest registry.opensuse.org/uyuni/server-postgresql:latest
+podman save -m --output images.tar registry.opensuse.org/uyuni/server:latest registry.opensuse.org/uyuni/server-postgresql:latest
+----
++
+.Docker
+----
+docker pull registry.opensuse.org/uyuni/server:latest registry.opensuse.org/uyuni/server-postgresql:latest
+docker save --output images.tar registry.opensuse.org/uyuni/server:latest registry.opensuse.org/uyuni/server-postgresql:latest
+----
++
+. Transfer the resulting [filename]``images.tar`` to the Server container host and load it using the following command:
++
+.加载服务器映像
+----
+podman load -i images.tar
+----
+
+== 在隔离环境中获取 {salt} 公式的容器映像
+
+部分公式（如 Bind 和 DHCP (Kea)）也使用容器。如果您计划在隔离环境中使用这些公式，需要拉取其映像、将映像保存为归档，然后加载到 {productname} 代理或其他受管系统中。
+
+映像可从 `registry.opensuse.org` 获取。
+
+.过程：为隔离环境获取公式映像
+. 在能够访问互联网的系统上，拉取所需映像。例如：
++
+[source, shell]
+----
+podman pull registry.opensuse.org/opensuse/bind:latest
+podman pull registry.opensuse.org/opensuse/kea:latest
+----
+. 将映像保存为 TAR 归档：
++
+[source, shell]
+----
+podman save -o formula-images.tar registry.opensuse.org/opensuse/bind:latest registry.opensuse.org/opensuse/kea:latest
+----
+. 将 `formula-images.tar` 文件传输至隔离的系统。
+. 在隔离的系统上加载映像：
++
+[source, shell]
+----
+podman load -i formula-images.tar
+----
+
+=== Deploy {productname} on {opensuse} {tumbleweed}
+
+{productname} 还在 RPM 软件包中提供了可在系统上安装的全部所需容器映像。
+
+[NOTE]
+====
+用户应在内部网络上提供所需的 RPM。这可以通过使用第二个 {productname} 服务器或任意类型的镜像来完成。
+====
+
+.Procedure: Install {productname} on {opensuse} {tumbleweed} in air-gapped environment
+. Install {opensuse} {tumbleweed}.
+. 更新系统。
+. 安装工具软件包和映像软件包（将 $ARCH$ 替换为适当的体系结构）:
+
++
+
+[source, shell]
+----
+zypper install mgradm* mgrctl* uyuni-server*-image*
+----
+
++
+
+. 使用 [command]``mgradm`` 部署 {productname}。在隔离环境中，可能需要使用 [command]``--pullPolicy Never`` 选项。
+
+
+For more detailed information about installing {productname} Server on {opensuse} {tumbleweed}, see xref:container-deployment/uyuni/server-deployment-uyuni.adoc[Server Deployment].
+
+要升级 {productname} 服务器，用户应升级系统中的所有软件包，并按照xref:container-management/updating-server-containers.adoc[服务器升级]中定义的过程操作。
+

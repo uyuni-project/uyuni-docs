@@ -1,0 +1,96 @@
+[[ssl-certs-selfsigned]]
+= 自己署名SSL証明書
+:revdate: 2025-05-08
+:page-revdate: {revdate}
+
+
+デフォルトでは、{productname}は自己署名証明書を使用します。 この場合、証明書は{productname}によって作成され、署名されます。 この方法では、証明書の詳細が正しいことを保証するために独立した認証局を使用しません。 サードパーティCAは、証明書に含まれる情報が正しいことを確認するためにチェックを実行します。
+
+* サードパーティCA証明書の詳細については、xref:administration:ssl-certs-imported.adoc[]を参照してください。
+* 証明書の置き換え方法の詳細については、xref:administration:ssl-certs-imported.adoc#ssl-certs-import-replace[]を参照してください。
+
+このセクションでは、新規または既存のインストールで自己署名証明書を作成または再作成する方法について説明します。
+
+SSLキーおよび証明書のホスト名はそれらを配備するマシンの完全修飾ホスト名に一致する必要があります。
+
+
+== 既存のサーバ証明書の再作成
+
+
+既存の証明書の有効期限が切れているか、何らかの理由で動作を停止している場合は、既存のCAから新しいサーバ証明書を生成できます。
+
+.プロシージャ: 既存のサーバ証明書の再作成
+
+. {productname}コンテナホストのコマンドプロンプトで、サーバ証明書を再生成します。
+
++
+
+[source, shell]
+----
+mgrctl exec -ti -- 'rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
+--set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
+--set-org-unit="ORGANIZATION UNIT" --set-email="name@example.com" \
+--set-hostname="susemanager.example.com" --set-cname="example.com"'
+----
+
++
+
+[systemitem]``set-cname``パラメータが{productname}サーバの完全修飾ドメイン名であることを確認します。 複数のエイリアスが必要な場合は複数回、[systemitem]``set-cname``パラメータを使用できます。
+
+機密鍵とサーバ証明書はサーバコンテナ内のディレクトリ[path]``/root/ssl-build/susemanager/``に``server.key``と``server.crt``として検索できます。 最後のディレクトリの名前は、``--set-hostname``オプションで使用されるホスト名に依存します。
+
+コンテナのホストpodmanシークレットを更新して、新しい証明書とキーを配備またはインポートします。 生成されたばかりの証明書をインポートする方法の詳細については、xref:administration:ssl-certs-imported.adoc#ssl-certs-import-replace[]を参照してください。
+
+
+
+[[ssl-certs-selfsigned-create-replace]]
+== 新しいCAおよびサーバ証明書の作成
+
+[IMPORTANT]
+====
+ルートCAを置き換える必要がある場合は注意してください。 サーバとクライアントの間の信頼チェーンを切断する可能性があります。 その場合は、管理ユーザがすべてのクライアントにログインしてCAを直接配備する必要があります。
+====
+
+
+.プロシージャ: 新しい証明書の作成
+
+. {productname}コンテナホストのコマンドプロンプトで、古い証明書ディレクトリを新しい場所に移動します。
+
++
+
+[source, shell]
+----
+mgrctl exec -- mv /root/ssl-build /root/old-ssl-build
+----
+
+. 新しいCA証明書を生成します。
+
++
+
+[source, shell]
+----
+mgrctl exec -ti -- 'rhn-ssl-tool --gen-ca --dir="/root/ssl-build" --set-country="COUNTRY" \
+--set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
+--set-org-unit="ORGANIZATION UNIT" --set-common-name="SUSE Manager CA Certificate" \
+--set-email="name@example.com"'
+----
+
++
+
+. 新しいサーバ証明書を生成します。
+
++
+
+[source, shell]
+----
+mgrctl exec -ti -- 'rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
+--set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
+--set-org-unit="ORGANIZATION UNIT" --set-email="name@example.com" \
+--set-hostname="susemanager.example.top" --set-cname="example.com"'
+----
+
++
+
+[systemitem]``set-cname``パラメータが{productname}サーバの完全修飾ドメイン名であることを確認します。 複数のエイリアスが必要な場合は複数回、[systemitem]``set-cname``パラメータを使用できます。
++
+ホスト名とcnameを使用して、各プロキシのサーバ証明書も生成する必要があります。

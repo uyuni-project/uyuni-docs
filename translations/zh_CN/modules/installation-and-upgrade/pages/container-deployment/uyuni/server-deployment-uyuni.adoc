@@ -1,0 +1,206 @@
+= {productname} Server Deployment on {opensuse} {tumbleweed}
+:revdate: 2025-10-08
+:page-revdate: {revdate}
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+
+== 部署准备工作
+
+
+本节介绍有关设置和部署 {productname} 服务器的专业知识。过程包括安装 [command]``Podman`` 和 [systemitem]``Uyuni 容器实用程序``、进行部署，然后通过 [command]``mgrctl`` 开始与容器交互。
+
+[NOTE]
+====
+This section assumes you have already configured an {opensuse} {tumbleweed} host server, whether it is running on a physical machine or within a virtual environment.
+
+https://download.opensuse.org/tumbleweed/
+====
+
+
+== 容器主机一般要求
+
+有关一般要求，请参见xref:installation-and-upgrade:general-requirements.adoc[一般要求]。
+
+An {opensuse} {tumbleweed} server should be installed from installation media.
+
+https://download.opensuse.org/tumbleweed/
+
+下面介绍此过程。
+
+[[installation-server-containers-requirements]]
+== 容器主机要求
+
+有关 CPU、RAM 和存储要求，请参见xref:installation-and-upgrade:hardware-requirements.adoc[硬件要求]。
+
+
+[IMPORTANT]
+====
+为了保证客户端能够解析 FQDN 域名，容器化服务器和主机都必须连接到正常运行的 DNS 服务器。此外，必须确保反向查找的配置正确。
+====
+
+
+== 安装用于容器的 Uyuni 工具
+
+
+.Procedure: Installing Uyuni Tools on {opensuse} {tumbleweed}
+[role="procedure"]
+____
+
+. On your local host, open a terminal window and log in.
+. Add the following repository to your {opensuse} {tumbleweed} server. You might need to use `sudo` for the following commands.
+
++
+
+----
+zypper ar https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable/images/repo/Uyuni-Server-POOL-$(arch)-Media1/ uyuni-server-stable
+----
+
++
+
+. Refresh the repository list and import the key:
+
++
+
+----
+zypper ref
+----
+
++
+
+When prompted, trust and import the new repository GPG key.
+
++
+
+. 安装容器工具：
+
++
+
+[source, shell]
+----
+zypper in mgradm mgrctl mgradm-bash-completion mgrctl-bash-completion uyuni-storage-setup-server
+----
+
+____
+
+有关 Uyuni 容器实用程序的详细信息，请参见 link:https://build.opensuse.org/repositories/systemsmanagement:Uyuni:Stable:ContainerUtils[Uyuni 容器实用程序]。
+
+
+== 配置自定义永久性存储
+
+此步骤是可选的。但是，如果您的基础架构需要自定义的永久性存储，请使用 [command]``mgr-storage-server`` 工具。
+
+有关详细信息，请参见 [command]``mgr-storage-server --help``。此工具可以简化容器存储和数据库卷的创建。
+
+如下所示使用命令：
+----
+mgr-storage-server <storage-disk-device> [<database-disk-device>]
+----
+
+例如：
+----
+mgr-storage-server /dev/nvme1n1 /dev/nvme2n1
+----
+
+[NOTE]
+====
+此命令将在 [path]``/var/lib/containers/storage/volumes`` 中创建永久性存储卷。
+
+有关详细信息，请参见 xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]。
+====
+
+
+== Install and Enable Podman
+
+Before deploying {productname}, you must install and enable [package]``podman``.
+
+.Procedure: Installing and Enabling Podman
+[role=procedure]
+____
+
+. Log in as root and install podman:
++
+[source, shell]
+----
+zypper in podman
+----
+
+. Start and enable the Podman service:
++
+[source, shell]
+----
+systemctl enable --now podman.service
+----
+
+____
+
+
+== 使用 Podman 部署 Uyuni 容器
+
+=== [command]``mgradm`` 概述
+
+使用 [command]``mgradm`` 工具将 {productname} 部署为容器。可使用两种方法将 {productname} 服务器部署为容器。本节重点介绍基本容器部署。
+
+有关使用自定义配置文件进行部署的信息，请参见 xref:installation-and-upgrade:container-management/mgradm-yaml-custom-configuration.adoc[]。
+
+可以在命令行中运行 [command]``mgradm --help`` 来了解更多信息。
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../installation-and-upgrade/partials/snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+.过程：使用 Podman 部署 Uyuni 容器
+. 在终端中以 sudo 或 root 用户身份运行以下命令。
++
+[source, shell]
+----
+sudo mgradm install podman
+----
++
+[IMPORTANT]
+====
+必须以 sudo 或 root 用户身份部署容器。如果您遗漏此步骤，终端中将显示以下错误。
+
+[source, shell]
+----
+INF Setting up uyuni network
+9:58AM INF Enabling system service
+9:58AM FTL Failed to open /etc/systemd/system/uyuni-server.service for writing 
+error="open /etc/systemd/system/uyuni-server.service: permission denied"
+----
+====
+
+. 等待部署完成。
+. 打开浏览器并访问您的服务器 FQDN。
+
+//In this section you learned how to deploy an {productname} Server container.
+
+
+
+=== 永久性卷
+
+许多用户希望指定其永久性卷的位置。
+
+[NOTE]
+====
+如果您只是在试用 {productname}，则无需指定这些卷。默认情况下，[command]``mgradm`` 会设置正确的卷。
+
+通常只需为较大规模的生产部署指定卷位置。
+====
+
+默认情况下，[command]``podman`` 将其卷存储在 [path]``/var/lib/containers/storage/volumes/`` 中。
+
+可以通过将磁盘挂载到此路径或文件系统中的预期卷路径（例如 [path]``/var/lib/containers/storage/volumes/var-spacewalk``）来为卷提供自定义存储配置。这一点对于数据库和软件包镜像尤为重要。
+
+有关容器中所有永久性卷的列表，请参见：
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+
+

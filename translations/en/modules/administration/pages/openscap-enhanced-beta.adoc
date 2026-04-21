@@ -1,0 +1,494 @@
+[[ch-openscap]]
+= Enhanced SCAP Auditing (Beta)
+:revdate: 2026-04-07
+:page-revdate: {revdate}
+
+
+== Overview
+
+{productname} introduces a modernized approach to SCAP (Security Content Automation Protocol) auditing, available as a beta feature.
+The enhanced SCAP integration streamlines compliance scanning by centralizing content management, introducing reusable policies, supporting automated remediation, and eliminating the need to pre-stage SCAP files on managed systems.
+
+[IMPORTANT]
+====
+This feature is currently in **beta**.
+You must enable the beta feature flag in your user preferences before using it.
+====
+
+
+== Enable the beta feature
+
+To access the enhanced SCAP auditing features:
+
+.Procedure: Enabling the beta feature
+[role=procedure]
+____
+. Navigate to menu:Home[User Account > My Preferences].
+
+. Check the btn:[Enable Beta Features] checkbox.
+
+. Click btn:[Submit].
+____
+
+Once enabled, additional menu entries appear under menu:Audit[OpenSCAP], and the scan scheduling interface is replaced with the new beta UI.
+
+[NOTE]
+====
+The beta feature flag is a per-user setting.
+Each user who wants to use the enhanced SCAP features must enable it individually.
+====
+
+
+
+== Key differences from legacy SCAP integration
+
+[cols="1,1", options="header"]
+|===
+| Legacy integration
+| Enhanced integration (beta)
+
+| SCAP content files must exist on the managed system beforehand
+| SCAP content is transferred automatically from the server to the managed system at scan time
+
+| No centralized content management
+| Upload and manage SCAP content centrally via the {webui}
+
+| No tailoring file management
+| Dedicated UI for uploading and managing tailoring files
+
+| Scans are configured individually each time
+| Reusable SCAP policies combine content, profiles, and tailoring files
+
+| No built-in remediation
+| Apply remediation directly from scan results, or define custom remediation scripts
+
+| No recurring scan support tied to policies
+| Schedule recurring scans linked to policies for ongoing compliance tracking
+|===
+
+
+
+== SCAP content management
+
+SCAP content files (DataStream and XCCDF) can be uploaded and managed centrally on the {productname} server.
+
+
+=== Upload SCAP content
+
+.Procedure: Uploading SCAP content
+[role=procedure]
+____
+. Navigate to menu:Audit[OpenSCAP > SCAP Content].
+
+. Click btn:[Create].
+
+. Provide a **Name** and optional **Description**.
+
+. Upload the files:
+
++
+
+--
+* **DataStream file**: The filename must end with `-ds.xml`.
+
+* **XCCDF file**: The filename must end with `-xccdf.xml`.
+
+* Both files must share the same base name (for example, `ssg-sle15-ds.xml` and `ssg-sle15-xccdf.xml`).
+
+--
+
+. Click btn:[Submit].
+____
+
+
+Uploaded files are stored on the server at [path]``/srv/susemanager/scap/ssg/content/``.
+
+
+
+=== Edit and delete SCAP content
+
+.Procedure: Editing and deleting SCAP content
+[role=procedure]
+____
+. Go to menu:Audit[OpenSCAP > SCAP Content].
+
+. Click a content entry to edit its name, description, or replace the uploaded files.
+
+. Select one or more entries and click btn:[Delete] to remove them.
+
+____
+
+[WARNING]
+====
+Deleting SCAP content that is referenced by a policy will break that policy.
+Ensure no active policies depend on the content before deleting it.
+====
+
+
+
+=== OVAL files
+
+Due to the large size of OVAL (Open Vulnerability and Assessment Language) files, they are not transferred automatically from the server to the managed system.
+If your SCAP evaluation requires OVAL files, you must ensure they are already present on the managed system before scheduling the scan.
+
+You can specify OVAL file paths when creating a SCAP policy.
+
+
+
+== Tailoring file management
+
+SCAP tailoring files allow you to customize the behavior of an SCAP profile without modifying the original content.
+The enhanced integration provides a dedicated interface for managing tailoring files.
+
+Tailoring files are scoped per organization.
+Each organization manages its own set of tailoring files independently.
+
+
+
+=== Upload a tailoring file
+
+.Procedure: Uploading a tailoring file
+[role=procedure]
+____
+. Navigate to menu:Audit[OpenSCAP > Tailoring Files].
+
+. Click btn:[Create].
+
+. Provide a **Name** and optional **Description**.
+
+. Upload the tailoring file (XML format).
+
+. Click btn:[Submit].
+
+____
+
+Tailoring files are stored on the server at [path]``/srv/susemanager/scap/tailoring-files/``.
+
+
+
+=== Editing and deleting tailoring files
+
+.Procedure: Edit and delete tailoring files
+[role=procedure]
+____
+. Navigate to menu:Audit[OpenSCAP > Tailoring Files] list.
+
+. Click a tailoring file entry to edit its name, description, or replace the file.
+
+. Select one or more entries and click btn:[Delete] to remove them.
+
+____
+
+
+
+== SCAP policies
+
+SCAP policies define a reusable combination of SCAP content, a specific profile, and an optional tailoring file.
+Policies simplify the process of scheduling consistent compliance scans across your infrastructure.
+
+
+=== Creating a policy
+
+.Procedure: Creating a policy
+[role=procedure]
+____
+. Navigate to menu:Audit[OpenSCAP > SCAP Policies].
+
+. Click btn:[Create].
+
+. Fill in the policy details:
+
++
+
+--
+Policy Name:: A unique name for the policy within your organization.
+Description:: An optional description of the policy's purpose.
+SCAP Content:: Select from the uploaded SCAP content.
+XCCDF Profile:: Select a profile from the chosen SCAP content. The list of available profiles is loaded dynamically from the content file.
+Tailoring File:: (Optional) Select a tailoring file to customize the selected profile.
+Tailoring Profile:: (Optional) If a tailoring file is selected, choose a profile from the tailoring file.
+OVAL Files:: (Optional) Comma-separated list of OVAL file paths that must exist on the managed system.
+Advanced Arguments:: (Optional) Additional `oscap` command-line arguments (for example, `--fetch-remote-resources`).
+Fetch Remote Resources:: (Optional) Enable to allow `oscap` to download remote XCCDF resources during evaluation.
+--
+
+. Click btn:[Submit].
+
+____
+
+
+
+=== Policy details and scan history
+
+Click on a policy name in the list to view its details, including:
+
+* The associated SCAP content, profile, and tailoring file.
+* A scan history showing all scans that were executed using this policy, with compliance results.
+
+
+
+=== Edit and delete policies
+
+.Procedure: Editing and deleting policies
+[role=procedure]
+____
+
+. Navigate to menu:Audit[OpenSCAP > SCAP Policies] list.
+
+. Click the edit icon to modify a policy.
+
+. Select one or more policies and click btn:[Delete] to remove them.
+
+____
+
+
+
+
+== Schedule SCAP scans
+
+
+=== Scheduling a scan for a single system
+
+.Procedure: Scheduling a scan for a single system
+[role=procedure]
+____
+. Navigate to menu:Systems[System Details > Audit > OpenSCAP > Schedule].
+
+. Select a **SCAP Policy** to use for the scan.
+
+. Choose the scan schedule:
+
++
+
+--
+* **Run now**: Execute the scan immediately.
+
+* **Schedule for later**: Pick a specific date and time.
+--
+
+. Click btn:[Schedule].
+
+____
+
+
+
+=== Schedule scans for multiple systems (SSM)
+
+
+.Procedure: Scheduling scans for multiple systems (SSM)
+[role=procedure]
+____
+. Add the target systems to the System Set Manager (SSM).
+
+. Navigate to menu:Systems[System Set Manager > Audit > Schedule].
+
+. Select a **SCAP Policy**.
+
+. Choose the scan schedule.
+
+. Click btn:[Schedule].
+
+____
+
+
+
+=== Recurring scans
+
+SCAP policies can be scheduled as recurring actions, enabling automated compliance monitoring.
+
+To set up a recurring scan, run the procedure:
+
+.Procedure: Setting up a recurring scan
+[role=procedure]
+____
+. Navigate to the recurring actions configuration for a system or system group.
+
+. Select **SCAP Policy Scan** as the action type.
+
+. Choose the SCAP policy to apply.
+
+. Configure the recurrence schedule (for example, daily, weekly).
+
+. Optionally enable **Test Mode** to simulate the scan without applying changes.
+
+____
+
+
+[NOTE]
+====
+Recurring scans are linked to the selected SCAP policy.
+If you update the policy (for example, change the profile), future recurring scans will use the updated configuration.
+====
+
+
+
+== How scans work
+
+When a scan is scheduled with the enhanced (beta) SCAP integration:
+
+. The {productname} server transfers the required SCAP content files (DataStream and XCCDF) from the server to the managed system using Salt's file management.
+. If a tailoring file is associated with the policy, it is also transferred.
+. The `oscap` tool is executed on the managed system with the appropriate parameters (profile, rules, tailoring, etc.).
+. Scan results (`results.xml` and `report.html`) are collected from the managed system and stored on the server.
+. Results are available for review in the WebUI under the system's audit section.
+
+Files are transferred to [path]``/var/cache/salt/minion/scap/`` on the managed system.
+
+[IMPORTANT]
+====
+OVAL files are **not** transferred automatically due to their large size.
+If your scan requires OVAL files, they must be present on the managed system before the scan runs.
+====
+
+
+
+[[remediation]]
+== Remediation
+
+The enhanced SCAP integration allows you to apply remediation actions directly from scan results to fix non-compliant rules.
+
+
+=== Remediation from scan results
+
+After reviewing scan results, you can apply remediation for individual rules that have failed.
+
+.Procedure: Applying remediation from scan results
+[role=procedure]
+____
+. Navigate to a completed scan's results.
+
+. Identify the non-compliant rule.
+
+. Click the remediation action to apply the fix.
+
+____
+
+
+Remediation can be applied in two ways:
+
+Bash remediation:: A shell script is executed on the managed system as root. 
+The script is derived from the SCAP content's built-in fix elements.
+
+Salt remediation:: A {salt} state is applied to the managed system. 
+This uses the `scap_beta.remediation` {salt} state with the remediation content passed as pillar data.
+
+
+
+=== Custom remediation
+
+If the built-in remediation from the SCAP content is insufficient or you need to tailor the fix for your environment, you can define custom remediation scripts.
+
+Custom remediation is scoped per organization and per rule.
+
+To save a custom remediation, follow these steps: 
+
+.Procedure: Saving a custom remediation
+[role=procedure]
+____
+. Navigate to the rule's remediation view.
+
+. Choose the script type:
+
++
+
+--
+* **Bash**: A custom shell script.
+
+* **Salt**: A custom Salt state definition.
+--
+
+. Enter or modify the remediation script.
+
+. Click btn:[Save].
+
+____
+
+
+Custom remediation overrides the default remediation from the SCAP content for the specific rule within your organization.
+
+[NOTE]
+====
+Custom remediation includes an audit trail.
+The system tracks which user created and last modified each custom remediation script.
+====
+
+
+
+=== Deleting custom remediation
+
+You can delete a custom remediation to revert to the default remediation provided by the SCAP content.
+
+Navigate to the custom remediation view and click btn:[Delete] for the specific script type.
+
+
+
+== Navigation reference
+
+When the beta feature is enabled, the following menu entries are available:
+
+[cols="1,2", options="header"]
+|===
+| Menu path
+| Description
+
+| menu:Audit[OpenSCAP > All Scans]
+| View all SCAP scan results (available with or without beta).
+
+| menu:Audit[OpenSCAP > SCAP Policies]
+| Create and manage reusable SCAP policies. _(beta only)_
+
+| menu:Audit[OpenSCAP > SCAP Content]
+| Upload and manage SCAP DataStream and XCCDF files. _(beta only)_
+
+| menu:Audit[OpenSCAP > Tailoring Files]
+| Upload and manage SCAP tailoring files. _(beta only)_
+
+| menu:Audit[OpenSCAP > XCCDF Diff]
+| Compare two SCAP scan results (available with or without beta).
+
+| menu:Audit[OpenSCAP > Advanced Search]
+| Search across all SCAP scan results (available with or without beta).
+
+| menu:Systems[System Details > Audit > OpenSCAP > Schedule]
+| Schedule a SCAP scan for a single system (uses the new policy-based UI when beta is enabled).
+
+| menu:Systems[SSM > Audit > Schedule]
+| Schedule SCAP scans for multiple systems (uses the new policy-based UI when beta is enabled).
+|===
+
+
+
+
+== Workflow example
+
+The following example demonstrates a typical workflow using the enhanced SCAP features:
+
+. **Enable beta features** in your user preferences.
+
+. **Upload SCAP content**:
++
+Navigate to menu:Audit[OpenSCAP > SCAP Content] and upload a SCAP Security Guide DataStream file (for example, `ssg-sle15-ds.xml` and `ssg-sle15-xccdf.xml`).
+
+. **Upload a tailoring file** (optional):
++
+Navigate to menu:Audit[OpenSCAP > Tailoring Files] and upload a tailoring file if you need to customize a profile.
+
+. **Create a SCAP policy**:
++
+Navigate to menu:Audit[OpenSCAP > SCAP Policies] and create a policy that references the uploaded content, selects a profile (for example, `CIS Benchmark Level 1`), and optionally includes the tailoring file.
+
+. **Schedule a scan**:
++
+Navigate to a system's menu:Audit[OpenSCAP > Schedule] tab, select the policy, and schedule the scan.
+
+. **Review results**:
++
+After the scan completes, review the results under the system's menu:Audit[OpenSCAP > List Scans] tab.
+
+. **Apply remediation**:
++
+For any non-compliant rules, apply the built-in remediation or define custom remediation scripts tailored to your environment.
+
+. **Set up recurring scans**:
++
+Configure recurring scans using the SCAP policy to maintain ongoing compliance monitoring.

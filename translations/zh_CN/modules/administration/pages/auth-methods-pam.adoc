@@ -1,0 +1,92 @@
+[[auth-methods-pam]]
+= 使用 PAM 进行身份验证
+:revdate: 2025-01-08
+:page-revdate: {revdate}
+
+{productname} 支持使用可插入身份验证模块 (PAM) 和 SSSD 的基于网络的身份验证系统。PAM 是一个库套件，可用于将 {productname} 与集中式身份验证机制相集成，让用户无需记住多个口令。{productname} 支持 LDAP、Kerberos 和其他基于网络的身份验证协议。
+
+
+== SSSD 配置
+
+
+.过程：配置 SSSD
+. 在 {productname} {webui} 中，导航到menu:用户[创建用户]，并允许新用户或现有用户使用 PAM 进行身份验证。
++
+[NOTE]
+====
+在用户名中，除了字母数字字符外，还允许使用 [literal]``-``、[literal]``_``、[literal]``.`` 和 [literal]``@``。
+====
+. 选中[guimenu]``可插入身份验证模块 (PAM)`` 复选框。
+. 在服务器容器中配置 SSSD。在 {productname} 容器主机的命令提示符处，以 root 身份进入服务器容器：
++
+
+----
+mgrctl term
+----
+
+. 在容器内部，执行以下步骤：
++
+.. 根据您的配置编辑 [path]``/etc/sssd/sssd.conf``。有关示例，请参见 xref:administration:auth-methods-pam.adoc#auth-methods-pam-ad[]。
+.. 完成后，退出容器：
++
+----
+exit
+----
+. 使用以下命令重启 {productname}：
++
+----
+mgradm restart
+----
+
+
+
+[IMPORTANT]
+====
+在 {productname} {webui} 中更改口令只会更改 {productname} Server 上的本地口令。如果为该用户启用 PAM，则可能根本不会使用本地口令。例如，在上面的示例中，Kerberos 口令并未更改。使用网络服务的口令更改机制来更改这些用户的口令。
+====
+
+
+有关配置 PAM 的详细信息，请参见《{sles} 安全指南》，其中提供了一个通用示例，该示例同样适用于其他基于网络的身份验证方法。此外，它还介绍了如何配置 Active Directory (AD) 服务。有关详细信息，请参见 link:{sles-base-os-documentation}/part-auth.html[]。
+
+
+
+[[auth-methods-pam-ad]]
+=== LDAP 与 Active Directory 集成的示例
+
+要将 LDAP 与 Active Directory 集成，可以使用以下示例。
+
+在代码段中，根据您的环境更改以下占位符：
+
+[literal]``$domain``::
+您的域名
+[literal]``$ad_server``::
+未从 [literal]``$domain`` [literal]``$uyuni-hostname`` 中自动检测到的 AD 服务器的 FQDN：此 AD 客户端应该知道的计算机名称。如果未设置，则为 [literal]``uyuni-server.mgr.internal``。
+
+
+[path]``/etc/sssd/sssd.conf`` 的示例代码段：
+
+----
+[sssd]
+config_file_version = 2
+services = nss, pam
+domains = $domain
+
+[nss]
+
+[pam]
+
+[domain/$domain]
+id_provider = ad
+chpass_provider = ad
+access_provider = ad
+auth_provider = ad
+
+ad_domain = $domain
+ad_server = $ad_server
+ad_hostname = $uyuni-hostname
+
+ad_gpo_map_network = +susemanager
+
+krb5_keytab = FILE:/etc/rhn/krb5.conf.d/krb5.keytab
+krb5_ccname_template = FILE:/tmp/krb5cc_%{uid}
+----

@@ -1,0 +1,125 @@
+[[security-repo-metadata]]
+= 리포지토리 메타데이터
+:revdate: 2024-12-16
+:page-revdate: {revdate}
+
+리포지토리 메타데이터에 서명하려면 사용자 정의 GPG 키가 필요합니다.
+
+[IMPORTANT]
+====
+서버 컨테이너 내부의 셸에 액세스하려면 컨테이너 호스트에서 [literal]``mgrctl term``을 실행합니다.
+====
+
+.Procedure: Generating a custom GPG key
+[role=procedure]
+____
+. 루트 사용자로 [command]``gpg`` 명령을 사용하여 새 키를 생성합니다.
+
++
+----
+mgrctl exec -it -- gpg --full-generate-key
+----
+
+. 프롬프트에서 [systemitem]``RSA``를 2048비트 크기의 키 유형으로 선택하고, 키의 적절한 만료 날짜를 선택합니다.
+    새 키에 대한 세부 사항을 확인하고 [systemitem]``y``를 입력하여 확인합니다.
+
+. 프롬프트에서 키와 연결할 이름 및 이메일 주소를 입력합니다.
+    원하는 경우, 키를 식별하는 데 도움이 되는 설명을 추가할 수도 있습니다. 사용자 ID에 만족하면 [systemitem]``O``를 입력하여 확인합니다.
+
+. 프롬프트에서 키를 보호하기 위한 비밀번호를 입력합니다.
+
+. 키는 자동으로 키링에 추가되어야 합니다.
+    키링에 키를 나열하여 확인합니다.
+
++
+----
+mgrctl exec -- gpg --list-keys
+----
+
+. [filename]``/etc/rhn/signing.conf`` 구성 파일에 키링의 비밀번호를 추가합니다. 이 작업을 수행하려면 텍스트 편집기에서 파일을 열고 다음 라인을 추가합니다.
+
++
+----
+GPGPASS="password"
+----
+____
+
+
+GPG 키 갱신에 대한 자세한 내용은 xref:administration:troubleshooting/tshoot-sync.adoc[]에서 확인할 수 있습니다.
+
+
+[command]``mgr-sign-metadata-ctl`` 명령을 사용하여 명령줄에서 메타데이터 서명을 관리할 수 있습니다.
+
+
+.Procedure: Enabling metadata signing
+[role=procedure]
+____
+. 사용할 키의 짧은 식별자를 알아야 합니다.
+    사용할 수 있는 짧은 형식의 공용 키를 나열할 수 있습니다.
+
++
+----
+mgrctl exec -- gpg --keyid-format short --list-keys
+...
+pub   rsa4096/3E7BFE0A 2019-04-02 [SC] [expires: 2029-04-01]
+      A43F9EC645ED838ED3014B035CFA51BF3E7BFE0A
+uid         [ultimate] SUSE Manager
+sub   rsa4096/118DE7FF 2019-04-02 [E] [expires: 2029-04-01]
+----
+
++
+
+. [command]``mgr-sign-metadata-ctl`` 명령으로 메타데이터 서명을 활성화합니다.
+
++
+----
+mgrctl exec -- mgr-sign-metadata-ctl enable 3E7BFE0A
+OK. Found key 3E7BFE0A in keyring.
+DONE. Set key 3E7BFE0A in /etc/rhn/signing.conf.
+DONE. Enabled metadata signing in /etc/rhn/rhn.conf.
+DONE. Exported key 3E7BFE0A to /srv/susemanager/salt/gpg/mgr-keyring.gpg.
+DONE. Exported key 3E7BFE0A to /var/spacewalk/gpg/<KEY_NAME>.key.
+NOTE. For the changes to become effective run:
+   mgr-sign-metadata-ctl regen-metadata
+----
+
+. 다음 명령으로 구성이 올바른지 확인합니다.
+
++
+----
+mgrctl exec -- mgr-sign-metadata-ctl check-config
+----
+
+. Restart the container for the configuration changes to be detected.
+
++
+----
+mgradm restart
+----
+
++
+. Schedule metadata regeneration to replace all metadata with new signed versions.
+
++
+----
+mgrctl exec -- mgr-sign-metadata-ctl regen-metadata
+----
+____
+
+
+[command]``mgr-sign-metadata-ctl`` 명령을 사용하여 다른 작업을 수행할 수도 있습니다. 전체 목록을 보려면 [command]``mgr-sign-metadata-ctl --help``를 사용합니다.
+
+리포지토리 메타데이터 서명은 전역 옵션입니다. 활성화되면 서버의 모든 소프트웨어 채널에서 활성화됩니다. 이는 서버에 연결된 모든 클라이언트가 패키지를 설치하거나 업데이트하려면 새 GPG 키를 신뢰해야 함을 의미합니다.
+
+
+
+.Procedure: Importing GPG keys on clients
+[role=procedure]
+____
+. 클라이언트에 GPG 키를 배포하면 Salt 상태 작업을 수행할 수 있습니다.
+
+. {productname} {webui}를 사용하여 highstate를 적용합니다.
+
+____
+
+GPG 키 문제 해결에 대한 자세한 내용은 xref:administration:troubleshooting/tshoot-sync.adoc[]에서 확인할 수 있습니다.

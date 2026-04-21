@@ -1,0 +1,145 @@
+[[setup-ansible-control-node]]
+= 设置 Ansible 控制节点
+:revdate: 2025-06-11
+:page-revdate: {revdate}
+
+要设置 Ansible 控制节点，请在 {productname} {webui} 中执行以下步骤。
+
+[NOTE]
+====
+
+要将客户端配置为 Ansible 控制节点，必须在该系统上安装 Ansible 软件包。通常，Ansible 软件包应从操作系统供应商的官方软件储存库获取。例如，在 {sle} 15 SP6 及 SP7 上，可通过 [literal]``系统管理模块``获取 Ansible。
+====
+
+
+
+.Procedure: Setting up Ansible Control Node on a {sle} 15 SP6 or SP7 system
+[role=procedure]
+____
+. 在 {productname} {webui} 中，导航到menu:管理[安装向导 > 产品]，校验是否已选择并同步带有[literal]``系统管理模块``和所需 [literal]``Python 3 模块``的 [literal]``SUSE Linux Enterprise Server 15 SP6 x86_64``（或更高版本）。
+
+. 部署 {sle} 15 SP6（或更高版本）客户端。
+
+. 在 {productname} {webui} 中，导航到客户端的menu:系统[概览]页面。选择menu:软件[软件通道]，并为客户端订阅 [literal]``SUSE Linux Enterprise Server 15 SP6 x86_64``（或更高版本）、[literal]``系统管理模块``和 [literal]``Python 3 模块``通道。
+
+. 选择客户端的menu:细节[属性]。在[literal]``附加系统类型``列表中启用 [guimenu]``Ansible 控制节点``，然后单击 btn:[更新属性]。
+
+. 导航到客户端概览页面，选择menu:状态[Highstate]，然后单击 btn:[应用 Highstate]。
+
+. 选择menu:事件[]选项卡并校验 Highstate 的状态。
+____
+
+[NOTE]
+====
+如果需要在 {sle} 15 SP4 或 SP5 客户端上安装更新版本的 Ansible，必须启用 [literal]``Python 3 模块``。
+====
+
+[NOTE]
+====
+较新的 Ansible 版本已不再支持管理使用过时 Python 版本的节点。如果受管节点仍然默认使用较旧 Python 版本，在运行剧本时可能会遇到连接错误或执行失败。为解决此问题，用户应在条件允许的情况下升级受管节点上的 Python，并在 Ansible 清单或配置中设置正确的 Python 解释器。
+====
+
+
+
+
+[[configure-ansible-inventory-files]]
+== 创建 Ansible 清单文件
+
+
+Ansible 集成工具会将剧本部署为清单文件。请为表 1 中列出的每个操作系统创建一个清单文件。
+
+.过程：创建 Ansible 清单文件
+[role=procedure]
+____
+. 创建主机并将其添加到由 Ansible 管理的清单文件。Ansible 清单的默认路径为 [path]``/etc/ansible/hosts``。
++
+
+.清单示例
+----
+client240.mgr.example.org
+client241.mgr.example.org
+client242.mgr.example.org
+client243.mgr.example.org ansible_ssh_private_key_file=/etc/ansible/some_ssh_key
+
+[mygroup1]
+client241.mgr.example.org
+client242.mgr.example.org
+
+[mygroup2]
+client243.mgr.example.org
+
+[all:vars]
+ansible_ssh_private_key_file=/etc/ansible/my_ansible_private_key
+----
+
+
+
+. 在 {productname} {webui} 中的 [guimenu]``Ansible`` 选项卡内，导航到 menu:Ansible[控制节点]，将清单文件添加到该控制节点中。
+
+. 在[literal]``剧本目录``部分下，将 [literal]``/usr/share/scap-security-guide/ansible`` 添加到[literal]``添加剧本目录``字段中，然后单击 btn:[保存]。
+
+. 在[literal]``清单文件``下，将您的清单文件位置添加到[literal]``添加清单文件``字段，然后单击 btn:[保存]。
++
+.示例
+----
+/etc/ansible/sles15
+/etc/ansible/sles12
+/etc/ansible/centos7
+----
++
+
+有关更多剧本示例，请参见 link:https://github.com/ansible/ansible-examples[]。
+____
+
+
+
+== 与 Ansible 节点建立通信
+
+.Procedure: Establishing communication with Ansible Nodes
+[role=procedure]
+____
+. 创建您要在清单中使用的 SSH 密钥。
+
++
+
+----
+ssh-keygen -f /etc/ansible/my_ansible_private_key
+----
+
+. 将生成的 SSH 密钥复制到 Ansible 受管客户端。示例：
+
++
+
+----
+ssh-copy-id -i /etc/ansible/my_ansible_public_key root@client240.mgr.example.org
+----
+
+. 如下所示在 [path]``/etc/ansible/ansible.cfg`` 中声明私用密钥：
++
+
+----
+private_key_file = /etc/ansible/my_ansible_private_key
+----
+
++
+
+请将 [path]``my_ansible_private_key`` 替换为包含私用密钥的文件的文件名。
+
+. 通过从控制节点执行以下命令来测试 Ansible 是否正常运行：
++
+
+----
+ansible all -m ping
+ansible mygroup1 -m ping
+ansible client240.mgr.example.org -m ping
+----
+
+____
+
+现在您可以运行更新。有关详细信息，请参见 xref:administration:ansible-compliance-as-code.adoc[]。
+
+
+// bsc#1213077 #9
+// section on how to create playbooks, and how to schedule their execution.
+// Add a description of the "Playbooks" tab, in general context.
+// There is a very summarized descriptions in next section "Compliance as code", but we // need a description of the playbooks tab that is independent of usage with openscap.

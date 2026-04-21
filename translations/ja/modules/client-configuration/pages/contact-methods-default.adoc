@@ -1,0 +1,38 @@
+[[contact-methods-salt]]
+= デフォルトの接続メソッド
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+
+特別な必要がない限り、{salt}プロトコルを使用するデフォルトの接続メソッドを推奨します。 デフォルトでは、{salt}バンドル実装([package]``venv-salt-minion``)が配備されます。 {salt}の全般的な詳細については、xref:specialized-guides:salt/salt-overview.adoc[]を参照してください。
+
+ifeval::[{mlm-content} == true]
+
+デフォルトの接続メソッド([literal]``デフォルト``)は最適なスケールメソッドです。{productname}のすべての新機能がサポートされています。
+
+[IMPORTANT]
+====
+いわゆる従来の接続プロトコルは、{productname} 5.0以降ではサポートされなくなりました。{productname} 4から5にアップグレードする前に、従来のプロキシを含む既存の従来のクライアントを{salt}に移行するか、{salt}プロキシで置き換える必要があります。
+
+従来の{productname} 4クライアントから{salt}クライアントへの移行の詳細については、link:https://documentation.suse.com/suma/4.3/en/suse-manager/client-configuration/contact-methods-migrate-traditional.html[]を参照してください。
+====
+
+endif::[]
+
+ソフトウェア更新は一般的にサーバからクライアントにプッシュされます。接続はクライアントから開始されます。つまり、クライアント上ではなくサーバ上でポートを開く必要があります。{salt}クライアントは{salt} minionとしても知られます。{productname} Serverはすべてのクライアントにデーモンをインストールします。
+
+非接続設定で{salt}クライアントを使用する必要がある場合、SSH Pushを接続メソッドとして設定できます。この接続メソッドでは、クライアントをDMZと呼ばれるファイアウォール保護ゾーンに配置できます。SSH Pushの詳細については、xref:client-configuration:contact-methods-saltssh.adoc[]を参照してください。
+
+
+
+[[onboarding-details]]
+== オンボードの詳細
+
+
+{salt}には、Minionのキーを保持する専用のデータベースがあります。このデータベースと{productname}のデータベースとの同期を保つ必要があります。キーが{salt}で受け入れられるとすぐに、{productname}でオンボーディングプロセスが開始されます。
+
+このオンボーディングプロセスでは、``minion_id``と``machine-id``を検索することで、既存のシステムが{productname}のデータベース内で検索されます。この結果に応じて、次のようなシナリオが考えられます。
+
+* 何も見つからない場合、新しいシステムが作成されます。
+* ``minion_id``または``machine-id``を持つエントリが見つかった場合、そのシステムが、新しいシステムに一致するように移行されます。
+* 両方のエントリに一致する項目があり、それらが同じシステム上にない場合、オンボーディングプロセスは中止されてエラーが発生します。
+* この場合、管理者が少なくとも1つのシステムを削除して競合を解決する必要があります。

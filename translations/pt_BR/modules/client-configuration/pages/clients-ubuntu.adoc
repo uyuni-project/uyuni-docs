@@ -1,0 +1,318 @@
+[[clients-ubuntu]]
+= Registering {ubuntu} Clients
+:revdate: 2025-03-13
+:page-revdate: {revdate}
+
+This section contains information about registering clients running {ubuntu} operating systems.
+
+ifeval::[{mlm-content} == true]
+
+// Use list format: repository URLs / packages and metadata / version info
+[IMPORTANT]
+====
+* Packages and metadata are provided by Ubuntu, not by {suse}.
+* For supported products, see the release notes and the support table at xref:client-configuration:supported-features-ubuntu.adoc[].
+====
+endif::[]
+
+ifeval::[{mlm-content} == true]
+
+{productname} supports {ubuntu} 22.04 LTS and 24.04 LTS clients using {salt}.
+endif::[]
+
+Bootstrapping is supported for starting {ubuntu} clients and performing initial state runs such as setting repositories and performing profile updates. However, the root user on {ubuntu} is disabled by default, so to use bootstrapping, you require an existing user with [command]``sudo`` privileges for Python.
+
+[IMPORTANT]
+====
+Canonical does not endorse or support {productname}.
+====
+
+== Add Software Channels
+
+
+Before you register {ubuntu} clients to your {productname} Server, you need to add the required software channels, and synchronize them.
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$arch-other-note.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/arch-other-note.adoc[]
+endif::[]
+
+ifeval::[{mlm-content} == true]
+
+The products you need for this procedure are:
+
+[[ubuntu-channels-wizard]]
+[cols="1,1", options="header"]
+.Ubuntu Products - WebUI
+|===
+
+| OS Version     | Product Name
+| {ubuntu} 24.04 | Ubuntu 24.04
+| {ubuntu} 22.04 | Ubuntu 22.04
+|===
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$addchannels_vendor_webui.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/addchannels_vendor_webui.adoc[]
+endif::[]
+
+Alternatively, you can add channels at the command prompt. The channels you need for this procedure are:
+
+[[ubuntu-channels-cli]]
+[cols="1,1", options="header"]
+.Ubuntu Channels - CLI
+|===
+
+| OS Version     | Base Channel
+| {ubuntu} 24.04 | ubuntu-2404-amd64-main-amd64
+| {ubuntu} 22.04 | ubuntu-2204-amd64-main-amd64
+|===
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$addchannels_vendor_cli.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/addchannels_vendor_cli.adoc[]
+endif::[]
+
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+The channels you need for this procedure are:
+
+[[ubuntu-channels-cli-uyuni]]
+[cols="1,1,1,1,1,1", options="header"]
+.Ubuntu Channels - CLI
+|===
+
+| OS Version | Base Channel | Main Channel | Updates Channel | Security Channel | Client Channel
+
+| {ubuntu} 24.04 | ubuntu-2404-pool-amd64-uyuni | ubuntu-2404-amd64-main-uyuni | ubuntu-2404-amd64-main-updates-uyuni | ubuntu-2404-amd64-main-security-uyuni | ubuntu-2404-amd64-uyuni-client
+| {ubuntu} 22.04 | ubuntu-2204-pool-amd64-uyuni | ubuntu-2204-amd64-main-uyuni | ubuntu-2204-amd64-main-updates-uyuni | ubuntu-2204-amd64-main-security-uyuni | ubuntu-2204-amd64-uyuni-client
+|===
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$addchannels_novendor_cli.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/addchannels_novendor_cli.adoc[]
+endif::[]
+
+[IMPORTANT]
+====
+You need all the new channels fully synchronized before bootstrapping any Ubuntu client.
+====
+
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+
+== Mirror Ubuntu ESM packages
+
+Canonical provides https://ubuntu.com/security/esm[Expanded Security Maintenance] (**ESM**) packages for https://ubuntu.com/pro[Ubuntu Pro] users and customers. These packages offer longer maintenance (_10 to 12 years_) for several operating system components and selected applications.
+
+These repositories can also be synchronized within {productname} if you extract the required **GPG keys** and your personal **Bearer Token** from a system registered to Ubuntu Pro.
+
+
+=== Extract GPG keys and Bearer Token
+
+Register an Ubuntu host with Ubuntu Pro. You will find your personal registration token in the https://ubuntu.com/pro/dashboard[Ubuntu Pro Dashbaord]. An https://login.ubuntu.com/[Ubuntu One acconut] is required for this.
+
+----
+sudo apt-get install ubuntu-advantage-tools
+sudo pro attach <perosnal_token>
+----
+
+After registration, you will find the Bearer Token in the file `/etc/apt/auth.conf.d/90ubuntu-advantage`:
+
+----
+machine esm.ubuntu.com/apps/ubuntu/ login bearer password <token>  # ubuntu-pro-client
+machine esm.ubuntu.com/infra/ubuntu/ login bearer password <token>  # ubuntu-pro-client
+----
+
+[NOTE]
+====
+One dedicated bearer token is used per repository.
+====
+
+Configure the following repositories within {productname}:
+
+=== Configure Ubuntu ESM repositories
+
+Use the following URLs for creating the repositories:
+
+[[ubuntu-esm-repositories]]
+[cols="1,1", options="header"]
+.Ubuntu ESM repositories
+|===
+
+| URL     | Description
+| https://bearer:<token>@esm.ubuntu.com/infra/ubuntu/dists/<release>-infra-updates/main/binary-<arch>/ | Operating system functional updates
+| https://bearer:<token>@esm.ubuntu.com/infra/ubuntu/dists/<release>-infra-security/main/binary-<arch>/ | Operating system security updates
+| https://bearer:<token>@esm.ubuntu.com/apps/ubuntu/dists/<release>-apps-updates/main/binary-<arch>/ | Application functional updates
+| https://bearer:<token>@esm.ubuntu.com/apps/ubuntu/dists/<release>-apps-security/main/binary-<arch>/ | Application security updates
+|===
+
+Replace `<token>` with your personal Bearer Token. Also, `arch` and `release` must be replaced with one of the following values:
+
+[[ubuntu-esm-archs-releases]]
+[cols="1,1", options="header"]
+.Ubuntu ESM architectures and releases
+|===
+
+| Architectures | Releases
+| `amd64`, `arm64`, `armel`, `armhf`, `i386`, `powerpc`, `ppc64el`, `s390x` | `bionic`, `focal`, `jammy`, `noble`, `trusty`, `xenial`
+|===
+
+In order for {productname} to synchronize the repositories, the corresponding GPG keys (`ubuntu-advantage-esm-infra-trusty.gpg`, `ubuntu-advantage-esm-apps.gpg`) must be imported. These are located on a system registered with Ubuntu Pro under `/etc/apt/trusted.gpg.d`. Copy these files to the {productname} system and import them as follows:
+
+----
+mgradm gpg add /path/to/gpg.key
+----
+
+Create the appropriate child channels below already synchronized {ubuntu} parent channels. After that, repositories can be synchronized.
+
+[IMPORTANT]
+====
+The procedure shown here can be used to circumvent the subscription limitations - however, this constitutes a breach of the Terms of Service and may have **legal consequences**. There must always be sufficient subscriptions for the number of systems used.
+====
+
+endif::[]
+
+== Check Synchronization Status
+
+ifeval::[{mlm-content} == true]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_webui_mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_webui_mlm.adoc[]
+endif::[]
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_webui_uyuni.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_webui_uyuni.adoc[]
+endif::[]
+
+endif::[]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_cli.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_cli.adoc[]
+endif::[]
+
+[NOTE]
+====
+{ubuntu} channels can be very large. Synchronization can sometimes take several hours.
+====
+
+
+
+== Manage GPG Keys
+
+Clients use GPG keys to check the authenticity of software packages before they are installed. Only trusted software can be installed on clients.
+
+[IMPORTANT]
+====
+Trusting a GPG key is important for security on clients. It is the task of the administrator to decide which keys are needed and can be trusted. Because a software channel cannot be used when the GPG key is not trusted, the decision of assigning a channel to a client depends on the decision of trusting the key.
+====
+
+For more information about GPG keys, see xref:client-configuration:gpg-keys.adoc[].
+
+
+== Root Access
+
+The root user on {ubuntu} is disabled by default for SSH access.
+
+To be able to onboard using a regular user, you need to edit the [filename]``sudoers`` file.
+
+[NOTE]
+====
+This issue happens with self-installed versions of {ubuntu}. If the default user has been granted administrative privileges during installation time, a password is required to perform privilege escalation using [command]``sudo``. With cloud instances this does not happen because [command]``cloud-init`` automatically creates a file under [path]``/etc/sudoers.d`` and grants privilege escalation through [command]``sudo`` without the need for a password.
+====
+
+
+
+=== Grant Root User Access
+
+.Procedure: Granting Root User Access
+
+. On the client, edit the [filename]``sudoers`` file:
++
+----
+sudo visudo
+----
++
+Grant [command]``sudo`` access to the user by adding this line at the end of the [filename]``sudoers`` file. Replace [systemitem]``<user>`` with the name of the user that is bootstrapping the client in the {webui}:
++
+----
+<user>  ALL=NOPASSWD: /usr/bin/python, /usr/bin/python2, /usr/bin/python3, /var/tmp/venv-salt-minion/bin/python
+----
+
+[NOTE]
+====
+This procedure grants root access without requiring a password, which is required for registering the client. When the client is successfully installed it runs with root privileges, so the access is no longer required. We recommend that you remove the line from the [path]``sudoers`` file after the client has been successfully installed.
+====
+
+
+
+=== Bootstrap as Install-created User via SSH
+
+To bootstrap an Ubuntu client via SSH you must add the install-created user to the sudo group. Then run the bootstrap script from the client.
+
+.Procedure: Adding Install-created User to sudo Group and Bootstrapping via SSH
+
+. On the client, as root, run from the command line (replace [literal]``<username>`` with the name of the install-created user):
++
+
+----
+sudo usermod -aG sudo <username>
+----
+
+. Bootstrap the client system from its command line (replace [literal]``<SERVER_FQDN>`` with the fully qualified domain name of the {productname} Server):
++
+
+----
+sudo su -
+curl -Sks https://<SERVER_FQDN>/pub/bootstrap/bootstrap-script.sh | /bin/bash
+----
+
+[IMPORTANT]
+====
+{ubuntu} can only be bootstrapped using the corresponding {ubuntu} bootstrap script run from the client system's command line after issuing [command]``sudo su -`` as above. It cannot be bootstrapped via the {productname} {webui} due to the fact that the root user is disabled on {ubuntu} by default, and that the {webui} does not permit for privilege escalation of the {ubuntu} install-created user.
+====
+
+
+
+== Register Clients
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$create_bootstrap_repo_register.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/create_bootstrap_repo_register.adoc[]
+endif::[]
+

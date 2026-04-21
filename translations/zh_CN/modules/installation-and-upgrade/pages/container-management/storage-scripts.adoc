@@ -1,0 +1,115 @@
+[[understanding-storage-scripts]]
+= 了解 [command]``mgr-storage-server`` 和 [command]``mgr-storage-proxy``
+:revdate: 2025-07-07
+:page-revdate: {revdate}
+
+ifeval::[{mlm-content} == true]
+
+[command]``mgr-storage-server`` 和 [command]``mgr-storage-proxy`` 是 {productname} 5.0 及更高版本提供的辅助脚本。
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+[command]``mgr-storage-server`` 和 [command]``mgr-storage-proxy`` 是 {productname} 提供的辅助脚本。
+endif::[]
+
+它们用于为 {productname} 服务器和代理指定存储配置。
+
+这些脚本以磁盘设备作为参数。[command]``mgr-storage-proxy`` 仅需要一个参数，即存储磁盘设备。[command]``mgr-storage-server`` 需要用户指定存储磁盘设备，此外还可选择传入第二个参数，即专用数据库磁盘设备。虽然普通存储设备和数据库存储设备可位于同一磁盘，但建议将数据库部署在专用的高性能磁盘上，以确保实现更优的性能和更便捷的管理。
+
+
+== 这些工具的功能
+
+
+[command]``mgr-storage-server`` 和 [command]``mgr-storage-proxy`` 均会执行以下标准存储设置操作：
+
+* 验证提供的存储设备。
+* 确保设备为空且适合使用。
+* 在指定设备上创建 XFS 文件系统。
+* 临时挂载设备以进行数据迁移。
+* 将相关存储目录迁移到新设备。
+* 在 [path]``/etc/fstab`` 中创建条目，确保存储设备在系统引导时自动挂载。
+* 将设备重新挂载到最终位置。
+
+
+.工具的专属特性
+[cols="1,3a"]
+|===
+| `mgr-storage-server`
+|
+Optionally supports a separate device for database storage.
+
+Stops {productname} services during migration, restarts them afterward.
+
+Moves Podman volumes directory [path]``/var/lib/containers/storage/volumes`` to the prepared storage, and optionally [path]``/var/lib/containers/storage/volumes/var-pgsql`` to the prepared database storage.
+
+| `mgr-storage-proxy`
+|
+Focuses only on proxy storage (no database storage support).
+
+Stops and restarts the proxy service during migration.
+
+Moves podman volumes directory [path]``/var/lib/containers/storage/volumes`` to the prepared storage.
+
+|===
+
+
+[NOTE]
+====
+这两个工具均会自动执行标准的 Linux 存储操作，不存在 Linux 管理员手动操作之外的隐藏逻辑或自定义逻辑。
+====
+
+
+== 这些工具**不**具备的功能
+
+* **不会**创建或管理 LVM 卷。
+* **不会**配置 RAID 或复杂存储拓扑。
+* **不会**阻止您在完成设置后使用常规 Linux 工具管理存储设备。
+* **不**提供动态调整大小或扩展功能 — 这些操作必须通过标准 Linux 存储工具完成。
+
+
+== 安装后的存储管理
+
+完成存储配置后，您可通过标准 Linux 命令安全地管理存储设备。
+
+
+=== 示例
+
+.示例 1：扩展存储容量（如果使用 LVM）
+
+----
+lvextend -L +10G /dev/your_vg/your_lv
+xfs_growfs /var/lib/containers/storage/volumes
+----
+
+
+.示例 2：迁移到更大容量的磁盘 
+
+. 添加并格式化新磁盘。
+. 临时挂载新磁盘。
+. 使用 `rsync` 复制数据。
+. 更新 `/etc/fstab`。
+. 将新磁盘重新挂载到适当位置。
+
+
+== 适用与不适用场景
+
+[IMPORTANT]
+====
+更改存储设置前，务必创建备份。
+====
+
+* **仅**在初始存储设置或迁移到新存储设备（需要使用工具处理数据迁移和更新 `/etc/fstab`）时使用这些工具。
+* **不要**重新运行这些脚本来扩容存储空间或调整其大小。要执行此类操作，请使用标准 Linux 工具（如 [literal]``lvextend``、[literal]``xfs_growfs``）。
+
+
+== 总结
+
+[command]``mgr-storage-server`` 和 [command]``mgr-storage-proxy`` 会根据标准 Linux 存储实践，自动完成 {productname} 组件的初始持久化存储设置，且不会限制或干扰后续的标准存储管理操作。
+
+完成设置后，您可继续使用熟悉的 Linux 工具管理存储设备。
+
+[IMPORTANT]
+====
+数据库存储卷空间耗尽会对系统运行造成严重影响。由于容器化环境尚未适配磁盘使用率通知功能，建议用户通过 Grafana、Prometheus 或其他偏好的工具，自行监控 Podman 卷的磁盘空间使用情况，尤其需要关注位于 [path]``/var/lib/containers/storage/volumes/`` 下的 var-pgsql 卷。
+====

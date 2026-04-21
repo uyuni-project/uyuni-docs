@@ -1,0 +1,32 @@
+[[troubleshooting-passing-grains-to-start-event]]
+= 对将 Grain 传递给启动事件时出现的问题进行查错
+:revdate: 2022-10-18
+:page-revdate: {revdate}
+
+Salt 客户端每次启动时都会将 ``machine_id`` grain 传递给 {productname}。{productname} 使用此 grain 确定客户端是否已注册。此过程需要进行同步 Salt 调用。同步 Salt 调用会阻止其他进程，因此如果您有大量客户端同时启动，该过程可能会造成很严重的延迟。
+
+为了解决此问题，Salt 中引入了一项新功能来避免进行单独的同步 Salt 调用。
+
+要使用此功能，您可以在支持该功能的客户端上向客户端配置中添加一个配置参数。
+
+如果想要更轻松地完成此过程，您可以使用 ``mgr_start_event_grains.sls`` 助手 Salt 状态。
+
+[NOTE]
+====
+这仅适用于已注册的客户端。如果您是最近注册 Salt 客户端的，系统默认会添加此配置参数。
+====
+
+
+在 {productname} Server 上的命令提示符下，使用以下命令启用 ``start_event_grains`` 配置助手：
+
+----
+salt '*' state.sls util.mgr_start_event_grains
+----
+
+此命令会在客户端的配置文件中添加所需的配置，并在客户端重启时应用更改。如果您的客户端非常多，可以改用批处理模式执行该命令：
+
+----
+salt --batch-size 50 '*' state.sls mgr_start_event_grains
+----
+
+

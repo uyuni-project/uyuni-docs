@@ -1,0 +1,156 @@
+== 프록시 구성 생성
+
+
+{productname} 프록시의 구성 아카이브는 {productname} 서버에서 생성됩니다. 각 추가 프록시에는 자체 구성 아카이브가 필요합니다.
+
+컨테이너화된 {productname} 프록시의 경우 변경 사항을 적용하려면 새 프록시 구성 파일을 빌드한 다음 컨테이너를 다시 배포해야 합니다. 이는 SSL 인증서를 포함한 설정을 업데이트하는 프로세스입니다.
+
+//[NOTE]
+//====
+//2 GB represents the default proxy squid cache size.
+//This will need to be adjusted for your environment.
+//====
+
+[IMPORTANT]
+====
+Podman 배포의 경우, 이 프록시 구성을 생성하기 전에 {productname} 프록시의 컨테이너 호스트가 {productname} 서버에 클라이언트로 등록되어 있어야 합니다.
+====
+
+프록시 FQDN을 사용하여 등록된 클라이언트가 아닌 프록시 컨테이너 구성을 생성하는 경우(Kubernetes 사용 사례와 같이), 시스템 목록에 새 시스템 항목이 표시됩니다. 이 새 항목은 이전에 입력한 프록시 FQDN 값 아래에 표시되며 시스템 유형은 [literal]``외부``입니다.
+
+[NOTE]
+====
+Peripheral servers are always using third-party SSL certificates. If the hub server has generated the certificates for the peripheral server, it needs to generate the certificate of each proxy too.
+
+On the hub server, run the following command.
+
+[source, shell]
+----
+mgrctl exec -ti -- rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
+  --set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
+  --set-org-unit="ORGANIZATION UNIT" --set-email="name@example.com" \
+  --set-hostname=PROXY --set-cname="proxy.example.com"
+----
+
+The files to use will be
+
+. 루트 CA로 [litteral]``/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT``,
+. [litteral]``/root/ssl-build/<hostname>/server.crt`` as the proxy certificate and
+. [litteral]``/root/ssl-build/<hostname>/server.key`` as the proxy certificate's key.
+====
+
+// tag::generate-proxy-config-section[]
+=== {webui}를 사용하여 프록시 구성 생성
+
+.Procedure: Generating a Proxy Container Configuration Using {webui}
+[role=procedure]
+_____
+
+. {webui}에서 menu:Systems[프록시 구성]으로 이동하여 필요한 데이터를 입력합니다.
+
+. [guimenu]``Proxy FQDN`` 필드에 프록시의 정규화된 도메인 이름을 입력합니다.
+
+. [guimenu]``상위 FQDN`` 필드에 {productname} Server 또는 다른 {productname} Proxy에 대한 정규화된 도메인 이름을 입력하십시오.
+
+. [guimenu]``프록시 SSH 포트`` 필드에 SSH 서비스가 {productname} Proxy에서 수신 대기하는 SSH 포트를 입력하십시오. 권장 사항은 기본 포트인 8022를 유지하는 것입니다.
+
+. In the [guimenu]``Max Squid cache size [MB]`` field type maximal allowed size for Squid cache. Recommended is to use at most 80% of available storage for the containers.
+
++
+
+[NOTE]
+====
+2GB는 기본 프록시 squid 캐시 크기입니다. 사용자의 환경에 적합하도록 조정해야 합니다.
+====
+
++
+
+[guimenu]``SSL 인증서`` 선택 목록에서 {productname} 프록시에 대해 새 서버 인증서를 생성해야 하는지 또는 기존 인증서를 사용해야 하는지 선택합니다. 생성된 인증서를 {productname} 기본 제공(자체 서명) 인증서로 간주할 수 있습니다.
+
++
+
+선택에 따라 새 인증서를 생성하기 위해 CA 인증서에 서명할 경로 또는 프록시 인증서로 사용할 기존 인증서 및 해당 키에 대한 경로를 입력하십시오.
+
++
+
+서버에서 생성된 CA 인증서는 [path]``/var/lib/containers/storage/volumes/root/_data/ssl-build`` 디렉토리에 저장됩니다.
+
++
+
+기존 또는 사용자 정의 인증서와 기업 및 중간 인증서의 개념에 대한 자세한 내용은 xref:administration:ssl-certs-imported.adoc[]에서 확인할 수 있습니다.
+
+. btn:[생성]을 클릭하여 {productname} 서버에 새 프록시 FQDN을 등록하고 컨테이너 호스트에 대한 세부사항이 포함된 구성 아카이브([filename]``config.tar.gz``)를 생성합니다.
+
+. 잠시 후 다운로드할 파일이 표시됩니다. 이 파일을 로컬에 저장합니다.
+
+_____
+
+
+=== [literal]``spacecmd`` 및 자체 서명 인증서를 사용하여 프록시 구성 생성
+
+You can generate a Proxy configuration using [literal]``spacecmd``.
+
+.절차: spacecmd 및 자체 서명 인증서를 사용하여 프록시 구성 생성
+[role=procedure]
+_____
+
+. 컨테이너 호스트에 SSH로 연결합니다.
+
+. 서버 및 프록시 FQDN을 바꾸는 다음 명령을 실행합니다.
+
++
+
+----
+mgrctl exec -ti 'spacecmd proxy_container_config_generate_cert -- dev-pxy.example.com dev-srv.example.com 2048 email@example.com -o /tmp/config.tar.gz'
+----
+
+. 서버 컨테이너에서 생성된 구성을 복사합니다.
+
++
+
+----
+mgrctl cp server:/tmp/config.tar.gz .
+----
+
+_____
+
+
+
+=== [literal]``spacecmd`` 및 사용자 정의 인증서를 사용하여 프록시 구성 생성
+
+[literal]``spacecmd``를 사용하여 기본 자체 서명 인증서가 아닌 사용자 정의 인증서에 대해 프록시 구성을 생성할 수 있습니다.
+
+.절차: spacecmd 및 사용자 정의 인증서를 사용하여 프록시 구성 생성
+[role=procedure]
+_____
+
+. 서버 컨테이너 호스트에 SSH로 연결합니다.
+
+. Execute the following commands, replacing the Server and Proxy FQDN:
+
++
+----
+for f in ca.crt proxy.crt proxy.key; do
+  mgrctl cp $f server:/tmp/$f
+done
+mgrctl exec -ti 'spacecmd proxy_container_config -- -p 8022 pxy.example.com srv.example.com 2048 email@example.com /tmp/ca.crt /tmp/proxy.crt /tmp/proxy.key -o /tmp/config.tar.gz'
+----
+
++
+. 설정에서 중간 CA를 사용하는 경우, 이를 복사하여 ``-i`` 옵션과 함께 명령에 포함시킵니다(필요한 경우 여러 번 제공 가능).
+
++
+----
+mgrctl cp intermediateCA.pem server:/tmp/intermediateCA.pem
+mgrctl exec -ti 'spacecmd proxy_container_config -- -p 8022 -i /tmp/intermediateCA.pem pxy.example.com srv.example.com 2048 email@example.com /tmp/ca.crt /tmp/proxy.crt /tmp/proxy.key -o /tmp/config.tar.gz'
+----
+
+. 서버 컨테이너에서 생성된 구성을 복사합니다.
++
+----
+mgrctl cp server:/tmp/config.tar.gz .
+----
+
+_____
+
+// end::generate-proxy-config-section[]

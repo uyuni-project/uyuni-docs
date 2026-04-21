@@ -1,0 +1,115 @@
+[[understanding-storage-scripts]]
+= [command]``mgr-storage-server``および[command]``mgr-storage-proxy``について
+:revdate: 2025-07-07
+:page-revdate: {revdate}
+
+ifeval::[{mlm-content} == true]
+
+[command]``mgr-storage-server``および[command]``mgr-storage-proxy``は、{productname} 5.0以降で提供されるヘルパースクリプトです。
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+[command]``mgr-storage-server``および[command]``mgr-storage-proxy``は、{productname}で提供されるヘルパースクリプトです。
+endif::[]
+
+これらは{productname}サーバおよびプロキシのストレージを設定するように設計されています。
+
+スクリプトはディスクデバイスを引数として受け取ります。[command]``mgr-storage-proxy``にはストレージディスクデバイス用の引数が1つ必要です。[command]``mgr-storage-server``にはストレージディスクデバイスが必要であり、オプションで専用データベースディスクデバイス用の2番目の引数を受け取ることができます。通常のストレージとデータベースストレージは同一ディスク上に配置可能ですが、パフォーマンスの向上と管理の容易さを確保するため、データベースは専用の高性能ディスクに配置することをお勧めします。
+
+
+== これらのツールの機能
+
+
+[command]``mgr-storage-server``と[command]``mgr-storage-proxy``の両方が標準のストレージセットアップ操作を実行します。
+
+* 提供されたストレージデバイスを検証します。
+* デバイスが空で使用に適していることを確認します。
+* 指定されたデバイス上にXFSファイルシステムを作成します。
+* データ移行のためデバイスを一時的にマウントします。
+* 関連するストレージディレクトリを新しいデバイスに移動します。
+* ブート時にストレージが自動的にマウントされるように、[path]``/etc/fstab``にエントリを作成します。
+* デバイスを最終的な場所で再マウントします。
+
+
+.追加のツール固有の動作
+[cols="1,3a"]
+|===
+| `mgr-storage-server`
+|
+Optionally supports a separate device for database storage.
+
+Stops {productname} services during migration, restarts them afterward.
+
+Moves Podman volumes directory [path]``/var/lib/containers/storage/volumes`` to the prepared storage, and optionally [path]``/var/lib/containers/storage/volumes/var-pgsql`` to the prepared database storage.
+
+| `mgr-storage-proxy`
+|
+Focuses only on proxy storage (no database storage support).
+
+Stops and restarts the proxy service during migration.
+
+Moves podman volumes directory [path]``/var/lib/containers/storage/volumes`` to the prepared storage.
+
+|===
+
+
+[NOTE]
+====
+どちらのツールも標準的なLinuxストレージ操作を自動化します。 Linx管理者が手動で行う範囲を超えた、隠れたロジックやカスタムロジックはありません。
+====
+
+
+== これらのツールが実行**しない**こと
+
+* LVMボリュームを作成または管理**しません**。
+* RAIDや複雑なストレージトポロジを設定**しません**。
+* セットアップ後に通常のLinuxツールを使用したストレージの管理を妨げる**ことはありません**。
+* 動的なサイズ変更や拡張機能は提供**しません**。これらは標準的なLinuxストレージツールで処理する必要があります。
+
+
+== インストール後のストレージ管理
+
+ストレージが設定されると、標準的なLinuxコマンドを使用して安全に管理できます。
+
+
+=== 例
+
+.例1: LVMを使用する場合のストレージの拡張
+
+----
+lvextend -L +10G /dev/your_vg/your_lv
+xfs_growfs /var/lib/containers/storage/volumes
+----
+
+
+.例2: 大容量ディスクへの移行 
+
+. 新規ディスクを追加してフォーマットします。
+. 一時的にマウントします。
+. ``rsync``を使用してデータをコピーします。
+. ``/etc/fstab``を更新します。
+. 正しい場所に再マウントします。
+
+
+== 使用する場合、使用しない場合
+
+[IMPORTANT]
+====
+ストレージセットアップに変更を行う前に、必ずバックアップを取ってください。
+====
+
+* これらのツールは初期ストレージセットアップ中、またはツールがデータ移行と``/etc/fstab``の更新を処理することが想定される新しいストレージへの移行時に**のみ**使用します。
+* ストレージのサイズ変更や拡張のためにこれらのスクリプトを再実行**しない**でください。このような操作には標準的なLinuxツール([literal]``lvextend``、[literal]``xfs_growfs``など)を使用してください。
+
+
+== 概要
+
+[command]``mgr-storage-server``および[command]``mgr-storage-proxy``は、標準的なLinuxストレージ手法を使用して、{productname}コンポーネントの初期永続化ストレージセットアップを自動化するのに役立ちます。これらは、その後の標準的なストレージ管理を制限したり妨げたりすることはありません。
+
+セットアップ後は、使い慣れたLinuxツールを使用してストレージの管理を続行してください。
+
+[IMPORTANT]
+====
+データベースボリュームがいっぱいになると、システム動作に重大な問題を引き起こす可能性があります。ディスク使用量の通知はまだコンテナ化された環境には適応されていないため、ユーザはPodmanボリューム自体で使用されるディスク容量を、GrafanaやPrometheusなどのツールまたは他の好ましい方法で監視することをお勧めします。[path]``/var/lib/containers/storage/volumes/``の下にあるvar-pgsqlボリュームに特に注意してください。
+====

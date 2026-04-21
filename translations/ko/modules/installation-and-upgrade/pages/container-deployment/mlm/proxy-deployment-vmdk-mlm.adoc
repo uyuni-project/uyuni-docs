@@ -1,0 +1,153 @@
+[[proxy-install-vmware]]
+= {productname} 프록시를 가상 머신으로 배포 - VMware
+:revdate: 2025-06-26
+:page-revdate: {revdate}
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+이 장에서는 {productname} {productnumber} 프록시를 이미지로 배포하기 위한 가상 머신 설정을 제공합니다. 이 설치에는 VMware가 샌드박스로 사용됩니다.
+
+
+
+// FIXME: make this section a snippet or move it to a general intro for both,
+//        KVM and VMware
+== 사용 가능한 이미지
+
+
+[IMPORTANT]
+====
+{productname} 프록시의 배포에 선호되는 방법은 다음 사용 가능한 이미지 중 하나를 사용하는 것입니다. 이러한 이미지에는 배포를 간소화하는 모든 도구가 포함되어 있습니다.
+====
+
+{productname} {productnumber} 프록시에 대한 이미지는 link:https://www.suse.com/download/suse-manager/[{productname} {productnumber} VM 이미지]에서 제공됩니다.
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-warn-images-sl-micro.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-warn-images-sl-micro.adoc[]
+endif::[]
+
+[NOTE]
+====
+Raw 이미지 준비에 대한 자세한 내용은 https://documentation.suse.com/sle-micro/6.1/html/Micro-deployment-raw-images-virtual-machines/index.html#deployment-preparing-configuration-device[]에서 확인할 수 있습니다.
+
+이미지 자체 설치에 대한 자세한 내용은 https://documentation.suse.com/sle-micro/6.1/html/Micro-deployment-selfinstall-images/index.html[]에서 확인할 수 있습니다.
+====
+
+// FIXME more archs supported?
+
+.사용할 수 있는 프록시 이미지
+[cols="3, 3", options="header"]
+|===
+| 아키텍처 | 이미지 형식
+
+| aarch64| qcow2, vmdk
+
+| x86_64  | qcow2, vmdk, 원시, 자체 설치 프로그램
+
+|===
+
+
+[[proxy-quickstart.sect.vmware.settings]]
+== 가상 머신 설정 - VMware
+
+이 섹션에서는 VMware 환경 내에서 {productname} 프록시 스토리지 파티션에 필수적인 추가 가상 디스크 생성을 중심으로 VMware 구성에 대해 설명합니다.
+
+[NOTE]
+====
+이 섹션에서는 최소 요구 사항을 명시합니다. 이러한 요구 사항은 클라이언트가 1개인 프록시와 같은 빠른 테스트 설치에 적합합니다.
+
+프로덕션 환경을 사용하고 디스크 공간에 대한 배경 정보가 필요한 경우 xref:installation-and-upgrade:hardware-requirements.adoc[] 항목을 참조하십시오.
+====
+
+.절차: VMware 가상 머신 생성
+
+. {productname} 프록시 [filename]``.vmdk`` 파일을 다운로드한 다음, 사본을 VMware 스토리지로 전송합니다.
+
+. VMware 웹 인터페이스를 사용하여 업로드된 [filename]``.vmdk`` 파일의 사본을 만듭니다. 이렇게 하면 제공된 [filename]``.vmdk`` 파일이 vSphere 하이퍼바이저에 적합한 형식으로 변환됩니다.
+
+. 게스트 OS 제품군 [systemitem]``Linux`` 및 게스트 OS 버전 {sle} 15(64비트)를 기반으로 새 가상 시스템을 생성하고 이름을 지정합니다.
+
+. 100GB(또는 그 이상)의 추가적인 [systemitem]``Hard Disk 2``를 추가합니다.
+
+. RAM 및 CPU 수를 최솟값으로 구성합니다. *)
+
+. 필요에 따라 네트워크 어댑터를 설정합니다.
+
+. VM의 전원을 켜고 최초 부팅 대화 상자(키보드 레이아웃, 사용권 계약, 표준 시간대, 루트 비밀번호)를 따릅니다.
+
+. 설치가 완료되면 루트로 로그인합니다.
+
+. 다음 섹션을 진행합니다.
+
+*) 최소 값은 xref:installation-and-upgrade:hardware-requirements.adoc#proxy-hardware-requirements[]에서 확인할 수 있습니다.
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-register-proxy-mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-register-proxy-mlm.adoc[]
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-actkey-bootstrap-proxy-mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-actkey-bootstrap-proxy-mlm.adoc[]
+endif::[]
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-generate_proxy_config.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-generate_proxy_config.adoc[]
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-transfer_proxy_config.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-transfer_proxy_config.adoc[]
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-start-proxy.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-start-proxy.adoc[]
+endif::[]
+
+
+
+=== 서비스에 사용자 정의 컨테이너 이미지 사용
+
+기본적으로 {productname} 프록시 제품군은 각 서비스에 대해 동일한 이미지 버전과 레지스트리 경로를 사용하도록 설정되어 있습니다. 그러나 [literal]``-tag`` 및 [literal]``-image``로 끝나는 설치 파라미터를 사용하여 특정 서비스에 대한 기본값을 재정의할 수 있습니다.
+
+예를 들어, 다음과 같이 사용합니다.
+
+----
+mgrpxy install podman --httpd-tag 0.1.0 --httpd-image registry.opensuse.org/uyuni/proxy-httpd /path/to/config.tar.gz
+----
+
+이는 다시 시작하기 전에 [path]``registry.opensuse.org/uyuni/proxy-httpds``가 사용할 이미지이고 [literal]``0.1.0``이 버전 태그인 httpd 서비스의 구성 파일을 조정합니다.
+
+값을 기본값으로 재설정하려면 해당 파라미터 없이 설치 명령을 다시 실행합니다.
+
+----
+mgrpxy install podman /path/to/config.tar.gz
+----
+
+이 명령은 먼저 모든 서비스의 구성을 전역 기본값으로 재설정한 다음 다시 로드합니다.

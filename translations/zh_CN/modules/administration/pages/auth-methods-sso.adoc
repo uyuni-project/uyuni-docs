@@ -1,0 +1,101 @@
+[[auth-methods-sso]]
+= 使用单点登录 (SSO) 进行身份验证
+:revdate: 2024-05-06
+:page-revdate: {revdate}
+
+{productname} 通过实现安全声明标记语言 (SAML){nbsp}2 协议来支持单点登录 (SSO)。
+
+单点登录是一种身份验证过程，它允许用户使用一组身份凭证访问多个应用程序。SAML 是一套基于 XML 的标准，用于交换身份验证和授权数据。SAML 身份服务提供者 (IdP) 向服务提供者 (SP) 提供身份验证和授权服务，例如 {productname}。{productname} 公开三个端点，必须启用它们才能进行单点登录。
+
+{productname} 中的 SSO 支持：
+
+* 使用 SSO 登录。
+* 使用服务提供者发起的单点注销 (SLO) 和身份服务提供者单点注销服务 (SLS) 注销。
+* 声明和 nameId 加密。
+* 声明签名。
+* 使用 AuthNRequest、LogoutRequest 和 LogoutResponses 进行消息签名。
+* 启用声明使用者服务端点。
+* 启用单点注销服务端点。
+* 发布 SP 元数据（可签名）。
+
+{productname} 中的 SSO 不支持：
+
+* 身份服务提供者 (IdP) 的产品选择和实现。
+* 对其他产品的 SAML 支持（请查看相关的产品文档）。
+
+有关 SSO 的示例实现，请参见 xref:administration:auth-methods-sso-example.adoc[]。
+
+
+[IMPORTANT]
+====
+如果您从默认身份验证方法更改为单点登录，则新的 SSO 身份凭证仅适用于 {webui}。``mgr-sync`` 或 ``spacecmd`` 等客户端工具仍然只能使用默认身份验证方法。
+====
+
+
+
+== 先决条件
+
+
+在开始之前，需要事先使用这些参数配置一个外部身份服务提供者。请查看 IdP 文档获取说明。
+
+
+[IMPORTANT]
+====
+IdP 用户与 {productname} 用户之间的映射在 SAML:Attribute 中指定。必须在 IdP 中配置 SAML:Attribute，并且必须在 SAML 身份验证中将其传递给 {productname}。该属性必须命名为“uid”，并且必须包含登录后与其映射的 {productname} 用户。必须在激活单点登录之前创建 {productname}。
+====
+
+
+需要以下端点：
+
+* 声明使用者服务 (ACS)：接受 SAML 消息以建立与服务提供者的会话的端点。
+    {productname} 中 ACS 的端点是：link:https://server.example.com/rhn/manager/sso/acs[]
+* 单点注销服务 (SLS)：从 IdP 发起注销请求的端点。
+    {productname} 中 SLS 的端点是：link:https://server.example.com/rhn/manager/sso/sls[]
+* 元数据：用于检索 SAML 的 {productname} 元数据的端点。
+    {productname} 中元数据的端点是：link:https://server.example.com/rhn/manager/sso/metadata[]
+
+使用用户 ``orgadmin`` 成功通过 IdP 完成身份验证后，您将以 ``orgadmin`` 用户身份登录到 {productname}，前提是 {productname} 中存在 ``orgadmin`` 用户。
+
+
+
+== 启用 SSO
+
+[NOTE]
+====
+SSO 与其他类型的身份验证是互斥的：请要么启用，要么禁用 SSO。默认已禁用 SSO。
+====
+
+[IMPORTANT]
+====
+请在服务器容器内执行相应步骤之前使用 [literal]``mgrctl term``。
+====
+
+.过程：启用 SSO
+
+. 如果您的用户在 {productname} 中尚不存在，请先创建他们。
+. 编辑 [path]``/etc/rhn/rhn.conf``，在文件末尾添加下面一行：
++
+----
+java.sso = true
+----
+. 在 [path]``/usr/share/rhn/config-defaults/rhn_java_sso.conf`` 中找到您要自定义的参数。
+    将要自定义的参数插入 [path]``/etc/rhn/rhn.conf``，并在这些参数的前面加上 [literal]``java.sso.`` 作为前缀。例如，在 [path]``/usr/share/rhn/config-defaults/rhn_java_sso.conf`` 中找到：
++
+----
+onelogin.saml2.sp.assertion_consumer_service.url = https://YOUR-PRODUCT-HOSTNAME-OR-IP/rhn/manager/sso/acs
+----
++
+要自定义此参数，请在 [path]``/etc/rhn/rhn.conf`` 中创建相应的选项并在选项名称前面加上``java.sso.`` 作为前缀：
++
+----
+java.sso.onelogin.saml2.sp.assertion_consumer_service.url = https://YOUR-PRODUCT-HOSTNAME-OR-IP/rhn/manager/sso/acs
+----
++
+要查找您需要更改的所有参数实例，请在文件中搜索占位符 [literal]``YOUR-PRODUCT`` 和 [literal]``YOUR-IDP-ENTITY``。每个参数都附带了其作用的简要说明。
+. 重启 spacewalk 服务以应用更改：
++
+----
+mgradm restart
+----
+
+访问 {productname} URL 时，您将重定向到 SSO 的 IdP，需要在其中完成身份验证。身份验证成功后，您将重定向到 {productname} {webui}，并以经过身份验证的用户身份登录。如果您在使用 SSO 登录时遇到问题，请查看 {productname} 日志了解详细信息。

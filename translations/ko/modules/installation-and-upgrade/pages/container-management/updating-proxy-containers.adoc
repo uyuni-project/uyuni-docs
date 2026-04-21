@@ -1,0 +1,136 @@
+= {productname} 프록시 업그레이드
+:revdate: 2025-05-05
+:page-revdate: {revdate}
+
+업그레이드 명령을 실행하기 전에 호스트 운영 체제를 업데이트해야 합니다. 호스트 운영 체제를 업데이트하면 [literal]``mgrpxy`` 도구와 같은 {productname} 도구도 함께 업데이트됩니다.
+
+.절차: 프록시 업그레이드
+[role=procedure]
+____
+. [command]``zypper``로 소프트웨어 리포지토리 새로 고침:
+
++
+
+[source, shell]
+----
+zypper ref
+----
+
+ifeval::[{mlm-content} == true]
+
+. 호스트 운영 체제에 따라 다음 단계를 진행합니다.
+
++
+
+{sl-micro} 같은 트랜잭션 시스템의 경우: ::
+
++
+
+--
+
+. [command]``transactional-update``로 사용 가능한 업데이트 적용:
+
++
+
+[source, shell]
+----
+transactional-update
+----
+
+. 업데이트가 완료되면 [literal]``reboot``를 수행합니다.
+
+--
+
++
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+. [command]``transactional-update``로 사용 가능한 업데이트 적용:
+
++
+
+[source, shell]
+----
+transactional-update
+----
+
+. 업데이트가 완료되면 [literal]``reboot``를 수행합니다.
+
+endif::[]
+
+
+ifeval::[{mlm-content} == true]
+
+{sles}의 경우: ::
+
++
+
+--
+
+[command]``zypper``로 설치된 소프트웨어 업데이트:
+
+[source, shell]
+----
+zypper up
+----
+
+--
+
+endif::[]
+
++
+
+. 다음 명령을 사용하여 [literal]``podman``에서 실행 중인 {productnumber} 프록시 컨테이너를 업데이트할 수 있습니다.
+
++
+
+[source, shell]
+----
+mgrpxy upgrade podman
+----
+
++
+
+또는 Kubernetes 클러스터에서 실행 중인 경우 다음을 사용하여 업데이트할 수 있습니다.
+
++
+
+[source, shell]
+----
+mgrpxy upgrade kubernetes
+----
+
++
+
+. podman에서, 사용하지 않는 컨테이너 이미지를 정리하여 디스크 공간을 확보합니다.
+
++
+
+[source, shell]
+----
+podman image prune -a
+----
+
+____
+
+Kubernetes에서는 이미지 정리가 자동으로 처리되거나 Kubernetes 배포판에 따라 다릅니다.
+
+[NOTE]
+====
+특정 버전으로 업그레이드할 때 태그 파라미터를 지정하지 않으면 기본적으로 가장 최신 버전으로 업그레이드됩니다. 특정 버전으로 업그레이드하려면 태그 파라미터에 원하는 이미지 태그를 지정하십시오.
+====
+
+[IMPORTANT]
+====
+
+ifeval::[{mlm-content} == true]
+
+특정 태그를 사용하여 특정 컨테이너를 업그레이드하는 옵션이 있지만, 이 기능은 PTF를 적용하는 경우에만 사용할 수 있습니다.
+endif::[]
+
+일반적인 상황에서는 일관성을 유지하기 위해 모든 프록시 컨테이너에 동일한 태그를 사용하는 것이 좋습니다.
+====
+
+air-gapped 설치의 경우, 먼저 컨테이너 RPM 패키지를 업그레이드한 다음, [command]``mgrpxy upgrade podman`` 명령을 실행합니다.

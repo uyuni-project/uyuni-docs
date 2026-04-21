@@ -1,0 +1,318 @@
+[[clients-ubuntu]]
+= {ubuntu} 클라이언트 등록
+:revdate: 2025-03-13
+:page-revdate: {revdate}
+
+이 섹션에는 {ubuntu} 운영 체제를 실행하는 클라이언트를 등록하는 방법에 대한 정보가 포함되어 있습니다.
+
+ifeval::[{mlm-content} == true]
+
+// Use list format: repository URLs / packages and metadata / version info
+[IMPORTANT]
+====
+* 패키지 및 메타데이터는 {suse}가 아닌 Ubuntu에서 제공합니다.
+* 지원되는 제품에 대해서는 xref:client-configuration:supported-features-ubuntu.adoc[]의 릴리스 노트 및 지원 테이블을 참조하십시오.
+====
+endif::[]
+
+ifeval::[{mlm-content} == true]
+
+{productname}은(는) {salt}를 사용하는 {ubuntu} 22.04 LTS 및 24.04 LTS 클라이언트를 지원합니다.
+endif::[]
+
+부트스트래핑은 {ubuntu} 클라이언트 시작과 초기 상태 실행 수행(예: 리포지토리 설정, 프로파일 업데이트 수행)에 대해 지원됩니다. 하지만 {ubuntu}의 루트 사용자는 기본적으로 비활성화되므로 부트스트래핑을 사용하려면 Python에 대한 [command]``sudo`` 권한이 있는 기존 사용자가 필요합니다.
+
+[IMPORTANT]
+====
+Canonical은 {productname}를 지지하거나 지원하지 않습니다.
+====
+
+== 소프트웨어 채널 추가
+
+
+{ubuntu} 클라이언트를 {productname} 서버에 등록하기 전에 필요한 소프트웨어 채널을 추가하고 이 채널을 동기화해야 합니다.
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$arch-other-note.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/arch-other-note.adoc[]
+endif::[]
+
+ifeval::[{mlm-content} == true]
+
+이 절차에 필요한 제품은 다음과 같습니다.
+
+[[ubuntu-channels-wizard]]
+[cols="1,1", options="header"]
+.Ubuntu 제품 - WebUI
+|===
+
+| OS 버전     | 제품 이름
+| {ubuntu} 24.04 | Ubuntu 24.04
+| {ubuntu} 22.04 | Ubuntu 22.04
+|===
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$addchannels_vendor_webui.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/addchannels_vendor_webui.adoc[]
+endif::[]
+
+또는 명령 프롬프트에서 채널을 추가할 수 있습니다. 이 절차에 필요한 채널은 다음과 같습니다.
+
+[[ubuntu-channels-cli]]
+[cols="1,1", options="header"]
+.Ubuntu 채널 - CLI
+|===
+
+| OS 버전     | 기본 채널
+| {ubuntu} 24.04 | ubuntu-2404-amd64-main-amd64
+| {ubuntu} 22.04 | ubuntu-2204-amd64-main-amd64
+|===
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$addchannels_vendor_cli.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/addchannels_vendor_cli.adoc[]
+endif::[]
+
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+이 절차에 필요한 채널은 다음과 같습니다.
+
+[[ubuntu-channels-cli-uyuni]]
+[cols="1,1,1,1,1,1", options="header"]
+.Ubuntu 채널 - CLI
+|===
+
+| OS Version | Base Channel | Main Channel | Updates Channel | Security Channel | Client Channel
+
+| {ubuntu} 24.04 | ubuntu-2404-pool-amd64-uyuni | ubuntu-2404-amd64-main-uyuni | ubuntu-2404-amd64-main-updates-uyuni | ubuntu-2404-amd64-main-security-uyuni | ubuntu-2404-amd64-uyuni-client
+| {ubuntu} 22.04 | ubuntu-2204-pool-amd64-uyuni | ubuntu-2204-amd64-main-uyuni | ubuntu-2204-amd64-main-updates-uyuni | ubuntu-2204-amd64-main-security-uyuni | ubuntu-2204-amd64-uyuni-client
+|===
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$addchannels_novendor_cli.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/addchannels_novendor_cli.adoc[]
+endif::[]
+
+[IMPORTANT]
+====
+새 채널을 완전히 동기화한 후에 Ubuntu 클라이언트를 부트스트랩해야 합니다.
+====
+
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+
+== Ubuntu ESM 패키지 미러링
+
+Canonical은 https://ubuntu.com/pro[Ubuntu Pro] 사용자 및 고객을 위한 https://ubuntu.com/security/esm[Expanded Security Maintenance] (**ESM**) 패키지를 제공합니다. 이 패키지는 여러 운영 체제 구성 요소와 일부 애플리케이션에 대해 더 긴 유지보수 기간(_10~12년_)을 제공합니다.
+
+이러한 리포지토리는 Ubuntu Pro에 등록된 시스템에서 필요한 **GPG 키** 및 개인 **Bearer 토큰**을 추출하면 {productname} 내에서 동기화할 수도 있습니다.
+
+
+=== GPG 키 및 Bearer 토큰 추출
+
+Ubuntu Pro에 Ubuntu 호스트를 등록합니다. 개인 등록 토큰은 https://ubuntu.com/pro/dashboard[Ubuntu Pro Dashbaord]에서 찾을 수 있습니다. 이를 위해서는 https://login.ubuntu.com/[Ubuntu One acconut]이 필요합니다.
+
+----
+sudo apt-get install ubuntu-advantage-tools
+sudo pro attach <perosnal_token>
+----
+
+등록 후, ``/etc/apt/auth.conf.d/90ubuntu-advantage`` 파일에서 Bearer 토큰을 찾을 수 있습니다.
+
+----
+machine esm.ubuntu.com/apps/ubuntu/ login bearer password <token>  # ubuntu-pro-client
+machine esm.ubuntu.com/infra/ubuntu/ login bearer password <token>  # ubuntu-pro-client
+----
+
+[NOTE]
+====
+리포지토리당 1개의 전용 bearer 토큰이 사용됩니다.
+====
+
+{productname} 내에 다음 리포지토리를 구성합니다.
+
+=== Ubuntu ESM 리포지토리 구성
+
+리포지토리를 만들려면 다음 URL을 사용합니다.
+
+[[ubuntu-esm-repositories]]
+[cols="1,1", options="header"]
+.Ubuntu ESM 리포지토리
+|===
+
+| URL     | 설명
+| https://bearer:<token>@esm.ubuntu.com/infra/ubuntu/dists/<release>-infra-updates/main/binary-<arch>/ | 운영 체제 기능 업데이트
+| https://bearer:<token>@esm.ubuntu.com/infra/ubuntu/dists/<release>-infra-security/main/binary-<arch>/ | 운영 체제 보안 업데이트
+| https://bearer:<token>@esm.ubuntu.com/apps/ubuntu/dists/<release>-apps-updates/main/binary-<arch>/ | 애플리케이션 기능 업데이트
+| https://bearer:<token>@esm.ubuntu.com/apps/ubuntu/dists/<release>-apps-security/main/binary-<arch>/ | 애플리케이션 보안 업데이트
+|===
+
+``<token>``을 개인 Bearer 토큰으로 바꿉니다. 또한 ``arch``와 ``release``는 다음 값 중 하나로 바꿔야 합니다.
+
+[[ubuntu-esm-archs-releases]]
+[cols="1,1", options="header"]
+.Ubuntu ESM 아키텍처 및 릴리스
+|===
+
+| 아키텍처 | 릴리스
+| `amd64`, `arm64`, `armel`, `armhf`, `i386`, `powerpc`, `ppc64el`, `s390x` | `bionic`, `focal`, `jammy`, `noble`, `trusty`, `xenial`
+|===
+
+{productname}이(가) 리포지토리를 동기화하려면 해당 GPG 키(`ubuntu-advantage-esm-infra-trusty.gpg`, `ubuntu-advantage-esm-apps.gpg`)를 가져와야 합니다. 이러한 키는 Ubuntu Pro에 등록된 시스템의 ``/etc/apt/trusted.gpg.d``에 있습니다. 이러한 파일을 {productname} 시스템에 복사하고 다음과 같이 가져옵니다.
+
+----
+mgradm gpg add /path/to/gpg.key
+----
+
+이미 동기화된 {ubuntu} 상위 채널 아래에 적절한 하위 채널을 만듭니다. 그런 다음 리포지토리를 동기화할 수 있습니다.
+
+[IMPORTANT]
+====
+여기에 표시된 절차를 사용하여 구독 제한을 우회할 수 있지만, 이는 서비스 이용 약관을 위반하는 것이며 **법적 결과**를 초래할 수 있습니다. 항상 사용하는 시스템 수에 해당하는 충분한 구독을 보유해야 합니다.
+====
+
+endif::[]
+
+== 동기화 상태 확인
+
+ifeval::[{mlm-content} == true]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_webui_mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_webui_mlm.adoc[]
+endif::[]
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_webui_uyuni.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_webui_uyuni.adoc[]
+endif::[]
+
+endif::[]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_cli.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_cli.adoc[]
+endif::[]
+
+[NOTE]
+====
+{ubuntu} 채널은 규모가 매우 클 수 있습니다. 때로 동기화에 몇 시간이 걸릴 수 있습니다.
+====
+
+
+
+== GPG 키 관리
+
+클라이언트는 소프트웨어 패키지가 설치되기 전에 GPG 키를 사용해 신뢰성을 확인합니다. 신뢰할 수 있는 소프트웨어만 클라이언트에 설치할 수 있습니다.
+
+[IMPORTANT]
+====
+클라이언트의 보안을 위해 GPG 키를 신뢰하는 것이 중요합니다. 어떤 키가 필요하고 신뢰할 수 있는지 결정하는 것은 관리자가 수행해야 하는 작업입니다. GPG 키를 신뢰할 수 없는 경우 소프트웨어 채널을 사용할 수 없기 때문에 채널을 클라이언트에 할당하는 결정은 키를 신뢰하는 결정에 따라 달라집니다.
+====
+
+GPG 키에 대한 자세한 내용은 xref:client-configuration:gpg-keys.adoc[]에서 확인할 수 있습니다.
+
+
+== 루트 액세스
+
+{ubuntu}의 루트 사용자는 SSH 액세스에 대해 기본적으로 비활성화되어 있습니다.
+
+일반 사용자를 사용하여 온보딩하려면 [filename]``sudoers`` 파일을 편집해야 합니다.
+
+[NOTE]
+====
+이 문제는 {ubuntu}의 자체 설치 버전에서 발생합니다. 설치 중에 기본 사용자에게 관리자 권한이 부여된 경우 [command]``sudo``를 사용하여 권한 에스컬레이션을 수행하려면 비밀번호가 필요합니다. 클라우드 인스턴스에서는 이런 일이 발생하지 않습니다. 왜냐하면 [command]``cloud-init``는 [path]``/etc/sudoers.d`` 아래에 자동으로 파일을 생성하고 비밀번호를 사용할 필요 없이 [command]``sudo``를 사용하여 권한 에스컬레이션을 부여하기 때문입니다.
+====
+
+
+
+=== 루트 사용자 액세스 권한 부여
+
+.절차: 루트 사용자에게 액세스 권한 부여
+
+. 클라이언트에서 다음과 같이 [filename]``sudoers`` 파일을 편집합니다.
++
+----
+sudo visudo
+----
++
+이 줄을 [filename]``sudoers`` 파일 끝에 추가하여 사용자에게 [command]``sudo`` 액세스 권한을 부여합니다. 다음과 같이 [systemitem]``<user>``를 {webui}에서 클라이언트를 부트스트래핑하고 있는 사용자의 이름으로 교체합니다.
++
+----
+<user>  ALL=NOPASSWD: /usr/bin/python, /usr/bin/python2, /usr/bin/python3, /var/tmp/venv-salt-minion/bin/python
+----
+
+[NOTE]
+====
+이 절차는 클라이언트 등록에 필요한 비밀번호가 없어도 루트에 액세스 권한을 부여합니다. 클라이언트는 성공적으로 설치된 후 루트 권한으로 실행되므로 액세스 권한이 더 이상 필요 없습니다. 클라이언트가 성공적으로 설치된 후 [path]``sudoers`` 파일에서 이 줄을 제거하는 것이 좋습니다.
+====
+
+
+
+=== SSH를 통해 설치 생성된 사용자로 부트스트랩
+
+SSH를 통해 Ubuntu 클라이언트를 부트스트랩하려면 설치 생성된 사용자를 sudo 그룹에 추가해야 합니다. 그런 다음 클라이언트에서 부트스트랩 스크립트를 실행합니다.
+
+.절차: sudo 그룹에 설치 생성된 사용자 추가 및 SSH를 통한 부트스트랩
+
+. 클라이언트에서 루트 권한으로 명령 라인에서 실행([literal]``<username>``을 설치 과정에서 생성된 사용자의 이름으로 바꾸기):
++
+
+----
+sudo usermod -aG sudo <username>
+----
+
+. 명령줄에서 클라이언트 시스템을 부트스트랩([literal]``<SERVER_FQDN>``을 {productname} 서버의 정규화된 도메인 이름으로 바꾸기):
++
+
+----
+sudo su -
+curl -Sks https://<SERVER_FQDN>/pub/bootstrap/bootstrap-script.sh | /bin/bash
+----
+
+[IMPORTANT]
+====
+{ubuntu}는 위에서와 같이 [command]``sudo su -``를 실행한 후 클라이언트 시스템의 명령줄에서 실행되는 해당 {ubuntu} 부트스트랩 스크립트를 통해서만 부트스트랩할 수 있습니다. {ubuntu}에서는 루트 사용자가 기본적으로 비활성화되어 있고, {webui}는 {ubuntu}를 설치할 때 생성된 사용자의 권한 상승을 허용하지 않기 때문에 {productname} {webui}를 통해서는 부트스트랩을 수행할 수 없습니다.
+====
+
+
+
+== 클라이언트 등록
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$create_bootstrap_repo_register.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/create_bootstrap_repo_register.adoc[]
+endif::[]
+

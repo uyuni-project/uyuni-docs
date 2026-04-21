@@ -1,0 +1,62 @@
+[[troubleshooting-customchannel]]
+= 对包含有冲突软件包的自定义通道进行查错
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+////
+Cause: Conflicting packages in custom channel
+Consequence: Creating bootstrap repo can fail
+Fix: Separate trees from each other
+Result: Clean and functional boostrap repo will be created
+////
+
+设置包含有冲突软件包的自定义通道时，某些功能（例如创建引导储存库）可能会导致未定义的行为，并使客户端注册失败。
+
+例如，版本号较高的有冲突软件包可能会包含在引导储存库中。此类软件包（例如 [package]``python3-zmq`` 或 [package]``zeromq``）可能会导致创建引导储存库时出错，或者在客户端引导期间导致问题。
+
+When the custom channel (for example, an EPEL channel) is added below the parent vendor channel, issues with conflicting packages cannot be solved directly. The way how to solve this is to separate the custom channel from the vendor channel. The custom channel needs to be created in a separate tree. In case that the custom channel needs to be delivered as a child, such environment can be created using Content Lifecycle Management (CLM). Sources in a CLM project can be added there from different trees. Using such an approach, the custom channel stays below the parent within the built environment. However, the vendor channel tree stays without the custom channel and the bootstrap repository. Then registering clients works correctly.
+
+将包含有冲突软件包的自定义通道（salt、zeromq 等）创建为子通道时，以下步骤可能有助于避免该问题：
+
+.过程：避免自定义通道中包含有冲突的软件包
+
+. 从父通道中去除作为子通道的自定义通道。有关详细信息，请参见 xref:administration:custom-channels.adoc#_manage_custom_channels[]。
+. 在单独的树中创建自定义通道。有关详细信息，请参见 xref:administration:custom-channels.adoc#_creating_custom_channels_and_repositories[]。
+要在内容生命周期管理 (CLM) 中添加作为子通道的自定义通道，请执行以下操作：
++
+* 在 {productname} {webui} 中，导航到menu:内容生命周期[]，然后单击 btn:[创建项目]。输入[guimenu]``名称``和[guimenu]``标签``。
+* 将源关联到项目。使用所需的供应商通道和自定义通道。（分享使用 CentOS8 的示例）
+* 将环境添加到项目中。例如，使用 CentOS8。
+* 要构建环境，请单击 btn:[构建] 按钮。这会创建一个包含供应商通道和自定义通道的环境，这些通道可与激活密钥相关联并用于引导客户端。
+. 重要说明：在 CLM 项目中，建议添加一个过滤器用于排除有问题或有冲突的软件包。否则会在客户端更新期间安装版本号较高的有冲突软件包。有关过滤的详细信息，请参见 xref:administration:content-lifecycle-examples.adoc#exclude-higher-kernel-version[]。
+. 要将最新补丁添加到 CLM 环境（包含供应商通道和自定义通道），请在项目中单击 btn:[构建] 按钮。需要执行此操作才能重新构建环境。
+
+* 有关 CLM 的详细信息，请参见 xref:administration:content-lifecycle.adoc[]。
+
+ifeval::[{mlm-content} == true]
+
+[NOTE]
+====
+如果直接在 {rhel} 客户端（或 {sll}、{centos}、{oracle} 等兼容系统）上使用 Extra Packages for Enterprise Linux (EPEL)，将会安装 EPEL 提供的 {salt} 软件包，这会丢失 {productname} 提供的 {salt} 软件包中包含的某些功能。此问题非常严重，因为这样将会生成一个包含非 SUSE {salt} 软件包的引导储存库。因此，系统不支持这样的使用场景。
+
+如果您需要启用 EPEL 储存库，请务必提前过滤掉 EPEL 提供的 {salt} 软件包（例如，在menu:软件[管理 > 通道 > EPEL > 软件包]中去除 {salt} 软件包）。
+====
+endif::[]

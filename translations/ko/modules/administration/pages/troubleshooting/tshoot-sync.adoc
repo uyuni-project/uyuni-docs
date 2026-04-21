@@ -1,0 +1,117 @@
+[[troubleshooting-package-sync]]
+= 문제 해결 동기화
+:revdate: 2025-07-08
+:page-revdate: {revdate}
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+
+동기화는 여러 이유로 실패할 수 있습니다. 연결 문제에 대한 자세한 내용을 확인하려면 다음 명령을 실행합니다.
+
+----
+export URLGRABBER_DEBUG=DEBUG
+spacewalk-repo-sync -c <channelname> <options> > /var/log/spacewalk-repo-sync-$(date +%F-%R).log 2>&1
+----
+
+Zypper가 생성한 로그는 [path]``/var/log/zypper.log``에서도 확인할 수 있습니다.
+
+
+GPG 키 불일치::
+{productname}는 타사 GPG 키를 자동으로 신뢰하지 않습니다. 패키지 동기화가 실패하면 신뢰할 수 없는 GPG 키 때문일 수 있습니다. [path]``/var/log/rhn/reposync``를 열고 다음과 같은 오류를 찾으면 이러한 경우에 해당하는지 확인 가능:
++
+----
+['/usr/bin/spacewalk-repo-sync', '--channel', 'sle-12-sp1-ga-desktop-
+nvidia-driver-x86_64', '--type', 'yum', '--non-interactive']
+RepoMDError: Cannot access repository. Maybe repository GPG keys are not imported
+----
++
+문제를 해결하려면 GPG 키를 {productname}로 임포트해야 합니다. GPG 키 임포트에 대한 자세한 내용은 xref:administration:repo-metadata.adoc[]에서 확인할 수 있습니다.
+
+
+[literal]``spacewalk-repo-sync``에서 GPG 키 제거::
+When a GPG key for repository has been manually imported using [literal]``spacewalk-repo-sync``, and this key is no longer needed (for example if the key was compromised, or was used for testing purposes only), it can be removed from the zypper RPM database used by [literal]``spacewalk-repo-sync`` with the following command:
++
+----
+rpm --dbpath=/var/lib/spacewalk/reposync/root/var/lib/rpm/ -e gpg-pubkey-*
+----
++
+여기서 [literal]``gpg-pubkey-*``는 제거할 GPG 키의 이름입니다.
+
+
+
+GPG 키 갱신::
+GPG 키를 갱신하려면 먼저 이전 키를 제거한 후 새 키를 생성하여 임포트합니다.
+
+체크섬 불일치::
+체크섬이 실패한 경우 [path]``/var/log/rhn/reposync/*.log`` 로그 파일에 다음과 같은 오류가 표시될 수 있습니다.
++
+----
+Repo Sync Errors: (50, u'checksums did not match
+326a904c2fbd7a0e20033c87fc84ebba6b24d937 vs
+afd8c60d7908b2b0e2d95ad0b333920aea9892eb', 'Invalid information uploaded
+to the server')
+The package microcode_ctl-1.17-102.57.62.1.x86_64 which is referenced by
+patch microcode_ctl-8413 was not found in the database. This patch has
+been skipped.
+----
++
+이 오류는 [command]``-Y`` 옵션을 사용하여 명령 프롬프트에서 동기화를 실행하여 해결 가능합니다.
++
+----
+spacewalk-repo-sync --channel <channelname> -Y
+----
++
+이 옵션은 로컬로 캐시된 체크섬이 아닌 동기화 전에 리포지토리 데이터를 확인합니다.
+
+
+연결 시간 제한::
+다운로드 시간이 다음 오류와 함께 초과하는 경우에 해당합니다.
++
+----
+28, '작업이 너무 느립니다. 최근 300초 내에 전송된 초당 1000바이트 미만
+----
++
+이 오류는 [path]``/etc/rhn/rhn.conf``에서 [literal]``reposync_timeout`` 및 [literal]``reposync_minrate`` 구성 값을 지정하여 해결할 수 있습니다. 기본적으로 300초 동안 초당 1000바이트 미만이 전송되면 다운로드가 중단됩니다. [literal]``reposync_minrate``로 초당 바이트 수를 조정하고 [literal]``reposync_timeout``으로 대기 시간(초)을 조정할 수 있습니다.
+
+
+재동기화 중 수동으로 키 신뢰하기::
+경우에 따라 [command]``reposync``를 실행할 때 GPG 키를 수동으로 수락해야 할 수 있습니다. 예:
++
+----
+# spacewalk-repo-sync -c nvidia-compute-sle-15-x86_64-we-sp3
+17:07:40 ======================================
+17:07:40 | Channel: nvidia-compute-sle-15-x86_64-we-sp3
+17:07:40 ======================================
+17:07:40 Sync of channel started.
+수신된 새 리포지토리 또는 패키지 서명 키:
+  리포지토리:       nvidia-compute-sle-15-x86_64-we-sp3
+  키 지문:  610C 7B14 E068 A878 070D A4E9 9CD0 A493 D42D 0685
+  키 이름:         cudatools <cudatools@nvidia.com>
+  키 알고리즘:    RSA 4096
+  키 생성 시간:      Thu Apr 14 16:04:01 2022
+  키 만료:      (만료 없음)
+  Rpm 이름:         gpg-pubkey-d42d0685-62589a51
+    참고: 데이터 서명을 통해 수신자는 데이터 서명 후 변경이 발생하지 않았음을 확인할 수 있습니다.
+    서명이 없거나 잘못되었거나 알 수 없는 서명이 있는 데이터를 수락하면 시스템 손상이 발생할 수 있으며,
+    극단적인 경우 시스템 침해로 이어질 수도 있습니다.
+    참고: GPG 공개 키는 지문으로 명확하게 식별됩니다. 키 이름에 의존하지 마십시오.
+    제공된 키의 진위 여부가 확실하지 않다면 리포지토리 제공자에게 문의하거나 해당 웹사이트를 확인하십시오.
+    많은 제공자는 사용 중인 GPG 키의 지문을 보여주는 웹 페이지를 제공합니다.
+키를 거부하시겠습니까, 일시적으로 신뢰하시겠습니까, 아니면 항상 신뢰하시겠습니까? [r/t/a/?] (r):
+----

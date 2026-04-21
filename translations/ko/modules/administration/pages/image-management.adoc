@@ -1,0 +1,933 @@
+[[image-management]]
+= 이미지 빌드 및 관리
+:revdate: 2025-02-25
+:page-revdate: {revdate}
+
+
+[[at.images.overview]]
+== 이미지 빌드 개요
+
+
+{productname}을(를) 사용하면 시스템 관리자가 컨테이너와 OS 이미지를 빌드하고 결과를 이미지 저장소에 푸시할 수 있습니다.
+
+.절차: 이미지 빌드 및 푸시
+[role=procedure]
+_____
+
+. 이미지 저장소를 정의합니다.
+
+. 이미지 프로파일을 정의하고 이를 소스(git 리포지토리 또는 디렉토리)와 연결합니다.
+
+. 이미지를 빌드합니다.
+
+. 이미지를 이미지 저장소로 푸시합니다.
+_____
+
+{productname}은(는) Dockerfile과 Kiwi라는 두 가지 빌드 유형을 지원합니다. Kiwi 빌드 유형은 시스템, 가상 및 기타 이미지를 빌드하기 위한 용도로 사용됩니다.
+
+// Needs checking
+// at later places to be fix accordingly
+Kiwi 빌드 유형의 이미지 저장소는 [path]``srv-www`` 볼륨에 파일 시스템 디렉토리로 미리 정의되어 있습니다.
+
+ifeval::[{mlm-content} == true]
+해당 이미지 파일은 [path]``https://MANAGER-HOST/os-images/ORGANIZATION-ID/FILE-NAME``에서 다운로드할 수 있습니다. 정확한 위치는 이미지 세부 정보 페이지에서 확인할 수 있습니다.
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+이미지 파일은 [path]``https://UYUNI-HOST/os-images/ORGANIZATION-ID/FILE-NAME``에서 다운로드할 수 있습니다. 정확한 위치는 이미지 상세 정보 페이지에서 확인할 수 있습니다.
+endif::[]
+
+
+[[at.images.docker]]
+== 컨테이너 이미지
+
+// FIXME, bsc#1245987: replace caas pattform with container host?
+// image::image-building.png[scaledwidth=80%]
+
+
+[[at.images.docker.requirements]]
+=== 요구사항
+
+컨테이너 기능은 {sles} 12 이상으로 구동되는 {salt} 클라이언트에서 사용할 수 있습니다. 시작하기 전, 환경의 다음 요구 사항 충족 여부를 확인합니다.
+
+* Dockerfile 및 구성 스크립트가 포함된 게시된 git 리포지토리입니다. 리포지토리는 공개 또는 비공개일 수 있으며, GitHub, GitLab 또는 BitBucket에서 호스팅되어야 합니다.
+* Docker 레지스트리와 같이 올바르게 구성된 이미지 저장소입니다.
+
+컨테이너에 대한 자세한 내용은 https://documentation.suse.com/container/all/html/Container-guide/[]에서 확인할 수 있습니다.
+
+
+[[at.images.docker.buildhost]]
+=== 빌드 호스트 생성
+
+{productname}를 사용하여 이미지를 빌드하려면 빌드 호스트를 생성 및 구성해야 합니다. 컨테이너 빌드 호스트는 {sle} 12 이상을 실행하는 {salt} 클라이언트입니다. 이 섹션에서는 빌드 호스트의 초기 구성에 대한 설명을 제공합니다.
+
+[IMPORTANT]
+====
+빌드 호스트의 운영 체제는 대상 이미지의 운영 체제와 일치해야 합니다.
+
+예를 들어, {sles}{nbsp}15(SP2 이상) OS 버전으로 구동되는 빌드 호스트에서는 {sles}{nbsp}15 기반 이미지를 빌드합니다. {sles}{nbsp}12 SP4 또는 {sles}{nbsp}12 SP4 OS 버전으로 구동되는 빌드 호스트에서는 {sles}{nbsp}12 기반 이미지를 빌드합니다.
+
+아키텍처 간 빌드는 지원되지 않습니다.
+////
+2022-05-12, ke: at least for now, according to feedback, this is unsupported:
+For example, you must build Raspberry Pi {sles}{nbsp}15 SP3 images on a Raspberry Pi (aarch64 architecture) build host running {sles}{nbsp}15 SP3.
+////
+====
+
+{productname} {webui}에서 다음 단계를 수행하여 빌드 호스트를 구성합니다.
+
+.절차: 호스트 빌드
+[role=procedure]
+_____
+
+. menu:시스템[시스템] 개요 페이지에서 빌드 호스트로 지정할 {salt} 클라이언트를 선택합니다.
+
+. 선택한 클라이언트의 [guimenu]``시스템 세부 사항`` 페이지에서 컨테이너 모듈을 할당합니다. menu:소프트웨어[소프트웨어 채널]로 이동하여 컨테이너 모듈을 활성화(예: [guimenu]``SLE-Module-Containers15-Pool`` 및 [guimenu]``SLE-Module-Containers15-Updates``)합니다. btn:[다음]을 클릭하여 계속합니다.
+
+. [guimenu]``소프트웨어 채널 변경``을 예약하고 btn:[확인]을 클릭합니다.
+
+. [guimenu]``시스템 세부 사항`` 탭에서 menu:속성[] 페이지를 선택하고, [guimenu]``추가 기능 시스템 유형`` 목록에서 ``컨테이너 빌드 호스트``를 활성화합니다. btn:[속성 업데이트]를 클릭하여 확인합니다.
+
+. [systemitem]``Highstate``를 적용하여 모든 필수 패키지를 설치합니다. 시스템 세부 사항 탭에서 menu:상태[Highstate]를 선택하고 btn:[Highstate 적용]을 클릭합니다. 또는 {productname} 서버 명령줄에서 [systemitem]``Highstate``를 적용합니다.
+
++
+
+[source, shell]
+----
+salt '$your_client' state.highstate
+----
+
+_____
+
+
+
+[[at.images.docker.buildchannels]]
+=== 컨테이너에 대한 활성화 키 생성
+
+{productname}를 사용하여 빌드한 컨테이너는 이미지를 빌드할 때 활성화 키와 연결된 채널을 리포지토리로 사용합니다. 이 섹션에서는 이러한 목적을 위해 임시 활성화 키를 생성하는 과정을 설명합니다.
+
+[NOTE]
+====
+컨테이너를 빌드하기 위해서는 ``SUSE 관리자 기본값`` 이외의 채널과 연결된 활성화 키가 필요합니다.
+====
+
+.절차: 활성화 키 생성
+[role=procedure]
+_____
+
+. menu:시스템[활성화 키]를 선택합니다.
+
+. btn:[키 생성]을 클릭합니다.
+
+. [guimenu]``설명`` 및 [guimenu]``키`` 이름을 입력합니다. 드롭다운 메뉴를 사용하여 이 키와 연결할 [guimenu]``기본 채널``을 선택합니다.
+
+. btn:[활성화 키 생성]으로 확인합니다.
+
+_____
+
+자세한 내용은 xref:client-configuration:activation-keys.adoc[]에서 확인할 수 있습니다.
+
+
+[[at.images.docker.imagestore]]
+=== 이미지 저장소 생성
+
+빌드된 모든 이미지는 이미지 저장소로 푸시됩니다. 이 섹션에는 이미지 저장소 생성에 대한 정보가 포함되어 있습니다. 이미지 저장소는 일반적으로 레지스트리로 참조됩니다.
+
+
+.절차: 이미지 저장소 생성
+[role=procedure]
+_____
+
+. menu:이미지[저장소]를 선택합니다.
+
+. [guimenu]``생성``을 클릭하여 새 저장소를 생성합니다.
+
+. [guimenu]``저장 유형``에서 올바른 유형을 선택합니다.
+
+. [guimenu]``레이블`` 필드에 이미지 저장소의 이름을 정의합니다.
+
+. 컨테이너 레지스트리 호스트(내부 또는 외부)의 FQDN(정규화된 도메인 이름)으로 [guimenu]``URI`` 필드를 입력하여 이미지 레지스트리 경로를 입력합니다.
+
++
+
+----
+registry.example.com
+----
+
++
+
+레지스트리 URI를 사용하여 이미 사용 중인 레지스트리의 이미지 저장소를 지정할 수도 있습니다.
+
++
+
+----
+registry.example.com:5000/myregistry/myproject
+----
+
+. btn:[생성]을 클릭하여 새 이미지 저장소를 추가합니다.
+
+_____
+
+
+
+[[at.images.docker.profile]]
+=== 이미지 프로파일 생성
+
+모든 컨테이너 이미지는 빌드 지침이 포함된 이미지 프로파일을 사용하여 빌드됩니다. 이 섹션에는 {productname} {webui}를 사용하여 이미지 프로파일을 생성하는 방법에 대한 정보가 포함되어 있습니다.
+
+.절차: 이미지 프로파일 생성
+[role=procedure]
+_____
+
+. 이미지 프로파일을 생성하려면 menu:이미지[프로파일]을 선택하고 btn:[생성]을 클릭합니다.
+
+. [guimenu]``레이블`` 필드를 작성하여 이미지 프로파일의 이름을 입력합니다.
+
++
+
+[NOTE]
+====
+컨테이너 이미지 태그의 형식이 ``myproject/myimage``와 같은 경우 이미지 저장소 레지스트리 URI에 ``/myproject`` 접미사가 포함되어 있는지 확인합니다.
+====
+
+. [guimenu]``이미지 유형``으로 ``Dockerfile``을 사용합니다.
+
+. 드롭다운 메뉴를 사용하여 [guimenu]``대상 이미지 저장소`` 필드에서 레지스트리를 선택합니다.
+
+. [guimenu]``경로`` 필드에 GitHub, GitLab 또는 BitBucket 리포지토리 URL을 입력합니다. 경로는 빌드 호스트의 로컬 디렉토리일 수도 있습니다. URL은 [literal]``http``, [literal]``https`` 또는 토큰 인증 URL이어야 합니다. GitHub 또는 GitLab의 경우 다음 형식 중 하나를 사용합니다.
+
++
+
+.GitHub 경로 옵션
+
+* GitHub 단일 사용자 프로젝트 리포지토리
+
++
+----
+https://github.com/USER/project.git#branchname:folder
+----
+
++
+
+* GitHub 조직 프로젝트 리포지토리
+
++
+----
+https://github.com/ORG/project.git#branchname:folder
+----
+
++
+
+* GitHub 토큰 인증
+
++
+
+git 리포지토리가 비공개인 경우 인증을 포함하도록 프로파일의 URL을 수정합니다. 다음 URL 형식을 사용하여 GitHub 토큰으로 인증합니다.
+
++
+
+----
+https://USER:<AUTHENTICATION_TOKEN>@github.com/USER/project.git#master:/container/
+----
+
++
+
+.GitLab 경로 옵션
+
+* GitLab 단일 사용자 프로젝트 리포지토리
+
++
+
+----
+https://gitlab.example.com/USER/project.git#master:/container/
+----
+
+* GitLab 그룹 프로젝트 리포지토리
+
++
+
+----
+https://gitlab.example.com/GROUP/project.git#master:/container/
+----
+
+* GitLab 토큰 인증
+
++
+
+git 리포지토리가 비공개이고 공개적으로 액세스할 수 없는 경우 인증을 포함하도록 프로파일의 git URL을 수정해야 합니다. 다음 URL 형식을 사용하여 GitLab 토큰으로 인증:
+
++
+
+----
+https://gitlab-ci-token:<AUTHENTICATION_TOKEN>@gitlab.example.com/USER/project.git#master:/container/
+----
+
++
+
+[IMPORTANT]
+====
+git 분기를 지정하지 않으면 기본적으로 ``마스터`` 분기가 사용됩니다. ``폴더``가 지정되지 않은 경우 이미지 소스(Dockerfile 소스)는 GitHub 또는 GitLab 체크아웃의 루트 디렉토리에 있어야 합니다.
+====
+
+. ``활성화 키``를 선택합니다. 활성화 키를 통해 프로파일을 사용하는 이미지를 올바른 채널 및 패키지에 할당할 수 있습니다.
+
++
+
+[NOTE]
+====
+활성화 키를 이미지 프로파일과 연결하면 프로파일을 사용하는 모든 이미지가 올바른 소프트웨어 채널과 채널의 모든 패키지를 사용하도록 할 수 있습니다.
+====
+
+. btn:[생성] 버튼을 클릭합니다.
+
+_____
+
+
+[[at.images.docker.sourceexample]]
+==== 예시 Dockerfile 소스
+
+재사용할 수 있는 이미지 프로파일은 https://github.com/SUSE/manager-build-profiles[]에 게시됩니다.
+
+[NOTE]
+====
+[option]``ARG`` 파라미터를 사용하면 빌드된 이미지를 {productname}에서 제공하는 원하는 리포지토리와 연결할 수 있습니다. [option]``ARG`` 파라미터를 사용하면 {sles}의 이미지 버전을 빌드할 수도 있으며, 이 버전은 빌드 호스트 자체에서 사용하는 {sles} 버전과 다를 수 있습니다.
+
+예를 들어 [command]``ARG repo`` 파라미터와 리포지토리 파일을 가리키는 [command]``echo`` 명령은 원하는 채널 버전에 대한 리포지토리 파일에 올바른 경로를 생성한 후 삽입합니다.
+
+리포지토리는 이미지 프로파일에 할당한 활성화 키로 결정됩니다.
+====
+
+----
+FROM registry.example.com/sles12sp2
+MAINTAINER Tux Administrator "tux@example.com"
+
+### 시작: 이러한 라인은 {productname}과(와) 함께 사용하기 위해 필요합니다.
+
+ARG repo
+ARG cert
+
+# 올바른 인증서 추가
+RUN echo "$cert" > /etc/pki/trust/anchors/RHN-ORG-TRUSTED-SSL-CERT.pem
+
+# 인증서 신뢰 저장소 업데이트
+RUN update-ca-certificates
+
+# 이미지에 리포지토리 경로 추가
+RUN echo "$repo" > /etc/zypp/repos.d/susemanager:dockerbuild.repo
+
+### 끝: 이러한 라인은 {productname}과(와) 함께 사용하기 위해 필요합니다.
+
+# 패키지 스크립트 추가
+ADD add_packages.sh /root/add_packages.sh
+
+# 패키지 스크립트 실행
+RUN /root/add_packages.sh
+
+# 빌드 후 이미지에서 리포지토리 경로 제거
+RUN rm -f /etc/zypp/repos.d/susemanager:dockerbuild.repo
+----
+
+==== 사용자 정의 정보 키-값 쌍을 Docker ``buildargs``로 사용
+
+사용자 정의 정보 키-값 쌍을 할당하여 이미지 프로파일에 정보를 첨부할 수 있습니다. 또한, 이러한 키-값 쌍은 ``buildargs``로 Docker 빌드 명령에 전달됩니다.
+
+사용 가능한 사용자 정보 키 및 추가 키 생성에 대한 자세한 내용은 xref:reference:systems/custom-system-info.adoc[]에서 확인할 수 있습니다.
+
+
+[[at.images.docker.building]]
+=== 이미지 빌드
+
+
+이미지를 구축하는 방법은 두 가지입니다. 첫 번째 방법은 처음부터 새로 만드는 것입니다. 왼쪽 탐색 모음에서 menu:이미지[만들기]를 선택하거나 menu:이미지[프로파일] 목록에서 만들기 아이콘을 클릭한 다음 절차를 따릅니다.
+
+.절차: 이미지 빌드
+[role=procedure]
+_____
+
+. menu:이미지[빌드]를 선택합니다.
+
+. 기본 ``최신``이 아닌 다른 버전을 원하는 경우 다른 태그 이름을 추가하십시오(컨테이너에만 해당).
+
+. [guimenu]``빌드 프로파일`` 및 [guimenu]``빌드 호스트``를 선택합니다.
+
++
+
+[NOTE]
+====
+빌드 필드 오른쪽의 [guimenu]``프로파일 요약``을 확인합니다. 빌드 프로파일을 선택하면 선택한 프로파일에 대한 자세한 정보가 이 영역에 표시됩니다.
+====
+
+. 빌드를 예약하려면 btn:[빌드] 버튼을 클릭합니다.
+
+_____
+
+
+
+[[at.images.docker.importing]]
+=== 이미지 임포트
+
+이미지를 가져오는 두 번째 방법은 임의의 이미지를 임포트한 후 검사하는 것입니다. 이를 위해서는, 왼쪽 탐색 모음에서 menu:이미지[이미지 목록]을 선택합니다. [guimenu]``임포트`` 대화 상자의 텍스트 상자를 입력합니다. 처리가 완료되면 임포트한 이미지가 [guimenu]``이미지 목록`` 페이지에 나열됩니다.
+
+.절차: 이미지 임포트
+[role=procedure]
+_____
+
+. menu:이미지[이미지 목록]에서 btn:[임포트]를 클릭하여 [guimenu]``이미지 임포트`` 대화 상자를 엽니다.
+
+. [guimenu]``이미지 임포트`` 대화 상자에서 다음 필드를 입력합니다.
+
++
+
+이미지 저장소:::
+검사를 위해 이미지를 끌어오는 레지스트리입니다.
+
+이미지 이름:::
+레지스트리에 있는 이미지의 이름입니다.
+
+이미지 버전:::
+레지스트리에 있는 이미지의 버전입니다.
+
+빌드 호스트:::
+이미지를 끌어오고 검사하는 빌드 호스트입니다.
+
+활성화 키:::
+이미지를 검사하는 소프트웨어 채널에 대한 경로를 제공하는 활성화 키입니다.
+
+. 확인하려면 btn:[임포트]를 클릭합니다.
+
+_____
+
+이미지 항목이 데이터베이스에 생성되고 {productname}에 대한 ``이미지 검사`` 작업이 예약됩니다.
+
+처리가 완료되면 ``이미지 목록``에서 임포트한 이미지를 찾을 수 있습니다. 이미지를 임포트했음을 나타내기 위해 ``빌드`` 열에 다른 아이콘이 표시됩니다. 임포트한 이미지의 상태 아이콘은 이미지의 ``개요`` 탭에서도 확인할 수 있습니다.
+
+
+
+[[at.images.docker.troubleshooting]]
+=== 문제 해결
+
+
+
+include::image-mgmt-container-inspection.adoc[]
+
+
+==== 일반적인 문제
+
+이미지 작업과 관련하여 알려진 몇 가지 문제는 다음과 같습니다.
+
+* 레지스트리 또는 git 리포지토리에 액세스하기 위한 HTTPS 인증서는 사용자 정의 상태 파일을 사용하여 클라이언트에 배포해야 합니다.
+* 현재 Docker를 사용한 SSH git 액세스는 지원되지 않습니다.
+
+
+
+[[at.images.kiwi]]
+== OS 이미지
+
+OS 이미지는 Kiwi 빌드 시스템에 의해 빌드됩니다. 출력 이미지는 사용자 정의가 가능하며 PXE, QCOW2, LiveCD 또는 기타 유형의 이미지일 수 있습니다.
+
+Kiwi 빌드 시스템에 대한 자세한 내용은 https://osinside.github.io/kiwi/[Kiwi 문서]에서 확인할 수 있습니다.
+
+
+
+[[at.images.kiwi.requirements]]
+=== 요구사항
+
+Kiwi 이미지 빌드 기능은 {sles}{nbsp}12 및 {sles}{nbsp}11이 실행되는 {salt} 클라이언트에서 사용할 수 있습니다.
+//SLE15 images support is not yet released for MLM4, but is part of MLM4.0.4 as tech preview
+//From {sles}{nbsp}15, ``kiwi-ng`` is used instead of the legacy Kiwi.
+
+Kiwi 이미지 구성 파일 및 구성 스크립트는 다음 위치 중 한 곳에서 액세스할 수 있어야 합니다.
+
+* Git 리포지토리
+* HTTP 또는 HTTPS 호스팅 tar 아카이브
+* 빌드 호스트 상의 로컬 디렉토리
+
+git에서 제공하는 전체 Kiwi 리포지토리의 예는 https://github.com/SUSE/manager-build-profiles/tree/master/OSImage[]에서 확인할 수 있습니다.
+
+
+[NOTE]
+====
+Kiwi로 빌드된 OS 이미지를 실행하는 호스트에는 사용할 수 있는 1{nbsp}GB 이상 RAM이 필요합니다. 디스크 공간은 이미지의 실제 크기에 따라 다릅니다. 자세한 내용은 기본 시스템 설명서에서 확인할 수 있습니다.
+====
+
+
+=== Accessing Git repositories via an HTTP/HTTPS proxy when building images
+
+When a build host needs to fetch sources from a git repository that is only reachable through an HTTP/HTTPS proxy, you may see git timeouts during the build because the git client invoked by the Salt state does not always pick up system-wide proxy settings (for example [path]``/etc/sysconfig/proxy`` or environment variables).
+
+To make git use the proxy for non-interactive builds create [path]``/etc/gitconfig`` with an http.proxy entry:
+
+[source, console]
+----
+# /etc/gitconfig
+[http]
+    proxy = http://proxy.example.com:3128
+# or for HTTPS
+[http]
+    proxy = https://proxy.example.com:3128
+----
+
+If the proxy requires authentication, prefer a credential helper or use a credential store instead of embedding credentials in the URL.
+
+==== Automating with {salt}
+
+You can manage [path]`/etc/gitconfig` on build hosts through Configuration Management, the same way as on any other managed system. Create a Salt state file and assign it to the build host via a config channel, then apply a highstate from the {productname} UI.
+
+If you want to source the proxy address from a System Custom Info field, use the `custom_info:` pillar prefix:
+
+[source, yaml]
+----
+/etc/gitconfig:
+  file.managed:
+    - user: root
+    - group: root
+    - mode: '0644'
+    - contents: |
+        [http]
+            proxy = {{ salt['pillar.get']('custom_info:build_server:git_proxy', 'http://proxy.example.com:3128') }}
+----
+
+[[container.based.kiwi.image.build.support]]
+=== 컨테이너 기반 Kiwi 이미지 빌드 지원
+
+기존의 레거시 Kiwi 및 KiwiNG 도구 외에도, {productname}에 컨테이너 기반 Kiwi 이미지 빌드 시스템이 도입되었습니다.
+
+
+==== 구성 및 재정의 
+
+관리자는 다음 필러 또는 사용자 정의 값을 사용하여 기본 동작을 재정의할 수 있습니다. 이를 구성하려면 {webui}에서 menu:시스템[사용자 정의 시스템 정보]로 이동하여 필요한 키를 생성하십시오.
+
+사용되는 빌드 시스템은 기본 OS 또는 특정 필러 값에 따라 달라집니다.
+
+* SLE 11 / SLE 12: 레거시 Kiwi v7
+* SLE 15: KiwiNG(v9 및 컨테이너화된 Kiwi 10)
+
+
+관리자는 다음 필러 또는 사용자 정의 값을 사용하여 기본 동작을 재정의할 수 있습니다.
+
+* [literal]``use_kiwi_ng``: Kiwi 9 사용을 강제 적용,
+* [literal]``use_kiwi_container``: 컨테이너화된 Kiwi 10 사용을 강제 적용. 이를 활성화하려면 값을 [literal]``1``로 설정하십시오.
+
+
+==== 버전별 구성
+
+SLES 15 프로파일에는 Kiwi 9이 사용되는 반면, 기본 컨테이너 동작에는 Kiwi 10이 사용되므로 SUSE Linux Enterprise 15 프로파일용 컨테이너화된 빌드 호스트를 사용할 때는 특정 구성이 필요합니다.
+
+SLES 15 프로파일에 올바른 버전이 사용되도록 하려면 다음 값으로 [literal]``kiwi_image`` 사용자 정의 정보 키를 정의해야 합니다.
+
+* [literal]``Key``: kiwi_image
+* [literal]``Value``: [path]``registry.suse.com/bci/kiwi:9``
+
+이 키가 설정되지 않은 경우 시스템은 최신 버전([path]``registry.suse.com/bci/Kiwi:10.2``)을 기본값으로 사용하며, 이로 인해 SLES 15 프로파일에서 빌드 문제가 발생할 수 있습니다.
+
+
+
+[[at.images.kiwi.buildhost]]
+=== 빌드 호스트 생성
+
+// FIXME, bsc#1245987:
+// Discussing Container-Based KIWI Image Build Support here?
+// Perhaps 2.'docker' might be 2, but the container variant might be different?
+
+{productname}로 모든 종류의 이미지를 빌드하려면 빌드 호스트를 생성 및 구성합니다. OS 이미지 빌드 호스트는 {sles}{nbsp}15(SP2 이상) 또는 {sles}{nbsp}12(SP4 이상)에서 실행되는 {salt} 클라이언트입니다.
+
+이 절차는 빌드 호스트의 초기 구성을 설명합니다.
+
+[IMPORTANT]
+====
+빌드 호스트의 운영 체제는 대상 이미지의 운영 체제와 일치해야 합니다.
+
+예를 들어, {sles}{nbsp}15(SP2 이상) OS 버전으로 구동되는 빌드 호스트에서는 {sles}{nbsp}15 기반 이미지를 빌드합니다. {sles}{nbsp}12 SP4 또는 {sles}{nbsp}12 SP4 OS 버전으로 구동되는 빌드 호스트에서는 {sles}{nbsp}12 기반 이미지를 빌드합니다.
+
+아키텍처 간에는 빌드할 수 없습니다. 예를 들어, {sles}{nbsp}15 SP3가 실행 중인 Raspberry PI(aarch64 아키텍처) 빌드 호스트에서는 Raspberry PI {sles}{nbsp}15 SP3 이미지를 빌드해야 합니다.
+====
+
+
+.절차: {productname} {webui}에서 빌드 호스트 구성
+[role=procedure]
+_____
+
+. menu:시스템[개요] 페이지에서 빌드 호스트로 지정할 클라이언트를 선택합니다.
+
+. menu:시스템 세부 사항[속성] 탭으로 이동하고 [guimenu]``추가 기능 시스템 유형`` > [guimenu]``OS 이미지 빌드 호스트`` 상자를 선택합니다.
+
+. btn:[속성 업데이트]로 확인합니다.
+
+. menu:시스템 세부 사항[소프트웨어 > 소프트웨어 채널]로 이동하고 빌드 호스트 버전에 따라 필요한 소프트웨어 채널을 활성화합니다.
+
++
+
+* {sles}{nbsp}12 빌드 호스트에는 {productname} 클라이언트 도구(``SLE-Manager-Tools12-Pool`` 및 ``SLE-Manager-Tools12-Updates``)가 필요합니다.
+
+* {sles}{nbsp}15 빌드 호스트에는 {sles} 모듈 ``SLE-Module-DevTools15-SP2-Pool`` 및 ``SLE-Module-DevTools15-SP2-Updates``가 필요합니다.
+
+*  예약하고 btn:[확인]을 클릭합니다.
+
+. ``Highstate``를 적용하여 Kiwi 및 모든 필수 패키지를 설치합니다. 시스템 세부 사항 페이지에서 menu:상태[Highstate]를 선택하고 btn:[Highstate 적용]을 클릭합니다. 또는 {productname} 서버 명령줄에서 Highstate를 적용합니다.
+
++
+
+----
+salt '$your_client' state.highstate
+----
+_____
+
+
+==== {productname} 웹 서버 공인 인증서 RPM
+
+빌드 호스트 프로비저닝은 {productname} 인증서 RPM을 빌드 호스트에 복사합니다. 이 인증서는 {productname}에서 제공하는 리포지토리에 액세스하기 위한 용도로 사용됩니다.
+
+인증서는 `mgr-package-rpm-certificate-osimage` 패키지 스크립트에 의해 RPM으로 패키징됩니다. 패키지 스크립트는 새 {productname} 설치 중에 자동으로 호출됩니다.
+
+``spacewalk-certs-tools`` 패키지를 업그레이드하는 경우 업그레이드 시나리오는 기본값을 사용하여 패키지 스크립트를 호출합니다. 그러나 인증서 경로가 변경되었거나 사용할 수 없는 경우 업그레이드 절차가 완료된 후 ``--ca-cert-full-path <path_to_certificate>``를 사용하여 패키지 스크립트를 수동으로 호출하십시오.
+
+
+==== 패키지 스크립트 호출 예제
+
+[source, bash]
+----
+/usr/sbin/mgr-package-rpm-certificate-osimage --ca-cert-full-path /root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT
+----
+
+인증서가 포함된 RPM 패키지는 다음과 같이 Salt가 액세스할 수 있는 디렉토리에 저장됩니다.
+----
+/usr/share/susemanager/salt/images/rhn-org-trusted-ssl-cert-osimage-1.0-1.noarch.rpm
+----
+
+인증서가 포함된 RPM 패키지는 다음 로컬 빌드 호스트 리포지토리에 제공됩니다.
+----
+/var/lib/Kiwi/repo
+----
+
+[IMPORTANT]
+====
+빌드 소스에 {productname} SSL 인증서가 포함된 RPM 패키지를 지정하고 Kiwi 구성에 ``부트스트랩`` 섹션의 필수 패키지로 ``rhn-org-trusted-ssl-cert-osimage``가 포함되어 있는지 확인합니다.
+
+.config.xml
+[source, xml]
+----
+...
+  <packages type="bootstrap">
+    ...
+    <package name="rhn-org-trusted-ssl-cert-osimage" bootinclude="true"/>
+  </packages>
+...
+----
+====
+
+
+
+// FIXME 2024-04-25, ke: continue here compare with container build host
+[[at.images.kiwi.buildchannels]]
+=== OS 이미지에 대한 활성화 키 생성
+
+이미지를 빌드할 때 OS 이미지가 리포지토리로 사용할 수 있는 채널과 연결된 활성화 키를 생성합니다.
+
+활성화 키는 OS 이미지 빌드에 필수입니다.
+
+[NOTE]
+====
+OS 이미지를 빌드하려면 ``기본`` 활성화 키가 아닌 다른 채널과 연결된 활성화 키가 필요합니다.
+====
+
+.절차: 활성화 키 생성
+[role=procedure]
+_____
+
+. {webui}에서 menu:시스템[활성화 키]를 선택합니다.
+
+. [guimenu]``키 생성``을 클릭합니다.
+
+. [guimenu]``설명``, [guimenu]``키`` 이름을 입력하고 드롭다운 상자를 사용하여 키와 연결할 [guimenu]``기본 채널``을 선택합니다.
+
+. btn:[활성화 키 생성]으로 확인합니다.
+
+_____
+
+자세한 내용은 xref:client-configuration:activation-keys.adoc[]에서 확인할 수 있습니다.
+
+
+
+[[at.images.kiwi.imagestore]]
+=== 이미지 저장소 생성
+
+// For background info about Image Store, see the overview at the beginning of this chapter.
+
+OS 이미지에는 대용량 저장소가 필요할 수 있습니다. 기본적으로 이미지 저장소는 [path]``srv-www`` 볼륨을 사용합니다.
+
+
+[NOTE]
+====
+시스템, 가상 및 기타 이미지를 빌드하기 위해 사용되는 Kiwi 빌드 유형의 이미지 저장소는 아직 지원되지 않습니다.
+
+
+ifeval::[{mlm-content} == true]
+해당 이미지 파일은 [path]``https://MANAGER-HOST/os-images/ORGANIZATION-ID/FILE-NAME``에서 다운로드할 수 있습니다. 정확한 위치는 이미지 세부 정보 페이지에서 확인할 수 있습니다.
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+이미지 파일은 [path]``https://UYUNI-HOST/os-images/ORGANIZATION-ID/FILE-NAME``에서 다운로드할 수 있습니다. 정확한 위치는 이미지 상세 정보 페이지에서 확인할 수 있습니다.
+endif::[]
+
+====
+
+
+
+[[at.images.kiwi.profile]]
+=== 이미지 프로파일 생성
+
+{webui}를 사용하여 이미지 프로파일을 관리합니다.
+
+.절차: 이미지 프로파일 생성
+[role=procedure]
+_____
+
+. 이미지 프로파일을 생성하려면 menu:이미지[프로파일]에서 선택하고 btn:[생성]을 클릭합니다.
+
+. [guimenu]``레이블`` 필드에 ``이미지 프로파일``의 이름을 입력합니다.
+
+. [guimenu]``이미지 유형``으로 ``Kiwi``를 사용합니다.
+
+. 이미지 저장소는 자동으로 선택됩니다.
+
+. Kiwi 구성 파일이 포함된 디렉토리에 [guimenu]``URL 구성``을 입력합니다. 예를 들어, https://github.com/SUSE/manager-build-profiles#master:OSImage/SLE-Micro54 같은 git URI를 입력합니다. 다른 옵션으로는 HTTP 또는 HTTPS로 호스팅되는 tar 아카이브 또는 빌드 호스트의 로컬 디렉토리가 있습니다. 자세한 내용은 이 섹션의 마지막에 제공되는 소스 형식 옵션을 참조하십시오.
+
+. 필요한 경우, [guimenu]``Kiwi 옵션``을 입력합니다. Kiwi 구성 파일이 여러 프로파일을 지정하는 경우 [option]``--profile <name>``을 사용하여 활성 프로파일을 선택합니다. 기타 옵션은 Kiwi 설명서를 참조하십시오.
+
+. [guimenu]``활성화 키``를 선택합니다. 활성화 키를 사용하면 프로파일을 사용하는 이미지가 올바른 채널 및 패키지에 할당할 수 있습니다.
+
++
+
+[NOTE]
+====
+이미지 프로파일이 올바른 소프트웨어 채널 및 모든 패키지를 사용하도록 활성화 키를 이미지 프로파일과 연결합니다.
+====
+
++
+
+. btn:[생성] 버튼으로 확인합니다.
+
+
+.소스 형식 옵션
+
+* _리포지토리에 대한 git/HTTP(S) URL_
+
++
+
+빌드할 이미지의 소스가 포함된 공개 또는 비공개 git 리포지토리의 URL입니다. 리포지토리의 레이아웃에 따라 가능한 URL은 다음과 같습니다.
+
++
+
+----
+https://github.com/SUSE/manager-build-profiles
+----
+
++
+
+URL에서 `#` 문자 뒤에 분기를 지정할 수 있습니다. 이 예에서는 다음 `master` 분기를 사용합니다.
+
++
+
+----
+https://github.com/SUSE/manager-build-profiles#master
+----
+
++
+
+`:` 문자 뒤에 이미지 소스가 포함된 디렉토리를 지정할 수 있습니다. 이 예에서는 다음 ``OSImage/POS_Image-JeOS6``을 사용합니다.
+
++
+
+----
+https://github.com/SUSE/manager-build-profiles#master:OSImage/POS_Image-JeOS6
+----
+
+* _tar 아카이브에 대한 HTTP(S) URL_
+
++
+
+웹 서버에서 호스팅되는 tar 아카이브(압축 또는 비압축)의 URL입니다.
+
++
+
+----
+https://myimagesourceserver.example.org/MyKiwiImage.tar.gz
+----
+
+* _빌드 호스트 상의 디렉토리 경로_
+
++
+
+Kiwi 빌드 시스템 소스가 포함된 디렉토리 경로를 입력합니다. 이 디렉토리는 선택한 빌드 호스트에 위치해야 합니다.
+
++
+
+----
+/var/lib/Kiwi/MyKiwiImage
+----
+
+_____
+
+
+[[at.images.kiwi.sourceexample]]
+==== Kiwi 소스의 예제
+
+
+Kiwi 소스는 최소한 ``config.xml``로 구성됩니다. 일반적으로 ``config.sh``와 ``image.sh``도 함께 포함됩니다. 소스에는 ``root`` 하위 디렉토리의 최종 이미지에 설치할 파일도 포함될 수도 있습니다.
+
+Kiwi 빌드 시스템에 대한 내용은 https://osinside.github.io/kiwi/[Kiwi documentation]에서 확인할 수 있습니다.
+
+{suse}는 https://github.com/SUSE/manager-build-profiles[SUSE/manager-build-profiles] 공개 GitHub 리포지토리에서 완전하게 작동하는 이미지 소스의 예를 제공합니다.
+
+.JeOS config.xml의 예
+// ###example-script-1###
+[source, xml]
+----
+<?xml version="1.0" encoding="utf-8"?>
+
+<image schemaversion="6.1" name="POS_Image_JeOS6">
+    <description type="system">
+        <author>Admin User</author>
+        <contact>noemail@example.com</contact>
+        <specification>SUSE Linux Enterprise 12 SP3 JeOS</specification>
+    </description>
+    <preferences>
+        <version>6.0.0</version>
+        <packagemanager>zypper</packagemanager>
+        <bootsplash-theme>SLE</bootsplash-theme>
+        <bootloader-theme>SLE</bootloader-theme>
+
+        <locale>en_US</locale>
+        <keytable>us.map.gz</keytable>
+        <timezone>Europe/Berlin</timezone>
+        <hwclock>utc</hwclock>
+
+        <rpm-excludedocs>true</rpm-excludedocs>
+        <type boot="saltboot/suse-SLES12" bootloader="grub2" checkprebuilt="true" compressed="false" filesystem="ext3" fsmountoptions="acl" fsnocheck="true" image="pxe" kernelcmdline="quiet"></type>
+    </preferences>
+    <!--    CUSTOM REPOSITORY
+    <repository type="rpm-dir">
+      <source path="this://repo"/>
+    </repository>
+    -->
+    <packages type="image">
+        <package name="patterns-sles-Minimal"/>
+        <package name="aaa_base-extras"/> <!-- wouldn't be SUSE without that ;-) -->
+        <package name="kernel-default"/>
+        <package name="venv-salt-minion"/>
+        ...
+    </packages>
+    <packages type="bootstrap">
+        ...
+        <package name="sles-release"/>
+        <!-- this certificate package is required to access {productname} repositories
+             and is provided by {productname} automatically -->
+        <package name="rhn-org-trusted-ssl-cert-osimage" bootinclude="true"/>
+
+    </packages>
+    <packages type="delete">
+        <package name="mtools"/>
+        <package name="initviocons"/>
+        ...
+    </packages>
+</image>
+----
+
+
+
+[[at.images.kiwi.building]]
+=== 이미지 빌드
+
+{webui}를 사용하여 이미지를 빌드하거나 가져오는 방법은 2가지가 있습니다. menu:이미지[빌드]를 선택하거나 menu:이미지[프로파일] 목록에서 빌드 아이콘을 클릭합니다.
+
+.절차: 이미지 빌드
+[role=procedure]
+_____
+
+. menu:이미지[빌드]를 선택합니다.
+
+. 기본 ``최신``이 아닌 다른 버전을 원하는 경우 다른 태그 이름을 추가합니다(컨테이너에만 적용됨).
+
+. [guimenu]``이미지 프로파일`` 및 [guimenu]``빌드 호스트``를 선택합니다.
+
++
+
+[NOTE]
+====
+빌드 필드 오른쪽에 [guimenu]``프로파일 요약``이 표시됩니다. 빌드 프로파일을 선택하면 선택한 프로파일에 대한 자세한 정보가 여기에 표시됩니다.
+====
+
++
+
+. 빌드를 예약하려면 btn:[빌드] 버튼을 클릭합니다.
+
+_____
+
+
+[IMPORTANT]
+====
+이미지 빌드 프로세스 중에 빌드 서버는 어떤 형태의 자동 마운터도 실행할 수 없습니다. 해당하는 경우, 루트 권한으로 실행 중인 Gnome 세션이 없는지 확인하십시오. 자동 마운터가 실행 중인 경우 이미지 빌드가 완료되지만, 이미지의 체크섬이 달라 실패하게 됩니다.
+====
+
+
+[[at.images.kiwi.inspection]]
+
+이미지 빌드가 성공하면 검사 단계가 시작됩니다. 검사 단계에서 {susemgr}는 이미지에 대한 정보를 수집합니다.
+
+* 이미지에 설치된 패키지 목록
+* 이미지의 체크섬
+* 이미지 유형 및 기타 이미지 세부 사항
+
+[NOTE]
+====
+빌드된 이미지 유형이 ``PXE``인 경우 {salt} 열도 생성됩니다. 이미지 열은 데이터베이스에 저장되며 {salt} 하위 시스템은 생성된 이미지에 대한 세부 사항에 액세스할 수 있습니다. 세부 사항에는 이미지 파일의 위치 및 제공 위치, 이미지 체크섬, 네트워크 부팅에 필요한 정보 등이 포함됩니다.
+
+생성된 열은 연결된 모든 클라이언트에서 사용할 수 있습니다.
+====
+
+
+
+[[at.images.kiwi.troubleshooting]]
+=== 문제 해결
+
+이미지를 빌드하려면 여러 종속 단계가 필요합니다. 빌드가 실패하는 경우 {salt} 상태 결과 및 빌드 로그를 조사하면 실패의 원인을 식별하는 데 도움이 될 수 있습니다. 빌드 실패 시 수행할 수 있는 검사:
+
+* 빌드 호스트는 빌드 소스에 액세스할 수 있습니다.
+* 빌드 호스트 및 {productname} 서버 모두에 이미지를 위한 충분한 디스크 공간이 있습니다.
+* 활성화 키에 연결된 올바른 채널이 있습니다.
+* 사용된 빌드 소스가 유효합니다.
+* {productname} 공용 인증서가 포함된 RPM 패키지는 최신 버전이며 ``/usr/share/susemanager/salt/images/rhn-org-trusted-ssl-cert-osimage-1.0-1.noarch.rpm``에서 사용할 수 있습니다. 공용 인증서 RPM을 새로 고치는 방법에 대한 자세한 내용은 <<at.images.kiwi.buildhost>>에서 확인할 수 있습니다.
+
+
+
+[[at.images.kiwi.limitations]]
+=== 제한 사항
+
+이 섹션에는 이미지 관련 작업을 할 때 알려진 몇 가지 문제가 포함되어 있습니다.
+
+* HTTP 소스 또는 git 리포지토리에 액세스하기 위해 사용되는 HTTPS 인증서는 사용자 정의 상태 파일을 통해 클라이언트에 배포하거나 수동으로 구성해야 합니다.
+* Kiwi 기반 이미지 임포트는 지원되지 않습니다.
+
+
+
+[[at.images.listing]]
+== 빌드 이미지 목록
+
+사용할 수 있는 빌드 이미지를 나열하려면 menu:이미지[이미지 목록]를 선택하십시오. 모든 이미지 목록이 표시됩니다.
+
+이미지에 대해 표시되는 데이터에는 이미지 [guimenu]``이름``, [guimenu]``버전``, [guimenu]``리비전`` 및 빌드 [guimenu]``상태``가 포함됩니다. 이미지에 사용할 수 있는 가능한 패치 및 패키지 업데이트 목록을 통해 이미지 업데이트 상태를 확인할 수도 있습니다.
+
+OS 이미지의 경우 [guimenu]``이름`` 및 [guimenu]``버전`` 필드는 Kiwi 소스에서 제공되며 빌드가 성공적으로 완료되면 업데이트됩니다. 빌드 중 또는 빌드 실패 후, 이 필드에는 프로파일 이름을 기반으로 하는 임시 이름이 표시됩니다.
+
+[guimenu]``리비전``은 빌드가 성공할 때마다 자동으로 증가합니다. OS 이미지의 경우 저장소에 여러 리비전이 함께 있을 수 있습니다.
+
+컨테이너 이미지의 경우 저장소에는 최신 리비전만 보존됩니다. 이전 버전(패키지, 패치 등)에 대한 정보는 보존되며 [guimenu]``구식 표시`` 확인란을 사용하여 나열할 수 있습니다.
+
+이미지에서 btn:[자세히] 버튼을 클릭하면 자세한 내용을 확인할 수 있습니다. 상세 보기에는 관련 패치의 정확한 목록, 이미지 내에 설치된 모든 패키지 목록 및 빌드 로그가 포함됩니다.
+
+btn:[삭제] 버튼을 클릭하면 목록에서 이미지가 삭제됩니다. 또한, 관련 열, OS 이미지 저장소의 파일 및 사용되지 않는 리비전도 삭제됩니다.
+
+[NOTE]
+====
+빌드가 성공한 후 상태를 검사한 경우에만 패치 및 패키지 목록을 사용할 수 있습니다.
+====

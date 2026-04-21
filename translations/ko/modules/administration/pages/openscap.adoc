@@ -1,0 +1,516 @@
+[[ch-openscap]]
+= OpenSCAP를 사용한 시스템 보안
+:revdate: 2025-06-17
+:page-revdate: {revdate}
+
+
+{productname}는 OpenSCAP를 사용하여 클라이언트에 대한 감사를 수행합니다. 모든 클라이언트에 대한 규정 준수 검사를 예약 및 확인할 수 있습니다.
+
+[NOTE]
+====
+An enhanced SCAP auditing experience is available as a beta feature. It provides centralized content management, reusable scan policies, recurring scans, and built-in remediation from the {webui}. To get started, see xref:administration:openscap-enhanced-beta.adoc[Enhanced SCAP Auditing (Beta)].
+====
+
+== SCAP 소개
+
+
+SCAP(Security Content Automation Protocol)는 커뮤니티 아이디어에서 파생된 상호 운용이 가능한 사양의 종합으로, 엔터프라이즈 시스템의 시스템 보안을 유지하기 위해 NIST(National Institute of Standards and Technology)에서 유지보수하는 사양군입니다.
+
+SCAP는 시스템 보안을 유지하기 위한 표준화된 접근 방식을 제공하기 위해 만들어졌으며, 사용되는 표준은 커뮤니티 및 엔터프라이즈 비즈니스의 니즈를 충족하기 위해 지속적으로 변경됩니다. 일관적이고 반복 가능한 개정 작업 흐름을 제공하기 위해 신규 사양은 NIST의 SCAP 릴리스 주기에 의해 관리됩니다. 자세한 내용은 다음에서 확인할 수 있습니다.
+
+* https://csrc.nist.gov/projects/security-content-automation-protocol
+* https://www.open-scap.org/features/standards/
+* https://ncp.nist.gov/repository?scap
+
+{productname}는 OpenSCAP를 사용하여 SCAP 사양을 구현합니다. OpenSCAP는 XCCDF(Extensible Configuration Checklist Description Format)를 활용하는 감사 도구입니다. XCCDF는 검사 목록의 내용을 나타내는 표준 방식이며 보안 검사 목록을 정의합니다. 또한, CPE(Common Platform Enumeration), CCE(Common Configuration Enumeration), OVAL(Open Vulnerability and Assessment Language)과 같은 다른 사양과 결합하여 SCAP 인증 제품에서 처리할 수 있는 SCAP로 표시되는 검사 목록을 생성합니다.
+
+OpenSCAP는 {suse} 보안 팀에서 생성한 컨텐트를 사용하여 패치가 있는지 확인합니다. OpenSCAP은 시스템 보안 구성 설정을 확인하고 표준 및 사양에 기반한 규칙을 활용하여 시스템의 손상 징후를 검사합니다. {suse} 보안 팀에 대한 자세한 내용은 link:https://www.suse.com/support/security[]를 참조하십시오.
+
+
+
+== SCAP 스캔을 위해 클라이언트 준비
+
+시작하기 전, SCAP 스캔을 위해 클라이언트 시스템을 준비해야 합니다.
+
+[NOTE]
+====
+SSH 연락 방법을 사용하는 Salt 클라이언트에서는 OpenSCAP 감사를 사용할 수 없습니다.
+====
+
+[IMPORTANT]
+====
+스캔 클라이언트는 스캔이 수행 중인 클라이언트에서 대규모의 메모리와 컴퓨팅 파워를 소모할 수 있습니다. {redhat} 클라이언트의 경우 스캔할 각 클라이언트에서 최소 2{nbsp}GB의 RAM을 사용할 수 있어야 합니다.
+====
+
+시작하기 전에 클라이언트에 OpenSCAP 스캐너와 SCAP Security Guide(컨텐트) 패키지를 설치합니다. 운영 체제에 따라 이러한 패키지는 기본 운영 체제 또는 {productname} 클라이언트 도구에 포함되어 있습니다.
+
+아래 테이블에는 필요한 패키지가 나열되어 있습니다.
+
+.OpenSCAP 패키지
+[%header, cols=3]
+|===
+| 운영 체제 | 스캐너 | 컨텐트
+| SLES | openscap-utils | scap-security-guide
+| openSUSE | openscap-utils | scap-security-guide
+| RHEL | openscap-utils | scap-security-guide-redhat
+| CentOS | openscap-utils | scap-security-guide-redhat
+| Oracle Linux | openscap-utils | scap-security-guide-redhat
+| Ubuntu | libopenscap8 | scap-security-guide-ubuntu
+| Debian | libopenscap8 | scap-security-guide-debian
+|===
+
+RHEL 7 및 호환 시스템은 오래된 컨텐트가 포함된 [package]``scap-security-guide`` 패키지를 제공합니다. {productname} 클라이언트 도구에 포함된 [package]``scap-security-guide-redhat`` 패키지를 사용하는 것이 좋습니다.
+
+
+[IMPORTANT]
+====
+{suse}는 다양한 openscap 프로파일에 대한 [package]``scap-security-guide`` 패키지를 제공합니다. [package]``scap-security-guide``의 현재 버전에서 {suse}가 지원하는 프로파일:
+
+* {sles} 12 및 15용 DISA STIG 프로파일
+* {sles} 12 및 15용 ANSSI-BP-028 프로파일
+* {sles} 12 및 15용 PCI-DSS 프로파일
+* {sles} 15용 HIPAA 프로파일
+* SAP Applications 15용 {sles}의 공용 클라우드 이미지 강화
+* {sle} 15용 공용 클라우드 강화
+* SLE 12 및 15용 표준 시스템 보안 프로파일
+
+CIS 프로필과 같은 기타 프로필은 커뮤니티에서 제공되며, SUSE에서 공식적으로 지원하지 않습니다.
+
+* {sles} 12 및 15용 CIS 프로파일(지원되지 않음)
+
+비{suse} 운영 체제의 경우 포함된 프로파일은 커뮤니티에서 제공하는 프로파일입니다. {suse}에서는 공식적으로 지원하지 않습니다.
+====
+
+== OpenSCAP 컨텐트 파일
+
+OpenSCAP는 SCAP 컨텐트 파일을 사용하여 테스트 규칙을 정의합니다. 이러한 컨텐트 파일은 XCCDF 또는 OVAL 표준을 기반으로 생성됩니다. SCAP 보안 가이드뿐만 아니라 공개적으로 사용할 수 있는 컨텐트 파일을 다운로드하고 요구사항에 따라 사용자 정의할 수 있습니다. 그리고 기본 컨텐트 파일 템플릿용 SCAP 보안 가이드 패키지를 설치할 수 있습니다. 또는 XCCDF 또는 OVAL에 익숙한 경우 자체 컨텐트 파일을 생성할 수 있습니다.
+
+
+[WARNING]
+====
+템플릿을 사용하여 SCAP 컨텐트 파일을 생성하는 것이 권장됩니다. 자체 사용자 정의 컨텐트 파일을 생성 및 사용하는 경우 자신이 모든 위험을 감수해야 합니다. 사용자 정의 컨텐트 파일을 사용하여 시스템이 손상된 경우 {suse}에서 지원하지 않을 수 있습니다.
+====
+
+컨텐트 파일을 생성한 후에는 해당 파일을 클라이언트로 전송해야 합니다. 물리적 저장 매체를 사용하거나 Salt(예: https://docs.saltproject.io/en/latest/ref/cli/salt-cp.html[salt-cp] 또는 https://docs.saltproject.io/en/latest/ref/file_server/index.html[Salt File Server]), [command]``ftp`` 또는 [command]``scp``를 사용하여 네트워크를 통해 다른 파일을 이동할 때와 동일한 방식으로 이 작업을 수행할 수 있습니다.
+
+[NOTE]
+====
+If you use the xref:administration:openscap-enhanced-beta.adoc[Enhanced SCAP Auditing (Beta)] features, you do not need to manually transfer content files. The server automatically deploys the required DataStreams and tailoring files to the client at runtime.
+====
+
+{productname}로 관리하는 클라이언트에 컨텐트 파일을 배포하는 패키지를 생성하는 것이 권장됩니다. 무결성을 보장하기 위해 패키지가 서명 및 검증될 수 있습니다. 자세한 내용은 xref:administration:custom-channels.adoc[]에서 확인할 수 있습니다.
+
+
+
+== OpenSCAP 프로파일 찾기
+
+운영 체제에 따라 다양한 OpenSCAP 컨텐트 파일 및 프로파일을 사용할 수 있습니다. 컨텐트 파일 한 개에는 프로파일이 두 개 이상 포함될 수 있습니다.
+
+RPM 기반 운영 체제에서 다음 명령을 사용하여 사용 가능한 SCAP 파일의 위치를 확인합니다.
+
+----
+rpm -ql <scap-security-guide-package-name-from-table>
+----
+
+DEB 기반 운영 체제에서 다음 명령을 사용하여 사용 가능한 SCAP 파일의 위치를 확인합니다.
+
+----
+dpkg -L <scap-security-guide-package-name-from-table>
+----
+
+요구사항에 적합한 SCAP 컨텐트 파일 한 개를 찾은 경우 클라이언트에서 사용 가능한 프로필을 나열합니다.
+
+----
+oscap info ./usr/share/xml/scap/ssg/content/ssg-sle15-ds.xml
+Document type: Source Data Stream
+Imported: 2021-03-24T18:14:45
+
+스트림: scap_org.open-scap_datastream_from_xccdf_ssg-sle15-xccdf-1.2.xml
+생성됨: (null)
+버전: 1.2
+체크리스트:
+        Ref-Id: scap_org.open-scap_cref_ssg-sle15-xccdf-1.2.xml
+                상태: draft
+                생성됨: 2021-03-24
+                해결됨: true
+                프로파일:
+                        제목: CIS SUSE Linux Enterprise 15 Benchmark
+                                Id: xccdf_org.ssgproject.content_profile_cis
+                        제목: Standard System Security Profile for SUSE Linux Enterprise 15
+                                Id: xccdf_org.ssgproject.content_profile_standard
+                        제목: DISA STIG for SUSE Linux Enterprise 15
+                                Id: xccdf_org.ssgproject.content_profile_stig
+                참조된 확인 파일:
+                        ssg-sle15-oval.xml
+                                system: http://oval.mitre.org/XMLSchema/oval-definitions-5
+                        ssg-sle15-ocil.xml
+                                system: http://scap.nist.gov/schema/ocil/2
+                        https://ftp.suse.com/pub/projects/security/oval/suse.linux.enterprise.15.xml
+                                system: http://oval.mitre.org/XMLSchema/oval-definitions-5
+확인:
+        Ref-Id: scap_org.open-scap_cref_ssg-sle15-oval.xml
+        Ref-Id: scap_org.open-scap_cref_ssg-sle15-ocil.xml
+        Ref-Id: scap_org.open-scap_cref_ssg-sle15-cpe-oval.xml
+사전:
+        Ref-Id: scap_org.open-scap_cref_ssg-sle15-cpe-dictionary.xml
+----
+
+
+스캔을 수행하기 위한 파일 경로 및 프로파일을 기록해 둡니다.
+
+
+
+== 감사 스캔 수행
+
+컨텐트 파일을 설치 또는 전송하면 감사 스캔을 수행할 수 있습니다. {productname} {webui}를 사용하여 감사 스캔을 트리거할 수 있습니다. {productname} API를 사용하여 정기 검사를 예약할 수도 있습니다.
+
+.절차: {webui}에서 감사 스캔 실행
+[role=procedure]
+_____
+
+. {productname} {webui}에서 menu:시스템[시스템 목록]으로 이동하여 스캔할 클라이언트를 선택합니다.
+
+. [guimenu]``감사`` 탭으로 이동하여 [guimenu]``일정`` 하위 탭으로 이동합니다.
+
+. [guimenu]``XCCDF 문서 경로`` 필드에 클라이언트에서 사용할 SCAP 템플릿 및 프로파일에 대한 파라미터를 입력합니다. 예는 다음과 같습니다.
+
++
+
+  * [literal]``Command``: /usr/bin/oscap xccdf eval
+  
+  * [literal]``Command-line arguments``: --profile xccdf_org.ssgproject.content_profile_stig
+  
+  * [literal]``Path to XCCDF document``: /usr/share/xml/scap/ssg/content/ssg-sle15-ds.xml
+
++
+
+[NOTE]
+====
+[literal]``--fetch-remote-resources`` 파라미터를 사용하면 대량의 RAM이 필요합니다. 또한, [literal]``file_recv_max_size`` 값을 늘려야 할 수도 있습니다.
+====
+
+. 스캔은 클라이언트의 다음번에 예약된 동기화 시 실행됩니다.
+
+_____
+
+[IMPORTANT]
+====
+XCCDF 컨텐트 파일은 유효성을 검사한 후 원격 시스템에서 실행됩니다. 컨텐트 파일에 잘못된 인수가 포함되면 테스트가 실패합니다.
+====
+
+
+.절차: API에서 감사 스캔 실행
+[role=procedure]
+_____
+
+. 시작하기 전, 스캔할 클라이언트에 Python 및 XML-RPC 라이브러리가 설치되어 있는지 확인합니다.
+
+. 기존 스크립트를 선택하거나 ``system.scap.scheduleXccdfScan``을 통해 시스템 검사를 예약하기 위한 스크립트를 생성합니다. 예는 다음과 같습니다.
+
++
+
+----
+#!/usr/bin/python3
+import xmlrpc.client
+client = xmlrpc.client.ServerProxy('https://server.example.com/rpc/api')
+key = client.auth.login('username', 'password')
+client.system.scap.scheduleXccdfScan(key, <1000010001>,
+    '<path_to_xccdf_file.xml>',
+    '--profile <profile_name>')
+client.auth.logout(session_key)
+----
+
++
+
+이 예에서:
+
+* ``<1000010001>``은 시스템 ID(sid)입니다.
+
+* ``<path_to_xccdf_file.xml>``은 클라이언트의 컨텐트 파일 위치에 대한 경로입니다. 예를 들어, [path]``/usr/share/xml/scap/ssg/content/ssg-sle15-ds.xml``입니다.
+
+* ``<profile_name>``은 [command]``oscap`` 명령에 대한 추가 인수입니다. 예를 들어, ``united_states_government_configuration_baseline``(USGCB)을 사용합니다.
+
+. 명령 프롬프트에서, 스캔할 클라이언트의 스크립트를 실행합니다.
+
+_____
+
+
+== 스캔 결과
+
+
+Information about the scans you have run is in the {productname} {webui}. Navigate to menu:Audit[OpenSCAP > All Scans] for a table of results. For more information about the data in this table, see xref:reference:audit/openscap-all-scans.adoc[].
+
+스캔에 대한 자세한 정보를 사용하려면 클라이언트에서 활성화해야 합니다. {productname} {webui}에서 menu:관리자[조직]으로 이동하고 클라이언트가 속한 조직을 클릭합니다. [guimenu]``구성`` 탭으로 이동하여 [guimenu]``자세한 SCAP 파일 업로드 활성화`` 옵션을 선택합니다. 활성화하면, 모든 스캔에서 자세한 정보가 포함된 추가 HTML 파일이 생성됩니다. 결과에는 다음과 유사한 추가 라인이 표시됩니다.
+
+----
+자세한 결과: xccdf-report.html xccdf-results.xml scap-yast2sec-oval.xml.result.xml
+----
+
+
+명령줄에서 스캔 정보를 검색하려면 [command]``spacewalk-report`` 명령을 사용합니다.
+
+----
+spacewalk-report system-history-scap
+spacewalk-report scap-scan
+spacewalk-report scap-scan-results
+----
+
+
+{productname} API를 사용하여 ``system.scap`` 핸들러로 결과를 확인할 수도 있습니다.
+
+
+[[remediation]]
+== 수정
+
+Remediation Bash scripts and Ansible playbooks are provided in the same SCAP Security Guide packages to harden the client systems.
+
+[TIP]
+====
+If you have the beta SCAP features enabled, you can apply remediation directly from scan results in the {webui}, including custom per-rule remediation scripts. See xref:administration:openscap-enhanced-beta.adoc#remediation[Enhanced SCAP Auditing - Remediation].
+====
+
+예:
+
+.bash 스트립트
+----
+/usr/share/scap-security-guide/bash/sle15-script-cis.sh
+/usr/share/scap-security-guide/bash/sle15-script-standard.sh
+/usr/share/scap-security-guide/bash/sle15-script-stig.sh
+----
+
+.Ansible 플레이북
+----
+/usr/share/scap-security-guide/ansible/sle15-playbook-cis.yml
+/usr/share/scap-security-guide/ansible/sle15-playbook-standard.yml
+/usr/share/scap-security-guide/ansible/sle15-playbook-stig.yml
+----
+
+클라이언트 시스템에서 Ansible을 활성화한 후 원격 명령을 사용하거나 Ansible을 사용하여 실행할 수 있습니다.
+
+
+=== Bash 스크립트를 사용한 수정 실행
+
+모든 대상 시스템에 [package]``scap-security-guide`` 패키지를 설치합니다. 자세한 내용은 xref:administration:ansible-setup-control-node.adoc[]에서 확인할 수 있습니다.
+
+패키지, 채널 및 스크립트는 각 운영 체제 및 배포에 따라 다릅니다. 해당 예는 <<scripts-for-os-types>> 섹션에서 확인할 수 있습니다.
+
+
+==== 단일 시스템에서 원격 명령으로 Bash 스크립트 실행
+
+단일 시스템에서 Bash 스크립트를 원격 명령으로 실행합니다.
+
+. menu:시스템[개요] 탭에서 인스턴스를 선택합니다. 그런 다음 menu:세부 사항[원격 명령]에서 다음과 같이 Bash 스크립트를 작성합니다.
++
+----
+#!/bin/bash
+chmod +x -R /usr/share/scap-security-guide/bash
+/usr/share/scap-security-guide/bash/sle15-script-stig.sh
+----
+
+. btn:[일정]을 클릭합니다.
+
+[NOTE]
+====
+폴더 및 스크립트 이름은 배포판과 버전 사이에서 변경됩니다. 예제는 <<scripts-for-os-types>> 섹션에서 확인할 수 있습니다.
+====
+
+
+==== 여러 시스템에서 시스템 세트 관리자를 사용하여 bash 스크립트 실행
+
+한 번에 여러 시스템에서 원격 명령으로 Bash 스크립트를 실행합니다.
+
+. 시스템 그룹이 생성되면 [guimenu]``시스템 그룹``을 클릭하고 테이블에서 [guimenu]``SSM에서 사용``을 선택합니다.
+
+. [guimenu]``시스템 세트 관리자``의 menu:기타[원격 명령]에서 다음과 같이 Bash 스크립트를 작성합니다.
++
+
+----
+#!/bin/bash
+chmod +x -R /usr/share/scap-security-guide/bash
+/usr/share/scap-security-guide/bash/sle15-script-stig.sh
+----
+
+. btn:[일정]을 클릭합니다.
+
+
+
+[[scripts-for-os-types]]
+=== 예시 수정 Bash 스크립트
+
+==== {sle} {opensuse} 및 변형
+
+예시 {sle} 및 {opensuse} 스크립트 데이터.
+
+패키지::
+scap-security-guide
+
+채널::
+* SLE12: SLES12 업데이트
+* SLE15: SLES15 모듈 Basesystem 업데이트
+
+Bash 스크립트 디렉토리::
+`/usr/share/scap-security-guide/bash/`
+
+Bash 스트립트::
++
+----
+opensuse-script-standard.sh
+sle12-script-standard.sh
+sle12-script-stig.sh
+sle15-script-cis.sh
+sle15-script-standard.sh
+sle15-script-stig.sh
+----
+
+
+
+==== {rhel} 및 {centos} Bash 스크립트 데이터
+
+예시 {rhel} 및 {centos} 스크립트 데이터.
+
+[NOTE]
+====
+centos7-updates의 [package]``scap-security-guide``에는 {rhel} 스크립트만 포함되어 있습니다.
+====
+
+패키지::
+scap-security-guide-redhat
+
+채널::
+* SUSE Manager 도구
+
+Bash 스크립트 디렉토리::
+`/usr/share/scap-security-guide/bash/`
+
+Bash 스트립트::
++
+----
+centos7-script-pci-dss.sh
+centos7-script-standard.sh
+centos8-script-pci-dss.sh
+centos8-script-standard.sh
+fedora-script-ospp.sh
+fedora-script-pci-dss.sh
+fedora-script-standard.sh
+ol7-script-anssi_nt28_enhanced.sh
+ol7-script-anssi_nt28_high.sh
+ol7-script-anssi_nt28_intermediary.sh
+ol7-script-anssi_nt28_minimal.sh
+ol7-script-cjis.sh
+ol7-script-cui.sh
+ol7-script-e8.sh
+ol7-script-hipaa.sh
+ol7-script-ospp.sh
+ol7-script-pci-dss.sh
+ol7-script-sap.sh
+ol7-script-standard.sh
+ol7-script-stig.sh
+ol8-script-anssi_bp28_enhanced.sh
+ol8-script-anssi_bp28_high.sh
+ol8-script-anssi_bp28_intermediary.sh
+ol8-script-anssi_bp28_minimal.sh
+ol8-script-cjis.sh
+ol8-script-cui.sh
+ol8-script-e8.sh
+ol8-script-hipaa.sh
+ol8-script-ospp.sh
+ol8-script-pci-dss.sh
+ol8-script-standard.sh
+rhel7-script-anssi_nt28_enhanced.sh
+rhel7-script-anssi_nt28_high.sh
+rhel7-script-anssi_nt28_intermediary.sh
+rhel7-script-anssi_nt28_minimal.sh
+rhel7-script-C2S.sh
+rhel7-script-cis.sh
+rhel7-script-cjis.sh
+rhel7-script-cui.sh
+rhel7-script-e8.sh
+rhel7-script-hipaa.sh
+rhel7-script-ncp.sh
+rhel7-script-ospp.sh
+rhel7-script-pci-dss.sh
+rhel7-script-rhelh-stig.sh
+rhel7-script-rhelh-vpp.sh
+rhel7-script-rht-ccp.sh
+rhel7-script-standard.sh
+rhel7-script-stig_gui.sh
+rhel7-script-stig.sh
+rhel8-script-anssi_bp28_enhanced.sh
+rhel8-script-anssi_bp28_high.sh
+rhel8-script-anssi_bp28_intermediary.sh
+rhel8-script-anssi_bp28_minimal.sh
+rhel8-script-cis.sh
+rhel8-script-cjis.sh
+rhel8-script-cui.sh
+rhel8-script-e8.sh
+rhel8-script-hipaa.sh
+rhel8-script-ism_o.sh
+rhel8-script-ospp.sh
+rhel8-script-pci-dss.sh
+rhel8-script-rhelh-stig.sh
+rhel8-script-rhelh-vpp.sh
+rhel8-script-rht-ccp.sh
+rhel8-script-standard.sh
+rhel8-script-stig_gui.sh
+rhel8-script-stig.sh
+rhel9-script-pci-dss.sh
+rhosp10-script-cui.sh
+rhosp10-script-stig.sh
+rhosp13-script-stig.sh
+rhv4-script-pci-dss.sh
+rhv4-script-rhvh-stig.sh
+rhv4-script-rhvh-vpp.sh
+sl7-script-pci-dss.sh
+sl7-script-standard.sh
+----
+
+
+==== {ubuntu} Bash 스크립트 데이터
+
+예시 {ubuntu} 스크립트 데이터.
+
+패키지::
+scap-security-guide-ubuntu
+
+채널::
+* SUSE Manager 도구
+
+Bash 스크립트 디렉토리::
+`/usr/share/scap-security-guide/`
+
+Bash 스트립트::
++
+----
+ubuntu1804-script-anssi_np_nt28_average.sh
+ubuntu1804-script-anssi_np_nt28_high.sh
+ubuntu1804-script-anssi_np_nt28_minimal.sh
+ubuntu1804-script-anssi_np_nt28_restrictive.sh
+ubuntu1804-script-cis.sh
+ubuntu1804-script-standard.sh
+ubuntu2004-script-standard.sh
+----
+
+
+==== {debian} Bash 스크립트 데이터
+
+예시 {debian} 스크립트 데이터.
+
+패키지::
+scap-security-guide-debian
+
+채널::
+* SUSE Manager 도구
+
+Bash 스크립트 디렉토리::
+`/usr/share/scap-security-guide/bash/`
+
+Bash 스트립트::
++
+----
+# Debian 12
+debian12-script-anssi_np_nt28_average.sh
+debian12-script-anssi_np_nt28_high.sh
+debian12-script-anssi_np_nt28_minimal.sh
+debian12-script-anssi_np_nt28_restrictive.sh
+debian12-script-standard.sh
+----

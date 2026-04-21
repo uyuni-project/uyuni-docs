@@ -1,0 +1,166 @@
+= {productname}サーバのアップグレード
+:revdate: 2025-07-29
+:page-revdate: {revdate}
+
+アップグレードコマンドを実行する前に、ホストオペレーティングシステムを更新する必要があります。ホストオペレーティングシステムを更新すると、[literal]``mgradm``ツールなどの{productname}ツールも更新されます。
+
+.プロシージャ: サーバのアップグレード
+[role=procedure]
+____
+. [command]``zypper``を使用してソフトウェアリポジトリを更新します。
+
++
+
+[source, shell]
+----
+zypper ref
+----
+
+ifeval::[{mlm-content} == true]
+
+. ホストオペレーティングシステムに応じて、以下のステップに進みます。
+
++
+
+{sl-micro}などのトランザクションシステムの場合: ::
+
++
+
+--
+
+. [command]``transactional-update``を使用して利用可能な更新を適用します。
+
++
+
+[source, shell]
+----
+transactional-update
+----
+
+. 更新が適用されたら、[literal]``reboot``を実行して再起動します。
+
+--
+
++
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+. [command]``transactional-update``を使用して利用可能な更新を適用します。
+
++
+
+[source, shell]
+----
+transactional-update
+----
+
+. 更新が適用されたら、[literal]``reboot``を実行して再起動します。
+
+endif::[]
+
+ifeval::[{mlm-content} == true]
+
+{sles}の場合: ::
+
++
+
+--
+
+[command]``zypper``を使用してインストールされたソフトウェアを更新します。
+
+[source, shell]
+----
+zypper up
+----
+
+--
+
+endif::[]
+
++
+
+. {productname}サーバコンテナは、次のコマンドを使用して更新できます。
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
++
+
+[source, shell]
+----
+mgradm upgrade podman
+----
+
++
+
+このコマンドは、コンテナのステータスを最新に更新してサーバを再起動します。
+
++
+
+. 未使用のコンテナイメージをクリーンアップし、ディスク容量を解放します。
+
++
+
+[source, shell]
+----
+podman image prune -a
+----
+
+____
+
+.サードパーティSSL証明書を使用したアップグレード
+[IMPORTANT]
+====
+サードパーティ証明書を使用している場合、データベースコンテナには、次のサブジェクト代替名(SAN)を持つSSL証明書が必要です。
+
+* [literal]``db``
+* [literal]``reportdb``
+* 外部向けの完全修飾ドメイン名
+
+メインコンテナとデータベースコンテナの両方に同じ証明書を使用できますが、これらのSANも必要です。
+
+In order to pass the new certificate to the upgrade command, use the [command]``--ssl-db-ca-root``, [command]``--ssl-db-cert`` and [command]``--ssl-db-key`` parameters.
+====
+
+.特定のバージョンへのアップグレード
+[NOTE]
+====
+タグパラメータを指定しない場合、デフォルトで最新バージョンにアップグレードされます。特定のバージョンにアップグレードするには、タグパラメータと目的のイメージタグを指定します。
+====
+
+upgradeコマンドとそのパラメータの詳細については、次のコマンドを使用します。
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
+[source, shell]
+----
+mgradm upgrade podman -h
+----
+
+
+Air-gappedインストールでは、まずコンテナのRPMパッケージをアップグレードし、その後[literal]``mgradm``コマンドを実行します。
+
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-database-backup-volume.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../partials/snippet-database-backup-volume.adoc[leveloffset=+1]
+endif::[]

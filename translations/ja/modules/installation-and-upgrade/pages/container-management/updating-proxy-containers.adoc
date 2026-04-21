@@ -1,0 +1,136 @@
+= {productname}プロキシのアップグレード
+:revdate: 2025-05-05
+:page-revdate: {revdate}
+
+アップグレードコマンドを実行する前に、ホストオペレーティングシステムを更新する必要があります。ホストオペレーティングシステムを更新すると、[literal]``mgrpxy``ツールなどの{productname}ツールも更新されます。
+
+.プロシージャ: プロキシのアップグレード
+[role=procedure]
+____
+. [command]``zypper``を使用してソフトウェアリポジトリを更新します。
+
++
+
+[source, shell]
+----
+zypper ref
+----
+
+ifeval::[{mlm-content} == true]
+
+. ホストオペレーティングシステムに応じて、以下のステップに進みます。
+
++
+
+{sl-micro}などのトランザクションシステムの場合: ::
+
++
+
+--
+
+. [command]``transactional-update``を使用して利用可能な更新を適用します。
+
++
+
+[source, shell]
+----
+transactional-update
+----
+
+. 更新が適用されたら、[literal]``reboot``を実行して再起動します。
+
+--
+
++
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+. [command]``transactional-update``を使用して利用可能な更新を適用します。
+
++
+
+[source, shell]
+----
+transactional-update
+----
+
+. 更新が適用されたら、[literal]``reboot``を実行して再起動します。
+
+endif::[]
+
+
+ifeval::[{mlm-content} == true]
+
+{sles}の場合: ::
+
++
+
+--
+
+[command]``zypper``を使用してインストールされたソフトウェアを更新します。
+
+[source, shell]
+----
+zypper up
+----
+
+--
+
+endif::[]
+
++
+
+. [literal]``podman``上で実行される{productname}プロキシコンテナは、次のコマンドを使用して更新できます。
+
++
+
+[source, shell]
+----
+mgrpxy upgrade podman
+----
+
++
+
+または、Kubernetesクラスタ上で実行されるプロキシコンテナは、次のコマンドを使用して更新できます。
+
++
+
+[source, shell]
+----
+mgrpxy upgrade kubernetes
+----
+
++
+
+. podman上で、未使用のコンテナイメージをクリーンアップしてディスク容量を解放します。
+
++
+
+[source, shell]
+----
+podman image prune -a
+----
+
+____
+
+Kubernetesではイメージクリーンアップが自動的に処理されますが、Kubernetesディストリビューションによって異なります。
+
+[NOTE]
+====
+特定のバージョンにアップグレードする際にタグパラメータを指定しない場合、デフォルトで最新バージョンにアップグレードされます。特定のバージョンにアップグレードするには、タグパラメータと目的のイメージタグを指定します。
+====
+
+[IMPORTANT]
+====
+
+ifeval::[{mlm-content} == true]
+
+特定のタグを使用して特定のコンテナをアップグレードするオプションはありますが、この機能はPTFの適用のみを意図しています。
+endif::[]
+
+通常の状況下では、すべてのプロキシコンテナに同じタグを使用して一貫性を確保することを強くお勧めします。
+====
+
+Air-gappedインストールでは、まずコンテナのRPMパッケージをアップグレードし、その後[command]``mgrpxy upgrade podman``コマンドを実行します。

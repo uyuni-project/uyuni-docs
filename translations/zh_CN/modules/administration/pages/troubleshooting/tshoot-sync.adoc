@@ -1,0 +1,118 @@
+[[troubleshooting-package-sync]]
+= 同步查错
+:revdate: 2025-07-08
+:page-revdate: {revdate}
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+
+同步失败的原因有很多。要获取有关连接问题的详细信息，请运行以下命令：
+
+----
+export URLGRABBER_DEBUG=DEBUG
+spacewalk-repo-sync -c <通道名称> <选项> > /var/log/spacewalk-repo-sync-$(date +%F-%R).log 2>&1
+----
+
+还可以检查 Zypper 在 [path]``/var/log/zypper.log`` 处创建的日志
+
+
+GPG 密钥不匹配::
+{productname} 不会自动信任第三方 GPG 密钥。如果软件包同步失败，原因可能是某个 GPG 密钥不受信任。您可以通过打开 [path]``/var/log/rhn/reposync`` 并查找如下所示的错误来确定这是否是原因所在：
++
+----
+['/usr/bin/spacewalk-repo-sync', '--channel', 'sle-12-sp1-ga-desktop-
+nvidia-driver-x86_64', '--type', 'yum', '--non-interactive']
+RepoMDError：无法访问储存库。可能未导入储存库 GPG 密钥
+----
++
+要解决该问题，需要将 GPG 密钥导入 {productname}。有关导入 GPG 密钥的详细信息，请参见 xref:administration:repo-metadata.adoc[]。
+
+
+从 [literal]``spacewalk-repo-sync`` 去除 GPG 密钥::
+When a GPG key for repository has been manually imported using [literal]``spacewalk-repo-sync``, and this key is no longer needed (for example if the key was compromised, or was used for testing purposes only), it can be removed from the zypper RPM database used by [literal]``spacewalk-repo-sync`` with the following command:
++
+----
+rpm --dbpath=/var/lib/spacewalk/reposync/root/var/lib/rpm/ -e gpg-pubkey-*
+----
++
+其中 [literal]``gpg-pubkey-*`` 是要去除的 GPG 密钥的名称。
+
+
+
+续订 GPG 密钥::
+如果您要续订某个 GPG 密钥，请先去除旧密钥，然后生成并导入新密钥。
+
+校验和不匹配::
+如果校验和失败，[path]``/var/log/rhn/reposync/*.log`` 日志文件中可能会显示如下所示的错误：
++
+----
+Repo Sync Errors: (50, u'checksums did not match
+326a904c2fbd7a0e20033c87fc84ebba6b24d937 vs
+afd8c60d7908b2b0e2d95ad0b333920aea9892eb', 'Invalid information uploaded
+to the server')
+The package microcode_ctl-1.17-102.57.62.1.x86_64 which is referenced by
+patch microcode_ctl-8413 was not found in the database. This patch has
+been skipped.
+----
++
+可以通过在命令提示符下使用 [command]``-Y`` 选项运行同步来解决此错误：
++
+----
+spacewalk-repo-sync --channel <通道名称> -Y
+----
++
+此选项在同步之前校验储存库数据，而不是依赖于本地缓存的校验和。
+
+
+连接超时::
+如果下载超时并出现以下错误：
++
+----
+28：操作速度太慢。过去 300 秒的传输速率小于 1000 字节/秒
+----
++
+您可以通过在 [path]``/etc/rhn/rhn.conf`` 中指定 [literal]``reposync_timeout`` 和 [literal]``reposync_minrate`` 配置值来解决此错误。默认情况下，如果在 300 秒内的传输速率小于 1000 字节/秒，则下载将会中止。您可以使用 [literal]``reposync_minrate`` 调整每秒字节数，并使用 [literal]``reposync_timeout`` 调整等待的秒数。
+
+
+重新同步期间手动信任密钥::
+在某些情况下，当运行 [command]``reposync`` 时，您可能需要手动接受 GPG 密钥。例如：
++
+----
+# spacewalk-repo-sync -c nvidia-compute-sle-15-x86_64-we-sp3
+17:07:40 ======================================
+17:07:40 | Channel: nvidia-compute-sle-15-x86_64-we-sp3
+17:07:40 ======================================
+17:07:40 Sync of channel started.
+New repository or package signing key received:
+  Repository:       nvidia-compute-sle-15-x86_64-we-sp3
+  Key Fingerprint:  610C 7B14 E068 A878 070D A4E9 9CD0 A493 D42D 0685
+  Key Name:         cudatools <cudatools@nvidia.com>
+  Key Algorithm:    RSA 4096
+  Key Created:      Thu Apr 14 16:04:01 2022
+  Key Expires:      (does not expire)
+  Rpm Name:         gpg-pubkey-d42d0685-62589a51
+    Note: Signing data enables the recipient to verify that no modifications occurred after the data
+    were signed. Accepting data with no, wrong or unknown signature can lead to a corrupted system
+    and in extreme cases even to a system compromise.
+    Note: A GPG pubkey is clearly identified by its fingerprint. Do not rely on the key's name. If
+    you are not sure whether the presented key is authentic, ask the repository provider or check
+    their web site. Many providers maintain a web page showing the fingerprints of the GPG keys they
+    are using.
+Do you want to reject the key, trust temporarily, or trust always? [r/t/a/?] (r):
+----

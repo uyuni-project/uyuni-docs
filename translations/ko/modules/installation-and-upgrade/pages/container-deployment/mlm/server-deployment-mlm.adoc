@@ -1,0 +1,263 @@
+[[deploy-mlm-server]]
+= {productname} {productnumber} 서버 배포
+:revdate: 2025-07-09
+:page-revdate: {revdate}
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+이 가이드에서는 {sl-micro} {microversion} 또는 {sles} {bci-mlm}에 {productname} {productnumber} 컨테이너를 설치하고 구성하는 방법을 설명합니다.
+
+// Link to hardware requirements do not show them here. We list them on other pages.
+// Done within next section.
+
+== {productname}의 하드웨어 요구사항
+
+이 테이블은 베어 메탈 머신에 {productname} 서버를 배포하기 위한 소프트웨어 및 하드웨어 요구 사항을 보여줍니다. 이 가이드의 목적에 따라 컴퓨터에는 16GB의 RAM과 최소 200GB의 디스크 공간이 있어야 합니다. 디스크 공간에 대한 배경 정보는 xref:installation-and-upgrade:hardware-requirements.adoc[]에서 확인할 수 있습니다.
+
+[cols="1,1", options="header"]
+.소프트웨어 및 하드웨어 요구사항
+|===
+| 소프트웨어 및 하드웨어  | 권장
+| 운영 체제:      | {sl-micro} {microversion} 또는
+
+                           {sles} {bci-mlm}
+| 아키텍처           | {x86_64}, {arm}, {s390x}, {ppc64le}
+| 프로세서: (CPU)       | 최소 네(4) 개의 64비트 CPU 코어
+| RAM:                   | 16GB
+| 디스크 공간:            | 200GB
+| 채널 요구 사항   | SUSE 또는 openSUSE 제품당 50GB
+                          
+                           Red Hat 제품당 360GB
+| 스왑 공간:            | 8~12GB
+|===
+
+.서버 컨테이너 호스트에 지원되는 운영 체제
+[NOTE]
+====
+컨테이너 호스트용으로 지원되는 운영 체제는 {sl-micro} {microversion} 또는 {sles} {bci-mlm}입니다.
+
+컨테이너 호스트::
+컨테이너 호스트는 컨테이너를 관리하고 배포할 수 있는 컨테이너 엔진(예: [systemitem]``Podman``)이 탑재된 서버입니다. 이러한 컨테이너는 필수적인 부분(예: 애플리케이션 및 라이브러리)을 보관하지만, 전체 운영 체제는 보관하지 않으므로 경량화됩니다. 이 설정은 애플리케이션이 다양한 환경에서 동일한 방식으로 실행되도록 보장합니다. 컨테이너 호스트는 이러한 컨테이너에 필요한 리소스(예: CPU, 메모리, 스토리지)를 제공합니다.
+====
+
+
+[IMPORTANT]
+====
+서버를 배포하려면 FQDN(정규화된 도메인 이름)을 사용해야 합니다. 라우터 또는 네트워크에서 FQDN을 자동으로 DNS 프로비저닝하지 않으면 배포 프로세스가 성공적으로 진행되지 않습니다. FQDN은 일반적으로 <호스트>.<도메인>.com 형식을 따릅니다.
+
+예:
+
+* [literal]``mlm.example.com``
+* [literal]``mlm.container.lab``
+
+자세한 내용은 xref:installation-and-upgrade:network-requirements.adoc[]의 네트워크 요구사항 섹션을 참조하십시오.
+====
+
+== 영구 볼륨
+
+// This sections needs to be run by devs. How would a customer use custom storage? How do we set this up with mgradm?
+
+{productname} {productnumber}은(는) 기본적으로 필요한 영구 스토리지 볼륨을 정의합니다. 이러한 볼륨이 아직 없다면 설치 중에 [command]``mgradm`` 도구에 의해 볼륨이 생성됩니다.
+
+이러한 볼륨은 [path]``/var/lib/containers/storage/volumes/``에 생성되며, [systemitem]``Podman``은 기본적으로 해당 볼륨을 저장합니다.
+
+.권장
+[NOTE]
+====
+이 디렉토리에 외부 스토리지 장치를 마운트하여 간소화된 스토리지를 활용할 수 있습니다. 여기에는 {postgresql} 데이터베이스, 리포지토리용 이진 패키지, 캐시, 운영 체제 이미지, 자동 설치 배포 및 구성 파일이 저장되므로 다음과 같은 3가지 권장 사항이 있습니다.
+
+고속 스토리지::
+이 탑재 지점은 NVMe 또는 SSD급 장치를 사용하는 것이 가장 좋습니다. 스토리지 속도가 느리면 {productname}의 성능에 부정적인 영향을 미칩니다.
+
+대용량::
+이를 위한 최소 권장 크기는 300GB 이상이며, 관리해야 할 Linux 배포 또는 아키텍처가 여러 개일 경우 더 큰 크기가 권장됩니다.
+
+권장 파일 시스템::
+XFS({sl-micro} {microversion}용으로 지원되는 모든 파일 시스템이 작동할 수도 있음).
+
+선택 사항::
+[path]``/var/lib/containers/storage/volumes/var-spacewalk``와 같은 예상 볼륨 경로에 디스크를 마운트하여 볼륨에 대한 사용자 지정 스토리지를 제공할 수 있습니다. 이렇게 하면 {productname} 배포의 복잡도가 높아지며 기본 스토리지 권장 사항이 제공하는 복원력에 영향을 줄 수 있습니다.
+
+====
+
+
+컨테이너의 모든 영구 볼륨 목록은 xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]에서 확인할 수 있습니다.
+
+
+
+
+[[deploy-mlm-server-host]]
+==  {productname} 서버 호스트 준비
+
+{sl-micro} {microversion} 또는 {sles} {bci-mlm}에 {productname}을(를) 배포할 수 있습니다. {sl-micro}는 트랜잭션 시스템이고 {sles}는 전체 서버 운영 체제입니다.
+
+원하는 대로 xref:installation-and-upgrade:container-deployment/mlm/server-deployment-mlm.adoc#deploy-mlm-server-micro[] 또는 xref:installation-and-upgrade:container-deployment/mlm/server-deployment-mlm.adoc#deploy-mlm-server-sles[]를 진행하고 선택하지 않은 섹션은 건너뜁니다.
+
+
+
+[[deploy-mlm-server-micro]]
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-prepare-micro-host.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-prepare-micro-host.adoc[leveloffset=+1]
+endif::[]
+
+배포를 계속하려면 xref:installation-and-upgrade:container-deployment/mlm/server-deployment-mlm.adoc#deploy-mlm-server-persistent-storage[]를 참조하십시오.
+
+[[deploy-mlm-server-sles]]
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-prepare-sles-host.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-prepare-sles-host.adoc[leveloffset=+1]
+endif::[]
+
+배포를 계속하려면 xref:installation-and-upgrade:container-deployment/mlm/server-deployment-mlm.adoc#deploy-mlm-server-persistent-storage[]를 참조하십시오.
+
+
+
+
+[[deploy-mlm-server-persistent-storage]]
+== 사용자 정의 영구 스토리지 구성
+
+영구 스토리지 구성은 선택 사항이지만, 컨테이너 디스크가 가득 찬 상황에 심각한 문제를 방지할 수 있는 유일한 방법입니다. [command]``mgr-storage-server`` 도구를 사용하여 사용자 지정 영구 스토리지를 구성하는 것이 적극 권장됩니다.
+
+자세한 내용은 [command]``mgr-storage-server --help``를 참조하십시오. 이 도구는 컨테이너 스토리지 및 데이터베이스 볼륨 생성을 간소화합니다.
+
+다음 방법으로 명령 사용:
+
+[source, shell]
+----
+mgr-storage-server <storage-disk-device> [<database-disk-device>]
+----
+
+예:
+
+----
+mgr-storage-server /dev/nvme1n1 /dev/nvme2n1
+----
+
+[NOTE]
+====
+이 명령은 [path]``/var/lib/containers/storage/volumes``에 영구 스토리지 볼륨을 생성합니다.
+
+자세한 내용은 다음을 참조하십시오.
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+====
+
+
+[[deploy-mlm-server-mgradm]]
+== [literal]``mgradm``을 사용하여 {productname} 배포
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-note-deploy-certs.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-note-deploy-certs.adoc[]
+endif::[]
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+.절차: [literal]``mgradm``을 사용한 {productname} {productnumber} 배포
+. 루트로 로그인합니다.
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-step-deploy-podman-certs.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-step-deploy-podman-certs.adoc[]
+endif::[]
+
++
+
+[IMPORTANT]
+====
+실행한 명령이 실패하면 {productname} {productnumber}을(를) 등록했는지 확인합니다. 설치 중에 등록을 건너뛰고 이제 명령줄에서 등록해야 하는 경우 아래 단계에 따라 레지스트리에 로그인합니다.
+
+include::../../../partials/snippet-login-into-suse-registry.adoc[]
+
+메시지가 표시되면 {productname} {productnumber} 등록 키를 사용합니다.
+====
+
+. 메시지가 표시되면 CA 키(인증 기관) 및 관리자 계정 비밀번호를 입력합니다.
++
+
+[NOTE]
+====
+관리자 계정 비밀번호는 5자 이상 48자 미만이어야 합니다.
+====
++
+
+. btn:[Enter]를 누릅니다.
+. 관리 계정의 이메일 주소를 입력합니다. btn:[Enter]를 누릅니다.
+. 배포가 완료될 때까지 기다립니다.
+. 브라우저를 열고 서버 FQDN으로 이동합니다.
+. 사용자 이름(기본값은 [literal]``admin``)과 배포 프로세스 중에 설정한 비밀번호를 입력합니다.
+
+이 가이드에서는 {productname} {productnumber} 서버를 컨테이너로 배포했습니다. 다음 섹션으로 진행하여 {scclongform}과(와) 동기화하기 위한 조직 자격 증명을 추가하십시오.
+
+
+== {productname} {productnumber}을(를) {scclongform}에 연결
+
+이 섹션에서는 {webui}에서 {scc}를 사용한 동기화 및 첫 번째 클라이언트 채널 추가에 대해 설명합니다.
+
+[[proc-admin-organization-credentials]]
+.절차: 조직 인증서 입력
+. 브라우저를 열고 서버 FQDN으로 이동합니다.
+. 사용자 이름(기본값은 [literal]``admin``)과 배포 프로세스 중에 설정한 비밀번호를 입력합니다.
+. {productname} {webui}에서 menu:관리[설정 마법사]를 선택합니다.
+. [guimenu]``설정 마법사`` 페이지에서 btn:[조직 인증서] 탭을 선택합니다.
+. btn:[새 인증서 추가]를 클릭합니다.
+. 브라우저에서 {scclongform}을(를) 가리킵니다.
+. 왼쪽 탐색에서 조직을 선택합니다.
+. 페이지 상단에서 사용자 탭을 선택한 다음 btn:[조직 자격 증명]을 선택합니다.
+. **미러링 자격 증명**을 기록해 둡니다.
+. {productname} {webui}에 [guimenu]``사용자 이름`` 및 [guimenu]``비밀번호``를 다시 입력한 다음 btn:[저장]을 눌러 확인합니다.
+
+체크 표시 아이콘으로 인증서가 확인되면 <<proc-quickstart-first-channel-sync>>를 진행합니다.
+
+
+[[proc-quickstart-first-channel-sync]]
+.절차: {scclongform}을(를) 사용한 동기화
+. {webui}에서 menu:관리[설정 마법사]로 이동합니다.
+. [guimenu]``설정 마법사`` 페이지에서 [guimenu]``제품 사용`` 탭을 선택합니다. 최근에 {scclongform}에 등록한 경우 제품 목록이 표에 채워지기 시작합니다. 이 작업에는 최대 몇 분이 소요될 수 있습니다. 작업 진행 상황은 오른쪽의 ``{scclongform}에서 제품 카탈로그 새로 고침`` 섹션에서 모니터링할 수 있습니다. 제품 표에는 아키텍처, 채널 및 상태 정보가 나열되어 있습니다. 자세한 내용은 xref:reference:admin/setup-wizard.adoc[마법사]에서 확인할 수 있습니다.
++
+image::admin_suse_products.png[scaledwidth=80%]
+. ``제품 설명으로 필터링`` 및 ``아키텍처로 필터링``을 사용하여 표시되는 제품 목록을 필터링할 수 있습니다. btn:[제품] 페이지에 나열된 채널은 클라이언트를 위한 리포지토리를 제공합니다.
++
+
+* 각 채널 왼쪽의 확인란을 선택하여 {productname}에 채널을 추가합니다. 설명 왼쪽의 화살표 기호를 클릭하면 제품이 펼쳐지고 사용 가능한 모듈이 나열됩니다.
+* 페이지 상단의 btn:[제품 추가]를 클릭하여 제품 동기화를 시작합니다.
+
+채널을 추가한 후 {productname}은(는) 채널을 동기화하도록 예약합니다. 이 작업은 {productname}이(가) {scclongform}에 있는 {suse} 리포지토리에서 서버의 로컬 [path]``/var/lib/containers/storage/volumes/var-spacewalk/`` 디렉토리로 채널 소프트웨어 소스를 복사하므로 시간이 오래 걸릴 수 있습니다.
+
+채널이 완전히 동기화되면 채널에 대한 부트스트랩 리포지토리가 자동으로 생성됩니다. 이 단계는 클라이언트를 성공적으로 부트스트랩하기 위해 매우 중요한 단계로, 클라이언트 측에서 채널 동기화 및 배포가 작동하는지 확인합니다. 이를 통해 {productname}의 설치 및 구성이 완료되고 클라이언트 부트스트랩에 필요한 채널이 준비됩니다.
+
+채널 동기화 프로세스가 완료되면 클라이언트를 등록할 수 있습니다. 자세한 지침은 xref:client-configuration:registration-overview.adoc[]을 참조하십시오.
+
+자세한 지침은 xref:client-configuration:registration-overview.adoc[]에서 확인할 수 있습니다.
+
+
+
+== 관리용 컨테이너 입력
+
+컨테이너 내부의 셸로 이동하려면 컨테이너 호스트에서 실행합니다.
+----
+mgrctl term
+----

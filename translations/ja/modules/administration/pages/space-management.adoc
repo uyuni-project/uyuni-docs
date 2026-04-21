@@ -1,0 +1,71 @@
+[[space-management]]
+= ディスク容量管理
+:revdate: 2026-03-10
+:page-revdate: {revdate}
+
+ディスク容量が不足すると、{productname}データベースとファイル構造に深刻な影響を及ぼす可能性があり、場合によっては回復できなくなります。
+
+{productname}は、空きディスク容量のために一部のディレクトリを監視します。 監視するディレクトリと作成される警告を変更できます。 すべての設定は、[path]``/etc/rhn/rhn.conf``設定ファイルで行われます。
+
+監視対象ディレクトリのいずれかの使用可能容量が警告しきい値を下回ると、設定された電子メールアドレスにメッセージが送信され、サインインページの上部に通知が表示されます。
+
+
+
+== Monitored directories
+
+
+デフォルトでは、{productname}は以下のディレクトリを監視します。
+
+* [path]``/var/spacewalk``
+* [path]``/var/cache``
+* [path]``/srv``
+
+監視するディレクトリは、[systemitem]``spacecheck_dirs``パラメータで変更できます。 スペースで区切って、複数のディレクトリを指定できます。
+
+例:
+
+----
+spacecheck_dirs = /var/spacewalk /var/cache /srv
+----
+
+ボリュームの詳細については、xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]を参照してください。
+
+== しきい値
+
+デフォルトでは、{productname}は、監視対象ディレクトリで使用可能な合計容量の10%未満になると警告を作成します。 また、監視対象ディレクトリの空き容量が5%未満になると、クリティカルアラートが作成されます。
+
+これらのアラートしきい値は[systemitem]``spacecheck_free_alert``および[systemitem]``spacecheck_free_critical``パラメータを使用して変更できます。
+
+例:
+
+----
+spacecheck_free_alert = 10
+spacecheck_free_critical = 5
+----
+
+
+
+== Shut down services
+
+デフォルトでは、クリティカルアラートしきい値に達すると、{productname}はspacewalkサービスをシャットダウンします。
+
+この動作は、[systemitem]``spacecheck_shutdown``パラメータで変更できます。 ``true``の値はシャットダウン機能を有効にします。 その他の値は無効にします。
+
+例:
+
+----
+spacecheck_shutdown = true
+----
+
+
+
+== Disable space checking
+
+スペースチェックツールはデフォルトで有効になっています。 次のコマンドを使用して完全に無効にできます。
+
+----
+systemctl stop spacewalk-diskcheck.timer
+systemctl disable spacewalk-diskcheck.timer
+----
+
+[literal]``spacewalk-diskcheck.timer``を無効にすると、アラートのしきい値に達した場合に定期的な電子メールアラートが停止しますが、警告通知はサインインページの上部に表示されます。

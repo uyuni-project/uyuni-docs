@@ -1,0 +1,228 @@
+[[proxy-install-vm]]
+= 仮想マシンとしての{productname}プロキシの配備 - KVM
+:revdate: 2025-06-26
+:page-revdate: {revdate}
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+この章では、{productname} {productnumber}プロキシをイメージとして配備するための仮想マシンの設定について説明します。このインストールでは、KVMを仮想マシンマネージャ(_virt-manager_)と組み合わせてサンドボックスとして使用します。
+
+
+
+// FIXME: make this section a snippet or move it to a general intro for both,
+//        KVM and VMware
+== 利用可能なイメージ
+
+
+[IMPORTANT]
+====
+{productname}プロキシを配備する際に推奨される方法は、利用可能な次のイメージの1つを使用することです。これらのイメージにはすべてのツールが含まれており、配備が容易になります。
+====
+
+// 2025-02-17, ke: as of today, suse-manager directory is still in use
+{productname} {productnumber}プロキシのイメージはlink:https://www.suse.com/download/suse-manager/[{productname} {productnumber} VM images]で入手できます。
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-warn-images-sl-micro.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-warn-images-sl-micro.adoc[]
+endif::[]
+
+[NOTE]
+====
+生イメージの準備の詳細については、link:https://documentation.suse.com/sle-micro/6.1/html/Micro-deployment-raw-images-virtual-machines/index.html#deployment-preparing-configuration-device[]を参照してください。
+
+セルフインストールイメージの詳細については、link:https://documentation.suse.com/sle-micro/6.1/html/Micro-deployment-selfinstall-images/index.html[]を参照してください。
+====
+
+// FIXME more archs supported?
+
+.利用可能なプロキシイメージ
+[cols="3, 3", options="header"]
+|===
+| アーキテクチャ | イメージの形式
+
+| aarch64| qcow2、vmdk
+
+| x86_64  | qcow2、vmdk、raw、セルフインストーラ
+
+|===
+
+
+[[proxy-quickstart.sect.kvm.settings]]
+== 仮想マシンマネージャ(virt-manager)の設定
+
+**virt-manager**を使用して、新しい仮想マシンを作成するときに、次の設定を入力します。
+
+[NOTE]
+====
+次の表は、最低要件を指定しています。これらは、クライアントが1つある1つのプロキシなど、テスト用の簡易的なインストールに適しています。
+
+運用環境を使用する場合、ディスク容量に関する背景情報が必要な場合は、xref:installation-and-upgrade:hardware-requirements.adoc[]を参照してください。
+====
+
+
+[cols="1,1", options="header"]
+|===
+2+<| KVMの設定
+| インストール方法 | 既存のディスクイメージのインポート
+| OS:                 | Linux
+| バージョン:            | {productname}-Proxy.x86_64-5.1.*.qcow2
+| メモリ:             | 最小*)
+| CPU:              | 最小*)
+| ストレージフォーマット:     | _.qcow2_ 40 GB (デフォルト)ルートパーティション
+| 名前:               | test-setup
+| ネットワーク             | Bridge _br0_
+|===
+
+*) 最小値については、xref:installation-and-upgrade:hardware-requirements.adoc#proxy-hardware-requirements[]を参照してください。
+
+
+[NOTE]
+====
+[path]``/var/lib/containers/storage/volumes`` 100GB以上。ストレージ要件は、使用するISOディストリビューションイメージ、コンテナ、およびブートストラップリポジトリの数に合わせて計算する必要があります。
+====
+
+
+
+[[proxy-minimmal.kvm.setup]]
+== KVMの初期セットアップ
+
+設定については、xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-vm-mlm.adoc#proxy-quickstart.sect.kvm.settings[]を参照してください。
+
+.プロシージャ: 初期セットアップを作成する
+. ダウンロードした{minimal} KVMイメージを使用して新しい仮想マシンを作成し、［[guimenu]``Import existing disk image ``］（既存のディスクイメージをインポート）を選択します。
+. RAMおよびCPU数を最小値で設定します。*)
+. KVMマシンに名前を付け、［[guimenu]``Customize configuration before install``］（インストール前に設定をカスタマイズ）チェックボックスを選択します。
+. btn:[Begin Installation]（インストールの開始）をクリックし、イメージからブートします。
+. ［JeOS Firstboot］の画面で、［Start］を選択して続行します。
++
+
+image::jeos-firstboot.png[]
+
+. キーボードレイアウトを選択します。
++
+
+image::select-keyboard.png[]
+
+.  ライセンス契約に同意します。
++
+
+image::accept-license-agreement.png[]
+
+. タイムゾーンを選択します。
++
+
+image::enter-timezone.png[]
+
+. rootのパスワードを入力します。
++
+
+image::root-password.png[]
+
+. インストールが完了したら、rootとしてログインします。
+
+. 次のセクションに進みます。
+
+*) 最小値については、xref:installation-and-upgrade:hardware-requirements.adoc#proxy-hardware-requirements[]を参照してください。
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-register-proxy-mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-register-proxy-mlm.adoc[]
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-actkey-bootstrap-proxy-mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-actkey-bootstrap-proxy-mlm.adoc[]
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-generate_proxy_config.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-generate_proxy_config.adoc[]
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-transfer_proxy_config.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-transfer_proxy_config.adoc[]
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-start-proxy.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-start-proxy.adoc[]
+endif::[]
+
+
+////
+[[installation-proxy-containers-services]]
+== Install container services on the host system
+ifeval::[{mlm-content} == true]
+
+[NOTE]
+====
+[literal]``Containers Module`` is required to be available for container host on a {sles} machine.
+====
+endif::[]
+
+{productname} Proxy containers are using [literal]``podman`` and [literal]``systemd`` to run and manage all proxy containers.
+
+First step is to install the [literal]``mgrpxy`` utility provided by the package of the same name.
+
+ifeval::[{mlm-content} == true]
+The [literal]``mgrpxy`` package is available in the {productname} Proxy product repositories.
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+The [literal]``mgrpxy`` package is available in the container utils repository: pick the one matching the distribution in: https://download.opensuse.org/repositories/systemsmanagement:Uyuni:/Stable:/ContainerUtils/.
+endif::[]
+
+To install them run:
+
+----
+zypper in helm mgrpxy
+----
+////
+
+
+=== サービスにカスタムコンテナイメージを使用する
+
+デフォルトでは、{productname}プロキシスイートは、その各サービスに対して同じイメージバージョンとレジストリパスを使用するように設定されています。ただし、末尾に[literal]``-tag``および[literal]``-image``を指定してインストールパラメータを使用し、特定のサービスのデフォルト値を上書きすることは可能です。
+
+たとえば、次のように使用します。
+
+----
+mgrpxy install podman --httpd-tag 0.1.0 --httpd-image registry.opensuse.org/uyuni/proxy-httpd /path/to/config.tar.gz
+----
+
+これは、httpdサービスの設定ファイルを調整してから再起動します。[path]``registry.opensuse.org/uyuni/proxy-httpds``は使用するイメージ、[literal]``0.1.0``はバージョンタグです。
+
+値をデフォルトにリセットするには、これらのパラメータを指定せずにもう一度installコマンドを実行します。
+
+----
+mgrpxy install podman /path/to/config.tar.gz
+----
+
+このコマンドは、すべてのサービスの設定をグローバルデフォルトにリセットして再ロードします。

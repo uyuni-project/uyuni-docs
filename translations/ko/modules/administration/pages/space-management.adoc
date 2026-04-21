@@ -1,0 +1,71 @@
+[[space-management]]
+= 디스크 공간 관리
+:revdate: 2026-03-10
+:page-revdate: {revdate}
+
+디스크 공간이 부족하면 복구가 불가능한 {productname} 데이터베이스 및 파일 구조에 심각한 영향을 미칠 수 있습니다.
+
+{productname}는 사용 가능한 디스크 공간을 위해 일부 디렉토리를 모니터링합니다. 모니터링되는 디렉토리 및 생성되는 경고를 수정할 수 있습니다. 모든 설정은 [path]``/etc/rhn/rhn.conf`` 구성 파일에서 구성됩니다.
+
+모니터링되는 디렉토리 중 하나의 사용 가능 공간이 경고 임계값 미만으로 감소하면, 구성된 이메일 주소로 메시지가 전송되고 로그인 페이지 상단에 알림이 표시됩니다.
+
+
+
+== Monitored directories
+
+
+{productname}에서 기본적으로 모니터링되는 디렉토리는 다음과 같습니다.
+
+* [path]``/var/spacewalk``
+* [path]``/var/cache``
+* [path]``/srv``
+
+[systemitem]``spacecheck_dirs`` 파라미터를 사용하여 모니터링할 디렉토리를 변경할 수 있습니다. 이 경우 공백으로 구분하여 여러 디렉토리를 지정할 수 있습니다.
+
+예:
+
+----
+spacecheck_dirs = /var/spacewalk /var/cache /srv
+----
+
+볼륨에 대한 자세한 내용은 xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]에서 확인할 수 있습니다.
+
+== 임계값
+
+{productname}는 기본적으로 모니터링되는 디렉토리에서 사용 가능한 총 공간이 10% 미만이면 경고를 생성합니다. 모니터링되는 디렉토리가 사용 가능한 공간의 5% 미만으로 감소하면 위험 경고를 생성합니다.
+
+[systemitem]``spacecheck_free_alert`` 및 [systemitem]``spacecheck_free_critical`` 파라미터를 사용하여 이러한 경고 임계값을 변경할 수 있습니다.
+
+예:
+
+----
+spacecheck_free_alert = 10
+spacecheck_free_critical = 5
+----
+
+
+
+== Shut down services
+
+기본적으로 {productname}는 위험 경고 임계값에 도달하면 Spacewalk 서비스를 종료합니다.
+
+[systemitem]``spacecheck_shutdown`` 파라미터를 사용하여 이 동작을 변경할 수 있습니다. 값이 ``true``이면 종료 기능이 활성화됩니다. 다른 값은 기능을 비활성화합니다.
+
+예:
+
+----
+spacecheck_shutdown = true
+----
+
+
+
+== Disable space checking
+
+공간 검사 도구는 기본적으로 활성화되어 있습니다. 완전히 비활성화하기 위한 명령은 다음과 같습니다.
+
+----
+systemctl stop spacewalk-diskcheck.timer
+systemctl disable spacewalk-diskcheck.timer
+----
+
+[literal]``spacewalk-diskcheck.timer``를 비활성화하면 경고 임계값에 도달한 경우 정기적인 이메일 경고가 중지되지만, 경고 알림은 로그인 페이지 상단에 계속 표시됩니다.

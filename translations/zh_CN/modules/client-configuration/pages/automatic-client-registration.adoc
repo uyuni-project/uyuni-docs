@@ -1,0 +1,69 @@
+[[automatic-client-registration]]
+= 自动注册 Terraform 创建的客户端
+:revdate: 2024-03-05
+:page-revdate: {revdate}
+
+
+Terraform 创建的新客户端可以自动注册到 {productname} 中。可以通过以下两种方式来完成注册：
+
+* 基于 [literal]``cloud-init`` 的注册
+* 基于 remote-exec 置备器的注册
+
+
+
+[[cloud-init-based-client-registration]]
+== 基于 [literal]``cloud-init`` 的客户端注册
+
+
+自动注册新创建的虚拟机的首选方式是利用 [literal]``cloud-init`` 进行注册。采用这种方法无需配置与主机的 SSH 连接。此外，无论使用哪种工具创建客户端，都可以采用这种方法。
+
+用户可以在使用 Terraform 部署映像时传递用户数据集，以便将虚拟机自动注册到 {productname} 中。[path]``user_data`` 只会在虚拟机首次启动时的引导期间运行一次。
+
+使用 [literal]``cloud-init`` 注册客户端之前，用户必须配置：
+
+* 引导脚本。有关详细信息，请参见 xref:client-configuration:registration-bootstrap.adoc[]。
+* 激活密钥。有关详细信息，请参见 xref:client-configuration:activation-keys.adoc[]。
+
+
+下面的命令会下载引导脚本并在新虚拟机创建后注册该虚拟机。应将此命令添加到 [literal]``cloud-init`` 配置中：
+
+----
+curl -s http://hub-server.tf.local/pub/bootstrap/bootstrap-default.sh | bash -s
+----
+
+[NOTE]
+====
+无论何时更新 [path]``user_data`` 来更改置备，Terraform 都会销毁虚拟机，然后使用新 IP 等信息重新创建虚拟机。
+====
+
+有关 AWS 上的 [literal]``cloud-init`` 的详细信息，请参见 https://registry.terraform.io/providers/hashicorp/template/latest/docs/data-sources/cloudinit_config[]。
+
+有关 [literal]``cloud-init`` 示例，请参见 https://registry.terraform.io/providers/hashicorp/cloudinit/latest/docs/data-sources/cloudinit_config#example-usage[]。
+
+
+
+[[remote-exec-provisioner-based-client-registration]]
+== 基于 [literal]``remote-exec`` 置备器的注册
+
+第二种自动注册新创建的虚拟机的方法是使用 Terraform 的 [literal]``remote-exec`` 置备器。
+
+[literal]``remote-exec`` 置备器会与新创建的虚拟机进行交互。它会建立 SSH 连接，然后便可在该虚拟机上运行命令。
+
+[IMPORTANT]
+====
+使用 [literal]``remote-exec`` 置备器注册客户端时，用户必须确保运行 Terraform 的虚拟机在新虚拟机创建后可以访问该虚拟机。
+====
+
+其他要求与使用<<cloud-init-based-client-registration>>时相同：
+
+* 引导脚本。有关详细信息，请参见 xref:client-configuration:registration-bootstrap.adoc[]。
+* 激活密钥。有关详细信息，请参见 xref:client-configuration:activation-keys.adoc[]。
+
+下面的命令会下载引导脚本并在新虚拟机创建后注册该虚拟机。应将此命令定义为要运行的远程命令：
+
+----
+curl -s http://hub-server.tf.local/pub/bootstrap/bootstrap-default.sh | bash -s
+----
+
+有关 [literal]``remote-exec`` 置备器的详细信息，请参见 https://www.terraform.io/docs/provisioners/remote-exec.html[]。
+

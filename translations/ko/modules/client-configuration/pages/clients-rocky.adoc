@@ -1,0 +1,216 @@
+[[clients-rocky]]
+= {rocky} 클라이언트 등록
+:revdate: 2026-03-17
+:page-revdate: {revdate}
+
+이 섹션에는 {rocky} 운영 체제를 실행하는 클라이언트를 등록하는 방법에 대한 정보가 포함되어 있습니다.
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$rhel10_cpu_architecture_warning.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/rhel10_cpu_architecture_warning.adoc[]
+endif::[]
+
+ifeval::[{mlm-content} == true]
+
+// Use list format: repository URLs / packages and metadata / version info
+[IMPORTANT]
+====
+* {rocky} 리포지토리 URL은 {scclongform}에서 사용할 수 있습니다.
+* 패키지 및 메타데이터는 {suse}가 아닌 Rocky Enterprise Software Foundation에서 제공합니다.
+* 지원되는 제품에 대해서는 xref:client-configuration:supported-features-rocky.adoc[]의 릴리스 노트 및 지원 테이블을 참조하십시오.
+====
+endif::[]
+
+
+
+[NOTE]
+====
+{rocky} 클라이언트를 {productname}에 등록하는 기능은 ``목표`` 정책으로 ``강제``하는 기본 SELinux 구성으로 테스트됩니다. SELinux를 비활성화해야 {rocky} 클라이언트를 {productname}에 등록할 수 있는 것은 아닙니다.
+====
+
+
+
+== 소프트웨어 채널 추가
+
+
+{rocky} 클라이언트를 {productname} 서버에 등록하려면 먼저 필요한 소프트웨어 채널을 추가하고 이 채널을 동기화해야 합니다.
+
+현재 지원되는 아키텍처는 ``x86_64`` 및 ``aarch64``이며, 버전 9의 경우 추가적으로 {ppc64le} 및 {s390x}가 지원됩니다. 지원되는 제품 및 아키텍처의 전체 목록은 xref:client-configuration:supported-features.adoc[]에서 확인할 수 있습니다.
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$arch-other-note.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/arch-other-note.adoc[]
+endif::[]
+
+ifeval::[{mlm-content} == true]
+
+예를 들어, `x86_64` 아키텍처에서 작업 시 필요한 제품은 다음과 같습니다.
+
+[[rocky-channels-wizard]]
+[cols="1,1", options="header"]
+.{rocky} 제품 - WebUI
+|===
+
+| OS Version  | Product Name
+| {rocky} 10  | {rocky} 10 x86_64
+| {rocky} 9   | {rocky} 9 x86_64
+| {rocky} 8   | {rocky} 8 x86_64
+
+|===
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$addchannels_vendor_webui.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/addchannels_vendor_webui.adoc[]
+endif::[]
+
+또는 명령 프롬프트에서 채널을 추가할 수 있습니다. 이 절차에 필요한 채널은 다음과 같습니다.
+
+[[rocky-channels-MLM-cli]]
+[cols="1,1", options="header"]
+.{rocky} 채널 - CLI
+|===
+
+| OS Version  | Base Channel
+| {rocky} 10  | rockylinux10-x86_64
+| {rocky} 9   | rockylinux9-x86_64
+| {rocky} 8   | rockylinux8-x86_64
+|===
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$addchannels_vendor_cli.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/addchannels_vendor_cli.adoc[]
+endif::[]
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+이 절차에 필요한 채널은 다음과 같습니다.
+
+[[rocky-channels-uyuni-cli]]
+[cols="1,1,1,1", options="header"]
+.{rocky} 채널 - CLI
+|===
+
+| OS Version  | Base Channel  | Client Channel            | AppStream Channel
+| {rocky} 10  | rockylinux10  | rockylinux10-uyuni-client | rockylinux10-appstream
+| {rocky} 9   | rockylinux9   | rockylinux9-uyuni-client  | rockylinux9-appstream
+| {rocky} 8   | rockylinux8   | rockylinux8-uyuni-client  | rockylinux8-appstream
+|===
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$addchannels_novendor_cli_multiarch.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/addchannels_novendor_cli_multiarch.adoc[]
+endif::[]
+
+[NOTE]
+====
+[command]``spacewalk-common-channels``가 제공하는 클라이언트 도구 채널은 {suse}가 아닌 {uyuni}가 공급합니다.
+====
+
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+[IMPORTANT]
+====
+For {rocky}{nbsp}10, {rocky}{nbsp}9 and {rocky}{nbsp}8 clients, add both the Base and AppStream channels. You require packages from both channels. If you do not add both channels, you cannot create the bootstrap repository, due to missing packages.
+====
+endif::[]
+
+[NOTE]
+====
+AppStream 채널에서 사용할 수 있는 패키지의 수가 업스트림과 {productname} 채널 간에 서로 약간 불일치함을 알 수 있습니다. 또한 다른 시점에 추가한 동일 채널을 비교하면 그 수가 다른 것을 알 수 있습니다. 이는 {rocky}가 리포지토리를 관리하는 방식에 원인이 있습니다. {rocky}는 새 버전이 릴리스되면 이전 버전의 패키지를 제거하지만 {productname}는 사용 기간과 관계없이 모두 그대로 유지합니다.
+====
+
+{rocky} 8을 통해 모듈형 채널을 사용하는 경우 클라이언트에서 Python 3.6 모듈 스트림을 활성화해야 합니다. Python 3.6을 제공하지 않으면 [package]``spacecmd`` 패키지의 설치가 실패합니다.
+
+
+== 동기화 상태 확인
+
+ifeval::[{mlm-content} == true]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_webui_mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_webui_mlm.adoc[]
+endif::[]
+
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_webui_uyuni.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_webui_uyuni.adoc[]
+endif::[]
+
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_cli.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_cli.adoc[]
+endif::[]
+
+
+
+== 활성화 키 생성
+
+{rocky} 채널에 연결된 활성화 키를 생성해야 합니다.
+
+활성화 키에 대한 자세한 내용은 xref:client-configuration:activation-keys.adoc[]를 참조하십시오.
+
+
+
+== GPG 키 관리
+
+클라이언트는 소프트웨어 패키지가 설치되기 전에 GPG 키를 사용해 신뢰성을 확인합니다. 신뢰할 수 있는 소프트웨어만 클라이언트에 설치할 수 있습니다.
+
+[IMPORTANT]
+====
+클라이언트의 보안을 위해 GPG 키의 신뢰성이 중요합니다. 어떤 키가 필요하고 신뢰할 수 있는지 결정하는 것은 관리자가 수행해야 하는 작업입니다. GPG 키를 신뢰할 수 없으면 클라이언트에 소프트웨어 채널을 할당할 수 없습니다.
+====
+
+GPG 키에 대한 자세한 내용은 xref:client-configuration:gpg-keys.adoc[]에서 확인할 수 있습니다.
+
+
+
+== 클라이언트 등록
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$create_bootstrap_repo_register.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/create_bootstrap_repo_register.adoc[]
+endif::[]
+
+
+
+== 정오표 관리
+
+{rocky} 클라이언트를 업데이트할 때 패키지에는 업데이트에 대한 메타데이터가 포함됩니다.

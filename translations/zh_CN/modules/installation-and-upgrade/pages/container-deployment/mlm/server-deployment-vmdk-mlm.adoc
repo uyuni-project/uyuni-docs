@@ -1,0 +1,176 @@
+[[install-vm-vmware]]
+= 将 {productname} {productnumber} 服务器部署为虚拟机 - VMware
+:revdate: 2025-07-09
+:page-revdate: {revdate}
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+本章提供用于将 {productname} {productnumber} 部署为映像的虚拟机设置。将使用 VMware 作为此安装的沙箱。
+
+
+// FIXME: make this and later sections a snippet or move it to a general
+//        intro for both, KVM and VMware
+== 可用映像
+
+
+[IMPORTANT]
+====
+部署 {productname} {productnumber} 服务器的首选方法是使用以下可用映像之一。所有工具都已包含在这些映像中，因而大大简化了部署。
+====
+
+{productname} {productnumber} 的映像可在 link:https://www.suse.com/download/suse-manager/[{productname} {productnumber} VM 映像]中找到。
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-warn-images-sl-micro.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-warn-images-sl-micro.adoc[]
+endif::[]
+
+[NOTE]
+====
+有关准备原始映像的详细信息，请参见 https://documentation.suse.com/sle-micro/6.1/html/Micro-deployment-raw-images-virtual-machines/index.html#deployment-preparing-configuration-device[]。
+// For the 5.0 backport:
+// For more information on preparing raw images, see link:https://documentation.suse.com/en-us/sle-micro/5.5/single-html/SLE-Micro-deployment/#sec-raw-preparation[].
+
+有关自安装映像的详细信息，请参见 https://documentation.suse.com/sle-micro/6.1/html/Micro-deployment-selfinstall-images/index.html
+====
+
+.可用服务器映像
+[cols="3, 3", options="header"]
+|===
+| 体系结构 | 映像格式
+
+| aarch64| qcow2、vmdk
+
+| x86_64  | qcow2、vmdk、raw、自安装程序
+
+| ppc64le | raw、自安装程序
+
+| s390x * | qcow2、raw
+|===
+
+__* s390x 有两个可用存储选项：CDL DASD 和 FBA。__
+
+
+
+
+
+[[quickstart.sect.vmware.settings]]
+== {productname} 虚拟机设置 - VMware
+
+本节说明 VMware 配置，重点介绍如何在 VMware 环境中创建对 {productname} 存储分区至关重要的额外虚拟磁盘。
+
+.过程：创建 VMware 虚拟机
+
+. 下载 {productname} Server [filename]``.vmdk`` 文件，然后将该文件副本传输到您的 VMware 存储区。
+
+. 使用 VMware Web 界面复制上载的 [filename]``.vmdk`` 文件。这会将提供的 [filename]``.vmdk`` 文件转换成适合 vSphere 超级管理程序的格式。
+
+. 创建一个新的虚拟机，并根据 Guest 操作系统系列 [systemitem]``Linux`` 和 Guest 操作系统版本 {sle} 15（64 位）为其命名。
+
++
+
+. 额外添加一个 500 GB（或更多空间）的[systemitem]``硬盘 2``。
+
+. 配置满足最低要求的 RAM 和 CPU 数量。*)
+
+. 根据需要设置网络适配器。
+
+. 启动 VM，然后按照首次引导对话框中的提示操作（键盘布局、许可协议、时区、root 的口令）。
+
+. 安装完成后，以 root 身份登录。
+
+. 继续阅读下一节。
+
+*) 最低要求值请参见 xref:installation-and-upgrade:hardware-requirements.adoc#proxy-hardware-requirements[]。
+
+
+[[minimal.susemgr.prep]]
+== 注册 {sl-micro} 和 {productname} {productnumber} 服务器
+
+开始之前，从 {scclongform} (https://scc.suse.com) 获取您的 {productname} 注册代码。
+
+[NOTE]
+====
+{sl-micro} {microversion} 权利包含在 {productname} 权利中，因此不需要单独的注册代码。
+====
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+.过程：注册 {sl-micro} 和 {productname} {productnumber}
+. 引导虚拟机。
+. 以 `root` 身份登录。
+. 在 {scc} 中注册 {sl-micro}。
++
+
+----
+transactional-update register -r <注册代码> -e <您的电子邮件地址>
+----
+
+. 重引导。
+
+. 在 {scclongform} 中注册 {productname} {productnumber}。
++
+
+----
+transactional-update register -p Multi-Linux-Manager-Server/5.1/x86_64 -r <注册代码>
+----
+
+. 重引导
+. 更新系统：
++
+
+----
+transactional-update
+----
+
+. 如果已应用更新，请重引导。
+
+. 此步骤是可选的。但是，如果您的基础架构需要自定义的永久性存储，请使用 [command]``mgr-storage-server`` 工具。
+
++
+
+有关详细信息，请参见 [command]``mgr-storage-server --help``。此工具可以简化容器存储和数据库卷的创建流程。请按以下方式使用该命令：
+
++
+
+----
+mgr-storage-server <storage-disk-device> [<database-disk-device>]
+----
+
++
+例如：
++
+
+----
+mgr-storage-server /dev/nvme1n1 /dev/nvme2n1
+----
+
++
+[NOTE]
+====
+此命令将在 [path]``/var/lib/containers/storage/volumes`` 中创建永久性存储卷。
+
+有关详细信息，请参见
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+====
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-step-deploy-podman-certs.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-step-deploy-podman-certs.adoc[]
+endif::[]

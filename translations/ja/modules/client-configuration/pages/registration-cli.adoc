@@ -1,0 +1,167 @@
+[[registering-clients-cli]]
+= コマンドラインでクライアントを登録する
+:revdate: 2025-03-28
+:page-revdate: {revdate}
+
+
+//== Manual Client Registration
+
+== 概要
+
+
+ほとんどの場合、{salt}クライアントは、デフォルトのブートストラップメソッドで正確に登録されます。
+
+ただし、{salt}を使用してクライアントを{productname}サーバに手動で登録できます。そのためには、クライアントで{salt} minionファイルを編集し、サーバの完全修飾ドメイン名(FQDN)を指定します。
+
+このメソッドでは:
+ 
+* サーバで受信するポート4505および4506を使用します。
+* {productname}サーバの設定は不要です。ただし、上記のポートを開いている必要があります。
+* 登録する前に[package]``venv-salt-minion`` (Salt bundle)または[package]``salt-minion``パッケージをSaltクライアントにインストール済みである必要があります。 両方ともさまざまな場所で設定ファイルを使用しますが、ファイル名は同じままです。 [literal]``systemd``サービスファイル名は異なります。
+
+[WARNING]
+====
+この方法でブートストラップを実行できるのは、クライアントツールチャンネルまたは公式の{suse}ディストリビューションの一部として[package]``salt-minion``を使用する場合のみです。
+====
+
+== {salt} Bundleの設定
+
+{salt} Bundle ([package]``venv-salt-minion``)::
+
++
+
+* [path]``/etc/venv-salt-minion/``
+* [path]``/etc/venv-salt-minion/minion``
+* [path]``/etc/venv-salt-minion/minion.d/NAME.conf``
+* systemdサービスファイル: [path]``venv-salt-minion.service``
+
++
+
+Salt bundleの詳細については、xref:client-configuration:contact-methods-saltbundle.adoc[Salt Bundle]を参照してください。
+
+.プロシージャ: Salt Bundle設定ファイルでクライアントを登録する
+. Saltクライアントで[literal]``minion``設定ファイルを開きます。 設定ファイルは次の場所にあります。
+
++
+
+.設定ファイル
+[source, Shell]
+----
+/etc/venv-salt-minion/minion
+----
+
++
+
+または
+
++
+
+.設定ファイル
+[source, Shell]
+----
+/etc/venv-salt-minion/minion.d/NAME.conf
+----
+. ファイルで、{productname}サーバまたはプロキシのFQDNと、アクティベーションキー(存在する場合)を追加または編集します。以下にリストされている他の設定パラメータも追加します。
+
++
+
+.設定パラメータ
+[source, YAML]
+----
+マスタ: SERVER.EXAMPLE.COM
+
+grains:
+  susemanager:
+    activation_key: "<Activation_Key_Name>"
+
+server_id_use_crc: adler32
+enable_legacy_startup_events: False
+enable_fqdns_grains: False
+----
+
+
+. [systemitem]``venv-salt-minion``サービスを再起動します。
+
++
+
+[source, Shell]
+----
+systemctl restart venv-salt-minion
+----
+
+. {productname}サーバで、新しいクライアントキーを受け入れます。[systemitem]``<client>``をクライアントの名前に置き換えます。
+
++
+
+----
+salt-key -a '<client>'
+----
+
+
+== クライアントの設定
+
+クライアント([package]``salt-minion``)::
++
+* [path]``/etc/salt/``
+* [path]``/etc/salt/minion``
+* [path]``/etc/salt/minion.d/NAME.conf``
+* systemdサービスファイル: [path]``salt-minion.service``
+
+.プロシージャ: Salt Minion設定ファイルでクライアントを登録する
+. Saltクライアントで[literal]``minion``設定ファイルを開きます。 設定ファイルは次の場所にあります。
+
++
+
+[source, Shell]
+----
+/etc/salt/minion
+----
+
++
+
+または
+
++
+
+[source, Shell]
+----
+/etc/salt/minion.d/NAME.conf
+----
+
+. ファイルで、{productname}サーバまたはプロキシのFQDNと、アクティベーションキー(存在する場合)を追加または編集します。以下にリストされている他の設定パラメータも追加します。
+
++
+
+[source, YAML]
+----
+マスタ: SERVER.EXAMPLE.COM
+
+grains:
+  susemanager:
+    activation_key: "<Activation_Key_Name>"
+
+server_id_use_crc: adler32
+enable_legacy_startup_events: False
+enable_fqdns_grains: False
+----
+
+. [systemitem]``salt-minion``サービスを再起動します。
+
++
+
+[source, Shell]
+----
+systemctl restart salt-minion
+----
+
+. {productname}サーバで、新しいクライアントキーを受け入れます。[systemitem]``<client>``をクライアントの名前に置き換えます。
+
++
+
+[source, Shell]
+----
+salt-key -a '<client>'
+----
+
+{salt} minion設定ファイルの詳細については、link:https://docs.saltproject.io/en/latest/ref/configuration/minion.html[Salt Minionの設定]を参照してください。
+

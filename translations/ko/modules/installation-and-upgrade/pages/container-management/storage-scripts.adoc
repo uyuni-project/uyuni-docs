@@ -1,0 +1,115 @@
+[[understanding-storage-scripts]]
+= [command]``mgr-storage-server`` 및 [command]``mgr-storage-proxy`` 이해하기
+:revdate: 2025-07-07
+:page-revdate: {revdate}
+
+ifeval::[{mlm-content} == true]
+
+[command]``mgr-storage-server`` 및 [command]``mgr-storage-proxy``는 {productname} 5.0 이상 버전과 함께 제공되는 헬퍼 스크립트입니다.
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+[command]``mgr-storage-server`` 및 [command]``mgr-storage-proxy``는 {productname}과(와) 함께 제공되는 보조 스크립트입니다.
+endif::[]
+
+이는 {productname} 서버 및 프록시를 위한 스토리지를 구성하도록 설계되었습니다.
+
+이 스크립트는 디스크 장치를 인수로 받습니다. [command]``mgr-storage-proxy``에는 스토리지 디스크 장치를 위한 단일 인수가 필요합니다. [command]``mgr-storage-server``에는 스토리지 디스크 장치가 필요하며, 선택적으로 전용 데이터베이스 디스크 장치를 위한 두 번째 인수를 받아들일 수 있습니다. 일반 스토리지와 데이터베이스 스토리지가 동일한 디스크에 존재할 수 있지만, 더 나은 성능과 쉬운 관리를 보장하기 위해 데이터베이스를 전용 고성능 디스크에 배치하는 것이 좋습니다.
+
+
+== 이러한 도구의 기능
+
+
+[command]``mgr-storage-server`` 및 [command]``mgr-storage-proxy``는 모두 표준 스토리지 설정 작업을 수행합니다.
+
+* 제공된 저장 장치를 확인합니다.
+* 장치가 비어 있고 사용에 적합한지 확인합니다.
+* 지정된 장치에 XFS 파일 시스템을 생성합니다.
+* 데이터 마이그레이션을 위해 장치를 임시로 마운트합니다.
+* 관련 저장소 디렉토리를 새 장치로 이동합니다.
+* [path]``/etc/fstab``에 항목을 생성하여 부팅 시 저장소가 자동으로 마운트되도록 합니다.
+* 장치를 최종 위치에 다시 마운트합니다.
+
+
+.도구별 추가 동작
+[cols="1,3a"]
+|===
+| `mgr-storage-server`
+|
+Optionally supports a separate device for database storage.
+
+Stops {productname} services during migration, restarts them afterward.
+
+Moves Podman volumes directory [path]``/var/lib/containers/storage/volumes`` to the prepared storage, and optionally [path]``/var/lib/containers/storage/volumes/var-pgsql`` to the prepared database storage.
+
+| `mgr-storage-proxy`
+|
+Focuses only on proxy storage (no database storage support).
+
+Stops and restarts the proxy service during migration.
+
+Moves podman volumes directory [path]``/var/lib/containers/storage/volumes`` to the prepared storage.
+
+|===
+
+
+[NOTE]
+====
+두 도구 모두 표준 Linux 스토리지 작업을 자동화합니다. Linux 관리자가 수동으로 수행하는 작업 이상의 숨겨진 또는 사용자 정의 논리는 존재하지 않습니다.
+====
+
+
+== 이러한 도구가 제공하지 *않는* 기능
+
+* LVM 볼륨을 생성하거나 관리하지 *않습니다*.
+* RAID 또는 복잡한 저장소 토폴로지를 구성하지 *않습니다*.
+* 설정 후 일반적인 Linux 도구를 사용하여 저장소를 관리하는 것을 방해하지 *않습니다*.
+* 동적 크기 조정 또는 확장 기능은 제공하지 *않습니다*. 이러한 작업은 표준 Linux 저장소 도구를 사용하여 처리해야 합니다.
+
+
+== 설치 후 저장소 관리
+
+저장소 구성이 완료되면 표준 Linux 명령을 사용하여 안전하게 관리할 수 있습니다.
+
+
+=== 예제
+
+.예시 1: LVM 사용 시 저장소 확장
+
+----
+lvextend -L +10G /dev/your_vg/your_lv
+xfs_growfs /var/lib/containers/storage/volumes
+----
+
+
+.예시 2: 더 큰 디스크로 마이그레이션 
+
+. 새 디스크를 추가하고 포맷합니다.
+. 일시적으로 마운트합니다.
+. ``rsync``를 사용하여 데이터를 복사합니다.
+. ``/etc/fstab``를 업데이트합니다.
+. 올바른 위치에 다시 마운트합니다.
+
+
+== 사용해야 하는 경우 또는 사용하지 않아야 하는 경우
+
+[IMPORTANT]
+====
+저장소 설정을 변경하기 전에 항상 백업을 수행하십시오.
+====
+
+* 이러한 도구는 초기 저장소 설정 시 또는 데이터 마이그레이션 및 `/etc/fstab` 업데이트를 처리할 것으로 예상되는 새 스토리지로 마이그레이션하는 *경우에만* 사용하십시오.
+* 저장소 크기 조정 또는 확장을 위해 이 스크립트를 다시 실행하지 *마십시오*. 이러한 작업에는 표준 Linux 도구(예: [literal]``lvextend``, [literal]``xfs_growfs``)를 사용하십시오.
+
+
+== 요약
+
+[command]``mgr-storage-server`` 및 [command]``mgr-storage-proxy``는 표준 Linux 저장소 관행을 사용하여 {productname} 구성 요소에 대한 초기 영구 저장소 설정을 자동화하는 데 도움을 줍니다. 이후 표준 저장소 관리에 제한을 두거나 간섭하지 않습니다.
+
+설정 이후에는 익숙한 Linux 도구를 사용하여 저장소를 계속 관리합니다.
+
+[IMPORTANT]
+====
+데이터베이스 볼륨이 가득 차면 시스템 운영에 심각한 문제가 발생할 수 있습니다. 디스크 사용량 알림 기능이 아직 컨테이너화된 환경에 적용되지 않았으므로, 사용자는 Grafana, Prometheus 등의 도구나 선호하는 다른 방법을 통해 podman 볼륨이 차지하는 디스크 공간을 직접 모니터링할 것을 권장합니다. 특히 [path]``/var/lib/containers/storage/volumes/`` 아래에 위치한 var-pgsql 볼륨에 각별히 유의해야 합니다.
+====

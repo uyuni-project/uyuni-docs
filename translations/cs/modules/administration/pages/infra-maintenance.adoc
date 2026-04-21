@@ -1,0 +1,119 @@
+[[infra-maintenance]]
+= Infrastructure maintenance tasks
+:revdate: 2025-05-27
+:page-revdate: {revdate}
+
+If you work with scheduled downtime periods, you might find it difficult to remember all the things that you need to do before, during, and after that critical downtime of the {productname} Server. {productname} Server related systems such as Inter-Server Synchronization Slave Servers or {productname} Proxies are also affected and have to be considered.
+
+{suse} recommends you always keep your {productname} infrastructure updated. That includes servers, proxies, and build hosts. If you do not keep the {productname} Server updated, you might not be able to update some parts of your environment when you need to.
+
+This section contains a checklist for your downtime period, with links to further information on performing each of the steps.
+
+
+
+== Server
+
+
+.Procedure: Server checks
+[role=procedure]
+____
+. Apply the latest updates.
+
+. Upgrade to the latest service pack, if required.
+
+. Run [command]``podman ps`` and check whether all required services are up and running.
+____
+
+On {sles} {bci-mlm}, you can install updates using a package manager:
+
+* For information on using {yast}, see {sles-base-os-documentation}/cha-onlineupdate-you.html.
+* For information on using zypper, see {sles-base-os-documentation}/cha-sw-cl.html#sec-zypper.
+
+On {sl-micro} {microversion}, you can install updates using the [command]``transactional-update`` command. For information on using [command]``transactional-update``, see https://documentation.suse.com/sle-micro/6.1/html/Micro-transactional-updates/transactional-updates.html.
+
+
+By default, several update channels are configured and enabled for the {productname} Server. New and updated packages become available automatically.
+
+
+ifeval::[{mlm-content} == true]
+
+To keep {susemgr} up to date, either connect it directly to {scclongform} or use {rmtool} (RMT). You can use RMT as a local installation source for disconnected environments.
+
+endif::[]
+
+
+ifeval::[{mlm-content} == true]
+
+You can check that the update channels are available on your system with this command:
+
+----
+zypper lr
+----
+
+The output looks similar to this:
+
+----
+Name                                                   | Enabled | GPG Check | Refresh
+-------------------------------------------------------+---------+-----------+--------
+SLE-Module-Basesystem15-SP7-Pool                       | Yes     | (r ) Yes  | No
+SLE-Module-Basesystem15-SP7-Updates                    | Yes     | (r ) Yes  | Yes
+SLE-Module-Containers15-SP7-Pool                       | Yes     | (r ) Yes  | No
+SLE-Module-Containers15-SP7-Updates                    | Yes     | (r ) Yes  | Yes
+SLE-Module-Python3-15-SP7-Pool                         | Yes     | (r ) Yes  | No
+SLE-Module-Python3-15-SP7-Updates                      | Yes     | (r ) Yes  | Yes
+SLE-Product-SLES15-SP7-Pool                            | Yes     | (r ) Yes  | No
+SLE-Product-SLES15-SP7-Updates                         | Yes     | (r ) Yes  | Yes
+SUSE-Multi-Linux-Manager-Server-SLE-5.2-Pool           | Yes     | (r ) Yes  | No
+SUSE-Multi-Linux-Manager-Server-SLE-5.2-Updates        | Yes     | (r ) Yes  | Yes
+SLE-Module-Server-Applications15-SP7-Pool              | Yes     | (r ) Yes  | No
+SLE-Module-Server-Applications15-SP7-Updates           | Yes     | (r ) Yes  | Yes
+SLE-Module-Systems-Management-15-SP7-Pool              | Yes     | (r ) Yes  | No
+SLE-Module-Systems-Management-15-SP7-Updates           | Yes     | (r ) Yes  | Yes
+----
+
+endif::[]
+
+
+ifeval::[{mlm-content} == true]
+
+{productname} releases maintenance updates (MUs) to provide newer packages. Maintenance updates are indicated with a new version number. For example, the major release 5.2 is incremented to 5.2.1 when an MU is released.
+
+You can verify which version you are running by looking at the bottom of the navigation bar in the {webui}. You can also fetch the version number with the [literal]``api.getVersion()`` XMLRPC API call.
+
+endif::[]
+
+
+
+=== Client tools
+
+When the server is updated consider updating some tools on the clients, too. Updating [package]``venv-salt-minion``, [package]``zypper``, and other related management package on clients is not a strict requirement, but it is a best practice in general. For example, a maintenance update on the server might introduce a major new Salt version. Then Salt clients continue to work but might experience problems later on. To avoid this {suse} makes sure that [package]``venv-salt-minion`` will always be updated safely.
+
+
+
+== Inter-Server Synchronization slave server
+
+If you are using an Inter-Server Synchronization slave server, update it after the {productname} Server update is complete.
+
+For more information, see xref:specialized-guides:large-deployments/iss_v2.adoc[Inter-Server Synchronization - Version 2].
+
+
+
+== Monitoring server
+
+If you are using a monitoring server for Prometheus, update it after the {productname} Server update is complete.
+
+Další informace o monitorování viz xref:administration:monitoring.adoc[].
+
+
+
+== Proxy
+
+Proxies should be updated as soon as {productname} Server updates are complete.
+
+In general, running a proxy connected to a server on a different version is not supported. The only exception is for the duration of updates where it is expected that the server is updated first, so the proxy could run the previous version temporarily.
+
+
+[WARNING]
+====
+Always upgrade the server first, then any proxy.
+====

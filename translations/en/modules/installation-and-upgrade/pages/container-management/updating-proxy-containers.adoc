@@ -1,0 +1,138 @@
+= {productname} Proxy Upgrade
+:revdate: 2025-05-05
+:page-revdate: {revdate}
+
+Before running the upgrade command, it is required to update the host operating system.
+Updating the host operating system will also result in the update of the {productname} tooling such as the [literal]``mgrpxy`` tool.
+
+.Procedure: Upgrading Proxy
+[role=procedure]
+____
+. Refresh software repositories with [command]``zypper``:
+
++
+
+[source,shell]
+----
+zypper ref
+----
+
+ifeval::[{mlm-content} == true]
+
+. Depending on the host operating system, proceed with these steps:
+
++
+
+For a transactional system such as {sl-micro}: ::
+
++
+
+--
+
+. Apply available updates with [command]``transactional-update``:
+
++
+
+[source,shell]
+----
+transactional-update
+----
+
+. If updates were applied, [literal]``reboot``.
+
+--
+
++
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+. Apply available updates with [command]``transactional-update``:
+
++
+
+[source,shell]
+----
+transactional-update
+----
+
+. If updates were applied, [literal]``reboot``.
+
+endif::[]
+
+
+ifeval::[{mlm-content} == true]
+
+For {sles}: ::
+
++
+
+--
+
+Update installed software with [command]``zypper``:
+
+[source,shell]
+----
+zypper up
+----
+
+--
+
+endif::[]
+
++
+
+. The {productname} Proxy containers running on [literal]``podman`` can be updated using the following command:
+
++
+
+[source,shell]
+----
+mgrpxy upgrade podman
+----
+
++
+
+Or, those running on a Kubernetes cluster can update using:
+
++
+
+[source,shell]
+----
+mgrpxy upgrade kubernetes
+----
+
++
+
+. On podman, clean up the unused container images to free disk space:
+
++
+
+[source,shell]
+----
+podman image prune -a
+----
+
+____
+
+On Kubernetes the image cleanup is handled automatically, or it depends on the Kubernetes distribution.
+
+[NOTE]
+====
+If you do not specify the tag parameter when upgrading to specific version, it will default to upgrading to the most recent version.
+To upgrade to a specific version, provide the tag parameter with the desired image tag.
+====
+
+[IMPORTANT]
+====
+
+ifeval::[{mlm-content} == true]
+
+While there is an option to upgrade a specific container using its specific tag, this feature is intended for applying PTFs only.
+endif::[]
+
+We highly recommend using the same tag for all proxy containers to ensure consistency under normal circumstances.
+====
+
+For air-gapped installations, first upgrade the container RPM packages, then run the [command]``mgrpxy upgrade podman`` command.

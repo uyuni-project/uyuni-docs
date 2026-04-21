@@ -1,0 +1,145 @@
+[[setup-ansible-control-node]]
+= Ansible制御ノードのセットアップ
+:revdate: 2025-06-11
+:page-revdate: {revdate}
+
+Ansible制御ノードをセットアップするには、{productname} {webui}から次のステップを実行します。
+
+[NOTE]
+====
+
+クライアントをAnsible制御ノードとして設定するには、そのシステムにAnsibleパッケージがインストールされている必要があります。 通常、Ansibleパッケージは、 オペレーティングシステムベンダの公式レポジトリから取得する必要があります。 たとえば、{sle} 15 SP6およびSP7では、Ansibleは、[literal]``Systems Management Module``から入手できます。
+====
+
+
+
+.Procedure: Setting up Ansible Control Node on a {sle} 15 SP6 or SP7 system
+[role=procedure]
+____
+. {productname} {webui}で、menu:管理[セットアップウィザード > 製品]に移動し、[literal]``SUSE Linux Enterprise Server 15 SP6 x86_64`` (以降)と[literal]``Systems Management Module``および必要な[literal]``Python 3 Module``が選択および同期されていることを確認します。
+
+. {sle} 15 SP6 (またはそれ以降)のクライアントを配備します。
+
+. {productname} {webui}で、クライアントのmenu:システム[概要]ページに移動します。 menu:ソフトウェア[ソフトウェアチャンネル]を選択し、クライアントを[literal]``SUSE Linux Enterprise Server 15 SP6 x86_64`` (またはそれ以降のSP)、[literal]``Systems Management Module``、および[literal]``Python 3 Module``チャンネルにサブスクライブします。
+
+. クライアントのmenu:詳細[プロパティ]を選択します。 ［ [literal]``付属エンタイトルメント`` ］リストで［[guimenu]``Ansible制御ノード``］を有効にして、btn:[プロパティの更新]をクリックします。
+
+. クライアントの概要ページに移動し、menu:状態[highstate]を選択して、btn:[highstateの適用]をクリックします。
+
+. menu:イベント[]タブを選択して、highstateの状態を確認します。
+____
+
+[NOTE]
+====
+{sle} 15 SP4またはSP5クライアントに新しいAnsibleをインストールする場合は、[literal]``Python 3 Module``を有効にする必要があります。
+====
+
+[NOTE]
+====
+Ansibleの新しいバージョンでは、古いPythonバージョンを搭載したノードの管理はサポートされなくなりました。 管理対象ノードが依然として古いPythonバージョンをデフォルトとして設定している場合、playbookの実行中に接続エラーや障害が発生する可能性があります。 これに対処するには、可能であれば管理対象ノードのPythonをアップグレードし、Ansibleのインベントリまたは設定で正しいPythonインタープリタを設定する必要があります。
+====
+
+
+
+
+[[configure-ansible-inventory-files]]
+== Ansibleインベントリファイルの作成
+
+
+Ansible統合ツールは、playbookをインベントリファイルとして配備します。 表1に一覧表示されている個々のオペレーティングシステムごとに1つのインベントリファイルを作成します。
+
+.プロシージャ: Ansibleインベントリファイルの作成
+[role=procedure]
+____
+. Ansibleが管理するインベントリファイルにホストを作成して追加します。 Ansibleインベントリのデフォルトパスは、[path]``/etc/ansible/hosts``です。
++
+
+.インベントリの例
+----
+client240.mgr.example.org
+client241.mgr.example.org
+client242.mgr.example.org
+client243.mgr.example.org ansible_ssh_private_key_file=/etc/ansible/some_ssh_key
+
+[mygroup1]
+client241.mgr.example.org
+client242.mgr.example.org
+
+[mygroup2]
+client243.mgr.example.org
+
+[all:vars]
+ansible_ssh_private_key_file=/etc/ansible/my_ansible_private_key
+----
+
+
+
+. {productname} {webui}で、［ [guimenu]``Ansible``］タブからmenu:Ansible[制御ノード]に移動して、制御ノードにインベントリファイルを追加します。
+
+. ［[literal]``playbookディレクトリ``］セクションで、［[literal]``Add a Playbook Directories``］（playbookディレクトリの追加）フィールドに[literal]``/usr/share/scap-security-guide/ansible``を追加し、btn:[保存]をクリックします。
+
+. ［[literal]``インベントリファイル``］の下の［[literal]``インベントリファイルの追加``］フィールドにインベントリファイルの場所を追加し、btn:[保存]をクリックします。
++
+.例
+----
+/etc/ansible/sles15
+/etc/ansible/sles12
+/etc/ansible/centos7
+----
++
+
+その他のplaybookの例については、link:https://github.com/ansible/ansible-examples[]を参照してください。
+____
+
+
+
+== Ansibleノードとの通信の確立
+
+.Procedure: Establishing communication with Ansible Nodes
+[role=procedure]
+____
+. インベントリで使用しているSSHキーを作成します。
+
++
+
+----
+ssh-keygen -f /etc/ansible/my_ansible_private_key
+----
+
+. 生成されたSSHキーをAnsible管理対象クライアントにコピーします。 例:
+
++
+
+----
+ssh-copy-id -i /etc/ansible/my_ansible_public_key root@client240.mgr.example.org
+----
+
+. 次のように[path]``/etc/ansible/ansible.cfg``で機密鍵を宣言します。
++
+
+----
+private_key_file = /etc/ansible/my_ansible_private_key
+----
+
++
+
+[path]``my_ansible_private_key``を、機密鍵を含むファイルの名前に置き換えます。
+
+. 制御ノードから次のコマンドを実行して、Ansibleが動作していることをテストします。
++
+
+----
+ansible all -m ping
+ansible mygroup1 -m ping
+ansible client240.mgr.example.org -m ping
+----
+
+____
+
+これで修復を実行できます。詳細については、xref:ansible-compliance-as-code.adoc[]を参照してください。
+
+
+// bsc#1213077 #9
+// section on how to create playbooks, and how to schedule their execution.
+// Add a description of the "Playbooks" tab, in general context.
+// There is a very summarized descriptions in next section "Compliance as code", but we // need a description of the playbooks tab that is independent of usage with openscap.

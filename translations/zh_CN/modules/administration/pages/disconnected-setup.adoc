@@ -1,0 +1,205 @@
+[[disconnected-setup]]
+= 断开连接的设置
+:revdate: 2025-05-27
+:page-revdate: {revdate}
+
+无法将 {productname} 连接到互联网时，您可以在断开连接的环境中使用它。
+
+在 {sle}{nbsp}15 和更高版本上可以使用储存库镜像工具 (RMT)。RMT 取代了订阅管理工具 (SMT)，后者在较旧的 {sle} 安装中可用。
+
+在断开连接的 {productname} 设置中，RMT 或 SMT 使用外部网络连接到 {scclongform}。所有软件通道和储存库都会同步到可卸存储设备。之后，可以使用该存储设备更新断开连接的 {productname} 安装。
+
+此设置可让您的 {productname} 安装保留在断开连接的脱机环境中。
+
+[NOTE]
+====
+您的 RMT 或 SMT 实例必须用于直接管理 {productname} Server。它不能用于管理级联的另一个 RMT 或 SMT 实例。
+====
+
+有关 RMT 的详细信息，请参见 link:{sles-base-os-documentation}/book-rmt.html[]。
+
+
+
+[[disconnected-setup-sync-scc]]
+== 从 {scc} 同步通道和储存库
+
+
+=== 同步 RMT
+
+可以在 {sle} 15 安装中使用 RMT 来管理运行 {sle} 12 或更高版本的客户端。
+
+我们建议您为每个 {productname} 安装设置一个专用 RMT 实例。
+
+
+
+.过程：设置 RMT
+. 在 RMT 实例上安装 RMT 软件包：
++
+----
+zypper in rmt-server
+----
+. 使用 {yast} 配置 RMT：
++
+----
+yast2 rmt
+----
+. 按照提示完成安装。
+
+有关设置 RMT 的详细信息，请参见 link:{sles-base-os-documentation}/book-rmt.html[]。
+
+
+
+.过程：将 RMT 与 {scc} 同步
+. 在 RMT 实例上，列出您的组织可用的所有产品和储存库：
++
+----
+rmt-cli products list --all
+rmt-cli repos list --all
+----
+. 同步您的组织可用的所有更新：
++
+----
+rmt-cli sync
+----
+还可以使用 systemd 将 RMT 配置为定期同步。
+. 启用所需的产品。
+    例如，要启用 SLES 15，请运行以下命令：
++
+----
+rmt-cli product enable sles/15/x86_64
+----
+. 将已同步的数据导出到可卸存储。
+    在此示例中，存储媒体的挂载位置为 [path]``/mnt/usb``：
++
+----
+rmt-cli export data /mnt/usb
+----
+. 将已启用的储存库导出到可卸存储：
++
+----
+rmt-cli export settings /mnt/usb
+rmt-cli export repos /mnt/usb
+----
+
+
+[IMPORTANT]
+====
+确保将外部存储挂载到 RMT 用户可写的目录。可以在 [path]``/etc/rmt.conf`` 的 `cli` 部分中更改 RMT 用户设置。
+====
+
+
+
+=== 同步 SMT
+
+
+SMT 已随附在 {sle} 12 中，可用于管理运行 {sle} 10 或更高版本的客户端。
+
+SMT 要求您在 SMT 实例上创建一个本地镜像目录以同步储存库和软件包。
+
+有关安装和配置 SMT 的更多细节，请参见 link:https://documentation.suse.com/sles/12-SP5/html/SLES-all/book-smt.html[]。
+
+
+
+.过程：将 SMT 与 {scc} 同步
+. 在 SMT 实例上，创建一个数据库替换文件：
++
+----
+smt-sync --createdbreplacementfile /tmp/dbrepl.xml
+----
+. 将已同步的数据导出到可卸存储。在此示例中，存储媒体的挂载位置为 [path]``/mnt/usb``：
++
+----
+smt-sync --todir /mnt/usb
+smt-mirror --dbreplfile /tmp/dbrepl.xml --directory /mnt/usb \
+           --fromlocalsmt -L /var/log/smt/smt-mirror-export.log
+curl https://scc.suse.com/multi-linux-manager/product_tree.json -o /mnt/usb/product_tree.json
+----
+
+
+[IMPORTANT]
+====
+确保将外部存储挂载到 RMT 用户可写的目录。可以在 [path]``/etc/smt.conf`` 中更改 SMT 用户设置。
+====
+
+
+
+== 必需通道
+
+需要启用相应的 {productname} 客户端工具通道，才能使 {productname} 能够同步给定的通道。如果未启用这些通道，{productname} 可能无法检测到该产品。
+
+运行以下命令启用这些必需的通道：
+
+SLES 12 和基于它的产品，例如 SLES for SAP 或 SLE HPC::
+RMT：[command]``rmt-cli products enable sle-manager-tools/12/x86_64``
++
+SMT：[command]``smt repos -p sle-manager-tools,12,x86_64``
+
+SLES 15 和基于它的产品，例如 SLES for SAP 或 SLE HPC::
+RMT：[command]``rmt-cli products enable sle-manager-tools/15/x86_64``
++
+SMT：[command]``smt repos -p sle-manager-tools,15,x86_64``
+
+然后镜像通道并导出。
+
+可以启用其他发行套件或体系结构。有关启用要镜像的产品通道或储存库的详细信息，请参见文档：
+
+RMT:: {sles-base-os-documentation}/cha-rmt-mirroring.html#sec-rmt-mirroring-enable-disable
+
+SMT:: https://documentation.suse.com/sles/12-SP5/single-html/SLES-smt/index.html#smt-mirroring-manage-domirror
+
+
+
+
+[[disconnected-setup-server]]
+== 不联网服务器
+
+要将 {productname} 设置为不联网服务器，请按照隔离部署的说明操作。
+
+
+=== 部署
+
+建议使用提供的映像将不联网服务器部署为虚拟机 (VM)。如需了解 {productname} 服务器的隔离部署方式，请参见 xref:installation-and-upgrade:container-deployment/mlm/server-air-gapped-deployment-mlm.adoc[]。
+
+请注意，执行最后一个命令时要包含 [option]``--mirror`` 选项，并将 [literal]``</media/disk>`` 替换为您的挂载点：
+
+----
+mgradm install podman --mirror </media/disk>
+----
+
+
+
+=== 同步
+
+如果您有加载了 {scclongform} 数据的可卸媒体，可以使用它来同步不联网服务器。
+
+[WARNING]
+====
+用于同步的可移动媒体必须始终在同一挂载点上可用。如果未挂载存储媒体，请不要触发同步，否则会导致数据损坏。
+====
+
+
+.过程：同步不联网服务器
+
+. 重启 Tomcat 服务：
++
+----
+mgrctl exec -ti -- systemctl restart tomcat
+----
+. 刷新本地数据：
++
+----
+mgrctl exec -ti -- mgr-sync refresh
+----
+. 执行同步：
++
+----
+mgrctl exec -ti -- mgr-sync list channels
+mgrctl exec -ti -- mgr-sync add channel channel-label
+----
+
+[NOTE]
+====
+请注意，如果设置了 [literal]``server.susemanager.fromdir``，{productname} 将无法检查 {scclongform} 身份凭证是否有效。相反，系统会显示一个警告信号，而不执行 {scc} 联机检查。
+====
+
+对于不联网设置，还有一种方法是使用服务器间同步 (ISS) 在服务器之间复制内容。有关详细信息，请参见 xref:specialized-guides:large-deployments/iss_v2.adoc[服务器间同步 - 版本 2]。

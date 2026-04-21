@@ -1,0 +1,130 @@
+[[confidential_computing]]
+= 기밀 컴퓨팅
+:revdate: 2025-07-17
+:page-revdate: {revdate}
+
+{CoCo}는 데이터 무결성, 데이터 기밀성, 코드 무결성에 대한 보안 수준을 향상하는 환경의 일종인 하드웨어 기반 TEE(신뢰 실행 환경)를 사용하여 사용 중 데이터를 보호할 수 있는 기술입니다.
+
+
+== {productname} 포함 {CoCo}
+
+
+TEE의 신뢰성은 증명 프로세스를 통해 확인할 수 있습니다. {productname}은(는) 등록된 시스템의 인증 서버로 사용할 수 있습니다. 그리고 이 모드로 실행되는 시스템에 대한 보고서 페이지를 생성합니다. 이러한 시스템은 정기적으로 증명 및 검사해야 합니다. 과거 검사 기록도 저장되며 요청에 따라 사용할 수 있습니다.
+
+{CoCo} 증명은 사용되는 하드웨어와 증명 대상 시스템이 실행되는 환경에 따라 달라집니다.
+
+[IMPORTANT]
+====
+{CoCo} 증명은 x86_64 아키텍처에서만 사용할 수 있습니다.
+====
+
+
+
+== 요구사항
+
+{CoCo}는 특성이 다음과 같은 환경에서 설정할 수 있습니다.
+
+* 증명되는 시스템(가상 머신)이 SLES15 SP6이며 {productname}(으)로 부트스트랩됩니다.
+* 하드웨어에 [literal]``AMD EPYC Milan CPU`` 또는 [literal]``AMD EPYC Genoa CPU``가 있어야 합니다.
+* {CoCo} 증명을 허용하도록 BIOS를 구성해야 합니다.
+* 호스트 OS 및 가상화 소프트웨어(KVM 및 libvirt)가 {CoCo}를 지원해야 합니다.
+
+
+== 제한 사항
+
+* SLES15 SP6에는 {CoCo} 증명이 기술 미리 보기로 제공됩니다.
+* {productname}에는 {CoCo} 증명이 기술 미리 보기로 제공됩니다.
+* 보안 부트가 증명되었습니다. 그러나 현재 KVM 보안 부트와 SNP 게스트는 함께 작동하지 않습니다.
+
+
+== {productname}에서 {CoCo} 사용
+
+[IMPORTANT]
+====
+호스트에서 {CoCo}를 설정 및 구성하는 정확한 단계는 OS 제조업체 설명서를 참조하십시오.
+====
+
+.절차: {productname} 설치 중에 증명 컨테이너 활성화
+[role=procedure]
+. 증명 컨테이너는 [literal]``mgradm install podman``을 사용하여 {productname}을(를) 설치하는 동안 활성화됩니다.
+. 다음을 [literal]``mgradm.yaml`` 파일에 추가합니다.
+//I need full path to this file.
++
+----
+coco:
+    replicas: 1
+----
+
+
+.절차: {productname} 설치 후 증명 컨테이너 활성화
+[role=procedure]
+. 설치 후 증명 컨테이너를 활성화하려면 명령줄 파라미터 [literal]``mgradm``을 사용합니다.
+. 명령 실행
++
+----
+mgradm scale uyuni-server-attestation --replicas 1
+----
+// (PLACEHOLDER): In the future instead of number 1, it should be possible to allow more then one container replica.
+
+
+.절차: {productname} 설치 후 증명 컨테이너 비활성화
+[role=procedure]
+. 이미 활성화된 증명 컨테이너를 비활성화하려면 다음 명령을 실행합니다.
++
+----
+mgradm scale uyuni-server-attestation --replicas 0
+----
+
+
+.절차: 증명 활성화
+[role=procedure]
+. 선택한 시스템의 경우 탭 메뉴: 감사[기밀 컴퓨팅 > 설정]으로 이동합니다.
+. 토글 버튼을 선택하여 증명을 활성화합니다.
+. 드롭다운 목록의 [literal]``환경 유형`` 필드에서 올바른 옵션을 선택합니다.
+//. (PLACEHOLDER) Enable the automatic attestaion at reboot by selecting the toggle button [literal]``Execution``.
+. btn:[저장] 버튼을 클릭하여 변경 내용을 저장합니다.
+
+.절차: 새 증명 예약
+[role=procedure]
+. 선택한 시스템의 경우 tab menu:감사[기밀 컴퓨팅 > 증명 나열]로 이동합니다.
+. btn:[증명 예약]을 클릭합니다. 새 양식이 열립니다.
+. [literal]``가장 먼저`` 필드에서 증명 실행 시간을 선택합니다.
+. 필요한 경우 [literal]``추가 위치`` 옵션을 선택하여 새로 생성한 증명을 작업 체인에 추가합니다.
+. btn:[일정] 버튼을 클릭하여 새 증명 실행을 저장하고 예약합니다.
+
+.절차: 시스템의 증명 보고서 세부 정보 보기
+[role=procedure]
+. 선택한 시스템의 경우 tab menu:감사[기밀 컴퓨팅 > 증명 나열]로 이동합니다.
+. 확인할 보고서를 찾아 선택합니다.
+. 선택한 증명 보고서 탭을 클릭하면 [literal]``Overview``가 열립니다.
+. 다음 탭 [literal]``SEV-SNP``로 이동합니다.
+. 마지막으로, 다음 탭 [literal]``Secure Boot``로 이동합니다.
+
+
+.절차: 감사에서 증명 보고서 보기
+[role=procedure]
+. 탐색 모음에서 menu:감사[기밀 컴퓨팅]을 선택합니다.
+. 모든 증명의 목록이 기본 패널에 표시됩니다.
++
+. 확인할 보고서를 찾아 선택합니다.
+
+
+
+=== 보고서 상태
+
+증명 보고서의 상태는 다음 중 하나일 수 있습니다.
+
+보류 중::
+예약된 증명의 기본 상태입니다. 프로세스가 아직 시작되거나 완료되지 않았기 때문에 보고서를 아직 사용할 수 없습니다.
+
+성공::
+예약된 증명이 볼 수 있는 보고서를 생성하면 프로세스 상태는 [literal]``성공``입니다.
+
+실패::
+예약된 증명이 실패하여 결과적으로 보고서가 생성되지 않으면 프로세스 상태는 [literal]``실패``입니다.
+
+
+
+== 관련 주제
+
+{CoCo}에 대한 자세한 내용은 https://www.fortanix.com/platform/confidential-computing-manager/what-is-confidential-computing[여기]를 참조하십시오.

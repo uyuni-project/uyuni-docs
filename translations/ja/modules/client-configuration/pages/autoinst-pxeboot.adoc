@@ -1,0 +1,117 @@
+[[autoinst-pxeboot]]
+= ネットワークを通じてインストールする(PXEブート)
+:description: Configure a network boot installation via PXE using DHCP to provide the client with an IP address, mask, installation server, and bootloader file for automatic
+:revdate: 2026-03-02
+:page-revdate: {revdate}
+:page-author: SUSE Product & Solution Documentation Team
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.12
+
+
+ネットワークブートによるインストール中に、次の処理が実行されます。
+
+. クライアントがPXEモードでブートされます。
+
+. A Dhcpd server provides the client with an IP address and mask, the address of an installation server, and the name of a bootloader file on that server.
+
+. クライアントは、インストールサーバからTFTPプロトコルを通じてブートローダファイルをダウンロードし、実行します。
+
+. クライアントは、インストールに使用できるプロファイルをメニューから選択するか、いずれかのプロファイルで自動インストールを開始します。
+
+. クライアントは、TFTPプロトコルを通じて、そのプロファイルと一致するディストリビューション用のカーネルと初期RAMディスクをダウンロードします。
+
+. インストールカーネルは、インストールプログラム、{kickstart}または{ay}を起動します。 それ以降、カーネルは、HTTPプロトコルを通じてサーバで提供されるリソースを使用します。
+
+. ディストリビューションは、{kickstart}または{ay}プロファイルに従って自動的にインストールされます。
+
+. The profile calls a code snippet that registers the client to the {productname} Server.
+
+image::cobbler_menu.png[scaledwidth=100%]
+
+The installation server can either be the {productname} Server or one of its proxies.
+// To install from a proxy, you must synchronize the TFTP tree between the server and the proxy before you begin.
+
+The Dhcpd server may also provide other configuration information to the client, like a host name, the address of a router and the address of a domain name server. Some of this information might be needed for the autoinstallation, for example if you specify the installation server by its domain name.
+
+[PXEブート]メニューで、最初の選択肢は[guimenu]``[ローカルブート]``です。 これを選択すると、ブートプロセスはローカルディスクドライブから続行されます。 特定の時間内にプロファイルが選択されなかった場合は、このオプションが自動的に選択されます。 これは、プロファイルを選択する人間のオペレータがいない場合に、自動インストールが開始されないようにするための安全対策です。
+
+または、手動での操作なしで、いずれかのプロファイルからインストールを自動的に開始することもできます。 これは「無人プロビジョニング」と呼ばれます。
+
+
+
+.Procedure: Installing with PXE boot
+[role=procedure]
+____
+. Prepare the Kea server, see xref:client-configuration:autoinst-pxeboot.adoc#prepare-the-dhcp-server[Prepare the Dhcpd Server].
+
+. 自動インストールのディストリビューションを準備します。xref:client-configuration:autoinst-distributions.adoc[自動インストールのディストリビューション]を参照してください。
+
+. 自動インストールプロファイルを準備します。xref:client-configuration:autoinst-profiles.adoc[自動インストールプロファイル]を参照してください。
+
+. クライアントを再起動し、インストールするプロファイルを選択します。
+____
+
+Some other steps are optional.
+
+For unattended provisioning, see xref:client-configuration:autoinst-unattended.adoc[Unattended provisioning].
+
+
+[[prepare-the-dhcp-server]]
+== Prepare the Dhcpd server
+
+The PXE boot process uses Dhcpd to find the TFTP server. The {productname} Server or its proxies can act as such a TFTP server.
+
+You must have administrative access to the network’s Dhcpd server. Edit the Dhcpd configuration file so that it points to the installation server as the TFTP boot server.
+
+
+.Example: Configuring the Kea Dhcpd server
+. On the Dhcpd server, as root, open the [path]``/etc/dhcpd.conf`` file.
+. クライアントに対する宣言を次のように変更します。
++
+----
+  host myclient { (...)
+                  next-server 192.168.2.1;
+                  filename "grub/grub.0"; }
+----
+. ファイルを保存し、[systemitem]``dhcpd``サービスを再起動します。
+
+
+This example directs the PXE client ``myclient`` to the installation server at ``192.168.2.1`` and instructs it to retrieve the [path]``grub/grub.0`` bootloader file.
+
+Alternatively, if your Dhcpd server is registered at {productname}, you can configure it using the Dhcpd formula instead:
+
+
+.Example: Configuring the Kea Dhcpd Server using the Dhcpd formula
+. Navigate to menu:Systems[System List], select the client you want to change, and go to the [guimenu]``Formulas`` tab to enable the Dhcpd formula.
+. 式の［[guimenu]``Dhcpd``］タブに移動し、［[guimenu]``次のサーバ``］フィールドに、インストールサーバのホスト名またはIPアドレスを入力します。
+. ［[guimenu]``Filename EFI``］（ファイル名EFI）フィールドで、[path]``grub/shim.efi``と入力し、EFI PXEのサポートを有効にします。
+. In the [guimenu]``Filename`` field, type [path]``grub/grub.0`` to enable legacy BIOS support.
+. btn:[Save Formula]（式の保存）をクリックして設定を保存します。
+. highstateを適用します。
+
+
+[NOTE]
+====
+* セキュアブートを使用しない場合は、［[guimenu]``Filename EFI``］（ファイル名EFI）フィールドに[path]``grub/shim.efi``ではなく[path]``grub/grubx86.efi``と入力します。
+
+* 異なるアーキテクチャについては、表<<grub-efi-arch>>を参照してください。
+
+* Using {cobbler} managed Dhcpd is unsupported with {productname}.
+====
+
+This sets up a global PXE server for all the hosts, you can also have per-host settings. For more information about the Dhcpd formula, see xref:specialized-guides:salt/salt-formula-dhcpd.adoc[Dhcpd Formula].
+
+
+
+[[grub-efi-arch]]
+== 異なるアーキテクチャ用のGRUB EFIバイナリ名
+
+[cols="1,1", options="header"]
+.異なるアーキテクチャ用のGRUB EFIバイナリ名
+|===
+| アーキテクチャ | GRUB EFIバイナリ名
+| aarch64      | grubaa64.efi
+| x86-64       | grubx86.efi
+| ppc64le      | grub.ppc64le
+|===

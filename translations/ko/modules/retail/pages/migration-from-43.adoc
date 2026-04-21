@@ -1,0 +1,133 @@
+[[retail-migration-from-43]]
+= Migrating from {susemgrbranch} 4.3
+:revdate: 2026-01-19
+:page-revdate: {revdate}
+
+This guide describes how to migrate one or more {susemgrbranch} Servers from {susemgr} Branch Server 4.3 to the {susemgrbranch} 5.1
+
+== 개요
+
+* Synchronize {susemgrbranch} channels
+* Backup existing {productname} {smr} 4.3 Branch Server Proxy
+* Validate branch objects were created
+* Migrate Branch Server Proxy host
+* 프록시 기능 확인
+
+image::4.3-branchserver-migration.svg[scaledwidth=80%]
+
+== Synchronize {susemgrbranch} channels
+
+See xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc[] how to synchronize product channels for a proxy systems.
+
+Depending on the host operating system:
+
+* [literal]``SUSE Linux Micro 6.1`` uses [literal]``SUSE Multi-Linux Manager Retail Branch Server Extension 5.1`` channels
+* [literal]``SUSE Linux Enterprise Server 15 SP7`` uses [literal]``SUSE Multi-Linux Manager Retail Branch Server Extension for SLE 5.1`` channels
+
+== Backup existing {susemgrbranch} 4.3
+
+{productname} {smr} 5.1.2 includes automated backup-migration procedure for both kinds of {susemgrproxy} variants. This procedure collects all required data and uploads them to the {productname} Server. For {susemgrbranch} this tool also creates and migrates {saltboot} related entities.
+
+[NOTE]
+====
+Squid cache data and POS images are not backed up. Due to change in functionality these data are not migrated and instead redownloaded from the server.
+
+See xref:retail-deploy-terminals.adoc#_synchronize_images_to_the_branch_server[] how to warm up the cache.
+====
+
+There are multiple ways to initiate {susemgrbranch} 4.3 migration:
+
+* API 호출
++
+[literal]``$proxyid``을(를) 브랜치 프록시의 서버 ID 또는 쉼표로 구분된 여러 서버 아이디로 바꿉니다.
++
+[code]
+----
+mgrctl api login
+mgrctl api post proxy/backupConfiguration '{"sids":[$proxyid]}'
+----
+* {salt} 호출
++
+아래 명령의 [literal]``$proxy``를 브랜치 프록시 미니언 ID로 바꾸거나, 대상이 여러 브랜치 프록시인 경우 [literal]``-L proxyminionid1,proxyminionid2,...``로 바꿉니다.
++
+[code]
+----
+salt $proxy proxy.backup
+----
+
+[NOTE]
+====
+특히 사용자 정의 수정 사항이 있는 경우 프록시도 수동으로 백업하는 것이 좋습니다.
+====
+
+[IMPORTANT]
+====
+{susemgrbranch} can still be used after backup step as before, however because some formulas were disabled by the backup/migration step, next highstate or image-sync state application will not work properly.
+
+Migrate the server host as soon as possible after backup step is performed.
+====
+
+== Validate branch objects were created for migrated branches
+
+Backup/migration step will create new Saltboot objects:
+
+- [literal]``Saltboot Group`` formula with settings from the original formulas is assigned to the branch group.
+- New cobbler profile is created for the branch group:
++
+[code]
+----
+# mgrctl exec -- cobbler profile report --name $branchid:S:$orgid:$orgname
+----
+- New cobbler systems are created for all assigned terminals:
++
+[code]
+----
+# mgrctl exec -- cobbler system find --kernel-options "MINION_ID_PREFIX=$branchid"
+----
+
+== Migrate {susemgrbranch} host
+
+Create and use AutoYAST profiles to migrate or reinstall the proxy host.
+
+=== {sles} 15 SP7을 기반으로 자동 설치 배포 준비
+
+- {sles} 15 SP7 설치 ISO를 서버 호스트에 다운로드하거나 가져옵니다.
+- Use [literal]``mgradm distribution copy $path_to_the_iso`` to copy installation files to the container
+- 자동 설치 배포 등록에 대해서는 xref:client-configuration:autoinst-distributions.adoc[]에서 확인할 수 있습니다.
+
+=== 자동 설치 프로파일 준비
+
+자세한 내용은 xref:client-configuration:autoinst-profiles.adoc[]에서 확인할 수 있습니다.
+
+Create an autoinstallation profile based previously created distribution. As a profile use profile provided at https://github.com/SUSE/manager-build-profiles/blob/master/AutoYaST/SUSE-Multi-Linux-Manager/SUSE%20Multi-Linux%20Manager%20Proxy/MLM_RBS-51-SLES-Upgrade.xml
+- 프로파일이 생성되면 [menuitem]``변수`` 탭으로 전환하여 필요한 변수를 입력합니다.
++
+[code]
+----
+org=organization_id
+distrotree=autoinstallation_distribution_label_from_previous_step
+channel_prefix=clm_channel_prefix or do not add this variable
+registration_key=activation_key_for_post_upgrade
+----
+- [menuitem] ``자동 설치 파일`` 탭에서 추가 검사를 위해 렌더링된 전체 프로파일을 볼 수 있습니다.
+
+=== 프록시 자동 설치 프로비저닝
+
+Schedule an autoinstallation on the old {susemgr} Branch Server 4.3 using the profile created in previous step.
+
+* Use Web UI interface [menuitem]``Provisioning`` tab at the [menuitem]``System`` view of migrating branch
+** During provisioning, the Salt key must be accepted manually. This is required to initiate the connection to the minion after reinstallation.
+** If the provisioning web interface hangs, it is better to check manually with [command]``podman`` whether the proxy is up and running on the migrated host.
+* 또는 API 호출 [command]``system/provisionSystem``을 사용하여 마이그레이션을 예약합니다. 예를 들어, {productname} 호스트에서 다음 코드 조각을 실행하십시오.
++
+[code]
+----
+mgrctl api login
+mgrctl api post system/provisionSystem '{"sid":$proxyid,"profileName":"$profileName"}'
+----
+
+== 프록시 기능 확인
+
+After migration is finished and salt is started first time, backed up proxy configuration is automatically deployed during [literal]``Hardware Refresh`` step.
+
+After finishing all onboarding steps, validate required proxy functionality. When validating the proxy, it is recommended to verify that minions can be contacted.

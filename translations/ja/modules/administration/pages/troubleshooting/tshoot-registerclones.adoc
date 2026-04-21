@@ -1,0 +1,167 @@
+[[troubleshooting-register-clones]]
+= クローンクライアントの登録のトラブルシューティング
+:revdate: 2025-04-24
+:page-revdate: {revdate}
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+
+{productname}を使用して仮想マシンを管理している場合は、仮想マシンのクローンを作成すると役立つ場合があります。 クローンとは、既存のディスクの正確なコピーであるプライマリディスクを使用する仮想マシンのことです。
+
+仮想マシンのクローンを作成すると時間を大幅に節約できますが、ディスク上の識別情報が重複しているために問題が発生する可能性があります。
+
+すでに登録されているクライアントがある場合は、そのクライアントのクローンを作成してから、クローンを登録しようとすると、おそらく、{productname}でそれらを2つの別々のクライアントとして登録する必要があります。 ただし、元のクライアントとクローンのマシンIDが同じ場合、{productname}は両方のクライアントを1つのシステムとして登録し、既存のクライアントデータはクローンのデータで上書きされます。
+
+これは、{productname}が2つの別のクライアントとして認識できるように、クローンのマシンIDを変更することで解決できます。
+
+[NOTE]
+====
+このプロシージャの各ステップはクローンクライアントで実行されます。 このプロシージャでは{productname}に登録されたままである、元のクライアントを操作しません。
+====
+
+
+
+.プロシージャ: 複製されたSaltクライアントでの重複するマシンIDを解決する
+[role=procedure]
+____
+
+. *初期システム設定*
+
+
+.. クローンマシンで、ホスト名とIPアドレスを変更します。
+    [path]``/etc/hosts``に加えられた変更と正しいホストエントリが含まれていることを確認します。
+
+
+. *重複するマシンIDを解決する*
+
+.. _systemdをサポートするディストリビューションの場合:_
+
+...   マシンに同じマシンIDがある場合は、rootとして、複製された各クライアントのファイルを削除し、再作成します。
+
++
+
+----
+rm /etc/machine-id
+rm /var/lib/dbus/machine-id
+rm /var/lib/zypp/AnonymousUniqueId
+dbus-uuidgen --ensure
+systemd-machine-id-setup
+----
+
++
+
+... クローン作成されたマシンにも[path]``/var/log/journal/``にフォルダが存在する場合、新しいマシンIDに合わせて名前を変更する必要があります。名前が一致しない場合、[command]``journalctl``はログを取得できず、[command]``podman logs``は何も表示しません。
+
++
+
+----
+mv /var/log/journal/* /var/log/journal/$(cat /etc/machine-id)
+----
+
++
+
+.. _systemdをサポートしないディストリビューションの場合: _
+  
+...  rootとして、dbusからマシンIDを生成します。
+
++
+
+----
+rm /var/lib/dbus/machine-id
+rm /var/lib/zypp/AnonymousUniqueId
+dbus-uuidgen --ensure
+----
+
++ 
+
+[IMPORTANT]
+====
+
+* 後で{sll}に解放される{rhel} 8.10サーバのクローンを作成する場合は、カーネル設定ファイルを修正するための追加のステップを実行する必要があります。
+
+
+{rhel}はマシンIDを使用して[path]``/boot/loader/entries``にカーネルエントリを生成します。 これらのステップを実行しないと、解放後に古いカーネルエントリと新しいカーネルエントリが混在する結果となります。これは{sll}カーネルが古いエントリを置き換えるのではなく新しいエントリを作成するためです。
+
+
+* マシンIDの変更後、および解放前に、次のコマンドを実行します。
+
++
+
+----
+sudo rm -rf /boot/loader/entries/
+sudo for ver in $(rpm -q kernel --qf '%{VERSION}-%{RELEASE}.%{ARCH}\n'); do echo "Reinstalling kernel $ver..."; sudo kernel-install add $ver /lib/modules/$ver; done
+sudo grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg
+----
+
+* {rhel} 8.10サーバの解放に関する詳細と例については、xref:client-configuration:contact-methods-intro.adoc[]を参照してください。
+
+====
+
+. *{salt}クライアントの再設定*
+
+.. クライアントがまだ同じSaltクライアントIDを持っている場合は、各クライアントの[path]``minion_id``ファイルを削除します(FQDNはクライアントの再起動時に再生成されるときに使用されます)。
+
+...  Salt Minionクライアントの場合:
+
++
+
+----
+rm /etc/salt/minion_id
+rm -rf /etc/salt/pki
+----
+
++
+
+... Salt Bundleクライアントの場合:
+
++
+
+----
+rm /etc/venv-salt-minion/minion_id
+rm -rf /etc/venv-salt-minion/pki
+----
+
++
+
+.. オンボーディングページから受諾されたキーを削除し、{productname}からシステムプロファイルを削除して、次のコマンドを使用してクライアントを再起動します。
+
+... Salt Minionクライアントの場合:
+
++
+
+----
+service salt-minion restart
+----
+
++
+
+... Salt Bundleクライアントの場合:
+
+
++
+
+----
+service venv-salt-minion restart
+----
+
++
+
+.. クライアントを再登録します。各クライアントは異なる[path]``/etc/machine-id``を持つようになり、［[guimenu]``システムの概要``］ページに正しく表示されるはずです。
+
+____

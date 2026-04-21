@@ -1,0 +1,166 @@
+[[backup-restore-db]]
+= Database Backup Management
+:description: Learn how to manage online database backups for the {productname} server using [command]``mgradm``.
+:revdate: 2026-03-17
+:page-revdate: {revdate}
+:page-author: SUSE Product & Solution Documentation Team
+:page-product-name: {productname}
+:page-product-version: {productnumber}
+
+This guide describes how to manage online database backups for the {productname} server using [command]``mgradm``. The backup system is based on {postgresql} continuous archiving Write-Ahead Logging (WAL), similarly like [command]``smdba`` in previous versions.
+
+[IMPORTANT]
+====
+* To ensure the system can be fully recovered, perform regular backups of both the database and other system volumes.
+
+* Regularly copy your backup volumes and WAL files to an external storage device or an off-site location for disaster recovery.
+====
+
+
+
+== 개요
+
+Continuous archiving reduces the risk of data loss by constantly backing up the transaction logs (WAL) to a dedicated volume.
+
+The backup system utilizes a dedicated Podman volume named [literal]``var-pgsql-walbackup`` to store:
+
+* A base backup (a full snapshot of the database).
+* WAL segments (incremental changes since the last base backup).
+
+
+[NOTE]
+====
+Point-in-time recovery is currently not supported by [command]``mgradm`` and requires a manual workflow.
+
+
+Only full recovery is supported by [command]``mgradm`` tool. The restore procedure will restore everything from the backup location.
+====
+
+
+
+== 선행 조건
+
+* [command]``mgradm`` tool installed on the host.
+* {productname} server running in a Podman environment.
+
+
+
+== Enabling backups
+
+To enable continuous archiving, run the following command:
+
+[source, shell]
+----
+mgradm backup db enable
+----
+
+This command:
+
+* Verifies that the backup is not already enabled.
+
+* Configures {postgresql} ([path]``postgresql.conf``) to enable [option]``archive_mode`` and sets the [option]``archive_command``.
+
+* Configures the [literal]``var-pgsql-walbackup`` volume for the database service.
+
+* Restarts the database service to apply changes.
+
+* Performs an initial base backup inside the container.
+
+If the backup is already configured but you need to re-initialize it, use the [option]``--force`` flag.
+
+
+
+== Checking backup status
+
+You can verify the current state of the database backup system at any time:
+
+[source, shell]
+----
+mgradm backup db status
+----
+
+The command will report one of the following statuses:
+
+* *enabled*: Backup is correctly configured and active.
+* *disabled*: Continuous archiving is explicitly turned off.
+* *misconfigured*: There is a discrepancy between the configuration and the runtime state (for example, missing volume, incorrect archive command).
+
+
+
+== Maintaining backups (rebasing)
+
+Over time, the number of WAL segments can grow significantly, consuming disk space and increasing restoration time. It is recommended to periodically "rebase" the backup by creating a new base backup and starting a new WAL chain.
+
+[source, shell]
+----
+mgradm backup db rebase
+----
+
+This command creates a fresh full snapshot of the database without requiring a service restart.
+
+[IMPORTANT]
+====
+Regularly rebase your database backups using command [command]``mgradm backup db rebase`` to minimize the time required for restore operations.
+====
+
+
+== Restoring from backup
+
+Restoring from a backup is a *destructive operation* that replaces the current database data with the content of the backup.
+
+[source, shell]
+----
+mgradm backup db restore
+----
+
+The restoration process:
+
+* Stops the database service.
+
+* Clears the current database data directory.
+
+* Extracts the base backup from the backup volume.
+
+* Configures {postgresql} for recovery.
+
+*  Starts the database service.
+
+* Replays the WAL segments to bring the database to the latest possible state.
+
+The command will wait until the database has fully recovered and is ready to accept connections.
+
+[IMPORTANT]
+====
+Ensure you have a recent base backup and all necessary WAL segments in the [literal]``var-pgsql-walbackup`` volume before performing a restore.
+====
+
+
+
+== Disabling backups
+
+To turn off continuous archiving:
+
+[source, shell]
+----
+mgradm backup db disable
+----
+
+By default, this command disables archiving in the configuration and restarts the database but preserves the backup volume.
+
+To also remove the backup volume and all stored backups, use:
+
+[source, shell]
+----
+mgradm backup db disable --purge-volume
+----
+
+[IMPORTANT]
+====
+Regularly test your restore procedures to verify data integrity and ensure you are prepared for a recovery.
+====
+
+
+
+== External documentation
+
+For more information on {postgresql}, see https://www.postgresql.org/docs/{postgresql-version}/continuous-archiving.html[{postgresql} {postgresql-version}: Continuous Archiving and Point-in-Time Recovery (PITR)].

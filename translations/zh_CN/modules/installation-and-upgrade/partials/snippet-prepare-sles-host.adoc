@@ -1,0 +1,187 @@
+== 准备 {sles} {bci-mlm} 主机
+
+
+或者，您也可以在 {sles} {bci-mlm} 上部署 {productname}。
+
+下面的过程介绍安装流程的主要步骤。
+
+
+=== 在 {sles} 上安装 {productname} 扩展
+
+.过程：在 {sles} 上安装 {productname} 扩展
+[role=procedure]
+____
+
+. 访问 link:https://www.suse.com/download/sles/[]，找到并下载 {sles} {bci-mlm} [literal]``.iso``。
+
+. 确保您拥有主机操作系统 ({sles} {bci-mlm}) 和扩展的注册代码
+
+. 启动 {sles} {bci-mlm} 的安装流程。
+
+.. 在[guimenu]``语言、键盘和产品选择``中选择要安装的产品。
+
+.. 在[literal]``许可协议``中，阅读协议并选中[guimenu]``我同意许可条款``。
+
+. 选择注册方法。在本示例中，我们将在 SUSE Customer Center 中注册服务器。
+
+. 输入您的 {scclongform} 电子邮件地址。
+
+. 输入 {sles} {bci-mlm} 的注册代码。
+
+. 单击[systemitem]``下一步``继续。
+
++
+
+[IMPORTANT]
+====
+请注意，对于 {sles} {bci-mlm}，您需要拥有有效的 {sles} 订阅及相应的注册代码，并在此界面提供。您还需要在下方输入 {productname} 扩展的注册代码。
+====
+
+. 在[literal]``扩展和模块选择``屏幕中，选中以下几项：
+
++
+
+  * 选择 {productname} 服务器扩展以安装服务器，或选择 {productname} 代理扩展以安装代理。
+  * Basesystem 模块
+  * Containers 模块
+
+. 单击[systemitem]``下一步``继续。
+
+. 输入您的 {productname} {productnumber} 扩展注册代码。
+
+. 单击 btn:[下一步] 继续。
+
+. 完成安装。
+
+. 安装完成后，以 root 身份登录新安装的服务器。
+
+. 更新系统（可选，如果在安装期间未将系统设置为自动下载更新）：
+
++
+
+[source, shell]
+----
+zypper up
+----
+
+. 重引导。
+
+____
+
+
+=== 从命令行注册（可选）
+
+如果您在安装 {sles} 期间已将 {productname} {productnumber} 添加为扩展，则可以跳过此过程。
+
+不过，您也可以选择在安装 {sles} 期间单击 btn:[跳过注册] 按钮来跳过注册。本节提供了在安装 {sles} 后注册产品的步骤。
+
+[NOTE]
+====
+以下步骤将注册 {x86_64} 体系结构的 {productname} {productnumber} 扩展，因此需要提供适用于 {x86_64} 体系结构的注册代码。
+
+要注册 {arm} 或 {s390x} 体系结构，请使用正确的注册代码。
+====
+
+
+.过程：从命令行注册
+[role=procedure]
+____
+
+. 运行以下命令列出可用扩展：
+
++
+
+[source, shell]
+----
+SUSEConnect --list-extensions
+----
+
++
+
+. From the list of available extensions, select the one you wish to install.
+
++
+
+* If installing the Server, use your {productname} Server Extension {productnumber} x86_64 registration code.
+
++
+
+For example for {sle} 15 SP7, use the following commands:
+
++
+
+[source, shell]
+----
+SUSEConnect -r <regcode>
+SUSEConnect -p sle-module-containers/15.7/x86_64
+SUSEConnect -p Multi-Linux-Manager-Server-SLE/5.1/x86_64 -r <regcode>
+----
+
++
+
+* 如果要安装代理，请运行以下命令，并提供您的 {productname} Proxy Extension {productnumber} x86_64 注册代码：
+
++
+
+----
+SUSEConnect -p Multi-Linux-Manager-Proxy-SLE/5.1/x86_64 -r <regcode>
+----
+
+____
+
+
+
+=== 安装并启用 [package]``podman``
+
+.过程：安装 [package]``podman``
+[role=procedure]
+____
+
+. 以 `root` 身份登录并安装产品软件包。
+
++
+
+
+* 在服务器上：
+
++
+
+[source, shell]
+----
+zypper in podman
+zypper in -t product Multi-Linux-Manager-Server-SLE
+----
+
+* 在代理上：
+
++
+
+[source, shell]
+----
+zypper in podman
+zypper in -t product Multi-Linux-Manager-Proxy-SLE
+----
+
+
++
+
+[IMPORTANT]
+====
+Before continuing, make sure that these packages are installed on the target system:
+* [package]``podman``
+** server: [package]``mgradm``, [package]``mgradm-bash-completion``
+** proxy: [package]``mgrpxy``, [package]``mgrpxy-bash-completion``
+====
+
++
+
+. 重引导系统或运行以下命令，以启动 Podman 服务：
+
++
+
+[source, shell]
+----
+systemctl enable --now podman.service
+----
+
+____

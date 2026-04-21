@@ -1,0 +1,45 @@
+[[tuning-changelogs]]
+= 微调更改日志
+:revdate: 2024-05-10
+:page-revdate: {revdate}
+
+某些软件包的更改日志项列表很长。默认会下载这些数据，但日志中保留的信息不一定有用。为了限制下载的更改日志元数据量并节省磁盘空间，您可以对磁盘上保留的项数施加限制。
+
+[IMPORTANT]
+====
+请在服务器容器内执行相应步骤之前使用 [literal]``mgrctl term``。
+====
+
+此配置选项保存在 [filename]``/etc/rhn/rhn.conf`` 配置文件中。该参数默认设置为 [systemitem]``20``。将此值更改为 [systemitem]``0`` 会提供不限数量的项。
+
+----
+java.max_changelog_entries = 20
+----
+
+如果您设置此参数，它只在同步新软件包后对其生效。
+
+更改此参数后，请使用 ``mgradm restart`` 重启服务。
+
+您可能想要删除再重新生成缓存的数据，以去除旧数据。
+
+[IMPORTANT]
+====
+删除再重新生成缓存的数据可能需要很长时间。根据您的通道数量和要删除的数据量，此过程可能需要几个小时。该任务由 Taskomatic 在后台运行，因此您可以在操作完成时继续使用 {productname}，但应该预料到性能会有所下降。
+====
+
+可以从命令行删除缓存的数据并请求重新生成数据：
+
+----
+spacewalk-sql -i
+----
+然后在 SQL 数据库提示符下输入：
+----
+DELETE FROM rhnPackageRepodata;
+INSERT INTO rhnRepoRegenQueue (id, CHANNEL_LABEL, REASON, FORCE)
+(SELECT sequence_nextval('rhn_repo_regen_queue_id_seq'),
+        C.label,
+        'cached data regeneration',
+        'Y'
+        FROM rhnChannel C);
+\q
+----

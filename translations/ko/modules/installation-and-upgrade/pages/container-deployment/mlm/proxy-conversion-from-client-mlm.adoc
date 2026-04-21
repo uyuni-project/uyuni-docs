@@ -1,0 +1,190 @@
+[[proxy-conversion-from-client-mlm]]
+= 클라이언트를 MLM 프록시로 변환
+
+== 개요
+
+이 장에서는 {webui}를 사용하여 클라이언트 시스템을 {productname} 프록시로 변환하는 방법에 대해 설명합니다.
+
+프록시 호스트 시스템이 이미 부트스트랩되었으며, 기본 운영 체제 채널(예: {sles} 15 SP7 또는 {sl-micro} 6.1) 및 프록시 확장 채널에 가입되어 있다고 가정합니다.
+
+클라이언트 온보딩에 대한 자세한 내용은 xref:client-configuration:registration-overview.adoc[]에서 확인할 수 있습니다.
+
+== 요구사항
+
+변환을 시작하기 전에 다음 요구 사항이 충족되었는지 확인하십시오.
+
+
+=== 지원되는 시스템
+
+현재 프록시 변환을 위해 지원되는 운영 체제는 다음과 같습니다.
+
+* {sles} 15 SP7
+
+* {sl-micro} 6.1
+
+=== 클라이언트는 다음과 같아야 함
+
+* {productname}에 이미 온보딩됨
+
+* 네트워크를 통해 연결 가능
+
+* 적절한 프록시 확장 채널 구독:
+
+** {productname} 프록시 확장 5.1(일치 아키텍처)
+
+
+== 준비
+
+프록시 변환을 계속하기 전에 변환 과정 중 중단을 방지하기 위해 다음 준비 사항이 완료되었는지 확인하십시오.
+
+=== SSL 인증서
+
+프록시와 다른 구성 요소 간의 통신을 보호하려면 유효한 SSL 인증서가 필요합니다.
+
+필요 사항:
+
+* {productname} 서버의 인증서에 서명한 인증 기관(CA)의 공개 인증서
+
+* 프록시용 인증서.
+
+* 프록시 인증서에 해당하는 개인 키입니다.
+
+[NOTE]
+====
+인증 기관(CA)이 임시 인증서 체인을 사용하는 경우, 모든 임시 인증서도 반드시 포함해야 합니다.
+====
+
+타사 인증서를 사용하지 않는 경우, {productname} 컨테이너 내부의 ``rhn-ssl-tool``을 사용하여 생성할 수 있습니다.
+
+.프록시 인증서 생성
+
+. {productname} 서버 호스트에서 다음을 실행:
+
++
+
+[source, shell]
+----
+mgrctl exec -ti -- rhn-ssl-tool --gen-server \
+  --set-hostname="<PROXY-FQDN>" \
+  --dir="/root/ssl-build"
+----
+
++
+
+다른 파라미터에 대한 자세한 내용은 xref:administration:ssl-certs-selfsigned.adoc[]에서 확인할 수 있습니다.
+
++
+
+. 인증서를 {productname} 서버 호스트 이전
+
++
+
+[source, shell]
+----
+mgrctl cp server:/root/ssl-build/<PROXY-FQDN>/server.crt /root/proxycert.pem
+mgrctl cp server:/root/ssl-build/<PROXY-FQDN>/server.key /root/proxykey.pem
+mgrctl cp server:/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT /root/rootca.pem
+----
+
++
+
+[NOTE]
+====
+인증서 및 키 파일이 생성된 정확한 폴더를 확인하려면 다음 명령으로 디렉토리를 나열할 수 있습니다.
+----
+mgrctl exec -ti -- ls -ltd /root/ssl-build/*/
+----
+====
+
+. {productname} 서버 호스트의 인증서를 로컬 컴퓨터 또는 다른 대상 시스템으로 전송합니다.
+
++
+
+[source, shell]
+----
+scp <MLM-FQDN>:/root/proxycert.pem ./
+scp <MLM-FQDN>:/root/proxykey.pem ./
+scp <MLM-FQDN>:/root/rootca.pem ./
+----
+
+=== 패키지 준비
+
+컨테이너 이미지를 RPM 패키지로 배포하는 것이 권장됩니다. 클라이언트에 다음 패키지가 설치되어 있는지 확인하십시오.
+
+* suse-multi-linux-manager-5.1-<ARCH>-proxy-httpd-image
+
+* suse-multi-linux-manager-5.1-<ARCH>-proxy-salt-broker-image
+
+* suse-multi-linux-manager-5.1-<ARCH>-proxy-squid-image
+
+* suse-multi-linux-manager-5.1-<ARCH>-proxy-ssh-image
+
+* suse-multi-linux-manager-5.1-<ARCH>-proxy-tftpd-image
+
+{webui}에서 [literal]``Software`` > [literal]``Packages`` > [literal]``Install`` 탭으로 이동한 후, 위의 패키지를 검색하여 설치할 수 있습니다.
+
+air-gapped 배포에 대한 자세한 내용은 xref:installation-and-upgrade:container-deployment/mlm/proxy-air-gapped-deployment-mlm.adoc[]에서 확인할 수 있습니다.
+
+== 프록시 클라이언트 설정
+
+. 클라이언트의 [literal]``Overview`` 페이지로 이동합니다.
+
+. btn:[프록시로 변환]을 클릭합니다.
+
++
+
+프록시 설정 양식으로 리디렉션되었는지 확인합니다.
+
++
+
+이 페이지는 나중에 [literal]``Details`` > [literal]``Proxy`` > [literal]``Configuration`` 탭에서 액세스할 수 있습니다.
+
+. {webui}에서 menu:프록시[구성]으로 이동하여 필요한 데이터를 입력합니다.
+
++
+
+.절차: 프록시 구성
+
+.. [guimenu]``상위 FQDN`` 필드에 상위 서버 또는 프록시의 완전히 정규화된 도메인 이름을 입력합니다.
+
+.. [guimenu]``프록시 SSH 포트`` 필드에 SSH 서비스가 {productname} Proxy에서 수신 대기하는 SSH 포트를 입력하십시오. 권장 사항은 기본 포트인 8022를 유지하는 것입니다.
+
+.. [guimenu]``최대 Squid 캐시 크기`` 필드에 Squid 캐시에 허용되는 최대 크기를 입력합니다.
+
+.. [guimenu]``프록시 관리자 이메일`` 필드에 관리자 이메일 주소를 입력합니다.
+
+.. [literal]``Certificates`` 섹션에서, 준비 단계에서 획득한 {productname} 프록시용 인증서를 제공하십시오.
+
+.. [literal]``Source`` 섹션에서 [literal]``RPM`` 또는 [literal]``Registry`` 옵션 중 하나를 선택합니다.
+
++
+
+* [literal]``RPM`` 옵션은 air-gapped 또는 제한 환경에서 권장됩니다.
+
+* The [literal]``Registry`` option can be used if connectivity to the container image registry is available.
+
++
+
+If selected, you will be prompted to choose between two sub-options: [literal]``Simple`` or [literal]``Advanced``.
+
++
+
+** [literal]``Simple``을 선택한 경우, [literal]``Registry URL`` 및 [literal]``Containers Tag`` 필드에 값을 입력합니다.
+
+*** [literal]``Registry URL``의 경우 [literal]``registry.suse.com/suse/multi-linux-manager/5.1/x86_64``를 선택합니다.
+
+*** 드롭다운 목록에서 태그를 선택합니다.
+
+** [literal]``Advanced``를 선택하면 양식에 추가 섹션이 표시됩니다.
+
+*** 각 개별 컨테이너 URL 필드에 레지스트리 [literal]``registry.suse.com/suse/multi-linux-manager/5.1/x86_64`` 뒤에 해당 접미사(예: ``_proxy-httpd_`` 또는 ``_salt-broker_``)를 사용합니다.
+
+*** 드롭다운 목록에서 태그를 선택합니다.
+
+. 모든 필드에 입력한 후에는 btn:[적용]을 클릭하여 구성을 적용하고 프록시 설치 작업을 예약합니다.
+
+== 프록시 활성화 확인
+
+클라이언트의 이벤트 기록을 확인하여 작업의 성공 여부를 확인합니다.
+
+(선택 사항) 프록시의 HTTP 엔드포인트에 액세스하여 환영 페이지가 표시되는지 확인합니다.

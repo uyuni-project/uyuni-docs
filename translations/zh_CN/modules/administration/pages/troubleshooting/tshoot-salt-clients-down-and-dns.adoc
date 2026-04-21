@@ -1,0 +1,44 @@
+[[troubleshooting-salt-clients-down-and-dns]]
+= 对 Salt 客户端显示为关闭状态的问题和 DNS 设置进行查错
+:revdate: 2024-05-15
+:page-revdate: {revdate}
+
+即使 Salt 客户端正在运行，软件包刷新或应用状态这样的操作也可能会标示为失败，并显示以下消息：
+
+----
+受控端已关闭或无法联系。
+----
+
+在此情况下，请尝试重新安排该操作。如果重新安排成功，发生问题的原因可能在于 DNS 配置有误。
+
+[IMPORTANT]
+====
+要在服务器容器内访问外壳，请在容器主机上运行 [literal]``mgrctl term``。
+====
+
+Salt 客户端重启时，或者系统在刷新 grain 时，客户端会计算其 FQDN grain，并在 grain 继续执行前保持无响应状态。当 {productname} Server 上安排的操作将要执行时，{productname} Server 会先于实际操作向客户端发出 ``test.ping``，以确保客户端实际上正在运行，可以触发该操作。
+
+默认情况下，{productname} Server 会等待 5 秒来获得 ``test.ping`` 命令的响应。如果在 5 秒内未收到响应，则会将该操作设置为失败，并显示消息指出客户端已关闭或无法联系。
+
+要解决此问题，请修复客户端上的 DNS 解析，使客户端在解析其 FQDN 时不会卡顿 5 秒时间。
+
+如果无法修复，请尝试将 {productname} Server 上 ``/etc/rhn/rhn.conf`` 文件中 ``java.salt_presence_ping_timeout`` 的值增至大于 4 的值。
+
+例如：
+
+----
+mgrctl term
+vim /etc/rhn/rhn.conf
+java.salt_presence_ping_timeout = 6
+----
+
+然后运行以下命令：
+
+----
+mgradm restart
+----
+
+[NOTE]
+====
+将此值增大会使 {productname} 服务器花费更长时间检查受控端是否无法连接或无响应，导致 {productname} 服务器总体速度更慢或响应能力更低。
+====

@@ -1,0 +1,161 @@
+[[tshoot-hostname-rename]]
+= {productname} Server 重命名查错
+:revdate: 2025-02-18
+:page-revdate: {revdate}
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+////
+Showing my working. --LKB 2020-06-22
+
+Cause: Renaming the hostname
+Consequence: Changes not picked up by db, clients and proxies
+Fix: Use the [command]``spacewalk-hostname-rename`` script to update the settings in the PostgreSQL database and the internal structures of {productname}.
+Result: Renaming is successfully propagated
+////
+
+如果您在本地更改了 {productname} Server 的主机名，{productname} 安装将无法正常进行。这是因为尚未在数据库中做出相应更改，因而这些更改无法从您的客户端和任何代理传播出来。
+
+
+
+== 重命名服务器
+
+如果您需要更改 {productname} 服务器的主机名，可以使用 [command]``mgradm server rename`` 命令执行操作。此命令会更新 {postgresql} 数据库中的相关设置以及 {productname} 的内部结构。
+
+
+
+=== 服务器配置
+
+此命令无必需参数，但如果新主机名与容器主机的主机名不一致，您可在命令中指定新主机名。
+
+
+如果需要生成与新主机名匹配的 SSL 证书，则需提供 SSL CA 口令。通过配置文件传递口令是更为安全的方式。
+
+.过程：准备 SSL CA 口令配置文件
+[role=procedure]
+____
+. 创建一个 [path]``config.yaml`` 文件，在其中包含如下内容：
+
++
+
+[source, shell]
+----
+ssl:
+  password: "<CA PASSWORD>"
+----
+____
+
+后续步骤中将会用到该文件。
+
+.过程：重命名 {productname} Server
+[role=procedure]
+____
+. 在 DNS 服务器上，本地和远程更改系统级别的服务器的网络设置。
+    您还需要提供用于反向名称解析的配置设置。更改网络设置的方式与重命名任何其他系统的方式相同。
+
+. 重引导 {productname} Server 以使用新网络配置并确保主机名更改。
+
+. 在容器主机上的命令行中执行以下命令。如果您创建的文件用于存储 SSL CA 口令，请添加 [command]``-c config.yaml``：
+
++
+
+[source, shell]
+----
+mgradm server rename
+----
+
++
+
+如果新主机名无法解析，此命令将会失败。
+
+____
+
+重命名操作会在服务器容器重启过程中同步进行，您可通过执行以下命令查看相关日志：
+
+[source, shell]
+----
+mgrctl exec -ti -- journalctl -u uyuni-update-config
+----
+
+请注意，重启服务器容器时，此命令会触发所有 {salt} 客户端的 pillar 数据刷新。操作耗时取决于已注册客户端的数量。
+
+
+=== 重新配置直接管理的客户端
+
+**如果通过 {productname} 代理管理客户端，请跳过此过程。**
+
+通过下面的过程可重新配置直接管理的客户端，确保它们知道服务器的新主机名和 IP 地址。
+
+.过程：重新配置直接管理的客户端
+[role=procedure]
+____
+. 在每个客户端的 {salt} 客户端配置文件中，指定新 {salt} 主控端（{productname} 服务器）的名称。相应配置文件名为 [path]``/etc/venv-salt-minion/minion.d/susemanager.conf``，如果您未使用 {salt} 捆绑包，则文件名为 [path]``/etc/salt-minion/minion.d/susemanager.conf``：
+
++
+
+----
+master: <新主机名>
+----
+
+. 在每个客户端上重启 {salt} 服务。可以运行以下命令：
+
++
+
+[source, shell]
+----
+systemctl restart venv-salt-minion
+----
+
++
+
+或者，如果您未使用 {salt} 捆绑包，则运行：
+
++
+
+[source, shell]
+----
+systemctl restart salt-minion
+----
+
+____
+
+
+=== ClientcConnection with applying high state
+
+最后，要将该主机名完全传播到 {salt} 客户端配置，请应用 Highstate。应用 Highstate 会更新储存库 URL 中的主机名。
+
+
+
+== 重新配置代理
+
+每一个代理都必须重新配置。必须将新服务器证书和密钥复制到相应代理。有关详细信息，请参见 xref:installation-and-upgrade:install-proxy.adoc[]。
+
+
+[IMPORTANT]
+====
+如果通过某个代理使用 PXE 引导，则必须检查该代理的配置设置。如果通过非容器化 {productname} Proxy 4.3 使用 PXE 引导，则需要重新配置 [systemitem]``tftpsync``。
+
+在容器主机上执行以下命令：
+
+[source, shell]
+----
+mgrctl exec -ti -- configure-tftpsync.sh
+----
+
+====

@@ -1,0 +1,96 @@
+= {productname}サーバのAir-gapped配備
+:revdate: 2025-07-25
+:page-revdate: {revdate}
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+== Air-gapped配備とは
+
+
+Air-gapped配備とは、安全ではないネットワーク、特にインターネットから物理的に隔離されたネットワークシステムをセットアップおよび運用することです。この種の配備は、一般的に高度なセキュリティ環境で使用されます。たとえば、軍事施設、金融システム、重要インフラストラクチャ、機密データを取り扱っていて外部の脅威から保護する必要がある場所などです。
+
+[systemitem]``Podman``または[systemitem]``Docker``を使用して、インターネットにアクセスできるマシンにコンテナイメージを簡単にプルできます。
+
+.プロシージャ: イメージのプル
+. 目的のイメージをプルしてから、イメージを[literal]``tar``アーカイブとして保存します。例:
+
++
+.Podman
+----
+podman pull registry.opensuse.org/uyuni/server:latest registry.opensuse.org/uyuni/server-postgresql:latest
+podman save -m --output images.tar registry.opensuse.org/uyuni/server:latest registry.opensuse.org/uyuni/server-postgresql:latest
+----
++
+.Docker
+----
+docker pull registry.opensuse.org/uyuni/server:latest registry.opensuse.org/uyuni/server-postgresql:latest
+docker save --output images.tar registry.opensuse.org/uyuni/server:latest registry.opensuse.org/uyuni/server-postgresql:latest
+----
++
+. Transfer the resulting [filename]``images.tar`` to the Server container host and load it using the following command:
++
+.サーバイメージをロードする
+----
+podman load -i images.tar
+----
+
+== Air-gapped環境における{salt} formulaのコンテナイメージの取得
+
+BindやDHCP (Kea)などの一部のformulaもコンテナを使用します。 これらをAir-gapped環境で使用する予定の場合は、イメージをプルして、アーカイブに保存し、{productname}プロキシまたは別の管理対象システムにロードする必要があります。
+
+イメージは`registry.opensuse.org`から入手できます。
+
+.プロシージャ: Air-gapped環境におけるformulaイメージの取得
+. インターネットにアクセスできるシステムで、必要なイメージをプルします。例:
++
+[source, shell]
+----
+podman pull registry.opensuse.org/opensuse/bind:latest
+podman pull registry.opensuse.org/opensuse/kea:latest
+----
+. イメージをTARアーカイブに保存します。
++
+[source, shell]
+----
+podman save -o formula-images.tar registry.opensuse.org/opensuse/bind:latest registry.opensuse.org/opensuse/kea:latest
+----
+. `formula-images.tar`ファイルをAir-gappedシステムに転送します。
+. Air-gappedシステムにイメージをロードします。
++
+[source, shell]
+----
+podman load -i formula-images.tar
+----
+
+=== Deploy {productname} on {opensuse} {tumbleweed}
+
+{productname}では、システムにインストール可能なRPMパッケージで、必要なコンテナイメージもすべて提供します。
+
+[NOTE]
+====
+ユーザは必要なRPMを内部ネットワーク上で利用できるようにする必要があります。そのためには、2つ目の{productname}サーバまたは何らかの種類のミラーを使用します。
+====
+
+.Procedure: Install {productname} on {opensuse} {tumbleweed} in air-gapped environment
+. Install {opensuse} {tumbleweed}.
+. システムを更新します。
+. ツールのパッケージとイメージパッケージをインストールします($ARCH$は適切なアーキテクチャに置き換えます)。
+
++
+
+[source, shell]
+----
+zypper install mgradm* mgrctl* uyuni-server*-image*
+----
+
++
+
+. [command]``mgradm``を使用して{productname}を配備します。エアギャップ環境では、[command]``--pullPolicy Never``オプションの使用をお勧めします。
+
+
+For more detailed information about installing {productname} Server on {opensuse} {tumbleweed}, see xref:container-deployment/uyuni/server-deployment-uyuni.adoc[Server Deployment].
+
+{productname}サーバをアップグレードするには、システム内のすべてのパッケージをアップグレードし、 xref:container-management/updating-server-containers.adoc[サーバのアップグレード]で定義されている手順に従う必要があります。
+

@@ -1,0 +1,118 @@
+[[troubleshooting-package-sync]]
+= 同期のトラブルシューティング
+:revdate: 2025-07-08
+:page-revdate: {revdate}
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+
+同期はさまざまな理由で失敗する可能性があります。 接続問題に関する詳細情報を取得するには、次のコマンドを実行します。
+
+----
+export URLGRABBER_DEBUG=DEBUG
+spacewalk-repo-sync -c <channelname> <options> > /var/log/spacewalk-repo-sync-$(date +%F-%R).log 2>&1
+----
+
+[path]``/var/log/zypper.log``にあるZypperによって作成されたログを確認することもできます。
+
+
+GPGキーの不一致::
+{productname}はサードパーティのGPGキーを自動的に信頼しません。 パッケージ同期が失敗する場合は、信頼されていないGPGキーが原因である可能性があります。 この場合は、[path]``/var/log/rhn/reposync``を開いて、次のようなエラーを検索することで確認できます。
++
+----
+['/usr/bin/spacewalk-repo-sync', '--channel', 'sle-12-sp1-ga-desktop-
+nvidia-driver-x86_64', '--type', 'yum', '--non-interactive']
+RepoMDError: Cannot access repository. Maybe repository GPG keys are not imported
+----
++
+この問題を解決するには、{productname}にGPGキーをインポートする必要があります。 GPGキーのインポートの詳細については、xref:administration:repo-metadata.adoc[]を参照してください。
+
+
+[literal]``spacewalk-repo-sync``からのGPGキーの削除::
+When a GPG key for repository has been manually imported using [literal]``spacewalk-repo-sync``, and this key is no longer needed (for example if the key was compromised, or was used for testing purposes only), it can be removed from the zypper RPM database used by [literal]``spacewalk-repo-sync`` with the following command:
++
+----
+rpm --dbpath=/var/lib/spacewalk/reposync/root/var/lib/rpm/ -e gpg-pubkey-*
+----
++
+ここで、[literal]``gpg-pubkey-*``は削除されるGPGキーの名前です。
+
+
+
+GPGキーの更新::
+GPGキーを更新する場合は、まず古いキーを削除してから、新しいキーを生成してインポートします。
+
+チェックサムの不一致::
+チェックサムが失敗すると、[path]``/var/log/rhn/reposync/*.log``ログファイルに次のようなエラーが表示される場合があります。
++
+----
+Repo Sync Errors: (50, u'checksums did not match
+326a904c2fbd7a0e20033c87fc84ebba6b24d937 vs
+afd8c60d7908b2b0e2d95ad0b333920aea9892eb', 'Invalid information uploaded
+to the server')
+The package microcode_ctl-1.17-102.57.62.1.x86_64 which is referenced by
+patch microcode_ctl-8413 was not found in the database. This patch has
+been skipped.
+----
++
+[command]``-Y``オプションを使用して、コマンドラインプロンプトから同期を実行することで、このエラーを解決できます。
++
+----
+spacewalk-repo-sync --channel <channelname> -Y
+----
++
+このオプションはローカルにキャッシュされたチェックサムに依存するのではなく、同期前にリポジトリデータを検証します。
+
+
+接続タイムアウト::
+ダウンロードが次のエラーでタイムアウトする場合:
++
+----
+28, 'Operation too slow. Less than 1000 bytes/sec transferred the last 300 seconds
+----
++
+このエラーは、[path]``/etc/rhn/rhn.conf``で[literal]``reposync_timeout``と[literal]``reposync_minrate``の設定値を指定することで解決できます。 デフォルトでは、300秒で1秒あたり1000バイト未満の転送が行われると、ダウンロードが中止されます。 [literal]``reposync_minrate``で1秒あたりのバイト数を調整でき、[literal]``reposync_timeout``で待機する秒数を調整できます。
+
+
+reposyncの実行中にキーを手動で信頼する::
+[command]``reposync``の実行時に、GPGキーを手動で承認する必要がある場合があります。 例:
++
+----
+# spacewalk-repo-sync -c nvidia-compute-sle-15-x86_64-we-sp3
+17:07:40 ======================================
+17:07:40 | Channel: nvidia-compute-sle-15-x86_64-we-sp3
+17:07:40 ======================================
+17:07:40 Sync of channel started.
+New repository or package signing key received:
+  Repository:       nvidia-compute-sle-15-x86_64-we-sp3
+  Key Fingerprint:  610C 7B14 E068 A878 070D A4E9 9CD0 A493 D42D 0685
+  Key Name:         cudatools <cudatools@nvidia.com>
+  Key Algorithm:    RSA 4096
+  Key Created:      Thu Apr 14 16:04:01 2022
+  Key Expires:      (does not expire)
+  Rpm Name:         gpg-pubkey-d42d0685-62589a51
+    Note: Signing data enables the recipient to verify that no modifications occurred after the data
+    were signed. Accepting data with no, wrong or unknown signature can lead to a corrupted system
+    and in extreme cases even to a system compromise.
+    Note: A GPG pubkey is clearly identified by its fingerprint. Do not rely on the key's name. If
+    you are not sure whether the presented key is authentic, ask the repository provider or check
+    their web site. Many providers maintain a web page showing the fingerprints of the GPG keys they
+    are using.
+Do you want to reject the key, trust temporarily, or trust always? [r/t/a/?] (r):
+----

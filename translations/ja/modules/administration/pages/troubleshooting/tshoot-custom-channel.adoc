@@ -1,0 +1,62 @@
+[[troubleshooting-customchannel]]
+= パッケージが競合するカスタムチャンネルのトラブルシューティング
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+////
+Cause: Conflicting packages in custom channel
+Consequence: Creating bootstrap repo can fail
+Fix: Separate trees from each other
+Result: Clean and functional boostrap repo will be created
+////
+
+パッケージが競合するカスタムチャンネルを設定する場合、ブートストラップリポジトリの作成などの機能が未定義の動作を引き起こし、クライアントの登録に失敗する可能性があります。
+
+たとえば、バージョン番号がより新しい競合するパッケージがブートストラップリポジトリに含まれる可能性があります。 このようなパッケージ(たとえば、[package]``python3-zmq``や[package]``zeromq``)により、ブートストラップリポジトリの作成が破損したり、クライアントのブートストラップ中に問題が発生する可能性があります。
+
+When the custom channel (for example, an EPEL channel) is added below the parent vendor channel, issues with conflicting packages cannot be solved directly. The way how to solve this is to separate the custom channel from the vendor channel. The custom channel needs to be created in a separate tree. In case that the custom channel needs to be delivered as a child, such environment can be created using Content Lifecycle Management (CLM). Sources in a CLM project can be added there from different trees. Using such an approach, the custom channel stays below the parent within the built environment. However, the vendor channel tree stays without the custom channel and the bootstrap repository. Then registering clients works correctly.
+
+競合するパッケージ(salt、zeromqなど)を持つカスタムチャンネルを子チャンネルとして作成する場合は、次のステップに従うことで問題を回避できます。
+
+.プロシージャ: カスタムチャンネルで競合するパッケージを回避する
+
+. カスタムチャンネルを親チャンネルから子チャンネルとして削除します。 詳細については、xref:administration:custom-channels.adoc#_manage_custom_channels[]を参照してください。
+. 別のツリーでカスタムチャンネルを作成します。 詳細については、xref:administration:custom-channels.adoc#_creating_custom_channels_and_repositories[]を参照してください。
+コンテンツライフサイクル管理(CLM)内で子チャンネルとしてカスタムチャンネルを取得するには、次の手順に従います。
++
+* {productname}の{webui}で、menu:コンテンツライフサイクル[]に移動し、btn:[プロジェクトの作成]をクリックします。 ［[guimenu]``名前`` ］と［ [guimenu]``ラベル``］に入力します。
+* ソースをプロジェクトに割り当てます。 必要なベンダチャンネルとカスタムチャンネルを使用します。 (CentOS8を使用した共有例)
+* プロジェクトに環境を追加します。 たとえば、CentOS8を使用します。
+* 環境を構築するには、btn:[ビルド]ボタンをクリックします。 これにより、アクティベーションキーに関連付けて、クライアントのブートストラップに使用できるベンダチャンネルとカスタムチャンネルを備えた環境が作成されます。
+. 重要なメモ: CLMプロジェクトでは、問題のあるパッケージや競合するパッケージを除外するフィルタを追加することをお勧めします。 これを追加しないと、より新しいバージョン番号の競合するパッケージがクライアントの更新中にインストールされます。 フィルタリングの詳細については xref:administration:content-lifecycle-examples.adoc#exclude-higher-kernel-version[]を参照してください。
+. 最新のパッチをCLM環境(ベンダチャンネルおよびカスタムチャンネルを使用)に取得するには、プロジェクトのbtn:[ビルド]ボタンをクリックします。 これは、環境を再構築するために必要です。
+
+* CLM の詳細については、xref:administration:content-lifecycle.adoc[] を参照してください。
+
+ifeval::[{mlm-content} == true]
+
+[NOTE]
+====
+Extra Packages for Enterprise Linux (EPEL)を直接{rhel}クライアント(または互換性のある{sll}、{centos}、{oracle}など)上で使用すると、EPELから{salt}パッケージがインストールされます。この場合、{productname}で提供されている{salt}パッケージで利用可能な一部の機能がインストールされません。これが特に重要な理由は、ブートストラップリポジトリにSUSE以外の{salt}パッケージが含まれる結果になるためです。したがって、これはサポート対象外のシナリオです。
+
+EPELリポジトリを有効にする必要がある場合は、事前にEPELから{salt}パッケージをフィルタで除外してください(たとえば、menu:ソフトウェア[管理 > チャンネル > EPEL > パッケージ]で{salt}パッケージを削除します)。
+====
+endif::[]

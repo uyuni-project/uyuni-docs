@@ -1,0 +1,100 @@
+= {productname} 프록시 air-gapped 배포
+:revdate: 2025-04-28
+:page-revdate: {revdate}
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+== air-gapped 배포란?
+
+
+air-gapped 배포란 안전하지 않은 네트워크, 특히 인터넷으로부터 물리적으로 격리된 네트워크 시스템을 설정하고 운영하는 것을 의미합니다. 이러한 유형의 배포는 일반적으로 군사 설치, 금융 시스템, 중요 인프라 및 민감한 데이터를 처리하고 외부 위협으로부터 보호해야 하는 모든 곳에서 보안 수준이 높은 환경에서 사용됩니다.
+
+[NOTE]
+====
+현재 air-gapped 배포는 {sle-micro}에서만 사용할 수 있습니다.
+====
+
+
+== 가상 머신으로 배포
+
+필요한 모든 도구 및 컨테이너 이미지가 미리 로드되어 있고 즉시 작동하므로, 제공되는 {productname} 가상 머신 이미지 옵션을 사용하여 설치하는 방법을 권장합니다.
+
+{productname} 프록시 가상 머신 설치에 대한 자세한 내용은 xref:container-deployment/mlm/proxy-deployment-vm-mlm.adoc[프록시를 가상 머신으로 배포]에서 확인할 수 있습니다.
+
+{productname} 프록시를 업그레이드하려면 xref:container-management/updating-proxy-containers.adoc[프록시 업그레이드]에 정의된 절차를 따라야 합니다.
+
+
+== {sl-micro}에 {productname} 배포
+
+또한 {productname}은(는) 필요한 모든 컨테이너 이미지를 시스템에 설치할 수 있는 RPM으로 제공합니다.
+
+.절차: air-gapped 방식으로 {sl-micro}에 {productname} 프록시 설치
+[role=procedure]
+____
+. {sl-micro}를 설치합니다.
+
+. {productname} 서버에서 프록시 호스트 OS를 클라이언트로 부트스트랩합니다.
+
+. 시스템을 업데이트합니다.
+
+. 도구 패키지 및 이미지 패키지 설치($ARCH$를 올바른 아키텍처로 대체)
+
++
+
+[source, shell]
+----
+transactional-update pkg install mgrpxy* mgrctl* suse-manager-5.0-$ARCH$-proxy-*
+----
+
+. 재부팅합니다.
+
+. {productname}을(를) mgrpxy로 배포합니다.
+____
+
+
+{sl-micro}에 {productname} 프록시를 설치하는 방법에 대한 자세한 내용은 xref:container-deployment/mlm/proxy-deployment-mlm.adoc[가상 머신으로 프록시 배포]에서 확인할 수 있습니다.
+
+{productname} 프록시를 업그레이드하려면 xref:container-management/updating-proxy-containers.adoc[프록시 업그레이드]에 정의된 절차를 따라야 합니다.
+
+
+== 공식 이미지
+
+일부 공식(예: Bind 및 DHCP(Kea))도 컨테이너를 사용합니다. air-gapped 환경에서 이를 사용하려면 해당 이미지를 가져와 아카이브에 저장한 후 {productname} 프록시 또는 다른 관리형 시스템에 로드해야 합니다.
+
+이미지는 ``registry.suse.com``에서 제공됩니다.
+
+.절차: air-gapped 환경에서 공식 이미지 가져오기
+[role=procedure]
+____
+. 인터넷에 연결된 시스템에서 필요한 이미지를 당겨옵니다.
+
++
+
+[source, shell]
+----
+podman pull registry.suse.com/suse/bind:latest
+podman pull registry.suse.com/suse/kea:2.6
+----
+
+. 이미지를 TAR 아카이브에 저장합니다.
+
++
+
+[source, shell]
+----
+podman save -m -o formula-images.tar registry.suse.com/suse/bind:latest registry.suse.com/suse/kea:2.6
+----
+
+. ``formula-images.tar`` 파일을 air-gapped 시스템으로 전송합니다.
+
+. air-gapped 시스템에 이미지를 로드합니다.
+
++
+
+[source, shell]
+----
+podman load -i formula-images.tar
+----
+____

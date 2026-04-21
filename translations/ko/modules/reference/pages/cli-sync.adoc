@@ -1,0 +1,166 @@
+[[ref-cli-sync]]
+= Synchronization CLI Tools
+:revdate: 2024-11-29
+:page-revdate: {revdate}
+
+[IMPORTANT]
+====
+서버 컨테이너 내부의 셸에 액세스하려면 컨테이너 호스트에서 [literal]``mgrctl term``을 실행합니다. 이 위치에서 평소와 같이 CLI 도구를 실행할 수 있습니다.
+====
+
+There are two tools for synchronizing clients to the server. For clients that are connected to the {scclongform}, use ``mgr-sync``. For all other clients, use ``spacewalk-repo-sync``.
+
+
+
+== Synchronize {scc} Repositories With mgr-sync
+
+
+//This content is the same as the content at modules/administration/pages/mgr-sync.adoc Perhaps we should snippet it? --LKB 2020-10-09
+
+The primary use of ``mgr-sync`` is to connect to the {scclongform}, retrieve product and package information, and prepare channels for synchronization with the {productname} Server.
+
+이 도구는 {suse} 지원 구독과 함께 사용하도록 설계되었으며, {opensuse}, {centos} 및 {ubuntu} 등 오픈 소스 배포에는 필요하지 않습니다.
+
+``mgr-sync``에서 사용할 수 있는 명령과 인수는 이 테이블에서 확인할 수 있습니다. ``mgr-sync`` 명령에 다음 구문을 사용합니다.
+
+----
+mgr-sync [-h] [--version] [-v] [-s] [-d {1,2,3}] {list,add,refresh,delete}
+----
+
+
+[[mgr-sync-commands]]
+[cols="1,1,1", options="header"]
+.mgr-sync 명령
+|===
+| Command | Description | Example Use
+| list | List channels, organization credentials, or products | ``mgr-sync list channels``
+| add | Add channels, organization credentials, or products | ``mgr-sync add channel <channel_name>``
+| refresh | Refresh the local copy of products, channels, and subscriptions | ``mgr-sync refresh``
+| delete | Delete existing {scc} organization credentials from the local system | ``mgr-sync delete credentials``
+| sync | Synchronize specified channel or ask for it when left blank| ``mgr-sync sync channel <channel_name>``
+|===
+
+
+명령과 관련된 전체 옵션 목록을 확인하려면 다음 명령을 사용합니다.
+
+----
+mgr-sync <command> --help
+----
+
+
+
+[[mgr-sync-optional-args]]
+[cols="1,1,1,1", options="header"]
+.mgr-sync 선택 사항 인수
+|===
+| 옵션 | 약식 옵션 | 설명 | 예시 사용
+| help | ``h`` | 명령 사용법 및 옵션 표시 | ``mgr-sync --help``
+| version | N/A | 현재 설치된 ``mgr-sync`` 버전 표시 | ``mgr-sync --version``
+| verbose | ``v`` | 자세한 출력 제공 | ``mgr-sync --verbose refresh``
+| store-credentials | ``s`` | 자격 증명을 로컬 숨김 파일에 저장 | ``mgr-sync --store-credentials``
+| debug | ``d`` | 추가 디버깅 정보 기록. 1, 2, 3의 수준 필요. 3은 가장 많은 양의 디버깅 정보를 제공 | ``mgr-sync -d 3 refresh``
+| no-sync | N/A | 동기화를 시작하지 않고 제품 또는 채널을 추가하려면 ``add`` 명령과 함께 사용 | ``mgr-sync --no-sync add <channel_name>``
+|===
+
+
+다음은 ``mgr-sync``에 대한 로그의 위치입니다.
+
+* [path]``/var/log/rhn/mgr-sync.log``
+* [path]``/var/log/rhn/rhn_web_api.log``
+
+
+
+== Synchronize Repositories with spacewalk-repo-sync
+
+The [command]``spacewalk-repo-sync`` tool synchronizes software repositories into {productname} channels. In most cases, this happens automatically, but you can use the tool to run it manually if required.
+
+The [command]``spacewalk-repo-sync`` tool has these primary commands:
+
+[[spacewalk-repo-sync-options]]
+[cols="1,1,1", options="header"]
+.spacewalk-repo-sync Options
+|===
+
+| Option
+| Description
+| Example Use
+
+| list
+| List all custom channels and the repositories assigned to them.
+| ``spacewalk-repo-sync --list``
+
+| channel
+| Synchronize a single channel to all repositories assigned to it.
+| ``spacewalk-repo-sync  --channel <custom-channel>``
+
+| deep-verify
+| ignore cached package checksums.
+| ``spacewalk-repo-sync --deep-verify``
+
+| force-all-errata
+| force re-importing all the patches.
+| ``spacewalk-repo-sync --deep-verify``
+
+| no-packages
+| excludes packages from the operation.
+| ``spacewalk-repo-sync --deep-verify --no-packages``
+
+|===
+
+For a complete list of options, see the ``spacewalk-repo-sync`` manpage:
+
+----
+man spacewalk-repo-sync
+----
+
+
+
+== 문제 해결 동기화
+
+If you are having trouble synchronizing with ``spacewalk-repo-sync`` you can find out more by watching the HTTP log as the command runs.
+
+
+
+.Procedure: Troubleshooting Synchronization Problems
+. Log the HTTP output into [path]``/var/log/zypper.log``:
++
+----
+ZYPP_MEDIA_CURL_DEBUG=2 spacewalk-repo-sync --channel <channel-label>
+----
+. Export the setting:
++
+----
+export URLGRABBER_DEBUG=DEBUG
+----
+. Start the synchronization:
++
+----
+/usr/bin/spacewalk-repo-sync --channel <channel-label> --type yum
+----
+  You can increase the debug level, by adding the [option]``-vvv`` option to the command.
+. When the complete completes, or fails, disable debug mode:
++
+----
+unset URLGRABBER_DEBUG
+----
+
+
+
+=== Add Custom Extra HTTP Headers
+
+You can add custom HTTP headers to the requests made by [command]``spacewalk-repo-sync`` at the time of synchronization. The custom HTTP headers are defined in the [path]``/etc/rhn/spacewalk-repo-sync/extra_headers.conf`` configuration file. The headers can be defined by repository name or channel label. You can also define global headers by putting them in the ``main`` section. For example:
+
+----
+[testchannel]
+X-MY-HEADER-1=VALUE
+X-MY-HEADER-2=VALUE
+
+[mychannel]
+X-MY-HEADER-3=VALUE
+X-MY-HEADER-4=VALUE
+
+[main]
+X-MYGLOBAL-HEADER=VALUE
+----
+
+This can be particularly useful when dealing with Red Hat Update Infrastructure (RHUI) repositories in the public cloud.

@@ -1,0 +1,190 @@
+[[proxy-conversion-from-client-mlm]]
+= クライアントをMLMプロキシに変換する
+
+== 概要
+
+この章では、{webui}を使用してクライアントシステムを{productname}プロキシに変換する方法を説明します。
+
+プロキシホストシステムがすでにブートストラップされており、ベースオペレーティングシステムチャンネル({sles} 15 SP7や{sl-micro} 6.1など)およびプロキシ拡張機能チャンネルにサブスクライブされていることが前提となります。
+
+クライアントのオンボーディングの詳細については、xref:client-configuration:registration-overview.adoc[]を参照してください。
+
+== 要件
+
+変換を開始する前に、以下の要件が満たされていることを確認します。
+
+
+=== サポートされているシステム
+
+以下のオペレーティングシステムのみが現在プロキシ変換にサポートされています。
+
+* {sles} 15 SP7
+
+* {sl-micro} 6.1
+
+=== クライアントは以下を満たしている必要があります
+
+* {productname}にすでにオンボーディング済みであること
+
+* ネットワーク経由でアクセス可能であること
+
+* 適切なプロキシ拡張機能チャンネルにサブスクライブされていること:
+
+** {productname} Proxy Extension 5.1 (アーキテクチャが一致していること)
+
+
+== 準備
+
+プロキシ変換を進める前に、変換プロセス中の中断を回避するため、以下の準備が完了していることを確認してください。
+
+=== SSL証明書
+
+プロキシと他のコンポーネント間の通信をセキュリティで保護するために、有効なSSL証明書が必要です。
+
+以下のものが必要です。
+
+* {productname}サーバ上の証明書に署名した認証局(CA)の公開証明書
+
+* プロキシの証明書。
+
+* プロキシ証明書に対応する機密鍵。
+
+[NOTE]
+====
+CAが中間証明書チェーンを使用している場合は、すべて中間証明書も含める必要があります。
+====
+
+サードパーティ証明書を使用していない場合は、{productname}コンテナ内の``rhn-ssl-tool``を使用して生成できます。
+
+.プロキシ証明書を生成する
+
+. {productname}サーバホストで、次のコマンドを実行します。
+
++
+
+[source, shell]
+----
+mgrctl exec -ti -- rhn-ssl-tool --gen-server \
+  --set-hostname="<PROXY-FQDN>" \
+  --dir="/root/ssl-build"
+----
+
++
+
+他のパラメータの詳細については、xref:administration:ssl-certs-selfsigned.adoc[]を参照してください。
+
++
+
+. {productname}サーバホストに証明書を転送します。
+
++
+
+[source, shell]
+----
+mgrctl cp server:/root/ssl-build/<PROXY-FQDN>/server.crt /root/proxycert.pem
+mgrctl cp server:/root/ssl-build/<PROXY-FQDN>/server.key /root/proxykey.pem
+mgrctl cp server:/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT /root/rootca.pem
+----
+
++
+
+[NOTE]
+====
+証明書とキーファイルが生成された正確なフォルダを確認するには、次のコマンドでディレクトリを一覧表示できます。
+----
+mgrctl exec -ti -- ls -ltd /root/ssl-build/*/
+----
+====
+
+. {productname}サーバホストからローカルマシンまたは他のターゲットシステムに証明書を転送します。
+
++
+
+[source, shell]
+----
+scp <MLM-FQDN>:/root/proxycert.pem ./
+scp <MLM-FQDN>:/root/proxykey.pem ./
+scp <MLM-FQDN>:/root/rootca.pem ./
+----
+
+=== パッケージの準備
+
+コンテナイメージをRPMパッケージとして配備することをお勧めします。次のパッケージがクライアントにインストールされていることを確認してください。
+
+* suse-multi-linux-manager-5.1-<ARCH>-proxy-httpd-image
+
+* suse-multi-linux-manager-5.1-<ARCH>-proxy-salt-broker-image
+
+* suse-multi-linux-manager-5.1-<ARCH>-proxy-squid-image
+
+* suse-multi-linux-manager-5.1-<ARCH>-proxy-ssh-image
+
+* suse-multi-linux-manager-5.1-<ARCH>-proxy-tftpd-image
+
+これらのパッケージは{webui}から、［ [literal]``ソフトウェア``］ >［ [literal]``パッケージ``］>［ [literal]``インストール``］タブに移動し、上記のパッケージを検索して、インストールすることでインストールできます。
+
+Air-gapped配備の詳細については、xref:installation-and-upgrade:container-deployment/mlm/proxy-air-gapped-deployment-mlm.adoc[]を参照してください。
+
+== プロキシクライアントのセットアップ
+
+. クライアントの［[literal]``概要``］ページに移動します。
+
+. btn:[プロキシへの変換]ボタンをクリックします。
+
++
+
+プロキシ設定フォームにリダイレクトされたことを確認します。
+
++
+
+このページには後で［[literal]``詳細``］ >［[literal]``プロキシ``］ >［[literal]``設定``］タブからアクセスできます。
+
+. {webui}で、menu:プロキシ[設定]に移動し、必要なデータを入力します。
+
++
+
+.プロシージャ: プロキシの設定
+
+.. ［[guimenu]``親FQDN``］フィールドに、親サーバまたはプロキシの完全修飾ドメイン名を入力します。
+
+.. ［[guimenu]``プロキシSSHポート``］フィールドに、SSHサービスが{productname}プロキシでリスンしているSSHポートを入力します。デフォルトの8022を維持することをお勧めします。
+
+.. ［[guimenu]``Squidの最大キャッシュサイズ``］フィールドに、Squidキャッシュの最大許容サイズをギガバイト単位で入力します。
+
+.. ［[guimenu]``プロキシ管理者の電子メール``］フィールドに、管理者の電子メールアドレスを入力します。
+
+.. ［[literal]``証明書``］セクションに、準備ステップで取得した {productname}プロキシの証明書を指定します。
+
+.. ［[literal]``ソース``］セクションで、2つのオプション(［[literal]``RPM``］または［[literal]``レジストリ``］)のいずれかを選択します。
+
++
+
+* ［[literal]``RPM``］オプション、はエアギャップ環境または制限された環境に推奨されます。
+
+* The [literal]``Registry`` option can be used if connectivity to the container image registry is available.
+
++
+
+If selected, you will be prompted to choose between two sub-options: [literal]``Simple`` or [literal]``Advanced``.
+
++
+
+** ［ [literal]``単純``］を選択した場合は、 ［[literal]``レジストリURL``］と［ [literal]``コンテナタグ``］フィールドに値を入力します。
+
+*** ［[literal]``レジストリURL``］には、[literal]``registry.suse.com/suse/multi-linux-manager/5.1/x86_64``を使用します。
+
+*** ドロップダウンリストからタグを選択します。
+
+** ［[literal]``詳細``］を選択する場合は、フォームの追加セクションが表示されます。
+
+*** 個々のコンテナURLフィールドには、レジストリ[literal]``registry.suse.com/suse/multi-linux-manager/5.1/x86_64``に続いて、対応するサフィックス(例: `_proxy-httpd_` または `_salt-broker_`)を使用します。
+
+*** ドロップダウンリストからタグを選択します。
+
+. すべてのフィールドが入力されたら、btn:[適用]をクリックして設定を適用し、プロキシインストールタスクをスケジュールします。
+
+== プロキシの有効化の確認
+
+クライアントのイベント履歴をチェックして、タスクの成功を確認します。
+
+(オプション)プロキシのHTTPエンドポイントにアクセスして、ようこそページが表示されることを確認します。

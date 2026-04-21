@@ -1,0 +1,96 @@
+[[ssl-certs-selfsigned]]
+= 자체 서명된 SSL 인증서
+:revdate: 2025-05-08
+:page-revdate: {revdate}
+
+
+기본적으로 {productname}은(는) 자체 서명 인증서를 사용합니다. 이 경우 인증서는 {productname}에 의해 생성 및 서명됩니다. 이 방법에서는 인증서의 세부 사항이 정확한지 확인하기 위해 독립 인증 기관을 사용하지 않습니다. 타사 CA는 인증서에 포함된 정보가 정확한지 확인하기 위해 검사를 수행합니다.
+
+* 타사 CA에 대한 자세한 내용은 xref:administration:ssl-certs-imported.adoc[]에서 확인할 수 있습니다.
+* 인증서 바꾸기에 대한 자세한 내용은 xref:administration:ssl-certs-imported.adoc#ssl-certs-import-replace[]에서 확인할 수 있습니다.
+
+이 섹션에서는 신규 또는 기존 설치에서 자체 서명된 인증서를 생성하거나 다시 생성하는 방법을 설명합니다.
+
+SSL 키 및 인증서의 호스트 이름은 이를 배포하는 시스템의 정규화된 호스트 이름과 일치해야 합니다.
+
+
+== 기존 서버 인증서 재생성
+
+
+기존 인증서가 만료되었거나 어떤 이유로 작동이 중지된 경우 기존 CA에서 새 서버 인증서를 생성할 수 있습니다.
+
+.절차: 기존 서버 인증서 재생성
+
+. {productname} 컨테이너 호스트의 명령 프롬프트에서 서버 인증서 재생성:
+
++
+
+[source, shell]
+----
+mgrctl exec -ti -- 'rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
+--set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
+--set-org-unit="ORGANIZATION UNIT" --set-email="name@example.com" \
+--set-hostname="susemanager.example.com" --set-cname="example.com"'
+----
+
++
+
+[systemitem]``set-cname`` 파라미터가 {productname} 서버의 정규화된 도메인 이름인지 확인합니다. 여러 별칭이 필요한 경우 [systemitem]``set-cname`` 파라미터를 여러 번 사용하면 됩니다.
+
+개인 키 및 서버 인증서는 서버 컨테이너의 [path]``/root/ssl-build/susemanager/`` 디렉토리에서 ``server.key`` 및 ``server.crt``로 찾을 수 있습니다. 마지막 디렉토리의 이름은 ``--set-hostname`` 옵션과 함께 사용된 호스트 이름에 따라 다릅니다.
+
+컨테이너의 호스트 podman 시크릿을 업데이트하여 새 인증서 및 키를 배포하거나 임포트합니다. 방금 생성한 인증서 임포트에 대한 자세한 내용은 xref:administration:ssl-certs-imported.adoc#ssl-certs-import-replace[]에서 확인할 수 있습니다.
+
+
+
+[[ssl-certs-selfsigned-create-replace]]
+== 새 CA 및 서버 인증서 생성
+
+[IMPORTANT]
+====
+루트 CA를 교체해야 하는 경우에는 유의해야 합니다. 서버와 클라이언트 간의 신뢰 체인이 끊길 수 있습니다. 그러한 경우 관리 사용자가 모든 클라이언트에 로그인하여 CA를 직접 배포해야 합니다.
+====
+
+
+.절차: 새 인증서 생성
+
+. {productname} 컨테이너 호스트의 명령 프롬프트에서 이전 인증서 디렉토리를 새 위치로 이동:
+
++
+
+[source, shell]
+----
+mgrctl exec -- mv /root/ssl-build /root/old-ssl-build
+----
+
+. 새 CA 인증서를 생성합니다.
+
++
+
+[source, shell]
+----
+mgrctl exec -ti -- 'rhn-ssl-tool --gen-ca --dir="/root/ssl-build" --set-country="COUNTRY" \
+--set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
+--set-org-unit="ORGANIZATION UNIT" --set-common-name="SUSE Manager CA Certificate" \
+--set-email="name@example.com"'
+----
+
++
+
+. 새 서버 인증서 생성:
+
++
+
+[source, shell]
+----
+mgrctl exec -ti -- 'rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
+--set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
+--set-org-unit="ORGANIZATION UNIT" --set-email="name@example.com" \
+--set-hostname="susemanager.example.top" --set-cname="example.com"'
+----
+
++
+
+[systemitem]``set-cname`` 파라미터가 {productname} 서버의 정규화된 도메인 이름인지 확인합니다. 여러 별칭이 필요한 경우 [systemitem]``set-cname`` 파라미터를 여러 번 사용하면 됩니다.
++
+호스트 이름 및 cname을 사용하여 각 프록시에 대해서도 서버 인증서를 생성해야 합니다.

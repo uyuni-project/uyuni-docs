@@ -1,0 +1,94 @@
+[[workflow-removing-channel]]
+= チャンネルの削除
+:revdate: 2025-01-23
+:page-revdate: {revdate}
+
+
+この章では、{suse}で提供されているチャンネルを{productname}から手動で削除する方法、サポート終了製品をクリーンアップする方法、および他の目的のために領域を再利用する方法について説明しています。
+
+
+
+
+[[preparing-to-remove-channel]]
+== チャンネルの削除の準備
+
+
+チャンネルを削除する前に、削除するチャンネルのラベルを特定する必要があります。これは、{webui}を使用するか、コマンドラインで行うことができます。
+
+[IMPORTANT]
+====
+* システムが現在サブスクライブしているチャンネルや、サブスクライブする予定のチャンネルを削除しないように注意してください。
+* 削除するチャンネルを現在サブスクライブしているシステムがある場合は、そのシステムをアップグレードするか、サブスクリプションを解除するまで、そのチャンネルを削除しないでください。
+====
+
+
+=== チャンネルのラベルの特定
+
+.プロシージャ: {webui}を使用したチャンネルのラベルの特定
+[role=procedure]
+. {productname} {webui}で、menu:ソフトウェア[チャンネルリスト > すべて]に移動します。
+. このページに、[label]``Channel Name (チャンネル名)``が表示されます。チャンネル名のリンクを選択すると、[literal]``Channel Label (チャンネルのラベル)``のフィールドが表示されます。
+. 削除するチャンネルと子チャンネルを特定します。
+
+
+.プロシージャ: コマンドラインを使用したチャンネルのラベルの特定
+[role=procedure]
+
+. {productname}コンテナホストで、次のコマンドを実行して、チャンネルのリストを取得できます。
++
+----
+mgrctl exec -ti -- spacewalk-remove-channel -l
+----
+
+
+===  システムのチャンネルのサブスクリプションの確認
+
+.プロシージャ: {webui}を使用した、システムのチャンネルのサブスクリプションの確認
+
+. {productname} {webui}で、menu:ソフトウェア[チャンネルリスト > すべて]に移動します。
+. 右側にある［[literal]``システム``］列を見つけます。
+. 削除するチャンネルがあるかどうかを［[literal]``システム``］列で確認します。
+
+
+.プロシージャ: コマンドラインを使用した、システムのチャンネルのサブスクリプションの確認
+
+. {productname}コンテナホストで次のコマンドを実行します。
++
+----
+mgrctl exec -ti -- 'spacecmd -- softwarechannel_listsystems <Channel Label>'
+----
+
+
+[[removing-channel]]
+== チャンネルの削除
+
+チャンネルとそのメタデータは、コマンドラインツールでのみ削除できます。 [command]``spacewalk-remove-channel``コマンドは、他のチャンネルから参照されなくなったソフトウェアパッケージを自動的に削除します。 したがって、メタデータはデータベースから、ファイルはストレージメディアから削除されます。
+
+
+
+=== 子チャンネルの削除
+
+.プロシージャ: コマンドラインを使用した子チャンネルの削除
+
+. 個々のチャンネルを削除するには、{productname}コンテナホストで次のコマンドを実行します。
++
+----
+mgrctl exec -ti -- spacewalk-remove-channel -c channel-label
+----
++
+. 複数のチャンネルを同時に削除するには、各チャンネルに対して[literal]``-c``フラグを使用し、その後に[literal]``channel-label``を付けます。 次に例を示します。
++
+----
+mgrctl exec -ti -- spacewalk-remove-channel -c channel-label1 -c channel-label2
+----
+
+
+=== 親チャンネルとそのすべての子チャンネルの削除
+
+.プロシージャ: 親チャンネルとそのすべての子チャンネルの削除
+. 親チャンネルとすべての子チャンネルを削除するには、[command]``spacewalk-remove-channel``を [option]``-a`` オプションを指定して実行し、[literal]``parent-channel-label`` を [literal]``sles12-sp5-pool-x86_64``のようなチャンネルラベルに置き換えます。
++
+----
+mgrctl exec -ti -- spacewalk-remove-channel -a parent-channel-label
+----
+

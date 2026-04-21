@@ -1,0 +1,117 @@
+[[autoinst-pxeboot]]
+= 네트워크를 통한 설치(PXE 부팅)
+:description: Configure a network boot installation via PXE using DHCP to provide the client with an IP address, mask, installation server, and bootloader file for automatic
+:revdate: 2026-03-02
+:page-revdate: {revdate}
+:page-author: SUSE Product & Solution Documentation Team
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.12
+
+
+네트워크 부팅 설치 중:
+
+. 클라이언트는 PXE 모드로 부팅됩니다.
+
+. A Dhcpd server provides the client with an IP address and mask, the address of an installation server, and the name of a bootloader file on that server.
+
+. 클라이언트는 설치 서버에서 TFTP 프로토콜을 통해 부트로더 파일을 다운로드한 후 실행합니다.
+
+. 클라이언트에는 메뉴에서 설치할 수 있는 프로파일을 선택하거나 프로파일 중 하나의 자동 설치를 시작할 수 있는 옵션이 제공됩니다.
+
+. 클라이언트는 해당 프로파일과 일치하는 배포판의 커널 및 초기 RAM 디스크를 TFTP 프로토콜을 통해 다운로드합니다.
+
+. 설치 커널은 {kickstart} 또는 {ay} 설치 프로그램을 시작합니다. 이제부터 HTTP 프로토콜을 통해 서버에 제공되는 리소스가 사용됩니다.
+
+. {kickstart} 또는 {ay} 프로파일에 따라 배포판이 자동으로 설치됩니다.
+
+. The profile calls a code snippet that registers the client to the {productname} Server.
+
+image::cobbler_menu.png[scaledwidth=100%]
+
+The installation server can either be the {productname} Server or one of its proxies.
+// To install from a proxy, you must synchronize the TFTP tree between the server and the proxy before you begin.
+
+The Dhcpd server may also provide other configuration information to the client, like a host name, the address of a router and the address of a domain name server. Some of this information might be needed for the autoinstallation, for example if you specify the installation server by its domain name.
+
+PXE 부팅 메뉴에서 먼저 [guimenu]``로컬 부팅``을 선택합니다. 이 옵션을 선택하면 로컬 디스크 드라이브에서 부팅 프로세스가 진행됩니다. 일정 시간이 지난 후 프로파일을 선택하지 않으면 이 옵션이 자동으로 선택됩니다. 이는 프로파일 중 하나를 선택하는 사용자 작업이 없는 경우 자동 설치가 시작되지 않도록 하는 보안 조치입니다.
+
+또는 수동 개입 없이 프로파일 중 하나에서 설치가 자동으로 시작될 수 있습니다. 이를 "무인 프로비저닝"이라고 합니다.
+
+
+
+.Procedure: Installing with PXE boot
+[role=procedure]
+____
+. Prepare the Kea server, see xref:client-configuration:autoinst-pxeboot.adoc#prepare-the-dhcp-server[Prepare the Dhcpd Server].
+
+. 자동 설치 가능한 배포판을 준비합니다. 관련 내용은 xref:client-configuration:autoinst-distributions.adoc[자동 설치 가능한 배포판]을 참조하십시오.
+
+. 자동 설치 프로파일을 준비합니다. 관련 내용은 xref:client-configuration:autoinst-profiles.adoc[자동 설치 프로파일]을 참조하십시오.
+
+. 클라이언트를 다시 부팅하고 설치할 프로파일을 선택합니다.
+____
+
+Some other steps are optional.
+
+For unattended provisioning, see xref:client-configuration:autoinst-unattended.adoc[Unattended provisioning].
+
+
+[[prepare-the-dhcp-server]]
+== Prepare the Dhcpd server
+
+The PXE boot process uses Dhcpd to find the TFTP server. The {productname} Server or its proxies can act as such a TFTP server.
+
+You must have administrative access to the network’s Dhcpd server. Edit the Dhcpd configuration file so that it points to the installation server as the TFTP boot server.
+
+
+.Example: Configuring the Kea Dhcpd server
+. On the Dhcpd server, as root, open the [path]``/etc/dhcpd.conf`` file.
+. 클라이언트의 선언을 수정합니다.
++
+----
+  host myclient { (...)
+                  next-server 192.168.2.1;
+                  filename "grub/grub.0"; }
+----
+. 파일을 저장하고 [systemitem]``dhcpd`` 서비스를 다시 시작합니다.
+
+
+This example directs the PXE client ``myclient`` to the installation server at ``192.168.2.1`` and instructs it to retrieve the [path]``grub/grub.0`` bootloader file.
+
+Alternatively, if your Dhcpd server is registered at {productname}, you can configure it using the Dhcpd formula instead:
+
+
+.Example: Configuring the Kea Dhcpd Server using the Dhcpd formula
+. Navigate to menu:Systems[System List], select the client you want to change, and go to the [guimenu]``Formulas`` tab to enable the Dhcpd formula.
+. 수식의 [guimenu]``Dhcpd`` 탭으로 이동하여 [guimenu]``다음 서버`` 필드에 설치 서버의 호스트 이름 또는 IP 주소를 입력합니다.
+. [guimenu]``파일 이름 EFI`` 필드에 [path]``grub/shim.efi``를 입력하여 EFI PXE 지원을 활성화합니다.
+. In the [guimenu]``Filename`` field, type [path]``grub/grub.0`` to enable legacy BIOS support.
+. btn:[수식 저장]을 클릭하여 구성을 저장합니다.
+. highstate를 적용합니다.
+
+
+[NOTE]
+====
+* 보안 부트를 사용하지 않는 경우 [guimenu]``Filename EFI`` 필드에 [path]``grub/shim.efi`` 대신 [path]``grub/grubx86.efi``를 입력하십시오.
+
+* 다른 아키텍처에 대해서는 <<grub-efi-arch>> 테이블을 참조하십시오.
+
+* Using {cobbler} managed Dhcpd is unsupported with {productname}.
+====
+
+This sets up a global PXE server for all the hosts, you can also have per-host settings. For more information about the Dhcpd formula, see xref:specialized-guides:salt/salt-formula-dhcpd.adoc[Dhcpd Formula].
+
+
+
+[[grub-efi-arch]]
+== 다른 아키텍처에 대한 GRUB EFI 바이너리 이름
+
+[cols="1,1", options="header"]
+.다른 아키텍처에 대한 GRUB EFI 바이너리 이름
+|===
+| 아키텍처 | GRUB EFI 바이너리 이름
+| aarch64      | grubaa64.efi
+| x86-64       | grubx86.efi
+| ppc64le      | grub.ppc64le
+|===

@@ -1,0 +1,78 @@
+[[troubleshooting-login-timeout]]
+= 登录超时查错
+:revdate: 2025-07-16
+:page-revdate: {revdate}
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+默认情况下，{productname} {webui} 要求用户在 30{nbsp}分钟后重新登录。根据您的环境，可能需要调整登录超时值。
+
+要调整该值，需要同时在 [path]``rhn.conf`` 和 [path]``web.xml`` 中进行更改。确保在 [path]``/etc/rhn/rhn.conf`` 中设置以秒为单位的值，在 [path]``web.xml`` 中设置以分钟为单位的值。这两个值必须表示相同的时间。
+
+例如，要将超时值更改为一小时，请将 [path]``rhn.conf`` 中的值设置为 3600 秒，将 [path]``web.xml`` 中的值设置为 60 分钟。
+
+
+
+.过程：调整 {webui} 登录超时值
+. 在容器主机上，在服务器容器内打开命令行：
+
++
+
+[source, shell]
+----
+mgrctl term
+----
+
++
+
+--
+
+.. 打开 [path]``/etc/rhn/rhn.conf`` 并添加或编辑下面一行内容，以包含以秒为单位的新超时值：
+
++
+
+----
+web.session_database_lifetime = <以秒为单位的超时值>
+----
+
+.. 保存并关闭该文件。
+
+.. 打开 [path]``/etc/tomcat/web.xml`` 并添加或编辑以下行，以包含以分钟为单位的新超时值：
+
++
+
+[source, xml]
+----
+<session-timeout>Timeout_Value_in_Minutes</session-timeout>
+----
+
+.. 保存并关闭该文件。
+
+--
+
++
+
+. 在容器主机上，重启服务器以强制应用新配置：
+
++
+
+[source, shell]
+----
+systemctl restart uyuni-server.service
+----

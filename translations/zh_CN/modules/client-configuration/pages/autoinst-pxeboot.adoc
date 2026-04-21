@@ -1,0 +1,117 @@
+[[autoinst-pxeboot]]
+= 通过网络安装（PXE 引导）
+:description: Configure a network boot installation via PXE using DHCP to provide the client with an IP address, mask, installation server, and bootloader file for automatic
+:revdate: 2026-03-02
+:page-revdate: {revdate}
+:page-author: SUSE Product & Solution Documentation Team
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.12
+
+
+在网络引导安装期间：
+
+. 客户端会以 PXE 模式引导。
+
+. A Dhcpd server provides the client with an IP address and mask, the address of an installation server, and the name of a bootloader file on that server.
+
+. 客户端通过 TFTP 协议从安装服务器上下载引导加载程序文件，并执行该文件。
+
+. 客户端可以从菜单中选择要安装的配置文件，或者开始自动安装其中一个配置文件。
+
+. 客户端通过 TFTP 协议下载与该配置文件匹配的发行套件适用的内核和初始 RAM 磁盘。
+
+. 安装内核启动安装程序 {kickstart} 或 {ay}。从现在起，它通过 HTTP 协议使用服务器上提供的资源。
+
+. 系统会根据 {kickstart} 或 {ay} 配置文件自动安装发行套件。
+
+. The profile calls a code snippet that registers the client to the {productname} Server.
+
+image::cobbler_menu.png[scaledwidth=100%]
+
+The installation server can either be the {productname} Server or one of its proxies.
+// To install from a proxy, you must synchronize the TFTP tree between the server and the proxy before you begin.
+
+The Dhcpd server may also provide other configuration information to the client, like a host name, the address of a router and the address of a domain name server. Some of this information might be needed for the autoinstallation, for example if you specify the installation server by its domain name.
+
+在 PXE 引导菜单中，第一个选项是[guimenu]``本地引导``。如果选择此选项，将从本地磁盘驱动器继续引导过程。如果一段时间后未选择任何配置文件，系统会自动选择此选项。这是一种安全措施，用于防止在没有操作人员选择其中一个配置文件时启动自动安装。
+
+安装也可以从其中一个配置文件自动启动，而无需手动干预。这称为“无人照管的置备”。
+
+
+
+.Procedure: Installing with PXE boot
+[role=procedure]
+____
+. Prepare the Kea server, see xref:client-configuration:autoinst-pxeboot.adoc#prepare-the-dhcp-server[Prepare the Dhcpd Server].
+
+. 准备可自动安装的发行套件，请参见 xref:client-configuration:autoinst-distributions.adoc[可自动安装的发行套件]。
+
+. 准备自动安装配置文件，请参见 xref:client-configuration:autoinst-profiles.adoc[自动安装配置文件]。
+
+. 重引导客户端，然后选择要安装的配置文件。
+____
+
+Some other steps are optional.
+
+For unattended provisioning, see xref:client-configuration:autoinst-unattended.adoc[Unattended provisioning].
+
+
+[[prepare-the-dhcp-server]]
+== Prepare the Dhcpd server
+
+The PXE boot process uses Dhcpd to find the TFTP server. The {productname} Server or its proxies can act as such a TFTP server.
+
+You must have administrative access to the network’s Dhcpd server. Edit the Dhcpd configuration file so that it points to the installation server as the TFTP boot server.
+
+
+.Example: Configuring the Kea Dhcpd server
+. On the Dhcpd server, as root, open the [path]``/etc/dhcpd.conf`` file.
+. 修改您的客户端的声明：
++
+----
+  host myclient { (...)
+                  next-server 192.168.2.1;
+                  filename "grub/grub.0"; }
+----
+. 保存文件并重启动 [systemitem]``dhcpd`` 服务。
+
+
+This example directs the PXE client ``myclient`` to the installation server at ``192.168.2.1`` and instructs it to retrieve the [path]``grub/grub.0`` bootloader file.
+
+Alternatively, if your Dhcpd server is registered at {productname}, you can configure it using the Dhcpd formula instead:
+
+
+.Example: Configuring the Kea Dhcpd Server using the Dhcpd formula
+. Navigate to menu:Systems[System List], select the client you want to change, and go to the [guimenu]``Formulas`` tab to enable the Dhcpd formula.
+. 转到公式的 [guimenu]``Dhcpd`` 选项卡，并在[guimenu]``下一台服务器``字段中输入安装服务器的主机名或 IP 地址。
+. 在[guimenu]``文件名 EFI`` 字段中，键入 [path]``grub/shim.efi`` 以启用 EFI PXE 支持。
+. In the [guimenu]``Filename`` field, type [path]``grub/grub.0`` to enable legacy BIOS support.
+. 单击 btn:[保存公式] 以保存您的配置。
+. 应用 Highstate。
+
+
+[NOTE]
+====
+* 如果不使用安全引导，请在[guimenu]``文件名 EFI`` 字段中键入 [path]``grub/grubx86.efi`` 而不是 [path]``grub/shim.efi``。
+
+* 有关不同的体系结构，请参见表格<<grub-efi-arch>>。
+
+* Using {cobbler} managed Dhcpd is unsupported with {productname}.
+====
+
+This sets up a global PXE server for all the hosts, you can also have per-host settings. For more information about the Dhcpd formula, see xref:specialized-guides:salt/salt-formula-dhcpd.adoc[Dhcpd Formula].
+
+
+
+[[grub-efi-arch]]
+== 不同体系结构的 GRUB EFI 二进制文件名
+
+[cols="1,1", options="header"]
+.不同体系结构的 GRUB EFI 二进制文件名
+|===
+| 体系结构 | GRUB EFI 二进制文件名
+| aarch64      | grubaa64.efi
+| x86-64       | grubx86.efi
+| ppc64le      | grub.ppc64le
+|===

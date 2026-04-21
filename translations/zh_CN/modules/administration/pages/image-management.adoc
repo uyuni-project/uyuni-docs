@@ -1,0 +1,933 @@
+[[image-management]]
+= 映像构建和管理
+:revdate: 2025-02-25
+:page-revdate: {revdate}
+
+
+[[at.images.overview]]
+== 映像构建概述
+
+
+{productname} 允许系统管理员构建容器和操作系统映像，并将结果推送到映像存储区。
+
+.过程：构建和推送映像
+[role=procedure]
+_____
+
+. 定义映像存储区。
+
+. 定义一个映像配置文件并将其与源（git 储存库或目录）相关联。
+
+. 构建映像。
+
+. 将映像推送到映像存储区。
+_____
+
+{productname} 支持两种构建类型：Dockerfile 和 Kiwi。Kiwi 构建类型用于构建系统映像、虚拟映像和其他映像。
+
+// Needs checking
+// at later places to be fix accordingly
+Kiwi 构建类型的映像存储区已预先定义为 [path]``srv-www`` 卷中的一个文件系统目录。
+
+ifeval::[{mlm-content} == true]
+映像文件可从 [path]``https://MANAGER-HOST/os-images/ORGANIZATION-ID/FILE-NAME`` 下载。确切路径可在映像详细信息页面中查询。
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+映像文件可从 [path]``https://UYUNI-HOST/os-images/ORGANIZATION-ID/FILE-NAME`` 下载。确切路径可在映像详细信息页面中查询。
+endif::[]
+
+
+[[at.images.docker]]
+== 容器映像
+
+// FIXME, bsc#1245987: replace caas pattform with container host?
+// image::image-building.png[scaledwidth=80%]
+
+
+[[at.images.docker.requirements]]
+=== 要求
+
+容器功能适用于运行 {sles} 12 或更高版本的 {salt} 客户端。在开始之前，请确保您的环境满足以下要求：
+
+* 一个包含 Dockerfile 和配置脚本的已发布 git 储存库。该储存库可以是公用或专用的，应托管在 GitHub、GitLab 或 BitBucket 上。
+* 一个正确配置的映像存储区，例如 Docker 仓库。
+
+有关容器的详细信息，请参见 https://documentation.suse.com/container/all/html/Container-guide/[]。
+
+
+[[at.images.docker.buildhost]]
+=== 创建构建主机
+
+要使用 {productname} 构建映像，您需要创建并配置一个构建主机。容器构建主机是运行 {sle} 12 或更高版本的 {salt} 客户端。本节将指导您完成构建主机的初始配置。
+
+[IMPORTANT]
+====
+构建主机上的操作系统必须与目标映像上的操作系统匹配。
+
+例如，在运行 {sles}{nbsp}15（SP2 或更高版本）操作系统版本的构建主机上构建基于 {sles}{nbsp}15 的映像。在运行 {sles}{nbsp}12 SP5 或 {sles}{nbsp}12 SP4 操作系统版本的构建主机上构建基于 {sles}{nbsp}12 的映像。
+
+不支持跨体系结构构建。
+////
+2022-05-12, ke: at least for now, according to feedback, this is unsupported:
+For example, you must build Raspberry Pi {sles}{nbsp}15 SP3 images on a Raspberry Pi (aarch64 architecture) build host running {sles}{nbsp}15 SP3.
+////
+====
+
+在 {productname} {webui} 中，执行以下步骤以配置构建主机：
+
+.过程：构建主机
+[role=procedure]
+_____
+
+. 在menu:系统[系统]概览页面中选择要指定为构建主机的 {salt} 客户端。
+
+. 在所选客户端的[guimenu]``系统细节``页面中指派容器模块。导航到menu:软件[软件通道]并启用容器模块（例如 [guimenu]``SLE-Module-Containers15-Pool`` 和 [guimenu]``SLE-Module-Containers15-Updates``）。单击 btn:[下一步] 以继续。
+
+. 安排[guimenu]``软件通道更改``，然后单击 btn:[确认]。
+
+. 从[guimenu]``系统细节``选项卡中选择menu:属性[]页面，并从[guimenu]``附加系统类型``列表中启用``容器构建主机``，然后单击 btn:[更新属性] 以确认。
+
+. 通过应用 [systemitem]``Highstate`` 安装所有必需的软件包。在系统细节选项卡中选择menu:状态[Highstate]，然后单击 btn:[应用 Highstate]。或者，从 {productname} 服务器命令行应用 [systemitem]``Highstate``：
+
++
+
+[source, shell]
+----
+salt '$your_client' state.highstate
+----
+
+_____
+
+
+
+[[at.images.docker.buildchannels]]
+=== 为容器创建激活密钥
+
+通过 {productname} 构建的容器使用在构建映像时作为储存库关联到激活密钥的通道。本节将指导您为此目的创建一个临时激活密钥。
+
+[NOTE]
+====
+要构建容器，需要一个与通道关联的激活密钥，但该通道不能是 ``SUSE Manager Default``。
+====
+
+.过程：创建激活密钥
+[role=procedure]
+_____
+
+. 选择menu:系统[激活密钥]。
+
+. 单击 btn:[创建密钥]。
+
+. 输入[guimenu]``说明``和[guimenu]``密钥名称``。使用下拉菜单选择要与此密钥关联的[guimenu]``基础通道``。
+
+. 单击 btn:[创建激活密钥] 确认。
+
+_____
+
+有关详细信息，请参见 xref:client-configuration:activation-keys.adoc[]。
+
+
+[[at.images.docker.imagestore]]
+=== 创建映像存储区
+
+构建的所有映像都会推送到映像存储区。本节包含有关创建映像存储区的信息。映像存储区通常称为仓库。
+
+
+.过程：创建映像存储区
+[role=procedure]
+_____
+
+. 选择menu:映像[存储区]。
+
+. 单击[guimenu]``创建``以创建新存储。
+
+. 在[guimenu]``存储区类型``字段中选择适当类型。
+
+. 在[guimenu]``标签``字段中定义映像存储区的名称。
+
+. 通过填写 [guimenu]``URI`` 字段提供映像仓库的路径，该路径用作容器仓库主机（无论是内部还是外部）的完全限定域名 (FQDN)。
+
++
+
+----
+registry.example.com
+----
+
++
+
+仓库 URI 还可用于指定已被使用的仓库中的映像存储区。
+
++
+
+----
+registry.example.com:5000/myregistry/myproject
+----
+
+. 单击 btn:[创建] 以添加新的映像存储区。
+
+_____
+
+
+
+[[at.images.docker.profile]]
+=== 创建映像配置文件
+
+所有容器映像都是使用包含构建说明的映像配置文件构建的。本节包含有关使用 {productname} {webui} 创建映像配置文件的信息。
+
+.过程：创建映像配置文件
+[role=procedure]
+_____
+
+. 要创建映像配置文件，请选择menu:映像[配置文件]，然后单击 btn:[创建]。
+
+. 通过填写[guimenu]``标签``字段提供映像配置文件的名称。
+
++
+
+[NOTE]
+====
+如果您的容器映像标记采用类似于 ``myproject/myimage`` 的格式，请确保您的映像存储区仓库 URI 包含 ``/myproject`` 后缀。
+====
+
+. 使用 `Dockerfile` 作为[guimenu]``映像类型``。
+
+. 使用下拉菜单从[guimenu]``目标映像存储区``字段中选择您的仓库。
+
+. 在[guimenu]``路径``字段中，键入 GitHub、GitLab 或 BitBucket 储存库 URL。该路径也可以是构建主机的本地目录。该 URL 应该是 [literal]``http``、[literal]``https`` 或令牌身份验证 URL。如果是 GitHub 或 GitLab 储存库，使用以下格式之一：
+
++
+
+.GitHub 路径选项
+
+* GitHub 单用户项目储存库
+
++
+----
+https://github.com/USER/project.git#branchname:folder
+----
+
++
+
+* GitHub 组织项目储存库
+
++
+----
+https://github.com/ORG/project.git#branchname:folder
+----
+
++
+
+* GitHub 令牌身份验证
+
++
+
+如果您的 git 储存库是专用的，请修改配置文件的 URL 以包含身份验证。使用以下 URL 格式通过 GitHub 令牌进行身份验证：
+
++
+
+----
+https://USER:<身份验证令牌>@github.com/USER/project.git#master:/container/
+----
+
++
+
+.GitLab 路径选项
+
+* GitLab 单用户项目储存库
+
++
+
+----
+https://gitlab.example.com/USER/project.git#master:/container/
+----
+
+* GitLab 组项目储存库
+
++
+
+----
+https://gitlab.example.com/GROUP/project.git#master:/container/
+----
+
+* GitLab 令牌身份验证
+
++
+
+如果您的 git 储存库是专用的且不可公开访问，则需要修改配置文件的 git URL 以包含身份验证。使用以下 URL 格式通过 GitLab 令牌进行身份验证：
+
++
+
+----
+https://gitlab-ci-token:<身份验证令牌>@gitlab.example.com/USER/project.git#master:/container/
+----
+
++
+
+[IMPORTANT]
+====
+如果您未指定 git 分支，则默认会使用 `master` 分支。如果未指定 `folder`，则映像源（Dockerfile 源）预期位于 GitHub 或 GitLab checkout 分支的根目录中。
+====
+
+. 选择一个``激活密钥``。激活密钥可确保将使用配置文件的映像指派到正确的通道和软件包。
+
++
+
+[NOTE]
+====
+将激活密钥与映像配置文件关联后，可以确保使用该配置文件的任何映像都会使用正确的软件通道以及该通道中的任何软件包。
+====
+
+. 单击 btn:[创建] 按钮。
+
+_____
+
+
+[[at.images.docker.sourceexample]]
+==== 示例 Dockerfile 源
+
+https://github.com/SUSE/manager-build-profiles 上发布了可重复使用的映像配置文件。
+
+[NOTE]
+====
+[option]``ARG`` 参数确保构建的映像与 {productname} 提供的所需储存库相关联。[option]``ARG`` 参数还可用于构建不同于构建主机本身所用 {sles} 版本的 {sles} 映像版本。
+
+例如：[command]``ARG repo`` 参数以及指向储存库文件的 [command]``echo`` 命令创建正确的路径，然后将其注入到所需通道版本的储存库文件中。
+
+储存库由您指派到映像配置文件的激活密钥决定。
+====
+
+----
+FROM registry.example.com/sles12sp2
+MAINTAINER Tux Administrator "tux@example.com"
+
+### 开始：与 {productname} 配合使用时需要这些行
+
+ARG repo
+ARG cert
+
+# 添加正确的证书
+RUN echo "$cert" > /etc/pki/trust/anchors/RHN-ORG-TRUSTED-SSL-CERT.pem
+
+# 更新证书信任存储
+RUN update-ca-certificates
+
+# 将储存库路径添加到映像
+RUN echo "$repo" > /etc/zypp/repos.d/susemanager:dockerbuild.repo
+
+### 结束：与 {productname} 配合使用时需要这些行
+
+# 添加打包脚本
+ADD add_packages.sh /root/add_packages.sh
+
+# 运行打包脚本
+RUN /root/add_packages.sh
+
+# 构建后从映像中去除储存库路径
+RUN rm -f /etc/zypp/repos.d/susemanager:dockerbuild.repo
+----
+
+==== 使用自定义信息键值对作为 Docker `buildargs`
+
+您可以指派自定义信息键值对，以将信息关联到映像配置文件。此外，这些键值对将作为 `buildargs` 传递给 Docker 构建命令。
+
+有关可用自定义信息键和创建其他信息键的详细信息，请参见 xref:reference:systems/custom-system-info.adoc[]。
+
+
+[[at.images.docker.building]]
+=== 构建映像
+
+
+可通过两种方式构建映像。第一种方式是从头开始创建。具体方法为：在左侧导航栏中选择menu:映像[构建]，或单击menu:映像[配置文件]列表中的构建图标，然后按照流程操作即可。
+
+.过程：构建映像
+[role=procedure]
+_____
+
+. 选择menu:映像[构建]。
+
+. 如果您不想使用默认的``最新``版本（仅与容器相关），而要使用其他版本，请添加不同的标记名称。
+
+. 选择[guimenu]``构建配置文件``和[guimenu]``构建主机``。
+
++
+
+[NOTE]
+====
+请注意构建字段右侧的[guimenu]``配置文件摘要``。在您选择构建配置文件后，有关所选配置文件的详细信息将显示在此区域中。
+====
+
+. 要安排构建，请单击 btn:[构建] 按钮。
+
+_____
+
+
+
+[[at.images.docker.importing]]
+=== 导入映像
+
+第二种获取映像的方式是导入并检查任意映像。具体方法为：在左侧导航栏中选择menu:映像[映像列表]。填写[guimenu]``导入``对话框中的文本框。处理完成后，导入的映像将显示在[guimenu]``映像列表``页面上。
+
+.过程：导入映像
+[role=procedure]
+_____
+
+. 在menu:映像[映像列表]中，单击 btn:[导入] 打开[guimenu]``导入映像``对话框。
+
+. 在[guimenu]``导入映像``对话框中填写以下字段：
+
++
+
+映像存储区:::
+要从中拉取映像进行检查的仓库。
+
+映像名称:::
+仓库中映像的名称。
+
+映像版本:::
+仓库中映像的版本。
+
+构建主机:::
+用于拉取和检查映像的构建主机。
+
+激活密钥:::
+激活密钥，它提供用于检查映像的软件通道的路径。
+
+. 单击 btn:[导入] 以确认。
+
+_____
+
+随即会在数据库中创建映像项，并在 {productname} 上安排``检查映像``操作。
+
+处理完成后，您可以在``映像列表``中找到已导入的映像。它在``构建``列中显示了一个不同的图标，指示该映像已导入。也可以在映像的``概览``选项卡上看到已导入映像的状态图标。
+
+
+
+[[at.images.docker.troubleshooting]]
+=== 查错
+
+
+
+include::image-mgmt-container-inspection.adoc[]
+
+
+==== 一般问题
+
+下面是处理映像时存在的一些已知问题：
+
+* 用于访问仓库或 git 储存库的 HTTPS 证书应通过自定义状态文件部署到客户端。
+* 目前不支持使用 Docker 进行 SSH git 访问。
+
+
+
+[[at.images.kiwi]]
+== 操作系统映像
+
+操作系统映像由 Kiwi 构建系统构建。输出映像可自定义，可以是 PXE、QCOW2、LiveCD 或其他类型的映像。
+
+有关 Kiwi 构建系统的详细信息，请参见 https://osinside.github.io/kiwi/[Kiwi 文档]。
+
+
+
+[[at.images.kiwi.requirements]]
+=== 要求
+
+Kiwi 映像构建功能适用于运行 {sles}{nbsp}12 和 {sles}{nbsp}11 的 {salt} 客户端。
+//SLE15 images support is not yet released for MLM4, but is part of MLM4.0.4 as tech preview
+//From {sles}{nbsp}15, ``kiwi-ng`` is used instead of the legacy Kiwi.
+
+必须可在以下位置之一访问 Kiwi 映像配置文件和配置脚本：
+
+* Git 储存库
+* HTTP 或 HTTPS 托管的 tar 归档
+* 构建主机上的本地目录
+
+有关 git 提供的完整 Kiwi 储存库的示例，请参见 https://github.com/SUSE/manager-build-profiles/tree/master/OSImage[]。
+
+
+[NOTE]
+====
+对于运行使用 Kiwi 构建的操作系统映像的主机，至少需要提供 1{nbsp}GB RAM。具体所需磁盘空间取决于映像的实际大小。有关详细信息，请参见底层系统的文档。
+====
+
+
+=== Accessing Git repositories via an HTTP/HTTPS proxy when building images
+
+When a build host needs to fetch sources from a git repository that is only reachable through an HTTP/HTTPS proxy, you may see git timeouts during the build because the git client invoked by the Salt state does not always pick up system-wide proxy settings (for example [path]``/etc/sysconfig/proxy`` or environment variables).
+
+To make git use the proxy for non-interactive builds create [path]``/etc/gitconfig`` with an http.proxy entry:
+
+[source, console]
+----
+# /etc/gitconfig
+[http]
+    proxy = http://proxy.example.com:3128
+# or for HTTPS
+[http]
+    proxy = https://proxy.example.com:3128
+----
+
+If the proxy requires authentication, prefer a credential helper or use a credential store instead of embedding credentials in the URL.
+
+==== Automating with {salt}
+
+You can manage [path]`/etc/gitconfig` on build hosts through Configuration Management, the same way as on any other managed system. Create a Salt state file and assign it to the build host via a config channel, then apply a highstate from the {productname} UI.
+
+If you want to source the proxy address from a System Custom Info field, use the `custom_info:` pillar prefix:
+
+[source, yaml]
+----
+/etc/gitconfig:
+  file.managed:
+    - user: root
+    - group: root
+    - mode: '0644'
+    - contents: |
+        [http]
+            proxy = {{ salt['pillar.get']('custom_info:build_server:git_proxy', 'http://proxy.example.com:3128') }}
+----
+
+[[container.based.kiwi.image.build.support]]
+=== 基于容器的 Kiwi 映像构建支持
+
+{productname} 推出了基于容器的 Kiwi 映像构建系统，同时保留现有旧版 Kiwi 工具和 KiwiNG 工具。
+
+
+==== 配置和覆盖设置 
+
+管理员可通过以下 pillar 或自定义值覆盖默认行为。如需进行相关配置，请在 {webui} 中导航至menu:[系统 > 自定义系统信息]，然后创建所需的键。
+
+构建系统的选用取决于底层操作系统或特定 pillar 值：
+
+* 对于 SLE 11 / SLE 12：旧版 Kiwi v7
+* 对于 SLE 15：KiwiNG（v9 及容器化 Kiwi 10）
+
+
+管理员可通过以下 pillar 或自定义值覆盖默认行为：
+
+* [literal]``use_kiwi_ng``：强制使用 Kiwi 9
+* [literal]``use_kiwi_container``：强制使用容器化 Kiwi 10。如需启用，请将值设为 [literal]``1``。
+
+
+==== 不同版本的配置
+
+当为 SUSE Linux Enterprise 15 配置文件使用容器化构建主机时，需要进行特定配置。因为 SLES 15 配置文件依赖 Kiwi 9，而容器默认行为使用 Kiwi 10。
+
+为确保 SLES 15 配置文件使用正确版本，您必须定义 [literal]``kiwi_image`` 自定义信息键，并设置以下值：
+
+* [literal]``键``：kiwi_image
+* [literal]``值``：[path]``registry.suse.com/bci/kiwi:9``
+
+如果未设置此键，系统将默认使用最新版本（例如 [path]``registry.suse.com/bci/kiwi:10.2``），这可能导致 SLES 15 配置文件出现构建问题。
+
+
+
+[[at.images.kiwi.buildhost]]
+=== 创建构建主机
+
+// FIXME, bsc#1245987:
+// Discussing Container-Based KIWI Image Build Support here?
+// Perhaps 2.'docker' might be 2, but the container variant might be different?
+
+要使用 {productname} 构建各种映像，请创建并配置一个构建主机。操作系统映像构建主机是在 {sles}{nbsp}15（SP2 或更高版本）或{sles}{nbsp}12（SP4 或更高版本）上运行的 {salt} 客户端。
+
+此过程将指导您完成构建主机的初始配置。
+
+[IMPORTANT]
+====
+构建主机上的操作系统必须与目标映像上的操作系统匹配。
+
+例如，在运行 {sles}{nbsp}15（SP2 或更高版本）操作系统版本的构建主机上构建基于 {sles}{nbsp}15 的映像。在运行 {sles}{nbsp}12 SP5 或 {sles}{nbsp}12 SP4 操作系统版本的构建主机上构建基于 {sles}{nbsp}12 的映像。
+
+无法实现跨体系结构的构建。例如，必须在运行 {sles}{nbsp}15 SP3 的 Raspberry PI（aarch64 体系结构）构建主机上构建 Raspberry PI {sles}{nbsp}15 SP3 映像。
+====
+
+
+.过程：在 {productname} {webui} 中配置构建主机
+[role=procedure]
+_____
+
+. 在menu:系统[概览]页面中选择要指定为构建主机的客户端。
+
+. 导航到menu:系统细节[属性]选项卡，选中[guimenu]``附加系统类型`` > [guimenu]``操作系统映像构建主机``复选框。
+
+. 单击 btn:[更新属性] 确认。
+
+. 导航到menu:系统细节[软件 > 软件通道]，根据构建主机版本启用所需的软件通道。
+
++
+
+* {sles}{nbsp}12 构建主机需要 {productname} 客户端工具（``SLE-Manager-Tools12-Pool`` 和 ``SLE-Manager-Tools12-Updates``）。
+
+* {sles}{nbsp}15 构建主机需要 {sles} 模块 ``SLE-Module-DevTools15-SP4-Pool`` 和 ``SLE-Module-DevTools15-SP4-Updates``。
+
+*  配置日程安排，然后单击 btn:[确认]。
+
+. 通过应用 ``Highstate`` 安装 Kiwi 和所有必需的软件包。在系统细节页面中选择menu:状态[Highstate]，然后单击 btn:[应用 Highstate]。或者，从 {productname} Server 命令行应用 Highstate：
+
++
+
+----
+salt '$your_client' state.highstate
+----
+_____
+
+
+==== {productname} Web 服务器公共证书 RPM
+
+构建主机置备将 {productname} 证书 RPM 复制到构建主机。此证书用于访问 {productname} 提供的储存库。
+
+该证书由 `mgr-package-rpm-certificate-osimage` 打包脚本打包在 RPM 中。在全新安装 {productname} 期间会自动调用该打包脚本。
+
+当您升级 `spacewalk-certs-tools` 软件包时，升级方案会使用默认值调用该打包脚本。但是，如果证书路径已更改或不可用，请在升级过程完成后使用 `--ca-cert-full-path <证书路径>` 手动调用该打包脚本。
+
+
+==== 封装脚本调用示例
+
+[source, bash]
+----
+/usr/sbin/mgr-package-rpm-certificate-osimage --ca-cert-full-path /root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT
+----
+
+包含证书的 RPM 软件包存储在 Salt 可访问的目录中，例如：
+----
+/usr/share/susemanager/salt/images/rhn-org-trusted-ssl-cert-osimage-1.0-1.noarch.rpm
+----
+
+包含证书的 RPM 软件包在本地构建主机储存库中提供：
+----
+/var/lib/Kiwi/repo
+----
+
+[IMPORTANT]
+====
+在构建源中指定包含 {productname} SSL 证书的 RPM 软件包，并确保您的 Kiwi 配置包含 ``rhn-org-trusted-ssl-cert-osimage`` 作为 ``bootstrap`` 部分中必需的软件包。
+
+.config.xml
+[source, xml]
+----
+...
+  <packages type="bootstrap">
+    ...
+    <package name="rhn-org-trusted-ssl-cert-osimage" bootinclude="true"/>
+  </packages>
+...
+----
+====
+
+
+
+// FIXME 2024-04-25, ke: continue here compare with container build host
+[[at.images.kiwi.buildchannels]]
+=== 为操作系统映像创建激活密钥
+
+创建与通道（在构建映像时操作系统映像可将其用作储存库）关联的激活密钥。
+
+必须提供激活密钥才能构建操作系统映像。
+
+[NOTE]
+====
+要构建操作系统映像，需要拥有与通道关联的非``默认``激活密钥。
+====
+
+.过程：创建激活密钥
+[role=procedure]
+_____
+
+. 在 {webui} 中，选择menu:系统[激活密钥]。
+
+. 单击[guimenu]``创建密钥``。
+
+. 输入[guimenu]``说明``和[guimenu]``密钥名称``，并使用下拉框选择要与该密钥关联的[guimenu]``基础通道``。
+
+. 单击 btn:[创建激活密钥] 确认。
+
+_____
+
+有关详细信息，请参见 xref:client-configuration:activation-keys.adoc[]。
+
+
+
+[[at.images.kiwi.imagestore]]
+=== 创建映像存储区
+
+// For background info about Image Store, see the overview at the beginning of this chapter.
+
+操作系统映像可能会占用大量存储空间。默认情况下，映像存储区会使用 [path]``srv-www`` 卷。
+
+
+[NOTE]
+====
+目前不支持 Kiwi 构建类型的用于构建系统映像、虚拟映像和其他映像的映像存储区。
+
+
+ifeval::[{mlm-content} == true]
+映像文件可从 [path]``https://MANAGER-HOST/os-images/ORGANIZATION-ID/FILE-NAME`` 下载。确切路径可在映像详细信息页面中查询。
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+映像文件可从 [path]``https://UYUNI-HOST/os-images/ORGANIZATION-ID/FILE-NAME`` 下载。确切路径可在映像详细信息页面中查询。
+endif::[]
+
+====
+
+
+
+[[at.images.kiwi.profile]]
+=== 创建映像配置文件
+
+使用 {webui} 管理映像配置文件。
+
+.过程：创建映像配置文件
+[role=procedure]
+_____
+
+. 要创建映像配置文件，请在menu:映像[配置文件]中选择，然后单击 btn:[创建]。
+
+. 在[guimenu]``标签``字段中，提供``映像配置文件``的名称。
+
+. 使用 `Kiwi` 作为[guimenu]``映像类型``。
+
+. 系统会自动选择映像存储区。
+
+. 输入包含 Kiwi 配置文件的目录的 [guimenu]``配置 URL``。例如，git URI（如 link:https://github.com/SUSE/manager-build-profiles#master:OSImage/SLE-Micro54[]）。其他选项包括 HTTP 或 HTTPS 托管的 tar 归档或构建主机上的本地目录。有关详细信息，请参见本节末尾的源格式选项。
+
+. 根据需要输入 [guimenu]``Kiwi 选项``。如果 Kiwi 配置文件指定了多个配置文件，请使用 [option]``--profile <name>`` 选择活动配置文件。有关其他选项，请参见 Kiwi 文档。
+
+. 选择一个[guimenu]``激活密钥``。激活密钥可确保将使用配置文件的映像指派到正确的通道和软件包。
+
++
+
+[NOTE]
+====
+将激活密钥与映像配置文件相关联，以确保映像配置文件使用正确的软件通道和任何软件包。
+====
+
++
+
+. 单击 btn:[创建] 按钮确认。
+
+
+.源格式选项
+
+* _指向储存库的 git/HTTP(S) URL_
+
++
+
+指向公用或私用 git 储存库的 URL，该储存库包含要构建的映像的源代码。根据储存库的布局，该 URL 可能是：
+
++
+
+----
+https://github.com/SUSE/manager-build-profiles
+----
+
++
+
+可以在 URL 中的 `#` 字符后面指定一个分支。此示例使用了 `master` 分支：
+
++
+
+----
+https://github.com/SUSE/manager-build-profiles#master
+----
+
++
+
+可以在 `:` 字符后面指定包含映像源的目录。此示例使用了 `OSImage/POS_Image-JeOS6`：
+
++
+
+----
+https://github.com/SUSE/manager-build-profiles#master:OSImage/POS_Image-JeOS6
+----
+
+* _指向 tar 归档的 HTTP(S) URL_
+
++
+
+指向托管在 Web 服务器上的 tar 归档（压缩或未压缩）的 URL。
+
++
+
+----
+https://myimagesourceserver.example.org/MyKiwiImage.tar.gz
+----
+
+* _构建主机上的目录的路径_
+
++
+
+输入包含 Kiwi 构建系统源的目录的路径。此目录必须在选定的构建主机上存在。
+
++
+
+----
+/var/lib/Kiwi/MyKiwiImage
+----
+
+_____
+
+
+[[at.images.kiwi.sourceexample]]
+==== Kiwi 源的示例
+
+
+Kiwi 源至少包含 `config.xml`。通常其中还有 `config.sh` 和 `images.sh`。源还可以包含要安装在 ``root`` 子目录下的最终映像中的文件。
+
+有关 Kiwi 构建系统的信息，请参见 https://osinside.github.io/kiwi/[Kiwi 文档]。
+
+{suse} 在 https://github.com/SUSE/manager-build-profiles[SUSE/manager-build-profiles] 公共 GitHub 代码库中提供了功能齐备的映像源的示例。
+
+.JeOS config.xml 示例
+// ###example-script-1###
+[source, xml]
+----
+<?xml version="1.0" encoding="utf-8"?>
+
+<image schemaversion="6.1" name="POS_Image_JeOS6">
+    <description type="system">
+        <author>Admin User</author>
+        <contact>noemail@example.com</contact>
+        <specification>SUSE Linux Enterprise 12 SP3 JeOS</specification>
+    </description>
+    <preferences>
+        <version>6.0.0</version>
+        <packagemanager>zypper</packagemanager>
+        <bootsplash-theme>SLE</bootsplash-theme>
+        <bootloader-theme>SLE</bootloader-theme>
+
+        <locale>en_US</locale>
+        <keytable>us.map.gz</keytable>
+        <timezone>Europe/Berlin</timezone>
+        <hwclock>utc</hwclock>
+
+        <rpm-excludedocs>true</rpm-excludedocs>
+        <type boot="saltboot/suse-SLES12" bootloader="grub2" checkprebuilt="true" compressed="false" filesystem="ext3" fsmountoptions="acl" fsnocheck="true" image="pxe" kernelcmdline="quiet"></type>
+    </preferences>
+    <!--    CUSTOM REPOSITORY
+    <repository type="rpm-dir">
+      <source path="this://repo"/>
+    </repository>
+    -->
+    <packages type="image">
+        <package name="patterns-sles-Minimal"/>
+        <package name="aaa_base-extras"/> <!-- wouldn't be SUSE without that ;-) -->
+        <package name="kernel-default"/>
+        <package name="venv-salt-minion"/>
+        ...
+    </packages>
+    <packages type="bootstrap">
+        ...
+        <package name="sles-release"/>
+        <!-- this certificate package is required to access {productname} repositories
+             and is provided by {productname} automatically -->
+        <package name="rhn-org-trusted-ssl-cert-osimage" bootinclude="true"/>
+
+    </packages>
+    <packages type="delete">
+        <package name="mtools"/>
+        <package name="initviocons"/>
+        ...
+    </packages>
+</image>
+----
+
+
+
+[[at.images.kiwi.building]]
+=== 构建映像
+
+可以使用 {webui} 以两种方式构建或获取映像。选择menu:映像[构建]，或单击menu:映像[配置文件]列表中的构建图标。
+
+.过程：构建映像
+[role=procedure]
+_____
+
+. 选择menu:映像[构建]。
+
+. 如果您不想使用默认的``最新``版本（仅适用于容器），而要使用其他版本，请添加不同的标记名称。
+
+. 选择[guimenu]``映像配置文件``和[guimenu]``构建主机``。
+
++
+
+[NOTE]
+====
+构建字段右侧会显示[guimenu]``配置文件摘要``。在您选择构建配置文件后，有关所选配置文件的详细信息将显示在此处。
+====
+
++
+
+. 要安排构建，请单击 btn:[构建] 按钮。
+
+_____
+
+
+[IMPORTANT]
+====
+在映像构建过程中，构建服务器无法运行任何形式的自动挂载程序。如果适用，请确保不要以 root 身份运行 Gnome 会话。如果某个自动挂载程序正在运行，则映像构建可以成功完成，但映像的校验和将会不同，从而导致失败。
+====
+
+
+[[at.images.kiwi.inspection]]
+
+成功构建映像后，检查阶段随即开始。在检查阶段，{susemgr} 会收集有关映像的信息：
+
+* 映像中安装的软件包列表
+* 映像的校验和
+* 映像类型和其他映像细节
+
+[NOTE]
+====
+如果构建的映像类型是 ``PXE``，则还会生成一个 {salt} pillar。映像 pillar 存储在数据库中，{salt} 子系统可以访问有关生成的映像的细节。细节包括映像文件所在位置和提供映像文件的位置、映像校验和、网络引导所需的信息，等等。
+
+生成的 pillar 可供所有连接的客户端使用。
+====
+
+
+
+[[at.images.kiwi.troubleshooting]]
+=== 查错
+
+构建映像需要完成几个相关的步骤。如果构建失败，调查 {salt} 状态结果和构建日志可能有助于确定失败原因。构建失败时，可以执行以下检查：
+
+* 构建主机是否可以访问构建源
+* 构建主机和 {productname} 服务器上是否为映像提供了足够的磁盘空间
+* 激活密钥是否关联了正确的通道
+* 使用的构建源是否有效
+* 包含 {productname} 公共证书的 RPM 软件包是否是最新的，并已在路径 `/usr/share/susemanager/salt/images/rhn-org-trusted-ssl-cert-osimage-1.0-1.noarch.rpm` 下提供。有关如何刷新公共证书 RPM 的详细信息，请参见 <<at.images.kiwi.buildhost>>。
+
+
+
+[[at.images.kiwi.limitations]]
+=== 限制
+
+本节包含使用映像时存在的一些已知问题。
+
+* 用于访问 HTTP 源或 git 储存库的 HTTPS 证书应通过自定义状态文件部署到客户端，或手动进行配置。
+* 不支持导入基于 Kiwi 的映像。
+
+
+
+[[at.images.listing]]
+== 构建的映像列表
+
+要列出可用的已构建映像，请选择menu:映像[映像列表]。此时会显示所有映像的列表。
+
+显示的映像相关数据包括映像的[guimenu]``名称``、[guimenu]``版本``、[guimenu]``修订版``和构建[guimenu]``状态``。还可以查看映像更新状态，以及可能适用于该映像的补丁和软件包更新列表。
+
+对于操作系统映像，[guimenu]``名称``和[guimenu]``版本``字段值源自 Kiwi 源，在成功完成构建后会更新。在构建期间或构建失败后，这些字段会根据配置文件名称显示一个临时名称。
+
+[guimenu]``修订版``会在每次成功构建后自动递增。对于操作系统映像，多个修订版可以在存储中共存。
+
+对于容器映像，存储中只会保存最新版本。有关旧修订版（软件包、补丁等）的信息将会保留，可以使用[guimenu]``显示过时项``复选框列出这些修订版。
+
+单击映像上的 btn:[细节] 按钮会显示一个详细视图。详细视图包含相关补丁的确切列表、映像中安装的所有软件包的列表和构建日志。
+
+单击 btn:[删除] 按钮会从列表中删除映像。同时还会删除操作系统映像存储区中关联的 pillar 和文件，以及过时的修订版。
+
+[NOTE]
+====
+仅当构建后的检查状态为成功时，才会显示补丁和软件包列表。
+====

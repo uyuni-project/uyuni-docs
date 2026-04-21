@@ -1,0 +1,174 @@
+[[auth-methods-sso-example]]
+= 예시 SSO 구현
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+
+이 예에서 SSO는 {productname}로 3개의 엔드포인트를 노출하고 Keycloak 21.0.1 이상을 ID 서비스 공급자(IdP)로 사용하여 구현됩니다.
+
+Keycloak IdP를 설치한 후 {productname} 서버를 설정하여 시작하십시오. 그런 다음 엔드포인트를 Keycloak 클라이언트로 추가하고 사용자를 생성할 수 있습니다.
+
+
+[WARNING]
+====
+이 예는 설명 목적으로만 제공됩니다. {suse}는 타사 ID 서비스 제공자를 권장하거나 지원하지 않으며 Keycloak과 제휴하지 않습니다. Keycloak 지원에 대해서는 link:https://www.keycloak.org/[]를 참조하십시오.
+====
+
+
+Keycloak을 시스템에 직접 설치하거나 컨테이너에서 실행할 수 있습니다. 이 예에서는 Podman 컨테이너에서 Keycloak을 실행합니다. Keycloak 설치에 대한 자세한 내용은 https://www.keycloak.org/guides#getting-started[]에서 Keycloak 설명서를 참조하십시오.
+
+
+.절차: ID 서비스 공급자 설정
+. Keycloak 설명서에 따라 Podman 컨테이너에 Keycloak을 설치합니다.
+. 프로세스를 계속 실행하려면 ``-td`` 인수를 사용하여 컨테이너를 실행하십시오.
++
+----
+podman run -td --name keycloak -p 8080:8080 -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin quay.io/keycloak/keycloak:21.0.1
+----
+. ``관리`` 사용자로 Keycloak {webui}에 로그인하고 다음 세부 정보를 사용하여 인증 영역을 생성합니다.
++
+* ``이름`` 필드에 영역 이름을 입력합니다.
+    예를 들어, ``MLM``입니다.
+* ``엔드포인트`` 필드에서 ``SAML 2.0 ID 공급자 메타 데이터`` 링크를 클릭합니다.
+    그러면 {productname} 구성 파일에 복사할 엔드포인트와 인증서가 표시되는 페이지로 이동합니다.
+
+
+Keycloak을 설치하고 영역을 생성한 후에는 {productname} 서버를 준비할 수 있습니다.
+
+.절차: {productname} 서버 설정
+. {productname} 서버에서 [path]``/etc/rhn/rhn.conf`` 구성 파일을 열고 이러한 파라미터를 편집합니다.
+    ``<FQDN_MLM>``을 {productname} 설치의 정규화된 도메인 이름으로 바꿉니다.
++
+----
+java.sso.onelogin.saml2.sp.entityid                       = https://<FQDN_MLM>/rhn/manager/sso/metadata
+java.sso.onelogin.saml2.sp.assertion_consumer_service.url = https://<FQDN_MLM>/rhn/manager/sso/acs
+java.sso.onelogin.saml2.sp.single_logout_service.url      = https://<FQDN_MLM>/rhn/manager/sso/sls
+----
+. 구성 파일에서 ``<FQDN_IDP>``를 Keycloak 서버의 정규화된 도메인 이름으로 바꿉니다.
+    ``<REALM>``을 인증 영역(예: ``MLM``)으로 바꿉니다.
++
+----
+java.sso.onelogin.saml2.idp.entityid                   = http://<FQDN_IDP>:8080/realms/<REALM>
+java.sso.onelogin.saml2.idp.single_sign_on_service.url = http://<FQDN_IDP>:8080/realms/<REALM>/protocol/saml
+java.sso.onelogin.saml2.idp.single_logout_service.url  = http://<FQDN_IDP>:8080/realms/<REALM>/protocol/saml
+----
+. IdP 메타데이터에서 공용 x509 인증서를 찾습니다.
+    ``http://<FQDN_IDP>:8080/realms/<REALM>/protocol/saml/descriptor``의 형식을 사용하십시오. 이 구성 파일에서 IdP의 공용 x509 인증서를 다음과 같이 지정합니다.
++
+----
+java.sso.onelogin.saml2.idp.x509cert = -----BEGIN CERTIFICATE----- <CERTIFICATE>  -----END CERTIFICATE-----
+----
+
+
+SSO를 활성화한 후 {productname}에서 [path]``rhn.conf``의 예는 다음과 같습니다.
+//+
+----
+java.sso = true
+
+
+# SAMLv2 프로토콜을 통한 SSO(Single Sign-On) 구성 파일입니다.
+# SSO를 활성화하려면 /etc/rhn/rhn.conf에서 java.sso = true로 설정하십시오.
+#
+# 필수 변경 사항: 이 파일에서 다음을 검색합니다.
+# - YOUR-PRODUCT
+# - YOUR-IDP-ENTITY
+#
+# 모든 파라미터에 대한 자세한 내용은
+# 제품 설명서 및 이 파일의 인라인 주석을 참조하십시오.
+#
+#
+#
+#
+# 'strict'가 True인 경우 Java Toolkit는 서명되거나 암호화되어야 하지만
+# 서명되지 않거나 암호화되지 않은 메시지를 거부합니다.
+# 또한, SAML을 엄격히 따르지 않는 메시지도 거부합니다.
+#
+# 경고: 프로덕션에서 이 파라미터 설정 파라미터는 "true"로 설정되어야 합니다.
+# 그렇지 않으면 환경이 안전하지 않고 공격에 노출됩니다.
+# 디버그 모드 활성화(오류 출력)
+# SP 항목의 식별자(URI여야 함)
+java.sso.onelogin.saml2.sp.entityid = https://MLMserver.example.org/rhn/manager/sso/metadata
+
+# <AuthnResponse> 메시지가 요청자(이 경우 SP)에게 반환되어야 하는
+# 위치와 방법에 대한 정보를 지정합니다.
+# IdP의 <Response>가 반환될 URL 위치
+java.sso.onelogin.saml2.sp.assertion_consumer_service.url = https://MLMserver.example.org/rhn/manager/sso/acs
+
+# <Logout Response> 메시지가 요청자(이 경우 SP)에게 반환되어야 하는
+# 위치와 방법에 대한 정보를 지정합니다.
+java.sso.onelogin.saml2.sp.single_logout_service.url = https://MLMserver.example.org/rhn/manager/sso/sls
+
+# IdP 항목의 식별자(URI여야 함)
+java.sso.onelogin.saml2.idp.entityid = http://idp.example.org:8080/realms/MLM
+
+# IdP의 SSO 엔드포인트 정보입니다. (인증 요청 프로토콜)
+# SP가 인증 요청 메시지를 보낼 IdP의 URL 대상
+java.sso.onelogin.saml2.idp.single_sign_on_service.url = http://idp.example.org:8080/realms/MLM/protocol/saml
+
+# IdP의 SLO 엔드포인트 정보입니다.
+# SP가 SLO 요청을 보낼 IdP의 URL 위치
+java.sso.onelogin.saml2.idp.single_logout_service.url = http://idp.example.org:8080/realms/MLM/protocol/saml
+
+# IdP의 공개 x509 인증서
+java.sso.onelogin.saml2.idp.x509cert = -----BEGIN CERTIFICATE----- MIIClzCCAX8CBgGC+tPbVjANBgkqhkiG9w0BAQsFADAPMQ0wCwYDVQQDDARTVU1BMB4XDTIyMDkwMTIwNTEwNFoXDTMyMDkwMTIwNTI0NFowDzENMAsG
+A1UEAwwEU1VNQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMNSWJAalB5mShTkMBO5mrsOosyheEL8/A37WvuqDPwwEfm4x0cG7gmMHvONxYXZk+LRyzoQl2sBrNFrbMuwu5dnah5ZSMxQyUu697S280m4vIiegGaFdbgH+g4FGBu
+eSis1ssMzTcES+NUuI7pLkMLNmSQtncESnoL9q2SyeQSwYtr5dz1ydl6IzjwtaWeyQ9EGJNtJtLk3U4+arLPCpHAwqFAnLO9NeYcRDNUKhNBs1v5mHP+L066PZu1/DkE0mSgy/+qXaS0CgZVKqz8qB+bvHVuAq9W60g1CjqZKbwvPu72p/7+d8z
+9DxXPIZ1uxdqn19q/kLEP2TYLtgQobSHECAwEAATANBgkqhkiG9w0BAQsFAAOCAQEAga+raLMJDo/P/yN1Z6SGGocK227WFqovBiE/mLYlp5Ff0+0jS1US1plSppJ94xOr8j0m7HW0Wu5xCz6oOhzXTEtnfIbeRyr1Rms3BWdxyXgQ9bWUeZMWZ
+HfDkTbhgRRmjDEwSSfEXRKQNvw41CpnlB36I0++ejgGnjDvH7BbkCaoW55JF5j6DT/WYR0n7MkEl2Ova9CH0e9X7Gny8iOAg26oziy06uy3P/lx9Z9RmHnvpvN/Q34SGEq9z/HlQVuP12UPj//iT21Jc17OOZFsZQXlGFTG6bXKmO42W8FdUDJU
+ONoXZgjMb3eC7U691YyeowoqTY7mJKxNPprYY/lL0w== -----END CERTIFICATE-----
+
+
+# 조직
+java.sso.onelogin.saml2.organization.name = SUSE Manager admin
+java.sso.onelogin.saml2.organization.displayname = SUSE Manager admin
+java.sso.onelogin.saml2.organization.url = https://MLMserver.example.org
+java.sso.onelogin.saml2.organization.lang =
+
+# Contacts
+java.sso.onelogin.saml2.contacts.technical.given_name = SUSE Manager admin
+java.sso.onelogin.saml2.contacts.technical.email_address = MLM@example.org
+java.sso.onelogin.saml2.contacts.support.given_name = SUSE Manager admin
+java.sso.onelogin.saml2.contacts.support.email_address = MLM@example.org
+----
+
+
+{productname} 엔드포인트를 Keycloak에 추가할 수 있습니다. Keycloak은 엔드포인트를 클라이언트로 참조합니다.
+
+
+.절차: 엔드포인트를 클라이언트로 추가
+. Keycloak {webui}에서 다음 세부 사항을 사용하여 새 클라이언트를 생성합니다.
++
+* ``클라이언트 유형`` 필드에서 ``SAML``을 선택합니다.
+* ``클라이언트 ID`` 필드에서 서버 구성 파일에 지정된 엔드포인트를 ``java.sso.onelogin.saml2.idp.entityid``로 입력합니다.
+    예: ``https://<FQDN_MLM>/rhn/manager/sso/metadata``.
+. ``설정`` 탭에서 다음 세부 정보를 사용하여 클라이언트를 미세 조정합니다.
++
+* ``서명 어설션`` 스위치를 ``켜짐``으로 토글합니다.
+* ``서명 알고리즘`` 필드에서 ``RSA_SHA1``을 선택합니다.
+* ``SAML 서명 키 이름`` 필드에서 ``키 ID``를 선택합니다.
+. ``키`` 탭에서:
++
+* ``클라이언트 서명 필요``를 ``끄기``로 설정합니다.
+. ``세분화된 SAML 엔드포인트 구성`` 섹션의 ``고급`` 탭에서 다음 세부 정보를 사용하여 엔드포인트 두 개를 추가합니다.
++
+* 두 ``어설션 소비자 서비스`` 필드에, 서버 구성 파일에 지정된 엔드포인트를 ``java.sso.onelogin.saml2.sp.assertion_consumer_service.url``로 입력합니다.
+    예: ``https://<FQDN_MLM>/rhn/manager/sso/acs``.
+* 두 ``로그아웃 서비스`` 필드에, 서버 구성 파일에 지정된 엔드포인트를 ``java.sso.onelogin.saml2.sp.single_logout_service.url``로 입력합니다.
+    예: ``https://<FQDN_MLM>/rhn/manager/sso/sls``.
+
+
+엔드포인트를 클라이언트로 추가하면 클라이언트 범위를 구성하고 Keycloak과 {productname} 간에 사용자를 매핑할 수 있습니다.
+
+
+.절차: 클라이언트 범위 및 매퍼 구성
+. Keycloak {webui}에서 menu:클라이언트[클라이언트 범위] 탭으로 이동하여 ``role_list``를 기본 클라이언트 범위로 할당합니다.
+. menu:클라이언트_범위[매퍼] 탭으로 이동하여 기본값을 사용해 사용자 속성 ``uid``에 대한 매퍼를 추가합니다.
+    이 SAML 특성은 {productname}에 필요합니다.
+. menu:클라이언트_범위[매퍼] 로 이동하여 ``역할_목록`` 매퍼를 클릭합니다. ``단일 역할 속성``을 ``켜기``로 설정합니다.
+. menu:사용자[관리자] 섹션으로 이동하여 관리 사용자를 생성합니다.
+    이 사용자는 {productname} 관리 사용자와 일치하지 않아도 됩니다.
+. menu:사용자[역할 매핑] 탭으로 이동하여 {productname} 관리 사용자의 사용자 이름과 일치하는 값을 갖는 ``uid``라는 속성을 추가합니다.
+. menu:사용자[자격 증명] 탭으로 이동하여 {productname} 관리 사용자가 사용하는 것과 동일한 비밀번호를 설정합니다.
+. 변경 사항을 저장합니다.
+
+
+구성을 완료하면 설치가 예상대로 작동하는지 테스트할 수 있습니다. {productname} 서버를 재시작하여 변경 사항을 적용하고 {productname} {webui}로 이동합니다. 설치가 올바르게 작동하면 성공적으로 인증할 수 있는 Keycloak SSO 페이지로 리디렉트됩니다.

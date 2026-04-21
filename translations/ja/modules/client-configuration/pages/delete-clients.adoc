@@ -1,0 +1,167 @@
+[[delete.clients]]
+= クライアントの削除
+:description: Delete clients in your SUSE Multi-Linux Manager Server either via the Web UI or command-line options
+:revdate: 2025-11-12
+:page-revdate: {revdate}
+
+// FIXME: where do we need to add warnings (suse clients only, all clients)
+
+クライアントを{productname}サーバから削除する必要がある場合、次の操作を実行できます。
+
+* {webui}を使用して削除する
+* コマンドラインからクライアントを削除する
+
+// can also be done manually.
+// FIXME: Why Manual Cleanup is necessary sometimes.
+
+
+
+[[delete.clients.webui]]
+== {webui}でクライアントを削除する
+
+
+.プロシージャ: クライアントの削除
+[role=procedure]
+____
+. {productname}の{webui}で、menu:システム[システム一覧]に移動し、削除するクライアントを選択します。
+
+. btn:[システムの削除]をクリックします。
+
+. 詳細を確認し、btn:[プロファイルの削除]をクリックして確認します。
+
+. {salt}クライアントの場合、{productname}は、追加の設定をクリーンアップしようとします。 クライアントに接続できない場合、削除をキャンセルするオプションや、設定ファイルをクリーンアップせずにクライアントを削除するオプションがあります。
+
+____
+
+システムセットマネージャを使用して複数のクライアントを削除することもできます。システムセットマネージャの詳細については、xref:client-configuration:system-set-manager.adoc[]を参照してください。
+
+[IMPORTANT]
+====
+クライアントをクリーンアップすると、{salt}が無効化されて、可能であればサービスが停止されるだけです。パッケージはアンインストールされません。
+====
+
+
+
+== コマンドラインでクライアントを削除する(APIコールを使用)
+
+.プロシージャ: サーバからのクライアントの削除
+[role=procedure]
+____
+. FQDN (完全修飾ドメイン名)を持つクライアントを削除します。
+
++
+
+----
+spacecmd system_delete FQDN
+----
+____
+
+[command]``spacecmd system_delete``は{salt}キーも削除します。
+
+[command]``system_delete``は以下のオプションを提供します。
+
+
+----
+usage: system_delete [options] <SYSTEMS>
+
+    options:
+          -c TYPE - Possible values:
+             *  'FAIL_ON_CLEANUP_ERR' - fail in case of cleanup error,
+             *  'NO_CLEANUP' - do not cleanup, just delete,
+             *  'FORCE_DELETE' - try cleanup first but delete server anyway
+	        in case of error
+----
+
+////
+// move to Trouble Shooting and link from here
+Sometimes a new registration of a deleted (unregistered) client might not be possible.
+To solve this issue, some Salt cache files should be deleted on the {productname} Server (Salt master) before trying to re-register again:
+
+----
+rm /var/cache/salt/master/thin/version
+rm /var/cache/salt/master/thin/thin.tgz
+----
+////
+
+
+
+[[delete.clients.commandline]]
+== コマンドラインからのクライアントの削除
+
+[IMPORTANT]
+====
+このプロセスは{productname}クライアントのみを対象としています。{productname}サーバ自体では実行しないでください。
+====
+
+[WARNING]
+====
+{rhel}、{debian}、またはクローンを実行しているクライアントでは、次のプロシージャを実行しないでください。 [command]``zypper``の代わりに、[command]``yum``、[command]``dnf``、[command]``apt``のような同等のパッケージャコマンドを使用します。
+====
+
+.プロシージャ: SLES 12および15クライアントの削除
+[role=procedure]
+____
+. salt-minionサービスを停止します。
+
++
+
+[source, shell]
+----
+systemctl stop salt-minion
+----
+
++
+
+. リポジトリと設定ファイルを削除します。
+
++
+
+[source, shell]
+----
+rm -f /etc/zypp/repos.d/susemanager\:bootstrap.repo
+rm -f /etc/zypp/repos.d/susemanager\:channels.repo
+rm -r /etc/sysconfig/rhn/
+rm -r /etc/salt/
+----
+
++
+
+. クライアントパッケージを削除します。
+
++
+
+[source, shell]
+----
+zypper rm salt salt-minion python*-salt sle-manager-tools-release
+----
+
+____
+
+
+.プロシージャ: {salt} Bundleクライアント - 登録の手動クリーンアップ
+[role=procedure]
+____
+. 登録解除するには、次のコマンドを実行します。
+
++
+
+[source, shell]
+----
+systemctl stop venv-salt-minion
+zypper rm -y venv-salt-minion sle-manager-tools-release
+rm -f /etc/zypp/repos.d/susemanager\:bootstrap.repo
+rm -f /etc/zypp/repos.d/susemanager\:channels.repo
+rm -r /etc/venv-salt-minion/*
+----
+
+. クライアントマシンIDを削除します。
+
++
+
+----
+rm /etc/sysconfig/rhn/systemid
+----
+
+____
+
+{salt} Bundleについては、xref:client-configuration:contact-methods-saltbundle.adoc[]を参照してください。

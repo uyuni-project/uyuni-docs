@@ -1,0 +1,45 @@
+[[troubleshooting-firewalls]]
+= 防火墙查错
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+
+
+Cause: User firewall is set to block outgoing traffic by dropping the packet request. During sync with {scc}, mlm waits for an answer on each URL until it times out, eventually causing the entire refresh of the product list to timeout. Applies only to third party (non-SUSE) products, as sync with {scc} needs to access locations other than {scc} to verify if the if the download location is valid.
+
+Consequence: The sync to {scc} fails, and the third party products are not shown in the product list.
+
+Fix: Configure the firewall to reject requests from mlm instead of drop (preferred), or configure a firewall on the server (if no ability to change firewall settings)
+
+Result: Sync to {scc} is either able to reach the URLs required, or rejects the request so that the request fails rather than times out.
+////
+
+如果您使用的防火墙阻止了传出流量，它可能会``拒绝``或``丢弃``网络请求。如果该防火墙设置为``丢弃``，则与 {scclongform} 的同步可能会超时。
+
+之所以发生这种情况，是因为同步进程需要访问为非 {suse} 客户端（而不仅仅是 {scclongform}）提供软件包的第三方储存库。当 {productname} 服务器尝试访问这些储存库以检查它们是否有效时，防火墙会丢弃请求，并且同步进程会继续等待响应，直到超时。
+
+如果发生这种情况，同步将持续很长时间，然后失败，并且您的非 {suse} 产品不会显示在产品列表中。
+
+可以通过多种不同的方法解决此问题。
+
+最简单的方法是将防火墙配置为允许访问非 {suse} 储存库所需的 URL。这样，同步进程就能访问这些 URL 并成功完成。
+
+如果不能允许外部流量，请将防火墙配置为``拒绝``来自 {productname} 的请求，而不是``丢弃``。这会拒绝对第三方 URL 的请求，因此同步会提前失败而不是超时，并且产品不会显示在列表中。
+
+如果您无权配置防火墙，可以考虑在 {productname} Server 上单独设置一个防火墙。

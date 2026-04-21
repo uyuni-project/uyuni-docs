@@ -1,0 +1,467 @@
+= Proxy Migration from 5.0 to 5.2
+:revdate: 2026-02-09
+:page-revdate: {revdate}
+
+== 概要
+
+
+このドキュメントは、**{productname}**で管理される環境において、**ホストオペレーティングシステム**と**プロキシ拡張機能**の両方を移行するためのテスト済みかつ検証済みのプロシージャを提供します。特に、**{productname} Proxy 5.0**を配備したシステムを対象としています。
+
+対象となるアップグレードシナリオは次のとおりです。
+
+* Migrating from **SUSE Linux Enterprise Micro (SLE Micro) 5.5** to **SL Micro 6.2**
+* **SUSE Linux Enterprise Server (SLES) 15 SP6**から**SLES 15 SP7**への移行
+* **{productname}プロキシ拡張機能**の**バージョン5.0**から**バージョン{productnumber}**へのアップグレード
+
+[IMPORTANT]
+====
+プロキシを移行する前に、まずSUSE Manager 5.0サーバを{productname} {productnumber}に移行する必要があります。
+====
+
+
+== {sle-micro} 5.5 to {sl-micro} 6.2
+
+This section provides the tested procedure to upgrade a {sle-micro} 5.5 host deployed with {productname} 5.0 Proxy to {sl-micro} 6.2 with {productname} {productnumber} Proxy.
+
+
+=== 前提条件
+
+* {productname} 5.0プロキシが{sle-micro} 5.5にインストールされ、実行されている。
+* プロキシシステムが{productname}サーバに登録されている。
+
+
+=== ディストリビューションのアップグレードとプロキシの移行
+
+.プロシージャ: {productname} 5.0プロキシを{productname} {productnumber}プロキシに移行する
+[role=procedure]
+____
+
+. システムと{productname}ツールのバージョンを確認します。
+
++
+
+[source, console]
+----
+cat /etc/os-release
+mgrpxy --version
+----
+
++
+
+確認:
+
+* オペレーティングシステム: [literal]``SLE Micro 5.5``
+* ツールのバージョン: [literal]``mgrpxy version 0.1.29``以降
+
++
+
+. 実行中のコンテナを確認します。
+
++
+
+[source, console]
+----
+podman ps
+----
+
++
+
+以下のコンテナが実行されていることを確認します。
+
+- `proxy-squid`
+- `proxy-ssh`
+- `proxy-httpd`
+- `proxy-tftpd`
+- `proxy-salt-broker`
+
++
+
+. {productname}サーバの新しいプロキシ製品を同期します。 詳細については、xref:client-configuration:products.adoc[]を参照してください。
+
++
+
+Web UIを使用して同期します。
+
+* [literal]``SL Micro 6.2``
+* [literal]``{productname} Proxy Extension {productnumber}``
+
++
+
+. プロキシ製品の移行を実行します。 詳細については、xref:client-configuration:client-upgrades-product-migration.adoc[]を参照してください。
+
++
+
+プロキシシステムに移動し、menu:システム[概要] > menu:ソフトウェア[製品移行]を選択します。
+
++
+
+移行元
+
+* [literal]``SLE Micro 5.5`` + [literal]``SUSE Manager Proxy 5.0 Extension``
+
++
+
+移行先
+
+* [literal]``SL Micro 6.2`` + [literal]``{productname} Proxy Extension {productnumber}``
+
++
+
+[IMPORTANT]
+====
+必要であることが確認されていない限り、プロンプトが表示されたときにオプションのチャンネルを**選択しないでください**。
+====
+
++
+
+[NOTE]
+====
+実際の移行を実行する前に、まず予行演習を実行することをお勧めします。
+====
+
++
+
+. 移行アクションを監視します。
+
++
+
+{webui}のmenu:システム[詳細 > イベント]タブでプロセスを追跡できます。
+
++
+
+. After the upgrade completes, stop the proxy container and then reboot the system.
+
++
+
+[source, console]
+----
+reboot
+mgrpxy stop
+----
+
++
+
+. 再起動後のチェックを実行します。
+
++
+
+アップグレードされたOSと{productname}拡張機能を確認します。
+
++
+
+[source, console]
+----
+cat /etc/os-release
+SUSEConnect --status-text
+----
+
++
+
+. {productname}ツールのバージョンを確認します。
+
++
+
+[source, console]
+----
+mgrpxy --version
+----
+
++
+
+予想される出力:
+
+- `mgrpxy version 5.2` or higher
+
++
+
+. Enable Root SSH Access (_if required_). SL Micro 6.2 disables root login via SSH by default. Edit `/etc/ssh/sshd_config.d/sshd.conf`:
+
++
+
+[source, console]
+----
+PermitRootLogin yes
+----
+
++
+
+サービスを再起動します。
+
++
+
+[source, shell]
+----
+systemctl restart sshd
+----
+
++
+
+詳細については、xref:administration:troubleshooting/tshoot-remote-root-on-micro.adoc[]を参照してください。
+
+
+. RPMパッケージとして新しいプロキシコンテナイメージをインストールします。
+
++
+
+[source, shell]
+----
+transactional-update pkg install suse-multi-linux-manager-5.2-<arch>-proxy*
+----
+
+. プロキシを再起動します。
+
+. プロキシコンテナをアップグレードして再起動します。
+
++
+
+[source, console]
+----
+mgrpxy upgrade podman
+mgrpxy stop
+mgrpxy start
+----
+
++
+
+. プロキシコンテナが動作していることを確認します。
+
++
+
+[source, console]
+----
+podman ps
+----
+
++
+
+すべての予期されるプロキシコンテナが稼働中である必要があります。
+
+- `proxy-salt-broker`
+- `proxy-httpd`
+- `proxy-squid`
+- `proxy-tftpd`
+- `proxy-ssh`
+
+____
+
+
+=== 移行の完了
+
+The proxy host system is now running {sl-micro} 6.2 with updated {productname} {productnumber} Proxy packages and synchronized product channels.
+
+
+== {sles} 15 SP6から15 SP7
+
+このセクションでは、{productname} 5.0プロキシが配備された{sles} SP6ホストを、{productname} {productnumber}プロキシを備えた{sles} {sp-version}にアップグレードするためのプロシージャについて説明します。
+
+
+=== 前提条件
+
+* {productname} Proxy 5.0が{sles} 15 SP6にインストールされ、実行されている。
+* プロキシシステムが{productname}サーバに登録されている。
+
+
+=== ディストリビューションのアップグレードとプロキシの移行
+
+.プロシージャ: {sles} 15 SP6上で{productname}プロキシコンポーネントを更新する
+[role=procedure]
+____
+
+. オペレーティングシステムと{productname}ツールのバージョンを確認します。
+
++
+
+[source, console]
+----
+cat /etc/os-release
+mgrpxy --version
+----
+
++
+
+確認:
+
+* オペレーティングシステム: [literal]``SUSE Linux Enterprise Server 15 SP6``
+* ツールのバージョン: [literal]``mgrpxy version 0.1.29``以降
+
+
++
+
+. 実行中のプロキシコンテナを一覧表示します。
+
++
+
+[source, console]
+----
+podman ps
+----
+
++
+
+以下のコンテナが実行されていることを確認します。
+
+- `proxy-salt-broker`
+- `proxy-httpd`
+- `proxy-squid`
+- `proxy-tftpd`
+- `proxy-ssh`
+
++
+
+. Synchronize the new Products in {productname} Server using the Web UI.
+
++
+
+For more information, see xref:client-configuration:products.adoc[].
+
++
+
+Synchronize:
+
+* [literal]``{sles} {sp-version}``
+* [literal]``{productname} Proxy Extension {productnumber}``
+
++
+
+. Perform proxy product migration.
+
++
+
+For more information, see xref:client-configuration:client-upgrades-product-migration.adoc[].
+
++
+
+プロキシシステムに移動し、menu:システム[概要] > menu:ソフトウェア[製品移行]を選択します。
+
++
+
+Migrate from:
+
+* [literal]``{sles} 15 SP6`` + [literal]``SUSE Manager Proxy 5.0 Extension``
+
++
+
+to:
+
+* [literal]``{sles} {sp-version}`` + [literal]``{productname} Proxy Extension {productnumber}``
+
++
+
+[IMPORTANT]
+====
+必要であることが確認されていない限り、プロンプトが表示されたときにオプションのチャンネルを**選択しないでください**。
+====
+
++
+
+[NOTE]
+====
+実際の移行を実行する前に、まず予行演習を実行することをお勧めします。
+====
+
++
+
+. 移行アクションを監視します。
+
++
+
+You can follow the process under menu:Systems[Details > Events] in the {webui}.
+
++
+
+. After the upgrade completes, stop the proxy container and then reboot the system.
+
++
+
+[source, console]
+----
+mgrpxy stop
+reboot
+----
+
++
+
+. 再起動後のチェックを実行します。
+
++
+
+Verify the OS and {productname} extension version:
+
++
+
+[source, console]
+----
+cat /etc/os-release
+SUSEConnect --status-text
+----
+
++
+
+. {productname}ツールのバージョンを確認します。
+
++
+
+[source, console]
+----
+mgrpxy --version
+----
+
++
+
+予想される出力:
+
+- `mgrpxy version 5.2` or higher
+
++
+
+. RPMパッケージとして新しいプロキシコンテナイメージをインストールします。
+
++
+
+[source, shell]
+----
+zypper install suse-multi-linux-manager-5.2-<arch>-proxy*
+----
+
++
+
+. プロキシを再起動します。
+
+. プロキシコンテナをアップグレードして再起動します。
+
++
+
+[source, console]
+----
+mgrpxy upgrade podman
+mgrpxy stop
+mgrpxy start
+----
+
++
+
+. プロキシコンテナが動作していることを確認します。
+
++
+
+[source, console]
+----
+podman ps
+----
+
++
+
+すべての予期されるプロキシコンテナが稼働中である必要があります。
+
+- `proxy-salt-broker`
+- `proxy-httpd`
+- `proxy-squid`
+- `proxy-tftpd`
+- `proxy-ssh`
+
+____
+
+
+=== 移行の完了
+
+The proxy host system is now running {sles} {sp-version} with updated {productname} {productnumber} Proxy packages and synchronized product channels.

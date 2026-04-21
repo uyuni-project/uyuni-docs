@@ -1,0 +1,128 @@
+[[client-upgrades-clm]]
+= コンテンツライフサイクルマネージャを使用したアップグレード
+:revdate: 2024-11-21
+:page-revdate: {revdate}
+
+管理する{sles}クライアントが多数ある場合、コンテンツライフサイクルマネージャを使用してインプレースアップグレードを自動化できます。
+
+
+
+== アップグレードの準備
+
+
+クライアントをアップグレードするには、その前に次の準備を行う必要があります。
+
+* コンテンツライフサイクルプロジェクトの作成
+* アクティベーションキーの作成
+* 自動インストールのディストリビューションの作成
+* 自動インストールプロファイルの作成
+
+.プロシージャ: コンテンツライフサイクルプロジェクトの作成
+. ディストリビューション用のコンテンツライフサイクルプロジェクトを作成します。
++
+詳細については、xref:administration:content-lifecycle.adoc[]を参照してください。
+
+. プロジェクトの名前は、短いがわかりやすい名前にします。
+
+. ディストリビューションに必要なソースチャンネルモジュールをすべて含めます。
+
+. 必要に応じてフィルタを追加し、1つ以上の環境を設定します。
+
+
+
+.プロシージャ: アクティベーションキーの作成
+. ディストリビューション用のアクティベーションキーを作成します。
++
+詳細については、xref:client-configuration:activation-keys.adoc[]を参照してください。
+
+. フィルタされたプロジェクトチャンネルのすべてがアクティベーションキーに含まれていることを確認します。
+
+
+
+.プロシージャ: 自動インストールのディストリビューションの作成
+
+. 移行するベースチャンネルごとに自動インストールのディストリビューションを作成します。
++
+詳細については、xref:client-configuration:autoinst-distributions.adoc[]を参照してください。
+
+. コンテンツライフサイクルプロジェクトの名前を表すディストリビューションラベルを付けます。
+
+. ［``インストーラ生成``］フィールドで、使用しているSLESのバージョンを選択します。
+
+
+
+.プロシージャ: 自動インストールプロファイルの作成
+
+. アップグレードするディストリビューションおよびサービスパックごとに自動インストールプロファイルを作成します。
++
+詳細については、xref:client-configuration:autoinst-profiles.adoc[]を参照してください。
+
+. プロファイルで変数を使用して、異なるライフサイクル環境を区別できます。
+
+
+自動インストールプロファイルのサンプルについては、link:https://github.com/SUSE/manager-build-profiles/tree/master/AutoYaST[]を参照してください。
+
+インプレースアップグレードを自動化するための自動インストールプロファイルでこれらの次の変数を使用します。
+
+
+
+.例: 自動インストールプロファイルで使用する変数
+----
+registration_key=1-15sp1-demo-test
+org=1
+channel_prefix=15sp1-demo-test
+distro_label=15sp1-demo-test
+----
+
+
+
+.例: 自動インストールプロファイルで使用するエントリ
+----
+ <listentry>
+     <ask_on_error config:type="boolean">true</ask_on_error>
+     <media_url>https://$redhat_management_server/ks/dist/child/$channel_prefix-sle-module-web-scripting15-sp1-pool-x86_64/$distro_label</media_url>
+     <name>$channel_prefix SLE-Module-Web-Scripting15-SP1 Pool for x86_64  </name>
+     <product>Web Scripting Module 15 SP1 x86_64 Pool</product>
+ </listentry>
+----
+
+
+
+== アップグレード
+
+サーバをアップグレードする準備ができたら、クライアントをプロビジョニングできます。
+
+.プロシージャ: クライアントのプロビジョニング
+
+. {productname}の{webui}で、menu:システム[システム一覧]に移動し、プロビジョニングするクライアントを選択してシステムセットマネージャに追加します。
+
+. menu:システム[システムセットマネージャ > 概要]に移動し、［[guimenu]``プロビジョニング``］タブをクリックします。
+
+. 使用する自動インストールプロファイルを選択します。
+
+
+PXEを使用できるクライアントでは、そのクライアントをプロビジョニングするとすぐに移行が自動化されます。その他のすべてのクライアントでは、{cobbler}を使用してアップグレードを実行できます。
+
+
+
+.プロシージャ: {cobbler}を使用してクライアントをアップグレードする
+. コマンドプロンプトで、rootとして、コンテナ内でシェルに移動し、次のコマンドを実行します。
++
+----
+mgrctl term
+----
+. 利用できる{cobbler}プロファイルを確認します。
++
+----
+cobbler profile list
+----
+. 選択したプロファイルおよびディストリビューションでISOファイルを構築します。
++
+----
+cobbler buildiso --iso=/tmp/SLE_15-sp1.iso --profiles=SLE_15-sp1:1:Example --distro=SLE_15-sp1
+----
+
+
+// FIXME: 2024-05-06, ke: Do we want to use /tmp here within the container?
+
+CD-ROMを使用したクライアントのプロビジョニングの詳細については、xref:client-configuration:autoinst-cdrom.adoc[]を参照してください。

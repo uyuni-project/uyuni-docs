@@ -1,0 +1,167 @@
+[[delete.clients]]
+= 클라이언트 삭제
+:description: Delete clients in your SUSE Multi-Linux Manager Server either via the Web UI or command-line options
+:revdate: 2025-11-12
+:page-revdate: {revdate}
+
+// FIXME: where do we need to add warnings (suse clients only, all clients)
+
+{productname} 서버에서 클라이언트를 제거해야 하는 경우 다음을 수행할 수 있습니다.
+
+* {webui}을(를) 사용하여 삭제
+* 명령 줄에서 클라이언트를 제거합니다.
+
+// can also be done manually.
+// FIXME: Why Manual Cleanup is necessary sometimes.
+
+
+
+[[delete.clients.webui]]
+== {webui}를 사용한 클라이언트 삭제
+
+
+.절차: 클라이언트 삭제
+[role=procedure]
+____
+. {productname} {webui}에서 menu:시스템[시스템 목록]으로 이동하여 삭제하려는 클라이언트를 선택합니다.
+
+. btn:[시스템 삭제]를 클릭합니다.
+
+. 상세 정보를 확인하고 btn:[프로파일 삭제]를 클릭하여 확인합니다.
+
+. {salt} 클라이언트의 경우 {productname}는 추가 구성의 정리를 시도합니다. 클라이언트에 연결할 수 없는 경우 삭제를 취소하거나 구성 파일을 정리하지 않고 클라이언트를 삭제할 수 있는 옵션이 제공됩니다.
+
+____
+
+시스템 세트 관리자를 사용하여 여러 클라이언트를 삭제할 수도 있습니다. 시스템 세트 관리자에 대한 자세한 내용은 xref:client-configuration:system-set-manager.adoc[]에서 확인할 수 있습니다.
+
+[IMPORTANT]
+====
+클라이언트를 정리하면 {salt}만 비활성화하고 가능한 경우 서비스를 중지합니다. 패키지는 설치 해제되지 않습니다.
+====
+
+
+
+== 명령 줄에서 클라이언트 삭제(API 호출 사용)
+
+.절차: 서버에서 클라이언트 삭제
+[role=procedure]
+____
+. FQDN(정규화된 도메인 이름)이 있는 클라이언트를 삭제합니다.
+
++
+
+----
+spacecmd system_delete FQDN
+----
+____
+
+[command]``spacecmd system_delete``는 {salt} 키도 삭제합니다.
+
+[command]``system_delete``에서 제공되는 옵션은 다음과 같습니다.
+
+
+----
+usage: system_delete [options] <SYSTEMS>
+
+    옵션:
+          -c TYPE - 사용할 수 있는 값:
+             *  'FAIL_ON_CLEANUP_ERR' - 정리 오류 발생 시 실패,
+             *  'NO_CLEANUP' - 삭제만 수행하고 정리하지 않음,
+             *  'FORCE_DELETE' - 우선 정리를 시도하지만, 오류 발생 시
+	        서버 삭제
+----
+
+////
+// move to Trouble Shooting and link from here
+Sometimes a new registration of a deleted (unregistered) client might not be possible.
+To solve this issue, some Salt cache files should be deleted on the {productname} Server (Salt master) before trying to re-register again:
+
+----
+rm /var/cache/salt/master/thin/version
+rm /var/cache/salt/master/thin/thin.tgz
+----
+////
+
+
+
+[[delete.clients.commandline]]
+== 명령줄에서 클라이언트 삭제
+
+[IMPORTANT]
+====
+이 프로세스는 {productname} 클라이언트에만 적용됩니다. {productname} 서버 자체에서는 실행하지 마십시오.
+====
+
+[WARNING]
+====
+{rhel}, {debian} 또는 클론을 실행하는 클라이언트에서 다음 절차를 실행해서는 안 됩니다. [command]``zypper`` 대신, [command]``yum``, [command]``dnf`` 또는 [command]``apt``와 같은 패키지 작성 도구 명령을 사용하십시오.
+====
+
+.절차: SLES 12 및 15 클라이언트 삭제
+[role=procedure]
+____
+. 다음과 같이 salt-minion 서비스를 중지합니다.
+
++
+
+[source, shell]
+----
+systemctl stop salt-minion
+----
+
++
+
+. 리포지토리 및 구성 파일 제거:
+
++
+
+[source, shell]
+----
+rm -f /etc/zypp/repos.d/susemanager\:bootstrap.repo
+rm -f /etc/zypp/repos.d/susemanager\:channels.repo
+rm -r /etc/sysconfig/rhn/
+rm -r /etc/salt/
+----
+
++
+
+. 클라이언트 패키지 제거:
+
++
+
+[source, shell]
+----
+zypper rm salt salt-minion python*-salt sle-manager-tools-release
+----
+
+____
+
+
+.절차: Salt 번들 클라이언트 - 수동 등록 정리
+[role=procedure]
+____
+. 등록을 취소하려면 다음을 실행합니다.
+
++
+
+[source, shell]
+----
+systemctl stop venv-salt-minion
+zypper rm -y venv-salt-minion sle-manager-tools-release
+rm -f /etc/zypp/repos.d/susemanager\:bootstrap.repo
+rm -f /etc/zypp/repos.d/susemanager\:channels.repo
+rm -r /etc/venv-salt-minion/*
+----
+
+. 클라이언트 머신 ID 제거:
+
++
+
+----
+rm /etc/sysconfig/rhn/systemid
+----
+
+____
+
+{salt} 번들에 대한 내용은 xref:client-configuration:contact-methods-saltbundle.adoc[]에서 확인할 수 있습니다.

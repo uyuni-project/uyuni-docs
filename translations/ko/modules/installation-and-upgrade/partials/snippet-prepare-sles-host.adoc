@@ -1,0 +1,187 @@
+== {sles} {bci-mlm} 호스트 준비
+
+
+또는 {productname}을(를) {sles} {bci-mlm}에 배포할 수 있습니다.
+
+다음 절차에서는 설치 과정의 주요 단계를 설명합니다.
+
+
+=== {sles}에 {productname} 확장 설치
+
+.절차: {sles}에 {productname} 확장 설치
+[role=procedure]
+____
+
+. https://www.suse.com/download/sles/[]에서 {sles} {bci-mlm} [literal]``.iso``를 찾아 다운로드합니다.
+
+. Make sure that you have registration codes both for the host operating system ({sles} {bci-mlm}) and extensions
+
+. {sles} {bci-mlm} 설치를 시작합니다.
+
+.. On the [literal]``Language, keyboard and product selection`` select the product to install.
+
+.. [literal]``라이선스 계약``에서 계약서를 읽고 [guimenu]``라이선스 약관에 동의합니다``에 체크 표시합니다.
+
+. Select the registration method. For this example, we will register the server with SUSE Customer Center.
+
+. Enter your {scclongform} email address.
+
+. {sles} {bci-mlm} 등록 코드를 입력합니다.
+
+. [systemitem]``다음``을 클릭하여 계속합니다.
+
++
+
+[IMPORTANT]
+====
+{sles} {bci-mlm}의 경우 유효한 {sles} 구독과 해당 등록 코드가 필요하며, 이 화면에서 이를 입력해야 합니다. 아래에 {productname} 확장 등록 코드를 입력해야 합니다.
+====
+
+. In the screen [literal]``Extensions and Modules Selection`` check the following:
+
++
+
+  * Select the {productname} Server Extension to install the Server, or the {productname} Proxy Extension to install the Proxy.
+  * Basesystem Module
+  * Containers Module
+
+. [systemitem]``다음``을 클릭하여 계속합니다.
+
+. Enter your {productname} {productnumber} extension registration code.
+
+. btn:[다음]을 클릭하여 계속합니다.
+
+. 설치를 완료합니다.
+
+. When the installation completes, log in to the newly installed server as root.
+
+. Update the System (optional, if the system was not set to download updates during install):
+
++
+
+[source, shell]
+----
+zypper up
+----
+
+. 재부팅합니다.
+
+____
+
+
+=== OPTIONAL: Registration from the command line
+
+{sles} 설치 시 {productname} {productnumber}을(를) 확장 기능으로 추가한 경우 이 절차를 건너뛸 수 있습니다.
+
+그러나 {sles} 설치 중 btn:[등록 건너뛰기] 버튼을 선택하여 등록을 건너뛸 수도 있습니다. 이 섹션에서는 {sles} 설치 후 제품을 등록하는 단계를 제공합니다.
+
+[NOTE]
+====
+다음 단계에서는 {x86_64} 아키텍처로 {productname} {productnumber} 확장을 등록하므로 {x86_64} 아키텍처에 대한 등록 코드가 필요합니다.
+
+{arm} 또는 {s390x} 아키텍처를 등록하려면 올바른 등록 코드를 사용하십시오.
+====
+
+
+.절차: 명령줄에서 등록
+[role=procedure]
+____
+
+. List available extensions with the following command:
+
++
+
+[source, shell]
+----
+SUSEConnect --list-extensions
+----
+
++
+
+. From the list of available extensions, select the one you wish to install.
+
++
+
+* If installing the Server, use your {productname} Server Extension {productnumber} x86_64 registration code.
+
++
+
+For example for {sle} 15 SP7, use the following commands:
+
++
+
+[source, shell]
+----
+SUSEConnect -r <regcode>
+SUSEConnect -p sle-module-containers/15.7/x86_64
+SUSEConnect -p Multi-Linux-Manager-Server-SLE/5.1/x86_64 -r <regcode>
+----
+
++
+
+* 프록시를 설치하는 경우, {productname} 프록시 확장 {productnumber} x86_64 등록 코드를 다음 명령과 함께 사용합니다.
+
++
+
+----
+SUSEConnect -p Multi-Linux-Manager-Proxy-SLE/5.1/x86_64 -r <regcode>
+----
+
+____
+
+
+
+=== [package]``podman``을 설치하고 활성화합니다.
+
+.작업: [package]``podman`` 설치
+[role=procedure]
+____
+
+. 루트 권한으로 로그인한 후 제품 패키지를 설치합니다.
+
++
+
+
+* 서버에서:
+
++
+
+[source, shell]
+----
+zypper in podman
+zypper in -t product Multi-Linux-Manager-Server-SLE
+----
+
+* 프록시에서:
+
++
+
+[source, shell]
+----
+zypper in podman
+zypper in -t product Multi-Linux-Manager-Proxy-SLE
+----
+
+
++
+
+[IMPORTANT]
+====
+Before continuing, make sure that these packages are installed on the target system:
+* [package]``podman``
+** server: [package]``mgradm``, [package]``mgradm-bash-completion``
+** proxy: [package]``mgrpxy``, [package]``mgrpxy-bash-completion``
+====
+
++
+
+. Start the Podman service by rebooting the system, or running a command:
+
++
+
+[source, shell]
+----
+systemctl enable --now podman.service
+----
+
+____

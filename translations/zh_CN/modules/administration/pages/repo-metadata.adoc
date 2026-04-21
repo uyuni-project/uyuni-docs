@@ -1,0 +1,125 @@
+[[security-repo-metadata]]
+= 储存库元数据
+:revdate: 2024-12-16
+:page-revdate: {revdate}
+
+需有一个自定义 GPG 密钥才能为储存库元数据签名。
+
+[IMPORTANT]
+====
+要在服务器容器内访问外壳，请在容器主机上运行 [literal]``mgrctl term``。
+====
+
+.Procedure: Generating a custom GPG key
+[role=procedure]
+____
+. 以 root 用户身份使用 [command]``gpg`` 命令生成新密钥：
+
++
+----
+mgrctl exec -it -- gpg --full-generate-key
+----
+
+. 根据提示选择 [systemitem]``RSA`` 作为密钥类型，将大小指定为 2048 位，并为密钥选择适当的失效日期。
+    检查新密钥的细节，然后键入 [systemitem]``y`` 以确认。
+
+. 根据提示输入要与该密钥关联的名称和电子邮件地址。
+    如果需要，您还可以添加注释以帮助识别该密钥。如果您对用户身份设置感到满意，请键入 [systemitem]``O`` 以确认。
+
+. 根据提示输入通行口令以保护您的密钥。
+
+. 该密钥应自动添加到您的密钥环。
+    可以通过列出密钥环中的密钥进行检查：
+
++
+----
+mgrctl exec -- gpg --list-keys
+----
+
+. 在文本编辑器中打开 [filename]``/etc/rhn/signing.conf`` 配置文件并添加下面一行内容，将密钥环的口令添加到该文件：
+
++
+----
+GPGPASS="password"
+----
+____
+
+
+有关如何续订 GPG 密钥，请参见 xref:administration:troubleshooting/tshoot-sync.adoc[]。
+
+
+可以在命令行中使用 [command]``mgr-sign-metadata-ctl`` 命令来管理元数据签名。
+
+
+.Procedure: Enabling metadata signing
+[role=procedure]
+____
+. 您需要知道所要使用的密钥的短标识符。
+    可以简短格式列出可用的公共密钥：
+
++
+----
+mgrctl exec -- gpg --keyid-format short --list-keys
+...
+pub   rsa4096/3E7BFE0A 2019-04-02 [SC] [expires: 2029-04-01]
+      A43F9EC645ED838ED3014B035CFA51BF3E7BFE0A
+uid         [ultimate] SUSE Manager
+sub   rsa4096/118DE7FF 2019-04-02 [E] [expires: 2029-04-01]
+----
+
++
+
+. 使用 [command]``mgr-sign-metadata-ctl`` 命令启用元数据签名：
+
++
+----
+mgrctl exec -- mgr-sign-metadata-ctl enable 3E7BFE0A
+OK. Found key 3E7BFE0A in keyring.
+DONE. Set key 3E7BFE0A in /etc/rhn/signing.conf.
+DONE. Enabled metadata signing in /etc/rhn/rhn.conf.
+DONE. Exported key 3E7BFE0A to /srv/susemanager/salt/gpg/mgr-keyring.gpg.
+DONE. Exported key 3E7BFE0A to /var/spacewalk/gpg/<KEY_NAME>.key.
+NOTE. For the changes to become effective run:
+   mgr-sign-metadata-ctl regen-metadata
+----
+
+. 可以使用以下命令检查您的配置是否正确：
+
++
+----
+mgrctl exec -- mgr-sign-metadata-ctl check-config
+----
+
+. Restart the container for the configuration changes to be detected.
+
++
+----
+mgradm restart
+----
+
++
+. Schedule metadata regeneration to replace all metadata with new signed versions.
+
++
+----
+mgrctl exec -- mgr-sign-metadata-ctl regen-metadata
+----
+____
+
+
+还可以使用 [command]``mgr-sign-metadata-ctl`` 命令执行其他任务。使用 [command]``mgr-sign-metadata-ctl --help`` 可查看完整列表。
+
+储存库元数据签名是全局选项。启用后，将对服务器上的所有软件通道启用该选项。这意味着，连接到服务器的所有客户端需要信任新的 GPG 密钥才能安装或更新软件包。
+
+
+
+.Procedure: Importing GPG keys on clients
+[role=procedure]
+____
+. 将 GPG 密钥部署到客户端的过程适用于 Salt 状态。
+
+. 使用 {productname} {webui} 应用 Highstate。
+
+____
+
+有关 GPG 密钥查错的详细信息，请参见 xref:administration:troubleshooting/tshoot-sync.adoc[]。

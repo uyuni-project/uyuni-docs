@@ -1,0 +1,349 @@
+= Distribution Upgrade and Server Migration from 5.1 to 5.2
+:revdate: 2026-02-17
+:page-revdate: {revdate}
+
+
+[IMPORTANT]
+====
+* {productname} 5.1 must be stopped before the upgrade.
+====
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-hardened-tmpdir.adoc[leveloffset=+2]
+include::installation-and-upgrade:partial$snippet-ssl-requirements.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-hardened-tmpdir.adoc[leveloffset=+2]
+include::../../../../../partials/snippet-ssl-requirements.adoc[leveloffset=+1]
+endif::[]
+
+During a migration the server SSL certificate and CA chain are copied from the source server, meaning that only the database certificates are required.
+
+
+== {sl-micro} 6.1 to {sl-micro} 6.2
+
+
+
+This document provides the tested procedure to upgrade a {sl-micro} 6.1 host deployed with {productname} 5.1 Server to {sl-micro} 6.2 and migrate to {productname} {productnumber}.
+
+
+=== 前提条件
+
+* {productname} 5.1 is installed and running on {sl-micro} 6.1.
+* システムは登録済みであり、{scc}にアクティブなサブスクリプションがある。
+
+
+=== ディストリビューションのアップグレードとサーバ移行
+
+.Procedure: Migration from {productname} 5.1 to {productname} {productnumber}
+[role=procedure]
+____
+
+. 現在の製品ステータスを確認します。
+
++
+
+[source, console]
+----
+SUSEConnect --status-text
+----
+
++
+
+確認:
+
+* Base OS: `SL Micro 6.1`
+* Extension: `SUSE Multi-Linux Manager Server 5.1 Extension`
+
++
+
+. システムが更新されていることを確認します。
+
++
+
+[source, console]
+----
+transactional-update patch
+----
+
++
+
+--
+
+* パッチが適用された場合、移行を続行する前に、サーバを停止し、システムを再起動してください。
+
++
+
+[source, console]
+----
+mgradm stop
+reboot
+----
+
+* 更新が見つからなかった場合、移行ステップに直接進むことができます。
+
+--
+
++
+
+. 移行を開始します。
+
++
+
+[source, console]
+----
+transactional-update migration --auto-agree-with-licenses --gpg-auto-import-keys
+----
+
++
+
+Follow the prompts and select the available migration to **SUSE Linux Micro 6.2** and **{productname} Server Extension {productnumber}**.
+
++
+
+. サーバを停止し、再起動して変更を適用します。
+
++
+
+[source, console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. 再起動後のチェックを実行します。
+
++
+
+Verify {productname} extension and {productname} version:
+
++
+
+[source, console]
+----
+SUSEConnect --status-text
+mgradm --version
+----
+
++
+
+予想される出力:
+
+* Extension: [literal]``SUSE Multi-Linux Manager Server {productnumber} Extension``
+* Version: [literal]``mgradm version 5.2.0`` or higher
+
++
+
+. Verify PostgreSQL database version.
+
++
+
+[source, console]
+----
+podman ps
+----
+
++
+
+予想される出力:
+
+* [literal]``server:5.2.0`` or higher
+* [literal]``server-postgresql:5.2.0`` or higher
+
++
+
+. Verify running containers:
+
++
+
+[source, console]
+----
+podman ps
+----
+
++
+
+You should see all the expected server containers are up and running.
+
+____
+
+
+=== 移行の完了
+
+The server host system is now running {sl-micro} 6.2 with updated {productname} {productnumber} Server packages.
+
+If you have a {productname} 5.1 proxy connected to this server, proceed to the xref:installation-and-upgrade:container-deployment/mlm/migrations/proxy/proxy-mlm-51-52.adoc[Proxy Migration 5.1 > 5.2] guide to upgrade the proxy host.
+
+Validate your setup before resuming production operations.
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+
+== {sles} 15 SP7
+
+This document provides the procedure to upgrade a {sles} 15 SP7 host deployed with {productname} 5.1 Server to {productname} {productnumber}.
+
+
+=== 前提条件
+
+* {productname} 5.1 is installed and running on {sles} 15 SP7.
+* システムは登録済みであり、{scc}にアクティブなサブスクリプションがある。
+
+
+=== Server package update and migration
+
+.Procedure: Update {productname} components on {sles} 15 SP7
+[role=procedure]
+____
+
+. 現在の製品ステータスを確認します。
+
++
+
+[source, console]
+----
+SUSEConnect --status-text
+----
+
++
+
+確認:
+
+* Base OS: `SUSE Linux Enterprise Server 15 SP7`
+* Extension: `SUSE Multi-Linux Manager Server 5.1 Extension`
+
++
+
+. システムが更新されていることを確認します。
+
++
+
+[source, console]
+----
+zypper patch
+----
+
++
+
+If patches were applied, stop the server and then reboot before proceeding:
+
++
+
+[source, console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. Perform the migration to {productname} {productnumber}.
+
++
+
+[source, console]
+----
+zypper migration
+----
+
++
+
+Select to migrate to:
+
+* `{productname} Server Extension {productnumber}`
+
++
+
+. Stop the server and reboot.
+
++
+
+[source, console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. 再起動後のチェックを実行します。
+
++
+
+Verify {productname} extension:
+
++
+
+[source, console]
+----
+SUSEConnect --status-text
+----
+
++
+
+予想される出力:
+
+* Extension: [literal]``SUSE Multi-Linux Manager Server {productnumber} Extension``
+
++
+
+. Verify {productname} version.
+
++
+
+[source, console]
+----
+mgradm --version
+----
+
++
+
+予想される出力:
+
+* Version: [literal]``mgradm version 5.2.0`` or higher
+
++
+
+. Verify containers:
+
++
+
+[source, console]
+----
+podman ps
+----
+
++
+
+予想される出力:
+
+* [literal]``server:5.2.0`` or higher
+* [literal]``server-postgresql:5.2.0`` or higher
+
+____
+
+
+=== 移行の完了
+
+The server host system is now running {sles} 15 SP7 with updated {productname} {productnumber} Server packages.
+
+If you have a {productname} 5.1 proxy connected to this server, proceed to the xref:installation-and-upgrade:container-deployment/mlm/migrations/proxy/proxy-mlm-51-52.adoc[Proxy Migration 5.1 > 5.2] guide to upgrade the proxy host.
+
+Validate your setup before resuming production operations.
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]

@@ -1,0 +1,100 @@
+= {productname} 代理隔离的部署
+:revdate: 2025-04-28
+:page-revdate: {revdate}
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+== 什么是隔离的部署？
+
+
+隔离部署是指设置和操作与不安全网络（尤其是互联网）隔离的任何联网系统。这种部署通常用于军事设施、金融系统、关键基础架构等高安全性环境，以及处理敏感数据，因而必须防范其受到外部威胁的任何位置。
+
+[NOTE]
+====
+目前只有 {sl-micro} 支持隔离的部署。
+====
+
+
+== 通过虚拟机部署
+
+建议的安装方法是使用所提供的 {productname} 虚拟机映像选项，因为所需的全部工具和容器映像都已预先加载并且随时可用。
+
+有关安装 {productname} 代理虚拟机的详细信息，请参见xref:container-deployment/mlm/proxy-deployment-vm-mlm.adoc[将代理部署为虚拟机]。
+
+要升级 {productname} 代理，用户应按照xref:container-management/updating-proxy-containers.adoc[代理升级]中定义的过程操作。
+
+
+== 在 {sl-micro} 上部署 {productname}
+
+{productname} 还在 RPM 中提供了可在系统上安装的所需的全部容器映像。
+
+.过程：在隔离环境中的 {sl-micro} 上安装 {productname}
+[role=procedure]
+____
+. 安装 {sl-micro}。
+
+. 将代理主机操作系统作为 {productname} 服务器上的客户端进行引导。
+
+. 更新系统。
+
+. 安装工具软件包和映像包（将 $ARCH$ 替换为正确的体系结构）
+
++
+
+[source, shell]
+----
+transactional-update pkg install mgrpxy* mgrctl* suse-multi-linux-manager-5.1-$ARCH$-proxy-*
+----
+
+. 重引导。
+
+. 使用 mgrpxy 部署 {productname}。
+____
+
+
+有关在 {sl-micro} 上安装 {productname} 代理的详细信息，请参见xref:container-deployment/mlm/proxy-deployment-mlm.adoc[将代理部署为虚拟机]。
+
+要升级 {productname} 代理，用户应按照xref:container-management/updating-proxy-containers.adoc[代理升级]中定义的过程操作。
+
+
+== 公式映像
+
+部分公式（如 Bind 和 DHCP (Kea)）也使用容器。如果您计划在隔离环境中使用这些公式，需要拉取其映像、将映像保存为归档，然后加载到 {productname} 代理或其他受管系统中。
+
+映像可从 `registry.suse.com` 获取。
+
+.过程：为隔离环境获取公式映像
+[role=procedure]
+____
+. 在能够访问互联网的系统上，拉取所需映像。
+
++
+
+[source, shell]
+----
+podman pull registry.suse.com/suse/bind:latest
+podman pull registry.suse.com/suse/kea:2.6
+----
+
+. 将映像保存为 TAR 归档：
+
++
+
+[source, shell]
+----
+podman save -m -o formula-images.tar registry.suse.com/suse/bind:latest registry.suse.com/suse/kea:2.6
+----
+
+. 将 `formula-images.tar` 文件传输至隔离的系统。
+
+. 在隔离的系统上加载映像：
+
++
+
+[source, shell]
+----
+podman load -i formula-images.tar
+----
+____

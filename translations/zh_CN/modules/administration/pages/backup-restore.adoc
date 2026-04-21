@@ -1,0 +1,319 @@
+[[backup-restore]]
+= 备份和恢复
+:revdate: 2025-06-23
+:page-revdate: {revdate}
+
+本章包含需要备份的文件信息。您可以使用内置的备份和恢复解决方案 ([command]``mgradm backup``) 创建 {productname} 备份。本章还补充说明了当系统发生故障时如何从备份恢复数据。
+
+由于 {productname} 依赖数据库及已安装的程序和配置，因此备份安装的所有组件至关重要。请定期备份您安装的 {productname} 系统，以防止数据丢失并确保快速恢复。
+
+[IMPORTANT]
+====
+无论您使用哪种备份方法，可用空间必须是当前安装使用的空间量的至少三倍。空间不足可能导致备份失败，因此请经常检查可用空间。
+====
+
+
+
+[[backup-restore-old]]
+== 借助 smdba 禁用旧方法
+
+
+
+如果您全新安装了 {productname} {productnumber}，则可跳过该节内容。
+
+[NOTE]
+====
+随着内置解决方案的问世，借助 [command]``smdba`` 备份工具的旧方法已被弃用。如果您已从采用 [command]``smdba`` 的旧系统迁移至新解决方案，就必须禁用旧功能并去除旧备份归档。
+====
+
+您可以选择在迁移前禁用 [command]``smdba``（推荐操作），也可在完成迁移后的 {productname} {productnumber} 系统中执行该操作。
+
+
+.过程：迁移前禁用已安装 smdba 的旧方法
+[role=procedure]
+____
+
+本过程仅适用于仍安装有 smdba 的场景。
+
+ifeval::[{mlm-content} == true]
+
+SUSE Manager 4.3（非容器化安装）与 SUSE Manager 5.0（容器化安装）系统中执行的命令有所不同（适用于 5.0 版本，或迁移前的 4.3 版本）：
+
+SUSE Manager 4.3::
+在命令行中以 root 身份执行以下命令：
+
+[source, shell]
+----
+smdba backup-hot --enable=off
+----
+
+SUSE Manager 5.0::
+在容器主机的命令行中，以 root 身份执行以下命令：
+
+[source, shell]
+----
+mgrctl exec -- smdba backup-hot --enable=off
+----
+
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+. 在容器主机的命令行中，以 root 身份执行以下命令：
++
+[source, shell]
+----
+mgrctl exec -- smdba backup-hot --enable=off
+----
+
+endif::[]
+
+
+此命令会按如下方式更改 [path]``/var/lib/pgsql/data/postgresql.conf`` 文件中的 [option]``archive_command`` 参数：
+
+----
+archive_command = '/bin/true'
+----
+
+____
+
+至此，您的旧系统已准备就绪，可迁移至 {productname} {productnumber}。
+
+
+.过程：迁移后在 {productname} {productnumber} 上禁用旧方法
+[role=procedure]
+____
+请在迁移后执行此过程（此时 smdba 已不可用）。
+
+. 以 root 用户身份在容器主机中编辑 [path]``/var/lib/containers/storage/volumes/var-pgsql/_data/postgresql.conf`` 文件，并设置以下选项：
++
+----
+archive_mode = off
+archive_command = '/bin/true'
+----
+
+. 重启容器：
++
+[source, shell]
+----
+mgradm restart
+----
+____
+
+
+
+[[backup-product]]
+== 备份 {productname}
+
+
+要备份 {productname} 安装，最全面的方法是使用 [command]``mgradm backup create`` 命令。这种方法不仅可以节省备份管理时间，还可以在发生故障时更快地重新安装和重新同步。不过，这种方法需要大量磁盘空间，并且可能要花费很长时间才能完成备份。
+
+命令 [command]``mgradm backup create`` 可备份某个目录。这个目录可以是本地目录或挂载的远程存储空间。
+
+命令 [command]``mgradm backup create`` 允许自定义备份内容。有关所有可用选项，请参见 [command]``mgradm backup create --help``。
+
+
+=== {productname} 的完整备份
+
+{productname} 的完整备份包含以下组件的备份：
+
+- {productname} 卷
+- 数据库卷
+- podman 网络配置
+- podman 机密
+- {productname} systemd 服务
+- {productname} 容器映像
+
+[WARNING]
+====
+创建完整备份期间，{productname} 服务将自动停止。此期间的服务中断时间可能较长。备份完成后，服务会自动重启。
+====
+
+.过程：使用 [command]``mgradm backup create`` 创建完整备份
+[role=procedure]
+____
+. 在容器主机上，以 root 身份执行以下命令创建备份：
+
++
+
+[source, shell]
+----
+mgradm backup create $path
+----
+
++
+
+请将 [literal]``$path`` 替换为备份位置的路径。
+____
+
+=== {productname} 的部分备份
+
+[command]``mgradm backup create`` 工具允许创建部分备份。您可以跳过个别卷或所有卷、跳过数据库备份和映像。
+
+特别是，当跳过数据库备份时，系统会创建备份而不停止 {productname} 服务，备份可以作为两阶段备份流程中的一个阶段运行。
+
+[WARNING]
+====
+部分备份仅针对部分数据执行，并未考量这些数据与其他未备份部分之间可能存在的依赖关系。因此，部分备份无法保障备份与恢复操作的一致性。
+====
+
+.过程：创建部分备份（跳过数据库备份）
+[role=procedure]
+____
+. 在容器主机上，以 root 身份执行以下命令创建备份：
+
++
+[source, shell]
+----
+mgradm backup create --skipdatabase $path
+----
++
+请将 [literal]``$path`` 替换为备份位置的路径。
+____
+
+.过程：创建部分备份（跳过卷）
+[role=procedure]
+____
+. 在容器主机上，以 root 身份执行以下命令创建备份：
+
++
+
+[source, shell]
+
+----
+mgradm backup create --skipvolumes $volumes $path
+----
+
++
+
+请将 [literal]``$path`` 替换为备份位置的路径。
+
++
+
+请将 [literal]``$volumes`` 替换为备份中要排除的某个卷或一系列以逗号分隔的卷名称。
+
++
+
+使用 [literal]``all`` 可以跳过所有卷（数据库卷除外）。
+____
+
+
+=== 备份额外的卷
+
+命令 [command]``mgradm backup`` 可使用 {productname} 卷的内部列表。如果安装期间配置了其他卷，或有其他卷需要添加到备份中，则需使用 [command]``--extravolumes $volumes`` 指定这些卷。
+
+.过程：创建包含其他自定义卷的备份
+[role=procedure]
+____
+. 在容器主机上，以 root 身份执行以下命令创建备份：
+
++
+
+[source, shell]
+----
+mgradm backup create --extravolumes $volume $path
+----
+
++
+
+请将 [literal]``$path`` 替换为备份位置的路径。
+
++
+
+请将 [literal]``$volumes`` 替换为备份中要包含的某个卷或一系列以逗号分隔的卷名称。
+
+____
+
+
+=== 执行手动数据库备份
+
+.过程：执行手动数据库备份
+[role=procedure]
+____
+. 请为备份分配永久存储空间。
+
+. 在 {productname} 容器主机的命令提示符处，以 root 身份执行以下命令：
+
++
+
+[source, shell]
+----
+mgradm backup create --skipvolumes all --skipconfig --skipimages $path
+----
+____
+
+
+[[restore-product]]
+== 从现有备份恢复 {productname}
+
+从现有备份恢复 {productname} 时，系统将枚举卷、映像和配置的备份以进行恢复。与创建备份的场景不同，恢复操作不使用内部卷列表，而是自动检测备份中存在的所有卷或映像。
+
+收集待恢复项目列表后，会执行存在性和完整性检查。存在性检查用于确保恢复备份时不会意外覆盖现有卷、映像或配置。完整性检查通过计算备份项目的校验和完成。
+
+两项检查均通过后，才会执行实际的备份恢复操作。
+
+[IMPORTANT]
+====
+恢复操作完成后，{productname} 服务不会自动启动。
+====
+
+.过程：从现有备份恢复
+[role=procedure]
+____
+. 在容器主机上以 root 身份运行以下命令，重新部署 {productname} 服务器：
+
++
+
+[source, shell]
+----
+mgradm stop
+mgradm backup restore $path
+mgradm start
+----
+
++
+
+请将 [literal]``$path`` 替换为备份位置的路径。
+____
+
+验证备份操作用时可能会很长。如果可通过其他方法确保备份完整性，则可以使用 [command]``--skipverify`` 选项跳过验证。
+
+如果出于某些原因需要跳过恢复备份中的某个卷，可以使用 [command]``--skipvolumes $volumes`` 选项。
+
+
+
+=== 恢复备份后建议执行的步骤
+
+.过程：恢复 {productname} 后建议执行的步骤
+[role=procedure]
+____
+
+. 使用 {productname} {webui} 或在容器中的命令提示符处使用 [command]``mgr-sync`` 工具重新同步您的 {productname} 储存库。您可以选择重新注册产品，或跳过注册和 SSL 证书生成部分。
+
+. On the container host, check whether you need to restore [path]``/var/lib/containers/storage/volumes/var-spacewalk/_data/packages/``. If [path]``/var/lib/containers/storage/volumes/var-spacewalk/_data/packages/`` was not in your backup, you need to restore it. If the source repository is available, you can restore [path]``/var/lib/containers/storage/volumes/var-spacewalk/_data/packages/`u with a complete channel synchronization:
+
++
+
+[source, shell]
+----
+mgrctl exec -ti -- mgr-sync refresh --refresh-channels
+----
+
+. 安排在下次启动 [command]``rhn-search`` 服务时重新创建搜索索引。
+
++
+
+此命令仅生成调试消息，而不生成错误消息。
+
++
+
+在容器主机上执行以下命令：
+
++
+
+[source, shell]
+----
+mgrctl exec -ti -- rhn-search cleanindex
+----
+
+____

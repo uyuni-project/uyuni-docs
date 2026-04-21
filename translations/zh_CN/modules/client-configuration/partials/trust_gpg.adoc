@@ -1,0 +1,72 @@
+操作系统要么直接信任自己的 GPG 密钥，要么至少将它们与最小系统一起安装，但通过其他 GPG 密钥签名的第三方软件包需要手动处理。客户端可以在不信任 GPG 密钥的情况下成功引导，但除非密钥受信任，否则您将无法安装新的客户端工具软件包或更新软件包。
+
+客户端现在使用为软件通道输入的 GPG 密钥信息来管理受信任密钥。如果将具有 GPG 密钥信息的软件通道指派给客户端，当通道刷新后或从此通道安装第一个软件包后，系统就会信任该密钥。
+
+软件通道页面中的 GPG 密钥 URL 参数可以包含以空格分隔的多个密钥 URL。如果其为文件 URL，则必须在使用软件通道之前在客户端上部署 GPG 密钥文件。
+
+基于 {redhat} 的客户端的客户端工具通道的 GPG 密钥会部署到客户端的 [path]``/etc/pki/rpm-gpg/`` 中，并可通过文件 URL 引用。
+
+// SUSE Liberty Linux not available at Uyuni for now
+
+ifeval::[{mlm-content} == true]
+对于 {sll} 客户端的 GPG 密钥，情况也是如此。
+endif::[]
+
+仅当为客户端指派了软件通道时，系统才会导入并信任这些密钥。
+
+[NOTE]
+====
+由于基于 Debian 的系统仅会对元数据签名，因此不需要为各个通道指定确切的密钥。如果用户按 xref:administration:repo-metadata.adoc[] 中的“使用自己的 GPG 密钥”所述配置了自己的 GPG 密钥来对元数据签名，系统会自动部署并信任该密钥。
+====
+
+
+== 用户定义的 GPG 密钥
+
+用户可以定义要部署到客户端的自定义 GPG 密钥。
+
+通过提供某些 pillar 数据并在 {salt} 文件系统中提供 GPG 密钥文件，系统会自动将它们部署到客户端。
+
+这些密钥会分别部署到 [path]``/etc/pki/rpm-gpg/``（在基于 RPM 的操作系统上）和 [path]``/usr/share/keyrings/``（在 Debian 系统上）中：
+
+为您要将密钥部署到的客户端定义 pillar 键 [literal]``custom_gpgkeys`` 并列出密钥文件名。
+// I think the cat command is here to show the contents of the file.
+// In this case, the cat is superfluous.
+----
+cat /srv/pillar/mypillar.sls
+custom_gpgkeys:
+  - my_first_gpg.key
+  - my_second_gpgkey.gpg
+----
+
+此外，在 {salt} 文件系统中创建名为 [path]``gpg`` 的目录，并将 [literal]``custom_gpgkeys`` pillar 数据中所指定的 GPG 密钥文件存储在该目录下。
+// I think the ls command is here to show the contents of the directory.
+// In this case, the ls is superfluous.
+
+----
+ls -la /srv/salt/gpg/
+/srv/salt/gpg/my_first_gpg.key
+/srv/salt/gpg/my_second_gpgkey.gpg
+----
+
+密钥将部署到客户端的 [path]``/etc/pki/rpm-gpg/my_first_gpg.key`` 和 [path]``/etc/pki/rpm-gpg/my_second_gpgkey.gpg`` 中。
+
+最后一步是将 URL 添加到软件通道的“GPG 密钥 URL”字段中。请导航到menu:软件[管理 > 通道]，然后选择要修改的通道。将值 [literal]``file:///etc/pki/rpm-gpg/my_first_gpg.key`` 添加到 [guimenu]``GPG 密钥 URL``中。
+
+
+== 引导脚本中的 GPG 密钥
+
+.过程：在客户端上使用引导脚本信任 GPG 密钥
+. 在 {productname} 服务器上的命令提示符处，检查 [path]``/srv/www/htdocs/pub/`` 目录的内容。此目录包含所有可用的公共密钥。记下为您正在注册的客户端指派的通道适用的密钥。
+. 打开相关的引导脚本，找到 [systemitem]``ORG_GPG_KEY=`` 参数并添加所需的密钥。例如：
++
+----
+uyuni-gpg-pubkey-0d20833e.key
+----
++
+您无需删除任何以前存储的密钥。
+
+
+[IMPORTANT]
+====
+信任 GPG 密钥对于客户端的安全非常重要。由管理员来决定需要哪些密钥，可以信任哪些密钥。如果不信任 GPG 密钥，便无法为客户端指派软件通道。
+====

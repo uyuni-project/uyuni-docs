@@ -1,0 +1,110 @@
+[[contact-methods-pushssh]]
+= SSH 推送（使用隧道）联系方法
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+
+
+SSH 推送（使用隧道）([literal]``ssh-push-tunnel``) 用于客户端无法直接访问 {productname} 服务器的环境。在此环境中，客户端位于受防火墙保护的区域（称为 DMZ）。DMZ 内的所有系统均无权打开连至内部网络（包括 {productname} 服务器）的连接。
+
+// CHECKIT: Maybe, we can delete the following sentence.  It is already
+// described in the second "important" admonition
+换句话说，SSH 推送（利用隧道）还会创建从客户端到 {productname} 服务器的反向隧道，而不仅是从服务器到客户端的隧道。
+
+服务器使用 SSH 定期联系客户端，以签入和执行安排的操作和事件。
+
+[IMPORTANT]
+====
+在使用 SSH 推送方法管理的客户端上，目前不支持使用置备模式重新安装系统。
+====
+
+
+[IMPORTANT]
+====
+隧道用于通过加密隧道提供对服务器的访问。指派给 SSH 推送客户端（使用隧道）的储存库只会通过此隧道提供，因此无法直接从客户端系统使用软件包管理器工具，因为储存库仅在隧道已启动时才可用。换而言之，仅当会话由服务器发起时才可访问储存库。客户端上的所有软件包管理操作只能从服务器端执行。
+====
+
+
+[IMPORTANT]
+====
+请在服务器容器内执行相应步骤之前使用 [literal]``mgrctl term``。
+====
+
+要通过 SSH 实现隧道连接，需要提供一个端口号用于通过 HTTPS 建立隧道。默认使用的端口号为 [literal]``1233``。要在容器内重写此端口号，可以在 [path]``/etc/rhn/rhn.conf`` 中添加大于 1024 的自定义端口号：
+
+----
+ssh_push_port_https = high_port
+----
+
+更改此配置参数后，必须重启 [systemitem]``salt-secrets-config.service``、[systemitem]``tomcat.service`` 和 [systemitem]``taskomatic.service`` 等服务。为了涵盖全部所需服务，最好以 root 身份重启 {productname} 服务器。在容器主机（在容器外部）上输入：
+
+----
+mgradm restart
+----
+
+
+////
+[IMPORTANT]
+====
+Use [literal]``mgrctl term`` before running steps inside the server container.
+====
+////
+
+出于安全原因，您可能需要结合使用 sudo 和 SSH，以非特权用户身份而不是 root 身份访问系统。
+
+
+.过程：配置非特权 SSH 访问
+. 在每个客户端系统上，创建相应的非特权用户。
+. 在每个客户端系统上，编辑 [filename]``sudoers`` 文件：
++
+----
+sudo visudo
+----
+. 在 [filename]``sudoers`` 文件末尾添加下面一行，以向用户授予 [command]``sudo`` 访问权限。以在 {webui} 中引导客户端的用户的名称替换 [systemitem]``<user>``：
++
+----
+<user>  ALL=NOPASSWD: /usr/bin/python3, /var/tmp/venv-salt-minion/bin/python
+----
++
+[NOTE]
+====
+此过程无需口令便可授予 root 访问权限，而注册客户端需要提供口令。客户端成功安装后会以 root 特权运行，因此将不再需要该访问权限。客户端成功安装之后，建议您从 [path]``sudoers`` 文件中去除该行。
+====
+
+. 在 {productname} 服务器容器内，编辑 [path]``/etc/rhn/rhn.conf`` 配置文件，并添加或修改下面一行以包含非特权用户名：
++
+----
+ssh_push_sudo_user = <user>
+----
+
+
+更改此配置参数后，必须重启 [systemitem]``salt-secrets-config.service``、[systemitem]``tomcat.service`` 和 [systemitem]``taskomatic.service`` 等服务。为了涵盖全部所需服务，最好以 root 身份重启 {productname} 服务器。在容器主机（在容器外部）上输入：
+
+----
+mgradm restart
+----
+
+需要使用 {webui} 或 API 将这些客户端注册到 {productname} 服务器。
+
+开始前，需要确保已指定要用于 SSH 隧道的端口。如果在更改端口号之前已注册客户端，则需要使用重新激活密钥再次注册客户端。
+
+* 有关引导的详细信息，请参见 xref:client-configuration:registration-bootstrap.adoc[]。
+* 有关引导的详细信息，请参见 xref:client-configuration:activation-keys.adoc#activation-keys-reactivation[]。
+
+
+
+.示例：通过 API 使用 SSH 推送（利用隧道）方法
+
+可以使用 API 来管理要使用的联系方法。以下示例 Python 代码将联系方法设为 ``ssh-push-tunnel``。
+
+----
+client = xmlrpclib.Server(MLM_HOST + "/rpc/api", verbose=0)
+key = client.auth.login(MLM_LOGIN, MLM_PASSWORD)
+client.system.setDetails(key, 1000012345, {'contact_method' : 'ssh-push-tunnel'})
+----
+
+有效值为：
+
+* `default` (pull)
+* `ssh-push`
+* `ssh-push-tunnel`
+

@@ -1,0 +1,131 @@
+[[rbac]]
+= 基于角色的访问控制 (RBAC)
+:revdate: 2025-06-18
+:page-revdate: {revdate}
+
+基于角色的访问控制 (RBAC) 是一种安全机制，它根据用户被分配的角色来限制授权用户对资源的访问权限。在 {productname} 中，RBAC 可确保用户仅能执行其获得明确授权的操作以及访问相关资源，从而提升安全性并简化管理流程。
+
+RBAC 的核心原则包括：
+
+* **最小权限原则：**仅授予用户执行其任务所需的必要访问权限。
+* **精细化控制：**针对特定功能提供精细的控制能力。
+* **职责分离：**防止单个用户对关键流程拥有过多控制权。
+* **可审计性：**能够清晰跟踪用户的操作及权限配置。
+
+
+[[rbac-key-concepts]]
+== RBAC 核心概念
+
+
+理解以下核心概念对于高效管理 RBAC 至关重要：
+
+* *Role:* A collection of permissions defining a specific set of capabilities within {productname}. 
+
++
+
+[IMPORTANT]
+
+====
+
+角色分配给用户后，用户将获得该角色对应的所有聚合权限。
+
+====
+
+* **权限：**原子级的授权项，允许用户在 {productname} 中执行特定操作、访问特定网页或调用特定 API 端点。在 {productname} 中，权限通过名称空间及其访问模式来表示。
+* **用户：**与 {productname} 进行交互的个人帐户。用户可被分配一个或多个角色。
+* **名称空间：**粒度化的访问控制单元，以树形结构组织。大多数名称空间均设有独立的“查看”或“修改”模式。
+
+
+[[user-roles]]
+== 在 {productname} 中使用角色
+
+{productname} 提供了预定义角色，并允许您定义额外的自定义角色，且可选择从多个其他角色的组合继承权限。
+
+
+=== 预定义角色
+
+有关预定义角色及其说明的完整列表，请参见 xref:administration:users.adoc#administrator-roles[]。
+
+
+=== 定义额外角色
+
+要定义额外角色，您可以执行以下操作：
+
+* 选择多个现有角色，从中继承权限。
+* 指定额外的名称空间，以授予访问权限。
+
+
+[[namespaces-fine-grained-access]]
+== 用于精细化访问控制的名称空间
+
+名称空间提供精细的访问控制，以树形结构组织。对于大多数名称空间，其内部访问权限可通过“查看”和“修改”模式进一步细化。
+
+[[namespace-example]]
+.示例：映像管理相关名称空间和访问模式
+[cols="1,1,3", options="header"]
+|===
+| 名称空间             | 访问模式   | 说明
+| ``cm.build``          | 修改        | 构建容器映像或 Kiwi 映像
+| ``cm.image.import``   | 修改        | 从已注册的映像存储区导入容器映像
+| ``cm.image.list``     | 查看          | 列出所有映像
+| ``cm.image.list``     | 修改        | 删除映像
+| ``cm.image.overview`` | 查看          | 查看映像详细信息、补丁、软件包、构建日志及群集信息
+| ``cm.image.overview`` | 修改        | 检查、重新构建、删除映像
+| ``cm.profile.details``| 查看          | 查看映像配置文件详细信息
+| ``cm.profile.details``| 修改        | 创建映像配置文件、编辑配置文件详细信息
+| ``cm.profile.list``   | 查看          | 列出所有映像配置文件
+| ``cm.profile.list``   | 修改        | 删除映像配置文件
+| ``cm.store.details``  | 查看          | 查看映像存储区详细信息
+| ``cm.store.details``  | 修改        | 创建映像存储区、编辑存储区详细信息
+| ``cm.store.list``     | 查看          | 列出所有映像存储区
+| ``cm.store.list``     | 修改        | 删除映像存储区
+|===
+
+名称空间及其说明的完整列表可通过调用 ``access.listNamespaces`` API 方法获取。有关详细信息（包括请求和响应格式），请参见 {productname} API 文档。
+
+
+[[managing-rbac]]
+== RBAC 管理
+
+目前只能通过 API 来管理 RBAC 角色和权限。要通过 Web UI 为用户分配角色，请参见 xref:administration:users.adoc[]。
+
+
+=== 通过 API 管理 RBAC
+
+{productname} API 提供了以编程方式管理角色、权限及用户分配的相关方法。
+
+
+==== ``access`` API
+
+以下 API 方法用于管理角色及其关联的访问权限：
+
+* ``listNamespaces``：列出 {productname} 中可用的名称空间、访问模式及其说明。
+* ``listPermissions``：列出某个角色的已授权名称空间。
+* ``listRoles``：列出 {productname} 中的现有角色。
+* ``createRole``：创建新角色，可选择从现有角色复制权限。
+* ``deleteRole``：删除角色。
+* ``grantAccess``：授予对名称空间的访问权限。
+* ``revokeAccess``：撤销对名称空间的访问权限。
+
+
+==== ``user`` API
+
+以下 API 方法用于管理用户与角色的分配关系：
+
+* ``listPermissions``：列出某个用户的有效权限。
+* ``listRoles``：列出某个用户分配到的角色。
+* ``addRole``：为某个用户分配角色。
+* ``removeRole``：去除某个用户的角色。
+
+有关详细的 API 文档（包括请求和响应格式），请参见 {productname} API 参考手册。
+
+
+[[rbac-best-practices]]
+== RBAC 最佳实践
+
+遵循以下最佳实践有助于维护安全、高效且易于管理的 RBAC 环境：
+
+* **最小权限原则：**始终仅授予用户完成其职责所需的最低权限，避免授予过于宽泛的权限。
+* **定期审查：**定期审查用户分配到的角色和权限，确保其仍然适用且符合当前的安全策略。
+* **记录角色：**为您创建的每个自定义角色清晰记录其用途和权限。
+* **职责分离：**设计并应用能够强制执行职责分离的角色，防止单个用户对关键流程拥有过多控制权。

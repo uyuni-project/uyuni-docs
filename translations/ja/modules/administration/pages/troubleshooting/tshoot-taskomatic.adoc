@@ -1,0 +1,59 @@
+[[troubleshooting-taskomatic]]
+= Taskomaticのトラブルシューティング
+:revdate: 2024-05-15
+:page-revdate: {revdate}
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+
+リポジトリメタデータの再生成は比較的集中的なプロセスであるため、Taskomaticが完了するまでに数分かかる可能性があります。 また、Taskomaticがクラッシュした場合、リポジトリメタデータの再生成が中断される可能性があります。
+
+[IMPORTANT]
+====
+サーバコンテナ内でシェルにアクセスするには、コンテナホストで[literal]``mgrctl term``を実行します。
+====
+
+Taskomatic がまだ実行されている場合、またはプロセスがクラッシュした場合は、{webui}でパッケージ更新が使用可能に見える場合がありますが、クライアントに表示されず、クライアントを更新しようとすると失敗します。 この場合、[command]``zypper ref``コマンドを使用すると、次のようなエラーが表示されます。
+
+----
+Valid metadata not found at specified URL
+----
+
+これを修正するには、Taskomaticがまだリポジトリメタデータを生成中であるか、またはクラッシュが発生した可能性があるかどうかを判断します。 クライアントの更新が正しく実行されるように、メタデータの再生成が完了するまで待つか、クラッシュ後にTaskomaticを再起動します。
+
+
+
+.プロシージャ: Taskomaticの問題の解決
+
+. {productname}サーバで、[path]``/var/log/rhn/rhn_taskomatic_daemon.log``ファイルを確認して、メタデータ再生成プロセスがまだ実行されているか、クラッシュが発生したかどうかを判断します。
+. taskomaticを再起動します。
++
+----
+service taskomatic restart
+----
++
+. Taskomaticログファイルで、次のような開始および終了行を検索することで、メタデータ再生成に関連するセクションを特定できます。
++
+----
+<YYYY-DD-MM> <HH:MM:SS>,174 [Thread-584] INFO  com.redhat.rhn.taskomatic.task.repomd.RepositoryWriter - Generating new repository metadata for channel 'cloned-2018-q1-sles12-sp3-updates-x86_64'(sha256) 550 packages, 140 errata
+
+...
+
+<YYYY-DD-MM> <HH:MM:SS>,704 [Thread-584] INFO  com.redhat.rhn.taskomatic.task.repomd.RepositoryWriter - Repository metadata generation for 'cloned-2018-q1-sles12-sp3-updates-x86_64' finished in 4 seconds
+----

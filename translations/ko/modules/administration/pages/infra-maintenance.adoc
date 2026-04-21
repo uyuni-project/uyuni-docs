@@ -1,0 +1,119 @@
+[[infra-maintenance]]
+= 인프라 유지보수 작업
+:revdate: 2025-05-27
+:page-revdate: {revdate}
+
+예정된 작동 중지 시간 기간 관련 작업 시 {productname} 서버의 중요한 작동 중지 시간 전, 도중, 이후에 수행해야 하는 모든 작업을 기억하는 것은 어려울 수 있습니다. 서버 간 동기화 슬레이브 서버 또는 {productname} 프록시 등 {productname} 서버 관련 시스템도 영향을 받으므로 고려해야 합니다.
+
+{suse}는 항상 {productname} 인프라를 최신 상태로 유지할 것을 권장합니다. 여기에는 서버, 프록시 및 빌드 호스트가 포함됩니다. {productname} 서버를 업데이트된 상태로 유지하지 않으면 필요할 때 환경의 일부를 업데이트하지 못할 수 있습니다.
+
+이 섹션에는 각 단계를 수행하는 추가 정보 링크와 작동 중지 시간 기간에 실행하는 검사 목록이 포함되어 있습니다.
+
+
+
+== 서버
+
+
+.절차: 서버 확인
+[role=procedure]
+____
+. 최신 업데이트를 적용합니다.
+
+. 필요한 경우, 최신 서비스 팩으로 업그레이드합니다.
+
+. Run [command]``podman ps`` and check whether all required services are up and running.
+____
+
+On {sles} {bci-mlm}, you can install updates using a package manager:
+
+* {yast} 사용에 대한 자세한 내용은 link:{sles-base-os-documentation}/cha-onlineupdate-you.html[]에서 확인할 수 있습니다.
+* zypper 사용에 대한 자세한 내용은 link:{sles-base-os-documentation}/cha-sw-cl.html#sec-zypper[]에서 확인할 수 있습니다.
+
+On {sl-micro} {microversion}, you can install updates using the [command]``transactional-update`` command. For information on using [command]``transactional-update``, see https://documentation.suse.com/sle-micro/6.1/html/Micro-transactional-updates/transactional-updates.html.
+
+
+기본적으로 {productname} 서버에 대해 여러 업데이트 채널이 구성 및 활성화되어 있습니다. 새 패키지와 업데이트된 패키지를 자동으로 사용할 수 있습니다.
+
+
+ifeval::[{mlm-content} == true]
+
+{susemgr}을 최신 상태로 유지하려면 {scclongform}에 직접 연결하거나 {rmtool}(RMT)을(를) 사용합니다. RMT를 연결이 끊긴 환경의 로컬 설치 소스로 사용할 수 있습니다.
+
+endif::[]
+
+
+ifeval::[{mlm-content} == true]
+
+시스템에서 업데이트 채널을 사용할 수 있는지 확인할 수 있는 명령은 다음과 같습니다.
+
+----
+zypper lr
+----
+
+다음과 유사한 형태로 출력됩니다.
+
+----
+Name                                                   | Enabled | GPG Check | Refresh
+-------------------------------------------------------+---------+-----------+--------
+SLE-Module-Basesystem15-SP7-Pool                       | Yes     | (r ) Yes  | No
+SLE-Module-Basesystem15-SP7-Updates                    | Yes     | (r ) Yes  | Yes
+SLE-Module-Containers15-SP7-Pool                       | Yes     | (r ) Yes  | No
+SLE-Module-Containers15-SP7-Updates                    | Yes     | (r ) Yes  | Yes
+SLE-Module-Python3-15-SP7-Pool                         | Yes     | (r ) Yes  | No
+SLE-Module-Python3-15-SP7-Updates                      | Yes     | (r ) Yes  | Yes
+SLE-Product-SLES15-SP7-Pool                            | Yes     | (r ) Yes  | No
+SLE-Product-SLES15-SP7-Updates                         | Yes     | (r ) Yes  | Yes
+SUSE-Multi-Linux-Manager-Server-SLE-5.2-Pool           | Yes     | (r ) Yes  | No
+SUSE-Multi-Linux-Manager-Server-SLE-5.2-Updates        | Yes     | (r ) Yes  | Yes
+SLE-Module-Server-Applications15-SP7-Pool              | Yes     | (r ) Yes  | No
+SLE-Module-Server-Applications15-SP7-Updates           | Yes     | (r ) Yes  | Yes
+SLE-Module-Systems-Management-15-SP7-Pool              | Yes     | (r ) Yes  | No
+SLE-Module-Systems-Management-15-SP7-Updates           | Yes     | (r ) Yes  | Yes
+----
+
+endif::[]
+
+
+ifeval::[{mlm-content} == true]
+
+{productname} releases maintenance updates (MUs) to provide newer packages. Maintenance updates are indicated with a new version number. For example, the major release 5.2 is incremented to 5.2.1 when an MU is released.
+
+{webui}의 탐색 모음 하단을 보면 실행 중인 버전을 확인할 수 있습니다. [literal]``api.getVersion()`` XMLRPC API 호출로 버전 번호를 가져올 수도 있습니다.
+
+endif::[]
+
+
+
+=== 클라이언트 도구
+
+서버가 업데이트되면 클라이언트의 일부 도구도 업데이트하는 것이 좋습니다. 클라이언트에서 [package]``salt-minion``, [package]``zypper`` 및 기타 관련 관리 패키지를 업데이트하는 것은 엄격한 요구 사항이 아니지만 일반적으로 모범 사례입니다. 예를 들어, 서버의 유지보수 업데이트에서는 주요 새 Salt 버전이 도입될 수 있습니다. 그러한 경우 Salt 클라이언트는 계속 작동하지만 나중에 문제가 발생할 수 있습니다. 이를 방지하기 위해 {suse}는 [package]``venv-salt-minion``이 항상 안전하게 업데이트될 수 있도록 보장합니다.
+
+
+
+== 서버 간 동기화 슬레이브 서버
+
+서버 간 동기화 슬레이브 서버를 사용 중인 경우 {productname} 서버 업데이트 완료 후 업데이트합니다.
+
+자세한 내용은 xref:specialized-guides:large-deployments/iss_v2.adoc[서버 간 동기화 - 버전 2]에서 확인할 수 있습니다.
+
+
+
+== 모니터링 서버
+
+Prometheus용 모니터링 서버를 사용 중인 경우 {productname} 서버 업데이트가 완료된 후 업데이트하십시오.
+
+모니터링에 대한 자세한 내용은 xref:administration:monitoring.adoc[]에서 확인할 수 있습니다.
+
+
+
+== 프록시
+
+{productname} 서버 업데이트가 완료되는 즉시 프록시를 업데이트해야 합니다.
+
+일반적으로 다른 버전의 서버에 연결된 프록시를 실행하는 기능은 지원되지 않습니다. 유일한 예외는 서버가 먼저 업데이트되어 프록시가 이전 버전을 일시적으로 실행할 수 있을 것으로 예상되는 업데이트 기간 동안입니다.
+
+
+[WARNING]
+====
+항상 서버를 먼저 업그레이드한 다음 프록시를 업그레이드하십시오.
+====

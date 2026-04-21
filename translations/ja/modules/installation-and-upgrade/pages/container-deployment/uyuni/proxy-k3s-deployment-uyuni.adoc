@@ -1,0 +1,68 @@
+[[installation-proxy-containers-k3s-uyuni]]
+= K3sへの{productname}プロキシの配備
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+
+[[installation-proxy-containers-k3s-k3s]]
+== K3sのインストール
+
+
+コンテナホストマシンに[literal]``K3s``をインストールします([literal]``<K3S_HOST_FQDN>``はK3sホストのFQDNに置き換えます)。
+
+----
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--tls-san=<K3S_HOST_FQDN>" sh -
+----
+
+
+[[installation-proxy-containers-k3s-helm]]
+== ツールのインストール
+
+インストールには[literal]``mgrpxy``パッケージと[literal]``helm``パッケージが必要です。
+
+インストーラスクリプトを使用してHelmをインストールします。
+----
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
+----
+
+詳細については、https://helm.sh/docs/intro/install/#from-scriptを参照してください。
+
+[literal]``mgrpxy``パッケージはコンテナのutilsリポジトリで利用可能です。https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable:/ContainerUtils/で、ディストリビューションに一致するパッケージを選択します。
+
+.プロシージャ
+. Leap Microにパッケージをインストールするには、次のコマンドを実行します。
++
+----
+transactional-update pkg install mgrpxy
+----
+. 再起動します。
+
+
+
+[[installation-proxy-containers-k3s-deploy]]
+== {productname}プロキシHelmチャートの配備
+
+{productname}プロキシポッドで使用するボリュームのストレージを設定するには、次のクレームに対して永続ボリュームを定義します。ストレージ設定をカスタマイズしない場合は、K3sによって自動的にストレージボリュームが作成されます。
+
+永続ボリュームのクレームの名前は次のとおりです。
+
+* [literal]``squid-cache-pv-claim``
+* [literal]``/package-cache-pv-claim``
+* [literal]``/tftp-boot-pv-claim``
+
+xref:installation-and-upgrade:container-deployment/uyuni/proxy-container-setup-uyuni.adoc[]に記載されているように、{productname}プロキシの設定を作成します。設定[literal]``tar.gz``ファイルをコピーしてインストールします。
+
+----
+mgrpxy install kubernetes /path/to/config.tar.gz
+----
+
+詳細については、以下を参照してください。
+
+* link:https://kubernetes.io/docs/concepts/storage/persistent-volumes/[] (Kubernetes)
+* link:https://rancher.com/docs/k3s/latest/en/storage/[] (K3s)ドキュメント

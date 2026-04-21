@@ -1,0 +1,153 @@
+[[proxy-install-vmware]]
+= {productname}プロキシの仮想マシンとしての配備 - VMware
+:revdate: 2025-06-26
+:page-revdate: {revdate}
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+この章では、{productname} {productnumber}プロキシをイメージとして配備するために必要な仮想マシン設定について説明します。このインストールでは、VMwareをサンドボックスとして使用します。
+
+
+
+// FIXME: make this section a snippet or move it to a general intro for both,
+//        KVM and VMware
+== 利用可能なイメージ
+
+
+[IMPORTANT]
+====
+{productname}プロキシを配備する際に推奨される方法は、利用可能な次のイメージの1つを使用することです。これらのイメージにはすべてのツールが含まれており、配備が容易になります。
+====
+
+{productname} {productnumber}プロキシのイメージはlink:https://www.suse.com/download/suse-manager/[{productname} {productnumber} VM images]で入手できます。
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-warn-images-sl-micro.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-warn-images-sl-micro.adoc[]
+endif::[]
+
+[NOTE]
+====
+生イメージの準備の詳細については、link:https://documentation.suse.com/sle-micro/6.1/html/Micro-deployment-raw-images-virtual-machines/index.html#deployment-preparing-configuration-device[]を参照してください。
+
+セルフインストールイメージの詳細については、link:https://documentation.suse.com/sle-micro/6.1/html/Micro-deployment-selfinstall-images/index.html[]を参照してください。
+====
+
+// FIXME more archs supported?
+
+.利用可能なプロキシイメージ
+[cols="3, 3", options="header"]
+|===
+| アーキテクチャ | イメージの形式
+
+| aarch64| qcow2、vmdk
+
+| x86_64  | qcow2、vmdk、raw、セルフインストーラ
+
+|===
+
+
+[[proxy-quickstart.sect.vmware.settings]]
+== 仮想マシン設定 - VMware
+
+このセクションでは、VMware環境内の{productname}プロキシストレージパーティションに不可欠な追加の仮想ディスクの作成に重点を置いて、 VMware設定について説明します。
+
+[NOTE]
+====
+このセクションでは、最低要件を指定しています。これらは、クライアントが1つある1つのプロキシなど、テスト用の簡易的なインストールに適しています。
+
+運用環境を使用する場合、ディスク容量に関する背景情報が必要な場合は、xref:installation-and-upgrade:hardware-requirements.adoc[]を参照してください。
+====
+
+.プロシージャ: VMware仮想マシンを作成する
+
+. {productname}プロキシ[filename]``.vmdk``ファイルをダウンロードし、コピーをVMwareストレージに転送します。
+
+. VMware Webインタフェースを使用して、アップロードされた[filename]``.vmdk``ファイルのコピーを作成します。 これにより、提供された[filename]``.vmdk``ファイルがvSphereハイパーバイザーに適した形式に変換されます。
+
+. ゲストOSファミリ[systemitem]``Linux``およびゲストOSバージョン{sle} 15 (64ビット)に基づいて、新しい仮想マシンを作成し、名前を付けます。
+
+. 100GB以上の[systemitem]``Hard Disk 2``を追加します。
+
+. RAMおよびCPU数を最小値で設定します。*)
+
+. 必要に応じてネットワークアダプタを設定します。
+
+. VMの電源を入れ、firstbootダイアログ(キーボードレイアウト、ライセンス契約、タイムゾーン、rootのパスワード)に従います。
+
+. インストールが完了したら、rootとしてログインします。
+
+. 次のセクションに進みます。
+
+*) 最小値については、xref:installation-and-upgrade:hardware-requirements.adoc#proxy-hardware-requirements[]を参照してください。
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-register-proxy-mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-register-proxy-mlm.adoc[]
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-actkey-bootstrap-proxy-mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-actkey-bootstrap-proxy-mlm.adoc[]
+endif::[]
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-generate_proxy_config.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-generate_proxy_config.adoc[]
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-transfer_proxy_config.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-transfer_proxy_config.adoc[]
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-start-proxy.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-start-proxy.adoc[]
+endif::[]
+
+
+
+=== サービスにカスタムコンテナイメージを使用する
+
+デフォルトでは、{productname}プロキシスイートは、その各サービスに対して同じイメージバージョンとレジストリパスを使用するように設定されています。ただし、末尾に[literal]``-tag``および[literal]``-image``を指定してインストールパラメータを使用し、特定のサービスのデフォルト値を上書きすることは可能です。
+
+たとえば、次のように使用します。
+
+----
+mgrpxy install podman --httpd-tag 0.1.0 --httpd-image registry.opensuse.org/uyuni/proxy-httpd /path/to/config.tar.gz
+----
+
+これは、httpdサービスの設定ファイルを調整してから再起動します。[path]``registry.opensuse.org/uyuni/proxy-httpds``は使用するイメージ、[literal]``0.1.0``はバージョンタグです。
+
+値をデフォルトにリセットするには、これらのパラメータを指定せずにもう一度installコマンドを実行します。
+
+----
+mgrpxy install podman /path/to/config.tar.gz
+----
+
+このコマンドは、すべてのサービスの設定をグローバルデフォルトにリセットして再ロードします。

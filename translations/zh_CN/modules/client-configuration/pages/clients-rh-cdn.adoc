@@ -1,0 +1,489 @@
+[[clients-rh-cdn]]
+= 使用 CDN 注册 {rhel} 客户端
+:revdate: 2026-03-17
+:page-revdate: {revdate}
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$rhel10_cpu_architecture_warning.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/rhel10_cpu_architecture_warning.adoc[]
+endif::[]
+
+
+ifeval::[{mlm-content} == true]
+
+// SUSE Liberty Linux not available at Uyuni for now
+如果您是直接运行 {rhel} 客户端而不是使用 {sleses} 来运行，则需要使用 {redhat} 源检索并更新软件包。
+endif::[]
+
+本节包含有关使用 {redhat} 内容分发网络 (CDN) 注册运行 {rhel} 操作系统的客户端的信息。
+
+而有关使用 {redhat} 更新基础结构 (RHUI) 的信息，请参见 xref:client-configuration:clients-rh-rhui.adoc[]。
+
+[IMPORTANT]
+====
+
+ifeval::[{mlm-content} == true]
+
+// SUSE Liberty Linux not available at Uyuni for now
+{rhel} 客户端基于 {redhat}，与 {sleses}、RES 或 {sles} 不相关。
+endif::[]
+
+您需负责安排对 {redhat} 基础媒体储存库和 {rhela} 安装媒体的访问权限，以及将 {productname} 服务器连接到 {redhat} 内容分发网络。对于您的所有 {rhela} 系统，均须从 {redhat} 获取支持。如果不这么做，可能会违反 {redhat} 的条款。
+====
+
+== 导入权利和证书
+
+
+{redhat} 客户端需要 {redhat} 证书颁发机构 (CA) 和权利证书以及权利密钥。
+
+权利证书内嵌失效日期，与支持订阅的期限匹配。为避免服务中断，您需要在每个支持订阅期结束时重复此过程。
+
+{redhat} 提供了一个订阅管理器工具，可用于管理订阅指派。此工具在本地运行，可跟踪安装的产品和订阅。客户端必须在订阅管理器中注册才能获得证书。
+
+{redhat} 客户端使用 URL 来复制储存库。URL 更改取决于 {redhat} 客户端是在何处注册的。
+
+{redhat} 客户端可通过三种方式注册：
+
+* redhat.com 上的 {redhat} 内容分发网络 (CDN)
+* {redhat} 从属服务器
+* 云中的 {redhat} 更新基础结构 (RHUI)
+
+本指南将介绍注册到 {redhat} CDN 的客户端。您至少须有一个注册到 CDN 的系统并拥有授权订阅，以获得储存库内容。
+
+而有关使用 {redhat} 更新基础结构 (RHUI) 的信息，请参见 xref:client-configuration:clients-rh-rhui.adoc[]。
+
+
+[IMPORTANT]
+====
+要为客户端系统使用从属证书，必须有从属服务器和订阅。{productname} 服务器不支持使用从属证书的客户端。
+====
+
+[WARNING]
+====
+权利证书内嵌失效日期，与支持订阅的期限匹配。为避免服务中断，您需要在每个支持订阅期结束时重复此过程。
+====
+
+{redhat} 提供了订阅管理器工具，可用于管理订阅指派。此工具在客户端系统本地运行，可跟踪安装的产品和订阅。使用订阅管理器注册到 redhat.com，然后执行下列过程获得证书。
+
+
+.过程：将客户端注册到订阅管理器
+
+. 在客户端系统上的命令提示符处注册订阅管理器工具：
++
+----
+subscription-manager register
+----
++
+出现提示时，输入您的 {redhat} 门户用户名和口令。
+. 运行以下命令：
++
+----
+subscription-manager activate
+----
++
+. 将客户端系统中的权利证书和密钥复制到 {productname} 服务器可访问的位置：
++
+----
+cp/etc/pki/entitlement/ /<example>/entitlement/
+----
++
+[NOTE]
+====
+您的权利证书和密钥的文件扩展名均为 [path]``.pem``。密钥的文件名中还包含 [path]``key``。
+====
++
+. 将客户端系统中的 {redhat} CA 证书文件复制到权利证书和密钥所在的相同网络位置：
++
+----
+cp /etc/rhsm/ca/redhat-uep.pem /<example>/entitlement
+----
+
+
+要管理 {redhat} 客户端上的储存库，您需要将 CA 和权利证书导入 {productname} 服务器。这需要您执行三次导入过程以创建相应的三项： 三项分别对应权利证书、权利密钥和 {redhat} 证书。
+
+
+
+.过程：将证书导入服务器
+
+. 在 {productname} 服务器 {webui} 上，导航到menu:系统[自动安装 > GPG 和 SSL 密钥]。
+. 单击 btn:[创建存储的密钥/证书]，并为权利证书设置下列参数：
+* 在[guimenu]``说明``字段中键入 [systemitem]``Entitlement-Cert-date``。
+* 在[guimenu]``类型``字段中，选择 [systemitem]``SSL``。
+* 在[guimenu]``选择要上载的文件``字段中，浏览到您保存权利证书的位置，然后选择 [path]``.pem`` 证书文件。
+. 单击 btn:[创建密钥]。
+. 单击 btn:[创建存储的密钥/证书]，并为权利密钥设置下列参数：
+* 在[guimenu]``说明``字段中键入 [systemitem]``Entitlement-key-date``。
+* 在[guimenu]``类型``字段中，选择 [systemitem]``SSL``。
+* 在[guimenu]``选择要上载的文件``字段中，浏览到您保存权利密钥的位置，然后选择 [path]``.pem`` 密钥文件。
+. 单击 btn:[创建密钥]。
+. 单击 btn:[创建存储的密钥/证书]，并为 {redhat} 证书设置下列参数：
+* 在[guimenu]``说明``字段中键入 [systemitem]``redhat-uep``。
+* 在[guimenu]``类型``字段中，选择 [systemitem]``SSL``。
+* 在[guimenu]``选择要上载的文件``字段中，浏览到您保存 {redhat} 证书的位置，然后选择证书文件。
+. 单击 btn:[创建密钥]。
+
+
+
+== 添加软件通道
+
+// 2022-04-21, ke:
+// Section sequence according to https://github.com/uyuni-project/uyuni-docs/pull/1535
+
+将 {redhat} 客户端注册到您的 {productname} 服务器之前，您需要添加所需的软件通道，并同步这些通道。
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$arch-other-note.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/arch-other-note.adoc[]
+endif::[]
+
+ifeval::[{mlm-content} == true]
+
+拥有 {susemgr} 订阅，您便能使用 {sleses}（也称为 {redhat} 扩展支持或 RES）的工具通道。必须使用客户端工具通道来创建引导储存库。此过程适用于 Salt 客户端。
+endif::[]
+
+ifeval::[{mlm-content} == true]
+
+此过程所需的产品包括：
+
+// SUSE Liberty Linux not available at Uyuni for now
+[[redhat-channels-wizard]]
+[cols="1,1", options="header"]
+.Red Hat 产品 - WebUI
+|===
+
+ifeval::[{mlm-content} == true]
+| OS Version  | Product Name
+| {redhat} 10 | RHEL and Liberty 10 Base
+| {redhat} 9  | RHEL and Liberty 9 Base
+| {redhat} 8  | RHEL or SLES ES or CentOS 8 Base
+| {redhat} 7  | RHEL7 Base x86_64
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+| OS Version | Product Name | {redhat} 10 | RHEL 10 | {redhat} 9 | RHEL | {redhat} 8 | RHEL or CentOS 8 Base | {redhat} 7 | RHEL7 Base x86_64
+endif::[]
+
+|===
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$addchannels_vendor_webui.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/addchannels_vendor_webui.adoc[]
+endif::[]
+
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+此过程所需的通道包括：
+
+[[redhat-channels-cli]]
+[cols="1,1,1,1", options="header"]
+.Red Hat 通道 - CLI
+|===
+
+| OS Version
+| Base Channel
+| Client Channel
+| Tools Channel
+| {redhat} 10
+| rhel10-pool-uyuni
+| -
+| rhel10-uyuni-client
+| {redhat} 9
+| rhel9-pool-uyuni
+| -
+| rhel9-uyuni-client
+
+| {redhat} 8
+| rhel8-pool-uyuni
+| -
+| rhel8-uyuni-client
+
+| {redhat} 7
+| rhel7-pool-uyuni
+| -
+| rhel7-uyuni-client
+
+|===
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$addchannels_novendor_cli_multiarch.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/addchannels_novendor_cli_multiarch.adoc[]
+endif::[]
+
+
+[NOTE]
+====
+[command]``spacewalk-common-channels`` 提供的客户端工具通道来自 {uyuni} 而非 {suse}。
+====
+
+endif::[]
+
+
+== 准备自定义储存库和通道
+
+要从 {redhat} CDN 镜像软件，需要在 {productname} 中创建自定义通道和储存库，它们都将通过 URL 链接到 CDN。必须在 {redhat} 门户中拥有这些产品的权利，此功能才能正常工作。可以使用订阅管理器工具获得要镜像的储存库的 URL：
+
+----
+subscription-manager repos
+----
+
+可以使用这些储存库 URL 来创建自定义储存库。这样您便可只镜像管理客户端所需的内容。
+
+[IMPORTANT]
+====
+如果您在 {redhat} 门户中拥有正确的权利，就可以只创建 {redhat} 储存库的自定义版本。
+====
+
+
+此过程所需的细节包括：
+
+[[redhat-repos-manual]]
+[cols="1,1", options="header"]
+.Red Hat 自定义储存库设置
+|===
+
+| 选项                 | 设置
+|储存库 URL         | {redhat} CDN 提供的内容 URL
+|包含已签名的元数据？   | 取消选中所有 {redhat} Enterprise 储存库
+|SSL CA 证书     | [systemitem]``redhat-uep``
+|SSL 客户端证书 | [systemitem]``Entitlement-Cert-date``
+|SSL 客户端密钥         | ``Entitlement-Key-date``
+|===
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$manual_repos.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/manual_repos.adoc[]
+endif::[]
+
+
+
+此过程所需的通道包括：
+
+[[redhat-channels-custom]]
+
+ifeval::[{mlm-content} == true]
+[cols="1,1,1", options="header"]
+.Red Hat 自定义通道
+|===
+
+| OS Version  | Base Product                     | Base Channel
+| {redhat} 10 | RHEL and Liberty 10 Base         | el10-pool-x86_64
+| {redhat} 9  | RHEL and Liberty 9 Base          | el9-pool-x86_64
+// SUSE Liberty Linux not available at Uyuni for now
+| {redhat} 8  | RHEL or SLES ES or CentOS 8 Base | rhel8-pool-x86_64
+| {redhat} 7  | RHEL7 Base x86_64                | rhel7-pool-x86_64
+
+|===
+endif::[]
+
+// SUSE Liberty Linux not available at Uyuni for now
+
+ifeval::[{uyuni-content} == true]
+[cols="1,1", options="header"]
+.Red Hat 自定义通道
+|===
+
+| OS Version  | Base Channel
+| {redhat} 10 | rhel10-pool-uyuni
+| {redhat} 9  | rhel9-pool-uyuni
+| {redhat} 8  | rhel8-pool-uyuni
+| {redhat} 7  | rhel7-pool-uyuni
+
+|===
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$manual_channels.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/manual_channels.adoc[]
+endif::[]
+
+[IMPORTANT]
+====
+For {redhat} 10, {redhat} 9 and {redhat} 8 clients, add both the Base and AppStream channels. You require packages from both channels. If you do not add both channels, you cannot create the bootstrap repository, due to missing packages.
+====
+
+如果您使用的是模块化通道，则必须在客户端上启用 Python 3.6 模块流。如果不提供 Python 3.6，[package]``spacecmd`` 软件包安装将会失败。
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$manual_associate.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/manual_associate.adoc[]
+endif::[]
+
+
+
+== 检查同步状态
+
+ifeval::[{mlm-content} == true]
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_webui_mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_webui_mlm.adoc[]
+endif::[]
+
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_webui_uyuni.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_webui_uyuni.adoc[]
+endif::[]
+
+
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_cli.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_cli.adoc[]
+endif::[]
+
+
+[NOTE]
+====
+{rhel} 通道可能非常大。同步所需的时间可能长达数小时。
+====
+
+
+.过程：可选：创建 Salt 状态以部署配置文件
+
+. 在 {productname} 服务器 {webui} 上，导航到menu:配置[通道]。
+. 单击 btn:[创建状态通道]。
+* 在[guimenu]``名称``字段中，键入 [systemitem]``subscription-manager: disable yum plugins``。
+* 在[guimenu]``标签``字段中，键入 [systemitem]``subscription-manager-disable-yum-plugins``。
+* 在[guimenu]``说明``字段中，键入 [systemitem]``subscription-manager: disable yum plugins``。
+* 将 [guimenu]``SLS 内容``字段留空。
+. 单击 btn:[创建配置通道]
+. 单击 btn:[创建配置文件]
+* 在[guimenu]``文件名/路径``字段中，键入 [systemitem]``/etc/yum/ pluginconf.d/subscription-manager.conf``。
+* 在[guimenu]``文件内容``字段中，键入：
++
+----
+[main]
+enabled=0
+----
+. 单击 btn:[创建配置文件]
+. 记下 [guimenu]``Salt 文件系统路径``字段的值。
+. 单击配置通道的名称。
+. 单击[guimenu]``查看/编辑 'init.sls' 文件``
+* 在[guimenu]``文件内容``字段中，键入：
++
+----
+configure_subscription-manager-disable-yum-plugins:
+  cmd.run:
+    - name: subscription-manager config --rhsm.auto_enable_yum_plugins=0
+    - watch:
+      - file: /etc/yum/pluginconf.d/subscription-manager.conf
+  file.managed:
+    - name: /etc/yum/pluginconf.d/subscription-manager.conf
+    - source: salt:///etc/yum/pluginconf.d/subscription-manager.conf
+----
+. 单击 btn:[更新配置文件]。
+
+
+[NOTE]
+====
+``创建 Salt 状态以部署配置文件``是可选过程。
+====
+
+
+.过程：为 {rhel} 客户端创建系统组
+
+. 在 {productname} 服务器 {webui} 上，导航到menu:系统[系统组]。
+. 单击 btn:[创建组]。
+* 在[guimenu]``名称``字段中，键入 [systemitem]``rhel-systems``。
+* 在[guimenu]``说明``字段中，键入[systemitem]``所有 RHEL 系统``。
+. 单击 btn:[创建组]。
+. 单击[guimenu]``状态``选项卡。
+. 单击[guimenu]``配置通道``选项卡。
+. 在搜索框中键入 [systemitem]``subscription-manager: disable yum plugins``。
+. 单击 btn:[搜索] 以查看状态。
+. 单击[systemitem]``指派``列中的状态对应的复选框。
+. 单击 btn:[保存更改]。
+. 单击 btn:[确认]。
+
+如果您已将 RHEL 系统添加到 {productname}，请将其指派给新的系统组，然后应用 Highstate。
+
+
+
+.过程：将系统组添加到激活密钥
+
+您需要修改用于 RHEL 系统的激活密钥，以包含之前创建的系统组。
+
+. 在 {productname} 服务器 {webui} 上，导航到menu:系统[激活密钥]。
+. 单击用于 RHEL 系统的每个激活密钥并：
+. 依次导航到[guimenu]``组``选项卡和[guimenu]``加入``子选项卡。
+. 选中[systemitem]``选择 rhel-systems``。
+. 单击 btn:[加入所选的组]。
+
+
+== 管理 GPG 密钥
+
+安装软件包之前，客户端会使用 GPG 密钥检查这些软件包的真实性。只有可信软件才能安装在客户端上。
+
+[IMPORTANT]
+====
+信任 GPG 密钥对于客户端的安全非常重要。由管理员来决定需要哪些密钥，可以信任哪些密钥。这是因为如果不信任 GPG 密钥，便无法使用软件通道，是否将通道指派给客户端取决于是否信任密钥。
+====
+
+有关 GPG 密钥的详细信息，请参见 xref:client-configuration:gpg-keys.adoc[]。
+
+[NOTE]
+====
+对于 {redhat} 自定义通道，如果您要选中[guimenu]``启用 GPG 检查``字段，则需填充 [guimenu]``GPG 密钥 URL`` 字段。您可以使用 {redhat} 受控端 [systemitem]``/etc/pki/rpm-gpg`` 目录下存储的 GPG 密钥的文件 URL。
+
+示例：[systemitem]``file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release``
+
+有关 {redhat} 产品签名密钥的完整列表，请参见 link:https://access.redhat.com/security/team/key[]。
+====
+
+
+== 注册客户端
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$create_bootstrap_repo_register.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/create_bootstrap_repo_register.adoc[]
+endif::[]

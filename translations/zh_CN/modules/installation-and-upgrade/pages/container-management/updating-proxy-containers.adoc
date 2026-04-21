@@ -1,0 +1,136 @@
+= {productname} 代理升级
+:revdate: 2025-05-05
+:page-revdate: {revdate}
+
+运行升级命令前，需要更新主机操作系统。更新主机操作系统时，{productname} 相关工具（如 [literal]``mgrpxy``）也会同步更新。
+
+.过程：升级代理
+[role=procedure]
+____
+. 使用 [command]``zypper`` 刷新软件储存库：
+
++
+
+[source, shell]
+----
+zypper ref
+----
+
+ifeval::[{mlm-content} == true]
+
+. 根据主机操作系统执行以下步骤：
+
++
+
+对于 {sl-micro} 等事务性系统： ::
+
++
+
+--
+
+. 使用 [command]``transactional-update`` 应用可用的更新:
+
++
+
+[source, shell]
+----
+transactional-update
+----
+
+. 如果已应用更新，请[literal]``重引导``。
+
+--
+
++
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+. 使用 [command]``transactional-update`` 应用可用的更新:
+
++
+
+[source, shell]
+----
+transactional-update
+----
+
+. 如果已应用更新，请[literal]``重引导``。
+
+endif::[]
+
+
+ifeval::[{mlm-content} == true]
+
+对于 {sles}： ::
+
++
+
+--
+
+使用 [command]``zypper`` 更新安装的软件：
+
+[source, shell]
+----
+zypper up
+----
+
+--
+
+endif::[]
+
++
+
+. 可使用以下命令来更新 [literal]``podman`` 上运行的 {productname} 代理容器：
+
++
+
+[source, shell]
+----
+mgrpxy upgrade podman
+----
+
++
+
+或者，可使用以下命令更新 Kubernetes 群集上运行的容器：
+
++
+
+[source, shell]
+----
+mgrpxy upgrade kubernetes
+----
+
++
+
+. 在 Podman 上，清理未使用的容器映像以释放磁盘空间：
+
++
+
+[source, shell]
+----
+podman image prune -a
+----
+
+____
+
+在 Kubernetes 中，映像清理工作要么自动完成，要么由所用的 Kubernetes 发行版决定具体执行方式。
+
+[NOTE]
+====
+如果升级到特定版本时未指定标记参数，则默认会升级到最新版本。要升级到特定版本，请为标记参数提供所需的映像标记。
+====
+
+[IMPORTANT]
+====
+
+ifeval::[{mlm-content} == true]
+
+虽然可以使用特定标记升级特定容器，但此功能仅用于应用 PTF。
+endif::[]
+
+在正常情况下，我们强烈建议为所有代理容器使用相同的标记，以确保配置一致性。
+====
+
+对于隔离的安装，请先升级容器 RPM 软件包，然后运行 [command]``mgrpxy upgrade podman`` 命令。
