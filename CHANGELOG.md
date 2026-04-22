@@ -1,3 +1,4 @@
+- Updated features table for EL 10 based distributions
 - Document Debian 13
 - Added support for Open Enterprise Server 25.4
 - Clarified how to get PTF images in air-gapped setup in Installation and 
