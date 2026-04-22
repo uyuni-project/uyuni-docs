@@ -596,6 +596,9 @@
     <a class="nav-link" href="../client-configuration/autoinst-reinstall.html">重新安装已注册系统</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../client-configuration/autoinst-pxeboot.html">通过网络安装（PXE 引导）</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../client-configuration/autoinst-cdrom.html">通过 CD-ROM 或 USB 密钥安装</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -680,7 +683,13 @@
 </ul>
   </li>
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="backup-restore.html">备份和恢复</a>
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="backup-restore.html">备份和还原</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="backup-restore-db.html">Database Backup Management</a>
+  </li>
+</ul>
   </li>
   <li class="nav-item" data-depth="2">
     <button class="nav-item-toggle"></button>
@@ -771,7 +780,13 @@
     <a class="nav-link" href="mirror-sources.html">镜像源</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <button class="nav-item-toggle"></button>
     <a class="nav-link" href="openscap.html">OpenSCAP</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="openscap-enhanced-beta.html">Enhanced SCAP Auditing (Beta)</a>
+  </li>
+</ul>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="repo-metadata.html">储存库元数据</a>
@@ -1277,6 +1292,15 @@
   <li class="nav-item" data-depth="5">
     <a class="nav-link" href="../reference/audit/openscap-advanced-search.html">Advanced Search</a>
   </li>
+  <li class="nav-item" data-depth="5">
+    <a class="nav-link" href="../reference/audit/audit-scap-content.html">SCAP Content</a>
+  </li>
+  <li class="nav-item" data-depth="5">
+    <a class="nav-link" href="../reference/audit/audit-scap-policies.html">SCAP Policies</a>
+  </li>
+  <li class="nav-item" data-depth="5">
+    <a class="nav-link" href="../reference/audit/audit-scap-tailoring-files.html">Tailoring Files</a>
+  </li>
 </ul>
   </li>
 </ul>
@@ -1292,16 +1316,7 @@
     <a class="nav-link" href="../reference/configuration/config-channels.html">Channels</a>
   </li>
   <li class="nav-item" data-depth="4">
-    <button class="nav-item-toggle"></button>
-    <a class="nav-link" href="../reference/configuration/config-files-menu.html">Files</a>
-<ul class="nav-list">
-  <li class="nav-item" data-depth="5">
-    <a class="nav-link" href="../reference/configuration/files-centrally-managed.html">Centrally Managed</a>
-  </li>
-  <li class="nav-item" data-depth="5">
-    <a class="nav-link" href="../reference/configuration/files-locally-managed.html">Locally Managed</a>
-  </li>
-</ul>
+    <a class="nav-link" href="../reference/configuration/config-files.html">Files</a>
   </li>
   <li class="nav-item" data-depth="4">
     <button class="nav-item-toggle"></button>
@@ -2567,14 +2582,57 @@ RUN rm -f /etc/zypp/repos.d/susemanager:dockerbuild.repo</pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="container.based.kiwi.image.build.support"><a class="anchor" href="#container.based.kiwi.image.build.support"></a><a class="link" href="#container.based.kiwi.image.build.support">3.2. 基于容器的 Kiwi 映像构建支持</a></h3>
+<h3 id="_accessing_git_repositories_via_an_httphttps_proxy_when_building_images"><a class="anchor" href="#_accessing_git_repositories_via_an_httphttps_proxy_when_building_images"></a><a class="link" href="#_accessing_git_repositories_via_an_httphttps_proxy_when_building_images">3.2. Accessing Git repositories via an HTTP/HTTPS proxy when building images</a></h3>
+<div class="paragraph">
+<p>When a build host needs to fetch sources from a git repository that is only reachable through an HTTP/HTTPS proxy, you may see git timeouts during the build because the git client invoked by the Salt state does not always pick up system-wide proxy settings (for example <code class="path">/etc/sysconfig/proxy</code> or environment variables).</p>
+</div>
+<div class="paragraph">
+<p>To make git use the proxy for non-interactive builds create <code class="path">/etc/gitconfig</code> with an http.proxy entry:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console"># /etc/gitconfig
+[http]
+    proxy = http://proxy.example.com:3128
+# or for HTTPS
+[http]
+    proxy = https://proxy.example.com:3128</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the proxy requires authentication, prefer a credential helper or use a credential store instead of embedding credentials in the URL.</p>
+</div>
+<div class="sect3">
+<h4 id="_automating_with_salt"><a class="anchor" href="#_automating_with_salt"></a><a class="link" href="#_automating_with_salt">3.2.1. Automating with Salt</a></h4>
+<div class="paragraph">
+<p>You can manage <code class="path">/etc/gitconfig</code> on build hosts through Configuration Management, the same way as on any other managed system. Create a Salt state file and assign it to the build host via a config channel, then apply a highstate from the Uyuni UI.</p>
+</div>
+<div class="paragraph">
+<p>If you want to source the proxy address from a System Custom Info field, use the <code>custom_info:</code> pillar prefix:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">/etc/gitconfig:
+  file.managed:
+    - user: root
+    - group: root
+    - mode: '0644'
+    - contents: |
+        [http]
+            proxy = {{ salt['pillar.get']('custom_info:build_server:git_proxy', 'http://proxy.example.com:3128') }}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="container.based.kiwi.image.build.support"><a class="anchor" href="#container.based.kiwi.image.build.support"></a><a class="link" href="#container.based.kiwi.image.build.support">3.3. 基于容器的 Kiwi 映像构建支持</a></h3>
 <div class="paragraph">
 <p>Uyuni 推出了基于容器的 Kiwi 映像构建系统，同时保留现有旧版 Kiwi 工具和 KiwiNG 工具。</p>
 </div>
 <div class="sect3">
-<h4 id="_配置和覆盖设置"><a class="anchor" href="#_配置和覆盖设置"></a><a class="link" href="#_配置和覆盖设置">3.2.1. 配置和覆盖设置</a></h4>
+<h4 id="_配置和覆盖设置"><a class="anchor" href="#_配置和覆盖设置"></a><a class="link" href="#_配置和覆盖设置">3.3.1. 配置和覆盖设置</a></h4>
 <div class="paragraph">
-<p>管理员可通过以下 pillar 或自定义值覆盖默认行为。如需进行相关配置，请在 Web UI 中导航至<span class="menuseq"><b class="menu">系统</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">自定义系统信息</b></span>，然后创建所需的键。</p>
+<p>管理员可通过以下 pillar 或自定义值覆盖默认行为。如需进行相关配置，请在 Web UI 中导航至menu:[系统 &gt; 自定义系统信息]，然后创建所需的键。</p>
 </div>
 <div class="paragraph">
 <p>构建系统的选用取决于底层操作系统或特定 pillar 值：</p>
@@ -2604,7 +2662,7 @@ RUN rm -f /etc/zypp/repos.d/susemanager:dockerbuild.repo</pre>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_不同版本的配置"><a class="anchor" href="#_不同版本的配置"></a><a class="link" href="#_不同版本的配置">3.2.2. 不同版本的配置</a></h4>
+<h4 id="_不同版本的配置"><a class="anchor" href="#_不同版本的配置"></a><a class="link" href="#_不同版本的配置">3.3.2. 不同版本的配置</a></h4>
 <div class="paragraph">
 <p>当为 SUSE Linux Enterprise 15 配置文件使用容器化构建主机时，需要进行特定配置。因为 SLES 15 配置文件依赖 Kiwi 9，而容器默认行为使用 Kiwi 10。</p>
 </div>
@@ -2627,7 +2685,7 @@ RUN rm -f /etc/zypp/repos.d/susemanager:dockerbuild.repo</pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="at.images.kiwi.buildhost"><a class="anchor" href="#at.images.kiwi.buildhost"></a><a class="link" href="#at.images.kiwi.buildhost">3.3. 创建构建主机</a></h3>
+<h3 id="at.images.kiwi.buildhost"><a class="anchor" href="#at.images.kiwi.buildhost"></a><a class="link" href="#at.images.kiwi.buildhost">3.4. 创建构建主机</a></h3>
 <div class="paragraph">
 <p>要使用 Uyuni 构建各种映像，请创建并配置一个构建主机。操作系统映像构建主机是在 SUSE Linux Enterprise Server&#160;15（SP2 或更高版本）或SUSE Linux Enterprise Server&#160;12（SP4 或更高版本）上运行的 Salt 客户端。</p>
 </div>
@@ -2697,7 +2755,7 @@ RUN rm -f /etc/zypp/repos.d/susemanager:dockerbuild.repo</pre>
 </blockquote>
 </div>
 <div class="sect3">
-<h4 id="_uyuni_web_服务器公共证书_rpm"><a class="anchor" href="#_uyuni_web_服务器公共证书_rpm"></a><a class="link" href="#_uyuni_web_服务器公共证书_rpm">3.3.1. Uyuni Web 服务器公共证书 RPM</a></h4>
+<h4 id="_uyuni_web_服务器公共证书_rpm"><a class="anchor" href="#_uyuni_web_服务器公共证书_rpm"></a><a class="link" href="#_uyuni_web_服务器公共证书_rpm">3.4.1. Uyuni Web 服务器公共证书 RPM</a></h4>
 <div class="paragraph">
 <p>构建主机置备将 Uyuni 证书 RPM 复制到构建主机。此证书用于访问 Uyuni 提供的储存库。</p>
 </div>
@@ -2709,7 +2767,7 @@ RUN rm -f /etc/zypp/repos.d/susemanager:dockerbuild.repo</pre>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_封装脚本调用示例"><a class="anchor" href="#_封装脚本调用示例"></a><a class="link" href="#_封装脚本调用示例">3.3.2. 封装脚本调用示例</a></h4>
+<h4 id="_封装脚本调用示例"><a class="anchor" href="#_封装脚本调用示例"></a><a class="link" href="#_封装脚本调用示例">3.4.2. 封装脚本调用示例</a></h4>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">/usr/sbin/mgr-package-rpm-certificate-osimage --ca-cert-full-path /root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT</code></pre>
@@ -2759,7 +2817,7 @@ RUN rm -f /etc/zypp/repos.d/susemanager:dockerbuild.repo</pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="at.images.kiwi.buildchannels"><a class="anchor" href="#at.images.kiwi.buildchannels"></a><a class="link" href="#at.images.kiwi.buildchannels">3.4. 为操作系统映像创建激活密钥</a></h3>
+<h3 id="at.images.kiwi.buildchannels"><a class="anchor" href="#at.images.kiwi.buildchannels"></a><a class="link" href="#at.images.kiwi.buildchannels">3.5. 为操作系统映像创建激活密钥</a></h3>
 <div class="paragraph">
 <p>创建与通道（在构建映像时操作系统映像可将其用作储存库）关联的激活密钥。</p>
 </div>
@@ -2806,7 +2864,7 @@ RUN rm -f /etc/zypp/repos.d/susemanager:dockerbuild.repo</pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="at.images.kiwi.imagestore"><a class="anchor" href="#at.images.kiwi.imagestore"></a><a class="link" href="#at.images.kiwi.imagestore">3.5. 创建映像存储区</a></h3>
+<h3 id="at.images.kiwi.imagestore"><a class="anchor" href="#at.images.kiwi.imagestore"></a><a class="link" href="#at.images.kiwi.imagestore">3.6. 创建映像存储区</a></h3>
 <div class="paragraph">
 <p>操作系统映像可能会占用大量存储空间。默认情况下，映像存储区会使用 <code class="path">srv-www</code> 卷。</p>
 </div>
@@ -2829,7 +2887,7 @@ RUN rm -f /etc/zypp/repos.d/susemanager:dockerbuild.repo</pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="at.images.kiwi.profile"><a class="anchor" href="#at.images.kiwi.profile"></a><a class="link" href="#at.images.kiwi.profile">3.6. 创建映像配置文件</a></h3>
+<h3 id="at.images.kiwi.profile"><a class="anchor" href="#at.images.kiwi.profile"></a><a class="link" href="#at.images.kiwi.profile">3.7. 创建映像配置文件</a></h3>
 <div class="paragraph">
 <p>使用 Web UI 管理映像配置文件。</p>
 </div>
@@ -2935,7 +2993,7 @@ RUN rm -f /etc/zypp/repos.d/susemanager:dockerbuild.repo</pre>
 </blockquote>
 </div>
 <div class="sect3">
-<h4 id="at.images.kiwi.sourceexample"><a class="anchor" href="#at.images.kiwi.sourceexample"></a><a class="link" href="#at.images.kiwi.sourceexample">3.6.1. Kiwi 源的示例</a></h4>
+<h4 id="at.images.kiwi.sourceexample"><a class="anchor" href="#at.images.kiwi.sourceexample"></a><a class="link" href="#at.images.kiwi.sourceexample">3.7.1. Kiwi 源的示例</a></h4>
 <div class="paragraph">
 <p>Kiwi 源至少包含 <code>config.xml</code>。通常其中还有 <code>config.sh</code> 和 <code>images.sh</code>。源还可以包含要安装在 <code>root</code> 子目录下的最终映像中的文件。</p>
 </div>
@@ -3001,7 +3059,7 @@ RUN rm -f /etc/zypp/repos.d/susemanager:dockerbuild.repo</pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="at.images.kiwi.building"><a class="anchor" href="#at.images.kiwi.building"></a><a class="link" href="#at.images.kiwi.building">3.7. 构建映像</a></h3>
+<h3 id="at.images.kiwi.building"><a class="anchor" href="#at.images.kiwi.building"></a><a class="link" href="#at.images.kiwi.building">3.8. 构建映像</a></h3>
 <div class="paragraph">
 <p>可以使用 Web UI 以两种方式构建或获取映像。选择<span class="menuseq"><b class="menu">映像</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">构建</b></span>，或单击<span class="menuseq"><b class="menu">映像</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">配置文件</b></span>列表中的构建图标。</p>
 </div>
@@ -3089,7 +3147,7 @@ RUN rm -f /etc/zypp/repos.d/susemanager:dockerbuild.repo</pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="at.images.kiwi.troubleshooting"><a class="anchor" href="#at.images.kiwi.troubleshooting"></a><a class="link" href="#at.images.kiwi.troubleshooting">3.8. 查错</a></h3>
+<h3 id="at.images.kiwi.troubleshooting"><a class="anchor" href="#at.images.kiwi.troubleshooting"></a><a class="link" href="#at.images.kiwi.troubleshooting">3.9. 查错</a></h3>
 <div class="paragraph">
 <p>构建映像需要完成几个相关的步骤。如果构建失败，调查 Salt 状态结果和构建日志可能有助于确定失败原因。构建失败时，可以执行以下检查：</p>
 </div>
@@ -3114,7 +3172,7 @@ RUN rm -f /etc/zypp/repos.d/susemanager:dockerbuild.repo</pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="at.images.kiwi.limitations"><a class="anchor" href="#at.images.kiwi.limitations"></a><a class="link" href="#at.images.kiwi.limitations">3.9. 限制</a></h3>
+<h3 id="at.images.kiwi.limitations"><a class="anchor" href="#at.images.kiwi.limitations"></a><a class="link" href="#at.images.kiwi.limitations">3.10. 限制</a></h3>
 <div class="paragraph">
 <p>本节包含使用映像时存在的一些已知问题。</p>
 </div>
