@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Repository Metadata :: Uyuni Documentation</title>
     <link rel="canonical" href="https://www.uyuni-project.org/uyuni-docs/en/uyuni/administration/repo-metadata.html">
-    <link rel="prev" href="openscap.html">
+    <link rel="prev" href="openscap-enhanced-beta.html">
     <link rel="next" href="role-based-access-control.html">
     <meta name="generator" content="Antora 3.1.10">
     <link rel="stylesheet" href="../../_/css/site.css">
@@ -596,6 +596,9 @@
     <a class="nav-link" href="../client-configuration/autoinst-reinstall.html">Reinstall Registered Systems</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../client-configuration/autoinst-pxeboot.html">Install via the Network (PXE Boot)</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../client-configuration/autoinst-cdrom.html">Install via a CD-ROM or a USB Key</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -680,7 +683,13 @@
 </ul>
   </li>
   <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
     <a class="nav-link" href="backup-restore.html">Backup and Restore</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="backup-restore-db.html">Database Backup Management</a>
+  </li>
+</ul>
   </li>
   <li class="nav-item" data-depth="2">
     <button class="nav-item-toggle"></button>
@@ -771,7 +780,13 @@
     <a class="nav-link" href="mirror-sources.html">Mirror Sources</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <button class="nav-item-toggle"></button>
     <a class="nav-link" href="openscap.html">OpenSCAP</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="openscap-enhanced-beta.html">Enhanced SCAP Auditing (Beta)</a>
+  </li>
+</ul>
   </li>
   <li class="nav-item is-current-page" data-depth="3">
     <a class="nav-link" href="repo-metadata.html">Repository Metadata</a>
@@ -1277,6 +1292,15 @@
   <li class="nav-item" data-depth="5">
     <a class="nav-link" href="../reference/audit/openscap-advanced-search.html">Advanced Search</a>
   </li>
+  <li class="nav-item" data-depth="5">
+    <a class="nav-link" href="../reference/audit/audit-scap-content.html">SCAP Content</a>
+  </li>
+  <li class="nav-item" data-depth="5">
+    <a class="nav-link" href="../reference/audit/audit-scap-policies.html">SCAP Policies</a>
+  </li>
+  <li class="nav-item" data-depth="5">
+    <a class="nav-link" href="../reference/audit/audit-scap-tailoring-files.html">Tailoring Files</a>
+  </li>
 </ul>
   </li>
 </ul>
@@ -1292,16 +1316,7 @@
     <a class="nav-link" href="../reference/configuration/config-channels.html">Channels</a>
   </li>
   <li class="nav-item" data-depth="4">
-    <button class="nav-item-toggle"></button>
-    <a class="nav-link" href="../reference/configuration/config-files-menu.html">Files</a>
-<ul class="nav-list">
-  <li class="nav-item" data-depth="5">
-    <a class="nav-link" href="../reference/configuration/files-centrally-managed.html">Centrally Managed</a>
-  </li>
-  <li class="nav-item" data-depth="5">
-    <a class="nav-link" href="../reference/configuration/files-locally-managed.html">Locally Managed</a>
-  </li>
-</ul>
+    <a class="nav-link" href="../reference/configuration/config-files.html">Files</a>
   </li>
   <li class="nav-item" data-depth="4">
     <button class="nav-item-toggle"></button>
@@ -1988,14 +2003,16 @@
 </tr>
 </table>
 </div>
+<div class="quoteblock procedure">
+<div class="title">Procedure: Generating a custom GPG key</div>
+<blockquote>
 <div class="olist arabic">
-<div class="title">Procedure: Generating a Custom GPG Key</div>
 <ol class="arabic">
 <li>
 <p>As the root user, use the <code class="command">gpg</code> command to generate a new key:</p>
 <div class="listingblock">
 <div class="content">
-<pre>mgrctl exec -- gpg --full-generate-key</pre>
+<pre>mgrctl exec -it -- gpg --full-generate-key</pre>
 </div>
 </div>
 </li>
@@ -2016,7 +2033,7 @@ When you are happy with the user identity, type <code class="systemitem">O</code
 You can check by listing the keys in your keyring:</p>
 <div class="listingblock">
 <div class="content">
-<pre>gpg --list-keys</pre>
+<pre>mgrctl exec -- gpg --list-keys</pre>
 </div>
 </div>
 </li>
@@ -2030,14 +2047,18 @@ You can check by listing the keys in your keyring:</p>
 </li>
 </ol>
 </div>
+</blockquote>
+</div>
 <div class="paragraph">
 <p>For renewing a GPG key, see <a href="troubleshooting/tshoot-sync.html" class="xref page">Troubleshooting Synchronization</a>.</p>
 </div>
 <div class="paragraph">
 <p>You can manage metadata signing on the command line using the <code class="command">mgr-sign-metadata-ctl</code> command.</p>
 </div>
+<div class="quoteblock procedure">
+<div class="title">Procedure: Enabling metadata signing</div>
+<blockquote>
 <div class="olist arabic">
-<div class="title">Procedure: Enabling Metadata Signing</div>
 <ol class="arabic">
 <li>
 <p>You need to know the short identifier for the key to use.
@@ -2077,7 +2098,15 @@ NOTE. For the changes to become effective run:
 </div>
 </li>
 <li>
-<p>Restart the services and schedule metadata regeneration to pick up the changes:</p>
+<p>Restart the container for the configuration changes to be detected.</p>
+<div class="listingblock">
+<div class="content">
+<pre>mgradm restart</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Schedule metadata regeneration to replace all metadata with new signed versions.</p>
 <div class="listingblock">
 <div class="content">
 <pre>mgrctl exec -- mgr-sign-metadata-ctl regen-metadata</pre>
@@ -2085,6 +2114,8 @@ NOTE. For the changes to become effective run:
 </div>
 </li>
 </ol>
+</div>
+</blockquote>
 </div>
 <div class="paragraph">
 <p>You can also use the <code class="command">mgr-sign-metadata-ctl</code> command to perform other tasks.
@@ -2095,8 +2126,10 @@ Use <code class="command">mgr-sign-metadata-ctl --help</code> to see the complet
 When it is enabled, it is enabled on all software channels on the server.
 This means that all clients connected to the server need to trust the new  GPG key to be able to install or update packages.</p>
 </div>
+<div class="quoteblock procedure">
+<div class="title">Procedure: Importing GPG keys on clients</div>
+<blockquote>
 <div class="olist arabic">
-<div class="title">Procedure: Importing GPG keys on Clients</div>
 <ol class="arabic">
 <li>
 <p>Deploying GPG keys to the clients works with salt states.</p>
@@ -2106,13 +2139,15 @@ This means that all clients connected to the server need to trust the new  GPG k
 </li>
 </ol>
 </div>
+</blockquote>
+</div>
 <div class="paragraph">
 <p>For more information about troubleshooting GPG keys, see <a href="troubleshooting/tshoot-sync.html" class="xref page">Troubleshooting Synchronization</a>.</p>
 </div>
 </div>
 </div>
 <nav class="pagination">
-  <span class="prev"><a href="openscap.html">OpenSCAP</a></span>
+  <span class="prev"><a href="openscap-enhanced-beta.html">Enhanced SCAP Auditing (Beta)</a></span>
   <span class="next"><a href="role-based-access-control.html">Role-Based Access Control (RBAC)</a></span>
 </nav>
 </article>
