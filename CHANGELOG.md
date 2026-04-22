@@ -1,3 +1,4 @@
+- Document Debian 13
 - Added support for Open Enterprise Server 25.4
 - Clarified how to get PTF images in air-gapped setup in Installation and 
   Upgrade Guide (bsc#1261307)
