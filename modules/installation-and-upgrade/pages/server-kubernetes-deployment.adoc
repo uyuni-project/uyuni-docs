@@ -1,0 +1,401 @@
+[[deploy-server-on-kubernetes]]
+= Server Deployment on {kube}
+:revdate: 2026-02-24
+:page-revdate: {revdate}
+
+
+{productname} can also be deployed on {kube}.
+This guide shows you how to install and configure a {productname} {productnumber} on {kube} on RKE2.
+
+Several personas are involved in the installation of {productname} on {kube}:
+
+* the {kube} administrator manages the cluster, its users and accesses,
+
+* the infrastructure administrator takes care of wiring the network access to the cluster,
+
+* the PKI administrator is responsible for the TLS certificates generation and deployment infrastructure,
+
+* the {productname} administrator controls the application itself and its deployment.
+
+In some cases, some of those personas can be merged into a single person or team, but keeping then in mind will explain why the installation is not a one-shot script doing everything.
+{kube} clusters can also vary a lot between organizations, so the {productname} core installation is designed to be as agnostic as possible of those specific cases.
+
+
+
+== Prerequisites
+
+Installing the {kube} cluster and configuring it is out of the scope of this document.
+
+The cluster is assumed to be ready to be used with a user having rights on a namespace dedicated to {productname}.
+
+If there isn't one defined yet, a [literal]``Role`` and [literal]``RoleBinding`` with minimum rights required to deploy [literal]``server-helm`` would look like the following:
+
+[source,yaml]
+----
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: example-resource-manager
+  namespace: $NAMESPACE
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/log", "services", "secrets", "configmaps", "serviceaccounts", "persistentvolumeclaims"]
+  verbs: ["*"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "statefulsets"]
+  verbs: ["*"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: example-resource-manager-binding
+  namespace: $NAMESPACE
+subjects:
+- kind: User
+  name: $USERNAME
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: example-resource-manager
+  apiGroup: rbac.authorization.k8s.io
+----
+
+[IMPORTANT]
+====
+This guide assumes the reader knows how to work with {kube}: the concepts will not be explained here as they are extensively documented in the official {kube} documentation.
+====
+
+The {productname} administrator needs to deploy the [literal]``server-helm`` {helm} chart.
+However, this chart requires to prepare:
+
+* TLS certificates chain for the server and database,
+
+* [literal]``ConfigMaps`` for the server and database root CA certificates,
+
+* persistent volumes  for the claims the chart will create or a storage class automatically creating them,
+
+* credentials secrets for the database users and the administrator,
+
+* Load balancers or other mechanisms to expose the Salt, report database and optionally TFTP ports.
+
+Run the following command to read the full details on how to use the server {helm} chart:
+
+ifeval::[{mlm-content} == true]
+[source, Shell, subs="attributes"]
+----
+helm show readme --version {productchartversion} \
+    oci://registry.suse.com/suse/multi-linux-manager/5.2/server-helm
+----
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+[source, Shell, subs="attributes"]
+----
+helm show readme --version {productchartversion} \
+    oci://registry.opensuse.org/uyuni/server-helm
+----
+
+[NOTE]
+====
+Helm requires the version to be semver2 compatible when using OCI repositories.
+This is why the version ([literal]``{productchartversion}``) is formatted differently from the release number ([literal]``{productnumber}``).
+====
+
+For older versions, the Helm chart is located in a snapshot repository like: [literal]``oci://registry.opensuse.org/systemsmanagement/uyuni/snapshots/<version>/opensuse_tumbleweed/uyuni/server-helm``.
+endif::[]
+
+
+
+=== Global architecture
+
+This diagram shows the components deployed by the [literal]``server-helm`` chart and the ones expected to be created before hand.
+
+image::server-kubernetes-design.png[]
+
+* Red items are required,
+
+* Green items are optional and can be enabled using the chart values,
+
+* Black components are the core components.
+
+[NOTE]
+====
+Even if there are values to disable the internal database, using an external one is not supported yet.
+Those properties are only present for testing purpose.
+====
+
+The next sections will explain the resources that are expected.
+
+
+
+=== Credentials
+
+
+The deployment requires four specific secrets of [literal]``kubernetes.io/basic-auth`` type, each containing a [literal]``username`` and a [literal]``password`` key.
+Here are example commands to create them, set the [literal]``NAMESPACE`` variable to the namespace where {productname} will be installed.
+Adjust these commands to set actual passwords.
+
+[IMPORTANT]
+====
+Using [literal]``--from-literal`` for the passwords is not a secure practice, read the command help to use [literal]``--from-file`` or [literal]``--from-env-file``.
+If using declarative YAML definitions instead of these commands, make sure these files are encrypted before pushing them to a remote version control.
+====
+
+[source, Shell]
+----
+kubectl create secret generic -n $NAMESPACE --type 'kubernetes.io/basic-auth' \
+    --from-literal=username=dbadmin \
+    --from-literal=password=supersecret \
+    db-admin-credentials
+kubectl create secret generic -n $NAMESPACE --type 'kubernetes.io/basic-auth' \
+    --from-literal=username=dbuser \
+    --from-literal=password=supersecret \
+    db-credentials
+kubectl create secret generic -n $NAMESPACE --type 'kubernetes.io/basic-auth' \
+    --from-literal=username=reportdb \
+    --from-literal=password=supersecret \
+    reportdb-credentials
+kubectl create secret generic -n $NAMESPACE --type 'kubernetes.io/basic-auth' \
+    --from-literal=username=admin \
+    --from-literal=password=supersecret \
+    admin-credentials
+----
+
+
+ifeval::[{mlm-content} == true]
+A secret with the SCC credentials needs to be defined in order to pull the images from `registry.suse.com`.
+Refer to https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ for the instructions to prepare the secret.
+Set the `registrySecret` [literal]``server-helm`` chart value to the name of the secret containing those credentials to use it.
+endif::[]
+
+
+
+=== TLS setup
+
+
+The following TLS secrets are expected:
+
+* [literal]``db-cert``: TLS certificate for the report database and needs to have the [literal]``db`` and [literal]``reportdb`` Subject Alternate Names, and the FQDN exposed to the outside world.
+
+* [literal]``uyuni-cert``: TLS certificate for the Ingress rule and needs to have the public FQDN as Subject Alternate Name.
+
+These secrets can be created using the [command]``kubectl create secret tls -n $NAMESPACE`` command.
+The certificate file passed to this command needs to start with the server certificate followed by the chain of intermediary CA certificates if any.
+The root CAs are not needed in these secrets as they are expected in ConfigMaps.
+
+The Root CA certificate of [literal]``db-cert`` and [literal]``uyuni-cert`` are expected in ConfigMaps named [literal]``db-ca`` and [literal]``uyuni-ca`` stored in the [literal]``ca.crt`` key.
+Those can be created with a command like [command]``kubectl create cm -n $NAMESPACE db-ca --from-file=ca.crt=/path/to/db-ca.crt``.
+
+
+
+=== Storage
+
+The server chart defines volumes as Persistent Volume Claims (PVCs).
+
+[WARNING]
+====
+* The creation of the underlying PVs is the responsibility of the cluster administrators.
+
+* The PVCs use the [literal]``ReadWriteOnce`` access mode.
+====
+
+The created PVCs can be tuned using {helm} chart values.
+Each of the PVCs can have the following values:
+
+* [literal]``size``: to set the requested size of the PVC.
+
+* [literal]``storageClass``: can be used to select the storage class to use for the PVC.
+  This can be useful to select faster storage for the database or the packages storage.
+
+* [literal]``extraLabels``: can be used to add custom labels to the PVC.
+
+* [literal]``annotations``: can be used to set custom annotations on the PVC.
+
+* [literal]``volumeName``: can be used to hard code which volume the PVC should be bound to.
+
+* [literal]``selector``: is the YAML fragment of the PVC selector to use to find the PV to bind to.
+
+Refer to https://kubernetes.io/docs/concepts/storage/persistent-volumes/ for more information on persistent volumes and their claims.
+
+
+Refer to the [literal]``server-helm`` README for the list of persistent volume claims which will be created and will need to be bound to persistent volumes.
+
+
+[IMPORTANT]
+====
+While the default sizes are provided, it is highly recommended to change them based on the distributions you plan to synchronize.
+
+For more information on storage requirements see xref:installation-and-upgrade:general-requirements.adoc[].
+====
+
+
+=== Exposing ports
+
+{productname} requires some TCP and UDP ports to be routed to its services.
+Refer to the [literal]``server-helm`` README for the list of ports to be exposed.
+
+[WARNING]
+====
+RKE2 ships with nginx as the default ingress controller.
+However, as this is deprecated and soon to be unsupported, the [literal]``server-helm`` chart defaults to use Traefik as ingress controller.
+Using the nginx ingress controller might work and will not be documented, use at your own risk.
+====
+
+[NOTE]
+====
+The [literal]``server-helm`` chart supports Gateway API version 1.4.
+Since this requires experimental CRDs which are not shipped with RKE2 1.35, it is not recommended to be used in production.
+====
+
+There are multiple ways to expose the ports, but this documentation will only mention how to configure RKE2's Traefik for this.
+This is not a task for the {productname} administrator, but the {kube} cluster administrator as it requires configuration to be set on the cluster nodes.
+
+To set Traefik to expose and route the needed ports, create a `/var/lib/rancher/rke2/server/manifests/uyuni-traefik.yaml` on each node with the following content.
+Note that Traefik takes a few seconds to be reinstalled after saving the file.
+
+[source,yaml]
+----
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: rke2-traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    ports:
+      reportdb-pgsql:
+        port: 5432
+        expose:
+          default: true
+        exposedPort: 5432
+        protocol: TCP
+        hostPort: 5432
+        containerPort: 5432
+      salt-publish:
+        port: 4505
+        expose:
+          default: true
+        exposedPort: 4505
+        protocol: TCP
+        hostPort: 4505
+        containerPort: 4505
+      salt-request:
+        port: 4506
+        expose:
+          default: true
+        exposedPort: 4506
+        protocol: TCP
+        hostPort: 4506
+        containerPort: 4506
+----
+
+When using the server as a TFTP server there are a few issues to consider.
+TFTP is complex to expose from a {kube} pod due to the nature of the protocol: the TFTP server receives requests on port 69, but negotiates another random port to continue.
+This port also needs to stay the same through the whole session for the server to recognize the client as being the same.
+This means that there are only two possible ways to use the TFTP server:
+
+* using a load balancer compatible with TFTP,
+
+* using the host network for the TFTP pod. This can be achieved by setting the [literal]``tftp.hostNetwork`` helm chart value to [literal]``true``.
+
+If Traefik is used as the ingress controller, the user needs access to additional resources.
+Add the following to the rules of the previously defined role:
+
+[source,yaml]
+----
+- apiGroups: ["traefik.io", "traefik.containo.us"]
+  resources: ["ingressroutetcps", "middlewares"]
+  verbs: ["*"]
+----
+
+=== Security framework setup
+
+The main container of the server runs [command]``systemd`` even though this is not a cloud native practice.
+This means that the default Kubernetes security profiles for this container are not sufficient.
+There are two possibilities to solve this issue:
+
+* run the main container as super privileged by setting the [literal]``server.superPrivileged`` helm value to [literal]``true``,
+
+* add custom policies or profile and use it for the container.
+
+Configuring SELinux or AppArmor is documented in the [literal]``server-helm`` chart README, report to it for more details.
+
+[WARNING]
+====
+Keep in mind, that running the container as super privileged is not the safest thing to do.
+====
+
+
+== Installation
+
+The [literal]``server-helm`` chart requires one value to be set: [literal]``global.fqdn``.
+The other values have sensible defaults, report to the [literal]``server-helm`` chart README for more details on those.
+
+The server can be installed with a command like the following:
+
+ifeval::[{mlm-content} == true]
+[source, Shell, subs="attributes"]
+----
+helm install smlm-server \
+     oci://registry.suse.com/suse/multi-linux-manager/5.2/server-helm \
+     -n $NAMESPACE \
+     --description "Server installation" \
+     --set "global.fqdn=the.server.fqdn" \
+     --set "registrySecret=the-scc-secret" \
+     --version {productchartversion}
+----
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+[source, Shell, subs="attributes"]
+----
+helm install uyuni-server \
+     oci://registry.opensuse.org/uyuni/server-helm \
+     -n $NAMESPACE \
+     --description "Server installation" \
+     --set "global.fqdn=the.server.fqdn" \
+     --version {productchartversion}
+----
+endif::[]
+
+When setting multiple values, using a YAML values file is recommended instead of passing several [literal]``--set`` parameters.
+Refer to the [command]``helm`` command help for more details.
+
+As the main container is not fully cloud-native yet, it is sometimes useful to get a terminal inside it.
+This can be achieved using the following commands.
+Variables have been used here for the sake of readability, but it could fit in a single line for convenience.
+This could be used in place of `mgrctl term` through the other pages of the documentation.
+
+[source, Shell]
+----
+NAMESPACE=`kubectl get pod -A -lapp.kubernetes.io/part-of=uyuni,app.kubernetes.io/component=server -o "jsonpath={.items[0].metadata.namespace}"`
+POD=`kubectl get pod -A -lapp.kubernetes.io/part-of=uyuni,app.kubernetes.io/component=server -o "jsonpath={.items[0].metadata.name}"`
+kubectl exec -ti -n $NAMESPACE $POD -- bash
+----
+
+
+== Example helm charts
+
+Some helm charts using the [literal]``server-helm`` chart can be found in the [literal]``{gitchartsbranch}`` branch of the https://github.com/uyuni-project/uyuni-charts/tree/{gitchartsbranch}[uyuni-charts] git repository.
+They show case how the TLS certificates can be generated using [literal]``cert-manager`` and [literal]``trust-manager``.
+Those examples may assume to have {kube} cluster administrator permissions.
+
+ifeval::[{mlm-content} == true]
+[WARNING]
+====
+These examples are not supported, only provided for documentation purpose.
+====
+endif::[]
+
+== Diagnostics / Troubleshooting
+
+// CB: TBD complete the troubleshooting section
+
+* Troubleshooting:
+
+**  Check the pods status and errors using [command]``kubectl get pod -n $NAMESPACE`` and [command]``kubectl describe pod -n $NAMESPACE <POD NAME>``.
+
+**  If the pods are ready, but Salt minions cannot access the master, check the network configuration and how the ports are exposed.
