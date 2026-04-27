@@ -1,3 +1,4 @@
+- Fixed build errors in PDFs
 - Changed command for updating Uyuni containers in Installation and Upgrade Guide
 - Updated uyuni-tools installation in Installation and Upgrade Guide
 - Added server installation on Kubernetes

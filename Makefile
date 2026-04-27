@@ -134,6 +134,7 @@ define pdf-book-create
 		--base-dir . \
 		--out-file $(7)/$(5)_$(6)_guide.pdf \
 		modules/$(6)/nav-$(6)-guide.pdf.$(8).adoc \
+		--failure-level ERROR \
 		--trace
 endef
 
@@ -153,6 +154,7 @@ define pdf-book-create-uyuni
 		--base-dir . \
 		--out-file $(7)/$(5)_$(6)_guide.pdf \
 		modules/$(6)/nav-$(6)-guide.pdf.$(8).adoc \
+		--failure-level ERROR \
 		--trace
 endef
 
