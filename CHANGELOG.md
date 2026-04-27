@@ -1,3 +1,4 @@
+- Update minimal RKE2 user permissions for server and proxy
 - Fixed build errors in PDFs
 - Changed command for updating Uyuni containers in Installation and Upgrade Guide
 - Updated uyuni-tools installation in Installation and Upgrade Guide
