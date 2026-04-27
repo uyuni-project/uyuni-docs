@@ -1,3 +1,4 @@
+- Updated uyuni-tools installation in Installation and Upgrade Guide
 - Added server installation on Kubernetes
 - Added online database backup instructions to Administration Guide
 - Added support for Open Enterprise Server 25.4
