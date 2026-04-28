@@ -1,3 +1,6 @@
+- Adjusted the urls and references for 5.2
+- Removed the smdba references
+- Removed the instructions for 4.3 proxy/rbs to 5.1 proxy/rbs
 - Fixed build errors in PDFs
 - Changed command for updating Uyuni containers in Installation and Upgrade Guide
 - Updated uyuni-tools installation in Installation and Upgrade Guide
