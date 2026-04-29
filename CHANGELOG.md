@@ -1,3 +1,5 @@
+- Added link to proxy creation from client to an existing document in Installation
+  and Upgrade Guide
 - Updated minimal RKE2 user permissions for server and proxy in Installation and Upgrade Guide
 - Fixed build errors in PDFs
 - Changed command for updating Uyuni containers in Installation and Upgrade Guide
