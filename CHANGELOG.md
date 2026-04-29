@@ -1,6 +1,7 @@
 - Adjusted the URLs and references for 5.2
 - Removed the smdba references
 - Removed the instructions for 4.3 proxy/rbs to 5.1 proxy/rbs
+- Updated minimal RKE2 user permissions for server and proxy in Installation and Upgrade Guide
 - Fixed build errors in PDFs
 - Changed command for updating Uyuni containers in Installation and Upgrade Guide
 - Updated uyuni-tools installation in Installation and Upgrade Guide

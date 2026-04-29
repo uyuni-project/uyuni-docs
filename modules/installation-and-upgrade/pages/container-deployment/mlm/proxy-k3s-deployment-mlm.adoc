@@ -32,6 +32,43 @@ Installing the {kube} cluster and configuring it is out of the scope of this doc
 
 The cluster is assumed to be ready to be used with a user having rights on a namespace dedicated to {productname}.
 
+Create [literal]``Role`` and [literal]``RoleBinding`` if they do not exist already. 
+The minimum rights required to deploy [literal]``proxy-helm`` are defined as:
+
+[source,yaml]
+----
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: example-resource-manager
+  namespace: $NAMESPACE
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/log", "services", "secrets", "configmaps", "persistentvolumeclaims"]
+  verbs: ["*"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["*"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: example-resource-manager-binding
+  namespace: $NAMESPACE
+subjects:
+- kind: User
+  name: $USERNAME
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: example-resource-manager
+  apiGroup: rbac.authorization.k8s.io
+----
+
+
 [IMPORTANT]
 ====
 This guide assumes the reader knows how to work with {kube}: the concepts will not be explained here as they are extensively documented in the official {kube} documentation.
@@ -198,6 +235,25 @@ spec:
         protocol: TCP
         hostPort: 4506
         containerPort: 4506
+----
+
+If Traefik is used as the Ingress controller, the user needs access to additional resources.
+Add the following to the rules of the previously defined role:
+
+[source,yaml]
+----
+- apiGroups: ["traefik.io", "traefik.containo.us"]
+  resources: ["ingressroutetcps"]
+  verbs: ["*"]
+----
+
+If Gateway API is used instead, add the following to the rules of the previously defined role:
+
+[source,yaml]
+----
+- apiGroups: ["gateway.networking.k8s.io"]
+  resources: ["gateways", "httproutes", "tcproutes"]
+  verbs: ["*"]
 ----
 
 TFTP is complex to expose from a {kube} pod due to the nature of the protocol: the TFTP server receives requests on port 69, but negotiates another random port to continue.
