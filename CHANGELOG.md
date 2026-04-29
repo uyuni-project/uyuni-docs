@@ -1,3 +1,5 @@
+- Added link to proxy creation from client to an existing document in Installation
+  and Upgrade Guide
 - Updated features table for EL 10 based distributions
 - Document Debian 13
 - Added support for Open Enterprise Server 25.4
