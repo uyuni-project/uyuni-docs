@@ -1,4 +1,4 @@
-- Added explanation for translating mgradm arguments to YAML in Installation and 
+- Added explanation for translating mgradm arguments to YAML to Installation and 
   Upgrade Guide (bsc#1258144)
 - Clarified how to get PTF images in air-gapped setup in Installation and 
   Upgrade Guide (bsc#1261307)
