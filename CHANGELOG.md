@@ -1,3 +1,4 @@
+- Corrected path for Salt minion in Retail Guide (#1262090)
 - Added mass migration using UI to Client Configuration Guide
 - Added explanation for translating mgradm arguments to YAML to Installation and 
   Upgrade Guide (bsc#1258144)

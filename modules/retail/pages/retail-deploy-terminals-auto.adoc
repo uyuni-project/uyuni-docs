@@ -1,6 +1,6 @@
 [[retail.deployterminals.auto]]
 = Deploy Terminals and Auto-Accept Keys
-:revdate: 2024-12-12
+:revdate: 2026-04-30
 :page-revdate: {revdate}
 
 You can configure {productname} to automatically accept the keys of newly deployed terminals.
@@ -30,18 +30,19 @@ For more information, see xref:retail:retail-deploy-terminals-auto.adoc#retail.d
 
 
 [[retail.deployterminals.auto.server]]
-== Configure the Server to Auto-Accept
-
+== Configure the server to auto-accept
 
 When you have configured {saltboot} using one of these methods, you need to configure the server to accept them.
 The server stores the autosign keys in a file within the [path]``/etc/salt/master.d/`` directory, which is preserved in [systemitem]``etc-salt`` volume.
 You can enable auto-signing by creating an auto-sign file that contains the key you created when you configured {saltboot}.
 
 
-
-.Procedure: Configuring the Server to Auto-Accept
+.Procedure: Configuring the server to auto-accept
+[role=procedure]
+____
 
 . At the command prompt of the {productname} container host, as root, enter the server container:
+
 +
 
 ----
@@ -49,10 +50,12 @@ mgrctl term
 ----
 
 . Inside the container, execute the following steps:
+
 +
 
 --
 .. In directory [path]``/etc/salt/master.d/``, create file [path]``autosign_grains.conf`` and specify [option]``autosign_grains_dir``:
+
 +
 ----
 echo "autosign_grains_dir: /etc/salt/autosign_grains" \
@@ -60,33 +63,42 @@ echo "autosign_grains_dir: /etc/salt/autosign_grains" \
 ----
 
 .. Create a file at [path]``/etc/salt/autosign_grains/autosign_key``, that contains the auto-sign key you specified with {saltboot} (replace [literal]``<AUTOSIGN_KEY>`` with the key:
+
 +
+
 ----
 mkdir /etc/salt/autosign_grains
 echo "<AUTOSIGN_KEY>" > /etc/salt/autosign_grains/autosign_key
 ----
+
 +
+
 For multiple keys, put each one on a new line.
 --
 
+____
 
 For more information about configuring the server to automatically accept grains, see https://docs.saltproject.io/en/latest/topics/tutorials/autoaccept_grains.html.
 
 
 
 [[retail.deployterminals.auto.keep]]
-== Configure {saltboot} to Keep Auto-Signed Grains
+== Configure {saltboot} to keep auto-signed grains
 
 Use different procedure for SLE 15 and SLE 12.
 
 
-
 // For SLE15 templates, the procedure is the following:
-.Procedure: Configuring {saltboot} to Keep Auto-Signed Grains (SLE 15)
-. In the location where the image source is built, such as a build host or source repository, create a configuration file called [path]``etc/salt/minion.d/autosign-grains.conf``.
+.Procedure: Configuring {saltboot} to keep auto-signed grains (SLE 15)
+[role=procedure]
+____
+. In the location where the image source is built, such as a build host or source repository, create a configuration file called [path]``etc/venv-salt-minion/minion.d/autosign-grains.conf``.
+
 . Edit the new configuration file with these details.
   You can use any value you like as the auto-sign key:
+
 +
+
 ----
 # create the grain
 grains:
@@ -96,17 +108,23 @@ grains:
 autosign_grains:
     - autosign_key
 ----
+____
 
 
 
 // For SLE12 and SLE11 templates, the procedure is the following:
-.Procedure: Configuring {saltboot} to Keep Auto-Signed Grains (SLE 12)
-. In the location where the image source is built, such as a build host or source repository, create a configuration file called [path]``etc/salt/minion.d/autosign-grains.conf``.
+.Procedure: Configuring {saltboot} to keep auto-signed grains (SLE 12)
+[role=procedure]
+____
+. In the location where the image source is built, such as a build host or source repository, create a configuration file called [path]``etc/venv-salt-minion/minion.d/autosign-grains.conf``.
   This must be outside of the [path]``root`` directory provided by the template.
   This way you prevent the inclusion of unwanted files in the ``initrd``.
+
 . Edit the new configuration file with these details.
   You can use any value you like as the auto-sign key:
+
 +
+
 ----
 # create the grain
 grains:
@@ -118,32 +136,43 @@ autosign_grains:
 ----
 
 . Create a tarball of this directory:
+
 +
+
 ----
 tar -czf autosign-grains.tgz etc
 ----
 
 . Edit the [path]``config.xml`` template file.
   In the [literal]``<packages type="image">`` element, add:
+
 +
+
 ----
 <archive name="autosign.tgz" bootinclude="true"/>
 ----
 
 . Save the file and rebuild the image.
 
+____
+
 
 
 [[retail.deployterminals.auto.pxe]]
-== Configure {saltboot} to Auto-Sign During PXE Boot
+== Configure {saltboot} to auto-sign during PXE boot
 
 
-
-.Procedure: Configuring {saltboot} to Auto-Sign During PXE Boot
+.Procedure: Configuring {saltboot} to auto-sign during PXE boot
+[role=procedure]
+____
 . Configure the PXE formula to specify these kernel parameters during booting:
+
 +
+
 ----
 SALT_AUTOSIGN_GRAINS=autosign_key:<AUTOSIGN_KEY>
 ----
+
 . PXE boot the {salt} client.
-  The formula creates the [path]``./etc/salt/minion.d/autosign-grains-onetime.conf`` configuration file and passes it to ``initrd``.
+  The formula creates the [path]``./etc/venv-salt-minion/minion.d/autosign-grains-onetime.conf`` configuration file and passes it to ``initrd``.
+____
