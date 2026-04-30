@@ -1,3 +1,4 @@
+- Removed Google Cloud Compute from PAYG documentation (bsc#1261631)
 - Added link to proxy creation from client to an existing document in Installation
   and Upgrade Guide
 - Adjusted the URLs and references for 5.2
