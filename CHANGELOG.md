@@ -1,3 +1,4 @@
+- Removed Google Cloud Compute from PAYG documentation (bsc#1261631)
 - Updated features table for EL 10 based distributions
 - Document Debian 13
 - Added support for Open Enterprise Server 25.4
