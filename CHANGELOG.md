@@ -1,3 +1,5 @@
+- Added link to proxy creation from client to an existing document in Installation
+  and Upgrade Guide
 - Adjusted the URLs and references for 5.2
 - Removed the smdba references
 - Removed the instructions for 4.3 proxy/rbs to 5.1 proxy/rbs
