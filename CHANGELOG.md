@@ -1,4 +1,5 @@
-- Added explanation for translating mgradm arguments to YAML in Installation and 
+- Added mass migration using UI to Client Configuration Guide
+- Added explanation for translating mgradm arguments to YAML to Installation and 
   Upgrade Guide (bsc#1258144)
 - Removed Google Cloud Compute from PAYG documentation (bsc#1261631)
 - Added link to proxy creation from client to an existing document in Installation
