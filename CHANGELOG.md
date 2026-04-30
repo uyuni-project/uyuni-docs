@@ -1,3 +1,4 @@
+- Added mass migration using UI in Client Configuration Guide
 - Adjusted the URLs and references for 5.2
 - Removed the smdba references
 - Removed the instructions for 4.3 proxy/rbs to 5.1 proxy/rbs
