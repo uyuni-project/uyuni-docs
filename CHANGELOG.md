@@ -1,3 +1,5 @@
+- Added explanation for translating mgradm arguments to YAML in Installation and 
+  Upgrade Guide (bsc#1258144)
 - Updated features table for EL 10 based distributions
 - Document Debian 13
 - Added support for Open Enterprise Server 25.4
