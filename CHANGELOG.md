@@ -1,5 +1,8 @@
 - Added explanation for translating mgradm arguments to YAML in Installation and 
   Upgrade Guide (bsc#1258144)
+- Removed Google Cloud Compute from PAYG documentation (bsc#1261631)
+- Added link to proxy creation from client to an existing document in Installation
+  and Upgrade Guide
 - Updated features table for EL 10 based distributions
 - Document Debian 13
 - Added support for Open Enterprise Server 25.4
