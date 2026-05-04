@@ -1,3 +1,5 @@
+- Added information about availability of SLE 16 and SL Micro 6.2 support
+  in the product versions 5.1.2 and later (bsc#1260614)
 - Corrected path for Salt minion in Retail Guide (#1262090)
 - Added explanation for translating mgradm arguments to YAML in Installation and 
   Upgrade Guide (bsc#1258144)
