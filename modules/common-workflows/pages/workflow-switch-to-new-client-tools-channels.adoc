@@ -9,7 +9,7 @@
 :page-product-version: 5.1
 
 
-{productname} 5.1 introduces a new, rebranded set of client tools for all supported operating systems.
+{productname} 5.1 introduced a new, rebranded set of client tools for all supported operating systems.
 
 This change requires some manual steps when upgrading from earlier versions to 5.1.
 
@@ -23,7 +23,11 @@ To ensure continued updates for client tools, you must:
 
 * Mirror the new `SUSE Multi-Linux Manager Client Tools for XYZ` channels for the relevant products and assign them to the appropriate clients.
 
-* Update any CLM projects, activation keys, or AutoYaST profiles that reference the old client tools channels to use the new ones.
+* Update any Content Lifecycle Management (CLM) projects, activation keys, or AutoYaST profiles that reference the old client tools channels to use the new ones.
+
+
+
+== Migration from old to new client tools using API
 
 This workflow demonstrates how to automate the synchronization of the new client tools channels and switch existing entities to use them via the XML-RPC API.
 
@@ -40,9 +44,10 @@ The process involves two main steps:
 . Update entities such as activation keys and CLM projects to use the new channels.
 
 
-== Use case / Situation
+=== Use case
 
-This workflow is intended for administrators managing {productname} 5.1. It helps automate the process of syncing new channels and updating activation keys and CLM projects, including project promotion, through the API, eliminating the need for manual operations in the {webui}.
+This workflow is intended for administrators managing {productname}. 
+It helps automate the process of syncing new channels and updating activation keys and CLM projects, including project promotion, through the API, eliminating the need for manual operations in the {webui}.
 
 By following this workflow, you can create a Python script that:
 
@@ -55,12 +60,12 @@ By following this workflow, you can create a Python script that:
 * Builds and promotes project environments.
 
 
-== Outcome
+=== Outcome
 
 After completing this workflow, new client tools will be synced and activation key and CLM projects will be fully switched to the new client tools channels.
 
 
-== Preparation
+=== Preparation
 
 Before you start, ensure that:
 
@@ -77,16 +82,13 @@ This workflow is divided into two major steps:
 
 
 
-== Step-by-step workflow
-
-
-=== Step 1: Synchronize new client tools channels
+=== Synchronize new client tools channels
 
 The first step ensures that all new client tools channels are synchronized for already installed base products.  
 This is achieved by listing all installed products via the XML-RPC API and identifying the matching client tools extensions.
 
 
-==== Workflow overview
+=== Workflow overview
 
 [NOTE]
 ====
@@ -108,7 +110,7 @@ These operations use the following XML-RPC methods:
 * `sync.content.addChannel(key, channelLabel, '')` - adds a specific channel for synchronization.
 
 
-===== Sample implementation
+==== Sample implementation
 
 ----
 def find_extensions_of_synced_products(client, key):
@@ -134,7 +136,7 @@ def add_client_tools_channels(client, key, extensions, dry_run):
                     client.sync.content.addChannel(key, label, '')
 ----
 
-.Procedure
+.Procedure: Detecting installed products and adding required channels
 [role=procedure]
 ____
 . Detect installed products using `client.sync.content.listProducts(key)`.
@@ -164,11 +166,13 @@ This forces the server to refresh and synchronize all newly added channels right
 Based on this workflow, a helper utility script named `sync_client_tools` has been created in the https://github.com/uyuni-project/contrib[Uyuni contrib repository] that one can use.
 
 
-=== Step 2: Update CLM projects and activation keys
+
+=== Update CLM projects and activation keys
 
 Once the new client tools channels are synchronized, the next step is to update your Content Lifecycle Management  projects and activation keys so that they reference the new channels instead of the old ones.
 
 This ensures that clients continue receiving updates from the correct repositories.
+
 
 ==== Workflow overview
 
@@ -182,7 +186,7 @@ This step consists of the following main tasks:
 
 ===== Sample implementation
 
-.Procedure
+.Procedure: Listing projects and attaching new tools
 [role=procedure]
 ____
 . List all projects and select the one to process.
@@ -304,4 +308,74 @@ Without them, the script would execute API calls without clear feedback or contr
 It is recommend to run your script in dry-run mode first to review the planned changes and test with a single project before applying it to all.
 ====
 
+
+
+== Migration from old to new client tools using {webui}
+
+Following the introduction of new client tools channels, and existing clients being migrated to the new channel structure, CLM projects must also be updated and system channels subscriptions modified.
+This can also be achieved via {webui}.
+
+
+=== Migrating from old to new client tools
+
+==== Prerequisites
+
+The following steps must be completed before the migration starts:
+
+* The product list must be updated to ensure new client tools are visible. 
+  This is done by running [command]``mgr-sync refresh`` from the command line, or by navigating to menu:Admin[Setup Wizard > Products] and clicking btn:[Refresh]. 
+* The new client tools products must be mirrored for all synchronized operating systems.
+
+
+The following procedures describe the migrations that need to take place.
+
+.Procedure: Updating CLM environments
+[role=procedure]
+____
+. In the {productname} {webui}, select the target CLM project.
+
+. Click btn:[Attach/Detach Sources].
+
+. Select the new ManagerTools channels.
+
+. Deselect the old SLE-Manager-Tools channels (or the equivalents for other operating systems).
+
++
+[NOTE]
+====
+For SUSE Linux Enterprise Server 12, the old client tools are mandatory and cannot be removed from the assigned sources.
+In this case, the new client tools are added without removing the old ones.
+====
+
+. Save the changes. 
+
+. Rebuild and promote the environments.
+____
+
+
+.Procedure: Updating systems using the System Set Manager (SSM)
+[role=procedure]
+____
+. Navigate to menu:Systems[System Set Manager].
+
+. Select the systems to be migrated.
+
+. Navigate to the Channels tab.
+
+. Ensure the base channel configuration remains unchanged.
+
+. In the channel list, select [btn]:Subscribe for the new ManagerTools channels.
+
+. Select [literal]``Unsubscribe`` for the old SLE-Manager-Tools channels (or the equivalents for other operating systems).
+
++
+[NOTE]
+====
+For some SUSE Linux Enterprise Server products, the {webui} may restrict unsubscribing from the old tools.
+In this instance, subscribe to the new Client Tools only.
+====
+
+. Click btn:[Apply] and then btn:[Confirm].
+
+____
 
