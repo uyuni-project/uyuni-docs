@@ -134,6 +134,9 @@ def add_client_tools_channels(client, key, extensions, dry_run):
                     client.sync.content.addChannel(key, label, '')
 ----
 
+.Procedure
+[role=procedure]
+____
 . Detect installed products using `client.sync.content.listProducts(key)`.
 
 . Iterate through product extensions to locate those containing “Client Tools” in their `friendly_name`.
@@ -145,6 +148,7 @@ def add_client_tools_channels(client, key, extensions, dry_run):
    * Skip if the channel is already installed (`status = installed`).
 
    * Otherwise, add the channel using `client.sync.content.addChannel(key, label, '')`.
+____
 
 
 This will ensure that all required client tools channels are added automatically before updating CLM projects or activation keys in Step 2.
@@ -178,9 +182,14 @@ This step consists of the following main tasks:
 
 ===== Sample implementation
 
+.Procedure
+[role=procedure]
+____
 . List all projects and select the one to process.
   For initial testing, use a single project such as `clm-project-example`:
+
 +
+
 ----
 projects = client.contentmanagement.listProjects(key)
 for p in projects:
@@ -190,7 +199,9 @@ for p in projects:
 Testing with a single project helps prevent large-scale accidental updates.
 
 . Retrieve project sources and identify both old (`manager-tools`) and new (`managertools`) client tools channels:
+
 +
+
 ----
 sources = client.contentmanagement.listProjectSources(key, project_label)
 old_tools = [s['channelLabel'] for s in sources if 'manager-tools' in s.get('channelLabel', '').lower()]
@@ -199,7 +210,9 @@ new_tools = [s['channelLabel'] for s in sources if 'managertools' in s.get('chan
 These lists will be used to detach outdated channels and attach the new ones.
 
 . For each old channel detected, call the `detachSource` endpoint:
+
 +
+
 ----
 if old_tools:
     for old in old_tools:
@@ -208,7 +221,9 @@ if old_tools:
 It is strongly recommended to run in dry-run mode first to validate which channels would be removed.
 
 . If the new client tools channels are not already attached, identify the matching base channel, list its child channels, and attach those with `managertools` in the label:
+
 +
+
 ----
 if not new_tools:
     source_labels = [s.get('channelLabel', '') for s in sources]
@@ -224,14 +239,18 @@ if not new_tools:
 Ensure the new client tools channels are already mirrored and synchronized before attachment.
 
 . Once sources are updated, list the project environments in sequence:
+
 +
+
 ----
 all_envs = client.contentmanagement.listProjectEnvironments(key, project_label)
 ----
 The returned list is ordered, and promotions should follow that order.
 +
 Build the first environment, then promote subsequent ones with short pauses between each to ensure completion.
+
 +
+
 ----
 if not all_envs:
     return
@@ -252,6 +271,9 @@ for i, env in enumerate(all_envs):
         log("Waiting 30 seconds before next promotion...")
         time.sleep(30)
 ----
+
+____
+
 
 After CLM projects are updated, ensure that any activation keys referencing old client tools channels are switched to the new channels as well.
 You can use the following API calls
