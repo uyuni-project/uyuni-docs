@@ -1,0 +1,438 @@
+# Taskfile.yml — uyuni-docs build system
+# Requires: task (https://taskfile.dev), Go (latest), npx antora, asciidoctor-pdf
+#
+# Quick reference:
+#   task setup                  Build the Go docbuild binary
+#   task gen                    Regenerate all Antora/site configs from config.yml
+#   task build:all              Build all four HTML output targets
+#   task build:mlm-dsc          MLM HTML — documentation.suse.com branding
+#   task build:mlm-webui        MLM HTML — product WebUI branding
+#   task build:uyuni-website    Uyuni HTML — website
+#   task build:uyuni-webui      Uyuni HTML — product WebUI
+#   task pdf:mlm                All MLM PDFs (all books, all languages)
+#   task pdf:uyuni              All Uyuni PDFs (all books, all languages)
+#   task pdf:all                All PDFs
+#   task pdf BOOK=administration PRODUCT=mlm LANG=en   Single book PDF
+#   task obs:mlm                OBS packages for MLM
+#   task obs:uyuni              OBS packages for Uyuni
+#   task validate:mlm           Antora validation — MLM
+#   task validate:uyuni         Antora validation — Uyuni
+#   task translations           Apply .po files via use_po.sh
+#   task clean                  Remove build/ and translations/
+
+version: '3'
+
+vars:
+  DOCBUILD: "{{.ROOT_DIR}}/.bin/docbuild"
+  PDF_THEMES_DIR: "{{.ROOT_DIR}}/branding/pdf/themes"
+  PDF_FONTS_DIR: "{{.ROOT_DIR}}/branding/pdf/fonts"
+  XREF_EXT: "{{.ROOT_DIR}}/.bin/xref-converter.rb"
+  LANGUAGES: "en ja zh_CN ko"
+  BOOKS: "installation-and-upgrade client-configuration administration reference retail common-workflows specialized-guides legal"
+
+tasks:
+  # --------------------------------------------------------------------------
+  # Setup — build the Go binary
+  # --------------------------------------------------------------------------
+  setup:
+    desc: Build the docbuild Go binary
+    cmds:
+      - mkdir -p .bin
+      - go build -o {{.DOCBUILD}} ./cmd/docbuild/
+    sources:
+      - cmd/docbuild/**/*.go
+      - internal/**/*.go
+      - go.mod
+      - go.sum
+    generates:
+      - .bin/docbuild
+
+  # --------------------------------------------------------------------------
+  # Config generation
+  # --------------------------------------------------------------------------
+  gen:
+    desc: Regenerate all Antora/site configs from config.yml
+    deps: [setup]
+    cmds:
+      - "{{.DOCBUILD}} gen-all"
+
+  # --------------------------------------------------------------------------
+  # HTML builds
+  # --------------------------------------------------------------------------
+  build:mlm-dsc:
+    desc: Build MLM HTML for documentation.suse.com (all languages)
+    deps: [setup]
+    cmds:
+      - for: {var: LANGUAGES}
+        cmd: |
+          echo "==> Building mlm-dsc / {{.ITEM}}"
+          {{.DOCBUILD}} gen-site -product mlm -output mlm-dsc -lang {{.ITEM}}
+          {{.DOCBUILD}} gen-antora -product mlm -lang {{.ITEM}}
+          mkdir -p translations/{{.ITEM}}
+          cp -a en/modules translations/{{.ITEM}}/modules || true
+          mkdir -p translations/{{.ITEM}}/modules/ROOT/pages/
+          cp -a en/modules/ROOT/pages/common_gfdl1.2_i.adoc translations/{{.ITEM}}/modules/ROOT/pages/ || true
+          DOCSEARCH_ENABLED=true SITE_SEARCH_PROVIDER=lunr LANG={{.ITEM}} LC_ALL={{.ITEM}} \
+            npx antora translations/{{.ITEM}}/mlm-dsc.site.yml --stacktrace
+
+  build:mlm-webui:
+    desc: Build MLM HTML for product WebUI (all languages, with language selector)
+    deps: [setup]
+    cmds:
+      - for: {var: LANGUAGES}
+        cmd: |
+          echo "==> Building mlm-webui / {{.ITEM}}"
+          {{.DOCBUILD}} gen-site -product mlm -output mlm-webui -lang {{.ITEM}}
+          {{.DOCBUILD}} gen-antora -product mlm -lang {{.ITEM}}
+          mkdir -p translations/{{.ITEM}}
+          cp -a en/modules translations/{{.ITEM}}/modules || true
+          mkdir -p translations/{{.ITEM}}/modules/ROOT/pages/
+          cp -a en/modules/ROOT/pages/common_gfdl1.2_i.adoc translations/{{.ITEM}}/modules/ROOT/pages/ || true
+          cp -a branding/supplemental-ui/mlm/webui-2025/ translations/{{.ITEM}}/supplemental-ui/
+          {{.DOCBUILD}} inject-lang-selector -hbs translations/{{.ITEM}}/supplemental-ui/partials/header-content.hbs
+          DOCSEARCH_ENABLED=true SITE_SEARCH_PROVIDER=lunr LANG={{.ITEM}} LC_ALL={{.ITEM}} \
+            npx antora translations/{{.ITEM}}/mlm-webui.site.yml --stacktrace
+
+  build:uyuni-website:
+    desc: Build Uyuni HTML for website (all languages)
+    deps: [setup]
+    cmds:
+      - for: {var: LANGUAGES}
+        cmd: |
+          echo "==> Building uyuni-website / {{.ITEM}}"
+          {{.DOCBUILD}} gen-site -product uyuni -output uyuni-website -lang {{.ITEM}}
+          {{.DOCBUILD}} gen-antora -product uyuni -lang {{.ITEM}}
+          mkdir -p translations/{{.ITEM}}
+          cp -a en/modules translations/{{.ITEM}}/modules || true
+          mkdir -p translations/{{.ITEM}}/modules/ROOT/pages/
+          cp -a en/modules/ROOT/pages/common_gfdl1.2_i.adoc translations/{{.ITEM}}/modules/ROOT/pages/ || true
+          DOCSEARCH_ENABLED=true SITE_SEARCH_PROVIDER=lunr LANG={{.ITEM}} LC_ALL={{.ITEM}} \
+            npx antora translations/{{.ITEM}}/uyuni-website.site.yml --stacktrace
+
+  build:uyuni-webui:
+    desc: Build Uyuni HTML for product WebUI (all languages, with language selector)
+    deps: [setup]
+    cmds:
+      - for: {var: LANGUAGES}
+        cmd: |
+          echo "==> Building uyuni-webui / {{.ITEM}}"
+          {{.DOCBUILD}} gen-site -product uyuni -output uyuni-webui -lang {{.ITEM}}
+          {{.DOCBUILD}} gen-antora -product uyuni -lang {{.ITEM}}
+          mkdir -p translations/{{.ITEM}}
+          cp -a en/modules translations/{{.ITEM}}/modules || true
+          mkdir -p translations/{{.ITEM}}/modules/ROOT/pages/
+          cp -a en/modules/ROOT/pages/common_gfdl1.2_i.adoc translations/{{.ITEM}}/modules/ROOT/pages/ || true
+          cp -a branding/supplemental-ui/uyuni/uyuni-2023/ translations/{{.ITEM}}/supplemental-ui/
+          {{.DOCBUILD}} inject-lang-selector -hbs translations/{{.ITEM}}/supplemental-ui/partials/header-content.hbs
+          DOCSEARCH_ENABLED=true SITE_SEARCH_PROVIDER=lunr LANG={{.ITEM}} LC_ALL={{.ITEM}} \
+            npx antora translations/{{.ITEM}}/uyuni-webui.site.yml --stacktrace
+
+  build:all:
+    desc: Build all four HTML output targets
+    deps:
+      - build:mlm-dsc
+      - build:mlm-webui
+      - build:uyuni-website
+      - build:uyuni-webui
+
+  # --------------------------------------------------------------------------
+  # PDF builds — single book
+  # Usage: task pdf BOOK=administration PRODUCT=mlm LANG=en
+  # --------------------------------------------------------------------------
+  pdf:
+    desc: "Build a single PDF book. Usage: task pdf BOOK=administration PRODUCT=mlm LANG=en"
+    deps: [setup]
+    vars:
+      BOOK: '{{default "administration" .BOOK}}'
+      PRODUCT: '{{default "mlm" .PRODUCT}}'
+      LANG: '{{default "en" .LANG}}'
+    cmds:
+      - |
+        BOOK="{{.BOOK}}"
+        PRODUCT="{{.PRODUCT}}"
+        LANG="{{.LANG}}"
+
+        # Resolve PDF theme from config.yml via docbuild (printed to stdout)
+        case "${PRODUCT}:${LANG}" in
+          mlm:ja)    THEME=suse-jp ;;
+          mlm:zh_CN) THEME=suse-sc ;;
+          mlm:ko)    THEME=suse-ko ;;
+          mlm:*)     THEME=suse ;;
+          uyuni:ja)    THEME=uyuni-jp ;;
+          uyuni:zh_CN) THEME=uyuni-sc ;;
+          uyuni:ko)    THEME=uyuni-ko ;;
+          uyuni:*)     THEME=uyuni ;;
+        esac
+
+        # CJK attributes
+        case "${LANG}" in
+          ja|zh_CN|ko) CJK_ATTR="-a scripts=cjk" ;;
+          *)            CJK_ATTR="" ;;
+        esac
+
+        # Locale for date formatting
+        case "${LANG}" in
+          ja)    LOCALE="ja_JP.UTF-8" ;;
+          zh_CN) LOCALE="zh_CN.UTF-8" ;;
+          ko)    LOCALE="ko_KR.UTF-8" ;;
+          *)     LOCALE="en_US.utf8" ;;
+        esac
+
+        # Date format
+        case "${LANG}" in
+          ja|zh_CN) DATE_FMT="%Y年%m月%e日" ;;
+          ko)       DATE_FMT="%Y년%m월%e일" ;;
+          *)        DATE_FMT="%B %d %Y" ;;
+        esac
+
+        REVDATE=$(LANG=${LOCALE} LC_ALL=${LOCALE} date +"${DATE_FMT}")
+        SRCDIR="translations/${LANG}"
+        OUTDIR="build/${LANG}/pdf"
+        mkdir -p "${OUTDIR}"
+
+        # Ensure English source modules are staged (translations may not have been built yet)
+        mkdir -p "${SRCDIR}"
+        if [ ! -d "${SRCDIR}/modules" ]; then
+          cp -a en/modules "${SRCDIR}/modules"
+        fi
+
+        # Generate PDF nav file from Antora nav
+        {{.DOCBUILD}} gen-pdf-nav -book ${BOOK} -lang ${LANG} -dir ${SRCDIR}/modules/${BOOK}
+
+        # Generate self-contained entities.adoc for this product/lang
+        # (written to translations/${LANG}/branding/pdf/entities.adoc)
+        {{.DOCBUILD}} gen-entities -product ${PRODUCT} -lang ${LANG}
+
+        cd "${SRCDIR}"
+        LANG=${LOCALE} LC_ALL=${LOCALE} asciidoctor-pdf \
+          -r {{.XREF_EXT}} \
+          -a lang=${LANG} \
+          -a pdf-themesdir={{.PDF_THEMES_DIR}}/ \
+          -a pdf-theme=${THEME} \
+          -a pdf-fontsdir={{.PDF_FONTS_DIR}} \
+          -a revdate="${REVDATE}" \
+          -a examplesdir=modules/${BOOK}/examples \
+          -a imagesdir=modules/${BOOK}/assets/images \
+          ${CJK_ATTR} \
+          --base-dir . \
+          --out-file {{.ROOT_DIR}}/${OUTDIR}/${PRODUCT}_${BOOK}_guide.pdf \
+          modules/${BOOK}/nav-${BOOK}-guide.pdf.${LANG}.adoc \
+          --failure-level ERROR \
+          --trace
+
+  # --------------------------------------------------------------------------
+  # PDF builds — all books for a product
+  # --------------------------------------------------------------------------
+  pdf:mlm:
+    desc: Build all MLM PDFs for all languages
+    deps: [setup]
+    cmds:
+      - for: {var: LANGUAGES}
+        cmd: |
+          LANG_CODE="{{.ITEM}}"
+          for BOOK in {{.BOOKS}}; do
+            task pdf BOOK=${BOOK} PRODUCT=mlm LANG=${LANG_CODE}
+          done
+
+  pdf:uyuni:
+    desc: Build all Uyuni PDFs for all languages
+    deps: [setup]
+    cmds:
+      - for: {var: LANGUAGES}
+        cmd: |
+          LANG_CODE="{{.ITEM}}"
+          for BOOK in {{.BOOKS}}; do
+            task pdf BOOK=${BOOK} PRODUCT=uyuni LANG=${LANG_CODE}
+          done
+
+  pdf:all:
+    desc: Build all PDFs for both products
+    deps:
+      - pdf:mlm
+      - pdf:uyuni
+
+  # --------------------------------------------------------------------------
+  # PDF collection — gather scattered build/{lang}/pdf/ into build/pdf/{lang}/
+  # --------------------------------------------------------------------------
+  pdf-collect:mlm:
+    desc: Move MLM PDFs from build/{lang}/pdf/ → build/pdf/{lang}/ (d.s.c structure)
+    deps: [setup]
+    cmds:
+      - "{{.DOCBUILD}} collect-pdfs -product mlm -src {{.ROOT_DIR}}/build -dest {{.ROOT_DIR}}/build/pdf -langs '{{.LANGUAGES}}'"
+
+  pdf-collect:uyuni:
+    desc: Move Uyuni PDFs from build/{lang}/pdf/ → build/pdf/{lang}/ (website structure)
+    deps: [setup]
+    cmds:
+      - "{{.DOCBUILD}} collect-pdfs -product uyuni -src {{.ROOT_DIR}}/build -dest {{.ROOT_DIR}}/build/pdf -langs '{{.LANGUAGES}}'"
+
+  # --------------------------------------------------------------------------
+  # Publish — full HTML + PDF pipeline for documentation.suse.com (susecom-2025)
+  # --------------------------------------------------------------------------
+  publish:dsc:
+    desc: Full d.s.c publish — MLM HTML (susecom-2025) + PDFs + per-language zip archives
+    deps: [setup]
+    cmds:
+      - task: build:mlm-dsc
+      - task: pdf:mlm
+      - task: pdf-collect:mlm
+      - task: pdf-zip:mlm
+
+  publish:uyuni:
+    desc: Full Uyuni website publish — HTML + PDFs + per-language zip archives
+    deps: [setup]
+    cmds:
+      - task: build:uyuni-website
+      - task: pdf:uyuni
+      - task: pdf-collect:uyuni
+      - task: pdf-zip:uyuni
+
+  publish:webui-mlm:
+    desc: MLM WebUI publish — HTML (with language selector) + PDFs + per-language zip archives
+    deps: [setup]
+    cmds:
+      - task: build:mlm-webui
+      - task: pdf:mlm
+      - task: pdf-collect:mlm
+      - task: pdf-zip:mlm
+
+  publish:webui-uyuni:
+    desc: Uyuni WebUI publish — HTML (with language selector) + PDFs + per-language zip archives
+    deps: [setup]
+    cmds:
+      - task: build:uyuni-webui
+      - task: pdf:uyuni
+      - task: pdf-collect:uyuni
+      - task: pdf-zip:uyuni
+
+  # --------------------------------------------------------------------------
+  # PDF zip archives — package collected PDFs for the index download link.
+  # Zips land at build/{lang}/{product}_{lang}-pdf.zip so the index page link
+  # "../{product}_{lang}-pdf.zip" resolves correctly from the HTML output dir.
+  # --------------------------------------------------------------------------
+  pdf-zip:mlm:
+    desc: Create per-language MLM PDF zip archives from collected build/pdf/{lang}/
+    deps: [setup]
+    cmds:
+      - for: {var: LANGUAGES}
+        cmd: |
+          LANG="{{.ITEM}}"
+          mkdir -p build/${LANG}
+          cd build/pdf && zip -r9 {{.ROOT_DIR}}/build/${LANG}/suse-multi-linux-manager-docs_${LANG}-pdf.zip ${LANG}/
+
+  pdf-zip:uyuni:
+    desc: Create per-language Uyuni PDF zip archives from collected build/pdf/{lang}/
+    deps: [setup]
+    cmds:
+      - for: {var: LANGUAGES}
+        cmd: |
+          LANG="{{.ITEM}}"
+          mkdir -p build/${LANG}
+          cd build/pdf && zip -r9 {{.ROOT_DIR}}/build/${LANG}/uyuni-docs_${LANG}-pdf.zip ${LANG}/
+
+  # --------------------------------------------------------------------------
+  # PDF tarballs — zip of all PDFs per product/language
+  # --------------------------------------------------------------------------
+  pdf-tar:mlm:
+    desc: Create PDF zip archives for MLM
+    cmds:
+      - for: {var: LANGUAGES}
+        cmd: |
+          LANG="{{.ITEM}}"
+          mkdir -p build/${LANG}
+          cd build && zip -r9 suse-multi-linux-manager-docs_${LANG}-pdf.zip ${LANG}/pdf/
+          mv build/suse-multi-linux-manager-docs_${LANG}-pdf.zip build/${LANG}/
+          mkdir -p build/packages
+          mv build/${LANG}/suse-multi-linux-manager-docs_${LANG}-pdf.zip build/packages/
+
+  pdf-tar:uyuni:
+    desc: Create PDF zip archives for Uyuni
+    cmds:
+      - for: {var: LANGUAGES}
+        cmd: |
+          LANG="{{.ITEM}}"
+          mkdir -p build/${LANG}
+          cd build && zip -r9 uyuni-docs_${LANG}-pdf.zip ${LANG}/pdf/
+          mv build/uyuni-docs_${LANG}-pdf.zip build/${LANG}/
+          mkdir -p build/packages
+          mv build/${LANG}/uyuni-docs_${LANG}-pdf.zip build/packages/
+
+  # --------------------------------------------------------------------------
+  # OBS packages — HTML tar.gz + PDF tar.gz → build/packages/
+  # --------------------------------------------------------------------------
+  obs:mlm:
+    desc: Generate OBS packages for MLM (HTML + PDF tarballs)
+    deps: [setup]
+    cmds:
+      - task: build:mlm-webui
+      - task: pdf:mlm
+      - for: {var: LANGUAGES}
+        cmd: |
+          LANG="{{.ITEM}}"
+          mkdir -p build/packages
+          tar --exclude="build/${LANG}/pdf" \
+              -czvf build/packages/susemanager-docs_${LANG}.tar.gz \
+              -C {{.ROOT_DIR}} build/${LANG}
+          tar -czvf build/packages/susemanager-docs_${LANG}-pdf.tar.gz \
+              -C {{.ROOT_DIR}} build/${LANG}/pdf
+
+  obs:uyuni:
+    desc: Generate OBS packages for Uyuni (HTML + PDF tarballs)
+    deps: [setup]
+    cmds:
+      - task: build:uyuni-website
+      - task: pdf:uyuni
+      - for: {var: LANGUAGES}
+        cmd: |
+          LANG="{{.ITEM}}"
+          mkdir -p build/packages
+          tar --exclude="build/${LANG}/pdf" \
+              -czvf build/packages/uyuni-docs_${LANG}.tar.gz \
+              -C {{.ROOT_DIR}} build/${LANG}
+          tar -czvf build/packages/uyuni-docs_${LANG}-pdf.tar.gz \
+              -C {{.ROOT_DIR}} build/${LANG}/pdf
+
+  # --------------------------------------------------------------------------
+  # Validation
+  # --------------------------------------------------------------------------
+  validate:mlm:
+    desc: Validate MLM documentation (Antora xref validator)
+    deps: [gen]
+    cmds:
+      - for: {var: LANGUAGES}
+        cmd: |
+          cd translations/{{.ITEM}}
+          NODE_PATH="$(npm -g root)" antora --generator @antora/xref-validator mlm-dsc.site.yml
+
+  validate:uyuni:
+    desc: Validate Uyuni documentation (Antora xref validator)
+    deps: [gen]
+    cmds:
+      - for: {var: LANGUAGES}
+        cmd: |
+          cd translations/{{.ITEM}}
+          NODE_PATH="$(npm -g root)" antora --generator @antora/xref-validator uyuni-website.site.yml
+
+  # --------------------------------------------------------------------------
+  # Translations
+  # --------------------------------------------------------------------------
+  translations:
+    desc: Apply .po translation files to generate translated AsciiDoc
+    cmds:
+      - bash scripts/use_po.sh
+
+  pot:
+    desc: Generate/update .pot/.po translation template files
+    cmds:
+      - bash scripts/make_pot.sh
+
+  # --------------------------------------------------------------------------
+  # Clean
+  # --------------------------------------------------------------------------
+  clean:
+    desc: Remove build output, translation working directories, and Antora cache
+    cmds:
+      - rm -rf build/
+      - rm -rf translations/
+      - rm -rf .cache/
+      - echo "Clean complete."

@@ -1,5 +1,44 @@
-FROM antora/antora:3.1.5
+# uyuni-docs builder image
+# Contains the full toolchain: Go, Task, Antora, Asciidoctor-PDF, po4a
+# Usage (build):  podman build -t uyuni-docs-builder .
+# Usage (run):    podman run --rm -v $(pwd):/docs:Z -w /docs uyuni-docs-builder task <target>
 
-RUN npm i -g @antora/lunr-extension
+FROM node:22-bookworm-slim
 
+ARG GO_VERSION=1.24.3
+ARG TASK_VERSION=3.43.3
 
+# ── System deps ───────────────────────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    git \
+    ruby \
+    ruby-dev \
+    build-essential \
+    po4a \
+    zip \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Go ────────────────────────────────────────────────────────────────────────
+RUN curl -fsSL https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz \
+    | tar -C /usr/local -xz
+ENV PATH="/usr/local/go/bin:${PATH}"
+
+# ── Task (taskfile.dev) ───────────────────────────────────────────────────────
+RUN curl -fsSL https://github.com/go-task/task/releases/download/v${TASK_VERSION}/task_linux_amd64.tar.gz \
+    | tar -C /usr/local/bin -xz task
+
+# ── Antora ────────────────────────────────────────────────────────────────────
+RUN npm install -g \
+    @antora/cli \
+    @antora/site-generator \
+    @antora/lunr-extension \
+    @asciidoctor/tabs
+
+# ── Asciidoctor-PDF + CJK fonts ───────────────────────────────────────────────
+RUN gem install \
+    asciidoctor-pdf \
+    rouge \
+    --no-document
+
+WORKDIR /docs

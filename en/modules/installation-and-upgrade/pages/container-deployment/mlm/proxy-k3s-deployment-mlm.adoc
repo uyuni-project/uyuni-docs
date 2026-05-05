@@ -1,0 +1,331 @@
+[[installation-proxy-containers-kube]]
+= {productname} {productnumber}  Proxy Deployment on Kubernetes
+:revdate: 2026-04-23
+:page-revdate: {revdate}
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+== Proxy on {kube} changes
+
+There were multiple changes in how to install {productname} proxies running on {kube}:
+
+* [command]``mgrpxy`` is no longer handling proxies on {kube}, helm and the [literal]``proxy-helm`` chart need to be used instead.
+
+* The TLS certificates have to be in secrets, rather than in the configuration tarball.
+  This aims at allowing cloud-native TLS certificates management for the proxies.
+
+* The proxy queries the server at the start of the container to verify that the versions are compatible.
+
+* The needed persistent volume claims has been reduced to the squid cache only.
+
+ifeval::[{mlm-content} == true]
+* The {productname} proxy is supported when running on an RKE2 cluster, K3S is longer supported.
+endif::[]
+
+
+
+== Prerequisites
+
+Installing the {kube} cluster and configuring it is out of the scope of this document.
+
+The cluster is assumed to be ready to be used with a user having rights on a namespace dedicated to {productname}.
+
+Create [literal]``Role`` and [literal]``RoleBinding`` if they do not exist already. 
+The minimum rights required to deploy [literal]``proxy-helm`` are defined as:
+
+[source,yaml]
+----
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: example-resource-manager
+  namespace: $NAMESPACE
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/log", "services", "secrets", "configmaps", "persistentvolumeclaims"]
+  verbs: ["*"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["*"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: example-resource-manager-binding
+  namespace: $NAMESPACE
+subjects:
+- kind: User
+  name: $USERNAME
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: example-resource-manager
+  apiGroup: rbac.authorization.k8s.io
+----
+
+
+[IMPORTANT]
+====
+This guide assumes the reader knows how to work with {kube}: the concepts will not be explained here as they are extensively documented in the official {kube} documentation.
+====
+
+The {productname} administrator needs to deploy the [literal]``proxy-helm`` {helm} chart.
+However, this chart requires to prepare:
+
+* TLS certificates chain for the proxy,
+
+* a [literal]``ConfigMap`` for the proxy root CA certificate,
+
+* a persistent volumes  for the claim the chart will create or a storage class automatically creating it,
+
+* Load balancers or other mechanisms to expose the Salt, SSH and TFTP ports.
+
+Run the following command to read the full details on how to use the proxy {helm} chart:
+
+ifeval::[{mlm-content} == true]
+[source, Shell, subs="attributes"]
+----
+helm show readme --version {productchartversion} \
+    oci://registry.suse.com/suse/multi-linux-manager/5.2/proxy-helm
+----
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+[source, Shell, subs="attributes"]
+----
+helm show readme --version {productchartversion} \
+    oci://registry.opensuse.org/uyuni/proxy-helm
+----
+
+[NOTE]
+====
+Helm requires the version to be semver2 compatible when using OCI repositories.
+This is why the version ([literal]``{productchartversion}``) is formatted differently from the release number ([literal]``{productnumber}``).
+====
+
+For older versions, the Helm chart is located in a snapshot repository like: [literal]``oci://registry.opensuse.org/systemsmanagement/uyuni/snapshots/<version>/opensuse_tumbleweed/uyuni/proxy-helm``.
+endif::[]
+
+
+
+
+ifeval::[{mlm-content} == true]
+=== Credentials
+
+A secret with the SCC credentials needs to be defined in order to pull the images from `registry.suse.com`.
+Refer to https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ for the instructions to prepare the secret.
+Set the `registrySecret` [literal]``proxy-helm`` chart value to the name of the secret containing those credentials to use it.
+endif::[]
+
+
+
+=== TLS setup
+
+The [literal]``proxy-cert`` TLS secret is expected.
+It contains the TLS certificate and key for the Ingress rule and needs to have the public FQDN as Subject Alternate Name.
+
+These secrets can be created using the [command]``kubectl create secret tls -n $NAMESPACE`` command.
+The certificate file passed to this command needs to start with the server certificate followed by the chain of intermediary CA certificates if any.
+The root CA is not needed in these secrets as it is expected in a ConfigMap.
+
+The Root CA certificate of [literal]``proxy-cert`` is expected in a ConfigMap named [literal]``uyuni-ca`` stored in the [literal]``ca.crt`` key.
+It can be created with a command like [command]``kubectl create cm -n $NAMESPACE uyuni-ca --from-file=ca.crt=/path/to/uyuni-ca.crt``.
+
+
+
+=== Storage
+
+The proxy chart defines a volume as a Persistent Volume Claim (PVC).
+
+[WARNING]
+====
+* The creation of the underlying PV is the responsibility of the cluster administrators.
+
+* The PVC use the [literal]``ReadWriteOnce`` access mode.
+====
+
+The created PVC can be tuned {helm} chart values, it can have the following values:
+
+* [literal]``size``: to set the requested size of the PVC.
+
+* [literal]``storageClass``: can be used to select the storage class to use for the PVC.
+
+* [literal]``extraLabels``: can be used to add custom labels to the PVC.
+
+* [literal]``annotations``: can be used to set custom annotations on the PVC.
+
+* [literal]``volumeName``: can be used to hard code which volume the PVC should be bound to.
+
+* [literal]``selector``: is the YAML fragment of the PVC selector to use to find the PV to bind to.
+
+Refer to https://kubernetes.io/docs/concepts/storage/persistent-volumes/ for more information on persistent volumes and their claims.
+
+
+Refer to the [literal]``proxy-helm`` README for the list of persistent volume claims which will be created and will need to be bound to persistent volumes.
+
+
+[IMPORTANT]
+====
+While the default sizes are provided, it is highly recommended to change them based on the distributions you plan to synchronize.
+
+For more information on storage requirements see xref:installation-and-upgrade:general-requirements.adoc[].
+====
+
+
+
+=== Exposing ports
+
+{productname} proxy requires some TCP and UDP ports to be routed to its services.
+Refer to the [literal]``proxy-helm`` README for the list of ports to be exposed.
+
+[WARNING]
+====
+RKE2 ships with nginx as the default ingress controller.
+However, as this is deprecated and soon to be unsupported, the [literal]``proxy-helm`` chart defaults to use Traefik as ingress controller.
+Using the nginx ingress controller might work and will not be documented, use at your own risk.
+====
+
+[NOTE]
+====
+The [literal]``proxy-helm`` chart supports Gateway API version 1.4.
+Since this requires experimental CRDs which are not shipped with RKE2 1.35, it is not recommended to be used in production.
+====
+
+There are multiple ways to expose the ports, but this documentation will only mention how to configure RKE2's Traefik for this.
+This is not a task for the {productname} administrator, but the {kube} cluster administrator as it requires configuration to be set on the cluster nodes.
+
+To set Traefik to expose and route the needed ports, create a `/var/lib/rancher/rke2/server/manifests/uyuni-traefik.yaml` on each node with the following content.
+Note that Traefik takes a few seconds to be reinstalled after saving the file.
+
+[source,yaml]
+----
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: rke2-traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    ports:
+      ssh:
+        port: 8022
+        expose:
+          default: true
+        exposedPort: 8022
+        protocol: TCP
+        hostPort: 8022
+      salt-publish:
+        port: 4505
+        expose:
+          default: true
+        exposedPort: 4505
+        protocol: TCP
+        hostPort: 4505
+        containerPort: 4505
+      salt-request:
+        port: 4506
+        expose:
+          default: true
+        exposedPort: 4506
+        protocol: TCP
+        hostPort: 4506
+        containerPort: 4506
+----
+
+If Traefik is used as the Ingress controller, the user needs access to additional resources.
+Add the following to the rules of the previously defined role:
+
+[source,yaml]
+----
+- apiGroups: ["traefik.io", "traefik.containo.us"]
+  resources: ["ingressroutetcps"]
+  verbs: ["*"]
+----
+
+If Gateway API is used instead, add the following to the rules of the previously defined role:
+
+[source,yaml]
+----
+- apiGroups: ["gateway.networking.k8s.io"]
+  resources: ["gateways", "httproutes", "tcproutes"]
+  verbs: ["*"]
+----
+
+TFTP is complex to expose from a {kube} pod due to the nature of the protocol: the TFTP server receives requests on port 69, but negotiates another random port to continue.
+This port also needs to stay the same through the whole session for the server to recognize the client as being the same.
+This means that there are only two possible ways to use the TFTP server:
+
+* using a load balancer compatible with TFTP,
+
+* using the host network for the TFTP pod. This can be achieved by setting the [literal]``tftp.hostNetwork`` helm chart value to [literal]``true``.
+
+
+
+== Configuration generation
+
+Before deploying the {productname} proxy, a configuration archive needs to be generated.
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-generate_proxy_config.adoc[tags=generate-proxy-config-section]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-generate_proxy_config.adoc[tags=generate-proxy-config-section]
+endif::[]
+
+
+
+[[installation-proxy-containers-kube-deploy]]
+== Deploying the {productname} Proxy Helm Chart
+
+Copy and extract the generated configuration [literal]``tar.gz`` file and then install using helm:
+
+ifeval::[{mlm-content} == true]
+[source, Shell, subs="attributes"]
+----
+helm install smlm-proxy \
+    oci://registry.suse.com/suse/multi-linux-manager/5.2/proxy-helm \
+    -n $NAMESPACE \
+    --description "Proxy installation" \
+    --set "registrySecret=the-scc-secret" \
+    --set-file global.config=path/to/config.yaml \
+    --set-file global.ssh=path/to/ssh.yaml \
+    --set-file global.httpd=path/to/httpd.yaml \
+----
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+[source, Shell, subs="attributes"]
+----
+helm install uyuni-proxy \
+    oci://registry.opensuse.org/uyuni/proxy-helm \
+    -n $NAMESPACE \
+    --description "Proxy installation" \
+    --set-file global.config=path/to/config.yaml \
+    --set-file global.ssh=path/to/ssh.yaml \
+    --set-file global.httpd=path/to/httpd.yaml \
+----
+endif::[]
+
+When setting multiple values, using a YAML values file is recommended instead of passing several [literal]``--set`` parameters.
+Refer to the [command]``helm`` command help for more details.
+
+
+
+== Example helm charts
+
+Some helm charts using the [literal]``proxy-helm`` chart can be found in the [literal]``{gitchartsbranch}`` branch of the https://github.com/uyuni-project/uyuni-charts/tree/{gitchartsbranch}[uyuni-charts] git repository.
+They show case how the TLS certificate can be generated using [literal]``cert-manager`` and [literal]``trust-manager``.
+Those examples may assume to have {kube} cluster administrator permissions.
+
+ifeval::[{mlm-content} == true]
+[WARNING]
+====
+These examples are not supported, only provided for documentation purpose.
+====
+endif::[]

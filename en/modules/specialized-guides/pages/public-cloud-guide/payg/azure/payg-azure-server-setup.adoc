@@ -1,0 +1,186 @@
+[[azure-server-setup]]
+= Initial Setup
+:revdate: 2025-03-03
+:page-revdate: {revdate}
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+.Procedure: Log in and Update the System
+. Within the Managed Resource group you have set up, you will find the virtual machine. To get the details, click on the name of the virtual machine.
+Here you can see the (public) IP address which you need to connect to the running instance. SSH into your {azure} instance. 
+
+. Switch to the root user and update the system .
+
++
+
+[source,shell]
+----
+sudo -i
+transactional-update
+----
+
+. Reboot the system.
+
+
+
+== Network Configuration
+
+
+// (Azure requirement, not ours).
+Remember, the {productname} {payg} setup requires, that a new Virtual Network and a new subnet is configured, which was performed in the previous step.
+
+Because {productname} {payg} is deployed as a 'Managed Application' it is not possible to deploy into an existing network.
+
+Before moving on to the next step, ensure the network is correctly configured:
+
+When you setup new clients which should be managed, take care that you put them into the private subnet which is configured with {productname} {payg} or peer your networks.
+
+[NOTE]
+====
+If you want to manage systems in an already existing network, you must configure **peering**.
+
+For more information, see link:https://learn.microsoft.com/en-us/azure/virtual-network/tutorial-connect-virtual-networks?tabs=portal#create-virtual-network-peer[Azure documentation].
+====
+
+.Procedure: Network configuration
+[role=procedure]
+____
+. Ensure the network configuration aligns such that `hostname -f` yields the identical name as the reverse DNS lookup of the private IP address, for instance, when executing `nslookup 10.0.0.X`.
+
+. Insert the private IP with its Fully Qualified Domain Name (FQDN) into [path]``/etc/hosts``.
+
++
+
+For example:
+
++
+
+----
+10.0.0.4   instancename.location.internal.cloudapp.azure.com
+----
+
+. Check the connection name with:
+
++
+
+----
+nmcli con show
+----
+
+. Modify the DNS search parameter using the connection name identified in the previous step with:
+
++
+
+----
+nmcli con mod <your_connection_name> ipv4.dns-search "internal.cloudapp.azure.com"
+----
+
+. Bring the connection up with:
+
++
+
+----
+nmcli con up <your_connection_name>
+----
+
+. Subsequently, [command]``hostname -f`` should return the same FQDN as obtained from [command]``nslookup 10.0.0.X``.
+____
+
+[IMPORTANT]
+====
+When adding new virtual machines (VMs), such as {sles}, it's crucial to ensure that they are configured within the same subnet as the {productname} instance, or that you have setup network peering. 
+This step is essential for successful network setup and integration.
+
+Additionally, be mindful of the geographical restrictions associated with your plans. 
+Make sure to utilize the appropriate Azure accounts which correspond to the specific geographic zones of your project.
+====
+
+
+== Configure Storage
+
+.Procedure: Configuring Storage
+
+. SSH into your {azure} instance.
+
+. Switch to the root user and update the system:
+
++
+
+[source,shell]
+----
+sudo -i
+transactional-update
+----
+
+. Reboot the system.
+
+. Configure storage using the appropriate tool:
+
+* For a standard setup, use [command]``mgr-storage-server``.
+* For a proxy configuration, use [command]``mgr-storage-proxy``.
+
++
+
+For more details, run:
+
++
+
+[source,shell]
+----
+mgr-storage-server --help
+mgr-storage-proxy --help
+----
+
++
+
+These tools simplify the creation of container storage and database volumes.
+
+. Identify the block devices:
+
++
+
+[source,shell]
+----
+ls /dev/disk/azure/scsi1/
+----
+
++
+
+This command lists the disks created during deployment. Typically:
+
+* `lun3` is the storage disk.
+* `lun4` is the database disk.
+
+. Configure storage using the identified devices:
+
++
+
+[source,shell]
+----
+mgr-storage-server /dev/disk/azure/scsi1/lun3 /dev/disk/azure/scsi1/lun4
+----
+
++
+
+[NOTE]
+====
+This command creates persistent storage volumes at:
+
+[path]``/var/lib/containers/storage/volumes``
+
+For more details, see xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[].
+====
+
++
+
+. Deploy using `mgradm` as root:
+
++
+
+[source,shell]
+----
+mgradm install podman <FQDN>
+----
+
