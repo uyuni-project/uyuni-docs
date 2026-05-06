@@ -1,3 +1,4 @@
+- Removed mention of CIS profile (bsc#1262460)
 - Added explanation for translating mgradm arguments to YAML to Installation and 
   Upgrade Guide (bsc#1258144)
 - Clarified how to get PTF images in air-gapped setup in Installation and 
