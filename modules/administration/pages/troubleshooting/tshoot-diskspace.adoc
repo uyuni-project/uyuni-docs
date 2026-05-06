@@ -48,3 +48,73 @@ You can also remove redundant database entries:
 .Procedure: Resolving Redundant Database Entries
 . Use the [command]``spacewalk-data-fsck`` command to list any redundant database entries.
 . Use the [command]``spacewalk-data-fsck --remove`` command to delete them.
+
+
+
+== Disk Check Warnings for Missing Directories
+
+After migrating to containerized deployments from 5.0 or when using custom disk check configurations, you might see warnings for directories that no longer exist.
+This commonly occurs when the [systemitem]``DISKCHECKDIRS`` environment variable references [path]``/var/lib/pgsql`` or its subdirectories.
+
+In containerized deployments, the PostgreSQL database runs in its own container, and the [path]``/var/lib/pgsql`` directory no longer exists in the server container.
+The database files are stored in a separate database container volume.
+
+If you see warnings like these in the logs or notifications:
+
+----
+DISKCHECK: Directory /var/lib/pgsql does not exist
+DISKCHECK: Directory /var/lib/pgsql/data does not exist
+----
+
+This indicates that the disk check configuration includes directories that are no longer valid in containerized deployments.
+
+
+=== Cause
+
+Prior to containerization, customers could configure custom directories to monitor by setting the [systemitem]``spacecheck_dirs`` parameter in [path]``/etc/rhn/rhn.conf``.
+A common configuration included [path]``/var/lib/pgsql`` to monitor database disk space.
+
+In containerized deployments:
+
+* The [systemitem]``spacecheck_dirs`` parameter in [path]``/etc/rhn/rhn.conf`` is still read, but is overridden by the [systemitem]``DISKCHECKDIRS`` environment variable if set
+* If [systemitem]``DISKCHECKDIRS`` is not set, the system falls back to [systemitem]``spacecheck_dirs`` from the configuration file
+* The database runs in a separate container and has its own dedicated disk check
+
+
+=== Fix
+
+Remove the obsolete directory references from the [systemitem]``DISKCHECKDIRS`` environment variable.
+
+.Procedure: Removing Obsolete Directory References
+
+. Check if you have a systemd override file with custom directory configuration:
++
+----
+cat /etc/systemd/system/uyuni-server.service.d/diskcheck.conf
+----
+
+. If the file contains [path]``/var/lib/pgsql`` or other non-existent directories, update it to use only valid directories:
++
+----
+cat > /etc/systemd/system/uyuni-server.service.d/diskcheck.conf << 'EOF'
+[Service]
+Environment="DISKCHECKDIRS=/var/spacewalk /var/cache /srv"
+EOF
+----
+
+. Apply the configuration by restarting {productname}:
++
+----
+mgradm restart
+----
+
+
+=== Result
+
+The disk check warnings for missing directories will no longer appear.
+The server container will only monitor the directories that exist within the container.
+
+The database container has its own separate disk check that monitors the PostgreSQL data directory ([path]``/var/lib/pgsql/data``) within the database container.
+This check is automatically configured and does not require manual intervention.
+
+For more information about disk space management in containerized deployments, see xref:administration:space-management.adoc[].
