@@ -235,12 +235,13 @@ asciidoc_extensions:
 
 | Command | Output | Replaces |
 |---|---|---|
+| `docbuild gen-all [-content-dir <dir>]` | All configs for all languages | `configure` Python script |
 | `docbuild gen-site -product <p> -output <o> -lang <code>` | `translations/{lang}/{output}.site.yml` | `site.yml.j2` + sed block in `Makefile.j2` |
-| `docbuild gen-antora -product <p> -lang <code>` | `translations/{lang}/antora.yml` | `antora.yml.j2` |
+| `docbuild gen-antora -product <p> -lang <code> [-content-dir <dir>]` | `translations/{lang}/antora.yml` | `antora.yml.j2` |
 | `docbuild gen-entities -product <p> -lang <code>` | `translations/{lang}/branding/pdf/entities.adoc` | `entities.adoc.j2` + `entities.specific.adoc.j2` |
-| `docbuild gen-pdf-nav -book <b> -lang <code> -dir <path>` | `{dir}/nav-{book}-guide.pdf.{lang}.adoc` | PDF nav generation in `Makefile.section.functions` |
-| `docbuild collect-pdfs -product <p> -src <path> -dest <path> -langs <list>` | Moves `build/{lang}/pdf/` → `build/pdf/{lang}/` | `cleanup_pdfs.sh` |
-| `docbuild gen-all` | All of the above for all configured languages | `configure` Python script |
+| `docbuild gen-pdf-nav -book <b> -lang <code> -dir <path>` | `{path}/nav-{book}-guide.pdf.{lang}.adoc` | PDF nav generation in `Makefile.section.functions` |
+| `docbuild inject-lang-selector -hbs <path>` | Modifies `header-content.hbs` in-place with language selector | Language selector inject in `Makefile.j2` |
+| `docbuild collect-pdfs -product <p> [-src <path>] [-dest <path>] [-langs "<list>"]` | Moves `build/{lang}/pdf/` → `build/pdf/{lang}/` | `cleanup_pdfs.sh` |
 
 **Dependencies:** Go stdlib + `gopkg.in/yaml.v3` only.
 
