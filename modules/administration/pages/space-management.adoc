@@ -6,73 +6,148 @@
 Running out of disk space can have a severe impact on the {productname} database and file structure which, in some cases, is not recoverable.
 
 {productname} monitors some directories for free disk space.
-You can modify which directories are monitored, and the warnings that are created.
-All settings are configured in the [path]``/etc/rhn/rhn.conf`` configuration file.
+You can modify which directories are monitored, and the warnings that are created using environment variables in systemd service override files.
 
 When the available space in one of the monitored directories falls below a warning threshold, a message is sent to the configured email address and a notification is shown at the top of the sign-in page.
 
 
 
-== Monitored directories
+== Monitored Directories
 
 
-By default, {productname} monitors these directories:
+By default, the {productname} Server container monitors these directories:
 
 * [path]``/var/spacewalk``
 * [path]``/var/cache``
 * [path]``/srv``
 
-You can change which directories are monitored with the [systemitem]``spacecheck_dirs`` parameter.
+You can change which directories are monitored by setting the [systemitem]``DISKCHECKDIRS`` environment variable in the server container systemd service.
 You can specify multiple directories by separating them with a space.
 
-For example:
+[NOTE]
+====
+The [systemitem]``DISKCHECKDIRS`` environment variable applies only to the server container.
+The database container always monitors [path]``/var/lib/pgsql/data`` and this cannot be overridden.
+====
 
+.Procedure: Configuring Monitored Directories
+. Create a systemd override directory for the server service:
++
 ----
-spacecheck_dirs = /var/spacewalk /var/cache /srv
+mkdir -p /etc/systemd/system/uyuni-server.service.d/
 ----
 
-For more information about volumes, see xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[].
+. Create a configuration file with the custom directories:
++
+----
+cat > /etc/systemd/system/uyuni-server.service.d/diskcheck.conf << 'EOF'
+[Service]
+Environment="DISKCHECKDIRS=/var/spacewalk /var/cache /srv"
+EOF
+----
+
+. Apply the configuration by restarting {productname}:
++
+----
+mgradm restart
+----
+
+For more information about container volumes, see xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[].
 
 == Thresholds
 
-By default, {productname} creates a warning when a monitored directory has less than 10% of total space available.
-A critical alert is created when a monitored directory falls below 5% space available.
+By default, {productname} creates a warning when a monitored directory reaches 90% disk usage.
+A critical alert is created when a monitored directory reaches 95% disk usage, and the container health check will fail.
 
-You can change these alert thresholds with the [systemitem]``spacecheck_free_alert`` and [systemitem]``spacecheck_free_critical`` parameters.
+You can change these alert thresholds by setting the [systemitem]``DISKCHECKALERT`` and [systemitem]``DISKTHRESHOLD`` environment variables.
 
-For example:
-
+.Procedure: Configuring Disk Check Thresholds
+. Create systemd override directories:
++
 ----
-spacecheck_free_alert = 10
-spacecheck_free_critical = 5
-----
-
-
-
-== Shut down services
-
-By default, {productname} shuts down the spacewalk services when the critical alert threshold is reached.
-
-You can change this behavior with the [systemitem]``spacecheck_shutdown`` parameter.
-A value of ``true`` enables the shut down feature.
-Any other value disables it.
-
-For example:
-
-----
-spacecheck_shutdown = true
+mkdir -p /etc/systemd/system/uyuni-server.service.d/
+mkdir -p /etc/systemd/system/uyuni-db.service.d/
 ----
 
-
-
-== Disable space checking
-
-The space checking tool is enabled by default.
-You can disable it entirely with these commands:
-
+. Create configuration files for both server and database services:
++
 ----
-systemctl stop spacewalk-diskcheck.timer
-systemctl disable spacewalk-diskcheck.timer
+cat > /etc/systemd/system/uyuni-server.service.d/diskcheck.conf << 'EOF'
+[Service]
+Environment="DISKCHECKALERT=90"
+Environment="DISKTHRESHOLD=95"
+EOF
+
+cat > /etc/systemd/system/uyuni-db.service.d/diskcheck.conf << 'EOF'
+[Service]
+Environment="DISKCHECKALERT=90"
+Environment="DISKTHRESHOLD=95"
+EOF
 ----
 
-Disabling the [literal]``spacewalk-diskcheck.timer`` will stop periodic email alerts if the alert threshold is reached, but the warning notification will still appear at the top of the sign-in page.
+. Apply the configuration by restarting {productname}:
++
+----
+mgradm restart
+----
+
+
+[IMPORTANT]
+====
+For large deployments with multi-terabyte storage volumes, you may want to use higher thresholds to make more efficient use of disk space.
+For example, on a 10{nbsp}TB volume, keeping 5% free means 500{nbsp}GB unused.
+For tuning recommendations for large deployments, see xref:specialized-guides:large-deployments/tuning.adoc#diskcheck-thresholds[].
+====
+
+
+== Database Disk Check
+
+The database container has its own disk check that monitors only the PostgreSQL data directory ([path]``/var/lib/pgsql/data``).
+This directory is always monitored and cannot be changed or overridden with the [systemitem]``DISKCHECKDIRS`` environment variable.
+
+The database disk check uses the [systemitem]``DISKCHECKALERT`` and [systemitem]``DISKTHRESHOLD`` environment variables configured for the [systemitem]``uyuni-db`` service.
+
+The database disk check runs as a PostgreSQL function and is invoked during container health checks.
+When the threshold is exceeded, the health check will fail and the container will be automatically stopped to prevent data corruption.
+
+[IMPORTANT]
+====
+The database container only monitors [path]``/var/lib/pgsql/data``.
+You cannot configure additional directories to monitor in the database container using [systemitem]``DISKCHECKDIRS``.
+To monitor other directories, use the server container configuration.
+====
+
+
+
+== Disable Space Checking
+
+The space checking tool is enabled by default and runs hourly via a scheduled task.
+To effectively disable disk space monitoring, set the threshold values to 99 (percent).
+
+.Procedure: Disabling Disk Space Monitoring
+. Edit the systemd override files to set very high thresholds:
++
+----
+cat > /etc/systemd/system/uyuni-server.service.d/diskcheck.conf << 'EOF'
+[Service]
+Environment="DISKCHECKALERT=99"
+Environment="DISKTHRESHOLD=99"
+EOF
+
+cat > /etc/systemd/system/uyuni-db.service.d/diskcheck.conf << 'EOF'
+[Service]
+Environment="DISKCHECKALERT=99"
+Environment="DISKTHRESHOLD=99"
+EOF
+----
+
+. Apply the configuration by restarting {productname}:
++
+----
+mgradm restart
+----
+
+[WARNING]
+====
+Disabling disk space monitoring is not recommended in production environments, as running out of disk space can cause severe and potentially unrecoverable damage to the database.
+====
