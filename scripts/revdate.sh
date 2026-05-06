@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# Find all .adoc files excluding Antora nav files (nav-*.adoc)
-find . -type f -name "*.adoc" ! -name "nav-*.adoc" | while read -r ADOC; do
+# Find all .adoc files under en/modules, excluding Antora nav files (nav-*.adoc)
+find en/modules -type f -name "*.adoc" ! -name "nav-*.adoc" | while read -r ADOC; do
   echo "Processing $ADOC ..."
   
   # Get last commit date
