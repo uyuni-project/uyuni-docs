@@ -3,6 +3,20 @@
 ## Overview
 
 ```
+l10n-weblate/{lang}.po
+    │
+    ▼
+scripts/use_po.sh  (po4a)
+    │  reads l10n-weblate/*.cfg
+    │  applies .po files to en/modules/**
+    │
+    └──► translations/{lang}/modules/**/*.adoc   (translated AsciiDoc)
+
+en/modules/**/*.adoc  ──► cp -an (no-clobber fallback for untranslated pages)
+    │
+    ▼
+translations/{lang}/modules/**/*.adoc  (translated + English fallback)
+
 config.yml
     │
     ▼
@@ -10,17 +24,57 @@ cmd/docbuild/main.go  (Go binary)
     │  reads config.yml
     │  renders Go text/templates
     │
-    ├──► translations/{lang}/site.yml        (per output-target, per language)
-    ├──► translations/{lang}/antora.yml      (per product, per language)
-    └──► branding/pdf/entities.adoc          (per product, per language)
+    ├──► translations/{lang}/{output}.site.yml   (per output-target, per language)
+    ├──► translations/{lang}/antora.yml          (per product, per language)
+    ├──► translations/{lang}/branding/pdf/entities.adoc  (per product, per language)
+    ├──► translations/{lang}/modules/{book}/nav-{book}-guide.pdf.{lang}.adoc
+    └──► .bin/xref-converter.rb                 (embedded Ruby extension)
                                   │
                                   ▼
                            Taskfile.yml
                                │
-                    ┌──────────┼──────────┐
-                    ▼          ▼          ▼
-                 antora   asciidoctor-pdf  zip/tar
-                (HTML)      (PDF)        (OBS packages)
+               ┌───────────────┼──────────────────┐
+               ▼               ▼                  ▼
+            antora      asciidoctor-pdf         zip/tar
+           (HTML)           (PDF)            (OBS packages)
+    translations/{lang}/   build/{lang}/pdf/   build/packages/
+    {output}.site.yml      {product}_{book}_guide.pdf
+```
+
+### HTML build pipeline (`build:mlm-dsc`, `build:uyuni-website`, etc.)
+
+```
+task build:mlm-dsc
+  1. task setup      → compile .bin/docbuild from Go source
+  2. task translations → po4a: l10n-weblate/*.po → translations/{lang}/modules/
+  3. for each LANG:
+       docbuild gen-site    → translations/{lang}/mlm-dsc.site.yml
+       docbuild gen-antora  → translations/{lang}/antora.yml
+       cp -an en/modules/.  → translations/{lang}/modules/ (English fallback, no-clobber)
+       antora               → build/{lang}/   (HTML output)
+```
+
+### PDF build pipeline (`pdf:mlm`, `pdf:uyuni`)
+
+```
+task pdf:mlm
+  1. task gen        → setup + docbuild gen-all + write .bin/xref-converter.rb
+  2. task translations → po4a: l10n-weblate/*.po → translations/{lang}/modules/
+  3. for each LANG × BOOK:
+       cp -an en/modules/.            → translations/{lang}/modules/ (fallback)
+       docbuild gen-pdf-nav           → nav-{book}-guide.pdf.{lang}.adoc
+       docbuild gen-entities          → translations/{lang}/branding/pdf/entities.adoc
+       asciidoctor-pdf (theme={lang}) → build/{lang}/pdf/{product}_{book}_guide.pdf
+```
+
+### Publish pipeline (`publish:dsc`, `publish:uyuni`)
+
+```
+task publish:dsc
+  1. task build:mlm-dsc     → HTML for all languages (includes translations)
+  2. task pdf:mlm           → PDFs for all languages (includes translations, cached)
+  3. task pdf-collect:mlm   → build/{lang}/pdf/ → build/pdf/{lang}/
+  4. task pdf-zip:mlm       → build/pdf/{lang}/ → build/{lang}/*-pdf.zip
 ```
 
 ## config.yml schema
@@ -197,28 +251,33 @@ asciidoc_extensions:
 ## Taskfile.yml — target reference
 
 ```
-task setup                         Build the Go binary
-task gen                           Run docbuild gen-all (regenerate all configs)
+task setup                         Build the Go binary (.bin/docbuild)
+task gen                           Run docbuild gen-all + write .bin/xref-converter.rb
+task translations                  Run use_po.sh (po4a) → translations/{lang}/modules/
 
-task build:mlm-dsc                 HTML for all languages — MLM, DSC branding
-task build:mlm-webui               HTML for all languages — MLM, WebUI branding
-task build:uyuni-website           HTML for all languages — Uyuni website
-task build:uyuni-webui             HTML for all languages — Uyuni WebUI
-task build:all                     All four HTML output targets
+task build:mlm-dsc                 MLM HTML — documentation.suse.com branding (all languages)
+task build:mlm-webui               MLM HTML — WebUI branding with language selector (all languages)
+task build:uyuni-website           Uyuni HTML — website branding (all languages)
+task build:uyuni-webui             Uyuni HTML — WebUI branding with language selector (all languages)
+task build:all                     All four HTML output targets (sequential)
 
-task pdf:mlm                       All 8 books × 4 languages — MLM
-task pdf:uyuni                     All 8 books × 4 languages — Uyuni
+task pdf BOOK=<b> PRODUCT=<p> LANG=<l>   Single book PDF
+task pdf:mlm                       All 8 books × 4 languages — MLM (runs translations first)
+task pdf:uyuni                     All 8 books × 4 languages — Uyuni (runs translations first)
 task pdf:all                       Both products
-task pdf:{book}:{product}:{lang}   Single book  e.g. task pdf:administration:mlm:en
 
-task obs:mlm                       HTML + PDF tarballs for MLM → build/packages/
-task obs:uyuni                     HTML + PDF tarballs for Uyuni → build/packages/
+task publish:dsc                   Full MLM publish — HTML + PDFs + zip archives
+task publish:uyuni                 Full Uyuni publish — HTML + PDFs + zip archives
+task publish:webui-mlm             MLM WebUI publish — HTML + PDFs + zip archives
+task publish:webui-uyuni           Uyuni WebUI publish — HTML + PDFs + zip archives
 
-task validate:mlm                  Antora validation run — MLM
-task validate:uyuni                Antora validation run — Uyuni
+task obs:mlm                       OBS packages for MLM → build/packages/
+task obs:uyuni                     OBS packages for Uyuni → build/packages/
 
-task translations                  Run use_po.sh to apply .po files → translations/
-task clean                         Remove build/ and translations/
+task validate:mlm                  Antora xref validation — MLM
+task validate:uyuni                Antora xref validation — Uyuni
+
+task clean                         Remove build/, translations/, .cache/
 ```
 
 ## Key design decisions
