@@ -93,7 +93,7 @@ translations/{lang}/modules/ ← Generated translated AsciiDoc (unchanged)
 branding/                    ← UI bundles, PDF themes (unchanged)
 l10n-weblate/                ← Weblate .po/.pot/.cfg files (unchanged)
 scripts/                     ← enforcing_checkstyle, find_unused, make_pot.sh, use_po.sh
-legacy-toolchain/            ← Old Makefile*, *.j2, configure, parameters.yml (preserved)
+docs/legacy-toolchain/      ← Old Makefile*, *.j2, configure, parameters.yml (preserved)
 config.yml                   ← Single build configuration file
 Taskfile.yml                 ← All build targets
 Dockerfile.custom            ← uyuni-docs-builder image (published to ghcr.io/uyuni-project/)

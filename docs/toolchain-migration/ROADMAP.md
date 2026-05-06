@@ -92,8 +92,8 @@
 
 **Goal:** Remove all old toolchain files; harden container image.
 
-- [x] Old `Makefile*` files (11) + Python/Jinja2 files + `parameters.yml` moved to `legacy-toolchain/`
-- [x] `extensions/` moved to `legacy-toolchain/` (xref-converter.rb embedded in Go binary)
+- [x] Old `Makefile*` files (11) + Python/Jinja2 files + `parameters.yml` moved to `docs/legacy-toolchain/`
+- [x] `extensions/` moved to `docs/legacy-toolchain/` (xref-converter.rb embedded in Go binary)
 - [x] Utility scripts reorganised into `scripts/`
 - [x] GitHub Actions workflows updated for new script paths
 - [x] `linting.yml` and `.vale.ini` removed (broken/unused)

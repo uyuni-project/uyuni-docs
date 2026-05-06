@@ -60,10 +60,10 @@
 
 ## Phase 6 — Cleanup
 
-- [x] Old `Makefile*` files (11) moved to `legacy-toolchain/`
-- [x] Python/Jinja2 files (`*.j2`, `configure`) moved to `legacy-toolchain/`
-- [x] `parameters.yml`, `antora.yml`, `site.yml`, `cleanup_pdfs.sh` moved to `legacy-toolchain/`
-- [x] `extensions/` moved to `legacy-toolchain/` (xref-converter.rb embedded in Go binary)
+- [x] Old `Makefile*` files (11) moved to `docs/legacy-toolchain/`
+- [x] Python/Jinja2 files (`*.j2`, `configure`) moved to `docs/legacy-toolchain/`
+- [x] `parameters.yml`, `antora.yml`, `site.yml`, `cleanup_pdfs.sh` moved to `docs/legacy-toolchain/`
+- [x] `extensions/` moved to `docs/legacy-toolchain/` (xref-converter.rb embedded in Go binary)
 - [x] Utility scripts reorganised into `scripts/` (`enforcing_checkstyle`, `find_unused`, `make_pot.sh`, `use_po.sh`)
 - [x] GitHub Actions workflows updated: `update_translation_files.yml`, `enforced_checkstyle.yml`, `find_unused_files.yml`
 - [x] `linting.yml` and `.vale.ini` removed (broken/unused)
