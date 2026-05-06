@@ -4,11 +4,11 @@
 # ── Build options ──────────────────────────────────────────────────────────────
 #
 #  OPTION A — Local toolchain (Go + Task + Antora + Asciidoctor-PDF installed)
-#    task build:mlm-dsc          MLM HTML — documentation.suse.com branding
-#    task build:mlm-webui        MLM HTML — product WebUI branding
-#    task build:uyuni-website    Uyuni HTML — website
-#    task build:uyuni-webui      Uyuni HTML — product WebUI
-#    task build:all              All four HTML output targets
+#    task build:mlm-dsc          MLM HTML — documentation.suse.com branding (all languages)
+#    task build:mlm-webui        MLM HTML — product WebUI branding (all languages)
+#    task build:uyuni-website    Uyuni HTML — website (all languages)
+#    task build:uyuni-webui      Uyuni HTML — product WebUI (all languages)
+#    task build:all              All four HTML output targets (sequential)
 #    task pdf:mlm                All MLM PDFs (all books, all languages)
 #    task pdf:uyuni              All Uyuni PDFs (all books, all languages)
 #    task pdf:all                All PDFs
@@ -27,10 +27,10 @@
 #  OPTION B — Container (only requires Podman or Docker, nothing else to install)
 #    task container:build               Build the uyuni-docs-builder image locally
 #    task container:shell               Interactive shell with repo mounted
-#    task container:build:mlm-dsc       MLM HTML — documentation.suse.com branding
-#    task container:build:mlm-webui     MLM HTML — product WebUI branding
-#    task container:build:uyuni-website Uyuni HTML — website
-#    task container:build:uyuni-webui   Uyuni HTML — product WebUI
+#    task container:build:mlm-dsc       MLM HTML — documentation.suse.com branding (all languages)
+#    task container:build:mlm-webui     MLM HTML — product WebUI branding (all languages)
+#    task container:build:uyuni-website Uyuni HTML — website (all languages)
+#    task container:build:uyuni-webui   Uyuni HTML — product WebUI (all languages)
 #    task container:build:all           All four HTML output targets
 #    task container:pdf:mlm             All MLM PDFs
 #    task container:pdf:uyuni           All Uyuni PDFs
@@ -81,6 +81,11 @@ tasks:
   # --------------------------------------------------------------------------
   gen:
     deps: [setup]
+    sources:
+      - config.yml
+      - .bin/docbuild
+    generates:
+      - .bin/xref-converter.rb
     cmds:
       - "{{.DOCBUILD}} gen-all"
 
@@ -88,82 +93,83 @@ tasks:
   # HTML builds
   # --------------------------------------------------------------------------
   build:mlm-dsc:
+    desc: Build MLM HTML — documentation.suse.com branding (all languages)
     deps: [setup]
     cmds:
+      - task: translations
       - for: {var: LANGUAGES}
         cmd: |
           echo "==> Building mlm-dsc / {{.ITEM}}"
           {{.DOCBUILD}} gen-site -product mlm -output mlm-dsc -lang {{.ITEM}}
           {{.DOCBUILD}} gen-antora -product mlm -lang {{.ITEM}}
-          mkdir -p translations/{{.ITEM}}
-          cp -a en/modules translations/{{.ITEM}}/modules || true
-          mkdir -p translations/{{.ITEM}}/modules/ROOT/pages/
-          cp -a en/modules/ROOT/pages/common_gfdl1.2_i.adoc translations/{{.ITEM}}/modules/ROOT/pages/ || true
+          mkdir -p translations/{{.ITEM}}/modules
+          cp -an en/modules/. translations/{{.ITEM}}/modules/ || true
           DOCSEARCH_ENABLED=true SITE_SEARCH_PROVIDER=lunr LANG={{.ITEM}} LC_ALL={{.ITEM}} \
             npx antora translations/{{.ITEM}}/mlm-dsc.site.yml --stacktrace
 
   build:mlm-webui:
+    desc: Build MLM HTML — WebUI branding with language selector (all languages)
     deps: [setup]
     cmds:
+      - task: translations
       - for: {var: LANGUAGES}
         cmd: |
           echo "==> Building mlm-webui / {{.ITEM}}"
           {{.DOCBUILD}} gen-site -product mlm -output mlm-webui -lang {{.ITEM}}
           {{.DOCBUILD}} gen-antora -product mlm -lang {{.ITEM}}
-          mkdir -p translations/{{.ITEM}}
-          cp -a en/modules translations/{{.ITEM}}/modules || true
-          mkdir -p translations/{{.ITEM}}/modules/ROOT/pages/
-          cp -a en/modules/ROOT/pages/common_gfdl1.2_i.adoc translations/{{.ITEM}}/modules/ROOT/pages/ || true
+          mkdir -p translations/{{.ITEM}}/modules
+          cp -an en/modules/. translations/{{.ITEM}}/modules/ || true
           cp -a branding/supplemental-ui/mlm/webui-2025/ translations/{{.ITEM}}/supplemental-ui/
           {{.DOCBUILD}} inject-lang-selector -hbs translations/{{.ITEM}}/supplemental-ui/partials/header-content.hbs
           DOCSEARCH_ENABLED=true SITE_SEARCH_PROVIDER=lunr LANG={{.ITEM}} LC_ALL={{.ITEM}} \
             npx antora translations/{{.ITEM}}/mlm-webui.site.yml --stacktrace
 
   build:uyuni-website:
+    desc: Build Uyuni HTML — website branding (all languages)
     deps: [setup]
     cmds:
+      - task: translations
       - for: {var: LANGUAGES}
         cmd: |
           echo "==> Building uyuni-website / {{.ITEM}}"
           {{.DOCBUILD}} gen-site -product uyuni -output uyuni-website -lang {{.ITEM}}
           {{.DOCBUILD}} gen-antora -product uyuni -lang {{.ITEM}}
-          mkdir -p translations/{{.ITEM}}
-          cp -a en/modules translations/{{.ITEM}}/modules || true
-          mkdir -p translations/{{.ITEM}}/modules/ROOT/pages/
-          cp -a en/modules/ROOT/pages/common_gfdl1.2_i.adoc translations/{{.ITEM}}/modules/ROOT/pages/ || true
+          mkdir -p translations/{{.ITEM}}/modules
+          cp -an en/modules/. translations/{{.ITEM}}/modules/ || true
           DOCSEARCH_ENABLED=true SITE_SEARCH_PROVIDER=lunr LANG={{.ITEM}} LC_ALL={{.ITEM}} \
             npx antora translations/{{.ITEM}}/uyuni-website.site.yml --stacktrace
 
   build:uyuni-webui:
+    desc: Build Uyuni HTML — WebUI branding with language selector (all languages)
     deps: [setup]
     cmds:
+      - task: translations
       - for: {var: LANGUAGES}
         cmd: |
           echo "==> Building uyuni-webui / {{.ITEM}}"
           {{.DOCBUILD}} gen-site -product uyuni -output uyuni-webui -lang {{.ITEM}}
           {{.DOCBUILD}} gen-antora -product uyuni -lang {{.ITEM}}
-          mkdir -p translations/{{.ITEM}}
-          cp -a en/modules translations/{{.ITEM}}/modules || true
-          mkdir -p translations/{{.ITEM}}/modules/ROOT/pages/
-          cp -a en/modules/ROOT/pages/common_gfdl1.2_i.adoc translations/{{.ITEM}}/modules/ROOT/pages/ || true
+          mkdir -p translations/{{.ITEM}}/modules
+          cp -an en/modules/. translations/{{.ITEM}}/modules/ || true
           cp -a branding/supplemental-ui/uyuni/uyuni-2023/ translations/{{.ITEM}}/supplemental-ui/
           {{.DOCBUILD}} inject-lang-selector -hbs translations/{{.ITEM}}/supplemental-ui/partials/header-content.hbs
           DOCSEARCH_ENABLED=true SITE_SEARCH_PROVIDER=lunr LANG={{.ITEM}} LC_ALL={{.ITEM}} \
             npx antora translations/{{.ITEM}}/uyuni-webui.site.yml --stacktrace
 
   build:all:
-    deps:
-      - build:mlm-dsc
-      - build:mlm-webui
-      - build:uyuni-website
-      - build:uyuni-webui
+    desc: Build all HTML output targets — all products, all languages (sequential)
+    cmds:
+      - task: build:mlm-dsc
+      - task: build:mlm-webui
+      - task: build:uyuni-website
+      - task: build:uyuni-webui
 
   # --------------------------------------------------------------------------
   # PDF builds — single book
   # Usage: task pdf BOOK=administration PRODUCT=mlm LANG=en
   # --------------------------------------------------------------------------
   pdf:
-    deps: [setup]
+    deps: [gen]
     vars:
       BOOK: '{{default "administration" .BOOK}}'
       PRODUCT: '{{default "mlm" .PRODUCT}}'
@@ -212,11 +218,9 @@ tasks:
         OUTDIR="build/${LANG}/pdf"
         mkdir -p "${OUTDIR}"
 
-        # Ensure English source modules are staged (translations may not have been built yet)
-        mkdir -p "${SRCDIR}"
-        if [ ! -d "${SRCDIR}/modules" ]; then
-          cp -a en/modules "${SRCDIR}/modules"
-        fi
+        # Ensure English source modules are staged as fallback without overwriting translated files
+        mkdir -p "${SRCDIR}/modules"
+        cp -an en/modules/. "${SRCDIR}/modules/" || true
 
         # Generate PDF nav file from Antora nav
         {{.DOCBUILD}} gen-pdf-nav -book ${BOOK} -lang ${LANG} -dir ${SRCDIR}/modules/${BOOK}
@@ -239,7 +243,7 @@ tasks:
           --base-dir . \
           --out-file {{.ROOT_DIR}}/${OUTDIR}/${PRODUCT}_${BOOK}_guide.pdf \
           modules/${BOOK}/nav-${BOOK}-guide.pdf.${LANG}.adoc \
-          --failure-level ERROR \
+          --failure-level FATAL \
           --trace
 
   # --------------------------------------------------------------------------
@@ -247,8 +251,9 @@ tasks:
   # --------------------------------------------------------------------------
   pdf:mlm:
     desc: Build all MLM PDFs for all languages
-    deps: [setup]
+    deps: [gen]
     cmds:
+      - task: translations
       - for: {var: LANGUAGES}
         cmd: |
           LANG_CODE="{{.ITEM}}"
@@ -258,8 +263,9 @@ tasks:
 
   pdf:uyuni:
     desc: Build all Uyuni PDFs for all languages
-    deps: [setup]
+    deps: [gen]
     cmds:
+      - task: translations
       - for: {var: LANGUAGES}
         cmd: |
           LANG_CODE="{{.ITEM}}"
@@ -433,6 +439,12 @@ tasks:
   # Translations
   # --------------------------------------------------------------------------
   translations:
+    desc: Apply .po translation files — populate translations/{lang}/modules/ from l10n-weblate/
+    sources:
+      - l10n-weblate/**/*.po
+      - l10n-weblate/**/*.cfg
+    generates:
+      - translations/**/*.adoc
     cmds:
       - bash scripts/use_po.sh
 
@@ -470,22 +482,27 @@ tasks:
 
   # HTML builds
   container:build:mlm-dsc:
+    desc: "Container: MLM HTML — documentation.suse.com branding (all languages)"
     cmds:
       - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs uyuni-docs-builder:latest task build:mlm-dsc"
 
   container:build:mlm-webui:
+    desc: "Container: MLM HTML — WebUI branding with language selector (all languages)"
     cmds:
       - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs uyuni-docs-builder:latest task build:mlm-webui"
 
   container:build:uyuni-website:
+    desc: "Container: Uyuni HTML — website branding (all languages)"
     cmds:
       - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs uyuni-docs-builder:latest task build:uyuni-website"
 
   container:build:uyuni-webui:
+    desc: "Container: Uyuni HTML — WebUI branding with language selector (all languages)"
     cmds:
       - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs uyuni-docs-builder:latest task build:uyuni-webui"
 
   container:build:all:
+    desc: "Container: All HTML output targets (all products, all languages)"
     cmds:
       - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs uyuni-docs-builder:latest task build:all"
 

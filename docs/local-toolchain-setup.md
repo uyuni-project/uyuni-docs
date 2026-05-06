@@ -150,23 +150,16 @@ task gen      # Generates all Antora/site configs from config.yml
 ## 7. Build targets
 
 ```bash
-# HTML builds
-task build:mlm-dsc          # MLM HTML — documentation.suse.com branding
-task build:mlm-webui        # MLM HTML — product WebUI branding
-task build:uyuni-website    # Uyuni HTML — website
-task build:uyuni-webui      # Uyuni HTML — product WebUI
-task build:all              # All four HTML targets
-
-# PDF builds
-task pdf:mlm                # All MLM PDFs — all books, all languages
-task pdf:uyuni              # All Uyuni PDFs — all books, all languages
-task pdf:all                # All PDFs
-
 # Full publish (HTML + PDFs + zips)
 task publish:dsc            # MLM — documentation.suse.com
 task publish:uyuni          # Uyuni — website
 task publish:webui-mlm      # MLM WebUI
 task publish:webui-uyuni    # Uyuni WebUI
+
+# PDF builds
+task pdf:mlm                # All MLM PDFs — all books, all languages
+task pdf:uyuni              # All Uyuni PDFs — all books, all languages
+task pdf:all                # All PDFs
 
 # OBS packages
 task obs:mlm                # OBS source packages for MLM

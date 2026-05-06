@@ -88,13 +88,12 @@ The image includes: Go, Task, Antora, Asciidoctor-PDF, po4a, and zip.
 Every build target has a `container:` prefixed equivalent.
 Your local repository is mounted at `/docs` inside the container — output lands in `build/` on your host.
 
-### HTML builds
+### Full publish (HTML + PDFs + zips)
 ```bash
-task container:build:mlm-dsc          # MLM HTML — documentation.suse.com branding
-task container:build:mlm-webui        # MLM HTML — product WebUI branding
-task container:build:uyuni-website    # Uyuni HTML — website
-task container:build:uyuni-webui      # Uyuni HTML — product WebUI
-task container:build:all              # All four HTML targets
+task container:publish:dsc            # MLM — documentation.suse.com
+task container:publish:uyuni          # Uyuni — website
+task container:publish:webui-mlm      # MLM WebUI
+task container:publish:webui-uyuni    # Uyuni WebUI
 ```
 
 ### PDF builds
@@ -102,14 +101,6 @@ task container:build:all              # All four HTML targets
 task container:pdf:mlm                # All MLM PDFs — all books, all languages
 task container:pdf:uyuni              # All Uyuni PDFs — all books, all languages
 task container:pdf:all                # All PDFs
-```
-
-### Full publish (HTML + PDFs + zips)
-```bash
-task container:publish:dsc            # MLM — documentation.suse.com
-task container:publish:uyuni          # Uyuni — website
-task container:publish:webui-mlm      # MLM WebUI
-task container:publish:webui-uyuni    # Uyuni WebUI
 ```
 
 ### OBS packages
@@ -130,13 +121,6 @@ task container:shell                  # Open a bash shell inside the container
 ```
 
 Use this to debug builds, inspect generated files, or run one-off commands inside the toolchain environment.
-
-### Escape hatch
-```bash
-task container:run -- <any-task>
-# Example:
-task container:run -- build:mlm-dsc
-```
 
 ---
 
