@@ -1,3 +1,4 @@
+- Fix Debian repository URL examples in custom channels
 - Removed mention of CIS profile (bsc#1262460)
 - Corrected path for Salt minion in Retail Guide (#1262090)
 - Added mass migration using UI to Client Configuration Guide
