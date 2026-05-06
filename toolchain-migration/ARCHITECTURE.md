@@ -181,18 +181,18 @@ asciidoc_extensions:
 
 | Command | Output | Replaces |
 |---|---|---|
-| `docbuild gen-site --output <output-target> --lang <code>` | `translations/{lang}/{output}.site.yml` | `Makefile.j2` sed block + `site.yml.j2` |
-| `docbuild gen-antora --product <product> --lang <code>` | `translations/{lang}/antora.yml` | `antora.yml.j2` |
-| `docbuild gen-entities --product <product> --lang <code>` | `branding/pdf/entities.adoc` | `entities.adoc.j2` + `entities.specific.adoc.j2` |
+| `docbuild gen-site -product <p> -output <o> -lang <code>` | `translations/{lang}/{output}.site.yml` | `site.yml.j2` + sed block in `Makefile.j2` |
+| `docbuild gen-antora -product <p> -lang <code>` | `translations/{lang}/antora.yml` | `antora.yml.j2` |
+| `docbuild gen-entities -product <p> -lang <code>` | `translations/{lang}/branding/pdf/entities.adoc` | `entities.adoc.j2` + `entities.specific.adoc.j2` |
+| `docbuild gen-pdf-nav -book <b> -lang <code> -dir <path>` | `{dir}/nav-{book}-guide.pdf.{lang}.adoc` | PDF nav generation in `Makefile.section.functions` |
+| `docbuild collect-pdfs -product <p> -src <path> -dest <path> -langs <list>` | Moves `build/{lang}/pdf/` → `build/pdf/{lang}/` | `cleanup_pdfs.sh` |
 | `docbuild gen-all` | All of the above for all configured languages | `configure` Python script |
-| `docbuild inject-lang-selector --output <output-target> --lang <code>` | Patches `header-content.hbs` in place | `enable-html-language-selector` Make macro |
 
-**Dependencies:** Go stdlib only (`text/template`, `os`, `flag`, `gopkg.in/yaml.v3`).
+**Dependencies:** Go stdlib + `gopkg.in/yaml.v3` only.
 
-**Templates** (embedded via `//go:embed`):
-- `templates/site.yml.tmpl`
-- `templates/antora.yml.tmpl`
-- `templates/entities.adoc.tmpl`
+**Templates:** Embedded inline in `internal/generate/templates.go` via `//go:embed`.
+
+**xref-converter.rb:** Embedded as a Go const in `internal/generate/xrefext.go`; written to `.bin/xref-converter.rb` at gen time. The `extensions/` directory is no longer needed at runtime.
 
 ## Taskfile.yml — target reference
 

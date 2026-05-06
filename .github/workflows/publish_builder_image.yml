@@ -1,0 +1,50 @@
+name: Publish uyuni-docs-builder image
+
+# Triggers:
+#   - Push to master/main when Dockerfile.custom changes
+#   - Manual run (maintainers only)
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - Dockerfile.custom
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: Build and push to ghcr.io
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@902fa8ec7d6ecbea8a986b4a4d3dc54f92af4df9 # v5
+        with:
+          images: ghcr.io/uyuni-project/uyuni-docs-builder
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=sha-
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@14487ce63c7a62a4a324b0bfb37086795e31c6c1 # v6
+        with:
+          context: .
+          file: Dockerfile.custom
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

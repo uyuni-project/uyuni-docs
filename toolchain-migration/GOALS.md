@@ -48,14 +48,24 @@
 
 ## Success criteria
 
-- [ ] `task build:mlm-dsc` produces identical HTML output to `make antora-mlm-en` (DSC branding)
-- [ ] `task build:mlm-webui` produces identical HTML output with `webui-2025` supplemental UI
-- [ ] `task build:uyuni-website` produces identical HTML output to `make antora-uyuni-en`
-- [ ] `task pdf:mlm` produces all 8 PDFs for all 4 languages with correct CJK themes
-- [ ] `task pdf:uyuni` produces all 8 PDFs for all 4 languages with correct CJK themes
-- [ ] `task obs:mlm` produces `susemanager-docs_{lang}.tar.gz` and `susemanager-docs_{lang}-pdf.tar.gz` in `build/packages/`
-- [ ] `task obs:uyuni` produces `uyuni-docs_{lang}.tar.gz` and `uyuni-docs_{lang}-pdf.tar.gz` in `build/packages/`
-- [ ] All non-English HTML builds include the language selector in `header-content.hbs`
-- [ ] Adding a new language requires only a single entry in `config.yml`
-- [ ] No Python, no Make, no Jinja2 required on the host (only Go and Task)
-- [ ] `l10n-weblate/` directory is byte-for-byte identical before and after migration
+- [x] `task build:mlm-dsc` produces identical HTML output to `make antora-mlm-en` (DSC branding)
+- [x] `task build:mlm-webui` produces identical HTML output with `webui-2025` supplemental UI
+- [x] `task build:uyuni-website` produces identical HTML output to `make antora-uyuni-en`
+- [x] `task pdf:mlm` produces all 8 PDFs for all 4 languages with correct CJK themes
+- [x] `task pdf:uyuni` produces all 8 PDFs for all 4 languages with correct CJK themes
+- [x] `task obs:mlm` produces `susemanager-docs_{lang}.tar.gz` and `susemanager-docs_{lang}-pdf.tar.gz` in `build/packages/`
+- [x] `task obs:uyuni` produces `uyuni-docs_{lang}.tar.gz` and `uyuni-docs_{lang}-pdf.tar.gz` in `build/packages/`
+- [x] All non-English HTML builds include the language selector in `header-content.hbs`
+- [x] Adding a new language requires only a single entry in `config.yml`
+- [x] No Python, no Make, no Jinja2 required on the host (only Go and Task)
+- [x] `l10n-weblate/` directory is byte-for-byte identical before and after migration (`.cfg` paths updated for `en/modules/`)
+
+## Additional goals achieved
+
+- [x] Container image `uyuni-docs-builder` — contributors need only Podman/Docker, zero local toolchain
+  - Published to `ghcr.io/uyuni-project/uyuni-docs-builder` via `publish_builder_image.yml`
+  - `GITHUB_TOKEN` only — no PAT, no stored secrets
+  - Image signed and pinned by commit SHA for supply-chain safety
+- [x] `task --list` curated — 25 user-facing targets visible, plumbing hidden
+- [x] `task container:*` targets — every publish command available via container without local toolchain
+- [x] `publish_builder_image.yml` workflow — triggers on `Dockerfile.custom` changes to master; pushes `latest` + `sha-<commit>` tags

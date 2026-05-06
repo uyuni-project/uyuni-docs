@@ -1,24 +1,52 @@
 # Taskfile.yml — uyuni-docs build system
 # Requires: task (https://taskfile.dev), Go (latest), npx antora, asciidoctor-pdf
 #
-# Quick reference:
-#   task setup                  Build the Go docbuild binary
-#   task gen                    Regenerate all Antora/site configs from config.yml
-#   task build:all              Build all four HTML output targets
-#   task build:mlm-dsc          MLM HTML — documentation.suse.com branding
-#   task build:mlm-webui        MLM HTML — product WebUI branding
-#   task build:uyuni-website    Uyuni HTML — website
-#   task build:uyuni-webui      Uyuni HTML — product WebUI
-#   task pdf:mlm                All MLM PDFs (all books, all languages)
-#   task pdf:uyuni              All Uyuni PDFs (all books, all languages)
-#   task pdf:all                All PDFs
-#   task pdf BOOK=administration PRODUCT=mlm LANG=en   Single book PDF
-#   task obs:mlm                OBS packages for MLM
-#   task obs:uyuni              OBS packages for Uyuni
-#   task validate:mlm           Antora validation — MLM
-#   task validate:uyuni         Antora validation — Uyuni
-#   task translations           Apply .po files via use_po.sh
-#   task clean                  Remove build/ and translations/
+# ── Build options ──────────────────────────────────────────────────────────────
+#
+#  OPTION A — Local toolchain (Go + Task + Antora + Asciidoctor-PDF installed)
+#    task build:mlm-dsc          MLM HTML — documentation.suse.com branding
+#    task build:mlm-webui        MLM HTML — product WebUI branding
+#    task build:uyuni-website    Uyuni HTML — website
+#    task build:uyuni-webui      Uyuni HTML — product WebUI
+#    task build:all              All four HTML output targets
+#    task pdf:mlm                All MLM PDFs (all books, all languages)
+#    task pdf:uyuni              All Uyuni PDFs (all books, all languages)
+#    task pdf:all                All PDFs
+#    task obs:mlm                OBS packages for MLM
+#    task obs:uyuni              OBS packages for Uyuni
+#    task publish:dsc            Full MLM publish — HTML + PDFs + zips
+#    task publish:uyuni          Full Uyuni publish — HTML + PDFs + zips
+#    task publish:webui-mlm      MLM WebUI publish
+#    task publish:webui-uyuni    Uyuni WebUI publish
+#    task validate:mlm           Antora xref validation — MLM
+#    task validate:uyuni         Antora xref validation — Uyuni
+#    task translations           Apply .po files (generates translated AsciiDoc)
+#    task pot                    Update .pot/.po translation templates
+#    task clean                  Remove build/, translations/, .cache/
+#
+#  OPTION B — Container (only requires Podman or Docker, nothing else to install)
+#    task container:build               Build the uyuni-docs-builder image locally
+#    task container:shell               Interactive shell with repo mounted
+#    task container:build:mlm-dsc       MLM HTML — documentation.suse.com branding
+#    task container:build:mlm-webui     MLM HTML — product WebUI branding
+#    task container:build:uyuni-website Uyuni HTML — website
+#    task container:build:uyuni-webui   Uyuni HTML — product WebUI
+#    task container:build:all           All four HTML output targets
+#    task container:pdf:mlm             All MLM PDFs
+#    task container:pdf:uyuni           All Uyuni PDFs
+#    task container:pdf:all             All PDFs
+#    task container:obs:mlm             OBS packages for MLM
+#    task container:obs:uyuni           OBS packages for Uyuni
+#    task container:publish:dsc         Full MLM publish — HTML + PDFs + zips
+#    task container:publish:uyuni       Full Uyuni publish — HTML + PDFs + zips
+#    task container:publish:webui-mlm   MLM WebUI publish
+#    task container:publish:webui-uyuni Uyuni WebUI publish
+#    task container:validate:mlm        Antora xref validation — MLM
+#    task container:validate:uyuni      Antora xref validation — Uyuni
+#    task container:translations        Apply .po files
+#    task container:pot                 Update translation templates
+#    task container:run -- <target>     Run any task (escape hatch)
+#
 
 version: '3'
 
@@ -29,13 +57,14 @@ vars:
   XREF_EXT: "{{.ROOT_DIR}}/.bin/xref-converter.rb"
   LANGUAGES: "en ja zh_CN ko"
   BOOKS: "installation-and-upgrade client-configuration administration reference retail common-workflows specialized-guides legal"
+  CONTAINER_CMD:
+    sh: which podman 2>/dev/null || which docker 2>/dev/null || echo "podman"
 
 tasks:
   # --------------------------------------------------------------------------
   # Setup — build the Go binary
   # --------------------------------------------------------------------------
   setup:
-    desc: Build the docbuild Go binary
     cmds:
       - mkdir -p .bin
       - go build -o {{.DOCBUILD}} ./cmd/docbuild/
@@ -51,7 +80,6 @@ tasks:
   # Config generation
   # --------------------------------------------------------------------------
   gen:
-    desc: Regenerate all Antora/site configs from config.yml
     deps: [setup]
     cmds:
       - "{{.DOCBUILD}} gen-all"
@@ -60,7 +88,6 @@ tasks:
   # HTML builds
   # --------------------------------------------------------------------------
   build:mlm-dsc:
-    desc: Build MLM HTML for documentation.suse.com (all languages)
     deps: [setup]
     cmds:
       - for: {var: LANGUAGES}
@@ -76,7 +103,6 @@ tasks:
             npx antora translations/{{.ITEM}}/mlm-dsc.site.yml --stacktrace
 
   build:mlm-webui:
-    desc: Build MLM HTML for product WebUI (all languages, with language selector)
     deps: [setup]
     cmds:
       - for: {var: LANGUAGES}
@@ -94,7 +120,6 @@ tasks:
             npx antora translations/{{.ITEM}}/mlm-webui.site.yml --stacktrace
 
   build:uyuni-website:
-    desc: Build Uyuni HTML for website (all languages)
     deps: [setup]
     cmds:
       - for: {var: LANGUAGES}
@@ -110,7 +135,6 @@ tasks:
             npx antora translations/{{.ITEM}}/uyuni-website.site.yml --stacktrace
 
   build:uyuni-webui:
-    desc: Build Uyuni HTML for product WebUI (all languages, with language selector)
     deps: [setup]
     cmds:
       - for: {var: LANGUAGES}
@@ -128,7 +152,6 @@ tasks:
             npx antora translations/{{.ITEM}}/uyuni-webui.site.yml --stacktrace
 
   build:all:
-    desc: Build all four HTML output targets
     deps:
       - build:mlm-dsc
       - build:mlm-webui
@@ -140,7 +163,6 @@ tasks:
   # Usage: task pdf BOOK=administration PRODUCT=mlm LANG=en
   # --------------------------------------------------------------------------
   pdf:
-    desc: "Build a single PDF book. Usage: task pdf BOOK=administration PRODUCT=mlm LANG=en"
     deps: [setup]
     vars:
       BOOK: '{{default "administration" .BOOK}}'
@@ -255,13 +277,11 @@ tasks:
   # PDF collection — gather scattered build/{lang}/pdf/ into build/pdf/{lang}/
   # --------------------------------------------------------------------------
   pdf-collect:mlm:
-    desc: Move MLM PDFs from build/{lang}/pdf/ → build/pdf/{lang}/ (d.s.c structure)
     deps: [setup]
     cmds:
       - "{{.DOCBUILD}} collect-pdfs -product mlm -src {{.ROOT_DIR}}/build -dest {{.ROOT_DIR}}/build/pdf -langs '{{.LANGUAGES}}'"
 
   pdf-collect:uyuni:
-    desc: Move Uyuni PDFs from build/{lang}/pdf/ → build/pdf/{lang}/ (website structure)
     deps: [setup]
     cmds:
       - "{{.DOCBUILD}} collect-pdfs -product uyuni -src {{.ROOT_DIR}}/build -dest {{.ROOT_DIR}}/build/pdf -langs '{{.LANGUAGES}}'"
@@ -311,7 +331,6 @@ tasks:
   # "../{product}_{lang}-pdf.zip" resolves correctly from the HTML output dir.
   # --------------------------------------------------------------------------
   pdf-zip:mlm:
-    desc: Create per-language MLM PDF zip archives from collected build/pdf/{lang}/
     deps: [setup]
     cmds:
       - for: {var: LANGUAGES}
@@ -321,7 +340,6 @@ tasks:
           cd build/pdf && zip -r9 {{.ROOT_DIR}}/build/${LANG}/suse-multi-linux-manager-docs_${LANG}-pdf.zip ${LANG}/
 
   pdf-zip:uyuni:
-    desc: Create per-language Uyuni PDF zip archives from collected build/pdf/{lang}/
     deps: [setup]
     cmds:
       - for: {var: LANGUAGES}
@@ -334,7 +352,6 @@ tasks:
   # PDF tarballs — zip of all PDFs per product/language
   # --------------------------------------------------------------------------
   pdf-tar:mlm:
-    desc: Create PDF zip archives for MLM
     cmds:
       - for: {var: LANGUAGES}
         cmd: |
@@ -346,7 +363,6 @@ tasks:
           mv build/${LANG}/suse-multi-linux-manager-docs_${LANG}-pdf.zip build/packages/
 
   pdf-tar:uyuni:
-    desc: Create PDF zip archives for Uyuni
     cmds:
       - for: {var: LANGUAGES}
         cmd: |
@@ -417,12 +433,10 @@ tasks:
   # Translations
   # --------------------------------------------------------------------------
   translations:
-    desc: Apply .po translation files to generate translated AsciiDoc
     cmds:
       - bash scripts/use_po.sh
 
   pot:
-    desc: Generate/update .pot/.po translation template files
     cmds:
       - bash scripts/make_pot.sh
 
@@ -436,3 +450,110 @@ tasks:
       - rm -rf translations/
       - rm -rf .cache/
       - echo "Clean complete."
+
+  # --------------------------------------------------------------------------
+  # Container — build and run via Podman/Docker (no local toolchain required)
+  # --------------------------------------------------------------------------
+  container:build:
+    desc: Build the uyuni-docs-builder container image locally
+    cmds:
+      - "{{.CONTAINER_CMD}} build -t uyuni-docs-builder:latest -f Dockerfile.custom ."
+
+  container:shell:
+    desc: Open an interactive shell inside the uyuni-docs-builder container
+    cmds:
+      - "{{.CONTAINER_CMD}} run --rm -it -v {{.ROOT_DIR}}:/docs:Z -w /docs uyuni-docs-builder:latest bash"
+
+  container:run:
+    cmds:
+      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs uyuni-docs-builder:latest task {{.CLI_ARGS}}"
+
+  # HTML builds
+  container:build:mlm-dsc:
+    cmds:
+      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs uyuni-docs-builder:latest task build:mlm-dsc"
+
+  container:build:mlm-webui:
+    cmds:
+      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs uyuni-docs-builder:latest task build:mlm-webui"
+
+  container:build:uyuni-website:
+    cmds:
+      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs uyuni-docs-builder:latest task build:uyuni-website"
+
+  container:build:uyuni-webui:
+    cmds:
+      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs uyuni-docs-builder:latest task build:uyuni-webui"
+
+  container:build:all:
+    cmds:
+      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs uyuni-docs-builder:latest task build:all"
+
+  # PDF builds
+  container:pdf:mlm:
+    desc: "Container: All MLM PDFs — all books, all languages"
+    cmds:
+      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs uyuni-docs-builder:latest task pdf:mlm"
+
+  container:pdf:uyuni:
+    desc: "Container: All Uyuni PDFs — all books, all languages"
+    cmds:
+      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs uyuni-docs-builder:latest task pdf:uyuni"
+
+  container:pdf:all:
+    desc: "Container: All PDFs (both products)"
+    cmds:
+      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs uyuni-docs-builder:latest task pdf:all"
+
+  # Publish targets
+  container:publish:dsc:
+    desc: "Container: Full MLM publish — HTML + PDFs + zips"
+    cmds:
+      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs uyuni-docs-builder:latest task publish:dsc"
+
+  container:publish:uyuni:
+    desc: "Container: Full Uyuni publish — HTML + PDFs + zips"
+    cmds:
+      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs uyuni-docs-builder:latest task publish:uyuni"
+
+  container:publish:webui-mlm:
+    desc: "Container: MLM WebUI publish — HTML + PDFs + zips"
+    cmds:
+      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs uyuni-docs-builder:latest task publish:webui-mlm"
+
+  container:publish:webui-uyuni:
+    desc: "Container: Uyuni WebUI publish — HTML + PDFs + zips"
+    cmds:
+      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs uyuni-docs-builder:latest task publish:webui-uyuni"
+
+  # OBS packages
+  container:obs:mlm:
+    desc: "Container: OBS source packages for MLM"
+    cmds:
+      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs uyuni-docs-builder:latest task obs:mlm"
+
+  container:obs:uyuni:
+    desc: "Container: OBS source packages for Uyuni"
+    cmds:
+      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs uyuni-docs-builder:latest task obs:uyuni"
+
+  # Validation
+  container:validate:mlm:
+    desc: "Container: Antora xref validation — MLM"
+    cmds:
+      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs uyuni-docs-builder:latest task validate:mlm"
+
+  container:validate:uyuni:
+    desc: "Container: Antora xref validation — Uyuni"
+    cmds:
+      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs uyuni-docs-builder:latest task validate:uyuni"
+
+  # Translations
+  container:translations:
+    cmds:
+      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs uyuni-docs-builder:latest task translations"
+
+  container:pot:
+    cmds:
+      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs uyuni-docs-builder:latest task pot"
+

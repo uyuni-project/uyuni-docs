@@ -36,48 +36,74 @@ Four named HTML output targets replace the current product-switching-via-sed app
 
 Active: `en`, `ja`, `ko`, `zh_CN`. Adding a new language is a single entry in `config.yml`.
 
-## Quick start (new system — once implementation complete)
+## Quick start
+
+### Option A — Container (recommended, only requires Podman or Docker)
 
 ```bash
-# Build the Go binary
-task setup
+# Build the image once
+task container:build
 
-# Build all HTML outputs for all languages
-task build:all
+# Publish builds
+task container:publish:dsc         # Full MLM publish — HTML + PDFs + zips
+task container:publish:uyuni       # Full Uyuni publish — HTML + PDFs + zips
+task container:publish:webui-mlm   # MLM WebUI publish
+task container:publish:webui-uyuni # Uyuni WebUI publish
 
-# Build a single output
-task build:mlm-dsc
-task build:uyuni-website
+# Individual targets
+task container:build:mlm-dsc
+task container:pdf:mlm
+task container:obs:mlm
+task container:obs:uyuni
 
-# Build all PDFs (all products, all languages)
-task pdf:all
-
-# Single book PDF
-task pdf:administration:mlm:en
-
-# OBS packages
-task obs:mlm
-task obs:uyuni
-
-# Clean
-task clean
+# Interactive shell
+task container:shell
 ```
 
-## Repository layout (target state)
+### Option B — Local toolchain (Go + Task + Antora + Asciidoctor-PDF)
+
+```bash
+# First-time setup
+task setup    # Build the Go docbuild binary
+task gen      # Regenerate Antora/site configs from config.yml
+
+# Publish builds
+task publish:dsc          # Full MLM publish — HTML + PDFs + zips
+task publish:uyuni        # Full Uyuni publish
+task publish:webui-mlm    # MLM WebUI publish
+task publish:webui-uyuni  # Uyuni WebUI publish
+
+# Individual targets
+task build:mlm-dsc
+task pdf:mlm
+task obs:mlm
+task obs:uyuni
+task validate:mlm
+
+task clean    # Remove build/, translations/, .cache/
+```
+
+Run `task --list` to see all 25 user-facing targets.
+
+## Repository layout
 
 ```
 en/modules/                  ← English AsciiDoc source (moved from modules/)
 translations/{lang}/modules/ ← Generated translated AsciiDoc (unchanged)
 branding/                    ← UI bundles, PDF themes (unchanged)
 l10n-weblate/                ← Weblate .po/.pot/.cfg files (unchanged)
+scripts/                     ← enforcing_checkstyle, find_unused, make_pot.sh, use_po.sh
+legacy-toolchain/            ← Old Makefile*, *.j2, configure, parameters.yml (preserved)
 config.yml                   ← Single build configuration file
 Taskfile.yml                 ← All build targets
+Dockerfile.custom            ← uyuni-docs-builder image (published to ghcr.io/uyuni-project/)
 cmd/docbuild/                ← Go binary source
   main.go
 go.mod
 go.sum
 build/                       ← Build output
   {lang}/                    ← HTML per language
+  pdf/{lang}/                ← Collected PDFs
   packages/                  ← OBS tarballs
 ```
 
