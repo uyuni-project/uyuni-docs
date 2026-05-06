@@ -52,15 +52,8 @@ cd uyuni-docs
 
 Task is the only tool you need on the host — it drives the container for you.
 
-**openSUSE / SLES:**
-```bash
-sudo zypper install go-task
-```
-
-**Ubuntu:**
 ```bash
 sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
 ```
 
 Verify:

@@ -10,22 +10,8 @@ This guide installs everything needed to build the documentation directly on you
 
 [Task](https://taskfile.dev) is the build runner that replaces Make.
 
-**openSUSE / SLES:**
-```bash
-sudo zypper install go-task
-```
-If not in the repo, install from the upstream binary:
 ```bash
 sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
-```
-
-**Ubuntu:**
-```bash
-sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
-```
-Add `~/.local/bin` to your `PATH` if not already there:
-```bash
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
 ```
 
 Verify:
