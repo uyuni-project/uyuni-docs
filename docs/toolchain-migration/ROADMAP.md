@@ -38,7 +38,7 @@
 **Goal:** `Taskfile.yml` fully replaces all `Makefile*` files.
 
 - [x] `task setup`, `task gen`
-- [x] `task build:{output}` for all four output targets + `task build:all`
+- [x] `task build:{output}` for all four output targets + `task draft:all`
 - [x] `task pdf` (single book), `task pdf:mlm`, `task pdf:uyuni`, `task pdf:all`
 - [x] `task pdf-collect:mlm/uyuni`, `task pdf-zip:mlm/uyuni`, `task pdf-tar:mlm/uyuni`
 - [x] `task obs:mlm`, `task obs:uyuni`
@@ -63,7 +63,7 @@
 - [x] Update `l10n-weblate/update-cfg-files` scan path: `modules/$GUIDE/` → `en/modules/$GUIDE/`
 - [x] Run `l10n-weblate/update-cfg-files` to regenerate `.cfg` file entries
 - [x] `make_pot.sh` and `use_po.sh` moved to `scripts/`, `CURRENT_DIR` fixed to repo root, `modules/` → `en/modules/`
-- [x] Full build test with `task build:all`
+- [x] Full build test with `task draft:all`
 
 **Exit criteria:** All four HTML outputs and all PDF builds succeed from `en/modules/`. ✅
 
@@ -73,10 +73,10 @@
 
 **Goal:** All 4 output targets × 4 languages × HTML + PDF validated.
 
-- [x] `task build:mlm-dsc` — all 4 languages
-- [x] `task build:mlm-webui` — all 4 languages
-- [x] `task build:uyuni-website` — all 4 languages
-- [x] `task build:uyuni-webui` — all 4 languages
+- [x] `task draft:mlm-dsc` — all 4 languages
+- [x] `task draft:mlm-webui` — all 4 languages
+- [x] `task draft:uyuni-website` — all 4 languages
+- [x] `task draft:uyuni-webui` — all 4 languages
 - [x] PDF: MLM 32/32 (8 books × 4 langs) — Exit 0
 - [x] PDF: Uyuni 32/32 (8 books × 4 langs) — Exit 0
 - [x] OBS: `obs:mlm` — 8 tarballs, Exit 0
@@ -129,7 +129,7 @@ that release. Contributors checkout the branch and build — correct version att
 ```bash
 git worktree add ../uyuni-docs-51 manager-5.1
 cd ../uyuni-docs-51
-task build:mlm-dsc
+task draft:mlm-dsc
 diff -r --brief ../uyuni-docs-reference/build/ build/
 ```
 

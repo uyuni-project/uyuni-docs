@@ -78,6 +78,8 @@ The image includes: Go, Task, Antora, Asciidoctor-PDF, po4a, and zip.
 
 ## 5. Build targets
 
+Run `task` (no arguments) to see all available targets grouped by category.
+
 Every build target has a `container:` prefixed equivalent.
 Your local repository is mounted at `/docs` inside the container — output lands in `build/` on your host.
 
@@ -95,6 +97,24 @@ task container:pdf:mlm                # All MLM PDFs — all books, all language
 task container:pdf:uyuni              # All Uyuni PDFs — all books, all languages
 task container:pdf:all                # All PDFs
 ```
+
+### Build a single PDF book
+
+Use the `pdf` task with `BOOK=`, `PRODUCT=`, and `LANG=` variables:
+
+```bash
+# Build the Administration Guide for MLM in English
+task pdf BOOK=administration PRODUCT=mlm LANG=en
+
+# Build the Installation and Upgrade Guide for Uyuni in Japanese
+task pdf BOOK=installation-and-upgrade PRODUCT=uyuni LANG=ja
+```
+
+Available books: `installation-and-upgrade` `client-configuration` `administration` `reference` `retail` `common-workflows` `specialized-guides` `legal`
+
+Available languages: `en` `ja` `zh_CN` `ko`
+
+Output is written to `build/{lang}/pdf/`.
 
 ### OBS packages
 ```bash

@@ -25,7 +25,7 @@
 - [x] `task setup`
 - [x] `task gen`
 - [x] `task build:{output}` (all four)
-- [x] `task build:all`
+- [x] `task draft:all`
 - [x] `task pdf` (single book via CLI args)
 - [x] `task pdf:mlm` / `task pdf:uyuni` / `task pdf:all`
 - [x] `task pdf-collect:mlm` / `task pdf-collect:uyuni`
@@ -54,7 +54,7 @@
 - [x] PDF: 32/32 Uyuni PDFs (8 books × 4 langs) — Exit 0
 - [x] OBS: `obs:mlm` — 8 tarballs (~31M each) — Exit 0
 - [x] OBS: `obs:uyuni` — 8 tarballs (31M PDF / 52M HTML) — Exit 0
-- [x] Container smoke test: `uyuni-docs-builder:test` — `task gen` + `task build:mlm-dsc` pass inside Podman
+- [x] Container smoke test: `uyuni-docs-builder:test` — `task gen` + `task draft:mlm-dsc` pass inside Podman
 - [x] `publish:dsc` full end-to-end in container — Exit 0 (`task container:publish:dsc`)
 - [ ] Weblate/po4a compatibility smoke test
 
@@ -113,7 +113,7 @@ git worktree add ../uyuni-docs-51 manager-5.1
 cd ../uyuni-docs-51
 
 # Build with new toolchain
-task build:mlm-dsc
+task draft:mlm-dsc
 
 # Diff HTML output against a reference build from the same branch using the old Makefile
 diff -r --brief ../uyuni-docs-reference/build/ build/

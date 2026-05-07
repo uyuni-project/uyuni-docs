@@ -51,7 +51,7 @@ task container:publish:webui-mlm   # MLM WebUI publish
 task container:publish:webui-uyuni # Uyuni WebUI publish
 
 # Individual targets
-task container:build:mlm-dsc
+task container:draft:mlm-dsc
 task container:pdf:mlm
 task container:obs:mlm
 task container:obs:uyuni
@@ -74,7 +74,7 @@ task publish:webui-mlm    # MLM WebUI publish
 task publish:webui-uyuni  # Uyuni WebUI publish
 
 # Individual targets
-task build:mlm-dsc
+task draft:mlm-dsc
 task pdf:mlm
 task obs:mlm
 task obs:uyuni

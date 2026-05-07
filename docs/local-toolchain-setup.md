@@ -135,6 +135,8 @@ task gen      # Generates all Antora/site configs from config.yml
 
 ## 7. Build targets
 
+Run `task` (no arguments) to see all available targets grouped by category.
+
 ```bash
 # Full publish (HTML + PDFs + zips)
 task publish:dsc            # MLM — documentation.suse.com
@@ -159,7 +161,23 @@ task validate:uyuni         # Antora xref validation — Uyuni
 task clean                  # Remove build/, translations/, .cache/
 ```
 
-Run `task --list` at any time to see all available targets.
+### Build a single PDF book
+
+Use the `pdf` task with `BOOK=`, `PRODUCT=`, and `LANG=` variables:
+
+```bash
+# Build the Administration Guide for MLM in English
+task pdf BOOK=administration PRODUCT=mlm LANG=en
+
+# Build the Installation and Upgrade Guide for Uyuni in Japanese
+task pdf BOOK=installation-and-upgrade PRODUCT=uyuni LANG=ja
+```
+
+Available books: `installation-and-upgrade` `client-configuration` `administration` `reference` `retail` `common-workflows` `specialized-guides` `legal`
+
+Available languages: `en` `ja` `zh_CN` `ko`
+
+Output is written to `build/{lang}/pdf/`.
 
 ---
 

@@ -41,10 +41,10 @@ cmd/docbuild/main.go  (Go binary)
     {output}.site.yml      {product}_{book}_guide.pdf
 ```
 
-### HTML build pipeline (`build:mlm-dsc`, `build:uyuni-website`, etc.)
+### HTML build pipeline (`draft:mlm-dsc`, `draft:uyuni-website`, etc.)
 
 ```
-task build:mlm-dsc
+task draft:mlm-dsc
   1. task setup      → compile .bin/docbuild from Go source
   2. task translations → po4a: l10n-weblate/*.po → translations/{lang}/modules/
   3. for each LANG:
@@ -71,7 +71,7 @@ task pdf:mlm
 
 ```
 task publish:dsc
-  1. task build:mlm-dsc     → HTML for all languages (includes translations)
+  1. task draft:mlm-dsc     → HTML for all languages (includes translations)
   2. task pdf:mlm           → PDFs for all languages (includes translations, cached)
   3. task pdf-collect:mlm   → build/{lang}/pdf/ → build/pdf/{lang}/
   4. task pdf-zip:mlm       → build/pdf/{lang}/ → build/{lang}/*-pdf.zip
@@ -256,11 +256,11 @@ task setup                         Build the Go binary (.bin/docbuild)
 task gen                           Run docbuild gen-all + write .bin/xref-converter.rb
 task translations                  Run use_po.sh (po4a) → translations/{lang}/modules/
 
-task build:mlm-dsc                 MLM HTML — documentation.suse.com branding (all languages)
-task build:mlm-webui               MLM HTML — WebUI branding with language selector (all languages)
-task build:uyuni-website           Uyuni HTML — website branding (all languages)
-task build:uyuni-webui             Uyuni HTML — WebUI branding with language selector (all languages)
-task build:all                     All four HTML output targets (sequential)
+task draft:mlm-dsc                 MLM HTML — documentation.suse.com branding (all languages)
+task draft:mlm-webui               MLM HTML — WebUI branding with language selector (all languages)
+task draft:uyuni-website           Uyuni HTML — website branding (all languages)
+task draft:uyuni-webui             Uyuni HTML — WebUI branding with language selector (all languages)
+task draft:all                     All four HTML output targets (sequential)
 
 task pdf BOOK=<b> PRODUCT=<p> LANG=<l>   Single book PDF
 task pdf:mlm                       All 8 books × 4 languages — MLM (runs translations first)

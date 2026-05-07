@@ -48,9 +48,9 @@
 
 ## Success criteria
 
-- [x] `task build:mlm-dsc` produces identical HTML output to `make antora-mlm-en` (DSC branding)
-- [x] `task build:mlm-webui` produces identical HTML output with `webui-2025` supplemental UI
-- [x] `task build:uyuni-website` produces identical HTML output to `make antora-uyuni-en`
+- [x] `task draft:mlm-dsc` produces identical HTML output to `make antora-mlm-en` (DSC branding)
+- [x] `task draft:mlm-webui` produces identical HTML output with `webui-2025` supplemental UI
+- [x] `task draft:uyuni-website` produces identical HTML output to `make antora-uyuni-en`
 - [x] `task pdf:mlm` produces all 8 PDFs for all 4 languages with correct CJK themes
 - [x] `task pdf:uyuni` produces all 8 PDFs for all 4 languages with correct CJK themes
 - [x] `task obs:mlm` produces `susemanager-docs_{lang}.tar.gz` and `susemanager-docs_{lang}-pdf.tar.gz` in `build/packages/`
