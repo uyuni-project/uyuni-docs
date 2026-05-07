@@ -97,9 +97,9 @@
 - [x] Utility scripts reorganised into `scripts/`
 - [x] GitHub Actions workflows updated for new script paths
 - [x] `linting.yml` and `.vale.ini` removed (broken/unused)
-- [x] `Dockerfile.custom` rewritten — full self-contained toolchain image (Go, Task, Antora, Asciidoctor-PDF, po4a, zip)
+- [x] `Dockerfile.bci` rewritten — full self-contained toolchain image (Go, Task, Antora, Asciidoctor-PDF, po4a, zip)
 - [x] `publish_builder_image.yml` — publishes `ghcr.io/uyuni-project/uyuni-docs-builder` via `GITHUB_TOKEN`
-  - Triggers on `Dockerfile.custom` changes merged to `master` + `workflow_dispatch`
+  - Triggers on `Dockerfile.bci` changes merged to `master` + `workflow_dispatch`
   - Pushes `latest` + immutable `sha-<commit>` tag
   - `permissions: packages: write` scoped to job only — no PAT, no stored secrets
   - Action pins are commit-hash pinned to prevent supply-chain tag-move attacks

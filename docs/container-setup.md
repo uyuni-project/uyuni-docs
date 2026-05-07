@@ -65,8 +65,8 @@ task --version
 
 ## 4. Build the container image
 
-This step builds the `uyuni-docs-builder` image locally from `Dockerfile.custom`.
-It takes a few minutes and only needs to be done once (or after `Dockerfile.custom` changes).
+This step builds the `uyuni-docs-builder` image locally from `Dockerfile.bci`.
+It takes a few minutes and only needs to be done once (or after `Dockerfile.bci` changes).
 
 ```bash
 task container:build
@@ -171,7 +171,7 @@ echo 'kernel.unprivileged_userns_clone=1' | sudo tee /etc/sysctl.d/99-userns.con
 If you use Docker instead of Podman, the `:Z` SELinux label flag is harmless but may produce a
 warning. The `CONTAINER_CMD` variable in `Taskfile.yml` auto-detects `podman` first, then `docker`.
 
-**Rebuilding the image after a `Dockerfile.custom` change**
+**Rebuilding the image after a `Dockerfile.bci` change**
 ```bash
 task container:build
 ```

@@ -68,4 +68,4 @@
   - Image signed and pinned by commit SHA for supply-chain safety
 - [x] `task --list` curated — 25 user-facing targets visible, plumbing hidden
 - [x] `task container:*` targets — every publish command available via container without local toolchain
-- [x] `publish_builder_image.yml` workflow — triggers on `Dockerfile.custom` changes to master; pushes `latest` + `sha-<commit>` tags
+- [x] `publish_builder_image.yml` workflow — triggers on `Dockerfile.bci` changes to master; pushes `latest` + `sha-<commit>` tags

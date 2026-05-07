@@ -67,7 +67,7 @@
 - [x] Utility scripts reorganised into `scripts/` (`enforcing_checkstyle`, `find_unused`, `make_pot.sh`, `use_po.sh`)
 - [x] GitHub Actions workflows updated: `update_translation_files.yml`, `enforced_checkstyle.yml`, `find_unused_files.yml`
 - [x] `linting.yml` and `.vale.ini` removed (broken/unused)
-- [x] `Dockerfile.custom` rewritten — full toolchain image (Go, Task, Antora, Asciidoctor-PDF, po4a, zip)
+- [x] `Dockerfile.bci` rewritten — full toolchain image (Go, Task, Antora, Asciidoctor-PDF, po4a, zip)
 - [x] `CoCo` attribute added to `config.yml` global asciidoc map
 - [x] `container:*` Task targets added — all user-facing publish commands available via container
 - [x] `task --list` curated — utility/plumbing tasks hidden, 25 user-facing targets shown
@@ -76,7 +76,7 @@
   - Registry: `ghcr.io/uyuni-project/uyuni-docs-builder` (GitHub Container Registry)
   - Auth: `GITHUB_TOKEN` only — no PAT, no stored secrets; token expires when run ends
   - Permissions: `packages: write + contents: read` scoped to this job only
-  - Triggers: push to `master` when `Dockerfile.custom` changes + `workflow_dispatch` for maintainers
+  - Triggers: push to `master` when `Dockerfile.bci` changes + `workflow_dispatch` for maintainers
   - Tags pushed: `latest` (always current master) + `sha-<commit>` (immutable, safe for pinning)
   - Action pins: all three actions pinned by commit SHA to prevent supply-chain tag-move attacks
   - **Org prerequisite:** GitHub org settings → Packages → Actions access policy → allow `uyuni-docs` repo to push packages

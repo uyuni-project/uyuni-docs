@@ -96,7 +96,7 @@ scripts/                     ← enforcing_checkstyle, find_unused, make_pot.sh,
 docs/legacy-toolchain/      ← Old Makefile*, *.j2, configure, parameters.yml (preserved)
 config.yml                   ← Single build configuration file
 Taskfile.yml                 ← All build targets
-Dockerfile.custom            ← uyuni-docs-builder image (published to ghcr.io/uyuni-project/)
+Dockerfile.bci               ← uyuni-docs-builder image (published to ghcr.io/uyuni-project/)
 cmd/docbuild/                ← Go binary source
   main.go
 go.mod

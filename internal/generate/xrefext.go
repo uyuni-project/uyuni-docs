@@ -26,7 +26,7 @@ import (
 //   xref:administration:troubleshooting/tshoot-firewalls.adoc[]
 //     → Administration Guide › Troubleshooting › Tshoot Firewalls
 //
-// Source: extensions/xref-converter.rb (Joseph Cayouette / Klaus Kaempf, 2019)
+// Source: extensions/xref-converter.rb (Joseph Cayouette 2026 / Klaus Kaempf, 2019)
 const xrefConverterRuby = `class PDFConverter < (Asciidoctor::Converter.for 'pdf')
   register_for 'pdf'
 
