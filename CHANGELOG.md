@@ -1,4 +1,5 @@
-- Document how to configure channel automatic synchronization
+- Documented how to configure channel automatic synchronization in Administration
+  Guide
 - Migrate build toolchain: Go + Task + BCI container
 - Removed mention of CIS profile (bsc#1262460)
 - Corrected path for Salt minion in Retail Guide (#1262090)
