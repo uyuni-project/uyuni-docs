@@ -1,0 +1,64 @@
+# uyuni-docs builder image — Debian Bookworm variant
+# Use this to compare build times against Dockerfile.bci (BCI/SUSE base).
+#
+# Usage (build):  podman build -f Dockerfile.bookworm -t uyuni-docs-builder:bookworm .
+# Usage (run):    podman run --rm -v $(pwd):/docs:Z -w /docs uyuni-docs-builder:bookworm task <target>
+
+FROM node:22-bookworm-slim
+
+ARG GO_VERSION=1.24.3
+ARG TASK_VERSION=3.43.3
+
+# ── System deps ───────────────────────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ruby \
+    ruby-dev \
+    gcc \
+    g++ \
+    make \
+    pkg-config \
+    po4a \
+    libtext-wrapi18n-perl \
+    libterm-readkey-perl \
+    libgraphicsmagick1-dev \
+    graphicsmagick \
+    locales \
+    zip \
+    curl \
+    ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && locale-gen en_US.UTF-8 ja_JP.UTF-8 zh_CN.UTF-8 ko_KR.UTF-8
+
+# ── Ruby gem environment ──────────────────────────────────────────────────────
+ENV GEM_HOME=/usr/local/lib/gems
+ENV PATH="/usr/local/lib/gems/bin:${PATH}"
+
+# ── Go ────────────────────────────────────────────────────────────────────────
+RUN curl -fsSL https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz \
+    | tar -C /usr/local -xz
+ENV PATH="/usr/local/go/bin:${PATH}"
+
+# ── Task (taskfile.dev) ───────────────────────────────────────────────────────
+RUN curl -fsSL https://github.com/go-task/task/releases/download/v${TASK_VERSION}/task_linux_amd64.tar.gz \
+    | tar -C /usr/local/bin -xz task
+
+# ── Antora ────────────────────────────────────────────────────────────────────
+RUN npm install -g \
+    @antora/cli \
+    @antora/site-generator \
+    @antora/lunr-extension \
+    @asciidoctor/tabs
+
+# ── Asciidoctor-PDF ───────────────────────────────────────────────────────────
+RUN gem install \
+    asciidoctor-pdf \
+    rouge \
+    coderay \
+    rb-pygments \
+    concurrent-ruby \
+    asciidoctor-diagram \
+    --no-document && \
+    gem install prawn-gmagick -v 0.0.9 --no-document
+
+WORKDIR /docs
