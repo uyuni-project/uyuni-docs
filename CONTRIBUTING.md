@@ -103,3 +103,16 @@ Update `CHANGELOG.md` with your changes. Add new entries at the top:
 ```
 
 [Guidelines](https://en.opensuse.org/openSUSE:Creating_a_changes_file_(RPM))
+
+---
+
+## Building the Documentation Locally
+
+To verify your changes before submitting a PR, build the documentation locally.
+Two options are available:
+
+| Option | What you need | Guide |
+|---|---|---|
+| Container (recommended) | Podman or Docker + Task | [docs/container-setup.md](docs/container-setup.md) |
+| Local toolchain | Go, Task, Node.js, Ruby | [docs/local-toolchain-setup.md](docs/local-toolchain-setup.md) |
+

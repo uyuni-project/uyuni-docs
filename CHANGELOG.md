@@ -1,3 +1,4 @@
+- Migrate build toolchain: Go + Task + BCI container
 - Fix Debian repository URL examples in custom channels
 - Removed mention of CIS profile (bsc#1262460)
 - Corrected path for Salt minion in Retail Guide (#1262090)
@@ -1285,4 +1286,3 @@
   client operating systems.
 - Documented upgrading to version 4.2 in Upgrade Guide (bsc#1185711).
 - Fixed URL of API documentation
-
