@@ -1,3 +1,4 @@
+- Rephrased instructions for RBAC in Administration Guide (bsc#1258079)
 - Migrate build toolchain: Go + Task + BCI container
 - Removed mention of CIS profile (bsc#1262460)
 - Corrected path for Salt minion in Retail Guide (#1262090)
