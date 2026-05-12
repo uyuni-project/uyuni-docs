@@ -1,3 +1,4 @@
+- Added documentation for deleting SCAP scan results to Administration Guide (bsc#1262471)
 - Migrate build toolchain: Go + Task + BCI container
 - Removed mention of CIS profile (bsc#1262460)
 - Corrected path for Salt minion in Retail Guide (#1262090)
