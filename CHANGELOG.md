@@ -1,3 +1,4 @@
+- Added documentation for deleting SCAP scan results to Administration Guide (bsc#1262471)
 - Removed mentions of Leap 15.5 and 15.4 and specified SUSE requiring general
   or LTS support in Client Configuration Guide (bsc#1262285)
 - Added information about availability of SLE 16 and SL Micro 6.2 support
