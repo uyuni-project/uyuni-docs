@@ -26,6 +26,8 @@
 #
 #  OPTION B — Container (only requires Podman or Docker, nothing else to install)
 #    task container:build               Build the uyuni-docs-builder image locally (registry.suse.com/bci/nodejs:22)
+#    task container:pull                Pull the latest pre-built image from ghcr.io (update local image)
+#    task container:check-update        Check whether a newer image is available on ghcr.io
 #    task container:shell               Interactive shell with repo mounted
 #    task container:draft:mlm-dsc       MLM HTML — documentation.suse.com branding (all languages)
 #    task container:draft:mlm-webui     MLM HTML — product WebUI branding (all languages)
@@ -59,6 +61,7 @@ vars:
   BOOKS: "installation-and-upgrade client-configuration administration reference retail common-workflows specialized-guides legal"
   CONTAINER_CMD:
     sh: which podman 2>/dev/null || which docker 2>/dev/null || echo "podman"
+  BUILDER_IMAGE: "ghcr.io/uyuni-project/uyuni-docs-builder:latest"
 
 tasks:
   # --------------------------------------------------------------------------
@@ -119,8 +122,10 @@ tasks:
         echo "    setup              Build the Go toolchain binary (.bin/docbuild)"
         echo "    gen                Regenerate site configs and xref-converter extension"
         echo "    clean              Remove build output, translation dirs, and Antora cache"
-        echo "    container:build    Build the uyuni-docs-builder container image locally"
-        echo "    container:shell    Open an interactive shell inside the container"
+        echo "    container:build        Build the uyuni-docs-builder container image locally"
+        echo "    container:pull         Pull the latest pre-built image from ghcr.io"
+        echo "    container:check-update Check whether a newer image is available on ghcr.io"
+        echo "    container:shell        Open an interactive shell inside the container"
         echo ""
         echo "  Run 'task --summary <task>' for details  |  'task --list' for the full index"
         echo ""
@@ -550,6 +555,40 @@ tasks:
     desc: "[Dev] Build the uyuni-docs-builder container image locally"
     cmds:
       - "{{.CONTAINER_CMD}} build -t uyuni-docs-builder:latest -f Dockerfile.bci ."
+
+  container:pull:
+    desc: "[Container] Pull the latest pre-built uyuni-docs-builder image from ghcr.io"
+    cmds:
+      - "{{.CONTAINER_CMD}} pull {{.BUILDER_IMAGE}}"
+      - "{{.CONTAINER_CMD}} tag {{.BUILDER_IMAGE}} uyuni-docs-builder:latest"
+      - 'echo "uyuni-docs-builder:latest is now up to date."'
+
+  container:check-update:
+    desc: "[Container] Check whether a newer uyuni-docs-builder image is available on ghcr.io"
+    silent: true
+    cmds:
+      - |
+        if ! command -v skopeo >/dev/null 2>&1; then
+          printf '\n  NOTE: skopeo is not installed — cannot check without pulling.\n'
+          printf '  To update your local image run: task container:pull\n\n'
+          exit 0
+        fi
+        REMOTE=$(skopeo inspect --no-creds docker://{{.BUILDER_IMAGE}} 2>/dev/null | grep -m1 '"Digest"' | awk -F'"' '{print $4}')
+        LOCAL=$({{.CONTAINER_CMD}} image inspect uyuni-docs-builder:latest 2>/dev/null | grep -m1 '"Digest"' | awk -F'"' '{print $4}')
+        if [ -z "$REMOTE" ]; then
+          printf '\n  WARNING: Could not reach ghcr.io — skipping update check.\n\n'
+        elif [ -z "$LOCAL" ]; then
+          printf '\n  No local uyuni-docs-builder image found. Run: task container:pull\n\n'
+        elif [ "$LOCAL" = "$REMOTE" ]; then
+          printf '  uyuni-docs-builder is up to date.\n'
+        else
+          printf '\n'
+          printf '  +--------------------------------------------------------------+\n'
+          printf '  |  A new uyuni-docs-builder image is available on ghcr.io.     |\n'
+          printf '  |  Run:  task container:pull                                   |\n'
+          printf '  +--------------------------------------------------------------+\n'
+          printf '\n'
+        fi
 
   container:shell:
     desc: "[Dev] Open an interactive shell inside the uyuni-docs-builder container"
