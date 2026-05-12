@@ -15,7 +15,9 @@ on:
       - completed
 
 jobs:
-  run:
+
+  # ── Uyuni HTML ─────────────────────────────────────────────────────────────
+  uyuni-html:
     runs-on: ubuntu-latest
 
     container:
@@ -28,62 +30,75 @@ jobs:
     - name: Build toolchain binary and generate configs
       run: task setup && task gen
 
-    # ── Uyuni HTML (master only) ────────────────────────────────────────────
-
     - name: Build Uyuni HTML documentation
       run: task publish:uyuni
-      if: github.ref_name == 'master'
 
     - name: Archive Uyuni HTML documentation
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
       with:
         name: documentation-uyuni-${{ github.ref_name }}
         path: build/en/
-      if: github.ref_name == 'master'
 
-    # ── Uyuni PDFs — English only (master only, for translator review) ──────
+  # ── MLM HTML ───────────────────────────────────────────────────────────────
+  mlm-html:
+    runs-on: ubuntu-latest
 
-    - name: Build Uyuni PDFs (English)
-      run: task pdf:uyuni LANGUAGES=en
-      if: github.ref_name == 'master'
+    container:
+      image: ghcr.io/uyuni-project/uyuni-docs-builder:latest
 
-    - name: Collect Uyuni PDFs
-      run: task pdf-collect:uyuni LANGUAGES=en
-      if: github.ref_name == 'master'
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v4
 
-    - name: Archive Uyuni PDFs (English)
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
-      with:
-        name: documentation-uyuni-pdf-en-${{ github.ref_name }}
-        path: build/pdf/en/
-      if: github.ref_name == 'master'
-
-    # ── MLM HTML (master only — future branches will uncomment trigger above) ──
+    - name: Build toolchain binary and generate configs
+      run: task setup && task gen
 
     - name: Build SUSE Multi-Linux Manager HTML documentation
       run: task publish:dsc
-      if: github.ref_name == 'master'
 
     - name: Archive SUSE Multi-Linux Manager HTML documentation
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
       with:
         name: documentation-suse-multi-linux-manager-${{ github.ref_name }}
         path: build/en/
-      if: github.ref_name == 'master'
 
-    # ── MLM PDFs — English only (master only, for translator review) ──────────
+  # ── PDFs — English only (for translator review) ────────────────────────────
+  pdfs:
+    runs-on: ubuntu-latest
+
+    container:
+      image: ghcr.io/uyuni-project/uyuni-docs-builder:latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v4
+
+    - name: Build toolchain binary and generate configs
+      run: task setup && task gen
+
+    - name: Build Uyuni PDFs (English)
+      run: task pdf:uyuni LANGUAGES=en
+
+    - name: Collect Uyuni PDFs
+      run: task pdf-collect:uyuni LANGUAGES=en
+
+    - name: Archive Uyuni PDFs (English)
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
+      with:
+        name: documentation-uyuni-pdf-en-${{ github.ref_name }}
+        path: build/pdf/en/
+
+    - name: Clean PDF output before MLM build
+      run: rm -rf build/pdf/en/
 
     - name: Build SUSE Multi-Linux Manager PDFs (English)
       run: task pdf:mlm LANGUAGES=en
-      if: github.ref_name == 'master'
 
     - name: Collect MLM PDFs
       run: task pdf-collect:mlm LANGUAGES=en
-      if: github.ref_name == 'master'
 
     - name: Archive SUSE Multi-Linux Manager PDFs (English)
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
       with:
         name: documentation-suse-multi-linux-manager-pdf-en-${{ github.ref_name }}
         path: build/pdf/en/
-      if: github.ref_name == 'master'
