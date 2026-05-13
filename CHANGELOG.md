@@ -1,3 +1,4 @@
+- Rephrased instructions for RBAC in Administration Guide (bsc#1258079)
 - Migrate build toolchain: Go + Task + BCI container
 - Fixed Debian repository URL examples in custom channels
 - Removed mention of CIS profile (bsc#1262460)
