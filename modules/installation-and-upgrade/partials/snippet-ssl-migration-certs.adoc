@@ -1,0 +1,158 @@
+When migrating, {productname} uses self-signed certificates by default.
+To use certificates from an external PKI (certificate authority), you can provide all certificate files when running [command]``{migration-command}`` using the [literal]``--ssl*`` flags.
+
+.Quick-reference: which flags are needed for your migration
+[cols="1,5"]
+|===
+|Migration situation|Flags needed
+
+|Self-signed CA, everything unchanged
+|None
+
+|New server certificate (same CA)
+|`--ssl-server-cert`, `--ssl-server-key`
+
+|New database certificate (same CA)
+|`--ssl-db-cert`, `--ssl-db-key`
+
+|New server and database certificates (same CA)
+|`--ssl-server-cert`, `--ssl-server-key`, `--ssl-db-cert`, `--ssl-db-key`
+
+|New server certificate + new CA
+|`--ssl-server-cert`, `--ssl-server-key`, `--ssl-ca-root`, `--ssl-ca-intermediate`
+
+|New database certificate + new CA
+|`--ssl-db-cert`, `--ssl-db-key`, `--ssl-db-ca-root`, `--ssl-db-ca-intermediate`
+
+|Changing CA only (same cert files, different CA chain)
+|`--ssl-ca-root`, `--ssl-ca-intermediate`, `--ssl-db-ca-root`, `--ssl-db-ca-intermediate`
+
+|Full replacement — new certs and CA for both components
+|See "All certificates from an external PKI" below
+|===
+
+Any [literal]``--ssl*`` flag not specified uses the corresponding value from the source server.
+Only provide flags for the files that differ from your current setup.
+
+=== Flag reference
+
+ifeval::[{migration-source} == 4.3]
+The following [literal]``--ssl*`` flags are supported by [command]``mgradm migrate``:
+endif::[]
+
+ifeval::[{migration-source} == 5.0]
+The following [literal]``--ssl*`` flags are supported by [command]``mgradm migrate`` and [command]``mgradm upgrade``:
+endif::[]
+
+[cols="1,5"]
+|===
+|Flag|Description
+
+|`--ssl-ca-root`
+|Path to the root CA certificate that signed the server certificate (defaults to source server CA)
+
+|`--ssl-ca-intermediate`
+|Path to an intermediate CA certificate in the chain (can be specified multiple times; defaults to source server)
+
+|`--ssl-server-cert`
+|Path to the server certificate (defaults to source server certificate)
+
+|`--ssl-server-key`
+|Path to the server private key (defaults to source server key)
+
+|`--ssl-db-ca-root`
+|Path to the root CA certificate that signed the database certificate
+
+|`--ssl-db-ca-intermediate`
+|Path to an intermediate CA certificate in the database certificate chain (can be specified multiple times)
+
+|`--ssl-db-cert`
+|Path to the database certificate
+
+|`--ssl-db-key`
+|Path to the database private key
+|===
+
+[IMPORTANT]
+====
+The database certificate chain is completely separate from the server certificate chain.
+The [literal]``--ssl-db-*`` flags must be provided even when using the same CA,
+as the database container requires its own certificates generated during migration.
+====
+
+=== Certificate requirements
+
+The following requirements apply to all certificate files used with [command]``mgradm migrate``:
+
+* All certificate files must be in PEM format.
+  If your certificates are in DER format, convert them first.
+
+* The hostname in the [literal]``X509v3 Subject Alternative Name`` section of the certificate must match the fully qualified hostname of the machine the certificates are deployed on.
+
+* Database certificates require [literal]``reportdb`` and [literal]``db`` as [literal]``Subject Alternative Name`` (SAN).
+
+* Supported key types are [literal]``RSA`` and [literal]``EC`` (Elliptic Curve).
+
+* When a CA chain is used, concatenate the certificates with the server or database certificate first, followed by all intermediate CA certificates in order.
+The root CA certificate should be provided in its own file.
+To combine files, you can use the following command:
+
++
+
+[source,shell]
+----
+cat server.pem intermediate-ca1.pem intermediate-ca2.pem > combined-server.pem
+----
+
+For full details on certificate preparation, see xref:administration:ssl-certs-imported.adoc[Import SSL Certificates].
+
+=== Scenario: All certificates from an external PKI
+
+This scenario covers migrating a server where both the web and database components use certificates from a third-party CA.
+The organization must gather the following certificate files:
+
+* Root CA certificate for the web component
+* Intermediate CA certificate for the web component (if applicable)
+* Server certificate for the web component
+* Private key for the web component
+* Root CA certificate for the database component
+* Intermediate CA certificate for the database component (if applicable)
+* Server certificate for the database component (with [literal]``reportdb`` and [literal]``db`` as SAN)
+* Private key for the database component
+
+In most deployments, a single CA serves both the server and database components.
+In that case, the same certificate files are used for both [literal]``--ssl-*`` and [literal]``--ssl-db-*`` flags.
+The example below uses separate file names for clarity.
+
+.Example migration command with all [literal]``--ssl*`` flags
+[source,shell,subs="attributes+"]
+----
+{migration-command} podman <oldserver.fqdn> \
+  --ssl-ca-root rootCAweb.pem \
+  --ssl-ca-intermediate intermediateCAweb.pem \
+  --ssl-server-cert webcert.pem \
+  --ssl-server-key webkey.key \
+  --ssl-db-ca-root rootCAdb.pem \
+  --ssl-db-ca-intermediate intermediateCAdb.pem \
+  --ssl-db-cert dbcert.pem \
+  --ssl-db-key dbkey.key
+----
+
+.Client deployment of external CA certificates
+[NOTE]
+====
+After a successful migration with external PKI certificates, deploy the CA certificate to all clients so they can verify the new server certificates:
+
+[source,shell]
+----
+mgrctl exec -- 'salt -b 50 * state.apply certs'
+----
+====
+
+=== Scenario: Mixed external and self-signed certificates
+
+When migrating with a mix of external and self-signed certificates, only replace the CA in a certificate chain when the server or database certificate and its private key are also being replaced in that same chain.
+For example, when replacing both the server certificate and key with external PKI versions, also provide the corresponding CA certificates.
+However, when only replacing database certificates, the self-signed CA password is still needed if the original CA is being reused.
+
+For the complete procedure, see the https://support.scc.suse.com/s/kb/SUSE-Multi-Linux-Manager-Server-migration-fails-due-to-unknown-or-lost-CA-password?language=en_US[SCC article: SUSE Multi-Linux Manager Server migration fails due to unknown (or lost) CA password].
