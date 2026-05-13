@@ -14,6 +14,16 @@ This guide installs everything needed to build the documentation directly on you
 sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
 ```
 
+The installer places the `task` binary in `~/.local/bin`. Make sure that directory is on your `$PATH`:
+
+```bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+> **openSUSE Leap 15.6 / Leap 16:** Do not install Task via `zypper` — the packaged version is too old (2.x).
+> Always use the install script above.
+
 Verify:
 ```bash
 task --version
