@@ -40,6 +40,7 @@ type ProductAsciidoc struct {
 
 // PDFConfig holds PDF artifact naming for a product.
 type PDFConfig struct {
+	Prefix  string `yaml:"prefix"`   // e.g. suse_multi_linux_manager → {prefix}_{book}_guide.pdf
 	TarName string `yaml:"tar_name"` // e.g. suse-multi-linux-manager-docs → _en-pdf.zip
 	OBSName string `yaml:"obs_name"` // e.g. susemanager-docs → _en.tar.gz
 }

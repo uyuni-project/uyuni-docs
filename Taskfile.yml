@@ -298,6 +298,9 @@ tasks:
         OUTDIR="build/${LANG}/pdf"
         mkdir -p "${OUTDIR}"
 
+        # Resolve PDF filename prefix from config.yml (e.g. suse_multi_linux_manager or uyuni)
+        PDF_PREFIX=$({{.DOCBUILD}} get-pdf-prefix -product ${PRODUCT})
+
         # Ensure English source modules are staged as fallback without overwriting translated files
         mkdir -p "${SRCDIR}/modules"
         cp -an en/modules/. "${SRCDIR}/modules/" || true
@@ -321,7 +324,7 @@ tasks:
           -a imagesdir=modules/${BOOK}/assets/images \
           ${CJK_ATTR} \
           --base-dir . \
-          --out-file {{.ROOT_DIR}}/${OUTDIR}/${PRODUCT}_${BOOK}_guide.pdf \
+          --out-file {{.ROOT_DIR}}/${OUTDIR}/${PDF_PREFIX}_${BOOK}_guide.pdf \
           modules/${BOOK}/nav-${BOOK}-guide.pdf.${LANG}.adoc \
           --failure-level FATAL \
           --trace
@@ -366,13 +369,17 @@ tasks:
     desc: "[Dev] Collect MLM PDFs from build/{lang}/pdf/ into build/pdf/{lang}/"
     deps: [setup]
     cmds:
-      - "{{.DOCBUILD}} collect-pdfs -product mlm -src {{.ROOT_DIR}}/build -dest {{.ROOT_DIR}}/build/pdf -langs '{{.LANGUAGES}}'"
+      - |
+        PREFIX=$({{.DOCBUILD}} get-pdf-prefix -product mlm)
+        {{.DOCBUILD}} collect-pdfs -product "${PREFIX}" -src {{.ROOT_DIR}}/build -dest {{.ROOT_DIR}}/build/pdf -langs '{{.LANGUAGES}}'
 
   pdf-collect:uyuni:
     desc: "[Dev] Collect Uyuni PDFs from build/{lang}/pdf/ into build/pdf/{lang}/"
     deps: [setup]
     cmds:
-      - "{{.DOCBUILD}} collect-pdfs -product uyuni -src {{.ROOT_DIR}}/build -dest {{.ROOT_DIR}}/build/pdf -langs '{{.LANGUAGES}}'"
+      - |
+        PREFIX=$({{.DOCBUILD}} get-pdf-prefix -product uyuni)
+        {{.DOCBUILD}} collect-pdfs -product "${PREFIX}" -src {{.ROOT_DIR}}/build -dest {{.ROOT_DIR}}/build/pdf -langs '{{.LANGUAGES}}'
 
   # --------------------------------------------------------------------------
   # Publish — full HTML + PDF pipeline for documentation.suse.com (susecom-2025)
