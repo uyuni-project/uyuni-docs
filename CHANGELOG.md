@@ -1,3 +1,4 @@
+- Rephrased instructions for RBAC in Administration Guide (bsc#1258079)
 - Added troubleshooting section for BTRFS to Administration
   Guide (bcs#1258816)
 - Removed mentions of Leap 15.5 and 15.4 and specified SUSE requiring general
