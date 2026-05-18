@@ -1,3 +1,4 @@
+- Added documentation for deleting SCAP scan results to Administration Guide (bsc#1262471)
 - Removed mention of CIS profile (bsc#1262460)
 - Added explanation for translating mgradm arguments to YAML to Installation and 
   Upgrade Guide (bsc#1258144)
