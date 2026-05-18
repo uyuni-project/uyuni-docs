@@ -1,0 +1,157 @@
+[[troubleshooting-btrfs]]
+= Resizing BTRFS
+:revdate: 2026-05-13
+:page-revdate: {revdate}
+
+
+== Resizing a BTRFS LVM partition on {sles}
+
+When managing a {sles} installation, the BTRFS root file system can become full due to files, caches, or snapshots.
+Because removing snapshots manually is not recommended, the best approach is to resize the partition.
+
+[NOTE]
+====
+To resize a BTRFS partition, the partition must remain mounted during this procedure.
+====
+
+The following steps illustrate how to resize a BTRFS LVM partition by adding a new disk (for example, [path]``/dev/sdb``) to the volume group.
+
+.Procedure: Resizing a BTRFS LVM Partition*
+[role=procedure]
+____
+. Check the disk information to identify the root file system device and the new disk using the `lsblk` command:
+
++
+
+[source,bash]
+----
+lsblk
+----
+
+. Create a physical volume on the newly added disk:
+
++
+
+[source,bash]
+----
+pvcreate /dev/sdb
+----
+
+. Scan for the current volume group that the root file system is using:
+
++
+
+[source,bash]
+----
+vgscan
+----
+
+. Extend the volume group with the newly created physical volume:
+
++
+
+[source,bash]
+----
+vgextend system /dev/sdb
+----
+
+. Extend the logical volume using the extended volume group:
+
++
+
+[source,bash]
+----
+lvextend -l +100%FREE /dev/system/root
+----
+
+. Resize the BTRFS root file system:
+
++
+
+[source,bash]
+----
+btrfs filesystem resize max /
+----
+
+. Check the result to verify that the system's root file system has been successfully resized to the new capacity:
+
++
+
+[source,bash]
+----
+lsblk
+----
+____
+                    
+
+
+
+
+== Resizing a BTRFS root volume on {sl-micro}
+
+When managing a {sle-micro} 5.5 or {sl-micro} 6 installation, the BTRFS root volume may run out of disk space and require resizing. 
+
+Attempting to resize the root volume using the standard command [command]``btrfs fi resize max /`` will result in the following error:
+
+[source,bash]
+----
+ERROR: unable to resize '/': Read-only file system
+----
+
+This occurs because the root volume is mounted read-only on {sle-micro} systems. 
+To successfully complete the operation online, you must target the [path]``/.snapshots`` mount point instead, which is mounted read-write.
+
+[WARNING]
+====
+Changes to the partition table can cause damage to the system. 
+
+Always make sure to have a complete backup before making changes to the partition table.
+====
+
+The following procedure illustrates how to resize a single disk where the root partition is the last partition on the device (for example, [path]``/dev/sda3``). 
+If your layout contains further partitions, the operation may become more complex and you may need to reach out to {scclongform} for support.
+
+.Procedure: Resizing the BTRFS root volume
+[role=procedure]
+____
+. Resize the existing disk to the new size using the appropriate hypervisor or storage tools for your environment.
+
+. Rescan the device to be resized.
+  For example, to rescan [path]``/dev/sda``, run the following command as root:
+
++
+
+[source,bash]
+----
+echo 1 > /sys/block/sda/device/rescan
+----
+
+. Resize the root partition using the comamnd [command]``growpart``. 
+  In this example, we resize partition 3 on [path]``/dev/sda``:
+
++
+
+[source,bash]
+----
+growpart /dev/sda 3
+----
+
+. Resize the BTRFS filesystem. 
+  Be sure to use [path]``/.snapshots`` instead of [path]``/`` to avoid the read-only error:
+
++
+
+[source,bash]
+----
+btrfs fi resize max /.snapshots
+----
+
+. Check the filesystem to verify that the new size has been applied successfully:
+
++
+
+[source,bash]
+----
+btrfs fi show /
+----
+____
