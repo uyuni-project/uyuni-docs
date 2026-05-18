@@ -56,6 +56,8 @@ func main() {
 		runGenPDFNav(repoRoot, args)
 	case "collect-pdfs":
 		runCollectPDFs(repoRoot, args)
+	case "get-pdf-prefix":
+		runGetPDFPrefix(repoRoot, args)
 	case "help", "-h", "--help":
 		usage()
 	default:
@@ -173,6 +175,26 @@ func runCollectPDFs(repoRoot string, args []string) {
 	}
 }
 
+func runGetPDFPrefix(repoRoot string, args []string) {
+	fs := flag.NewFlagSet("get-pdf-prefix", flag.ExitOnError)
+	cfgPath := fs.String("config", defaultConfig, "path to config.yml")
+	product := fs.String("product", "", "product name, e.g. mlm (required)")
+	_ = fs.Parse(args)
+
+	requireFlags(fs, "product")
+	cfg := mustLoad(filepath.Join(repoRoot, *cfgPath))
+	p, ok := cfg.Products[*product]
+	if !ok {
+		fatalf("get-pdf-prefix: unknown product %q", *product)
+	}
+	if p.PDF.Prefix == "" {
+		// Fall back to the product key name if no prefix is configured.
+		fmt.Print(*product)
+	} else {
+		fmt.Print(p.PDF.Prefix)
+	}
+}
+
 func mustLoad(path string) *config.Config {
 	cfg, err := config.Load(path)
 	if err != nil {
@@ -205,6 +227,7 @@ Subcommands:
   gen-entities -product P -lang L            Generate branding/pdf/entities.adoc
   gen-pdf-nav -book B -lang L -dir D         Generate nav-{book}-guide.pdf.{lang}.adoc from Antora nav
   inject-lang-selector -hbs PATH             Inject language selector into header-content.hbs
+  get-pdf-prefix -product P                              Print the PDF filename prefix for a product
   collect-pdfs -product P [-src S] [-dest D] [-langs L]  Move PDFs into dest/{lang}/ structure
 
 Common flags:
