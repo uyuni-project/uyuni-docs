@@ -1,3 +1,4 @@
+- Added documentation for deleting SCAP scan results to Administration Guide (bsc#1262471)
 - Added troubleshooting section for BTRFS to Administration
   Guide (bcs#1258816)
 - Rephrased instructions for RBAC in Administration Guide (bsc#1258079)
