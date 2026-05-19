@@ -1,3 +1,4 @@
+- Added Code 16 to Monitoring documentation (bsc#1263814)
 - Added documentation for deleting SCAP scan results to Administration Guide (bsc#1262471)
 - Rephrased instructions for RBAC in Administration Guide (bsc#1258079)
 - Added troubleshooting section for BTRFS to Administration
