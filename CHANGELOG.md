@@ -1,3 +1,4 @@
+- Updated registration instructions for PowerPC self-install in Common Workflows (bsc#1260617)
 - Added documentation for deleting SCAP scan results to Administration Guide (bsc#1262471)
 - Added troubleshooting section for BTRFS to Administration
   Guide (bcs#1258816)
