@@ -1,3 +1,5 @@
+- Updated OVAL-based CVE audit page to remove Technology Preview status
+  and mention that feature is now enabled by default
 - Updated registration instructions for PowerPC self-install in Common Workflows (bsc#1260617)
 - Added documentation for deleting SCAP scan results to Administration Guide (bsc#1262471)
 - Added troubleshooting section for BTRFS to Administration
