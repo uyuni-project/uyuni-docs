@@ -1,5 +1,6 @@
 - Added information about recreating missing Cobbler entries by resaving
   the Saltboot Group formula to Retail Guide (bsc#1265334)
+- Added Code 16 products to monitoring documentation in Administration Guide (bsc#1263814)
 - Updated OVAL-based CVE audit page to remove Technology Preview status
   and mention that feature is now enabled by default
 - Updated registration instructions for PowerPC self-install in Common Workflows (bsc#1260617)
