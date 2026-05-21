@@ -1,3 +1,4 @@
+- Added OS versions currently suported with OVAL in the product (bsc#1262664)
 - Added Code 16 products to monitoring documentation in Administration Guide (bsc#1263814)
 - Updated OVAL-based CVE audit page to remove Technology Preview status
   and mention that feature is now enabled by default
