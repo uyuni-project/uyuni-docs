@@ -3,31 +3,46 @@
 
 {productname} includes the ability to synchronize the content of optional third-party repositories with some of the products that can be managed by it.
 
-Some third-party GPG keys are included by default in the {productname} database, and some are not. 
+Some third-party GPG keys are included by default in the {productname} database, and some are not.
 For third-party keys that are not included, the relevant keys need to be imported when choosing to synchronize such third-party repositories.
 
-To import a GPG key, use the following command syntax, executing the command on the {productname} host server:
+GPG key management is performed through the {productname} XML-RPC API.
+The [command]``mgrctl gpg`` subcommands read a key from a local file or remote URL and upload it to the server, so they can be run from any host that has [systemitem]``mgrctl`` installed and network access to the server's API; they no longer require shell access into the server container.
+
+Because the commands call the API, valid administrator credentials must be supplied.
+They can be provided on the command line with the [option]``--api-server``, [option]``--api-user``, and [option]``--api-password`` flags, through environment variables, or in the [systemitem]``mgrctl`` configuration file.
+
+To import a GPG key, use the following command syntax:
 
 ----
-mgradm gpg add <path-to-gpg-key-file-or-URL>
+mgrctl gpg upload <path-to-gpg-key-file-or-URL>
 ----
 
-. Example: Adding a GPG key from a file
+The argument can be either a path to a local file containing an ASCII-armored GPG key, or an URL from which [systemitem]``mgrctl`` can download the key from.
+
+. Example: Uploading a GPG key from a local file
 +
 ----
-mgradm gpg add repomd.xml.key
+mgrctl gpg upload repomd.xml.key
 ----
 
-. Example: Adding a GPG key from a remote repository using a URL
+. Example: Uploading a GPG key from a remote repository using a URL
 +
 ----
-mgradm gpg add https://<3rd-party-domain>/path/to/repository/repodata/repomd.xml.key
+mgrctl gpg upload https://<3rd-party-domain>/path/to/repository/repodata/repomd.xml.key
 ----
 
-To list the keys currently held in the {productname} GPG database, run the following command:
+To list the keys currently held in the {productname} GPG keyring, run:
 
 ----
-mgrctl exec -ti -- gpg --homedir /var/lib/spacewalk/gpgdir --list-keys
+mgrctl gpg list
+----
+
+The output includes, for each key, its fingerprint, key type and size, and the associated user IDs.
+The fingerprint can be used to remove a key from the keyring:
+
+----
+mgrctl gpg remove <fingerprint>
 ----
 
 [NOTE]

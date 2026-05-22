@@ -1,3 +1,4 @@
+- Update pages related to GPG upload from mgradm to mgrctl
 - Added ppc64le support for AlmaLinux 8 in Uyuni
 - Corrected the architectures of Rocky Linux 8 in Uyuni, which has no ppc64le build upstream
 - Corrected the s390x information for AlmaLinux and Rocky Linux 9 and 10 in Uyuni
