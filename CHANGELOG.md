@@ -1,3 +1,4 @@
+- Clarified Jinja templating in Client Configuration Guide (bsc#1262012)
 - Added documentation on space usage percentage on the server and db 
   container which can be set using DISKCHECKALERT and DISKTHRESHOLD 
 - Updated the supported features table in the client
