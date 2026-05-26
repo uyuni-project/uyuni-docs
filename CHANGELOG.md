@@ -1,3 +1,5 @@
+- Added information about recreating missing Cobbler entries by resaving
+  the Saltboot Group formula to Retail Guide (bsc#1265334)
 - Updated Hub online synchronization documentation in Specialized Guides
 - Added documentation on space usage percentage on the server and db 
   container which can be set using DISKCHECKALERT and DISKTHRESHOLD 
