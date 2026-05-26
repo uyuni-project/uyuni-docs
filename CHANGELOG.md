@@ -1,5 +1,11 @@
 - Enhanced large deployments guide with information on avoiding tasks getting stuick in 
   pending state in containerized environments (bsc#1258815)
+- Clarified Jinja templating in Client Configuration Guide (bsc#1262012)
+- Added information about recreating missing Cobbler entries by resaving
+  the Saltboot Group formula to Retail Guide (bsc#1265334)
+- Updated Hub online synchronization documentation in Specialized Guides
+- Updated Hub documentation to clarify hub online synchronization as the primary connection method
+  and remove CA requirement references in Specialized Guides (bsc#1274935)
 - Added Code 16 products to monitoring documentation in Administration Guide (bsc#1263814)
 - Updated OVAL-based CVE audit page to remove Technology Preview status
   and mention that feature is now enabled by default
