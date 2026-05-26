@@ -1,3 +1,4 @@
+- Updated Hub online synchronization documentation in Specialized Guides
 - Added documentation on space usage percentage on the server and db 
   container which can be set using DISKCHECKALERT and DISKTHRESHOLD 
 - Updated the supported features table in the client
