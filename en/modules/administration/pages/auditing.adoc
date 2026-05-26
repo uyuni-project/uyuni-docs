@@ -1,6 +1,6 @@
 [[auditing]]
 = Auditing
-:revdate: 2025-03-31
+:revdate: 2026-05-18
 :page-revdate: {revdate}
 
 In {productname}, you can keep track of your clients through a series of auditing tasks.
@@ -29,17 +29,28 @@ In the {productname} {webui}, navigate to menu:Audit[CVE Audit] to see a list of
 By default, the patch data is updated at 23:00 every day.
 We recommend that before you begin a CVE audit you refresh the data to ensure you have the latest patches.
 
-.Procedure: Updating Patch Data
+.Procedure: Updating patch data
+[role=procedure]
+____
 . In the {productname} {webui}, navigate to menu:Admin[Task Schedules] and select the ``cve-server-channels-default`` schedule.
+
 . Click btn:[cve-server-channels-bunch].
+
 . Click btn:[Single Run Schedule] to schedule the task.
   Allow the task to complete before continuing with the CVE audit.
+____
 
-.Procedure: Verifying Patch Status
+.Procedure: Verifying patch status
+[role=procedure]
+____
 . In the {productname} {webui}, navigate to menu:Audit[CVE Audit].
+
 . To check the patch status for a particular CVE, type the CVE identifier in the [guimenu]``CVE Number`` field.
+
 . Select the patch statuses you want to look for, or leave all statuses checked to look for all.
+
 . Click btn:[Audit Servers] to check all systems, or click btn:[Audit Images] to check all images.
+____
 
 For more information about the patch status icons used on this page, see xref:reference:audit/audit-cve-audit.adoc[].
 
@@ -54,23 +65,13 @@ For more information about this method, see the {productname} API Guide.
 
 == OVAL
 
-[IMPORTANT]
-====
-In addition to retrieving CVE information from channel data, {productname} now includes an experimental feature that fetches CVE details from OVAL files.
-This functionality is currently considered a *Technology Preview*.
-
-Users are encouraged to experiment with this feature and share feedback.
-However, it is not yet recommended for production use without thorough testing in a test environment.
-====
-
-
 The CVE Audit operation relies on two primary data sources: channels and OVAL (Open Vulnerability and Assessment Language).
 These two sources provide the metadata for conducting CVE audits, each serving a distinct purpose.
 
 Channels::
 Channels include the updated software packages, including the patches, and provide insights into the essential patches required to address vulnerabilities.
 
-OVAL (Technology Preview)::
+OVAL::
 In contrast, OVAL data supply the information about vulnerabilities themselves, and packages that render a system vulnerable to a CVE.
 
 While it is possible to conduct CVE audits using only channels data, synchronizing OVAL data enhances the accuracy of the results, particularly in cases involving zero-day vulnerabilities or partially patched vulnerabilities.
@@ -83,20 +84,22 @@ Having synced OVAL data only, you can already perform CVE audits and check if yo
 
 [NOTE]
 ====
-Key characteristics of the OVAL feature include: 
+Key characteristics of the OVAL feature include:
 
-* *Disabled by default*: The feature is turned off by default and must be explicitly enabled by the user by updating the configuration file [litaral]``rhn.conf`` and restarting relevant services.
-* *Reversible*: If any issues arise, users can revert back to the standard channel-based CVE audit.
-* *Performance considerations*: While initial testing has been conducted, there are still concerns regarding performance, and further optimizations may be needed.
+* *Enabled by default*: The feature is enabled by default and requires no additional configuration.
+* *Reversible*: If needed, users can disable OVAL data and revert to the standard channel-based CVE audit.
+  See <<disable-oval-data,Disabling OVAL Data Support>> below.
 
 * OVAL data is updated at 23:00 every day by default.
   We recommend that before you begin a CVE audit you refresh the data to ensure you have the latest vulnerabilities metadata.
 ====
 
+The following procedures can be used to enable, disable, or update OVAL data.
 
-.Procedure: Enabling OVAL Data Support
-
-. Add or modify the following setting in file [literal]``/etc/rhn/rhn.conf`` in the container:  
+.Procedure: Enabling OVAL data support
+[role=procedure]
+____
+. Add or modify the following setting in file [literal]``/etc/rhn/rhn.conf`` in the container:
 
 +
 ----
@@ -109,45 +112,63 @@ java.cve_audit.enable_oval_metadata=true
 ----
 systemctl restart tomcat taskomatic
 ----
+____
 
-If you encounter issues and need to revert to the default behavior, disable the feature by setting:
-
-
-.Procedure: Disabling OVAL Data Support
-
+Alternatively, use the procedure for disabling OVAL data support.
+ 
+[[disable-oval-data]]
+.Procedure: Disabling OVAL data support
+[role=procedure]
+____
 . Add or modify the following setting in [literal]``rhn.conf``:
+
 +
+
 ----
 java.cve_audit.enable_oval_metadata=false
 ----
+
 +
+
 . Restart the Tomcat and Taskomatic services:
 
 +
 ----
 systemctl restart tomcat taskomatic
 ----
+____
 
 
-.Procedure: Updating OVAL Data
+.Procedure: Updating OVAL data
+[role=procedure]
+____
 . In the {productname} {webui}, navigate to menu:Admin[Task Schedules] and select the ``oval-data-sync-default`` schedule.
+
 . Click btn:[oval-data-sync-bunch].
+
 . Click btn:[Single Run Schedule] to schedule the task.
 
 Allow the task to complete before continuing with the CVE audit.
+____
 
 
 === Collect CPE
 
-To be able to accurately identify what vulnerabilities apply to a certain client, we need to identify the operating system product that client uses. To do that, we collect the CPE (Common Platform Enumeration) of the client as a salt grain, then we save it to the database.
+To be able to accurately identify what vulnerabilities apply to a certain client, we need to identify the operating system product that client uses. 
+To do that, we collect the CPE (Common Platform Enumeration) of the client as a {salt} grain, then we save it to the database.
 
 The CPE of newly registered clients will be automatically collected and saved to the database.
 However, for existing clients, it is necessary to execute the ``Update Packages List`` action at least once.
 
-.Procedure: Update Packages List
+.Procedure: Update packages list
+[role=procedure]
+____
 . In the {productname} {webui}, navigate to menu:Systems[System List > All] and select a client.
+
 . Then go to the [guimenu]``Software`` tab and select the [guimenu]``Packages`` sub-tab.
+
 . Click btn:[Update Packages List] to update packages and collect the CPE of client.
+____
 
 
 === OVAL Sources

@@ -1,6 +1,21 @@
 - Documented how to configure channel automatic synchronization in Administration
   Guide
+- Clarified Jinja templating in Client Configuration Guide (bsc#1262012)
+- Added information about recreating missing Cobbler entries by resaving
+  the Saltboot Group formula to Retail Guide (bsc#1265334)
+- Updated Hub online synchronization documentation in Specialized Guides
+- Updated Hub documentation to clarify hub online synchronization as the primary connection method
+  and remove CA requirement references in Specialized Guides (bsc#1274935)
+- Added Code 16 products to monitoring documentation in Administration Guide (bsc#1263814)
+- Updated OVAL-based CVE audit page to remove Technology Preview status
+  and mention that feature is now enabled by default
+- Updated registration instructions for PowerPC self-install in Common Workflows (bsc#1260617)
+- Added documentation for deleting SCAP scan results to Administration Guide (bsc#1262471)
+- Added troubleshooting section for BTRFS to Administration
+  Guide (bcs#1258816)
+- Rephrased instructions for RBAC in Administration Guide (bsc#1258079)
 - Migrate build toolchain: Go + Task + BCI container
+- Fixed Debian repository URL examples in custom channels
 - Removed mention of CIS profile (bsc#1262460)
 - Corrected path for Salt minion in Retail Guide (#1262090)
 - Added mass migration using UI to Client Configuration Guide
@@ -1287,4 +1302,3 @@
   client operating systems.
 - Documented upgrading to version 4.2 in Upgrade Guide (bsc#1185711).
 - Fixed URL of API documentation
-

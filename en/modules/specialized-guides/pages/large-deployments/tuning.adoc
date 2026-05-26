@@ -712,6 +712,70 @@ If you see lines containing ``LOG:  temporary file:`` try raising this parameter
 
 
 
+[[diskcheck-thresholds]]
+=== `DISKCHECKALERT` and `DISKTHRESHOLD`
+
+[cols="1,1"]
+|===
+| Description          | Environment variables that control disk usage monitoring thresholds for containerized deployments.
+                         [systemitem]``DISKCHECKALERT`` triggers a warning notification when disk usage exceeds the specified percentage.
+                         [systemitem]``DISKTHRESHOLD`` triggers a critical notification and causes the container health check to fail, which will automatically stop the container.
+                         In large deployments with multi-terabyte storage volumes, the default thresholds (90% and 95%) can leave excessive amounts of disk space unused.
+                         For example, on a 10{nbsp}TB volume, 5% free space equals 500{nbsp}GB, which is wasteful.
+                         Increasing these thresholds allows more efficient use of available storage capacity while maintaining adequate headroom for operations.
+| Tune when            | Large storage volumes are deployed (multiple terabytes) and you want to use disk space more efficiently while maintaining adequate headroom for database growth and repository synchronization.
+| Value default        | [systemitem]``DISKCHECKALERT=90``, [systemitem]``DISKTHRESHOLD=95``
+| Value recommendation | For deployments with 5{nbsp}TB+ storage: [systemitem]``DISKCHECKALERT=95``, [systemitem]``DISKTHRESHOLD=98``.
+                         For deployments with 10{nbsp}TB+ storage: [systemitem]``DISKCHECKALERT=96``, [systemitem]``DISKTHRESHOLD=99``.
+| Location             | Systemd service override files: [path]``/etc/systemd/system/uyuni-server.service.d/diskcheck.conf`` and [path]``/etc/systemd/system/uyuni-db.service.d/diskcheck.conf``
+| Example              | See the procedure below
+| After changing       | Monitor disk usage notifications and ensure adequate space remains for database growth, package repository synchronization, and temporary operations.
+                         Use [command]``df -h`` to verify current disk usage levels.
+| Notes                | The disk check runs hourly.
+                         Both the server and database containers should use the same threshold values.
+                         When [systemitem]``DISKTHRESHOLD`` is exceeded, container health checks will fail and the container will be automatically stopped.
+                         The database container only monitors [path]``/var/lib/pgsql/data`` and this cannot be overridden with [systemitem]``DISKCHECKDIRS``.
+| More information     | xref:administration:space-management.adoc[]
+|===
+
+
+.Procedure: Configuring Disk Check Thresholds for Large Deployments
+
+. Create systemd override directories for both services:
++
+----
+mkdir -p /etc/systemd/system/uyuni-server.service.d/
+mkdir -p /etc/systemd/system/uyuni-db.service.d/
+----
+
+. Create configuration files with higher thresholds for the server service:
++
+----
+cat > /etc/systemd/system/uyuni-server.service.d/diskcheck.conf << 'EOF'
+[Service]
+Environment="DISKCHECKALERT=95"
+Environment="DISKTHRESHOLD=98"
+EOF
+----
+
+. Create configuration files with higher thresholds for the database service:
++
+----
+cat > /etc/systemd/system/uyuni-db.service.d/diskcheck.conf << 'EOF'
+[Service]
+Environment="DISKCHECKALERT=95"
+Environment="DISKTHRESHOLD=98"
+EOF
+----
+
+. Apply the configuration by restarting {productname}:
++
+----
+mgradm restart
+----
+
+
+
 [[memory-usage]]
 == Memory Usage
 
