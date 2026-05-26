@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2026-05-20 13:29+0000\n"
+"POT-Creation-Date: 2026-05-22 08:37+0000\n"
 "PO-Revision-Date: 2025-05-14 16:59+0000\n"
 "Last-Translator: anonymous <noreply@weblate.org>\n"
 "Language-Team: Macedonian <https://l10n.opensuse.org/projects/uyuni/docs-administration-master/mk/>\n"
@@ -1951,7 +1951,11 @@ msgstr ""
 #: modules/administration/pages/backup-restore.adoc:28
 #: modules/administration/pages/mirror-sources.adoc:9
 #: modules/administration/pages/repo-metadata.adoc:28
+#: modules/administration/pages/space-management.adoc:18
+#: modules/administration/pages/space-management.adoc:30
+#: modules/administration/pages/space-management.adoc:44
 #: modules/administration/pages/ssl-certs-imported.adoc:39
+#: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:32
 #: modules/administration/pages/troubleshooting/tshoot-salt-clients-down-and-dns.adoc:13
 #, no-wrap
 msgid "mgradm restart\n"
@@ -5693,9 +5697,6 @@ msgstr ""
 
 #. type: Plain text
 #: modules/administration/pages/custom-channels.adoc:54
-#: modules/administration/pages/space-management.adoc:11
-#: modules/administration/pages/space-management.adoc:17
-#: modules/administration/pages/space-management.adoc:22
 #: modules/administration/pages/troubleshooting/tshoot-salt-clients-down-and-dns.adoc:10
 msgid "For example:"
 msgstr ""
@@ -12784,7 +12785,7 @@ msgstr ""
 
 #. type: Plain text
 #: modules/administration/pages/space-management.adoc:3
-msgid "{productname} monitors some directories for free disk space.  You can modify which directories are monitored, and the warnings that are created.  All settings are configured in the [path]``/etc/rhn/rhn.conf`` configuration file."
+msgid "{productname} monitors some directories for free disk space.  You can modify which directories are monitored, and the warnings that are created using environment variables in systemd service override files."
 msgstr ""
 
 #. type: Plain text
@@ -12795,12 +12796,12 @@ msgstr ""
 #. type: Title ==
 #: modules/administration/pages/space-management.adoc:5
 #, no-wrap
-msgid "Monitored directories"
+msgid "Monitored Directories"
 msgstr ""
 
 #. type: Plain text
 #: modules/administration/pages/space-management.adoc:6
-msgid "By default, {productname} monitors these directories:"
+msgid "By default, the {productname} Server container monitors these directories:"
 msgstr ""
 
 #. type: Plain text
@@ -12820,88 +12821,200 @@ msgstr ""
 
 #. type: Plain text
 #: modules/administration/pages/space-management.adoc:10
-msgid "You can change which directories are monitored with the [systemitem]``spacecheck_dirs`` parameter.  You can specify multiple directories by separating them with a space."
+msgid "You can change which directories are monitored by setting the [systemitem]``DISKCHECKDIRS`` environment variable in the server container systemd service.  You can specify multiple directories by separating them with a space."
 msgstr ""
 
-#. type: delimited block -
+#. type: delimited block =
+#: modules/administration/pages/space-management.adoc:11
+msgid "The [systemitem]``DISKCHECKDIRS`` environment variable applies only to the server container.  The database container always monitors [path]``/var/lib/pgsql/data`` and this cannot be overridden."
+msgstr ""
+
+#. type: Block title
 #: modules/administration/pages/space-management.adoc:12
 #, no-wrap
-msgid "spacecheck_dirs = /var/spacewalk /var/cache /srv\n"
+msgid "Procedure: Configuring Monitored Directories"
 msgstr ""
 
 #. type: Plain text
 #: modules/administration/pages/space-management.adoc:13
-msgid "For more information about volumes, see xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]."
+msgid "Create a systemd override directory for the server service:"
+msgstr ""
+
+#. type: delimited block -
+#: modules/administration/pages/space-management.adoc:14
+#, no-wrap
+msgid "mkdir -p /etc/systemd/system/uyuni-server.service.d/\n"
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/space-management.adoc:15
+msgid "Create a configuration file with the custom directories:"
+msgstr ""
+
+#. type: delimited block -
+#: modules/administration/pages/space-management.adoc:16
+#: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:30
+#, no-wrap
+msgid ""
+"cat > /etc/systemd/system/uyuni-server.service.d/diskcheck.conf << 'EOF'\n"
+"[Service]\n"
+"Environment=\"DISKCHECKDIRS=/var/spacewalk /var/cache /srv\"\n"
+"EOF\n"
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/space-management.adoc:17
+#: modules/administration/pages/space-management.adoc:29
+#: modules/administration/pages/space-management.adoc:43
+#: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:31
+msgid "Apply the configuration by restarting {productname}:"
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/space-management.adoc:19
+msgid "For more information about container volumes, see xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]."
 msgstr ""
 
 #. type: Title ==
-#: modules/administration/pages/space-management.adoc:14
+#: modules/administration/pages/space-management.adoc:20
 #, no-wrap
 msgid "Thresholds"
 msgstr ""
 
 #. type: Plain text
-#: modules/administration/pages/space-management.adoc:15
-msgid "By default, {productname} creates a warning when a monitored directory has less than 10% of total space available.  A critical alert is created when a monitored directory falls below 5% space available."
-msgstr ""
-
-#. type: Plain text
-#: modules/administration/pages/space-management.adoc:16
-msgid "You can change these alert thresholds with the [systemitem]``spacecheck_free_alert`` and [systemitem]``spacecheck_free_critical`` parameters."
-msgstr ""
-
-#. type: delimited block -
-#: modules/administration/pages/space-management.adoc:18
-#, no-wrap
-msgid ""
-"spacecheck_free_alert = 10\n"
-"spacecheck_free_critical = 5\n"
-msgstr ""
-
-#. type: Title ==
-#: modules/administration/pages/space-management.adoc:19
-#, no-wrap
-msgid "Shut down services"
-msgstr ""
-
-#. type: Plain text
-#: modules/administration/pages/space-management.adoc:20
-msgid "By default, {productname} shuts down the spacewalk services when the critical alert threshold is reached."
-msgstr ""
-
-#. type: Plain text
 #: modules/administration/pages/space-management.adoc:21
-msgid "You can change this behavior with the [systemitem]``spacecheck_shutdown`` parameter.  A value of ``true`` enables the shut down feature.  Any other value disables it."
+msgid "By default, {productname} creates a warning when a monitored directory reaches 90% disk usage.  A critical alert is created when a monitored directory reaches 95% disk usage, and the container health check will fail."
 msgstr ""
 
-#. type: delimited block -
+#. type: Plain text
+#: modules/administration/pages/space-management.adoc:22
+msgid "You can change these alert thresholds by setting the [systemitem]``DISKCHECKALERT`` and [systemitem]``DISKTHRESHOLD`` environment variables."
+msgstr ""
+
+#. type: Block title
 #: modules/administration/pages/space-management.adoc:23
 #, no-wrap
-msgid "spacecheck_shutdown = true\n"
-msgstr ""
-
-#. type: Title ==
-#: modules/administration/pages/space-management.adoc:24
-#, no-wrap
-msgid "Disable space checking"
+msgid "Procedure: Configuring Disk Check Thresholds"
 msgstr ""
 
 #. type: Plain text
-#: modules/administration/pages/space-management.adoc:25
-msgid "The space checking tool is enabled by default.  You can disable it entirely with these commands:"
+#: modules/administration/pages/space-management.adoc:24
+msgid "Create systemd override directories:"
 msgstr ""
 
 #. type: delimited block -
-#: modules/administration/pages/space-management.adoc:26
+#: modules/administration/pages/space-management.adoc:25
 #, no-wrap
 msgid ""
-"systemctl stop spacewalk-diskcheck.timer\n"
-"systemctl disable spacewalk-diskcheck.timer\n"
+"mkdir -p /etc/systemd/system/uyuni-server.service.d/\n"
+"mkdir -p /etc/systemd/system/uyuni-db.service.d/\n"
 msgstr ""
 
 #. type: Plain text
+#: modules/administration/pages/space-management.adoc:26
+msgid "Create configuration files for both server and database services:"
+msgstr ""
+
+#. type: delimited block -
 #: modules/administration/pages/space-management.adoc:27
-msgid "Disabling the [literal]``spacewalk-diskcheck.timer`` will stop periodic email alerts if the alert threshold is reached, but the warning notification will still appear at the top of the sign-in page."
+#, no-wrap
+msgid ""
+"cat > /etc/systemd/system/uyuni-server.service.d/diskcheck.conf << 'EOF'\n"
+"[Service]\n"
+"Environment=\"DISKCHECKALERT=90\"\n"
+"Environment=\"DISKTHRESHOLD=95\"\n"
+"EOF\n"
+msgstr ""
+
+#. type: delimited block -
+#: modules/administration/pages/space-management.adoc:28
+#, no-wrap
+msgid ""
+"cat > /etc/systemd/system/uyuni-db.service.d/diskcheck.conf << 'EOF'\n"
+"[Service]\n"
+"Environment=\"DISKCHECKALERT=90\"\n"
+"Environment=\"DISKTHRESHOLD=95\"\n"
+"EOF\n"
+msgstr ""
+
+#. type: delimited block =
+#: modules/administration/pages/space-management.adoc:31
+msgid "For large deployments with multi-terabyte storage volumes, you may want to use higher thresholds to make more efficient use of disk space.  For example, on a 10{nbsp}TB volume, keeping 5% free means 500{nbsp}GB unused.  For tuning recommendations for large deployments, see xref:specialized-guides:large-deployments/tuning.adoc#diskcheck-thresholds[]."
+msgstr ""
+
+#. type: Title ==
+#: modules/administration/pages/space-management.adoc:32
+#, no-wrap
+msgid "Database Disk Check"
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/space-management.adoc:33
+msgid "The database container has its own disk check that monitors only the PostgreSQL data directory ([path]``/var/lib/pgsql/data``).  This directory is always monitored and cannot be changed or overridden with the [systemitem]``DISKCHECKDIRS`` environment variable."
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/space-management.adoc:34
+msgid "The database disk check uses the [systemitem]``DISKCHECKALERT`` and [systemitem]``DISKTHRESHOLD`` environment variables configured for the [systemitem]``uyuni-db`` service."
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/space-management.adoc:35
+msgid "The database disk check runs as a PostgreSQL function and is invoked during container health checks.  When the threshold is exceeded, the health check will fail and the container will be automatically stopped to prevent data corruption."
+msgstr ""
+
+#. type: delimited block =
+#: modules/administration/pages/space-management.adoc:36
+msgid "The database container only monitors [path]``/var/lib/pgsql/data``.  You cannot configure additional directories to monitor in the database container using [systemitem]``DISKCHECKDIRS``.  To monitor other directories, use the server container configuration."
+msgstr ""
+
+#. type: Title ==
+#: modules/administration/pages/space-management.adoc:37
+#, no-wrap
+msgid "Disable Space Checking"
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/space-management.adoc:38
+msgid "The space checking tool is enabled by default and runs hourly via a Taskomatic scheduled task.  Notification can be disabled by disabling diskcheck-task-queue-default Taskomatic job.  To effectively disable disk space monitoring, set the threshold values to 99 (percent)."
+msgstr ""
+
+#. type: Block title
+#: modules/administration/pages/space-management.adoc:39
+#, no-wrap
+msgid "Procedure: Disabling Disk Space Monitoring"
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/space-management.adoc:40
+msgid "Edit the systemd override files to set very high thresholds:"
+msgstr ""
+
+#. type: delimited block -
+#: modules/administration/pages/space-management.adoc:41
+#, no-wrap
+msgid ""
+"cat > /etc/systemd/system/uyuni-server.service.d/diskcheck.conf << 'EOF'\n"
+"[Service]\n"
+"Environment=\"DISKCHECKALERT=99\"\n"
+"Environment=\"DISKTHRESHOLD=99\"\n"
+"EOF\n"
+msgstr ""
+
+#. type: delimited block -
+#: modules/administration/pages/space-management.adoc:42
+#, no-wrap
+msgid ""
+"cat > /etc/systemd/system/uyuni-db.service.d/diskcheck.conf << 'EOF'\n"
+"[Service]\n"
+"Environment=\"DISKCHECKALERT=99\"\n"
+"Environment=\"DISKTHRESHOLD=99\"\n"
+"EOF\n"
+msgstr ""
+
+#. type: delimited block =
+#: modules/administration/pages/space-management.adoc:45
+msgid "Disabling disk space monitoring is not recommended in production environments, as running out of disk space can cause severe and potentially unrecoverable damage to the database."
 msgstr ""
 
 #. type: Title =
@@ -14816,6 +14929,125 @@ msgstr ""
 #. type: Plain text
 #: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:11
 msgid "Use the [command]``spacewalk-data-fsck --remove`` command to delete them."
+msgstr ""
+
+#. type: Title ==
+#: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:12
+#, no-wrap
+msgid "Disk Check Warnings for Missing Directories"
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:13
+msgid "After migrating to containerized deployments from 5.0 or when using custom disk check configurations, you might see warnings for directories that no longer exist.  This commonly occurs when the [systemitem]``DISKCHECKDIRS`` environment variable references [path]``/var/lib/pgsql`` or its subdirectories."
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:14
+msgid "In containerized deployments, the PostgreSQL database runs in its own container, and the [path]``/var/lib/pgsql`` directory no longer exists in the server container.  The database files are stored in a separate database container volume."
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:15
+msgid "If you see warnings like these in the logs or notifications:"
+msgstr ""
+
+#. type: delimited block -
+#: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:16
+#, no-wrap
+msgid ""
+"DISKCHECK: Directory /var/lib/pgsql does not exist\n"
+"DISKCHECK: Directory /var/lib/pgsql/data does not exist\n"
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:17
+msgid "This indicates that the disk check configuration includes directories that are no longer valid in containerized deployments."
+msgstr ""
+
+#. type: Title ===
+#: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:18
+#, no-wrap
+msgid "Cause"
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:19
+msgid "Prior to containerization, customers could configure custom directories to monitor by setting the [systemitem]``spacecheck_dirs`` parameter in [path]``/etc/rhn/rhn.conf``.  A common configuration included [path]``/var/lib/pgsql`` to monitor database disk space."
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:20
+msgid "In containerized deployments:"
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:21
+msgid "The [systemitem]``spacecheck_dirs`` parameter in [path]``/etc/rhn/rhn.conf`` is still read, but is overridden by the [systemitem]``DISKCHECKDIRS`` environment variable if set"
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:22
+msgid "If [systemitem]``DISKCHECKDIRS`` is not set, the system falls back to [systemitem]``spacecheck_dirs`` from the configuration file"
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:23
+msgid "The database runs in a separate container and has its own dedicated disk check"
+msgstr ""
+
+#. type: Title ===
+#: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:24
+#, no-wrap
+msgid "Fix"
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:25
+msgid "Remove the obsolete directory references from the [systemitem]``DISKCHECKDIRS`` environment variable."
+msgstr ""
+
+#. type: Block title
+#: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:26
+#, no-wrap
+msgid "Procedure: Removing Obsolete Directory References"
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:27
+msgid "Check if you have a systemd override file with custom directory configuration:"
+msgstr ""
+
+#. type: delimited block -
+#: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:28
+#, no-wrap
+msgid "cat /etc/systemd/system/uyuni-server.service.d/diskcheck.conf\n"
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:29
+msgid "If the file contains [path]``/var/lib/pgsql`` or other non-existent directories, update it to use only valid directories:"
+msgstr ""
+
+#. type: Title ===
+#: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:33
+#, no-wrap
+msgid "Result"
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:34
+msgid "The disk check warnings for missing directories will no longer appear.  The server container will only monitor the directories that exist within the container."
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:35
+msgid "The database container has its own separate disk check that monitors the PostgreSQL data directory ([path]``/var/lib/pgsql/data``) within the database container.  This check is automatically configured and does not require manual intervention."
+msgstr ""
+
+#. type: Plain text
+#: modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:36
+msgid "For more information about disk space management in containerized deployments, see xref:administration:space-management.adoc[]."
 msgstr ""
 
 #. type: Title =
