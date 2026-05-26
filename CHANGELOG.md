@@ -1,3 +1,4 @@
+- Clarified Jinja templating in Client Configuration Guide (bsc#1262012)
 - Added information about recreating missing Cobbler entries by resaving
   the Saltboot Group formula to Retail Guide (bsc#1265334)
 - Updated Hub online synchronization documentation in Specialized Guides
