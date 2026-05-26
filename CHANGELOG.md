@@ -1,3 +1,5 @@
+- Added information about recreating missing Cobbler entries by resaving
+  the Saltboot Group formula to Retail Guide (bsc#1265334)
 - Updated Hub online synchronization documentation in Specialized Guides
 - Updated Hub documentation to clarify hub online synchronization as the primary connection method
   and remove CA requirement references in Specialized Guides (bsc#1274935)
