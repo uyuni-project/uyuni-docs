@@ -1,3 +1,5 @@
+- Enhanced large deployments guide with information on avoiding tasks getting stuick in 
+  pending state in containerized environments (bsc#1258815)
 - Added Code 16 products to monitoring documentation in Administration Guide (bsc#1263814)
 - Updated OVAL-based CVE audit page to remove Technology Preview status
   and mention that feature is now enabled by default
