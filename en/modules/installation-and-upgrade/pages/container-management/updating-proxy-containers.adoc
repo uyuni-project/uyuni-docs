@@ -94,6 +94,7 @@ mgrpxy upgrade podman
 
 +
 
+ifeval::[{mlm-content} == true]
 Or, those running on a Kubernetes cluster can update using:
 
 +
@@ -104,6 +105,7 @@ mgrpxy upgrade kubernetes
 ----
 
 +
+endif::[]
 
 . On podman, clean up the unused container images to free disk space:
 
@@ -115,8 +117,6 @@ podman image prune -a
 ----
 
 ____
-
-On Kubernetes the image cleanup is handled automatically, or it depends on the Kubernetes distribution.
 
 [NOTE]
 ====
@@ -136,3 +136,102 @@ We highly recommend using the same tag for all proxy containers to ensure consis
 ====
 
 For air-gapped installations, first upgrade the container RPM packages, then run the [command]``mgrpxy upgrade podman`` command.
+
+
+== Proxy upgrade on {kube}
+
+Proxies deployed via the [literal]``proxy-helm`` chart (on either RKE2 or K3S) are upgraded by re-running [command]``helm upgrade --install`` against a newer chart version. The chart values and the existing PVC binding are preserved between releases.
+
+[NOTE]
+====
+This is the supported {kube} upgrade path. The legacy [command]``mgrpxy install kubernetes`` / [command]``mgrpxy upgrade kubernetes`` flow on K3S is replaced by the direct chart-based deployment; if you are still on that path, follow the one-time migration
+ifeval::[{mlm-content} == true]
+in xref:container-deployment/mlm/migrations/proxy/proxy-mlm-51-52-kubernetes.adoc[]
+endif::[]
+ifeval::[{uyuni-content} == true]
+in xref:container-deployment/uyuni/migrate-uyuni-proxy-mgrpxy-to-helm.adoc[]
+endif::[]
+before the procedure below applies.
+====
+
+.Procedure: Upgrade the proxy on {kube}
+[role=procedure]
+____
+
+. Re-extract the configuration files from the running proxy if the {productname} Server certificate, CA or registration data changed since the last install:
+
++
+
+[source,console]
+----
+mkdir -p /root/proxy-config
+kubectl -n <namespace> exec deploy/uyuni-proxy -c httpd -- cat /etc/uyuni/config.yaml > /root/proxy-config/config.yaml
+kubectl -n <namespace> exec deploy/uyuni-proxy -c httpd -- cat /etc/uyuni/httpd.yaml > /root/proxy-config/httpd.yaml
+kubectl -n <namespace> exec deploy/uyuni-proxy -c ssh   -- cat /etc/uyuni/ssh.yaml   > /root/proxy-config/ssh.yaml
+----
+
++
+
+Otherwise reuse the configuration files saved at install time.
+
++
+
+ifeval::[{mlm-content} == true]
+. Run [command]``helm upgrade --install`` against the new chart version:
+
++
+
+[source,console,subs="attributes"]
+----
+helm upgrade --install uyuni-proxy \
+    oci://registry.suse.com/suse/multi-linux-manager/{productnumber}/proxy-helm \
+    --version {productchartversion} \
+    --namespace <namespace> \
+    --set "registrySecret=the-scc-secret" \
+    --set-file global.config=/root/proxy-config/config.yaml \
+    --set-file global.httpd=/root/proxy-config/httpd.yaml \
+    --set-file global.ssh=/root/proxy-config/ssh.yaml \
+    --reuse-values
+----
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+. Run [command]``helm upgrade --install`` against the new chart version:
+
++
+
+[source,console,subs="attributes"]
+----
+helm upgrade --install uyuni-proxy \
+    oci://registry.opensuse.org/uyuni/proxy-helm \
+    --version {productchartversion} \
+    --namespace <namespace> \
+    --set-file global.config=/root/proxy-config/config.yaml \
+    --set-file global.httpd=/root/proxy-config/httpd.yaml \
+    --set-file global.ssh=/root/proxy-config/ssh.yaml \
+    --reuse-values
+----
+endif::[]
+
++
+
+[NOTE]
+====
+[literal]``--reuse-values`` keeps cluster-specific overrides ([literal]``ingress.class``, [literal]``tftp.hostNetwork``, [literal]``volumes.squid.volumeName``, [literal]``dnsConfig``, etc.) intact across the upgrade. Override them explicitly with additional [literal]``--set`` flags when a value needs to change.
+====
+
++
+
+. Watch the rollout and verify the pods come back up:
+
++
+
+[source,console]
+----
+kubectl -n <namespace> rollout status deploy/uyuni-proxy
+kubectl -n <namespace> get pod
+----
+
+____
+
+On {kube} the image cleanup is handled automatically, or it depends on the {kube} distribution.

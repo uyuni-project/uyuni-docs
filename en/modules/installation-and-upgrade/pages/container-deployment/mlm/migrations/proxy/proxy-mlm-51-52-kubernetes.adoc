@@ -1,0 +1,254 @@
+= Proxy Migration from 5.1 to 5.2 on Kubernetes
+:revdate: 2026-05-27
+:page-revdate: {revdate}
+
+== Introduction
+
+This document provides the procedure for migrating a {productname} Proxy 5.1 deployed on a {kube} cluster (via [command]``mgrpxy install kubernetes``) to {productname} Proxy {productnumber} deployed via the [literal]``proxy-helm`` chart directly.
+
+The procedure applies to both supported distributions:
+
+* RKE2
+* K3S
+
+The deployment selector labels changed between 5.1 and 5.2 ([literal]``app: uyuni-proxy`` to [literal]``app.kubernetes.io/component: proxy``).
+Since [literal]``spec.selector`` is immutable in {kube}, the old deployment must be removed before the new one can be created.
+This causes a short downtime (approximately 30 to 60 seconds).
+The squid cache PVC can be preserved across the upgrade.
+
+[IMPORTANT]
+====
+Before migrating the proxy, it is required to first migrate the {productname} 5.1 Server to {productname} {productnumber}.
+====
+
+
+=== Prerequisites
+
+* {productname} Proxy 5.1 is installed and running on an RKE2 or K3S cluster.
+* Proxy system is registered with the {productname} {productnumber} Server.
+* [command]``helm`` ({productchartversion}-compatible) and [command]``kubectl`` are available on a cluster node.
+
+
+== Preparation (while 5.1 is still running)
+
+.Procedure: Preserve state and prepare the new namespace
+[role=procedure]
+____
+
+. Preserve the squid PVC by switching the PV reclaim policy to [literal]``Retain``.
+
++
+
+[source,console]
+----
+PV=$(kubectl -n <namespace> get pvc squid-cache -o jsonpath='{.spec.volumeName}')
+kubectl patch pv $PV -p '{"spec":{"persistentVolumeReclaimPolicy":"Retain"}}'
+----
+
++
+
+Replace [literal]``<namespace>`` with the namespace where the 5.1 proxy is installed (often [literal]``default`` for [command]``mgrpxy install kubernetes`` deployments).
+
++
+
+. Extract the configuration files from the running 5.1 proxy.
+
++
+
+[source,console]
+----
+mkdir -p /root/proxy-config
+kubectl -n <namespace> exec deploy/uyuni-proxy -c httpd -- cat /etc/uyuni/config.yaml > /root/proxy-config/config.yaml
+kubectl -n <namespace> exec deploy/uyuni-proxy -c httpd -- cat /etc/uyuni/httpd.yaml > /root/proxy-config/httpd.yaml
+kubectl -n <namespace> exec deploy/uyuni-proxy -c ssh   -- cat /etc/uyuni/ssh.yaml   > /root/proxy-config/ssh.yaml
+----
+
++
+
+. Prepare the namespace for the 5.2 install.
+
++
+
+[source,console]
+----
+kubectl create namespace uyuni-proxy
+----
+
++
+
+The [literal]``proxy-helm`` chart creates the [literal]``proxy-cert`` TLS secret and the [literal]``uyuni-ca`` [literal]``ConfigMap`` automatically from the tarball values at install time.
+
+____
+
+
+== Update Traefik (no downtime)
+
+The mgrpxy-managed 5.1 install configured the bundled Traefik with entryPoint names [literal]``uyuni-ssh``, [literal]``uyuni-publish`` and [literal]``uyuni-request``.
+The 5.2 [literal]``proxy-helm`` chart defaults to [literal]``ssh``, [literal]``salt-publish`` and [literal]``salt-request``.
+Replace the Traefik [literal]``HelmChartConfig`` so that the new entryPoints exist before the cutover.
+
+The [literal]``HelmChartConfig`` name and the manifests path differ between distributions; pick the matching subsection.
+
+=== On RKE2
+
+Write the manifest to [literal]``/var/lib/rancher/rke2/server/manifests/uyuni-traefik-config.yaml`` and use [literal]``rke2-traefik`` as the [literal]``HelmChartConfig`` name; [literal]``hostPort`` is required so the host listens on the entryPoint ports:
+
+[source,console]
+----
+cat > /var/lib/rancher/rke2/server/manifests/uyuni-traefik-config.yaml << 'EOF'
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: rke2-traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    ports:
+      ssh:
+        port: 8022
+        exposedPort: 8022
+        protocol: TCP
+        hostPort: 8022
+        expose:
+          default: true
+      salt-publish:
+        port: 4505
+        exposedPort: 4505
+        protocol: TCP
+        hostPort: 4505
+        containerPort: 4505
+        expose:
+          default: true
+      salt-request:
+        port: 4506
+        exposedPort: 4506
+        protocol: TCP
+        hostPort: 4506
+        containerPort: 4506
+        expose:
+          default: true
+EOF
+
+kubectl -n kube-system rollout restart deploy/rke2-traefik
+kubectl -n kube-system rollout status deploy/rke2-traefik
+----
+
+=== On K3S
+
+Write the manifest to [literal]``/var/lib/rancher/k3s/server/manifests/uyuni-traefik-config.yaml`` and use [literal]``traefik`` as the [literal]``HelmChartConfig`` name; [literal]``hostPort``/[literal]``containerPort`` are not required:
+
+[source,console]
+----
+cat > /var/lib/rancher/k3s/server/manifests/uyuni-traefik-config.yaml << 'EOF'
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    ports:
+      ssh:
+        port: 8022
+        exposedPort: 8022
+        protocol: TCP
+        expose:
+          default: true
+      salt-publish:
+        port: 4505
+        exposedPort: 4505
+        protocol: TCP
+        expose:
+          default: true
+      salt-request:
+        port: 4506
+        exposedPort: 4506
+        protocol: TCP
+        expose:
+          default: true
+EOF
+
+kubectl -n kube-system rollout restart deploy/traefik
+kubectl -n kube-system rollout status deploy/traefik
+----
+
+[NOTE]
+====
+Until the cutover step below, the 5.1 proxy is still routed through the old entryPoint names that are no longer exposed; if its [literal]``IngressRouteTCP`` objects reference them, traffic to the 5.1 proxy may already be interrupted.
+If continuous service is required, defer this step until immediately before the cutover.
+====
+
+
+== Cutover (downtime starts here)
+
+.Procedure: Replace the 5.1 deployment with the 5.2 chart
+[role=procedure]
+____
+
+. Uninstall the 5.1 release.
+
++
+
+[source,console]
+----
+helm -n <namespace> uninstall <release-name>
+----
+
++
+
+. Release the PV from its old claim so the new chart can bind to it.
+
++
+
+[source,console]
+----
+kubectl patch pv $PV --type=json \
+  -p '[{"op":"remove","path":"/spec/claimRef"}]'
+----
+
++
+
+. Install the 5.2 chart, binding to the existing squid PV.
+
++
+
+[source,console,subs="attributes"]
+----
+helm upgrade --install uyuni-proxy \
+    oci://registry.suse.com/suse/multi-linux-manager/5.2/proxy-helm \
+    --version {productchartversion} \
+    --namespace uyuni-proxy \
+    --set "registrySecret=the-scc-secret" \
+    --set-file global.config=/root/proxy-config/config.yaml \
+    --set-file global.httpd=/root/proxy-config/httpd.yaml \
+    --set-file global.ssh=/root/proxy-config/ssh.yaml \
+    --set ingress.type=traefik \
+    --set ingress.class=traefik \
+    --set tftp.hostNetwork=true \
+    --set volumes.squid.volumeName=$PV
+----
+
++
+
+[NOTE]
+====
+On K3S, the bundled Traefik picks up every [literal]``Ingress`` regardless of class unless customized.
+If your install does not filter by class, set [literal]``ingress.class=""`` instead of [literal]``traefik``.
+====
+
+____
+
+
+== Verify
+
+[source,console]
+----
+kubectl -n uyuni-proxy get pod -w
+kubectl -n uyuni-proxy get pvc          # squid-cache should be Bound to the old PV
+kubectl -n uyuni-proxy logs deploy/uyuni-proxy -c httpd --tail=20
+----
+
+
+=== Migration complete
+
+The proxy is now running {productname} {productnumber} on {kube}, managed by the [literal]``proxy-helm`` chart, reusing the 5.1 squid cache volume.

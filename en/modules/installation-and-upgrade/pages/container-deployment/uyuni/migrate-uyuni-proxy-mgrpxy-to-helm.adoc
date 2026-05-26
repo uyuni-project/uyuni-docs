@@ -1,0 +1,200 @@
+= Migrating the {productname} Proxy on K3s from mgrpxy to proxy-helm
+:revdate: 2026-05-26
+:page-revdate: {revdate}
+
+== Introduction
+
+This document describes how to migrate a {productname} Proxy deployed on K3s via [command]``mgrpxy install kubernetes`` (the legacy path) to a deployment using the [literal]``proxy-helm`` chart directly.
+
+The legacy path used [command]``mgrpxy`` as a thin wrapper around [command]``helm`` and installed the proxy with selector labels [literal]``app: uyuni-proxy``.
+The new path uses the [literal]``proxy-helm`` chart directly with selector labels [literal]``app.kubernetes.io/component: proxy``.
+Since [literal]``spec.selector`` is immutable in {kube}, the old deployment must be removed before the new one can be created.
+This causes a short downtime (approximately 30 to 60 seconds).
+The squid cache PVC can be preserved across the migration.
+
+For the destination install procedure and chart values reference, see xref:container-deployment/mlm/proxy-kubernetes-deployment-mlm.adoc[].
+
+
+=== Prerequisites
+
+* The proxy is installed and running on a K3s cluster via [command]``mgrpxy install kubernetes``.
+* [command]``helm`` (3.x) and [command]``kubectl`` are available on the K3s node.
+* The proxy is registered with the {productname} Server.
+
+
+== Preparation (while the legacy install is still running)
+
+.Procedure: Preserve state and prepare the new namespace
+[role=procedure]
+____
+
+. Preserve the squid PVC by switching the PV reclaim policy to [literal]``Retain``.
+
++
+
+[source,console]
+----
+PV=$(kubectl -n <namespace> get pvc squid-cache -o jsonpath='{.spec.volumeName}')
+kubectl patch pv $PV -p '{"spec":{"persistentVolumeReclaimPolicy":"Retain"}}'
+----
+
++
+
+Replace [literal]``<namespace>`` with the namespace where the legacy proxy is installed (often [literal]``default`` for [command]``mgrpxy install kubernetes`` deployments).
+
++
+
+. Extract the configuration files from the running proxy.
+
++
+
+[source,console]
+----
+mkdir -p /root/proxy-config
+kubectl -n <namespace> exec deploy/uyuni-proxy -c httpd -- cat /etc/uyuni/config.yaml > /root/proxy-config/config.yaml
+kubectl -n <namespace> exec deploy/uyuni-proxy -c httpd -- cat /etc/uyuni/httpd.yaml > /root/proxy-config/httpd.yaml
+kubectl -n <namespace> exec deploy/uyuni-proxy -c ssh   -- cat /etc/uyuni/ssh.yaml   > /root/proxy-config/ssh.yaml
+----
+
++
+
+. Prepare the namespace for the new install.
+
++
+
+[source,console]
+----
+kubectl create namespace uyuni-proxy
+----
+
++
+
+The [literal]``proxy-helm`` chart creates the [literal]``proxy-cert`` TLS secret and the [literal]``uyuni-ca`` [literal]``ConfigMap`` automatically from the tarball values at install time.
+
+____
+
+
+== Update Traefik (no downtime)
+
+The legacy [command]``mgrpxy`` install configured the bundled K3s Traefik with entryPoint names [literal]``uyuni-ssh``, [literal]``uyuni-publish`` and [literal]``uyuni-request``.
+The [literal]``proxy-helm`` chart defaults to [literal]``ssh``, [literal]``salt-publish`` and [literal]``salt-request``.
+Replace the Traefik [literal]``HelmChartConfig`` so the new entryPoints exist before the cutover:
+
+[source,console]
+----
+cat > /var/lib/rancher/k3s/server/manifests/uyuni-traefik-config.yaml << 'EOF'
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    ports:
+      ssh:
+        port: 8022
+        exposedPort: 8022
+        protocol: TCP
+        expose:
+          default: true
+      salt-publish:
+        port: 4505
+        exposedPort: 4505
+        protocol: TCP
+        expose:
+          default: true
+      salt-request:
+        port: 4506
+        exposedPort: 4506
+        protocol: TCP
+        expose:
+          default: true
+EOF
+
+kubectl -n kube-system rollout restart deploy/traefik
+kubectl -n kube-system rollout status deploy/traefik
+----
+
+[NOTE]
+====
+Until the cutover step below, the legacy proxy is still routed through the old entryPoint names that are no longer exposed; if its [literal]``IngressRouteTCP`` objects reference them, traffic to the legacy proxy may already be interrupted.
+If continuous service is required, defer this step until immediately before the cutover.
+====
+
+
+== Cutover (downtime starts here)
+
+.Procedure: Replace the legacy deployment with the proxy-helm chart
+[role=procedure]
+____
+
+. Uninstall the legacy release.
+
++
+
+[source,console]
+----
+helm -n <namespace> uninstall <release-name>
+----
+
++
+
+The release name created by [command]``mgrpxy install kubernetes`` is typically [literal]``uyuni-proxy``.
+
++
+
+. Release the PV from its old claim so the new chart can bind to it.
+
++
+
+[source,console]
+----
+kubectl patch pv $PV --type=json \
+  -p '[{"op":"remove","path":"/spec/claimRef"}]'
+----
+
++
+
+. Install the [literal]``proxy-helm`` chart, binding to the existing squid PV.
+
++
+
+[source,console,subs="attributes"]
+----
+helm upgrade --install uyuni-proxy \
+    oci://registry.opensuse.org/uyuni/proxy-helm \
+    --version {productchartversion} \
+    --namespace uyuni-proxy \
+    --set-file global.config=/root/proxy-config/config.yaml \
+    --set-file global.httpd=/root/proxy-config/httpd.yaml \
+    --set-file global.ssh=/root/proxy-config/ssh.yaml \
+    --set ingress.type=traefik \
+    --set ingress.class=traefik \
+    --set tftp.hostNetwork=true \
+    --set volumes.squid.volumeName=$PV
+----
+
++
+
+[NOTE]
+====
+On a vanilla K3s install the bundled Traefik picks up every [literal]``Ingress`` regardless of class.
+If your install does not customize Traefik to filter by class, set [literal]``ingress.class: ""`` instead of [literal]``traefik``.
+====
+
+____
+
+
+== Verify
+
+[source,console]
+----
+kubectl -n uyuni-proxy get pod -w
+kubectl -n uyuni-proxy get pvc          # squid-cache should be Bound to the old PV
+kubectl -n uyuni-proxy logs deploy/uyuni-proxy -c httpd --tail=20
+----
+
+
+=== Migration complete
+
+The proxy is now managed by the [literal]``proxy-helm`` chart directly, reusing the legacy squid cache volume.
