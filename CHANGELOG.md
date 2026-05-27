@@ -1,3 +1,5 @@
+- Added migration steps for SL Micro 6.1 as base OS
+  to Retail Branch Server 4.3 migration guide (bsc#1262168)
 - Clarified Jinja templating in Client Configuration Guide (bsc#1262012)
 - Added information about recreating missing Cobbler entries by resaving
   the Saltboot Group formula to Retail Guide (bsc#1265334)

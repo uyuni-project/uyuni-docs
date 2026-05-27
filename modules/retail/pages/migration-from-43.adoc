@@ -24,6 +24,7 @@ Depending on the host operating system:
 * [literal]``SUSE Linux Micro 6.1`` uses [literal]``SUSE Multi-Linux Manager Retail Branch Server Extension 5.1`` channels
 * [literal]``SUSE Linux Enterprise Server 15 SP7`` uses [literal]``SUSE Multi-Linux Manager Retail Branch Server Extension for SLE 5.1`` channels
 
+[[retail-backup-43]]
 == Backup existing {susemgrbranch} 4.3
 
 {productname} {smr} 5.1.2 includes automated backup-migration procedure for both kinds of {susemgrproxy} variants. This procedure collects all required data and uploads them to the {productname} Server. For {susemgrbranch} this tool also creates and migrates {saltboot} related entities.
@@ -87,15 +88,19 @@ Backup/migration step will create new Saltboot objects:
 
 == Migrate {susemgrbranch} host
 
+You can either upgrade the existing host to {sles} 15 SP7 using AutoYaST, or perform a fresh installation of {sl-micro} 6.1.
+
+=== Upgrade to {sles} 15 SP7 using AutoYaST
+
 Create and use AutoYAST profiles to migrate or reinstall the proxy host.
 
-=== Prepare autoinstallation distribution based on {sles} 15 SP7
+==== Prepare autoinstallation distribution based on {sles} 15 SP7
 
 - Download or obtain {sles} 15 SP7 installation ISO to the server host
 - Use [literal]``mgradm distribution copy $path_to_the_iso`` to copy installation files to the container
 - Register the autoinstallation distribution, see xref:client-configuration:autoinst-distributions.adoc[].
 
-=== Prepare autoinstallation profile
+==== Prepare autoinstallation profile
 
 For more information, see xref:client-configuration:autoinst-profiles.adoc[].
 
@@ -112,7 +117,7 @@ registration_key='activation_key_for_post_upgrade'
 ----
 - In tab [menuitem]``Autoinstallation File`` you can see complete rendered profile for additional inspection
 
-=== Provision autoinstallation of the proxy
+==== Provision autoinstallation of the proxy
 
 Schedule an autoinstallation on the old {susemgr} Branch Server 4.3 using the profile created in previous step.
 
@@ -124,6 +129,46 @@ Schedule an autoinstallation on the old {susemgr} Branch Server 4.3 using the pr
 mgrctl api login
 mgrctl api post system/provisionSystem '{\"sid\":$proxyid,\"profileName\":\"$profileName\"}'
 ----
+
+=== Reinstall with {sl-micro} 6.1
+
+{sl-micro} 6.1 requires a fresh installation on the host.
+
+[IMPORTANT]
+====
+Perform the backup of the existing 4.3 Branch Server as described in xref:#retail-backup-43[] before proceeding with the host reinstallation.
+====
+
+include::installation-and-upgrade:partial$snippet-prepare-micro-proxy-host.adoc[leveloffset=+2]
+
+==== Register and deploy the proxy
+
+.Procedure: Registering and deploying the proxy
+[role=procedure]
+____
+
+. Once the host is prepared, register the new {sl-micro} 6.1 system to the {productname} Server as a client.
+  It is recommended to use the same minion ID as the original 4.3 Branch Server.
+  For more information, see xref:client-configuration:registration-overview.adoc[].
+. On the {productname} Server, generate the proxy configuration for the new branch server. 
+  For more information, see xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc#generate-proxy-config[].
+. Transfer the configuration to the {sl-micro} 6.1 host and install the proxy:
++
+[source,bash]
+----
+mgrpxy install podman config.tar.gz
+----
+. Start the proxy:
++
+[source,bash]
+----
+mgrpxy start
+----
+. Once the proxy is operational, the {productname} Server will automatically deploy the backed up configuration during the next [literal]``Hardware Refresh`` step.
+
+____
+
+
 
 == Validate proxy functionality
 

@@ -38,6 +38,7 @@ The management of the containerized proxy running with Podman is done using the 
 image::43-proxy-migration.mmaid.svg[scalewidth=80%]
 
 
+[[proxy-backup-43]]
 == Backup existing {susemgrproxy} data
 
 {productname} {smr} 5.1.2 includes automated backup-migration procedure for both kinds of {susemgrproxy} variants. This procedure collects all required data and uploads them to the {productname} Server. For {susemgrbranch} this tool also creates and migrates {saltboot} related entities, see xref:retail:migration-from-43.adoc[].
@@ -74,16 +75,19 @@ It is recommended to do a manual backup of the proxy as well, particularly if th
 
 == Deploy a new {susemgrproxy}
 
-{susemgrproxy} host operating system can be either {sles} 15 SP7 or {sl-micro} {microversion}.
-This guide however considers only {sles} 15 SP7 for AutoYAST based installation. {sl-micro} {microversion}  will require manual redeployment, see xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc[]
+You can either upgrade the existing host to {sles} 15 SP7 using AutoYaST, or perform a fresh installation of {sl-micro} 6.1.
 
-=== Prepare autoinstallation distribution based on {sles} 15 SP7
+=== Upgrade to {sles} 15 SP7 using AutoYaST
+
+Create and use AutoYAST profiles to migrate or reinstall the proxy host.
+
+==== Prepare autoinstallation distribution based on {sles} 15 SP7
 
 - Download or obtain {sles} 15 SP7 installation ISO to the server host
 - Use [command]``mgradm distribution copy $path_to_the_iso`` to copy installation files to the container
 - Register the autoinstallation distribution, see xref:client-configuration:autoinst-distributions.adoc[].
 
-=== Prepare autoinstallation profile
+==== Prepare autoinstallation profile
 
 For more information, see xref:client-configuration:autoinst-profiles.adoc[].
 
@@ -100,7 +104,7 @@ registration_key='activation_key_for_post_upgrade'
 ----
 - In tab [menuitem]``Autoinstallation File`` you can see complete rendered profile for additional inspection
 
-=== Provision autoinstallation of the proxy
+==== Provision autoinstallation of the proxy
 
 Schedule an autoinstallation on the old {susemgr} Proxy 4.3 using the profile created in previous step.
 
@@ -112,6 +116,46 @@ Schedule an autoinstallation on the old {susemgr} Proxy 4.3 using the profile cr
 mgrctl api login
 mgrctl api post system/provisionSystem '{\"sid\":$proxyid,\"profileName\":\"$profileName\"}'
 ----
+
+=== Reinstall with {sl-micro} 6.1
+
+{sl-micro} 6.1 requires a fresh installation on the host.
+
+[IMPORTANT]
+====
+Perform the backup of the existing 4.3 Proxy as described in xref:#proxy-backup-43[] before proceeding with the host reinstallation.
+====
+
+include::installation-and-upgrade:partial$snippet-prepare-micro-proxy-host.adoc[leveloffset=+1]
+
+==== Register and deploy the proxy
+
+.Procedure: Registering and deploying the proxy
+[role=procedure]
+____
+
+. Once the host is prepared, register the new {sl-micro} 6.1 system to the {productname} Server as a client.
+  It is recommended to use the same minion ID as the original 4.3 Proxy.
+  For more information, see xref:client-configuration:registration-overview.adoc[].
+. On the {productname} Server, generate the proxy configuration for the new proxy server. 
+  For more information, see xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc#generate-proxy-config[].
+. Transfer the configuration to the {sl-micro} 6.1 host and install the proxy:
++
+[source,bash]
+----
+mgrpxy install podman config.tar.gz
+----
+. Start the proxy:
++
+[source,bash]
+----
+mgrpxy start
+----
+. Once the proxy is operational, the {productname} Server will automatically deploy the backed up configuration during the next [literal]``Hardware Refresh`` step.
+
+____
+
+
 
 == Validate proxy functionality
 
