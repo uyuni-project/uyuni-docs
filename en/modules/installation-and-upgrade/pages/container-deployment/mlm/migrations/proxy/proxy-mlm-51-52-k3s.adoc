@@ -1,15 +1,16 @@
-= Proxy Migration from 5.1 to 5.2 on Kubernetes
+= Proxy Migration from 5.1 to 5.2 on K3S
 :revdate: 2026-05-27
 :page-revdate: {revdate}
 
 == Introduction
 
-This document provides the procedure for migrating a {productname} Proxy 5.1 deployed on a {kube} cluster (via [command]``mgrpxy install kubernetes``) to {productname} Proxy {productnumber} deployed via the [literal]``proxy-helm`` chart directly.
+This document provides the procedure for migrating a {productname} Proxy 5.1 deployed on K3S (via [command]``mgrpxy install kubernetes``) to {productname} Proxy {productnumber} deployed via the [literal]``proxy-helm`` chart directly on the same K3S cluster.
 
-The procedure applies to both supported distributions:
-
-* RKE2
-* K3S
+[NOTE]
+====
+[command]``mgrpxy install kubernetes`` in 5.1 only supports K3S, so this migration applies to K3S → K3S only.
+A 5.1 K3S proxy cannot be migrated to RKE2 with this procedure.
+====
 
 The deployment selector labels changed between 5.1 and 5.2 ([literal]``app: uyuni-proxy`` to [literal]``app.kubernetes.io/component: proxy``).
 Since [literal]``spec.selector`` is immutable in {kube}, the old deployment must be removed before the new one can be created.
@@ -24,7 +25,7 @@ Before migrating the proxy, it is required to first migrate the {productname} 5.
 
 === Prerequisites
 
-* {productname} Proxy 5.1 is installed and running on an RKE2 or K3S cluster.
+* {productname} Proxy 5.1 is installed and running on a K3S cluster.
 * Proxy system is registered with the {productname} {productnumber} Server.
 * [command]``helm`` ({productchartversion}-compatible) and [command]``kubectl`` are available on a cluster node.
 
@@ -83,59 +84,11 @@ ____
 
 == Update Traefik (no downtime)
 
-The mgrpxy-managed 5.1 install configured the bundled Traefik with entryPoint names [literal]``uyuni-ssh``, [literal]``uyuni-publish`` and [literal]``uyuni-request``.
+The mgrpxy-managed 5.1 install configured the bundled K3S Traefik with entryPoint names [literal]``uyuni-ssh``, [literal]``uyuni-publish`` and [literal]``uyuni-request``.
 The 5.2 [literal]``proxy-helm`` chart defaults to [literal]``ssh``, [literal]``salt-publish`` and [literal]``salt-request``.
 Replace the Traefik [literal]``HelmChartConfig`` so that the new entryPoints exist before the cutover.
 
-The [literal]``HelmChartConfig`` name and the manifests path differ between distributions; pick the matching subsection.
-
-=== On RKE2
-
-Write the manifest to [literal]``/var/lib/rancher/rke2/server/manifests/uyuni-traefik-config.yaml`` and use [literal]``rke2-traefik`` as the [literal]``HelmChartConfig`` name; [literal]``hostPort`` is required so the host listens on the entryPoint ports:
-
-[source,console]
-----
-cat > /var/lib/rancher/rke2/server/manifests/uyuni-traefik-config.yaml << 'EOF'
-apiVersion: helm.cattle.io/v1
-kind: HelmChartConfig
-metadata:
-  name: rke2-traefik
-  namespace: kube-system
-spec:
-  valuesContent: |-
-    ports:
-      ssh:
-        port: 8022
-        exposedPort: 8022
-        protocol: TCP
-        hostPort: 8022
-        expose:
-          default: true
-      salt-publish:
-        port: 4505
-        exposedPort: 4505
-        protocol: TCP
-        hostPort: 4505
-        containerPort: 4505
-        expose:
-          default: true
-      salt-request:
-        port: 4506
-        exposedPort: 4506
-        protocol: TCP
-        hostPort: 4506
-        containerPort: 4506
-        expose:
-          default: true
-EOF
-
-kubectl -n kube-system rollout restart deploy/rke2-traefik
-kubectl -n kube-system rollout status deploy/rke2-traefik
-----
-
-=== On K3S
-
-Write the manifest to [literal]``/var/lib/rancher/k3s/server/manifests/uyuni-traefik-config.yaml`` and use [literal]``traefik`` as the [literal]``HelmChartConfig`` name; [literal]``hostPort``/[literal]``containerPort`` are not required:
+Write the manifest to [literal]``/var/lib/rancher/k3s/server/manifests/uyuni-traefik-config.yaml`` and use [literal]``traefik`` as the [literal]``HelmChartConfig`` name; [literal]``hostPort``/[literal]``containerPort`` are not required on K3S:
 
 [source,console]
 ----
@@ -223,7 +176,7 @@ helm upgrade --install uyuni-proxy \
     --set-file global.httpd=/root/proxy-config/httpd.yaml \
     --set-file global.ssh=/root/proxy-config/ssh.yaml \
     --set ingress.type=traefik \
-    --set ingress.class=traefik \
+    --set ingress.class="" \
     --set tftp.hostNetwork=true \
     --set volumes.squid.volumeName=$PV
 ----
@@ -232,8 +185,8 @@ helm upgrade --install uyuni-proxy \
 
 [NOTE]
 ====
-[literal]``ingress.class=traefik`` matches the bundled RKE2 Traefik, which filters by [literal]``--providers.kubernetescrd.ingressclass=traefik``.
-On vanilla K3S, the bundled Traefik picks up every [literal]``Ingress`` regardless of class; set [literal]``ingress.class=""`` instead, unless the K3S Traefik install was customized to filter by class.
+On vanilla K3S the bundled Traefik picks up every [literal]``Ingress`` regardless of class, so [literal]``ingress.class=""`` is the right value.
+If the K3S Traefik install was customized to filter by class (for example via [literal]``--providers.kubernetescrd.ingressclass=traefik``), set [literal]``ingress.class=traefik`` instead.
 ====
 
 ____
@@ -251,4 +204,4 @@ kubectl -n uyuni-proxy logs deploy/uyuni-proxy -c httpd --tail=20
 
 === Migration complete
 
-The proxy is now running {productname} {productnumber} on {kube}, managed by the [literal]``proxy-helm`` chart, reusing the 5.1 squid cache volume.
+The proxy is now running {productname} {productnumber} on K3S, managed by the [literal]``proxy-helm`` chart, reusing the 5.1 squid cache volume.
