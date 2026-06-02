@@ -538,7 +538,7 @@ helm install smlm-server \
      -n $NAMESPACE \
      --description "Server installation" \
      --set "global.fqdn=the.server.fqdn" \
-     --set "registrySecret=the-scc-secret" \
+     --set "registrySecret=scc-credentials" \
      --version {productchartversion}
 ----
 endif::[]
@@ -558,10 +558,33 @@ endif::[]
 When setting multiple values, using a YAML values file is recommended instead of passing several [literal]``--set`` parameters.
 Refer to the [command]``helm`` command help for more details.
 
-As the main container is not fully cloud-native yet, it is sometimes useful to get a terminal inside it.
-This can be achieved using the following commands.
-Variables have been used here for the sake of readability, but it could fit in a single line for convenience.
-This could be used in place of `mgrctl term` through the other pages of the documentation.
+
+
+== Verifying the installation
+
+After running [command]``helm install``, the server pod starts [command]``systemd`` and multiple services inside it.
+This takes longer than a typical container startup — allow a few minutes before expecting the pod to be fully ready.
+
+Watch the pods come up:
+
+[source,shell]
+----
+kubectl get pods -n uyuni-server -w
+----
+
+All pods should eventually reach [literal]``Running`` status with all containers ready.
+If a pod is stuck in [literal]``Pending``, [literal]``CrashLoopBackOff``, or [literal]``Error``, check its events:
+
+[source,shell]
+----
+kubectl describe pod -n uyuni-server <POD_NAME>
+kubectl logs -n uyuni-server <POD_NAME>
+----
+
+Once all pods are ready, open a browser and navigate to [literal]``https://<your-fqdn>``.
+The {productname} setup wizard should appear.
+
+To get a terminal inside the server container (equivalent to [command]``mgrctl term`` used elsewhere in the documentation):
 
 [source, Shell]
 ----
@@ -591,6 +614,6 @@ endif::[]
 
 * Troubleshooting:
 
-**  Check the pods status and errors using [command]``kubectl get pod -n $NAMESPACE`` and [command]``kubectl describe pod -n $NAMESPACE <POD NAME>``.
+**  Check the pods status and errors using [command]``kubectl get pod -n uyuni-server`` and [command]``kubectl describe pod -n uyuni-server <POD NAME>``.
 
 **  If the pods are ready, but Salt minions cannot access the master, check the network configuration and how the ports are exposed.
