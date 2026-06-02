@@ -505,22 +505,58 @@ If Gateway API is used instead of Traefik, also add the following to the role ru
   verbs: ["*"]
 ----
 
+[[security-framework-setup]]
 === Security framework setup
 
-The main container of the server runs [command]``systemd`` even though this is not a cloud native practice.
-This means that the default Kubernetes security profiles for this container are not sufficient.
-There are two possibilities to solve this issue:
+The main container of the server runs [command]``systemd``, which requires elevated privileges that the default {kube} security profiles do not allow.
+There are two ways to handle this:
 
-* run the main container as super privileged by setting the [literal]``server.superPrivileged`` helm value to [literal]``true``,
-
-* add custom policies or profile and use it for the container.
-
-Configuring SELinux or AppArmor is documented in the [literal]``server-helm`` chart README, report to it for more details.
-
+Super-privileged mode::
+Set the [literal]``server.superPrivileged`` helm value to [literal]``true``.
+This disables all Linux security module enforcement (SELinux, AppArmor) for the container and grants it broad host access.
++
 [WARNING]
 ====
-Keep in mind, that running the container as super privileged is not the safest thing to do.
+Super-privileged mode is the simplest option but significantly reduces the security posture of the node.
+Use it only for testing and development, not for production deployments.
 ====
+
+Custom AppArmor or SELinux profile (recommended for production)::
+Create a custom policy or profile that grants only the specific permissions [command]``systemd`` requires.
+This maintains security module enforcement while allowing the container to function correctly.
+
+==== AppArmor
+
+Obtain the profile content from the [literal]``server-helm`` chart README, which includes a ready-to-use profile named [literal]``k8s-systemd-uyuni``.
+Deploy it on each cluster node, then load it:
+
+[source,shell]
+----
+cp /path/to/k8s-systemd-uyuni /etc/apparmor.d/k8s-systemd-uyuni
+apparmor_parser -r /etc/apparmor.d/k8s-systemd-uyuni
+----
+
+Then reference it in the helm values:
+
+[source,yaml]
+----
+server:
+  apparmorProfile: k8s-systemd-uyuni
+----
+
+==== SELinux
+
+Obtain the policy file ([filename]``systemdcontainerpolicy.te``) from the [literal]``server-helm`` chart README.
+Copy it to each cluster node, then compile and install it:
+
+[source,shell]
+----
+checkmodule -M -m -o systemdcontainerpolicy.mod systemdcontainerpolicy.te
+semodule_package -o systemdcontainerpolicy.pp -m systemdcontainerpolicy.mod
+semodule -i systemdcontainerpolicy.pp
+----
+
+No helm value is required for SELinux — applying the policy module on the node is sufficient.
 
 
 == Installation
