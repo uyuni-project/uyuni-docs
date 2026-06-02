@@ -277,19 +277,55 @@ endif::[]
 
 === TLS setup
 
+The chart expects two TLS secrets and two ConfigMaps holding the corresponding root CA certificates.
 
-The following TLS secrets are expected:
+[literal]``uyuni-cert``::
+TLS certificate for the Ingress rule.
+Must include the public FQDN as a Subject Alternate Name.
 
-* [literal]``db-cert``: TLS certificate for the report database and needs to have the [literal]``db`` and [literal]``reportdb`` Subject Alternate Names, and the FQDN exposed to the outside world.
+[literal]``db-cert``::
+TLS certificate for the report database.
+Must include [literal]``db`` and [literal]``reportdb`` as Subject Alternate Names (these are the internal {kube} service names), plus the public FQDN if the report database is accessed from outside the cluster.
 
-* [literal]``uyuni-cert``: TLS certificate for the Ingress rule and needs to have the public FQDN as Subject Alternate Name.
+[NOTE]
+====
+The certificate file must start with the server certificate followed by any intermediate CA certificates.
+Do not include the root CA in the secret — root CAs go into ConfigMaps (see below).
+====
 
-These secrets can be created using the [command]``kubectl create secret tls -n $NAMESPACE`` command.
-The certificate file passed to this command needs to start with the server certificate followed by the chain of intermediary CA certificates if any.
-The root CAs are not needed in these secrets as they are expected in ConfigMaps.
+Create the secrets from your certificate and key files:
 
-The Root CA certificate of [literal]``db-cert`` and [literal]``uyuni-cert`` are expected in ConfigMaps named [literal]``db-ca`` and [literal]``uyuni-ca`` stored in the [literal]``ca.crt`` key.
-Those can be created with a command like [command]``kubectl create cm -n $NAMESPACE db-ca --from-file=ca.crt=/path/to/db-ca.crt``.
+[source,shell]
+----
+kubectl create secret tls uyuni-cert \
+    -n $NAMESPACE \
+    --cert=/path/to/server.crt \
+    --key=/path/to/server.key
+
+kubectl create secret tls db-cert \
+    -n $NAMESPACE \
+    --cert=/path/to/db.crt \
+    --key=/path/to/db.key
+----
+
+Create ConfigMaps for the root CA certificates:
+
+[source,shell]
+----
+kubectl create configmap uyuni-ca \
+    -n $NAMESPACE \
+    --from-file=ca.crt=/path/to/server-ca.crt
+
+kubectl create configmap db-ca \
+    -n $NAMESPACE \
+    --from-file=ca.crt=/path/to/db-ca.crt
+----
+
+[TIP]
+====
+If you want to automate certificate issuance and renewal, [literal]``cert-manager`` together with [literal]``trust-manager`` can manage all of the above automatically.
+See <<example-helm-charts>> for links to example charts that demonstrate this approach.
+====
 
 
 
@@ -478,6 +514,7 @@ kubectl exec -ti -n $NAMESPACE $POD -- bash
 ----
 
 
+[[example-helm-charts]]
 == Example helm charts
 
 Some helm charts using the [literal]``server-helm`` chart can be found in the [literal]``{gitchartsbranch}`` branch of the https://github.com/uyuni-project/uyuni-charts/tree/{gitchartsbranch}[uyuni-charts] git repository.
