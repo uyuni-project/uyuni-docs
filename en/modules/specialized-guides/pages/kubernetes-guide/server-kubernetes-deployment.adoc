@@ -4,8 +4,8 @@
 :page-revdate: {revdate}
 
 
-{productname} can also be deployed on {kube}.
-This guide shows you how to install and configure a {productname} {productnumber} on {kube} on RKE2.
+{productname} can be deployed on {kube} using a {helm} chart.
+This guide covers deploying {productname} {productnumber} on RKE2.
 
 Several personas are involved in the installation of {productname} on {kube}:
 
@@ -17,8 +17,72 @@ Several personas are involved in the installation of {productname} on {kube}:
 
 * the {productname} administrator controls the application itself and its deployment.
 
-In some cases, some of those personas can be merged into a single person or team, but keeping then in mind will explain why the installation is not a one-shot script doing everything.
-{kube} clusters can also vary a lot between organizations, so the {productname} core installation is designed to be as agnostic as possible of those specific cases.
+In some cases those personas can be merged into a single person or team, but keeping them in mind explains why the installation is not a one-shot script.
+{kube} clusters can vary a lot between organizations, so the {productname} core installation is designed to be as agnostic as possible of those specifics.
+
+
+
+== Supported configuration
+
+[cols="1,3", options="header"]
+|===
+| Component | Supported
+
+| {kube} distribution
+| RKE2.
+Other distributions are not tested and not supported.
+
+| RKE2 version
+| Refer to the {productname} release notes for the minimum supported RKE2 version.
+
+| Ingress controller
+| Traefik (the RKE2 default).
+The nginx ingress controller shipped with RKE2 is deprecated and will be removed in a future RKE2 release; it is not documented here.
+
+| Gateway API
+| Supported from version 1.4, but requires experimental CRDs not included in RKE2 by default.
+Not recommended for production use.
+
+| Storage
+| Any storage class providing [literal]``ReadWriteOnce`` volumes.
+RKE2 ships with the [literal]``local-path`` provisioner by default, which is suitable for testing but provides no redundancy and is not recommended for production.
+
+| CNI
+| No special requirements.
+Canal (the RKE2 default) is supported.
+
+| Required tools
+| [literal]``helm`` v3 and [literal]``kubectl``, configured to access the target cluster.
+|===
+
+[NOTE]
+====
+Because the main server container runs [command]``systemd``, {productname} on {kube} is not fully cloud-native.
+Running it requires elevated security permissions that standard {kube} security profiles do not allow by default.
+See <<security-framework-setup>> for details.
+====
+
+
+
+== Namespace
+
+Install {productname} into a dedicated namespace named [literal]``uyuni-server``.
+This keeps the server workload clearly separated from other workloads on the cluster, and allows support tooling to collect logs without requiring manual input.
+The companion proxy guide uses [literal]``uyuni-proxy`` by the same convention.
+
+[IMPORTANT]
+====
+If you choose a different namespace, use it consistently throughout all commands in this guide.
+Support tooling assumes the [literal]``uyuni-server`` namespace by default.
+====
+
+Create the namespace and set the variable used throughout this guide:
+
+[source,shell]
+----
+kubectl create namespace uyuni-server
+NAMESPACE=uyuni-server
+----
 
 
 
