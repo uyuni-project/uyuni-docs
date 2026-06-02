@@ -214,10 +214,9 @@ The next sections will explain the resources that are expected.
 
 === Credentials
 
-
 The deployment requires four specific secrets of [literal]``kubernetes.io/basic-auth`` type, each containing a [literal]``username`` and a [literal]``password`` key.
-Here are example commands to create them, set the [literal]``NAMESPACE`` variable to the namespace where {productname} will be installed.
-Adjust these commands to set actual passwords.
+The following commands use the [literal]``$NAMESPACE`` variable set in the <<namespace>> section.
+Replace [literal]``supersecret`` with actual passwords before running them.
 
 [IMPORTANT]
 ====
@@ -247,9 +246,31 @@ kubectl create secret generic -n $NAMESPACE --type 'kubernetes.io/basic-auth' \
 
 
 ifeval::[{mlm-content} == true]
-A secret with the SCC credentials needs to be defined in order to pull the images from `registry.suse.com`.
-Refer to https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ for the instructions to prepare the secret.
-Set the `registrySecret` [literal]``server-helm`` chart value to the name of the secret containing those credentials to use it.
+{productname} images are hosted on [literal]``registry.suse.com`` and require authentication.
+Create an image pull secret using your SUSE Customer Center (SCC) mirroring credentials.
+Mirroring credentials can be found at https://scc.suse.com under menu:My Organization[Mirroring Credentials].
+
+[source,shell]
+----
+kubectl create secret docker-registry scc-credentials \
+    -n $NAMESPACE \
+    --docker-server=registry.suse.com \
+    --docker-username=YOUR_SCC_MIRRORING_USERNAME \
+    --docker-password=YOUR_SCC_MIRRORING_PASSWORD
+----
+
+[NOTE]
+====
+SCC mirroring credentials are different from your regular SCC login.
+Use the dedicated mirroring username and password shown on the Mirroring Credentials page, not your SCC account email and password.
+====
+
+Pass the secret name to the [literal]``server-helm`` chart during installation:
+
+[source,shell]
+----
+--set "registrySecret=scc-credentials"
+----
 endif::[]
 
 
