@@ -644,12 +644,79 @@ These examples are not supported, only provided for documentation purpose.
 ====
 endif::[]
 
-== Diagnostics / Troubleshooting
+== Troubleshooting
 
-// CB: TBD complete the troubleshooting section
+Start by checking the overall pod status and recent events:
 
-* Troubleshooting:
+[source,shell]
+----
+kubectl get pods -n uyuni-server
+kubectl get events -n uyuni-server --sort-by='.lastTimestamp'
+----
 
-**  Check the pods status and errors using [command]``kubectl get pod -n uyuni-server`` and [command]``kubectl describe pod -n uyuni-server <POD NAME>``.
+=== Pod stuck in Pending
 
-**  If the pods are ready, but Salt minions cannot access the master, check the network configuration and how the ports are exposed.
+A pod stays in [literal]``Pending`` when it cannot be scheduled.
+The most common cause is an unbound PVC — the storage class has not provisioned a volume yet.
+
+[source,shell]
+----
+kubectl get pvc -n uyuni-server
+kubectl describe pvc -n uyuni-server <PVC_NAME>
+----
+
+Check that the storage class exists and is available, and that the PVC size does not exceed what the provisioner can provide.
+
+=== Pod in CrashLoopBackOff
+
+A pod that crashes immediately after starting is often caused by a missing secret or a security profile blocking [command]``systemd``.
+
+Check the pod logs:
+
+[source,shell]
+----
+kubectl logs -n uyuni-server <POD_NAME> --previous
+----
+
+If the log shows permission denied errors related to cgroup or mount operations, the AppArmor or SELinux profile is not applied correctly.
+See <<security-framework-setup>> for setup instructions.
+
+If the log shows secret or credential errors, verify that all required secrets exist in the namespace:
+
+[source,shell]
+----
+kubectl get secrets -n uyuni-server
+----
+
+=== Web UI not reachable
+
+If all pods are running but the web interface is not accessible, the ingress or port exposure is likely misconfigured.
+
+Verify the Ingress resource was created:
+
+[source,shell]
+----
+kubectl get ingress -n uyuni-server
+----
+
+Check that the FQDN in the Ingress matches the value passed to [literal]``global.fqdn`` during installation, and that DNS resolves to the cluster.
+Also confirm that the Traefik configuration was applied on the RKE2 server nodes as described in <<_exposing_ports>>.
+
+ifeval::[{mlm-content} == true]
+=== Image pull errors
+
+If pods fail with [literal]``ImagePullBackOff``, the SCC credentials secret is missing or incorrect.
+
+[source,shell]
+----
+kubectl describe pod -n uyuni-server <POD_NAME>
+----
+
+Look for [literal]``unauthorized`` or [literal]``authentication required`` in the events.
+Verify the secret exists and was created with the correct mirroring credentials (see <<credentials>>), and that [literal]``registrySecret`` in the helm values matches the secret name.
+endif::[]
+
+=== Salt minions cannot connect
+
+If the server is running but Salt minions cannot reach it, the TCP ports 4505 and 4506 are not exposed correctly.
+Verify the Traefik configuration was applied on the RKE2 server nodes and that no firewall is blocking those ports between the minions and the cluster.
