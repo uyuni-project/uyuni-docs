@@ -13,8 +13,8 @@ Before proceeding, ensure your environment meets these requirements:
 
 [%interactive]
 * [ ] *Kubernetes Distribution:* RKE2 (other distributions are not supported).
-* [ ] *Ingress Controller:* Traefik (RKE2 default).
-* [ ] *Tools:* [literal]``helm`` (v3) and [literal]``kubectl`` configured.
+* [ ] *Ingress Controller:* Traefik (RKE2 defaults to nginx, which is not supported).
+* [ ] *Tools:* {helm} v3 and [literal]``kubectl`` configured with access to the cluster.
 * [ ] *Permissions:* [literal]``cluster-admin`` privileges (or access to someone who has them).
 * [ ] *Node-Level Access:* Root access to RKE2 nodes to apply AppArmor/SELinux policies and configure Traefik.
 * [ ] *Storage:* A [literal]``StorageClass`` supporting [literal]``ReadWriteOnce`` volumes.
@@ -22,6 +22,7 @@ Before proceeding, ensure your environment meets these requirements:
 [NOTE]
 ====
 If you do not have node-level access to apply security policies, or if your environment is not RKE2, you may want to consider a standard installation on a virtual machine or bare-metal instead.
+Deploying on a {kube} cluster is still possible, but would require to run the main container as super privileged.
 ====
 
 Several personas are involved in the installation of {productname} on {kube}:
@@ -53,8 +54,8 @@ Other distributions are not tested and not supported.
 | Refer to the {productname} release notes for the minimum supported RKE2 version.
 
 | Ingress controller
-| Traefik (the RKE2 default).
-The nginx ingress controller shipped with RKE2 is deprecated and will be removed in a future RKE2 release; it is not documented here.
+| Traefik.
+The nginx ingress controller shipped with RKE2 is deprecated and will be removed in a future RKE2 release; it is not documented here, nor tested.
 
 | Gateway API
 | Supported from version 1.4, but requires experimental CRDs not included in RKE2 by default.
@@ -62,14 +63,15 @@ Not recommended for production use.
 
 | Storage
 | Any storage class providing [literal]``ReadWriteOnce`` volumes.
-RKE2 ships with the [literal]``local-path`` provisioner by default, which is suitable for testing but provides no redundancy and is not recommended for production.
+RKE ships without any provisioner.
+The [literal]``local-path`` provisioner is suitable for testing but provides no redundancy and is not recommended for production.
 
 | CNI
 | No special requirements.
 Canal (the RKE2 default) is supported.
 
 | Required tools
-| [literal]``helm`` v3 and [literal]``kubectl``, configured to access the target cluster.
+| {helm} v3 and [literal]``kubectl``, configured to access the target cluster.
 |===
 
 [NOTE]
@@ -90,7 +92,9 @@ The companion proxy guide uses [literal]``uyuni-proxy`` by the same convention.
 [IMPORTANT]
 ====
 If you choose a different namespace, use it consistently throughout all commands in this guide.
+ifeval::[{mlm-content} == true]
 Support tooling assumes the [literal]``uyuni-server`` namespace by default.
+endif::[]
 ====
 
 Create the namespace and set the variable used throughout this guide:
@@ -103,18 +107,16 @@ NAMESPACE=uyuni-server
 
 
 
-== Preparation
+== User permissions
 
-Installing the {kube} cluster and configuring it is out of the scope of this document.
-
-The cluster is assumed to be ready to be used with a user having rights on a namespace dedicated to {productname}.
 
 [NOTE]
 ====
 If the {productname} administrator already holds [literal]``cluster-admin`` permissions, the RBAC setup below can be skipped.
 ====
 
-If a namespace-scoped role is needed, the following [literal]``Role`` and [literal]``RoleBinding`` grant the minimum rights required to deploy [literal]``server-helm`` with Traefik:
+The user installing the {productname} server {helm} chart needs to have permissions on the namespace.
+The following [literal]``Role`` and [literal]``RoleBinding`` grant the minimum rights required to deploy [literal]``server-helm`` with Traefik:
 
 [source,yaml]
 ----
