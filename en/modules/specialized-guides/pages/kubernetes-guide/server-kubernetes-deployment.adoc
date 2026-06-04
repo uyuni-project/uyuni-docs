@@ -313,10 +313,10 @@ Must include [literal]``db`` and [literal]``reportdb`` as Subject Alternate Name
 [NOTE]
 ====
 The certificate file must start with the server certificate followed by any intermediate CA certificates.
-Do not include the root CA in the secret — root CAs go into ConfigMaps (see below).
+Do not include the root CA in the [literal]``uyuni-cert`` secret — root CAs go into ConfigMaps (see below).
 ====
 
-Create the secrets from your certificate and key files:
+Create the server ingress certificate secret:
 
 [source,shell]
 ----
@@ -324,12 +324,24 @@ kubectl create secret tls uyuni-cert \
     -n $NAMESPACE \
     --cert=/path/to/server.crt \
     --key=/path/to/server.key
-
-kubectl create secret tls db-cert \
-    -n $NAMESPACE \
-    --cert=/path/to/db.crt \
-    --key=/path/to/db.key
 ----
+
+The report database secret requires an additional [literal]``ca.crt`` key that [command]``kubectl create secret tls`` does not produce.
+Create it as a generic secret instead:
+
+[source,shell]
+----
+kubectl create secret generic db-cert \
+    -n $NAMESPACE \
+    --from-file=tls.crt=/path/to/db.crt \
+    --from-file=tls.key=/path/to/db.key \
+    --from-file=ca.crt=/path/to/db-ca.crt
+----
+
+[NOTE]
+====
+For self-signed certificates where the certificate is also its own CA, pass the same file for both [literal]``tls.crt`` and [literal]``ca.crt``.
+====
 
 Create ConfigMaps for the root CA certificates:
 
