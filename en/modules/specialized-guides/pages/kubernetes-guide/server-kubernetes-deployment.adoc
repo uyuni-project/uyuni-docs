@@ -63,7 +63,7 @@ Not recommended for production use.
 
 | Storage
 | Any storage class providing [literal]``ReadWriteOnce`` volumes.
-RKE ships without any provisioner.
+RKE2 ships without any provisioner.
 The [literal]``local-path`` provisioner is suitable for testing but provides no redundancy and is not recommended for production.
 
 | CNI
@@ -83,7 +83,56 @@ See <<security-framework-setup>> for details.
 
 
 
-== Namespace
+== Preparation
+
+[IMPORTANT]
+====
+This guide assumes the reader knows how to work with {kube}: the concepts will not be explained here as they are extensively documented in the official {kube} documentation.
+====
+
+The {productname} administrator needs to deploy the [literal]``server-helm`` {helm} chart.
+However, this chart requires preparing:
+
+* TLS certificates chain for the server and database,
+
+* [literal]``ConfigMaps`` for the server and database root CA certificates,
+
+* persistent volumes  for the claims the chart will create or a storage class automatically creating them,
+
+* credentials secrets for the database users and the administrator,
+
+* Load balancers or other mechanisms to expose the Salt, report database and optionally TFTP ports.
+
+Run the following command to read the full details on how to use the server {helm} chart:
+
+ifeval::[{mlm-content} == true]
+[source, Shell, subs="attributes"]
+----
+helm show readme --version {productchartversion} \
+    oci://registry.suse.com/suse/multi-linux-manager/5.2/server-helm
+----
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+[source, Shell, subs="attributes"]
+----
+helm show readme --version {productchartversion} \
+    oci://registry.opensuse.org/uyuni/server-helm
+----
+
+[NOTE]
+====
+Helm requires the version to be semver2 compatible when using OCI repositories.
+This is why the version ([literal]``{productchartversion}``) is formatted differently from the release number ([literal]``{productnumber}``).
+====
+
+For older versions, the Helm chart is located in a snapshot repository like: [literal]``oci://registry.opensuse.org/systemsmanagement/uyuni/snapshots/<version>/opensuse_tumbleweed/uyuni/server-helm``.
+endif::[]
+
+
+
+[[namespace]]
+=== Namespace
 
 Install {productname} into a dedicated namespace named [literal]``uyuni-server``.
 This keeps the server workload clearly separated from other workloads on the cluster, and allows support tooling to collect logs without requiring manual input.
@@ -107,8 +156,7 @@ NAMESPACE=uyuni-server
 
 
 
-== User permissions
-
+=== User permissions
 
 [NOTE]
 ====
@@ -162,50 +210,6 @@ Save this to a file such as [filename]``uyuni-server-rbac.yaml``, then apply it 
 ----
 kubectl apply -f uyuni-server-rbac.yaml
 ----
-
-[IMPORTANT]
-====
-This guide assumes the reader knows how to work with {kube}: the concepts will not be explained here as they are extensively documented in the official {kube} documentation.
-====
-
-The {productname} administrator needs to deploy the [literal]``server-helm`` {helm} chart.
-However, this chart requires preparing:
-
-* TLS certificates chain for the server and database,
-
-* [literal]``ConfigMaps`` for the server and database root CA certificates,
-
-* persistent volumes  for the claims the chart will create or a storage class automatically creating them,
-
-* credentials secrets for the database users and the administrator,
-
-* Load balancers or other mechanisms to expose the Salt, report database and optionally TFTP ports.
-
-Run the following command to read the full details on how to use the server {helm} chart:
-
-ifeval::[{mlm-content} == true]
-[source, Shell, subs="attributes"]
-----
-helm show readme --version {productchartversion} \
-    oci://registry.suse.com/suse/multi-linux-manager/5.2/server-helm
-----
-endif::[]
-
-ifeval::[{uyuni-content} == true]
-[source, Shell, subs="attributes"]
-----
-helm show readme --version {productchartversion} \
-    oci://registry.opensuse.org/uyuni/server-helm
-----
-
-[NOTE]
-====
-Helm requires the version to be semver2 compatible when using OCI repositories.
-This is why the version ([literal]``{productchartversion}``) is formatted differently from the release number ([literal]``{productnumber}``).
-====
-
-For older versions, the Helm chart is located in a snapshot repository like: [literal]``oci://registry.opensuse.org/systemsmanagement/uyuni/snapshots/<version>/opensuse_tumbleweed/uyuni/server-helm``.
-endif::[]
 
 
 
