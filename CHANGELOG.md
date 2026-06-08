@@ -1,5 +1,8 @@
 - Documented how to configure channel automatic synchronization in Administration
   Guide
+- Added OS versions currently suported with OVAL in the product (bsc#1262664)
+- Enhanced large deployments guide with information on avoiding tasks getting stuick in 
+  pending state in containerized environments (bsc#1258815)
 - Clarified Jinja templating in Client Configuration Guide (bsc#1262012)
 - Added information about recreating missing Cobbler entries by resaving
   the Saltboot Group formula to Retail Guide (bsc#1265334)
