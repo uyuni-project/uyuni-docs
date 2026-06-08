@@ -1,3 +1,4 @@
+- Add instructions to migrate from wicked to NM (bsc#1257295)
 - Added OS versions currently suported with OVAL in the product (bsc#1262664)
 - Enhanced large deployments guide with information on avoiding tasks getting stuick in 
   pending state in containerized environments (bsc#1258815)
