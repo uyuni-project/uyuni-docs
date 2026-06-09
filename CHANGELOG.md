@@ -1,3 +1,5 @@
+- Added instructions to migrate from wicked to NetworkManager to Administration Guide
+  (bsc#1257295)
 - Added troubleshooting guide for Salt SSH known hosts to Administration Guide
 - Added OS versions currently suported with OVAL in the product (bsc#1262664)
 - Enhanced large deployments guide with information on avoiding tasks getting stuick in 
