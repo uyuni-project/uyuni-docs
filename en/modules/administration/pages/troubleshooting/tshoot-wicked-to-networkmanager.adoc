@@ -4,24 +4,6 @@
 :page-revdate: {revdate}
 
 ////
-PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
-
-Troubleshooting format:
-
-One sentence each:
-Cause: What created the problem?
-Consequence: What does the user see when this happens?
-Fix: What can the user do to fix this problem?
-Result: What happens after the user has completed the fix?
-
-If more detailed instructions are required, put them in a "Resolving" procedure:
-.Procedure: Resolving Widget Wobbles
-. First step
-. Another step
-. Last step
-////
-
-////
 Applies to: SUSE Multi-Linux Manager 5.0 / 5.1 on SL Micro 6.1
 Platform: Microsoft Azure (cloud image deployments)
 
@@ -31,7 +13,8 @@ Fix: Install NetworkManager inside a transactional shell, remove wicked, enable 
 Result: NetworkManager manages the network and the system is in a supported configuration.
 ////
 
-== Problem Description
+
+== Problem description
 
 In some cases, after upgrading the {productname} host OS from SLE Micro 5.5 to SL Micro 6.1, the system may continue running wicked as the active network manager.
 
@@ -61,7 +44,7 @@ Contact SUSE Support for guidance specific to your configuration.
 ====
  
  
-== Scope and Impact
+== Scope and impact
  
 [cols="1,2", options="header"]
 |===
@@ -86,6 +69,7 @@ DHCP leases are typically bound to the MAC address.
 Minions connect to the same IP address after the migration.
 |===
  
+
  
 == Prerequisites
  
@@ -94,63 +78,95 @@ Before starting:
 * Ensure you have out-of-band console access to the system (for example, the serial console provided by your cloud platform or hypervisor).
 This is your recovery path if the network does not come back correctly after the reboot.
 * Confirm the {productname} container is running and healthy:
+
 +
+
 ----
 sudo podman ps
 ----
+
 * Record the current IP address and routing table on the host.
 You will verify these are unchanged after the migration:
+
 +
+
 ----
 ip addr show eth0
 ip route show
 ----
  
  
-== Migration Procedure
- 
-=== Step 1: Take a Snapshot
- 
-Create a snapshot before making any changes.
-This is your rollback point if something goes wrong.
- 
+== Migration procedure
+
+.Procedure: Migrating wicked to NetworkManager
+[role=procedure]
+____
+
+. Take a snapshot before making any changes.
+  This is your rollback point if something goes wrong.
+
++
+
 ----
 sudo snapper create -d "Pre-NetworkManager-Migration"
 ----
- 
+
++ 
+
 Note the snapshot number from the output.
-You will need it if you need to roll back.
+You will use it if you need to roll back.
+
++
  
 ----
 sudo snapper list
 ----
- 
- 
-=== Step 2: Apply Changes in a Transactional Shell
- 
-Open a transactional update shell.
-All changes made here are staged atomically and only take effect after the reboot in Step 3.
- 
+
+. Open a transactional update shell to apply changes.
+
++
+
+[IMPORTANT]
+====
+All changes made here are staged atomically and only take effect after the reboot in the next step.
+====
+
++
+
 ----
 sudo transactional-update shell
 ----
+
++
  
 Inside the shell, install NetworkManager:
  
++
+
 ----
 zypper in NetworkManager
 ----
+
++
  
 Confirm with [literal]``y`` when prompted.
 NetworkManager and its dependencies are installed from the SL Micro-6.1 repositories.
+
++
  
 Remove the orphaned wicked packages:
+
++
  
 ----
 zypper rm wicked wicked-service cockpit-wicked
 ----
+
++
  
 Confirm with [literal]``y`` when prompted.
+
++
  
 [NOTE]
 ====
@@ -166,26 +182,38 @@ Look for the following lines to confirm the critical symlinks were removed:
  Removed "/etc/systemd/system/network.service".
  Removed "/etc/systemd/system/multi-user.target.wants/wicked.service".
 ====
+
++
  
 Enable NetworkManager so it starts on the next boot:
- 
+
++ 
+
 ----
 systemctl enable NetworkManager
 ----
+
++
  
 You should see the following symlinks created:
  
  Created symlink /etc/systemd/system/network.service → /usr/lib/systemd/system/NetworkManager.service.
  Created symlink /etc/systemd/system/multi-user.target.wants/NetworkManager.service → ...
+
++
  
 Exit the transactional shell:
+
++
  
 ----
 exit
 ----
+
  
- 
-=== Step 3: Reboot
+. Reboot.
+
++
  
 [WARNING]
 ====
@@ -193,71 +221,107 @@ The system will lose network connectivity during the reboot.
 SSH sessions will be terminated.
 Use your out-of-band console to monitor the reboot if needed.
 ====
- 
+
++
+
 ----
 sudo reboot
 ----
+
  
- 
-=== Step 4: Verify the Migration
- 
-After the system comes back up, run the following checks on the host.
+. Verify the migration after the system comes back up.
+  Run the following checks on the host.
+
++
  
 Confirm [literal]``network.service`` now points to NetworkManager:
+
++
  
 ----
 systemctl show -p Id network.service
 ----
+
++
  
 Expected output:
  
  Id=NetworkManager.service
+
++
  
 Confirm wicked packages are fully removed:
+
++
  
 ----
 rpm -q wicked wicked-service
 ----
+
++
  
 Expected output:
  
  package wicked is not installed
  package wicked-service is not installed
+
++
  
 Confirm the IP address is unchanged:
+
++
  
 ----
 ip addr show eth0
 ----
+
++
  
 The IP address must match what was recorded before the migration.
 If it has changed, minions will lose connectivity to {productname}.
-See xref:tshoot-wicked-to-networkmanager.adoc#ts-ip-changed[IP Address Changed After Reboot].
+For more information, see xref:tshoot-wicked-to-networkmanager.adoc#ts-ip-changed[IP Address Changed After Reboot].
+
++
  
 Confirm the routing table is intact:
+
++
  
 ----
 ip route show
 ----
+
++
  
 Compare the output against the routing table recorded before the migration and verify all routes are present.
+
++
  
 [NOTE]
 ====
 If any routes are missing immediately after boot, wait 90 seconds and check again.
 The [literal]``cloud-netconfig`` service runs on a 60-second timer and restores any missing cloud-provider-specific routes automatically.
 ====
+
++
  
 Confirm the {productname} container is running:
+
++
  
 ----
 sudo podman ps
 ----
+
++
  
 The container should show status [literal]``healthy`` within a few minutes of boot.
+
+____
+
  
  
-== What Changes After the Migration
+== The changes after the migration
  
 [cols="1,2", options="header"]
 |===
@@ -300,13 +364,21 @@ Continues running without modification or restart.
  
 If the system does not come back correctly after the reboot, use the snapshot taken in Step 1 to roll back.
  
-=== Roll Back via Boot Menu
- 
+
+=== Roll back via boot menu
+
+.Procedure: Rolling back via boot menu
+[role=procedure]
+____
 . Connect to the system using your out-of-band console.
+
 . When the GRUB menu appears during boot, select the snapshot taken in Step 1.
+
 . The system boots into the pre-migration state with wicked active.
+____
+
  
-=== Roll Back via Command Line
+=== Roll back via command line
  
 If the system boots but the network is not working correctly:
  
