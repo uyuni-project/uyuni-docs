@@ -1,4 +1,6 @@
 - Added OS versions currently suported with OVAL in the product (bsc#1262664)
+- Added instructions to migrate from wicked to NetworkManager to Administration Guide
+  (bsc#1257295)
 - Added migration steps for SL Micro 6.1 as base OS
   to Retail Branch Server 4.3 migration guide (bsc#1262168)
 - Clarified Jinja templating in Client Configuration Guide (bsc#1262012)

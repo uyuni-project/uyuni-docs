@@ -1,0 +1,393 @@
+[[tshoot-wicked-to-networkmanager]]
+= Replacing wicked with NetworkManager after Host OS Upgrade
+:revdate: 2026-06-08
+:page-revdate: {revdate}
+
+////
+Applies to: SUSE Multi-Linux Manager 5.0 / 5.1 on SL Micro 6.1
+Platform: Microsoft Azure (cloud image deployments)
+
+Cause: After upgrading the host OS from SLE Micro 5.5 to SL Micro 6.1, wicked remains active.
+Consequence: Wicked packages become orphaned with no repository or security updates.
+Fix: Install NetworkManager inside a transactional shell, remove wicked, enable NetworkManager, and reboot.
+Result: NetworkManager manages the network and the system is in a supported configuration.
+////
+
+
+== Problem description
+
+In some cases, after upgrading the {productname} host OS from SLE Micro 5.5 to SL Micro 6.1, the system may continue running wicked as the active network manager.
+
+This is an unsupported configuration.
+
+Wicked packages carried over from the previous installation become orphaned as they are no longer available in any SL Micro 6.1 repository and receive no security updates.
+ 
+[NOTE]
+====
+{productname} runs as a container on the SL Micro host.
+Network management is handled entirely by the host OS.
+The {productname} container does not require any changes during this procedure.
+====
+ 
+The following symptoms confirm the system is affected:
+ 
+* [command]``systemctl status wicked`` shows [literal]``active (exited)``
+* [command]``systemctl status NetworkManager`` shows [literal]``Unit NetworkManager.service could not be found``
+* [command]``systemctl show -p Id network.service`` returns [literal]``Id=wicked.service``
+* [command]``sudo zypper se -s wicked`` shows wicked listed under [literal]``(System Packages)`` with no repository
+ 
+[WARNING]
+====
+This procedure applies to systems using DHCP, which is the standard configuration for {productname} cloud images.
+If your deployment uses static IP addresses, VLANs, custom bonding, or other non-standard network configurations, do not proceed.
+Contact SUSE Support for guidance specific to your configuration.
+====
+ 
+ 
+== Scope and impact
+ 
+[cols="1,2", options="header"]
+|===
+| Item | Detail
+ 
+| Applies to
+| {productname} 5.0 and 5.1 on SL Micro 6.1
+ 
+| Network interruption
+| The system is briefly unreachable during the reboot at the end of this procedure
+ 
+| {productname} container
+| Remains running throughout.
+No changes to the container are required.
+ 
+| IP address
+| Unchanged after migration when using DHCP with a cloud provider.
+DHCP leases are typically bound to the MAC address.
+ 
+| Minions
+| No reconfiguration required.
+Minions connect to the same IP address after the migration.
+|===
+ 
+ 
+== Prerequisites
+ 
+Before starting:
+ 
+* Ensure you have out-of-band console access to the system (for example, the serial console provided by your cloud platform or hypervisor).
+This is your recovery path if the network does not come back correctly after the reboot.
+* Confirm the {productname} container is running and healthy:
+
++
+
+----
+sudo podman ps
+----
+
+* Record the current IP address and routing table on the host.
+You will verify these are unchanged after the migration:
+
++
+
+----
+ip addr show eth0
+ip route show
+----
+ 
+ 
+== Migration procedure
+
+.Procedure: Migrating wicked to NetworkManager
+[role=procedure]
+____
+
+. Take a snapshot before making any changes.
+  This is your rollback point if something goes wrong.
+
++
+
+----
+sudo snapper create -d "Pre-NetworkManager-Migration"
+----
+
++ 
+
+Note the snapshot number from the output.
+You will need it if you need to roll back.
+
++ 
+----
+sudo snapper list
+----
+
+. Open a transactional update shell to apply changes.
+
++
+
+[IMPORTANT]
+====
+All changes made here are staged atomically and only take effect after the reboot in the next step.
+====
+
++
+
+----
+sudo transactional-update shell
+----
+
++
+ 
+Inside the shell, install NetworkManager:
+ 
++
+
+----
+zypper in NetworkManager
+----
+
++
+ 
+Confirm with [literal]``y`` when prompted.
+NetworkManager and its dependencies are installed from the SL Micro-6.1 repositories.
+
++
+ 
+Remove the orphaned wicked packages:
+
++
+ 
+----
+zypper rm wicked wicked-service cockpit-wicked
+----
+
++
+ 
+Confirm with [literal]``y`` when prompted.
+
++
+ 
+[NOTE]
+====
+During the wicked removal you will see warnings similar to the following:
+ 
+ warning: file wicked: remove failed: No such file or directory
+ 
+These warnings are expected.
+Some wicked files were already absent after the OS upgrade.
+The removal completes successfully.
+Look for the following lines to confirm the critical symlinks were removed:
+ 
+ Removed "/etc/systemd/system/network.service".
+ Removed "/etc/systemd/system/multi-user.target.wants/wicked.service".
+====
+
++
+ 
+Enable NetworkManager so it starts on the next boot:
+
++ 
+
+----
+systemctl enable NetworkManager
+----
+
++
+ 
+You should see the following symlinks created:
+ 
+ Created symlink /etc/systemd/system/network.service → /usr/lib/systemd/system/NetworkManager.service.
+ Created symlink /etc/systemd/system/multi-user.target.wants/NetworkManager.service → ...
+
++
+ 
+Exit the transactional shell:
+
++
+ 
+----
+exit
+----
+
+ 
+. Reboot.
+
++
+ 
+[WARNING]
+====
+The system will lose network connectivity during the reboot.
+SSH sessions will be terminated.
+Use your out-of-band console to monitor the reboot if needed.
+====
+
++
+
+----
+sudo reboot
+----
+
+ 
+. Verify the migration after the system comes back up.
+  Run the following checks on the host.
+
++
+ 
+Confirm [literal]``network.service`` now points to NetworkManager:
+
++
+ 
+----
+systemctl show -p Id network.service
+----
+
++
+ 
+Expected output:
+ 
+ Id=NetworkManager.service
+
++
+ 
+Confirm wicked packages are fully removed:
+
++
+ 
+----
+rpm -q wicked wicked-service
+----
+
++
+ 
+Expected output:
+ 
+ package wicked is not installed
+ package wicked-service is not installed
+
++
+ 
+Confirm the IP address is unchanged:
+
++
+ 
+----
+ip addr show eth0
+----
+
++
+ 
+The IP address must match what was recorded before the migration.
+If it has changed, minions will lose connectivity to {productname}.
+// For more information, see xref:tshoot-wicked-to-networkmanager.adoc#ts-ip-changed[IP Address Changed After Reboot].
+
++
+ 
+Confirm the routing table is intact:
+
++
+ 
+----
+ip route show
+----
+
++
+ 
+Compare the output against the routing table recorded before the migration and verify all routes are present.
+
++
+ 
+[NOTE]
+====
+If any routes are missing immediately after boot, wait 90 seconds and check again.
+The [literal]``cloud-netconfig`` service runs on a 60-second timer and restores any missing cloud-provider-specific routes automatically.
+====
+
++
+ 
+Confirm the {productname} container is running:
+
++
+ 
+----
+sudo podman ps
+----
+
++
+ 
+The container should show status [literal]``healthy`` within a few minutes of boot.
+
+____
+
+ 
+ 
+== The changes after the migration
+ 
+[cols="1,2", options="header"]
+|===
+| Item | Notes
+ 
+| IP address
+| Unchanged when using DHCP.
+NetworkManager obtains the same address via DHCP.
+ 
+| Slave or bonded interfaces
+| Slave interfaces remain present and attached to their master.
+They no longer appear in [command]``ip addr show`` because NetworkManager does not display slave interfaces there.
+Use [command]``ip link show <interface>`` to confirm they are present.
+This is expected behaviour and has no impact on network performance.
+ 
+| Cloud-provider-specific routes
+| Managed by [literal]``cloud-netconfig``, which operates independently of the network manager and continues to do so after the switch.
+Routes are restored within 60 seconds if missing after boot.
+ 
+| IPv6 link-local address
+| The link-local address on the primary interface changes because NetworkManager generates it differently from wicked.
+This has no impact on standard {productname} deployments which use IPv4.
+ 
+| Default route metric
+| NetworkManager adds an explicit [literal]``metric 100`` to the default route.
+This is correct behaviour and has no negative impact.
+ 
+| NetworkManager connection files
+| NetworkManager auto-generates connection definitions in [literal]``/var/run/NetworkManager/system-connections/`` which is a tmpfs location.
+These are regenerated on every boot from DHCP.
+The original wicked configuration in [literal]``/etc/sysconfig/network/ifcfg-*`` is left in place but is not read by NetworkManager.
+ 
+| {productname} container
+| Not affected.
+Continues running without modification or restart.
+|===
+ 
+ 
+== Rollback
+ 
+If the system does not come back correctly after the reboot, use the snapshot taken in Step 1 to roll back.
+ 
+
+=== Roll back via boot menu
+
+.Procedure: Rolling back via boot menu
+[role=procedure]
+____
+. Connect to the system using your out-of-band console.
+
+. When the GRUB menu appears during boot, select the snapshot taken in Step 1.
+
+. The system boots into the pre-migration state with wicked active.
+____
+
+ 
+=== Roll back via command line
+ 
+If the system boots but the network is not working correctly:
+ 
+----
+sudo transactional-update rollback <snapshot-number>
+sudo reboot
+----
+ 
+[NOTE]
+====
+After a rollback, the system returns to the orphaned wicked state.
+The system will function, but wicked remains unsupported.
+Contact SUSE Support if the migration continues to fail.
+====
