@@ -1,3 +1,4 @@
+- Removed obsolete file from Salt guide (bsc#1268006)
 - Added instructions to migrate from wicked to NetworkManager to Administration Guide
   (bsc#1257295)
 - Added troubleshooting guide for Salt SSH known hosts to Administration Guide
