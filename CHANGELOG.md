@@ -1,3 +1,4 @@
+- Adjusted the note about *.rpmnew and *.rpmsave files usage
 - Added instructions to migrate from wicked to NetworkManager to Administration Guide
   (bsc#1257295)
 - Added troubleshooting guide for Salt SSH known hosts to Administration Guide
