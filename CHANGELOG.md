@@ -1,3 +1,4 @@
+- Update list of OSs supported by CVE Auditing with OVAL
 - Add the missing step in upgrade guide (bsc#1268069)
 - Added instructions to migrate from wicked to NetworkManager to Administration Guide
   (bsc#1257295)
