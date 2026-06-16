@@ -484,7 +484,7 @@ volumes:
 Pass the file to [command]``helm install`` with [option]``-f values.yaml``.
 
 
-
+[[installing-traefik]]
 === Installing Traefik
 
 RKE2 ships with nginx as the default ingress controller.
@@ -732,7 +732,6 @@ These examples are not supported, only provided for documentation purpose.
 ====
 endif::[]
 
-The https://github.com/axeal/mlm-lab/tree/beta2[mlm-lab] community repository demonstrates an alternative approach using Rancher Fleet to deploy {productname} automatically into downstream RKE2 clusters, with dynamic FQDN configuration driven by cluster labels.
 The https://github.com/axeal/mlm-lab/tree/beta2[community] repository demonstrates an alternative approach using Rancher Fleet to deploy {productname} automatically into downstream RKE2 clusters, with dynamic FQDN configuration driven by cluster labels.
 This covers a GitOps-style deployment path not described elsewhere in this documentation.
 
@@ -803,8 +802,32 @@ Also confirm that the Traefik configuration was applied on the RKE2 server nodes
 
 === 502 Bad Gateway
 
-If the web interface returns a 502 Bad Gateway error and all pods are running, firewalld may be blocking traffic between the cluster's internal networks.
-Add the pod and service networks to the trusted zone:
+A 502 Bad Gateway error means Traefik received the request but could not reach a healthy backend.
+There are several possible causes.
+
+*The server pod is still starting up.*
+The main container runs [command]``systemd`` and takes several minutes to become fully ready.
+A 502 during this window is normal — wait for all containers to report ready before investigating further:
+
+[source,shell]
+----
+kubectl get pods -n uyuni-server -w
+----
+
+*Traefik is not routing to the correct service.*
+Verify that the Ingress resource exists and that its [literal]``ingressClassName`` is [literal]``traefik``:
+
+[source,shell]
+----
+kubectl get ingress -n uyuni-server -o yaml
+----
+
+If the [literal]``ingressClassName`` does not match the IngressClass created by the Traefik Helm release, Traefik silently ignores the rule.
+See <<installing-traefik>> for the correct naming requirement.
+
+*Firewalld is blocking traffic between internal cluster networks.*
+If the pod is ready and Traefik routing looks correct, firewalld on the node may be dropping packets between the pod and service CIDRs.
+Add both networks to the trusted zone:
 
 [source,shell]
 ----
