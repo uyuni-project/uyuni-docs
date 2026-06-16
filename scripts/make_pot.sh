@@ -12,7 +12,7 @@
 CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
 
 # root of the documentation repository
-SRCDIR_MODULE="./en/modules"
+SRCDIR_MODULE="./modules"
 
 # place where the po files are
 if [ -z "$PO_DIR" ] ; then
