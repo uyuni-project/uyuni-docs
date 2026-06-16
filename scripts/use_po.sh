@@ -24,7 +24,7 @@ TRANSLATION_THRESHOLD_PERCENTAGE=0
 
 CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
 
-SRCDIR_MODULE="./modules"
+SRCDIR_MODULE="./en/modules"
 
 # place where the po files are
 if [ -z "$PO_DIR" ] ; then
