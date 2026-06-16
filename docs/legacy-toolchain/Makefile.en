@@ -1,0 +1,103 @@
+# Clean up build artifacts
+.PHONY: clean-en
+clean-en: clean-branding-en ## Remove build artifacts from output directory (Antora and PDF)
+	$(call clean-function,translations/en,en)
+
+.PHONY: clean-branding-en
+clean-branding-en:
+	$(call clean-branding,en)
+
+.PHONY: copy-branding-en
+copy-branding-en: copy-branding
+	$(call copy-branding,en)
+
+.PHONY: configure-mlm-branding-dsc-en
+configure-mlm-branding-dsc-en: configure-mlm-branding-dsc
+	$(call configure-mlm-branding-dsc,en)
+
+.PHONY: configure-mlm-branding-webui-en
+configure-mlm-branding-webui-en: configure-mlm-branding-webui
+	$(call configure-mlm-branding-webui,en)
+
+.PHONY: validate-mlm-en
+validate-mlm-en:
+	$(call validate-product,translations/en,mlm-site.yml)
+
+.PHONY: pdf-tar-mlm-en
+pdf-tar-mlm-en:
+	$(call pdf-tar-product,en,suse-multi-linux-manager-docs_en-pdf,$(current_dir)/build/en/pdf)
+
+.PHONY: set-html-language-selector-mlm-en
+set-html-language-selector-mlm-en: set-html-language-selector-mlm
+	mkdir -p $(shell dirname translations/en/$(SUPPLEMENTAL_FILES_MLM))
+	cp -a translations/$(SUPPLEMENTAL_FILES_MLM) translations/en/$(SUPPLEMENTAL_FILES_MLM)
+
+.PHONY: prepare-antora-mlm-en
+prepare-antora-mlm-en: copy-branding-en set-html-language-selector-mlm-en
+	cd $(current_dir)
+	mkdir -p $(current_dir)/translations/en && \
+	cp -a antora.yml translations/en/antora.yml && \
+	sed "s/\(url\:\ https\:\/\/documentation\.suse\.com\/multi-linux-manager\/5\.1\/\)/\1en\//;\
+	s/\-\ url\:\ \./\-\ url\:\ \.\.\/\.\.\//;\
+	s/start_path\:\ \./\start_path\:\ translations\/en/;\
+	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/en/;" site.yml > translations/en/mlm-site.yml && \
+	cp -a $(current_dir)/modules $(current_dir)/translations/en/
+	find modules/ -maxdepth 1 -name "*" -type d -exec mkdir -p $(current_dir)/translations/en/{} \; && \
+	mkdir -p $(current_dir)/translations/en/modules/ROOT/pages/
+	cp -a $(current_dir)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(current_dir)/translations/en/modules/ROOT/pages/	
+	cd $(current_dir)
+
+.PHONY: antora-mlm-en
+antora-mlm-en: configure-mlm-branding-dsc-en prepare-antora-mlm-en pdf-all-mlm-en pdf-tar-mlm-en
+	$(call antora-mlm-function,translations/en,en)
+
+.PHONY: html-mlm-en
+html-mlm-en: configure-mlm-branding-dsc-en prepare-antora-mlm-en
+	$(call antora-mlm-function,translations/en,en)
+
+
+.PHONY: obs-packages-mlm-en
+obs-packages-mlm-en: configure-mlm-branding-webui-en pdf-all-mlm-en antora-mlm-en ## Generate mlm OBS tar files
+	$(call obs-packages-product,en,en/pdf,susemanager-docs_en,susemanager-docs_en-pdf)
+
+# UYUNI
+
+.PHONY: validate-uyuni-en
+validate-uyuni-en:
+	$(call validate-product,translations/en,uyuni-site.yml)
+
+.PHONY: pdf-tar-uyuni-en
+pdf-tar-uyuni-en:
+	$(call pdf-tar-product,en,uyuni-docs_en-pdf,$(current_dir)/build/en/pdf)
+
+.PHONY: set-html-language-selector-uyuni-en
+set-html-language-selector-uyuni-en: set-html-language-selector-uyuni
+	mkdir -p $(shell dirname translations/en/$(SUPPLEMENTAL_FILES_UYUNI))
+	cp -a translations/$(SUPPLEMENTAL_FILES_UYUNI) translations/en/$(SUPPLEMENTAL_FILES_UYUNI)
+
+.PHONY: prepare-antora-uyuni-en
+prepare-antora-uyuni-en: copy-branding-en set-html-language-selector-uyuni-en
+	cd $(current_dir)
+	mkdir -p $(current_dir)/translations/en && \
+	cp antora.yml translations/en/antora.yml && \
+	sed "s/\(url\:\ https\:\/\/www\.uyuni-project\.org\/uyuni-docs\/\)/\1en\//;\
+	s/\-\ url\:\ \./\-\ url\:\ \.\.\/\.\.\//;\
+	s/start_path\:\ \./\start_path\:\ translations\/en/;\
+	s/dir:\ \.\/build\/en/dir:\ \.\.\/\.\.\/build\/en/;" site.yml > translations/en/uyuni-site.yml && \
+	cp -a $(current_dir)/modules $(current_dir)/translations/en/
+	find modules/ -maxdepth 1 -name "*" -type d -exec mkdir -p $(current_dir)/translations/en/{} \; && \
+	mkdir -p $(current_dir)/translations/en/modules/ROOT/pages/	
+	cp -a $(current_dir)/modules/ROOT/pages/common_gfdl1.2_i.adoc $(current_dir)/translations/en/modules/ROOT/pages/	
+	cd $(current_dir)
+
+.PHONY: antora-uyuni-en
+antora-uyuni-en: prepare-antora-uyuni-en pdf-all-uyuni-en pdf-tar-uyuni-en
+	$(call antora-uyuni-function,translations/en,en)
+
+.PHONY: html-uyuni-en
+html-uyuni-en: prepare-antora-uyuni-en
+	$(call antora-uyuni-function,translations/en,en)
+
+.PHONY: obs-packages-uyuni-en
+obs-packages-uyuni-en: pdf-all-uyuni-en antora-uyuni-en ## Generate UYUNI OBS tar files
+	$(call obs-packages-product,en,en/pdf,uyuni-docs_en,uyuni-docs_en-pdf)

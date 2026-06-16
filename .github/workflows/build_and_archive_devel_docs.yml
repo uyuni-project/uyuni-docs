@@ -3,62 +3,102 @@ name: Build and archive documentation from development branches
 on:
   push:
     branches:
-      - 'master'  # Only master will build both Uyuni and SUSE Manager documentations
-      - 'manager-4.3' # Other branches will only build SUSE Manager documentation
-      - 'manager-5.0' # Other branches will only build SUSE Manager documentation
-      - 'manager-5.1' # Other branches will only build SUSE Manager documentation
+      - 'master'
+      # Future: uncomment when backports are ready
+      # - 'manager-5.2'
+      # - 'manager-5.1'
+      # - 'manager-5.0'
+      # - 'manager-4.3'
   workflow_run:
     workflows: ["Update translation files"] # This workflow creates commits, so we need to run after a successful run
     types:
       - completed
 
 jobs:
-  run:
+
+  # ── Uyuni HTML ─────────────────────────────────────────────────────────────
+  uyuni-html:
     runs-on: ubuntu-latest
 
+    container:
+      image: ghcr.io/uyuni-project/uyuni-docs-builder:latest
+
     steps:
-    - name: Checkout this repository
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.2.2
-      with:
-        path: uyuni-docs
+    - name: Checkout repository
+      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 #v4
 
-    - name: Checkout uyuni-docs-helper repository
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.2.2
-      with:
-        path: uyuni-docs-helper
-        repository: uyuni-project/uyuni-docs-helper
+    - name: Build toolchain binary and generate configs
+      run: task setup && task gen
 
-    - name: Configure environment
-      run: |
-        alias docker='podman'
-        mkdir outputs
+    - name: Build Uyuni HTML documentation
+      run: task publish:uyuni
 
-    - name: Build the Uyuni documentation
-      run: |
-        cd uyuni-docs-helper
-        ./uyuni-docs-helper -r ${{ github.ref_name }} -g https://github.com/${{ github.repository}}.git -o /tmp -c antora-uyuni-en -p uyuni
-        cd ..
-        mkdir ./uyuni # Required so the folder name is included later in the archive
-        cp -r /tmp/build ./uyuni/uyuni
-      if: github.ref_name == 'master'
-
-    - name: Archive Uyuni Documentation
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+    - name: Archive Uyuni HTML documentation
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
       with:
         name: documentation-uyuni-${{ github.ref_name }}
-        path: uyuni/
-      if: github.ref_name == 'master'
+        path: build/en/
 
-    - name: Build the SUSE Multi-Linux Manager documentation
-      run: |
-        cd uyuni-docs-helper
-        ./uyuni-docs-helper -r ${{ github.ref_name }} -g https://github.com/${{ github.repository}}.git -o /tmp -c antora-mlm-en -p mlm
-        cd ..
-        mkdir ./suse-multi-linux-manager # Required so the folder name is included later in the archive
-        cp -r /tmp/build ./suse-multi-linux-manager/suse-multi-linux-manager
+  # ── MLM HTML ───────────────────────────────────────────────────────────────
+  mlm-html:
+    runs-on: ubuntu-latest
 
-    - name: Archive SUSE Multi-Linux Manager Documentation
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+    container:
+      image: ghcr.io/uyuni-project/uyuni-docs-builder:latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 #v4
+
+    - name: Build toolchain binary and generate configs
+      run: task setup && task gen
+
+    - name: Build SUSE Multi-Linux Manager HTML documentation
+      run: task publish:dsc
+
+    - name: Archive SUSE Multi-Linux Manager HTML documentation
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
       with:
         name: documentation-suse-multi-linux-manager-${{ github.ref_name }}
-        path: suse-multi-linux-manager/
+        path: build/en/
+
+  # ── PDFs — English only (for translator review) ────────────────────────────
+  pdfs:
+    runs-on: ubuntu-latest
+
+    container:
+      image: ghcr.io/uyuni-project/uyuni-docs-builder:latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 #v4
+
+    - name: Build toolchain binary and generate configs
+      run: task setup && task gen
+
+    - name: Build Uyuni PDFs (English)
+      run: task pdf:uyuni LANGUAGES=en
+
+    - name: Collect Uyuni PDFs
+      run: task pdf-collect:uyuni LANGUAGES=en
+
+    - name: Archive Uyuni PDFs (English)
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
+      with:
+        name: documentation-uyuni-pdf-en-${{ github.ref_name }}
+        path: build/pdf/en/
+
+    - name: Clean PDF output before MLM build
+      run: rm -rf build/pdf/en/
+
+    - name: Build SUSE Multi-Linux Manager PDFs (English)
+      run: task pdf:mlm LANGUAGES=en
+
+    - name: Collect MLM PDFs
+      run: task pdf-collect:mlm LANGUAGES=en
+
+    - name: Archive SUSE Multi-Linux Manager PDFs (English)
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
+      with:
+        name: documentation-suse-multi-linux-manager-pdf-en-${{ github.ref_name }}
+        path: build/pdf/en/

@@ -3,61 +3,59 @@ name: Test PDF translations (ja, ko, zh_CN)
 on:
   push:
     branches:
-      - master  # Only master will build both Uyuni and SUSE Multi-Linux Manager documentations
-      - manager-4.3 # Other branches will only build SUSE Multi-Linux Manager documentation
-      - manager-5.0 # Other branches will only build SUSE Multi-Linux Manager documentation
-      - manager-5.1 # Other branches will only build SUSE Multi-Linux Manager documentation
+      - master
+      # Future: uncomment when backports are ready
+      # - 'manager-5.2'
+      # - 'manager-5.1'
+      # - 'manager-5.0'
+      # - 'manager-4.3'
 
 jobs:
   run:
     runs-on: ubuntu-latest
 
+    container:
+      image: ghcr.io/uyuni-project/uyuni-docs-builder:latest
+
     steps:
-    - name: Checkout this repository
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.2.2
+    - name: Checkout repository
+      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 #v4
+
+    - name: Build toolchain binary and generate configs
+      run: task setup && task gen
+
+    # ── Uyuni translated PDFs (master only) ──────────────────────────────────
+
+    - name: Build Uyuni PDFs (ja, ko, zh_CN)
+      run: task pdf:uyuni LANGUAGES="ja ko zh_CN"
+      if: github.ref_name == 'master'
+
+    - name: Collect Uyuni PDFs (ja, ko, zh_CN)
+      run: task pdf-collect:uyuni LANGUAGES="ja ko zh_CN"
+      if: github.ref_name == 'master'
+
+    - name: Upload Uyuni translated PDFs
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
       with:
-        path: uyuni-docs
+        name: uyuni-pdf-translations-${{ github.ref_name }}
+        path: build/pdf/
+        retention-days: 7
+      if: github.ref_name == 'master'
 
-    - name: Checkout uyuni-docs-helper repository
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.2.2
+    # ── MLM translated PDFs (master only) ────────────────────────────────────
+
+    - name: Build MLM PDFs (ja, ko, zh_CN)
+      run: task pdf:mlm LANGUAGES="ja ko zh_CN"
+      if: github.ref_name == 'master'
+
+    - name: Collect MLM PDFs (ja, ko, zh_CN)
+      run: task pdf-collect:mlm LANGUAGES="ja ko zh_CN"
+      if: github.ref_name == 'master'
+
+    - name: Upload MLM translated PDFs
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
       with:
-        path: uyuni-docs-helper
-        repository: uyuni-project/uyuni-docs-helper
-
-    - name: Configure environment
-      run: |
-        alias docker='podman'
-        mkdir outputs
-
-    - name: Build the Uyuni PDFs in Japanese
-      run: |
-        cd uyuni-docs-helper
-        ./uyuni-docs-helper -r ${{ github.ref_name }} -o /tmp -c pdf-all-uyuni-ja -p uyuni
+        name: mlm-pdf-translations-${{ github.ref_name }}
+        path: build/pdf/
+        retention-days: 7
       if: github.ref_name == 'master'
-
-    - name: Build the SUSE Multi-Linux Manager PDFs in Japanese
-      run: |
-        cd uyuni-docs-helper
-        ./uyuni-docs-helper -r ${{ github.ref_name }} -o /tmp -c pdf-all-mlm-ja -p mlm
-
-    - name: Build the Uyuni PDFs in Korean
-      run: |
-        cd uyuni-docs-helper
-        ./uyuni-docs-helper -r ${{ github.ref_name }} -o /tmp -c pdf-all-uyuni-ko -p uyuni
-      if: github.ref_name == 'master'
-
-    - name: Build the SUSE Multi-Linux Manager PDFs in Korean
-      run: |
-        cd uyuni-docs-helper
-        ./uyuni-docs-helper -r ${{ github.ref_name }} -o /tmp -c pdf-all-mlm-ko -p mlm
-
-    - name: Build the Uyuni PDFs in Chinese, Simplified
-      run: |
-        cd uyuni-docs-helper
-        ./uyuni-docs-helper -r ${{ github.ref_name }} -o /tmp -c pdf-all-uyuni-zh_CN -p uyuni
-      if: github.ref_name == 'master'
-
-    - name: Build the SUSE Multi-Linux Manager PDFs in Chinese, Simplified
-      run: |
-        cd uyuni-docs-helper
-        ./uyuni-docs-helper -r ${{ github.ref_name }} -o /tmp -c pdf-all-mlm-zh_CN -p mlm
