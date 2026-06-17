@@ -1,4 +1,4 @@
-- Clarify CentOS 7 support status
+- Clarified CentOS 7 support status in Client Configuration Guide (bsc#1268178)
 - Add the missing step in upgrade guide (bsc#1268069)
 - Added instructions to migrate from wicked to NetworkManager to Administration Guide
   (bsc#1257295)
