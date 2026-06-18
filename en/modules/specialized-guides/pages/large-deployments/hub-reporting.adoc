@@ -1,34 +1,25 @@
 [[lsd-hub-reporting]]
 = Hub Reporting
 :description: Configure Hub Reporting to collect and aggregate data from SUSE Multi-Linux Manager servers for combined reporting
-:revdate: 2026-05-21
+:revdate: 2026-06-18
 :page-revdate: {revdate}
 :page-author: SUSE Product & Solution Documentation Team
 :page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
 :page-product-name: SUSE Multi-Linux Manager
 :page-product-version: 5.1
 
-The Hub prepares and provides content for multiple peripheral {productname} Servers.
-The goal of the reporting feature is to get data from these Servers back and have combined reporting data available on the Hub.
-The data is made available for external Reporting Tools.
+Hub Reporting extends the xref:administration:reporting-database.adoc[Reporting Database] feature by aggregating reporting data from all connected peripheral {productname} servers into a single central reporting database on the Hub.
 
-== Architecture
+For general reporting database setup, user creation, schema documentation, and Grafana dashboard integration, see xref:administration:reporting-database.adoc[].
 
+== Hub Architecture
 
-The main database is a PostgreSQL database in the {productname} Hub system.
-It stores all the information collected from all the servers, and aggregates them.
-Every peripheral Server has its own reporting database where the information is collected for that system.
-In summary:
+In a hub deployment:
 
-- the DB in {productname} Hub stores, collects and aggregates data coming from all the DBs of the peripheral Servers,
-- the DB in {productname} Hub stores also its own data from the systems directly connected and managed by the Hub,
-- the DB in peripheral {productname} Server stores its own data,
-- the reporting tool can be connected either to the Hub or to any {productname} Server.
-
-== Setup
-
-The reporting database and schema are set up by default using the local PostgreSQL server.
-The reporting database is a separate database accessible via the network.
+- the reporting database in the {productname} Hub stores, collects, and aggregates data coming from the reporting databases of all peripheral servers,
+- the reporting database in the {productname} Hub also stores its own data from systems directly connected to and managed by the Hub,
+- the reporting database on each peripheral {productname} server stores only its own data,
+- external reporting tools can connect to either the Hub or any peripheral {productname} server.
 
 [IMPORTANT]
 ====
@@ -36,79 +27,14 @@ The connection between hub and peripheral servers is established via hub online 
 For more information, see xref:specialized-guides:large-deployments/hub-online-sync.adoc[].
 ====
 
+== Hub Data Aggregation
 
+The `update-reporting-hub-default` schedule fetches and aggregates reporting data from all registered peripheral servers.
+For a description of both taskomatic reporting schedules, see xref:administration:reporting-database.adoc[].
 
-=== Create a DB user for the reporting
+If peripheral servers are in different timezones, align all `update-reporting-default` schedules so that every peripheral server has finished its local job before `update-reporting-hub-default` runs on the Hub.
 
-Before connecting an external Reporting Tools to the Database, a user with read-only permission should be created.
-For doing that, it is possible to use ``uyuni-setup-reportdb-user``.
-
-----
-usage: uyuni-setup-reportdb-user [options]
-
-options:
-  --help
-            show this help message and exit
-  --non-interactive
-            Switches to non-interactive mode
-  --dbuser=DBUSER
-            Report DB User
-  --dbpassword=DBPASSWORD
-            Report DB Password
-  --add
-            Add the new user
-  --delete
-            Delete the user
-  --modify
-            Set a new password
-----
-
-== Database Schema
-
-The schema exports the most important tables from the main {productname} Database as a de-normalized variant containing only data which are relevant for a report.
-
-Ready-to-use reports are provided as views, aggregating data over multiple tables.
-
-Every table gets an extra id column (`mgm_id`) specifying the {productname} server which provided the data.
-On a single {productname} Server this column has the standard value `1` which represent [literal]``localhost``.
-On the {productname} Hub it is replaced with the real server id the managed server has in the hub database.
-
-Another common additional field is `synced_date`, which represents the time when the data were exported from the main {productname} Server database.
-
-Navigate to menu:Help[Report Database Schema] to find the schema documentation.
-
-== Data Generation and Update
-
-{productname} uses taskomatic jobs to generate the data for the reporting database and to get the data from the peripheral servers to the hub.
-
-To generate and update the data on a peripheral server, the responsible schedule is called `update-reporting-default`.
-It is executed by default daily at midnight.
-
-On the {productname} Hub there is a second schedule which is important.
-To fetch the reporting data from all registered peripheral servers, the task with the name `update-reporting-hub-default` is executed daily at 1:30 AM.
-
-All times are in the local timezone of the server.
-If the peripheral servers are in different timezones, it is recommended to align all the schedules.
-Make sure that all reporting data are gathered at a specific point in time, and `update-reporting-hub-default` is running when all peripheral servers have actually finished their local jobs.
-
-
-
-=== Tuning Reporting Jobs
-
-[[reportdb-batch-size]]
-=== `report_db_batch_size`
-
-[cols="1,1"]
-|===
-| Description          | The maximum number of rows fetched and written from one database to the other in one shot.
-| Tune when            | Out of memory errors or on processing speed problems.
-| Value default        | 2000
-| Value recommendation | 500 - 5000
-| Location             | [path]``/etc/rhn/rhn.conf``
-| Example              | `report_db_batch_size = 4000`
-| After changing       | Check xref:memory-usage[memory usage].
-                         Monitor memory usage closely before and after the change.
-|===
+== Tuning
 
 [[reportdb-hub-workers]]
 === `report_db_hub_workers`
@@ -121,9 +47,10 @@ Make sure that all reporting data are gathered at a specific point in time, and 
 | Value recommendation | 2 - 10
 | Location             | [path]``/etc/rhn/rhn.conf``
 | Example              | `report_db_hub_workers = 5`
-| After changing       | Check xref:memory-usage[memory usage].
-                         Monitor memory and cpu usage of the hub closely before and after the change.
-                         Also monitor the load, cpu and memory usage of the reporting database of the hub.
+| After changing       | Monitor memory and CPU usage of the hub closely before and after the change.
+                         Also monitor the load, CPU and memory usage of the reporting database of the hub.
 | Notes                | All the data collected from the peripheral server must be written into the hub reporting database.
                          Tuning that database could increase the performance as well.
 |===
+
+For the `report_db_batch_size` tuning parameter, which applies to all servers including the hub, see xref:administration:reporting-database.adoc#reportdb-batch-size[].
