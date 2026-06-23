@@ -1,5 +1,5 @@
 = {productname} Server Upgrade
-:revdate: 2025-07-29
+:revdate: 2026-06-17
 :page-revdate: {revdate}
 
 Before running the upgrade command, it is required to update the host operating system.
@@ -8,6 +8,7 @@ Updating the host operating system will also result in the update of the {produc
 .Procedure: Upgrading Server
 [role=procedure]
 ____
+
 . Refresh software repositories with [command]``zypper``:
 
 +
@@ -48,13 +49,13 @@ endif::[]
 
 ifeval::[{uyuni-content} == true]
 
-. Apply available updates:
+. Apply available updates with [command]``transactional-update``:
 
 +
 
 [source,shell]
 ----
-zypper dup
+transactional-update
 ----
 
 . If updates were applied, [literal]``reboot``.
@@ -106,30 +107,42 @@ mgradm upgrade podman
 This command will bring the status of the container up-to-date and restart the server.
 
 +
-
 . Clean up the unused container images to free disk space:
 
 +
-
 [source,shell]
 ----
 podman image prune -a
 ----
 
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-check-rpmnew-rpmsave.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../partials/snippet-check-rpmnew-rpmsave.adoc[]
+endif::[]
+
 ____
 
+
 .Upgrading with third-party SSL certificate
-[IMPORTANT]
+[NOTE]
 ====
-If you are using third-party certificates, the database container needs to have an SSL certificate with the following Subject Alternate Names (SANs):
+In previous versions, the database container needed to have an SSL certificate with the following Subject Alternate Names (SANs):
 
 * [literal]``db``
 * [literal]``reportdb``
-* the externally facing fully qualified domain name
 
-The same certificate can be used for both the main container and the database one, but it needs to have those SANs too.
+This is no longer required.
+The database container needs only the externally facing fully qualified domain name.
+The old certificates with [literal]``db`` and [literal]``reportdb`` SANs can be still used.
 
-In order to pass the new certificate to the upgrade command, use the [command]``--ssl-db-ca-root``, [command]``--ssl-db-cert`` and [command]``--ssl-db-key`` parameters.
+The same certificate can be used for both the main container and the database one.
+
+In order to pass the new certificates to the upgrade command, use the [command]``--ssl-db-ca-root``, [command]``--ssl-db-cert`` and [command]``--ssl-db-key`` parameters.
 ====
 
 .Upgrading to specific version
