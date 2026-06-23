@@ -1,3 +1,4 @@
+- Adjusted the note about *.rpmnew and *.rpmsave files usage (bsc#1245944)
 - Added OS versions currently suported with OVAL in the product (bsc#1262664)
 - Added instructions to migrate from wicked to NetworkManager to Administration Guide
   (bsc#1257295)
