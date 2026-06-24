@@ -1,4 +1,8 @@
-- Removed obsolete file from Salt guide (bsc#1268006)
+- Added SSL CA migration guide and warnings about new Basic Constraints
+- Clarified CentOS 7 support status in Client Configuration Guide (bsc#1268178)
+- Updated list of OSs supported by CVE Auditing with OVAL in Administration Guide
+- Commented out the pages related to PAYG on Azure in Specialized Guides
+- Add the missing step in upgrade guide (bsc#1268069)
 - Added instructions to migrate from wicked to NetworkManager to Administration Guide
   (bsc#1257295)
 - Added troubleshooting guide for Salt SSH known hosts to Administration Guide
@@ -17,12 +21,12 @@
 - Updated registration instructions for PowerPC self-install in Common Workflows (bsc#1260617)
 - Added documentation for deleting SCAP scan results to Administration Guide (bsc#1262471)
 - Added troubleshooting section for BTRFS to Administration
-  Guide (bcs#1258816)
+  Guide (bsc#1258816)
 - Rephrased instructions for RBAC in Administration Guide (bsc#1258079)
 - Migrate build toolchain: Go + Task + BCI container
 - Fixed Debian repository URL examples in custom channels
 - Removed mention of CIS profile (bsc#1262460)
-- Corrected path for Salt minion in Retail Guide (#1262090)
+- Corrected path for Salt minion in Retail Guide (bsc#1262090)
 - Added mass migration using UI to Client Configuration Guide
 - Added explanation for translating mgradm arguments to YAML to Installation and 
   Upgrade Guide (bsc#1258144)
