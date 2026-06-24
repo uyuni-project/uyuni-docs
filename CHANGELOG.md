@@ -1,4 +1,4 @@
-- Reorgnized the documentation around reporting database 
+- Reorganized the documentation around reporting database
 - Added OS versions currently suported with OVAL in the product (bsc#1262664)
 - Added instructions to migrate from wicked to NetworkManager to Administration Guide
   (bsc#1257295)
