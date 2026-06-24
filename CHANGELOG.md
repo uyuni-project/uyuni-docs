@@ -17,13 +17,13 @@
 - Added documentation for deleting SCAP scan results to Administration Guide (bsc#1262471)
 - Rephrased instructions for RBAC in Administration Guide (bsc#1258079)
 - Added troubleshooting section for BTRFS to Administration
-  Guide (bcs#1258816)
+  Guide (bsc#1258816)
 - Removed mentions of Leap 15.5 and 15.4 and specified SUSE requiring general
   or LTS support in Client Configuration Guide (bsc#1262285)
 - Added information about availability of SLE 16 and SL Micro 6.2 support
   in the product versions 5.1.2 and later (bsc#1260614)
 - Removed mention of CIS profile (bsc#1262460)
-- Corrected path for Salt minion in Retail Guide (#1262090)
+- Corrected path for Salt minion in Retail Guide (bsc#1262090)
 - Added explanation for translating mgradm arguments to YAML in Installation and 
   Upgrade Guide (bsc#1258144)
 - Removed Google Cloud Compute from PAYG documentation (bsc#1261631)
@@ -42,7 +42,6 @@
 - Added online database backup instructions to Administration Guide
 - Fixed comamnd for product deployment in Installation and Upgrade Guide
   (bsc#1259479)
-- Added online database backup instructions
 - Added warning for the proxy key creation and limitations around assigning 
   cloned channels (bsc#1257823)
 - Fixed disk space management instructions in Administration Guide (bsc#1253144)
