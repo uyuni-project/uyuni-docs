@@ -1,3 +1,4 @@
+- Removed obsolete file from Salt guide (bsc#1268006)
 - Added OS versions currently suported with OVAL in the product (bsc#1262664)
 - Added instructions to migrate from wicked to NetworkManager to Administration Guide
   (bsc#1257295)
