@@ -1,3 +1,4 @@
+- Reorganized the documentation around reporting database
 - Adjusted the note about *.rpmnew and *.rpmsave files usage (bsc#1245944)
 - Removed obsolete file from Salt guide (bsc#1268006)
 - Added OS versions currently suported with OVAL in the product (bsc#1262664)
