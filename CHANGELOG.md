@@ -1,4 +1,6 @@
-- Added SSL CA migration guide and warnings about new Basic Constraints
+- Documented how to configure channel automatic synchronization in Administration
+  Guide
+-  Added SSL CA migration guide and warnings about new Basic Constraints
 - Clarified CentOS 7 support status in Client Configuration Guide (bsc#1268178)
 - Updated list of OSs supported by CVE Auditing with OVAL in Administration Guide
 - Commented out the pages related to PAYG on Azure in Specialized Guides
