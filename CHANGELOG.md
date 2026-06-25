@@ -1,3 +1,4 @@
+- Add the warninng about malformed nftables rules (bsc#1268755)
 - Documented how to configure channel automatic synchronization in Administration
   Guide
 -  Added SSL CA migration guide and warnings about new Basic Constraints
