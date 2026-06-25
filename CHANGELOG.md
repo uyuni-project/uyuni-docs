@@ -1,5 +1,4 @@
-- Fixed incorrect API call and added output examples for channel automatic 
-  synchronization in Administration Guide (bsc#1269155)
+- Add the warninng about malformed nftables rules (bsc#1268755)
 - Documented how to configure channel automatic synchronization in Administration
   Guide
 -  Added SSL CA migration guide and warnings about new Basic Constraints
