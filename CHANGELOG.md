@@ -1,4 +1,4 @@
-- Add the warninng about malformed nftables rules (bsc#1268755)
+- Removed obsolete Kiwi OS image certificate RPM repackaging steps.
 - Documented how to configure channel automatic synchronization in Administration
   Guide
 -  Added SSL CA migration guide and warnings about new Basic Constraints
