@@ -1,3 +1,5 @@
+- Move Prometheus as the first section in Monitoring Formulas
+- Add information about optional TLS Grafana configuration (bsc#1268567)
 - Clarified Jinja templating in Client Configuration Guide (bsc#1262012)
 - Added documentation for deleting SCAP scan results to Administration Guide (bsc#1262471)
 - Removed mention of CIS profile (bsc#1262460)
