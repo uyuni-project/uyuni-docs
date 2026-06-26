@@ -1,8 +1,6 @@
-- Add the link to kubernetes guide from the podman based installation docs
-- Removed obsolete Kiwi OS image certificate RPM repackaging steps.
-- Documented how to configure channel automatic synchronization in Administration
-  Guide
--  Added SSL CA migration guide and warnings about new Basic Constraints
+- Move Prometheus as the first section in Monitoring Formulas
+- Add information about optional TLS Grafana configuration (bsc#1268567)
+- Added SSL CA migration guide and warnings about new Basic Constraints
 - Clarified CentOS 7 support status in Client Configuration Guide (bsc#1268178)
 - Updated list of OSs supported by CVE Auditing with OVAL in Administration Guide
 - Commented out the pages related to PAYG on Azure in Specialized Guides
