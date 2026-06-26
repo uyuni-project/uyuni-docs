@@ -1,3 +1,5 @@
+- Move Prometheus as the first section in Monitoring Formulas
+- Add information about optional TLS Grafana configuration (bsc#1268567)
 - Reorganized the documentation around reporting database
 - Adjusted the note about *.rpmnew and *.rpmsave files usage (bsc#1245944)
 - Removed obsolete file from Salt guide (bsc#1268006)
