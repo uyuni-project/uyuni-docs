@@ -1,3 +1,4 @@
+- Add the link to kubernetes guide from the podman based installation docs
 - Removed obsolete Kiwi OS image certificate RPM repackaging steps.
 - Documented how to configure channel automatic synchronization in Administration
   Guide
