@@ -1,3 +1,4 @@
+- Document use_bundle_build custom info key for KIWI builds (bsc#1243168)
 - Move Prometheus as the first section in Monitoring Formulas
 - Add information about optional TLS Grafana configuration (bsc#1268567)
 - Reorganized the documentation around reporting database
