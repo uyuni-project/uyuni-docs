@@ -1,3 +1,5 @@
+- Enhanced Prometheus formula with command to generate password hash in
+  Specialized Guides (bsc#1268570)
 - Updated SSO / SAML integration with Keycloak in Administration Guide (bsc#1261195)
 - Move Prometheus as the first section in Monitoring Formulas
 - Add information about optional TLS Grafana configuration (bsc#1268567)
