@@ -1,3 +1,4 @@
+- Renamed add-ca to addca in SSL CA Migration guide
 - Updated SSO / SAML integration with Keycloak in Administration Guide (bsc#1261195)
 - Move Prometheus as the first section in Monitoring Formulas
 - Add information about optional TLS Grafana configuration (bsc#1268567)
