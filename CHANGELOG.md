@@ -1,3 +1,4 @@
+- Document the repository value for helm charts on MLM (bsc#1269667)
 - Document use_bundle_build custom info key for KIWI builds (bsc#1243168)
 - Enhanced Prometheus formula with command to generate password hash in
   Specialized Guides (bsc#1268570)
