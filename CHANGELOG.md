@@ -1,3 +1,5 @@
+- Enhanced Prometheus formula with command to generate password hash in
+  Specialized Guides (bsc#1268570)
 - Renamed add-ca to addca in SSL CA Migration guide
 - Updated SSO / SAML integration with Keycloak in Administration Guide (bsc#1261195)
 - Move Prometheus as the first section in Monitoring Formulas
