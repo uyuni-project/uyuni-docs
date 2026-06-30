@@ -364,6 +364,118 @@ See <<example-helm-charts>> for links to example charts that demonstrate this ap
 ====
 
 
+==== Custom CA certificates
+
+Additional CA certificates can be added to the server's trust store through an optional [literal]``custom-cas`` ConfigMap.
+The chart projects [literal]``uyuni-ca``, [literal]``db-ca`` and [literal]``custom-cas`` together under [path]``/etc/pki/trust/anchors/`` using a Kubernetes projected volume, so each key in [literal]``custom-cas`` becomes a file under that directory.
+
+
+If [literal]``custom-cas`` does not exist, the chart still deploys — only [literal]``uyuni-ca`` and [literal]``db-ca`` are projected.
+
+To add a custom CA:
+
+[source,shell]
+----
+kubectl create configmap custom-cas \
+    -n $NAMESPACE \
+    --from-file=my-corp.crt=/path/to/my-corp.crt
+
+kubectl rollout restart deployment -n $NAMESPACE -l app.kubernetes.io/component=server
+----
+
+To change the set of trusted CAs later, delete the ConfigMap and recreate it with all the certificates you want trusted:
+
+[source,shell]
+----
+kubectl delete configmap custom-cas -n $NAMESPACE
+
+kubectl create configmap custom-cas \
+    -n $NAMESPACE \
+    --from-file=my-corp.crt=/path/to/my-corp.crt \
+    --from-file=partner.crt=/path/to/partner.crt
+
+kubectl rollout restart deployment -n $NAMESPACE -l app.kubernetes.io/component=server
+----
+
+The deployment restart is required so the server reruns [command]``update-ca-certificates`` on startup and the updated set of CAs is merged into the system trust bundle.
+
+
+==== Migrating custom CAs from the removed ca-certs PVC
+
+Earlier chart versions used a [literal]``ca-certs`` PVC mounted at [path]``/etc/pki/trust/anchors/`` to hold custom CA certificates.
+This PVC has been replaced by the [literal]``custom-cas`` ConfigMap.
+If you previously dropped custom certificates into [literal]``ca-certs``, recover them and load them into the new ConfigMap.
+
+[NOTE]
+====
+Depending on the chart version and resource policies, the [literal]``ca-certs`` PVC may remain on the cluster after an upgrade even if it is no longer used.
+Verify whether it still exists before attempting recovery: [command]``kubectl get pvc ca-certs -n $NAMESPACE``.
+The recovery procedure below works as long as the PVC (and its data) is still present.
+====
+
+If the [literal]``uyuni`` pod is still running with the old chart, copy the directory directly from the live container:
+
+[source,shell]
+----
+POD=$(kubectl get pod -n $NAMESPACE -l app.kubernetes.io/component=server -o jsonpath='{.items[0].metadata.name}')
+kubectl cp $NAMESPACE/$POD:/etc/pki/trust/anchors ./old-ca-certs
+----
+
+If the chart has already been upgraded (the [literal]``uyuni`` pod no longer mounts the old PVC), attach a rescue pod to the orphaned PVC and copy the data out:
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ca-certs-rescue
+spec:
+  containers:
+    - name: rescue
+      image: busybox:stable
+      command: ["sleep", "3600"]
+      volumeMounts:
+        - name: ca-certs
+          mountPath: /data
+  volumes:
+    - name: ca-certs
+      persistentVolumeClaim:
+        claimName: ca-certs
+----
+
+[source,shell]
+----
+kubectl apply -n $NAMESPACE -f ca-certs-rescue.yaml
+kubectl wait --for=condition=Ready pod/ca-certs-rescue -n $NAMESPACE --timeout=300s
+kubectl cp $NAMESPACE/ca-certs-rescue:/data ./old-ca-certs
+kubectl delete pod ca-certs-rescue -n $NAMESPACE
+----
+
+Remove the two files that are now provided by the [literal]``uyuni-ca`` and [literal]``db-ca`` ConfigMaps -- they must not be copied into [literal]``custom-cas``:
+
+[source,shell]
+----
+rm -f ./old-ca-certs/LOCAL-RHN-ORG-TRUSTED-SSL-CERT \
+      ./old-ca-certs/DB-RHN-ORG-TRUSTED-SSL-CERT
+----
+
+Load the remaining files into the [literal]``custom-cas`` ConfigMap and restart the deployment:
+
+[source,shell]
+----
+kubectl create configmap custom-cas -n $NAMESPACE \
+    $(for f in ./old-ca-certs/*; do [ -f "$f" ] && printf -- '--from-file=%s=%s ' "$(basename -- "$f")" "$f"; done)
+
+kubectl rollout restart deployment -n $NAMESPACE -l app.kubernetes.io/component=server
+----
+
+Once the new deployment is healthy and the custom CAs are confirmed in the trust store, the old PVC can be deleted:
+
+[source,shell]
+----
+kubectl delete pvc ca-certs -n $NAMESPACE
+----
+
 
 === Storage
 
@@ -442,9 +554,6 @@ The following PVCs will be created by the chart:
 
 | [literal]``srv-tftpboot``
 | 300Mi
-
-| [literal]``ca-certs``
-| 10Mi
 
 | [literal]``etc-apache2``, [literal]``etc-cobbler``, [literal]``etc-postfix``, [literal]``etc-rhn``, [literal]``etc-salt``, [literal]``etc-sssd``, [literal]``etc-systemd-multi``, [literal]``etc-systemd-sockets``, [literal]``etc-tomcat``
 | 1Mi each
