@@ -1,3 +1,4 @@
+- Added a common workflow to setup crypto policies in the server container (bsc#1253505)
 - Enhanced Prometheus formula with command to generate password hash in
   Specialized Guides (bsc#1268570)
 - Renamed add-ca to addca in SSL CA Migration guide
