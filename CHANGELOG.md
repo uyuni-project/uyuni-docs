@@ -1,3 +1,5 @@
+- Fix D.S.C. typography in susecom-2025 theme: use docserv SUSE fonts
+  instead of Google variable font, and enforce readable font weights
 - Enhanced Prometheus formula with command to generate password hash in
   Specialized Guides (bsc#1268570)
 - Renamed add-ca to addca in SSL CA Migration guide
