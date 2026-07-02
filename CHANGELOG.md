@@ -1,3 +1,4 @@
+- Document Ansible Playbook variable editing (bsc#1260396)
 - Document use_bundle_build custom info key for KIWI builds (bsc#1243168)
 - Enhanced Prometheus formula with command to generate password hash in
   Specialized Guides (bsc#1268570)
