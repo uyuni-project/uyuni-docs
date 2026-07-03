@@ -34,7 +34,7 @@
 - Fixed Debian repository URL examples in custom channels
 - Removed mention of CIS profile (bsc#1262460)
 - Corrected path for Salt minion in Retail Guide (bsc#1262090)
-- Added mass migration using UI to Client Configuration Guide
+- Added mass migration using UI to Client Configuration Guide (bsc#1259594)
 - Added explanation for translating mgradm arguments to YAML to Installation and 
   Upgrade Guide (bsc#1258144)
 - Removed Google Cloud Compute from PAYG documentation (bsc#1261631)
