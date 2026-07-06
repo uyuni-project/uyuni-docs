@@ -1,3 +1,4 @@
+- Document Ansible Playbook variable editing (bsc#1260396)
 - Convert broken `[role]``text`` double-backtick literals in `en/modules`
   to standard single-backtick literals for Weblate AI translation
   compatibility
