@@ -1,4 +1,7 @@
 - Document Ansible Playbook variable editing (bsc#1260396)
+- Convert broken `[role]``text`` double-backtick literals in `en/modules`
+  to standard single-backtick literals for Weblate AI translation
+  compatibility
 - Document use_bundle_build custom info key for KIWI builds (bsc#1243168)
 - Updated SSO / SAML integration with Keycloak in Administration Guide (bsc#1261195)
 - Move Prometheus as the first section in Monitoring Formulas
