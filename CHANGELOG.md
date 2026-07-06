@@ -1,3 +1,5 @@
+- Enhanced Prometheus formula with command to generate password hash in
+  Specialized Guides (bsc#1268570)
 - Document Ansible Playbook variable editing (bsc#1260396)
 - Convert broken `[role]``text`` double-backtick literals in `en/modules`
   to standard single-backtick literals for Weblate AI translation
