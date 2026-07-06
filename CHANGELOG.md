@@ -1,4 +1,10 @@
 - Added a common workflow to setup crypto policies in the server container (bsc#1253505)
+- Document Ansible Playbook variable editing (bsc#1260396)
+- Adjust to the new way to expose the report database (bsc#1270038)
+- Convert broken `[role]``text`` double-backtick literals in `en/modules`
+  to standard single-backtick literals for Weblate AI translation
+  compatibility
+- Document use_bundle_build custom info key for KIWI builds (bsc#1243168)
 - Enhanced Prometheus formula with command to generate password hash in
   Specialized Guides (bsc#1268570)
 - Renamed add-ca to addca in SSL CA Migration guide
@@ -34,7 +40,7 @@
 - Fixed Debian repository URL examples in custom channels
 - Removed mention of CIS profile (bsc#1262460)
 - Corrected path for Salt minion in Retail Guide (bsc#1262090)
-- Added mass migration using UI to Client Configuration Guide
+- Added mass migration using UI to Client Configuration Guide (bsc#1259594)
 - Added explanation for translating mgradm arguments to YAML to Installation and 
   Upgrade Guide (bsc#1258144)
 - Removed Google Cloud Compute from PAYG documentation (bsc#1261631)

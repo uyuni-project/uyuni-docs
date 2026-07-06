@@ -4,11 +4,11 @@
 
 == Introduction
 
-This document describes how to migrate a {productname} Proxy deployed on K3s via [command]``mgrpxy install kubernetes`` (the legacy path) to a deployment using the [literal]``proxy-helm`` chart directly.
+This document describes how to migrate a {productname} Proxy deployed on K3s via `mgrpxy install kubernetes` (the legacy path) to a deployment using the `proxy-helm` chart directly.
 
-The legacy path used [command]``mgrpxy`` as a thin wrapper around [command]``helm`` and installed the proxy with selector labels [literal]``app: uyuni-proxy``.
-The new path uses the [literal]``proxy-helm`` chart directly with selector labels [literal]``app.kubernetes.io/component: proxy``.
-Since [literal]``spec.selector`` is immutable in {kube}, the old deployment must be removed before the new one can be created.
+The legacy path used `mgrpxy` as a thin wrapper around `helm` and installed the proxy with selector labels `app: uyuni-proxy`.
+The new path uses the `proxy-helm` chart directly with selector labels `app.kubernetes.io/component: proxy`.
+Since `spec.selector` is immutable in {kube}, the old deployment must be removed before the new one can be created.
 This causes a short downtime (approximately 30 to 60 seconds).
 The squid cache PVC can be preserved across the migration.
 
@@ -17,8 +17,8 @@ For the destination install procedure and chart values reference, see xref:kuber
 
 === Prerequisites
 
-* The proxy is installed and running on a K3s cluster via [command]``mgrpxy install kubernetes``.
-* [command]``helm`` (3.x) and [command]``kubectl`` are available on the K3s node.
+* The proxy is installed and running on a K3s cluster via `mgrpxy install kubernetes`.
+* `helm` (3.x) and `kubectl` are available on the K3s node.
 * The proxy is registered with the {productname} Server.
 
 
@@ -28,7 +28,7 @@ For the destination install procedure and chart values reference, see xref:kuber
 [role=procedure]
 ____
 
-. Preserve the squid PVC by switching the PV reclaim policy to [literal]``Retain``.
+. Preserve the squid PVC by switching the PV reclaim policy to `Retain`.
 
 +
 
@@ -40,7 +40,7 @@ kubectl patch pv $PV -p '{"spec":{"persistentVolumeReclaimPolicy":"Retain"}}'
 
 +
 
-Replace [literal]``<namespace>`` with the namespace where the legacy proxy is installed (often [literal]``default`` for [command]``mgrpxy install kubernetes`` deployments).
+Replace `<namespace>` with the namespace where the legacy proxy is installed (often `default` for `mgrpxy install kubernetes` deployments).
 
 +
 
@@ -69,16 +69,16 @@ kubectl create namespace uyuni-proxy
 
 +
 
-The [literal]``proxy-helm`` chart creates the [literal]``proxy-cert`` TLS secret and the [literal]``uyuni-ca`` [literal]``ConfigMap`` automatically from the tarball values at install time.
+The `proxy-helm` chart creates the `proxy-cert` TLS secret and the `uyuni-ca` `ConfigMap` automatically from the tarball values at install time.
 
 ____
 
 
 == Update Traefik (no downtime)
 
-The legacy [command]``mgrpxy`` install configured the bundled K3s Traefik with entryPoint names [literal]``uyuni-ssh``, [literal]``uyuni-publish`` and [literal]``uyuni-request``.
-The [literal]``proxy-helm`` chart defaults to [literal]``ssh``, [literal]``salt-publish`` and [literal]``salt-request``.
-Replace the Traefik [literal]``HelmChartConfig`` so the new entryPoints exist before the cutover:
+The legacy `mgrpxy` install configured the bundled K3s Traefik with entryPoint names `uyuni-ssh`, `uyuni-publish` and `uyuni-request`.
+The `proxy-helm` chart defaults to `ssh`, `salt-publish` and `salt-request`.
+Replace the Traefik `HelmChartConfig` so the new entryPoints exist before the cutover:
 
 [source,console]
 ----
@@ -117,7 +117,7 @@ kubectl -n kube-system rollout status deploy/traefik
 
 [NOTE]
 ====
-Until the cutover step below, the legacy proxy is still routed through the old entryPoint names that are no longer exposed; if its [literal]``IngressRouteTCP`` objects reference them, traffic to the legacy proxy may already be interrupted.
+Until the cutover step below, the legacy proxy is still routed through the old entryPoint names that are no longer exposed; if its `IngressRouteTCP` objects reference them, traffic to the legacy proxy may already be interrupted.
 If continuous service is required, defer this step until immediately before the cutover.
 ====
 
@@ -139,7 +139,7 @@ helm -n <namespace> uninstall <release-name>
 
 +
 
-The release name created by [command]``mgrpxy install kubernetes`` is typically [literal]``uyuni-proxy``.
+The release name created by `mgrpxy install kubernetes` is typically `uyuni-proxy`.
 
 +
 
@@ -155,7 +155,7 @@ kubectl patch pv $PV --type=json \
 
 +
 
-. Install the [literal]``proxy-helm`` chart, binding to the existing squid PV.
+. Install the `proxy-helm` chart, binding to the existing squid PV.
 
 +
 
@@ -199,8 +199,8 @@ endif::[]
 
 [NOTE]
 ====
-The example uses [literal]``ingress.class=traefik`` for the case where the surrounding Traefik filters by class (for example [literal]``--providers.kubernetescrd.ingressclass=traefik``).
-On a vanilla K3S install the bundled Traefik picks up every [literal]``Ingress`` regardless of class; set [literal]``ingress.class=""`` instead.
+The example uses `ingress.class=traefik` for the case where the surrounding Traefik filters by class (for example `--providers.kubernetescrd.ingressclass=traefik`).
+On a vanilla K3S install the bundled Traefik picks up every `Ingress` regardless of class; set `ingress.class=""` instead.
 ====
 
 ____
@@ -218,4 +218,4 @@ kubectl -n uyuni-proxy logs deploy/uyuni-proxy -c httpd --tail=20
 
 === Migration complete
 
-The proxy is now managed by the [literal]``proxy-helm`` chart directly, reusing the legacy squid cache volume.
+The proxy is now managed by the `proxy-helm` chart directly, reusing the legacy squid cache volume.

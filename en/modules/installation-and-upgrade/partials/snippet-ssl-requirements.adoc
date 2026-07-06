@@ -9,12 +9,30 @@ If not using the self-signed generated CA and certificates, ensure you have the 
 All files must be in PEM format.
 
 The hostname of the SSL server certificate must match the fully qualified hostname of the machine you deploy them on.
-You can set the hostnames in the [literal]``X509v3 Subject Alternative Name`` section of the certificate.
+You can set the hostnames in the `X509v3 Subject Alternative Name` section of the certificate.
 You can also list multiple hostnames if your environment requires it.
-Supported Key types are [literal]``RSA`` and [literal]``EC`` (Elliptic Curve).
+Supported Key types are `RSA` and `EC` (Elliptic Curve).
 
 [NOTE]
 ====
-In the past, database SSL certificate required [literal]``reportdb`` and [literal]``db`` as [literal]``Subject Alternative Name``.
-This is no longer needed, and only the Server FQDN (used to access the report database) is mandatory as [literal]``Subject Alternative Name``.
+In the past, database SSL certificate required `reportdb` and `db` as `Subject Alternative Name`.
+This is no longer needed, and only the Server FQDN (used to access the report database) is mandatory as `Subject Alternative Name`.
 ====
+
+The database container needs only the externally facing fully qualified domain name.
+The old certificates with `db` and `reportdb` SANs can be still used.
+
+The same certificate can be used for both the main container and the database one.
+
+In order to pass the new certificates to the upgrade command, use the `--ssl-db-ca-root`, `--ssl-db-cert` and `--ssl-db-key` parameters.
+
+
+
+ifeval::[{mlm-content} == true]
+
+In {productname} 5.2, internal communication between the `uyuni-server` and `uyuni-db` Podman containers has been optimized.
+Because this traffic is strictly local, TLS is now explicitly disabled in `/etc/rhn/rhn.conf`. 
+Consequently, defining `db` and `reportdb` in the certificate's Subject Alternative Names (SAN) is no longer required or used. 
+However, perimeter security has become stricter, and remote connections to the PostgreSQL port (`5432`) are now explicitly enforced to be TLS-protected via `/var/lib/pgsql/data/pg_hba.conf`.
+
+endif::[]
