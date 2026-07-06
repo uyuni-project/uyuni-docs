@@ -14,10 +14,10 @@ Before proceeding, ensure your environment meets these requirements:
 [%interactive]
 * [ ] *Kubernetes Distribution:* RKE2 (other distributions are not supported).
 * [ ] *Ingress Controller:* Traefik (RKE2 defaults to nginx, which is not supported).
-* [ ] *Tools:* {helm} v3 and [literal]``kubectl`` configured with access to the cluster.
-* [ ] *Permissions:* [literal]``cluster-admin`` privileges (or access to someone who has them).
+* [ ] *Tools:* {helm} v3 and `kubectl` configured with access to the cluster.
+* [ ] *Permissions:* `cluster-admin` privileges (or access to someone who has them).
 * [ ] *Node-Level Access:* Root access to RKE2 nodes to apply AppArmor/SELinux policies and configure Traefik.
-* [ ] *Storage:* A [literal]``StorageClass`` supporting [literal]``ReadWriteOnce`` volumes.
+* [ ] *Storage:* A `StorageClass` supporting `ReadWriteOnce` volumes.
 
 [NOTE]
 ====
@@ -62,21 +62,21 @@ The nginx ingress controller shipped with RKE2 is deprecated and will be removed
 Not recommended for production use.
 
 | Storage
-| Any storage class providing [literal]``ReadWriteOnce`` volumes.
+| Any storage class providing `ReadWriteOnce` volumes.
 RKE2 ships without any provisioner.
-The [literal]``local-path`` provisioner is suitable for testing but provides no redundancy and is not recommended for production.
+The `local-path` provisioner is suitable for testing but provides no redundancy and is not recommended for production.
 
 | CNI
 | No special requirements.
 Canal (the RKE2 default) is supported.
 
 | Required tools
-| {helm} v3 and [literal]``kubectl``, configured to access the target cluster.
+| {helm} v3 and `kubectl`, configured to access the target cluster.
 |===
 
 [NOTE]
 ====
-Because the main server container runs [command]``systemd``, {productname} on {kube} is not fully cloud-native.
+Because the main server container runs `systemd`, {productname} on {kube} is not fully cloud-native.
 Running it requires elevated security permissions that standard {kube} security profiles do not allow by default.
 See <<security-framework-setup>> for details.
 ====
@@ -90,12 +90,12 @@ See <<security-framework-setup>> for details.
 This guide assumes the reader knows how to work with {kube}: the concepts will not be explained here as they are extensively documented in the official {kube} documentation.
 ====
 
-The {productname} administrator needs to deploy the [literal]``server-helm`` {helm} chart.
+The {productname} administrator needs to deploy the `server-helm` {helm} chart.
 However, this chart requires preparing:
 
 * TLS certificates chain for the server and database,
 
-* [literal]``ConfigMaps`` for the server and database root CA certificates,
+* `ConfigMaps` for the server and database root CA certificates,
 
 * persistent volumes  for the claims the chart will create or a storage class automatically creating them,
 
@@ -123,10 +123,10 @@ helm show readme --version {productchartversion} \
 [NOTE]
 ====
 Helm requires the version to be semver2 compatible when using OCI repositories.
-This is why the version ([literal]``{productchartversion}``) is formatted differently from the release number ([literal]``{productnumber}``).
+This is why the version (`{productchartversion}`) is formatted differently from the release number (`{productnumber}`).
 ====
 
-For older versions, the Helm chart is located in a snapshot repository like: [literal]``oci://registry.opensuse.org/systemsmanagement/uyuni/snapshots/<version>/opensuse_tumbleweed/uyuni/server-helm``.
+For older versions, the Helm chart is located in a snapshot repository like: `oci://registry.opensuse.org/systemsmanagement/uyuni/snapshots/<version>/opensuse_tumbleweed/uyuni/server-helm`.
 endif::[]
 
 
@@ -134,15 +134,15 @@ endif::[]
 [[namespace]]
 === Namespace
 
-Install {productname} into a dedicated namespace named [literal]``uyuni-server``.
+Install {productname} into a dedicated namespace named `uyuni-server`.
 This keeps the server workload clearly separated from other workloads on the cluster, and allows support tooling to collect logs without requiring manual input.
-The companion proxy guide uses [literal]``uyuni-proxy`` by the same convention.
+The companion proxy guide uses `uyuni-proxy` by the same convention.
 
 [IMPORTANT]
 ====
 If you choose a different namespace, use it consistently throughout all commands in this guide.
 ifeval::[{mlm-content} == true]
-Support tooling assumes the [literal]``uyuni-server`` namespace by default.
+Support tooling assumes the `uyuni-server` namespace by default.
 endif::[]
 ====
 
@@ -160,11 +160,11 @@ NAMESPACE=uyuni-server
 
 [NOTE]
 ====
-If the {productname} administrator already holds [literal]``cluster-admin`` permissions, the RBAC setup below can be skipped.
+If the {productname} administrator already holds `cluster-admin` permissions, the RBAC setup below can be skipped.
 ====
 
 The user installing the {productname} server {helm} chart needs to have permissions on the namespace.
-The following [literal]``Role`` and [literal]``RoleBinding`` grant the minimum rights required to deploy [literal]``server-helm`` with Traefik:
+The following `Role` and `RoleBinding` grant the minimum rights required to deploy `server-helm` with Traefik:
 
 [source,yaml]
 ----
@@ -204,7 +204,7 @@ roleRef:
 <1> Replace with your namespace if you chose a different name.
 <2> Replace with the actual {kube} username of the {productname} administrator.
 
-Save this to a file such as [filename]``uyuni-server-rbac.yaml``, then apply it as the cluster administrator:
+Save this to a file such as `uyuni-server-rbac.yaml`, then apply it as the cluster administrator:
 
 [source,shell]
 ----
@@ -215,7 +215,7 @@ kubectl apply -f uyuni-server-rbac.yaml
 
 === Global architecture
 
-This diagram shows the components deployed by the [literal]``server-helm`` chart and the ones expected to be created before hand.
+This diagram shows the components deployed by the `server-helm` chart and the ones expected to be created before hand.
 
 image::server-kubernetes-design.png[]
 
@@ -237,13 +237,13 @@ The next sections will explain the resources that are expected.
 
 === Credentials
 
-The deployment requires four specific secrets of [literal]``kubernetes.io/basic-auth`` type, each containing a [literal]``username`` and a [literal]``password`` key.
-The following commands use the [literal]``$NAMESPACE`` variable set in the <<namespace>> section.
-Replace [literal]``supersecret`` with actual passwords before running them.
+The deployment requires four specific secrets of `kubernetes.io/basic-auth` type, each containing a `username` and a `password` key.
+The following commands use the `$NAMESPACE` variable set in the <<namespace>> section.
+Replace `supersecret` with actual passwords before running them.
 
 [IMPORTANT]
 ====
-Using [literal]``--from-literal`` for the passwords is not a secure practice, read the command help to use [literal]``--from-file`` or [literal]``--from-env-file``.
+Using `--from-literal` for the passwords is not a secure practice, read the command help to use `--from-file` or `--from-env-file`.
 If using declarative YAML definitions instead of these commands, make sure these files are encrypted before pushing them to a remote version control.
 ====
 
@@ -269,7 +269,7 @@ kubectl create secret generic -n $NAMESPACE --type 'kubernetes.io/basic-auth' \
 
 
 ifeval::[{mlm-content} == true]
-{productname} images are hosted on [literal]``registry.suse.com`` and require authentication.
+{productname} images are hosted on `registry.suse.com` and require authentication.
 Create an image pull secret using your SUSE Customer Center (SCC) mirroring credentials.
 Mirroring credentials can be found at https://scc.suse.com under menu:My Organization[Mirroring Credentials].
 
@@ -288,7 +288,7 @@ SCC mirroring credentials are different from your regular SCC login.
 Use the dedicated mirroring username and password shown on the Mirroring Credentials page, not your SCC account email and password.
 ====
 
-Pass the secret name to the [literal]``server-helm`` chart during installation:
+Pass the secret name to the `server-helm` chart during installation:
 
 [source,shell]
 ----
@@ -302,19 +302,19 @@ endif::[]
 
 The chart expects two TLS secrets and two ConfigMaps holding the corresponding root CA certificates.
 
-[literal]``uyuni-cert``::
+`uyuni-cert`::
 TLS certificate for the Ingress rule.
 Must include the public FQDN as a Subject Alternate Name.
 
-[literal]``db-cert``::
+`db-cert`::
 TLS certificate for the report database.
 Must include the public FQDN if the report database is accessed from outside the cluster. It can be the same
-certificate as [literal]``uyuni-cert``.
+certificate as `uyuni-cert`.
 
 [NOTE]
 ====
 The certificate file must start with the server certificate followed by any intermediate CA certificates.
-Do not include the root CA in the [literal]``uyuni-cert`` secret — root CAs go into ConfigMaps (see below).
+Do not include the root CA in the `uyuni-cert` secret — root CAs go into ConfigMaps (see below).
 ====
 
 Create the server ingress certificate secret:
@@ -327,7 +327,7 @@ kubectl create secret tls uyuni-cert \
     --key=/path/to/server.key
 ----
 
-The report database secret requires an additional [literal]``ca.crt`` key that [command]``kubectl create secret tls`` does not produce.
+The report database secret requires an additional `ca.crt` key that `kubectl create secret tls` does not produce.
 Create it as a generic secret instead:
 
 [source,shell]
@@ -341,7 +341,7 @@ kubectl create secret generic db-cert \
 
 [NOTE]
 ====
-For self-signed certificates where the certificate is also its own CA, pass the same file for both [literal]``tls.crt`` and [literal]``ca.crt``.
+For self-signed certificates where the certificate is also its own CA, pass the same file for both `tls.crt` and `ca.crt`.
 ====
 
 Create ConfigMaps for the root CA certificates:
@@ -359,7 +359,7 @@ kubectl create configmap db-ca \
 
 [TIP]
 ====
-If you want to automate certificate issuance and renewal, [literal]``cert-manager`` together with [literal]``trust-manager`` can manage all of the above automatically.
+If you want to automate certificate issuance and renewal, `cert-manager` together with `trust-manager` can manage all of the above automatically.
 See <<example-helm-charts>> for links to example charts that demonstrate this approach.
 ====
 
@@ -395,24 +395,24 @@ For production, use a StorageClass backed by a proper storage system.
 ====
 * The creation of the underlying PVs is the responsibility of the cluster administrators.
 
-* The PVCs use the [literal]``ReadWriteOnce`` access mode.
+* The PVCs use the `ReadWriteOnce` access mode.
 ====
 
 The created PVCs can be tuned using {helm} chart values.
 Each of the PVCs can have the following values:
 
-* [literal]``size``: to set the requested size of the PVC.
+* `size`: to set the requested size of the PVC.
 
-* [literal]``storageClass``: can be used to select the storage class to use for the PVC.
+* `storageClass`: can be used to select the storage class to use for the PVC.
   This can be useful to select faster storage for the database or the packages storage.
 
-* [literal]``extraLabels``: can be used to add custom labels to the PVC.
+* `extraLabels`: can be used to add custom labels to the PVC.
 
-* [literal]``annotations``: can be used to set custom annotations on the PVC.
+* `annotations`: can be used to set custom annotations on the PVC.
 
-* [literal]``volumeName``: can be used to hard code which volume the PVC should be bound to.
+* `volumeName`: can be used to hard code which volume the PVC should be bound to.
 
-* [literal]``selector``: is the YAML fragment of the PVC selector to use to find the PV to bind to.
+* `selector`: is the YAML fragment of the PVC selector to use to find the PV to bind to.
 
 Refer to https://kubernetes.io/docs/concepts/storage/persistent-volumes/ for more information on persistent volumes and their claims.
 
@@ -422,44 +422,44 @@ The following PVCs will be created by the chart:
 |===
 | PVC | Default size
 
-| [literal]``var-pgsql``
+| `var-pgsql`
 | 50Gi
 
-| [literal]``var-spacewalk``
+| `var-spacewalk`
 | 100Gi
 
-| [literal]``var-cache``
+| `var-cache`
 | 10Gi
 
-| [literal]``var-log``
+| `var-log`
 | 2Gi
 
-| [literal]``var-search``
+| `var-search`
 | 10Gi
 
-| [literal]``srv-www``
+| `srv-www`
 | 100Gi
 
-| [literal]``srv-tftpboot``
+| `srv-tftpboot`
 | 300Mi
 
-| [literal]``ca-certs``
+| `ca-certs`
 | 10Mi
 
-| [literal]``etc-apache2``, [literal]``etc-cobbler``, [literal]``etc-postfix``, [literal]``etc-rhn``, [literal]``etc-salt``, [literal]``etc-sssd``, [literal]``etc-systemd-multi``, [literal]``etc-systemd-sockets``, [literal]``etc-tomcat``
+| `etc-apache2`, `etc-cobbler`, `etc-postfix`, `etc-rhn`, `etc-salt`, `etc-sssd`, `etc-systemd-multi`, `etc-systemd-sockets`, `etc-tomcat`
 | 1Mi each
 
-| [literal]``etc-sysconfig``
+| `etc-sysconfig`
 | 20Mi
 
-| [literal]``run-salt-master``, [literal]``srv-formulametadata``, [literal]``srv-pillar``, [literal]``srv-salt``, [literal]``srv-spacewalk``, [literal]``srv-susemanager``, [literal]``var-cobbler``, [literal]``var-salt``
+| `run-salt-master`, `srv-formulametadata`, `srv-pillar`, `srv-salt`, `srv-spacewalk`, `srv-susemanager`, `var-cobbler`, `var-salt`
 | 1–10Mi each
 
 |===
 
 [IMPORTANT]
 ====
-The default sizes for [literal]``var-spacewalk`` and [literal]``srv-www`` (100Gi each) are a starting point only.
+The default sizes for `var-spacewalk` and `srv-www` (100Gi each) are a starting point only.
 Size them based on the number of distributions and packages you plan to synchronize.
 For more information see xref:installation-and-upgrade:general-requirements.adoc[].
 ====
@@ -481,17 +481,17 @@ volumes:
     storageClass: fast-ssd
 ----
 
-Pass the file to [command]``helm install`` with [option]``-f values.yaml``.
+Pass the file to `helm install` with `-f values.yaml`.
 
 
 [[installing-traefik]]
 === Installing Traefik
 
 RKE2 ships with nginx as the default ingress controller.
-The [literal]``server-helm`` chart requires Traefik, so nginx must be disabled and Traefik installed before proceeding.
+The `server-helm` chart requires Traefik, so nginx must be disabled and Traefik installed before proceeding.
 This is a task for the {kube} cluster administrator.
 
-Disable the nginx ingress controller by adding the following to [filename]``/etc/rancher/rke2/config.yaml`` on each RKE2 server node (create the file if it does not exist):
+Disable the nginx ingress controller by adding the following to `/etc/rancher/rke2/config.yaml` on each RKE2 server node (create the file if it does not exist):
 
 [source,yaml]
 ----
@@ -499,7 +499,7 @@ disable:
   - rke2-ingress-nginx
 ----
 
-Install Traefik by creating [filename]``/var/lib/rancher/rke2/server/manifests/traefik.yaml`` on the RKE2 server node with the following content:
+Install Traefik by creating `/var/lib/rancher/rke2/server/manifests/traefik.yaml` on the RKE2 server node with the following content:
 
 [source,yaml]
 ----
@@ -516,9 +516,9 @@ spec:
 
 [IMPORTANT]
 ====
-The [literal]``metadata.name`` must be [literal]``traefik``.
-The [literal]``server-helm`` chart creates Ingress resources with [literal]``ingressClassName: traefik``, which must match the IngressClass name created by the Helm release.
-Using a different name (such as [literal]``rke2-traefik``) causes Traefik to silently ignore all {productname} ingresses, resulting in 404 responses even when all pods are running.
+The `metadata.name` must be `traefik`.
+The `server-helm` chart creates Ingress resources with `ingressClassName: traefik`, which must match the IngressClass name created by the Helm release.
+Using a different name (such as `rke2-traefik`) causes Traefik to silently ignore all {productname} ingresses, resulting in 404 responses even when all pods are running.
 ====
 
 Restart RKE2 to apply both changes:
@@ -534,18 +534,18 @@ Wait for Traefik to become ready before continuing
 === Exposing ports
 
 {productname} requires some TCP and UDP ports to be routed to its services.
-Refer to the [literal]``server-helm`` README for the list of ports to be exposed.
+Refer to the `server-helm` README for the list of ports to be exposed.
 
 [NOTE]
 ====
-The [literal]``server-helm`` chart supports Gateway API version 1.4.
+The `server-helm` chart supports Gateway API version 1.4.
 Since this requires experimental CRDs which are not shipped with RKE2 by default, it is not recommended for production use.
 ====
 
 There are multiple ways to expose the ports, but this documentation will only cover how to configure RKE2's Traefik for this.
 This is a task for the {kube} cluster administrator, not the {productname} administrator.
 
-To set Traefik to expose and route the needed ports, create [filename]``/var/lib/rancher/rke2/server/manifests/uyuni-traefik.yaml`` on RKE2 server node (control plane node) with the following content.
+To set Traefik to expose and route the needed ports, create `/var/lib/rancher/rke2/server/manifests/uyuni-traefik.yaml` on RKE2 server node (control plane node) with the following content.
 Agent (worker) nodes do not have this directory and do not need the file.
 Traefik takes a few seconds to be reconfigured after the file is saved.
 
@@ -559,14 +559,6 @@ metadata:
 spec:
   valuesContent: |-
     ports:
-      reportdb-pgsql:
-        port: 5432
-        expose:
-          default: true
-        exposedPort: 5432
-        protocol: TCP
-        hostPort: 5432
-        containerPort: 5432
       salt-publish:
         port: 4505
         expose:
@@ -592,16 +584,26 @@ This means that there are only two possible ways to use the TFTP server:
 
 * using a load balancer compatible with TFTP,
 
-* using the host network for the TFTP pod. This can be achieved by setting the [literal]``tftp.hostNetwork`` helm chart value to [literal]``true``.
+* using the host network for the TFTP pod. This can be achieved by setting the `tftp.hostNetwork` helm chart value to `true`.
+
+[IMPORTANT]
+====
+Exposing the report database externally requires configuring the [literal]``reportdb`` service as a [literal]``NodePort`` or [literal]``LoadBalancer`` (via the [literal]``services.reportdb`` value).
+
+Be aware of a critical security behavior: external database connections require SSL, whereas internal cluster connections do not.
+However, Traefik ingress TCP routes mask client IPs, causing PostgreSQL to view external traffic as internal.
+
+If you expose the database using a Traefik ingress TCP route and endpoint, you risk allowing clients to establish unencrypted, insecure connections.
+====
 
 [[security-framework-setup]]
 === Security framework setup
 
-The main container of the server runs [command]``systemd``, which requires elevated privileges that the default {kube} security profiles do not allow.
+The main container of the server runs `systemd`, which requires elevated privileges that the default {kube} security profiles do not allow.
 There are two ways to handle this:
 
 Super-privileged mode::
-Set the [literal]``server.superPrivileged`` helm value to [literal]``true``.
+Set the `server.superPrivileged` helm value to `true`.
 This disables all Linux security module enforcement (SELinux, AppArmor) for the container and grants it broad host access.
 +
 [WARNING]
@@ -611,12 +613,12 @@ Use it only for testing and development, not for production deployments.
 ====
 
 Custom AppArmor or SELinux profile (recommended for production)::
-Create a custom policy or profile that grants only the specific permissions [command]``systemd`` requires.
+Create a custom policy or profile that grants only the specific permissions `systemd` requires.
 This maintains security module enforcement while allowing the container to function correctly.
 
 ==== AppArmor
 
-Obtain the profile content from the [literal]``server-helm`` chart README, which includes a ready-to-use profile named [literal]``k8s-systemd-uyuni``.
+Obtain the profile content from the `server-helm` chart README, which includes a ready-to-use profile named `k8s-systemd-uyuni`.
 Deploy it on each cluster node, then load it:
 
 [source,shell]
@@ -635,7 +637,7 @@ server:
 
 ==== SELinux
 
-Obtain the policy file ([filename]``systemdcontainerpolicy.te``) from the [literal]``server-helm`` chart README.
+Obtain the policy file (`systemdcontainerpolicy.te`) from the `server-helm` chart README.
 Copy it to each cluster node, then compile and install it:
 
 [source,shell]
@@ -645,7 +647,7 @@ semodule_package -o systemdcontainerpolicy.pp -m systemdcontainerpolicy.mod
 semodule -i systemdcontainerpolicy.pp
 ----
 
-Then configure the custom SELinux type in the helm values (using [literal]``uyuni_container_t`` if using the recommended policy from the README):
+Then configure the custom SELinux type in the helm values (using `uyuni_container_t` if using the recommended policy from the README):
 
 [source,yaml]
 ----
@@ -656,8 +658,8 @@ server:
 
 == Installation
 
-The [literal]``server-helm`` chart requires one value to be set: [literal]``global.fqdn``.
-The other values have sensible defaults, refer to the [literal]``server-helm`` chart README for more details on those.
+The `server-helm` chart requires one value to be set: `global.fqdn`.
+The other values have sensible defaults, refer to the `server-helm` chart README for more details on those.
 
 The server can be installed with a command like the following:
 
@@ -686,14 +688,14 @@ helm install uyuni-server \
 ----
 endif::[]
 
-When setting multiple values, using a YAML values file is recommended instead of passing several [literal]``--set`` parameters.
-Refer to the [command]``helm`` command help for more details.
+When setting multiple values, using a YAML values file is recommended instead of passing several `--set` parameters.
+Refer to the `helm` command help for more details.
 
 
 
 == Verifying the installation
 
-After running [command]``helm install``, the server pod starts [command]``systemd`` and multiple services inside it.
+After running `helm install`, the server pod starts `systemd` and multiple services inside it.
 This takes longer than a typical container startup — allow a few minutes before expecting the pod to be fully ready.
 
 Watch the pods come up:
@@ -703,8 +705,8 @@ Watch the pods come up:
 kubectl get pods -n uyuni-server -w
 ----
 
-All pods should eventually reach [literal]``Running`` status with all containers ready.
-If a pod is stuck in [literal]``Pending``, [literal]``CrashLoopBackOff``, or [literal]``Error``, check its events:
+All pods should eventually reach `Running` status with all containers ready.
+If a pod is stuck in `Pending`, `CrashLoopBackOff`, or `Error`, check its events:
 
 [source,shell]
 ----
@@ -712,10 +714,10 @@ kubectl describe pod -n uyuni-server <POD_NAME>
 kubectl logs -n uyuni-server <POD_NAME>
 ----
 
-Once all pods are ready, open a browser and navigate to [literal]``https://<your-fqdn>``.
+Once all pods are ready, open a browser and navigate to https://`<your-fqdn>`.
 The {productname} setup wizard should appear.
 
-To get a terminal inside the server container (equivalent to [command]``mgrctl term`` used elsewhere in the documentation):
+To get a terminal inside the server container (equivalent to `mgrctl term` used elsewhere in the documentation):
 
 [source, Shell]
 ----
@@ -727,8 +729,8 @@ kubectl exec -ti -n uyuni-server $SERVER_POD -- bash
 [[example-helm-charts]]
 == Example helm charts
 
-Some helm charts using the [literal]``server-helm`` chart can be found in the [literal]``{gitchartsbranch}`` branch of the https://github.com/uyuni-project/uyuni-charts/tree/{gitchartsbranch}[uyuni-charts] git repository.
-They showcase how the TLS certificates can be generated using [literal]``cert-manager`` and [literal]``trust-manager``.
+Some helm charts using the `server-helm` chart can be found in the `{gitchartsbranch}` branch of the https://github.com/uyuni-project/uyuni-charts/tree/{gitchartsbranch}[uyuni-charts] git repository.
+They showcase how the TLS certificates can be generated using `cert-manager` and `trust-manager`.
 Those examples may assume to have {kube} cluster administrator permissions.
 
 ifeval::[{mlm-content} == true]
@@ -760,7 +762,7 @@ kubectl get events -n uyuni-server --sort-by='.lastTimestamp'
 
 === Pod stuck in Pending
 
-A pod stays in [literal]``Pending`` when it cannot be scheduled.
+A pod stays in `Pending` when it cannot be scheduled.
 The most common cause is an unbound PVC — the storage class has not provisioned a volume yet.
 
 [source,shell]
@@ -773,7 +775,7 @@ Check that the storage class exists and is available, and that the PVC size does
 
 === Pod in CrashLoopBackOff
 
-A pod that crashes immediately after starting is often caused by a missing secret or a security profile blocking [command]``systemd``.
+A pod that crashes immediately after starting is often caused by a missing secret or a security profile blocking `systemd`.
 
 Check the pod logs:
 
@@ -803,7 +805,7 @@ Verify the Ingress resource was created:
 kubectl get ingress -n uyuni-server
 ----
 
-Check that the FQDN in the Ingress matches the value passed to [literal]``global.fqdn`` during installation, and that DNS resolves to the cluster.
+Check that the FQDN in the Ingress matches the value passed to `global.fqdn` during installation, and that DNS resolves to the cluster.
 Also confirm that the Traefik configuration was applied on the RKE2 server nodes as described in <<exposing-ports>>.
 
 === 502 Bad Gateway
@@ -812,7 +814,7 @@ A 502 Bad Gateway error means Traefik received the request but could not reach a
 There are several possible causes.
 
 *The server pod is still starting up.*
-The main container runs [command]``systemd`` and takes several minutes to become fully ready.
+The main container runs `systemd` and takes several minutes to become fully ready.
 A 502 during this window is normal — wait for all containers to report ready before investigating further:
 
 [source,shell]
@@ -821,14 +823,14 @@ kubectl get pods -n uyuni-server -w
 ----
 
 *Traefik is not routing to the correct service.*
-Verify that the Ingress resource exists and that its [literal]``ingressClassName`` is [literal]``traefik``:
+Verify that the Ingress resource exists and that its `ingressClassName` is `traefik`:
 
 [source,shell]
 ----
 kubectl get ingress -n uyuni-server -o yaml
 ----
 
-If the [literal]``ingressClassName`` does not match the IngressClass created by the Traefik Helm release, Traefik silently ignores the rule.
+If the `ingressClassName` does not match the IngressClass created by the Traefik Helm release, Traefik silently ignores the rule.
 See <<installing-traefik>> for the correct naming requirement.
 
 *Firewalld is blocking traffic between internal cluster networks.*
@@ -851,15 +853,15 @@ If the cluster was configured with custom pod or service CIDRs, use those instea
 ifeval::[{mlm-content} == true]
 === Image pull errors
 
-If pods fail with [literal]``ImagePullBackOff``, the SCC credentials secret is missing or incorrect.
+If pods fail with `ImagePullBackOff`, the SCC credentials secret is missing or incorrect.
 
 [source,shell]
 ----
 kubectl describe pod -n uyuni-server <POD_NAME>
 ----
 
-Look for [literal]``unauthorized`` or [literal]``authentication required`` in the events.
-Verify the secret exists and was created with the correct mirroring credentials (see <<credentials>>), and that [literal]``registrySecret`` in the helm values matches the secret name.
+Look for `unauthorized` or `authentication required` in the events.
+Verify the secret exists and was created with the correct mirroring credentials (see <<credentials>>), and that `registrySecret` in the helm values matches the secret name.
 endif::[]
 
 === Salt minions cannot connect
