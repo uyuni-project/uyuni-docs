@@ -1,0 +1,82 @@
+[[workflow-customize-security-policies]]
+= Customize security policies on the server
+:revdate: 2020-06-24
+:page-revdate: {revdate}
+
+The default allowed security algorithms on the server may contain weak ones.
+This workflow shows you how to apply the same policies in the {productname} server container than on the container host on podman.
+
+
+This workflow shows you how to restrict the use of weak security algorithms inside the {productname} server container by mounting the host's cryptographic policies.
+
+This approach uses a systemd drop-in file to cleanly handle the volume mount via Podman at startup, ensuring consistency across container Lifecycles.
+
+
+== Use Case
+
+This workflow is beneficial when:
+
+* You need to comply with strict security hardening standards by disabling weak cryptographic algorithms.
+* You want to centralize policy management so that host-level crypto changes automatically apply to the container.
+
+== Outcome
+
+After completing this workflow, the host's [path]``/etc/crypto-policies`` directory will be mounted read-only into the server container every time it starts, enforcing your required security baselines.
+
+
+== Preparation
+
+Before you start, you should have:
+
+* Root access to the {productname} Server host.
+* The desired cryptographic policies already configured and tested on the host system using the [command]``crypto-policies`` package and it [command]``update-crypto-policies``.
+
+
+
+== Step-by-step Workflow Instructions
+
+[IMPORTANT]
+====
+Do not modify the systemd service file directly.
+Always use a drop-in configuration file in the `.service.d` directory to ensure modifications are preserved during system updates.
+====
+
+.Procedure: Creating a systemd drop-in for crypto policy volume mounting
+[role=procedure]
+____
+. Open a terminal on your {productname} Server host as the `root` user.
+
+
+. Create or edit the drop-in configuration file named `custom.conf`:
++
+[source,shell]
+----
+vi /etc/systemd/system/uyuni-server.service.d/custom.conf
+----
+
+. Add the following configuration block to inject the read-only volume mount parameter into Podman:
++
+----
+[Service]
+Environment="PODMAN_EXTRA_ARG=--volume /etc/crypto-policies:/etc/crypto-policies:ro"
+----
+
+. Reload the systemd manager configuration to apply the new drop-in file:
++
+[source,shell]
+----
+systemctl daemon-reload
+----
+
+. Restart the {productname} services to recreate the container with the newly defined volume mount:
++
+[source,shell]
+----
+mgradm restart
+----
+
+
+
+== Related Topics 
+
+* For more information on crypto policies, see [command]``man 7 crypto-policies``.

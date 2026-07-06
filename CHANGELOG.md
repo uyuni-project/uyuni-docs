@@ -1,3 +1,4 @@
+- Added a common workflow to setup crypto policies in the server container (bsc#1253505)
 - Added procedure for allowing uploading of large files to Specialized
   Guides (bsc#1268673)
 - Enhanced Prometheus formula with command to generate password hash in
