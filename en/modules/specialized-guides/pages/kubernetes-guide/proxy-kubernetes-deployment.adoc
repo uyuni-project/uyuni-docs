@@ -7,7 +7,7 @@
 
 There were multiple changes in how to install {productname} proxies running on {kube}:
 
-* [command]``mgrpxy`` is no longer handling proxies on {kube}, helm and the [literal]``proxy-helm`` chart need to be used instead.
+* `mgrpxy` is no longer handling proxies on {kube}, helm and the `proxy-helm` chart need to be used instead.
 
 * The TLS certificates have to be in secrets, rather than in the configuration tarball.
   This aims at allowing cloud-native TLS certificates management for the proxies.
@@ -28,8 +28,8 @@ Installing the {kube} cluster and configuring it is out of the scope of this doc
 
 The cluster is assumed to be ready to be used with a user having rights on a namespace dedicated to {productname}.
 
-Create [literal]``Role`` and [literal]``RoleBinding`` if they do not exist already. 
-The minimum rights required to deploy [literal]``proxy-helm`` are defined as:
+Create `Role` and `RoleBinding` if they do not exist already. 
+The minimum rights required to deploy `proxy-helm` are defined as:
 
 [source,yaml]
 ----
@@ -70,12 +70,12 @@ roleRef:
 This guide assumes the reader knows how to work with {kube}: the concepts will not be explained here as they are extensively documented in the official {kube} documentation.
 ====
 
-The {productname} administrator needs to deploy the [literal]``proxy-helm`` {helm} chart.
+The {productname} administrator needs to deploy the `proxy-helm` {helm} chart.
 However, this chart requires to prepare:
 
 * TLS certificates chain for the proxy,
 
-* a [literal]``ConfigMap`` for the proxy root CA certificate,
+* a `ConfigMap` for the proxy root CA certificate,
 
 * a persistent volumes  for the claim the chart will create or a storage class automatically creating it,
 
@@ -83,7 +83,7 @@ However, this chart requires to prepare:
 
 [NOTE]
 ====
-The TLS certificate and the root CA [literal]``ConfigMap`` are optional inputs: the [literal]``proxy-helm`` chart can create [literal]``proxy-cert`` and [literal]``uyuni-ca`` itself from the values carried in the configuration tarball.
+The TLS certificate and the root CA `ConfigMap` are optional inputs: the `proxy-helm` chart can create `proxy-cert` and `uyuni-ca` itself from the values carried in the configuration tarball.
 See the TLS setup section below for the trade-offs and the adoption procedure for pre-existing objects.
 ====
 
@@ -107,10 +107,10 @@ helm show readme --version {productchartversion} \
 [NOTE]
 ====
 Helm requires the version to be semver2 compatible when using OCI repositories.
-This is why the version ([literal]``{productchartversion}``) is formatted differently from the release number ([literal]``{productnumber}``).
+This is why the version (`{productchartversion}`) is formatted differently from the release number (`{productnumber}`).
 ====
 
-For older versions, the Helm chart is located in a snapshot repository like: [literal]``oci://registry.opensuse.org/systemsmanagement/uyuni/snapshots/<version>/opensuse_tumbleweed/uyuni/proxy-helm``.
+For older versions, the Helm chart is located in a snapshot repository like: `oci://registry.opensuse.org/systemsmanagement/uyuni/snapshots/<version>/opensuse_tumbleweed/uyuni/proxy-helm`.
 endif::[]
 
 
@@ -121,7 +121,7 @@ ifeval::[{mlm-content} == true]
 
 A secret with the SCC credentials needs to be defined in order to pull the images from `registry.suse.com`.
 Refer to https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ for the instructions to prepare the secret.
-Set the `registrySecret` [literal]``proxy-helm`` chart value to the name of the secret containing those credentials to use it.
+Set the `registrySecret` `proxy-helm` chart value to the name of the secret containing those credentials to use it.
 endif::[]
 
 
@@ -130,11 +130,11 @@ endif::[]
 
 The proxy needs the following objects in its namespace:
 
-* A TLS secret named [literal]``proxy-cert`` containing the proxy server certificate and key, with the public FQDN as Subject Alternate Name.
+* A TLS secret named `proxy-cert` containing the proxy server certificate and key, with the public FQDN as Subject Alternate Name.
 
-* A [literal]``ConfigMap`` named [literal]``uyuni-ca`` containing the root CA in the [literal]``ca.crt`` key.
+* A `ConfigMap` named `uyuni-ca` containing the root CA in the `ca.crt` key.
 
-In a cloud-native setup the certificates are typically managed externally (for example by [literal]``cert-manager``); create the objects beforehand:
+In a cloud-native setup the certificates are typically managed externally (for example by `cert-manager`); create the objects beforehand:
 
 [source, Shell]
 ----
@@ -145,22 +145,22 @@ kubectl create configmap uyuni-ca -n uyuni-proxy \
     --from-file=ca.crt=/path/to/uyuni-ca.crt
 ----
 
-The certificate file passed to [command]``kubectl create secret tls`` needs to start with the server certificate followed by the chain of intermediary CA certificates if any.
-The root CA is not needed in this secret as it is expected in the [literal]``uyuni-ca`` [literal]``ConfigMap``.
+The certificate file passed to `kubectl create secret tls` needs to start with the server certificate followed by the chain of intermediary CA certificates if any.
+The root CA is not needed in this secret as it is expected in the `uyuni-ca` `ConfigMap`.
 
 [NOTE]
 ====
-Both objects can also be created by the [literal]``proxy-helm`` chart itself from the values in the configuration tarball, with no manual [command]``kubectl create`` step:
+Both objects can also be created by the `proxy-helm` chart itself from the values in the configuration tarball, with no manual `kubectl create` step:
 
-* [literal]``proxy-cert`` is rendered from the [literal]``server_crt`` and [literal]``server_key`` fields of [literal]``httpd.yaml``.
+* `proxy-cert` is rendered from the `server_crt` and `server_key` fields of `httpd.yaml`.
 
-* [literal]``uyuni-ca`` is rendered from the [literal]``ca_crt`` field of [literal]``config.yaml``.
+* `uyuni-ca` is rendered from the `ca_crt` field of `config.yaml`.
 
 This requires the configuration tarball to actually contain those fields.
-If the proxy configuration was generated with the SSL part skipped (for example via the [guimenu]``SSL certificate`` selection list in the {webui}, or with [command]``spacecmd proxy_container_config_nossl``), the tarball carries no certificates and the auto-render path produces nothing — [literal]``proxy-cert`` and [literal]``uyuni-ca`` must then be created manually as shown above.
+If the proxy configuration was generated with the SSL part skipped (for example via the `SSL certificate` selection list in the {webui}, or with `spacecmd proxy_container_config_nossl`), the tarball carries no certificates and the auto-render path produces nothing — `proxy-cert` and `uyuni-ca` must then be created manually as shown above.
 
-When [literal]``proxy-cert`` or [literal]``uyuni-ca`` already exist in the namespace (created manually or by a previous tool), the chart leaves them alone and the proxy uses the values already present.
-To switch a pre-existing object over to helm management from the tarball values, set the [literal]``cert.takeOwnership`` chart value to [literal]``true`` and pass [command]``helm install --take-ownership`` ({helm} 3.14+) once:
+When `proxy-cert` or `uyuni-ca` already exist in the namespace (created manually or by a previous tool), the chart leaves them alone and the proxy uses the values already present.
+To switch a pre-existing object over to helm management from the tarball values, set the `cert.takeOwnership` chart value to `true` and pass `helm install --take-ownership` ({helm} 3.14+) once:
 
 [source, Shell, subs="attributes"]
 ----
@@ -170,9 +170,9 @@ helm upgrade --install uyuni-proxy \
     ...
 ----
 
-The toggle is required because the default skip-if-exists behavior leaves nothing for [command]``--take-ownership`` to adopt.
-After adoption the objects carry the helm [literal]``managed-by`` label and the chart treats them as helm-managed: value changes are applied on subsequent upgrades, and they are removed on [command]``helm uninstall`` like any other chart resource.
-On later upgrades [literal]``cert.takeOwnership`` can be left at [literal]``true`` or dropped back to [literal]``false`` — the default render condition already covers helm-managed objects.
+The toggle is required because the default skip-if-exists behavior leaves nothing for `--take-ownership` to adopt.
+After adoption the objects carry the helm `managed-by` label and the chart treats them as helm-managed: value changes are applied on subsequent upgrades, and they are removed on `helm uninstall` like any other chart resource.
+On later upgrades `cert.takeOwnership` can be left at `true` or dropped back to `false` — the default render condition already covers helm-managed objects.
 ====
 
 
@@ -185,27 +185,27 @@ The proxy chart defines a volume as a Persistent Volume Claim (PVC).
 ====
 * The creation of the underlying PV is the responsibility of the cluster administrators.
 
-* The PVC use the [literal]``ReadWriteOnce`` access mode.
+* The PVC use the `ReadWriteOnce` access mode.
 ====
 
 The created PVC can be tuned {helm} chart values, it can have the following values:
 
-* [literal]``size``: to set the requested size of the PVC.
+* `size`: to set the requested size of the PVC.
 
-* [literal]``storageClass``: can be used to select the storage class to use for the PVC.
+* `storageClass`: can be used to select the storage class to use for the PVC.
 
-* [literal]``extraLabels``: can be used to add custom labels to the PVC.
+* `extraLabels`: can be used to add custom labels to the PVC.
 
-* [literal]``annotations``: can be used to set custom annotations on the PVC.
+* `annotations`: can be used to set custom annotations on the PVC.
 
-* [literal]``volumeName``: can be used to hard code which volume the PVC should be bound to.
+* `volumeName`: can be used to hard code which volume the PVC should be bound to.
 
-* [literal]``selector``: is the YAML fragment of the PVC selector to use to find the PV to bind to.
+* `selector`: is the YAML fragment of the PVC selector to use to find the PV to bind to.
 
 Refer to https://kubernetes.io/docs/concepts/storage/persistent-volumes/ for more information on persistent volumes and their claims.
 
 
-Refer to the [literal]``proxy-helm`` README for the list of persistent volume claims which will be created and will need to be bound to persistent volumes.
+Refer to the `proxy-helm` README for the list of persistent volume claims which will be created and will need to be bound to persistent volumes.
 
 
 [IMPORTANT]
@@ -220,12 +220,12 @@ For more information on storage requirements see xref:installation-and-upgrade:g
 === Exposing ports
 
 {productname} proxy requires some TCP and UDP ports to be routed to its services.
-Refer to the [literal]``proxy-helm`` README for the list of ports to be exposed.
+Refer to the `proxy-helm` README for the list of ports to be exposed.
 
 [WARNING]
 ====
 RKE2 ships with nginx as the default ingress controller.
-However, as this is deprecated and soon to be unsupported, the [literal]``proxy-helm`` chart defaults to use Traefik as ingress controller.
+However, as this is deprecated and soon to be unsupported, the `proxy-helm` chart defaults to use Traefik as ingress controller.
 Using the nginx ingress controller might work and will not be documented, use at your own risk.
 
 K3S ships Traefik by default, so no controller swap is needed.
@@ -233,7 +233,7 @@ K3S ships Traefik by default, so no controller swap is needed.
 
 [NOTE]
 ====
-The [literal]``proxy-helm`` chart supports Gateway API version 1.4.
+The `proxy-helm` chart supports Gateway API version 1.4.
 Since this requires experimental CRDs which are not shipped with RKE2 1.35 or the bundled K3S Traefik, it is not recommended to be used in production.
 ====
 
@@ -242,7 +242,7 @@ This is not a task for the {productname} administrator, but the {kube} cluster a
 
 ==== On RKE2
 
-Create [literal]``/var/lib/rancher/rke2/server/manifests/uyuni-traefik.yaml`` on each node with the following content.
+Create `/var/lib/rancher/rke2/server/manifests/uyuni-traefik.yaml` on each node with the following content.
 Note that Traefik takes a few seconds to be reinstalled after saving the file.
 
 [source,yaml]
@@ -282,8 +282,8 @@ spec:
 
 ==== On K3S
 
-K3S ships Traefik in the [literal]``kube-system`` namespace. Create [literal]``/var/lib/rancher/k3s/server/manifests/uyuni-traefik.yaml`` on each node with the following content.
-The [literal]``HelmChartConfig`` name is [literal]``traefik`` and [literal]``hostPort``/[literal]``containerPort`` are not required:
+K3S ships Traefik in the `kube-system` namespace. Create `/var/lib/rancher/k3s/server/manifests/uyuni-traefik.yaml` on each node with the following content.
+The `HelmChartConfig` name is `traefik` and `hostPort`/`containerPort` are not required:
 
 [source,yaml]
 ----
@@ -317,21 +317,21 @@ spec:
 
 [NOTE]
 ====
-On a vanilla K3S install, the bundled Traefik picks up every [literal]``Ingress`` regardless of class.
-Set [literal]``ingress.class: ""`` in the [literal]``proxy-helm`` values so the chart does not emit a class annotation that would be ignored.
-If the Traefik install is customized to filter by class (for example via [literal]``--providers.kubernetescrd.ingressclass=traefik``), keep [literal]``ingress.class: "traefik"``.
+On a vanilla K3S install, the bundled Traefik picks up every `Ingress` regardless of class.
+Set `ingress.class: ""` in the `proxy-helm` values so the chart does not emit a class annotation that would be ignored.
+If the Traefik install is customized to filter by class (for example via `--providers.kubernetescrd.ingressclass=traefik`), keep `ingress.class: "traefik"`.
 ====
 
 [NOTE]
 ====
-K3S's built-in load balancer ([literal]``klipper-lb`` / [literal]``serviceLB``) does not support the TFTP protocol.
-Expose TFTP via the host network instead by setting [literal]``tftp.hostNetwork: true`` in the chart values.
+K3S's built-in load balancer (`klipper-lb` / `serviceLB`) does not support the TFTP protocol.
+Expose TFTP via the host network instead by setting `tftp.hostNetwork: true` in the chart values.
 ====
 
 [NOTE]
 ====
-The Traefik entryPoint names ([literal]``ssh``, [literal]``salt-publish`` and [literal]``salt-request``) must match the [literal]``ingress.entryPoints`` values configured in the [literal]``proxy-helm`` chart (the names above are the chart defaults).
-If the surrounding Traefik installation uses different entryPoint names, override the chart defaults via the [literal]``ingress.entryPoints`` value:
+The Traefik entryPoint names (`ssh`, `salt-publish` and `salt-request`) must match the `ingress.entryPoints` values configured in the `proxy-helm` chart (the names above are the chart defaults).
+If the surrounding Traefik installation uses different entryPoint names, override the chart defaults via the `ingress.entryPoints` value:
 
 [source,yaml]
 ----
@@ -368,16 +368,16 @@ This means that there are only two possible ways to use the TFTP server:
 
 * using a load balancer compatible with TFTP,
 
-* using the host network for the TFTP pod. This can be achieved by setting the [literal]``tftp.hostNetwork`` helm chart value to [literal]``true``.
+* using the host network for the TFTP pod. This can be achieved by setting the `tftp.hostNetwork` helm chart value to `true`.
 
 
 
 === DNS configuration
 
-The [literal]``dnsConfig`` chart value is a passthrough to the pod's https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config[Kubernetes [literal]``PodDNSConfig``].
+The `dnsConfig` chart value is a passthrough to the pod's https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config[Kubernetes `PodDNSConfig`].
 It is unset by default so the pod inherits the cluster's normal DNS behavior.
 
-If external FQDN lookups from the proxy hang for around 10 seconds (the default [literal]``urlopen`` timeout), the cluster's default [literal]``ndots:5`` is likely expanding the name through several cluster search domains before falling back to the bare lookup.
+If external FQDN lookups from the proxy hang for around 10 seconds (the default `urlopen` timeout), the cluster's default `ndots:5` is likely expanding the name through several cluster search domains before falling back to the bare lookup.
 Override with:
 
 [source,yaml]
@@ -399,7 +399,7 @@ include::installation-and-upgrade:partial$snippet-generate_proxy_config.adoc[tag
 endif::[]
 
 ifdef::backend-pdf[]
-include::../../../partials/snippet-generate_proxy_config.adoc[tags=generate-proxy-config-section]
+include::../../../installation-and-upgrade/partials/snippet-generate_proxy_config.adoc[tags=generate-proxy-config-section]
 endif::[]
 
 
@@ -407,7 +407,7 @@ endif::[]
 [[installation-proxy-containers-kube-deploy]]
 == Deploying the {productname} Proxy Helm Chart
 
-Copy and extract the generated configuration [literal]``tar.gz`` file and then install using helm.
+Copy and extract the generated configuration `tar.gz` file and then install using helm:
 
 ifeval::[{mlm-content} == true]
 The [literal]``proxy-helm`` chart requires the [literal]``repository`` value to be set.
@@ -445,15 +445,15 @@ helm install uyuni-proxy \
 ----
 endif::[]
 
-When setting multiple values, using a YAML values file is recommended instead of passing several [literal]``--set`` parameters.
-Refer to the [command]``helm`` command help for more details.
+When setting multiple values, using a YAML values file is recommended instead of passing several `--set` parameters.
+Refer to the `helm` command help for more details.
 
 
 
 == Example helm charts
 
-Some helm charts using the [literal]``proxy-helm`` chart can be found in the [literal]``{gitchartsbranch}`` branch of the https://github.com/uyuni-project/uyuni-charts/tree/{gitchartsbranch}[uyuni-charts] git repository.
-They show case how the TLS certificate can be generated using [literal]``cert-manager`` and [literal]``trust-manager``.
+Some helm charts using the `proxy-helm` chart can be found in the `{gitchartsbranch}` branch of the https://github.com/uyuni-project/uyuni-charts/tree/{gitchartsbranch}[uyuni-charts] git repository.
+They show case how the TLS certificate can be generated using `cert-manager` and `trust-manager`.
 Those examples may assume to have {kube} cluster administrator permissions.
 
 ifeval::[{mlm-content} == true]
