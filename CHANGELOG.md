@@ -1,5 +1,13 @@
 - Added procedure for allowing uploading of large files to Specialized
   Guides (bsc#1268673)
+- Enhanced Prometheus formula with command to generate password hash in
+  Specialized Guides (bsc#1268570)
+- Document Ansible Playbook variable editing (bsc#1260396)
+- Convert broken `[role]``text`` double-backtick literals in `en/modules`
+  to standard single-backtick literals for Weblate AI translation
+  compatibility
+- Document use_bundle_build custom info key for KIWI builds (bsc#1243168)
+- Updated SSO / SAML integration with Keycloak in Administration Guide (bsc#1261195)
 - Move Prometheus as the first section in Monitoring Formulas
 - Add information about optional TLS Grafana configuration (bsc#1268567)
 - Reorganized the documentation around reporting database
