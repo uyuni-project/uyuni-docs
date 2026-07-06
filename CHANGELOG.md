@@ -1,3 +1,4 @@
+- Document the repository value for helm charts on MLM (bsc#1269667)
 - Removed unsupported {raspberrypios} 12 from Client Configuration Guide
 - Added a common workflow to setup crypto policies in the server container (bsc#1253505)
 - Document Ansible Playbook variable editing (bsc#1260396)
