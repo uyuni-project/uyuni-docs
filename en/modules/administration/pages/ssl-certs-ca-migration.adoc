@@ -3,22 +3,22 @@
 :revdate: 2026-06-24
 :page-revdate: {revdate}
 
-Use this procedure to replace the root certificate authority (CA) of a {productname} server, for example to replace an older self-signed CA that does not mark the [literal]``X509v3 Basic Constraints`` extension as [literal]``critical``.
+Use this procedure to replace the root certificate authority (CA) of a {productname} server, for example to replace an older self-signed CA that does not mark the `X509v3 Basic Constraints` extension as `critical`.
 For more information, see xref:administration:ssl-certs-imported.adoc#ssl-certs-verify-ca-basic-constraints[].
 
 ifeval::[{uyuni-content} == true]
 [NOTE]
 ====
-Python 3.13 and later (and probably other SSL clients) validates certificates strictly and rejects any CA certificate that does not mark the [literal]``X509v3 Basic Constraints`` extension as [literal]``critical``.
+Python 3.13 and later (and probably other SSL clients) validates certificates strictly and rejects any CA certificate that does not mark the `X509v3 Basic Constraints` extension as `critical`.
 ====
 endif::[]
 
-On Podman installations, the [command]``mgradm ssl`` commands help perform the rotation.
+On Podman installations, the `mgradm ssl` commands help perform the rotation.
 They generate or import the new CA, update the server and database secrets, and restart the services.
 
 .The migration is done in two phases:
-. With [command]``mgradm ssl addca``, you add the new CA to the trusted bundle so that both the old and new CA are trusted, and distribute it to all clients and proxies.
-. After all clients and proxies trust the new CA, [command]``mgradm ssl rotate`` switches the server to a certificate signed by the new CA and drops the old one.
+. With `mgradm ssl addca`, you add the new CA to the trusted bundle so that both the old and new CA are trusted, and distribute it to all clients and proxies.
+. After all clients and proxies trust the new CA, `mgradm ssl rotate` switches the server to a certificate signed by the new CA and drops the old one.
 
 Also consider any machine that is not managed by the server but still accesses it through the API or a browser, as it needs the new CA too.
 These machines are not detected by the trust check in xref:ssl-certs-ca-migration.adoc#ssl-certs-ca-migration-verify-trust[], so track and verify them yourself.
@@ -30,15 +30,15 @@ A client that does not trust the new CA can no longer connect, and you have to d
 ====
 
 The certificates are stored in Podman secrets, which the container reads at startup.
-The server CA bundle, certificate, and key are in [literal]``uyuni-ca``, [literal]``uyuni-cert``, and [literal]``uyuni-key``; the database equivalents are [literal]``uyuni-db-ca``, [literal]``uyuni-db-cert``, and [literal]``uyuni-db-key``.
-On {kube}, the root CAs are read from the [literal]``uyuni-ca`` and [literal]``db-ca`` config maps, while the certificates are read from the [literal]``uyuni-cert`` and [literal]``db-cert`` secrets.
-The [command]``mgradm ssl`` commands manage these secrets on Podman; on {kube}, you update the config maps and secrets manually as described below.
+The server CA bundle, certificate, and key are in `uyuni-ca`, `uyuni-cert`, and `uyuni-key`; the database equivalents are `uyuni-db-ca`, `uyuni-db-cert`, and `uyuni-db-key`.
+On {kube}, the root CAs are read from the `uyuni-ca` and `db-ca` config maps, while the certificates are read from the `uyuni-cert` and `db-cert` secrets.
+The `mgradm ssl` commands manage these secrets on Podman; on {kube}, you update the config maps and secrets manually as described below.
 
 [[ssl-certs-ca-migration-add]]
 == Add the New CA to the Trust Bundle
 
-On Podman, add the new CA with [command]``mgradm ssl addca``.
-The command generates a new self-signed root CA, or imports a third-party one, appends it to the [literal]``uyuni-ca`` and [literal]``uyuni-db-ca`` secrets without changing the served certificate, restarts the services, and prints the SHA-256 fingerprint of the new CA.
+On Podman, add the new CA with `mgradm ssl addca`.
+The command generates a new self-signed root CA, or imports a third-party one, appends it to the `uyuni-ca` and `uyuni-db-ca` secrets without changing the served certificate, restarts the services, and prints the SHA-256 fingerprint of the new CA.
 
 To generate a new self-signed CA, run the following command on the container host.
 Replace the subject values with the ones for your organization.
@@ -51,9 +51,9 @@ mgradm ssl addca --ssl-password CA_PASSWORD \
   --ssl-org ORGANIZATION --ssl-ou "ORGANIZATION UNIT"
 ----
 
-If [option]``--ssl-password`` is omitted, the command prompts for it.
+If `--ssl-password` is omitted, the command prompts for it.
 To use a third-party root CA instead, pass its certificate and any intermediate certificates in place of the generation options.
-Repeat [option]``--ssl-ca-intermediate`` for each intermediate CA:
+Repeat `--ssl-ca-intermediate` for each intermediate CA:
 
 [source,shell]
 ----
@@ -61,7 +61,7 @@ mgradm ssl addca --ssl-ca-root /root/new-ca.pem \
   --ssl-ca-intermediate /root/intermediate-ca.pem
 ----
 
-On {kube}, append the new root CA certificate to the [literal]``uyuni-ca`` and [literal]``db-ca`` config maps manually:
+On {kube}, append the new root CA certificate to the `uyuni-ca` and `db-ca` config maps manually:
 
 [source,shell]
 ----
@@ -73,14 +73,14 @@ kubectl patch -n uyuni-server configmap uyuni-ca --patch-file /dev/stdin  -o yam
 rm combined.crt
 ----
 
-You also need to run a similar command for [literal]``db-ca``.
+You also need to run a similar command for `db-ca`.
 
 Once the server trusts the new CA, distribute it to every client and proxy.
 Deploy the new CA to all Salt clients by applying the highstate, as described in xref:administration:ssl-certs-imported.adoc#ssl-certs-import-deploy-root-ca[].
 
 On each {productname} Proxy, make it trust the new CA without a full redeployment.
-The proxy reads its trusted CA from the [literal]``uyuni-ca`` Podman secret, so update that secret directly.
-After [command]``mgradm ssl addca``, the server publishes the combined CA bundle, which contains both the old and new root CAs, at [path]``http://SERVER_FQDN/pub/RHN-ORG-TRUSTED-SSL-CERT``.
+The proxy reads its trusted CA from the `uyuni-ca` Podman secret, so update that secret directly.
+After `mgradm ssl addca`, the server publishes the combined CA bundle, which contains both the old and new root CAs, at `http://SERVER_FQDN/pub/RHN-ORG-TRUSTED-SSL-CERT`.
 Download it on the proxy host, replace the secret, and restart the proxy:
 
 [source,shell]
@@ -96,7 +96,7 @@ Also make sure the new CA is deployed to any other machine that is not a reachab
 == Confirm the Clients Trust the New CA
 
 Before switching, confirm that the clients trust the new CA.
-On Podman, run [command]``mgradm ssl rotate --check-only`` to query the Salt minions and report which ones already trust the new CA and which do not, without performing the rotation:
+On Podman, run `mgradm ssl rotate --check-only` to query the Salt minions and report which ones already trust the new CA and which do not, without performing the rotation:
 
 [source,shell]
 ----
@@ -107,7 +107,7 @@ This check is best-effort: it only covers Salt minions that respond at the time 
 Offline minions and non-minion systems such as proxies running on {kube} or unmanaged machines are not covered and must be verified manually.
 
 To verify one of those manually, compare fingerprints.
-The [command]``mgradm ssl addca`` command already reported the SHA-256 fingerprint of the new CA.
+The `mgradm ssl addca` command already reported the SHA-256 fingerprint of the new CA.
 You can also recompute it from the new CA certificate.
 For a self-signed CA, read the staged certificate from the server:
 
@@ -117,9 +117,9 @@ mgrctl exec -- openssl x509 -in /root/ssl-build-rotation/RHN-ORG-TRUSTED-SSL-CER
   -noout -fingerprint -sha256
 ----
 
-For a third-party CA, run the same command against the root CA file you passed to [command]``mgradm ssl addca``.
+For a third-party CA, run the same command against the root CA file you passed to `mgradm ssl addca`.
 
-The client trust file [path]``/etc/pki/trust/anchors/RHN-ORG-TRUSTED-SSL-CERT`` contains several certificates.
+The client trust file `/etc/pki/trust/anchors/RHN-ORG-TRUSTED-SSL-CERT` contains several certificates.
 List the fingerprints of all of them on a client and confirm that the new CA fingerprint is present:
 
 [source,shell]
@@ -137,13 +137,13 @@ while openssl x509 -noout -fingerprint -sha256; do :; done < /etc/pki/trust/anch
 Only continue after all clients and proxies trust the new CA.
 ====
 
-On Podman, switch to the new CA with [command]``mgradm ssl rotate``.
-The command promotes the CA staged by [command]``mgradm ssl addca``, issues a new server certificate signed by it, replaces the server and database certificates, keys, and CA secrets, and restarts the services.
-Before switching, it checks over Salt that the clients trust the new CA and refuses to continue if some do not, unless you pass [option]``--force``.
-Like [command]``mgradm ssl rotate --check-only``, this check only covers Salt minions that respond, so an offline minion that does not report does not block the rotation; verify such minions manually beforehand.
+On Podman, switch to the new CA with `mgradm ssl rotate`.
+The command promotes the CA staged by `mgradm ssl addca`, issues a new server certificate signed by it, replaces the server and database certificates, keys, and CA secrets, and restarts the services.
+Before switching, it checks over Salt that the clients trust the new CA and refuses to continue if some do not, unless you pass `--force`.
+Like `mgradm ssl rotate --check-only`, this check only covers Salt minions that respond, so an offline minion that does not report does not block the rotation; verify such minions manually beforehand.
 
 For a self-signed CA, run the following command.
-Use the fully qualified domain name of your {productname} server, or allow it to be detected automatically, and repeat [option]``--ssl-cname`` for additional aliases:
+Use the fully qualified domain name of your {productname} server, or allow it to be detected automatically, and repeat `--ssl-cname` for additional aliases:
 
 [source,shell]
 ----
@@ -151,7 +151,7 @@ mgradm ssl rotate --ssl-password CA_PASSWORD
 ----
 
 To install a third-party server certificate signed by the new CA, provide the certificate, key, and root CA instead.
-The database reuses the server values unless you pass the matching [option]``--ssl-db-*`` options:
+The database reuses the server values unless you pass the matching `--ssl-db-*` options:
 
 [source,shell]
 ----
@@ -163,15 +163,15 @@ mgradm ssl rotate --ssl-ca-root /root/new-ca.pem \
 
 [NOTE]
 ====
-The [command]``mgradm ssl addca`` and [command]``mgradm ssl rotate`` commands are only available on Podman.
-On {kube}, replace the [literal]``uyuni-cert`` and [literal]``db-cert`` secrets with the new server certificate and key, update the [literal]``uyuni-ca`` and [literal]``db-ca`` config maps to contain only the new CA, then restart the server.
+The `mgradm ssl addca` and `mgradm ssl rotate` commands are only available on Podman.
+On {kube}, replace the `uyuni-cert` and `db-cert` secrets with the new server certificate and key, update the `uyuni-ca` and `db-ca` config maps to contain only the new CA, then restart the server.
 ====
 
 [[ssl-certs-ca-migration-emergency]]
 === Rotate a Compromised CA Immediately
 
 If the current CA is compromised, you cannot wait for the overlap period in which both the old and new CA are trusted.
-Pass [option]``--emergency`` to [command]``mgradm ssl rotate`` to generate a new CA together with a matching server certificate and drop the old CA in a single step, without the two-phase overlap:
+Pass `--emergency` to `mgradm ssl rotate` to generate a new CA together with a matching server certificate and drop the old CA in a single step, without the two-phase overlap:
 
 [source,shell]
 ----
@@ -187,7 +187,7 @@ After an emergency rotation, distribute the new CA to all clients and proxies as
 [[ssl-certs-ca-migration-update-proxies]]
 == Update Proxies
 
-In xref:ssl-certs-ca-migration.adoc#ssl-certs-ca-migration-add[], you already made each proxy trust the new CA by updating its [literal]``uyuni-ca`` Podman secret.
+In xref:ssl-certs-ca-migration.adoc#ssl-certs-ca-migration-add[], you already made each proxy trust the new CA by updating its `uyuni-ca` Podman secret.
 Now that the server uses a certificate signed by the new CA, every proxy also needs its own certificate signed by it.
 For each proxy, regenerate the proxy configuration and redeploy the proxy:
 
