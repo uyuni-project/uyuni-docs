@@ -1,3 +1,4 @@
+- Document Ansible Playbook variable editing (bsc#1260396)
 - Adjust to the new way to expose the report database (bsc#1270038)
 - Convert broken `[role]``text`` double-backtick literals in `en/modules`
   to standard single-backtick literals for Weblate AI translation
