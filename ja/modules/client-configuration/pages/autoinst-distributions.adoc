@@ -1,0 +1,215 @@
+[[autoinst-distributions]]
+= 自動インストール可能なディストリビューション
+:description: クライアントインストールのためにさまざまな方法で構成できる自動インストール可能なディストリビューションを作成します。
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+自動インストールプロセスは、インストールを開始するためにいくつかのファイルに依存しています。
+これらのファイルには、Linuxカーネル、初期RAMディスク、およびインストールモードでオペレーティングシステムを起動するために必要なその他のファイルが含まれます。
+
+{productname}は、`mgradm`ツールを使用して、ソースからサーバーコンテナにインストールファイルをコピーします。
+
+必要なファイルをDVDイメージから抽出できます。
+詳細については、xref:client-configuration:autoinst-distributions.adoc#based-on-iso-image[ISOイメージに基づくディストリビューション]を参照してください。
+
+あるいは、`tftpboot-installation`パッケージをインストールすることもできます。
+詳細については、xref:client-configuration:autoinst-distributions.adoc#based-on-rpm-package[RPMパッケージに基づくディストリビューション]を参照してください。
+
+これらのファイルと同じオペレーティングシステムバージョン用に、{productname}サーバでベースチャンネルを同期させておく必要があります。
+
+ファイルの準備が整い、ベースチャンネルが同期されたら、ディストリビューションを宣言する必要があります。
+この操作は、インストールファイルをベースチャンネルに関連付けます。
+ディストリビューションは、1つ以上のインストールプロファイルによって参照されることができます。
+詳細については、xref:client-configuration:autoinst-distributions.adoc#declare-distribution[自動インストール可能なディストリビューションを宣言する]を参照してください。
+
+
+
+[[based-on-iso-image]]
+== ISOイメージに基づくディストリビューション
+
+
+この方法は、クライアントにインストールしたいオペレーティングシステムのインストールメディアがあることを前提としています。
+通常、これは、DVD `.iso`イメージであり、Linuxカーネル、`initrd`ファイル、およびインストールモードでオペレーティングシステムを起動するために必要なその他のファイルが含まれています。
+
+
+
+.プロシージャ:インストールメディアからのファイルのインポート
+. `mgradm`を使用してISOイメージからインストールデータをインポートします:
++
+----
+# mgradm distribution copy <image_name>.iso <image_name>
+----
++
+. `mgradm`によって報告されたディストリビューションパスをメモしてください。
+  ディストリビューションを{productname}に宣言する際に必要になります。
+
+
+
+=== ディストリビューションの自動検出と登録
+
+`mgradm`は、ディストリビューション名を自動的に検出し、サーバーに登録することができます。
+提供されたISOイメージには、`.treeinfo`ファイルが含まれている必要があります。
+
+.プロシージャ:自動検出と登録を使用してディストリビューションファイルをインポートします。
+. `mgradm`を使用します:
++
+----
+# mgradm distribution copy --api-user <username> --api-password <password> <image_name>.iso
+----
+
+
+[[based-on-rpm-package]]
+== RPMパッケージに基づくディストリビューション
+
+この方法は、{suse}システムで動作します。
+インストールシステム用にあらかじめパッケージされたファイルを使用するため、インストールメディアからコンテンツをインポートするよりも簡単です。
+
+
+
+.プロシージャ:インストールパッケージからファイルを抽出する。
+. {productname}サーバーで、`tftpboot-installation`で始まる名前のパッケージをインストールします。
+  コマンド`zypper se tftpboot-installation`を使用して、その正確な名前を確認できます。
+. 次のコマンドを使用して別のルートにパッケージをインストールし、再起動しなくても済むようにすることができます。
++
+----
+# mkdir /opt/tftpinstall
+# zypper --installroot /opt/tftpinstall install tftpboot-installation-SLE-Micro-5.5-x86_64
+----
+. コマンド`ls -d /opt/tftpinstall/usr/share/tftpboot-installation/*`を使用してインストールファイルを見つけます。
+. `mgradm`を使用してインストールファイルをコピーします。
++
+----
+# mgradm distribution copy /opt/tftpinstall/usr/share/tftpboot-installation/SLE-Micro-5.5-x86_64 SLE-Micro-5.5-x86_64
+----
+. `mgradm`ツールによって報告されたディストリビューションパスをメモしておきます。
+  ディストリビューションを{productname}に宣言する際に必要になります。
+. `mgradm`ツールが終了したら、`/opt/tftpinstall`ディレクトリを削除してください。
+
+この手順は、{productname}サーバーを動かしているのと同じオペレーティングシステムのバージョンのインストールを準備します。
+クライアントに異なるオペレーティングシステムまたはバージョンをインストールしたい場合は、所属するディストリビューションからパッケージ`tftpboot-installation-*`を手動で取得する必要があります。
+`Package Search`入力ボックス{productname}で、`tftpboot-installation`で始まる名前のパッケージを検索し、パッケージの詳細を確認します。
+それらには、`/var/spacewalk/`以下のローカルパスが表示されます。
+
+
+
+[[declare-distribution]]
+== 自動インストールのディストリビューションを宣言する
+
+自動インストールファイルを抽出した後の次の手順は、自動インストールのディストリビューションの宣言です。
+
+
+
+.プロシージャ:自動インストール可能なディストリビューションの宣言。
+. {productname} {webui}で、menu:システム[自動インストール> ディストリビューション]に移動します。
+. `Create Distribution`をクリックし、以下のフィールドに入力します。
++
+* `Distribution Label`フィールドに、自動インストール可能なディストリビューションを識別するための名前を入力します。
+* `Tree Path`フィールドに、{productname}サーバーに保存されているインストールメディアへのパスを入力します。
+* 一致する`Base Channel`を選択します。
+  このチャンネルはインストールメディアと一致する必要があります。
+* `Installer Generation`を選択します。
+  このチャンネルはインストールメディアと一致する必要があります。
+* オプション:このディストリビューションをブートするときに使用するカーネルオプションを指定します。
+  カーネルオプションを提供する方法はいくつかあります。
+  ここには、ディストリビューションに一般的なオプションのみを追加してください。
+. btn:[自動インストール可能なディストリビューションの作成]をクリックします。
+
+準備したインストールファイルには、必要なパッケージが含まれていない可能性があります。
+含まれていない場合は、`useonlinerepo=1`を`Kernel Options`フィールドに追加します。
+
+パッケージリポジトリには、署名されていないメタデータが含まれている場合があります。
+メタデータが署名されていない場合は、`insecure=1`を`Kernel Options`フィールドに追加するか、xref:client-configuration:autoinst-owngpgkey.adoc[Use Your Own GPG Key]で説明されているように独自のGPGキーを使用します。
+
+これらのカーネルオプションは、フルDVDの代わりに「オンラインインストーラ」ISOイメージを使用する場合や、`tpboot-installation`パッケージを使用する場合などに必要です。
+
+自動インストール可能なディストリビューションを管理するには、menu:システム[自動インストール> ディストリビューション]に移動します。
+
+ifeval::[{mlm-content} == true]
+[NOTE]
+====
+{productname}プロキシ 4.3を{sle}クライアントと同様に自動インストールできます。
+{sle}インストールメディアを使用し、`SLE-Product-SUSE-Manager-Proxy-4.3-Pool for x86_64`ベースチャネルを選択するようにしてください。
+====
+endif::[]
+
+== ディストリビューションとプロファイルのカーネルオプションの処理
+
+{productname}は、割り当てたカーネルオプションを組み合わせることができます。
+これは特別な継承ロジックを使用して行われます。
+これに関連するオブジェクトタイプは3つあります。
+
+. ディストリビューション(または略して "Distros")
+. プロファイル
+. システム
+
+最終的なカーネルオプションに影響を与える4つ目の特別なポイントは、Cobbler設定ファイル`/etc/cobbler/settings.yaml`です。
+Cobbler設定ファイルは、すべてのディストリビューションのデフォルトのカーネルオプションを定義します。
+これは{productname}の文脈ではサポートされていません。
+
+カーネルオプションを効果的に管理するには、生の値と解決済みの値を理解することが極めて重要です。
+
+. **生の値**:これらは、特定のCobbler項目に直接割り当てられ、Cobblerの内部データベースにそのまま保存される値を指します。
+. **解決済みの値**:これらの値は、Cobbler項目の継承階層を考慮して実行時に動的に生成されます。
+
+オプションの前に`!`を付けると、そのオプションは最終的なカーネルコマンドラインから削除することになります。
+
+{productname}は、プロファイルとシステムのカーネルオプションを管理します。
+そのため、ディストリビューションのカーネルオプションのみを編集できます。
+
+=== 例
+
+==== 基本的な継承の例
+
+ディストリビューションの生の値
+
+----
+install=http://uyuni.server/ks/dist/SLES15SP4 self_update=0
+----
+
+プロファイルの生の値
+
+----
+console=tty1
+----
+
+システムの生の値
+
+----
+console=ttyS0
+----
+
+このプロファイルを継承するシステムの*解決済み*値
+
+----
+install=http://uyuni.server/ks/dist/SLES15SP4 self_update=0 console=ttyS0
+----
+
+==== オプション削除の例
+
+ディストリビューションの生の値
+
+----
+install=http://uyuni.server/ks/dist/SLES15SP4 self_update=0
+----
+
+プロファイルの生の値
+
+----
+console=tty1
+----
+
+システムの生の値
+
+----
+!self_update
+----
+
+このプロファイルを継承するシステムの*解決済み*値
+
+----
+install=http://uyuni.server/ks/dist/SLES15SP4 console=ttyS0
+----

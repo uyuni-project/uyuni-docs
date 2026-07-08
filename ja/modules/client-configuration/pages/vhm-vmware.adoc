@@ -1,0 +1,87 @@
+[[virt-vmware]]
+= VMwareによる仮想化
+:description: SUSE Multi-Linux Managerを使用して、サーバ上に設定された仮想ホストマネージャ(VHM)を介して、VMware vSphere仮想マシンを構成し、ホストをインベントリします。
+:revdate: 2024-09-03
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメントチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+{productname}では、ESXiやvCenterなどのVMware vSphere仮想マシンを使用できます。そのためには、仮想ホストマネージャ(VHM)を設定します。
+
+まず、{productname}サーバ上にVHMを設定し、利用可能なVMホストをインベントリする必要があります。
+その後、TaskomaticはVMのAPIを使用してデータ収集を開始できます。
+
+
+
+== VHMの設定
+
+
+
+仮想ホストマネージャ(VHM)は{productname}サーバ上で動作します。
+
+VHMを実行するには、{productname}サーバでポート443がオープンになっていて、VMware APIにアクセスする必要があります。
+
+VMwareホストは、ホストおよびゲストへのアクセスを制御するために、アクセスロールとパーミッションを使用します。
+VHMによってインベントリに含めるVMwareオブジェクトまたはリソースには、少なくとも`read-only`のパーミッションが必要です。
+オブジェクトやリソースを除外したい場合は、それらに`no-access`をマークしてください。
+
+新しいホストを{productname}に追加する際は、ユーザーやオブジェクトに割り当てられているロールやパーミッションが{productname}によってインベントリされる必要があるかどうかを検討する必要があります。
+
+ユーザ、ロール、およびパーミッションに関する詳細は、VMware vSphereドキュメントを参照してください: https://techdocs.broadcom.com/us/en/vmware-cis/vsphere.html
+
+
+.プロシージャ:VMware VHMの作成
+
+. {productname} {webui}で、menu:Systems[Virtual Host Managers]に移動します。
+. btn:[Create]をクリックし、`VMware-based`を選択します。
+. `Add a VMware-based Virtual Host Manager`セクションで、以下のパラメータを使用します。
+* `Label`フィールドにVHMのカスタム名を入力します。
+* `Hostname`フィールドに、完全修飾ドメイン名(FQDN)またはホストIPアドレスを入力します。
+* `Port`フィールドに、使用するESXi APIポートを入力します(例えば、`443`)。
+* `Username`フィールドに、VMホストに関連付けられているユーザー名を入力します。
+* `Password`フィールドに、VMホストユーザーに関連付けられているパスワードを入力します。
+. btn:[Create]をクリックして変更を保存し、VHMを作成します。
+. `Virtual Host Managers`ページで、新しいVHMを選択します。
+. `Properties`ページで、btn:[Refresh Data]をクリックして、新しいVHMをインベントリに追加します。
+
+インベントリされたオブジェクトおよびリソースを表示するには、menu:Systems[System List> Virtual Systems]に移動します。
+
+
+[NOTE]
+====
+ブラウザからESXiサーバにHTTPSで接続すると、時々`invalid certificate`エラーが記録されることがあります。
+この場合、仮想ホストサーバからのデータの更新が失敗します。
+問題を修正するには、ESXiサーバから証明書を抽出し、`/etc/pki/trust/anchors`にコピーします。
+コマンドラインで`update-ca-certificates`コマンドを実行して証明書を再度信頼し、spacewalkサービスを再起動します。
+====
+
+VHMが作成され、設定された後、Taskomaticはデータ収集を自動的に実行します。
+手動でデータ収集を行いたい場合は、menu:Systems[Virtual Host Managers]に移動し、適切なVHMを選択して、btn:[Refresh Data]をクリックします。
+
+{productname}には、APIを使用してVHMに接続し、仮想ホストに関する情報を要求できる`virtual-host-gatherer`というツールが付属しています。`virtual-host-gatherer`は、各モジュールが特定のVHMを有効にするオプションモジュールの概念を維持しています。
+このツールは、Taskomaticによって毎晩自動的に呼び出されます。
+`virtual-host-gatherer`ツールのログファイルは`/var/log/rhn/gatherer.log`にあります。
+
+
+
+== VMwareでのSSLエラーのトラブルシューティング
+
+VMwareのインストール環境を設定中にSSLエラーが発生した場合、VMwareからCA証明書をダウンロードし、{productname}で信頼する必要があります。
+
+
+
+.プロシージャ:VMware CA証明書を信頼する
+. VMwareインストール環境からCA証明書をダウンロードします。
+    そのためには、vCenterの{webui}にログインし、btn:[Download trusted root CA certificates]をクリックします。
+. ダウンロードしたCA証明書ファイルが`.zip`フォーマットの場合、アーカイブを抽出します。
+    証明書ファイルには番号が拡張子として付いています。
+    例えば、`certificate.0`。
+. 証明書ファイルを{productname}サーバにコピーし、`/etc/pki/trust/anchors/`ディレクトリに保存します。
+. コピーした証明書のファイル名のサフィックスを、`.crt`または`.pem`に変更します。
+. {productname}サーバのコマンドプロンプトで、CA証明書のレコードを更新します。
++
+----
+update-ca-certificates
+----

@@ -1,0 +1,138 @@
+[[infra-maintenance]]
+= 基础架构维护任务
+:description: 确保您的 SUSE Multi-Linux Manager 基础设施始终保持最新状态，并及时获取最新的更新、服务包和软件包
+:revdate: 2025-05-27
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+如果您在预定停机时间内工作，可能会发现很难记住在 {productname} 服务器关键停机时间之前、期间和之后所需执行的所有操作。
+与 {productname} 服务器相关的系统，例如服务器间同步从服务器或 {productname} 代理也会受到影响，必须考虑在内。
+
+{suse} 建议您始终保持 {productname} 基础设施处于最新状态。
+这包括服务器、代理和构建主机。
+如果您不保持 {productname} 服务器的最新状态，可能会在需要更新环境中某些部分时遇到无法更新的问题。
+
+本章提供了一份停机时段核对清单，其中包含有关执行每个步骤的更多信息的链接。
+
+
+
+== 服务器
+
+
+.过程：升级服务器检查
+[role=procedure]
+____
+. 应用最新更新。
+
+. 根据需要升级到最新服务包。
+
+. 运行 `podman ps` 并检查所有必需的服务是否已正常运行。
+____
+
+在 {sles} {bci-mlm} 上，您可以使用软件包管理器安装更新：
+
+* 有关使用 {yast} 的信息，请参见 {sles-base-os-documentation}/cha-onlineupdate-you.html。
+* 有关使用 zypper 的信息，请参见 {sles-base-os-documentation}/cha-sw-cl.html#sec-zypper。
+
+在 {sl-micro} {microversion} 上，您可以使用 `transactional-update` 命令安装更新。
+有关使用 `transactional-update` 的信息，请参见 https://documentation.suse.com/sle-micro/6.1/html/Micro-transactional-updates/transactional-updates.html.。
+
+
+默认情况下，为 {productname} 服务器配置并启用多个更新通道。
+新的和更新的软件包会自动提供。
+
+
+ifeval::[{mlm-content} == true]
+
+要保持 {susemgr} 的最新状态，可以直接将其连接到 {scclongform} 或使用 {rmtool} (RMT)。
+您可以将 RMT 用作断开连接环境的本地安装源。
+
+endif::[]
+
+
+ifeval::[{mlm-content} == true]
+
+可以使用以下命令检查更新通道是否在您的系统上可用：
+
+----
+zypper lr
+----
+
+输出如下所示：
+
+----
+Name                                                   | Enabled | GPG Check | Refresh
+-------------------------------------------------------+---------+-----------+--------
+SLE-Module-Basesystem15-SP7-Pool                       | Yes     | (r ) Yes  | No
+SLE-Module-Basesystem15-SP7-Updates                    | Yes     | (r ) Yes  | Yes
+SLE-Module-Containers15-SP7-Pool                       | Yes     | (r ) Yes  | No
+SLE-Module-Containers15-SP7-Updates                    | Yes     | (r ) Yes  | Yes
+SLE-Module-Python3-15-SP7-Pool                         | Yes     | (r ) Yes  | No
+SLE-Module-Python3-15-SP7-Updates                      | Yes     | (r ) Yes  | Yes
+SLE-Product-SLES15-SP7-Pool                            | Yes     | (r ) Yes  | No
+SLE-Product-SLES15-SP7-Updates                         | Yes     | (r ) Yes  | Yes
+SUSE-Multi-Linux-Manager-Server-SLE-5.1-Pool           | Yes     | (r ) Yes  | No
+SUSE-Multi-Linux-Manager-Server-SLE-5.1-Updates        | Yes     | (r ) Yes  | Yes
+SLE-Module-Server-Applications15-SP7-Pool              | Yes     | (r ) Yes  | No
+SLE-Module-Server-Applications15-SP7-Updates           | Yes     | (r ) Yes  | Yes
+SLE-Module-Systems-Management-15-SP7-Pool              | Yes     | (r ) Yes  | No
+SLE-Module-Systems-Management-15-SP7-Updates           | Yes     | (r ) Yes  | Yes
+----
+
+endif::[]
+
+
+ifeval::[{mlm-content} == true]
+
+{productname} 发布维护更新 (MUs) 以提供更新的软件包。
+维护更新以新版本号表示。
+例如，当发布维护更新时，主要版本 5.1 会递增到 5.1.1。
+
+您可以通过查看 {webui} 导航栏底部来验证您正在运行的版本。
+您还可以通过 `api.getVersion()` XMLRPC API 调用获取版本号。
+
+endif::[]
+
+
+
+=== 客户端工具
+
+当服务器更新时，请考虑同时更新客户端上的一些工具。
+在客户端上更新 `venv-salt-minion`、`zypper` 以及其他相关管理软件包并非严格要求，但通常被视为最佳实践。
+例如，服务器上的维护更新可能会引入一个主要的新 Salt 版本。
+然后 Salt 客户端继续工作，但可能会在后续遇到问题。
+为避免这种情况，{suse} 会确保 `venv-salt-minion` 始终能够安全地进行更新。
+
+
+
+== 服务器间同步从属服务器
+
+如果您使用服务器间同步从属服务器，请在 {productname} 服务器更新完成后对其进行更新。
+
+有关更多信息，请参见 xref:specialized-guides:large-deployments/iss_v2.adoc[Inter-Server Synchronization - Version 2]。
+
+
+
+== 监视服务器
+
+如果您使用 Prometheus 监控服务器，请在 {productname} 服务器更新完成后对其进行更新。
+
+有关监控的更多信息，请参见 xref:administration:monitoring.adoc[]。
+
+
+
+== 代理
+
+代理应在 {productname} 服务器更新完成后尽快进行更新。
+
+一般来说，运行与不同版本的服务器连接的代理是不被支持的。
+唯一的例外是在更新期间，预计服务器会先更新，因此代理可以暂时运行先前的版本。
+
+
+[WARNING]
+====
+始终先升级服务器，然后再升级任何代理。
+====

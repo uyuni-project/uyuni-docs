@@ -1,0 +1,163 @@
+[[proxy-install-vmware]]
+= {productname}プロキシの仮想マシンとしてのデプロイメント - VMware
+:description: SUSE Multi-Linux ManagerプロキシをVMware環境で仮想マシンとして構成し、効率的なストレージパーティション管理を行い、改善する方法を学びます。
+:revdate: 2025-06-26
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+この章では、{productname} {productnumber}プロキシのイメージとしてのデプロイメントのための仮想マシン設定を提供します。
+このインストールにはVMwareがサンドボックスとして使用されます。
+
+
+
+// FIXME: make this section a snippet or move it to a general intro for both,
+//        KVM and VMware
+== 利用可能なイメージ
+
+
+[IMPORTANT]
+====
+{productname}プロキシをデプロイするための推奨方法は、以下の利用可能なイメージのいずれかを使用することです。
+すべてのツールはこれらのイメージに含まれており、デプロイメントが簡素化されています。
+====
+
+{productname} {productnumber}プロキシのイメージは、link:https://www.suse.com/download/suse-manager/[{productname} {productnumber} VMイメージ]で入手可能です。
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-warn-images-sl-micro.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-warn-images-sl-micro.adoc[]
+endif::[]
+
+[NOTE]
+====
+生イメージの準備に関する詳細については、 https://documentation.suse.com/sle-micro/6.1/html/Micro-deployment-raw-images-virtual-machines/index.html#deployment-preparing-configuration-device[]を参照してください。
+
+セルフインストールイメージに関する追加情報については、 https://documentation.suse.com/sle-micro/6.1/html/Micro-deployment-selfinstall-images/index.htmlを参照してください。
+====
+
+// FIXME more archs supported?
+
+.利用可能なプロキシイメージ
+[cols="3, 3", options="header"]
+|===
+| アーキテクチャ | イメージフォーマット
+
+| aarch64| qcow2、vmdk
+
+| x86_64  | qcow2、vmdk、raw、セルフインストーラー
+
+|===
+
+
+[[proxy-quickstart.sect.vmware.settings]]
+== 仮想マシン設定 - VMware
+
+このセクションでは、VMware環境内の{productname}プロキシストレージパーティションに不可欠な追加の仮想ディスクの作成に重点を置いて、VMware設定について説明します。
+
+[NOTE]
+====
+このセクションでは、最小要件を指定します。
+これらは、クライアント1台のプロキシなど、迅速なテストインストールに適しています。
+
+本番環境を使用したい場合や、ディスクスペースに関する背景情報が必要な場合は、xref:installation-and-upgrade:hardware-requirements.adoc[]を参照してください。
+====
+
+.プロシージャ:VMware仮想マシンの作成
+
+. まず、{productname} プロキシ `.vmdk` ファイルをダウンロードし、そのコピーをVMwareストレージに転送します。
+
+. VMwareウェブインターフェースを使用して、アップロードされた`.vmdk`ファイルのコピーを作成します。
+  この操作により、提供された`.vmdk`ファイルがvSphereハイパーバイザーに適した形式に変換されます。
+
+. ゲストOSファミリ`Linux`およびゲストOSバージョン{sle} 15 (64ビット)に基づいて、新しい仮想マシンを作成し、名前を付けます。
+
+. さらに100GB（以上）の`Hard Disk 2`を加えます。
+
+. RAMおよびCPU数を最小値で設定します。*)
+
+. 必要に応じてネットワークアダプタを設定します。
+
+. VMの電源を入れ、firstbootダイアログ(キーボードレイアウト、ライセンス契約、タイムゾーン、rootのパスワード)に従います。
+
+. インストールが完了したら、rootとしてログインします。
+
+. 次のセクションに進みます。
+
+*) 最小値については、xref:installation-and-upgrade:hardware-requirements.adoc#proxy-hardware-requirements[]を参照してください。
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-register-proxy-mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-register-proxy-mlm.adoc[]
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-actkey-bootstrap-proxy-mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-actkey-bootstrap-proxy-mlm.adoc[]
+endif::[]
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-generate_proxy_config.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-generate_proxy_config.adoc[]
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-transfer_proxy_config.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-transfer_proxy_config.adoc[]
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-start-proxy.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-start-proxy.adoc[]
+endif::[]
+
+
+
+=== サービスにカスタムコンテナイメージを使用する
+
+デフォルトでは、{productname}プロキシスイートは、各サービスに対して同じイメージバージョンとレジストリパスを使用するように設定されています。
+ただし、`-tag`および`-image`で終わるインストールパラメータを使用することで、特定のサービスに対してデフォルト値を上書きすることが可能です。
+
+たとえば、次のように使用します。
+
+----
+mgrpxy install podman --httpd-tag 0.1.0 --httpd-image registry.opensuse.org/uyuni/proxy-httpd /path/to/config.tar.gz
+----
+
+httpdサービスの設定ファイルを調整します（`registry.opensuse.org/uyuni/proxy-httpds`は使用するイメージ、`0.1.0`はバージョンタグです）、その後再起動します。
+
+値をデフォルトにリセットするには、これらのパラメータを指定せずにもう一度installコマンドを実行します。
+
+----
+mgrpxy install podman /path/to/config.tar.gz
+----
+
+このコマンドは、すべてのサービスの設定をグローバルデフォルトにリセットして再ロードします。

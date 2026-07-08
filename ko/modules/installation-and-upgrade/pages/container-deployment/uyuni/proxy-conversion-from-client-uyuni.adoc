@@ -1,0 +1,176 @@
+[[proxy-conversion-from-client-uyuni]]
+= 클라이언트에서의 프록시 변환
+:description: Web UI를 사용하여 기존 클라이언트 시스템을 프록시로 구성하여 SUSE Multi-Linux Manager Proxy를 구성합니다.
+:page-author: SUSE 제품 및 솔루션 문서 팀
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+== 개요
+
+이 장에서는 {productname}를 사용하여 클라이언트 시스템을 {webui} 프록시로 변환하는 방법에 대해 설명합니다.
+
+프록시 호스트 시스템이 이미 부트스트랩되어 기본 운영 체제 채널을 구독하고 있다고 가정합니다.
+
+클라이언트 온보딩에 대한 정보는 xref:client-configuration:registration-overview.adoc[]을 참조하십시오.
+
+== 요구사항
+
+변환을 시작하기 전에 다음 요구 사항이 충족되었는지 확인하십시오.
+
+
+=== 클라이언트는 다음과 같아야 함
+
+- 이미 {productname}에 온보딩되었습니다.
+- 네트워크를 통해 연결 가능
+
+
+== 배포 준비
+
+프록시 변환을 계속하기 전에 변환 과정 중 중단을 방지하기 위해 다음 준비 사항이 완료되었는지 확인하십시오.
+
+=== SSL 인증서
+
+프록시와 다른 구성 요소 간의 통신을 보호하려면 유효한 SSL 인증서가 필요합니다.
+
+필요 사항:
+
+* {productname} 서버의 인증서에 서명한 인증 기관(CA)의 공개 인증서
+* 프록시용 활성화 키 생성
+* 프록시의 인증서에 첨부된 추가 정보입니다.
+
+[NOTE]
+====
+인증 기관(CA)이 임시 인증서 체인을 사용하는 경우, 모든 임시 인증서도 반드시 포함해야 합니다.
+====
+
+타사 인증서를 사용하지 않는 경우, `rhn-ssl-tool` 컨테이너 내부의 {productname}을 사용하여 생성할 수 있습니다.
+
+.\{productname} 프록시 구성 아카이브 파일 생성
+
+. {productname} 서버 호스트에서 다음을 실행하십시오:
++
+[source,shell]
+----
+mgrctl exec -ti -- rhn-ssl-tool --gen-server \
+  --set-hostname="<PROXY-FQDN>" \
+  --dir="/root/ssl-build"
+----
++
+다른 매개변수에 대한 자세한 내용은 xref:administration:ssl-certs-selfsigned.adoc[]을 참조하십시오.
++
+
+. 인증서를 {productname} 서버 호스트로 전송합니다.
++
+[source,shell]
+----
+mgrctl cp server:/root/ssl-build/<PROXY-FQDN>/server.crt /root/proxycert.pem
+mgrctl cp server:/root/ssl-build/<PROXY-FQDN>/server.key /root/proxykey.pem
+mgrctl cp server:/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT /root/rootca.pem
+----
++
+[NOTE]
+====
+인증서 및 키 파일이 생성된 정확한 폴더를 확인하려면 다음 명령으로 디렉토리를 나열할 수 있습니다.
+----
+mgrctl exec -ti -- ls -ltd /root/ssl-build/*/
+----
+====
+
+. 인증서를 {productname} 서버 호스트에서 전송하십시오.
++
+
+[source,shell]
+----
+scp <UYUNI-FQDN>:/root/proxycert.pem ./
+scp <UYUNI-FQDN>:/root/proxykey.pem ./
+scp <UYUNI-FQDN>:/root/rootca.pem ./
+----
+
+=== 배포 준비
+
+==== `mgrpxy`을 설치하십시오.
+
+`mgrpxy` 도구는 시스템에 맞는 리포지토리에서 설치해야 합니다. 다음에서 적절한 리포지토리를 선택하십시오:
+
+https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable:/ContainerUtils/
+
+.예시(openSUSE Leap Micro 5.5의 경우):
+[source,shell]
+----
+zypper ar https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable:/ContainerUtils/openSUSE_Leap_Micro_5.5/ uyuni-containerutils
+zypper ref
+zypper in mgrpxy
+----
+
+==== 컨테이너 이미지 배포
+
+컨테이너 이미지를 RPM 패키지로 배포하는 것이 권장됩니다. 클라이언트에 다음 패키지가 설치되어 있는지 확인하십시오:
+
+[source,shell]
+----
+zypper ar https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable/containerfile/ uyuni-proxy-images
+zypper ref
+zypper in uyuni-proxy-httpd-image \
+           uyuni-proxy-salt-broker-image \
+           uyuni-proxy-squid-image \
+           uyuni-proxy-ssh-image \
+           uyuni-proxy-tftpd-image
+----
+
+공기 차단 배포에 대한 자세한 내용은 xref:installation-and-upgrade:container-deployment/mlm/proxy-air-gapped-deployment-mlm.adoc[]을 참조하십시오.
+
+[NOTE]
+====
+트랜잭션 서버에서는 원자성과 지속성을 보장하기 위해 위의 명령을 트랜잭션 업데이트 셸 세션으로 래핑합니다.
+
+[source,shell]
+----
+transactional-update shell
+# (run zypper commands here)
+exit
+----
+
+이를 통해 트랜잭션 환경에서 변경 사항이 올바르게 적용됩니다.
+====
+
+== 프록시 업그레이드
+
+. 클라이언트의 `Overview` 페이지로 이동합니다.
+. 버튼 btn:[프록시로 변경]을 클릭합니다.
++
+프록시 구성 생성
++
+이 페이지는 나중에 `Details` > `Proxy` > `Configuration` 탭에서 액세스할 수 있습니다.
+
+. {webui}에서 menu:프록시[구성]으로 이동하여 필요한 데이터를 입력하십시오:
+
++
+.절차 프록시 구성
+.. `Parent FQDN` 필드에 상위 서버 또는 프록시의 완전히 정규화된 도메인 이름을 입력합니다.
+.. `Proxy SSH port` 필드에 {productname} 프록시에서 SSH 서비스가 수신 대기하는 SSH 포트를 입력합니다. 기본값을 유지하는 것이 좋습니다: 8022.
+.. `Max Squid cache size` 필드에 Squid 캐시에 허용되는 최대 크기를 기가바이트 단위로 입력합니다.
+.. `Proxy admin email` 필드에 관리자의 이메일 주소를 입력합니다.
+.. `Certificates` 섹션에서 준비 단계에서 획득한 {productname} 프록시의 인증서를 제공합니다.
+
+.. `Source` 섹션에서 `RPM` 또는 `Registry` 중 하나의 옵션을 선택합니다.
++
+* `RPM` 옵션은 네트워크가 분리된(air-gapped) 또는 제한된 환경에서 권장됩니다.
+* `Registry` 옵션은 컨테이너 이미지 레지스트리에 연결할 수 있는 경우 사용할 수 있습니다. +
+선택하면 `Simple` 또는 `Advanced`라는 두 가지 하위 옵션 중 하나를 선택하라는 메시지가 표시됩니다.
++
+** `Simple`이 선택된 경우 `Registry URL` 및 `Containers Tag` 필드에 값을 입력합니다.
+*** `Registry URL`의 경우 `registry.opensuse.org/uyuni`를 사용합니다.
+*** 드롭다운 목록에서 태그를 선택합니다.
+
+** `Advanced`이 선택되면 양식에 추가 섹션이 표시됩니다:
+*** 각 개별 컨테이너 URL 필드에 대해 레지스트리 `registry.opensuse.org/uyuni` 뒤에 해당 접미사를 붙여 사용합니다(예: `_proxy-httpd_` 또는 `_salt-broker_`).
+*** 드롭다운 목록에서 태그를 선택합니다.
+
+. 모든 필드에 입력한 후 btn:[적용]을 클릭하여 구성을 적용하고 프록시 설치 작업을 예약합니다.
+
+== 마이그레이션 수행
+
+클라이언트의 이벤트 기록을 확인하여 작업 성공 여부를 확인합니다.
+
+(선택 사항) 프록시의 HTTP 엔드포인트에 액세스하여 환영 페이지가 표시되는지 확인합니다.

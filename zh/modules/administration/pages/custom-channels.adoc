@@ -1,0 +1,364 @@
+[[custom-channel]]
+= 自定义通道
+:description: 配置自定义通道以创建和管理您自己的软件包和储存库，这些储存库为客户端提供可信的第三方软件更新
+:revdate: 2025-02-28
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+自定义通道使您能够创建自己的软件包和储存库，您可以使用它们来更新您的客户端。
+它们还允许您在您的环境中使用第三方供应商提供的软件。
+
+本节提供有关如何创建、管理和删除自定义通道的更多详细信息。
+您必须具有管理员权限才能创建和管理自定义通道。
+
+
+== 创建自定义通道和储存库
+
+在创建自定义通道之前，请确定要将其关联到哪个基础通道，以及要为内容使用哪些储存库。
+
+如果您有需要在客户端系统上安装的自定义软件包，您可以创建一个自定义子通道来管理它们。
+您需要在{productname} {webui}中创建通道并为软件包创建储存库，然后将通道分配给您的系统。
+
+[IMPORTANT]
+====
+不要创建其中有软件包与客户端系统不兼容的子通道。
+====
+
+如果您想使用供应商提供的软件包，可以选择供应商通道作为基础通道。
+或者，选择 `none` 使您的自定义通道成为基础通道。
+
+
+.过程：升级创建自定义通道
+[role=procedure]
+____
+. 在{productname} {webui}中，导航到menu:软件[管理> 通道]，然后单击btn:[创建通道]。
+
+. 在 `Create Software Channel` 页面上，为您的通道指定一个名称（例如 `My Tools SLES 15 SP1 x86_64`）和一个标签（例如 `my-tools-sles15sp1-x86_64`）。
+    标签不能包含空格或大写字母。
+
+. 在 `Parent Channel` 下拉菜单中，选择相关的基础通道（例如 `SLE-Product-SLES15-SP1-Pool for x86_64`）。
+    确保为软件包选择兼容的父通道。
+
+. 在 `Architecture` 下拉菜单中，选择适当的硬件架构（例如 `x86_64`）。
+
+. 根据环境的需要，在联系方法细节、通道访问控制和 GPG 字段中提供任何附加信息。
+
+. 单击btn:[创建通道]。
+____
+
+自定义通道有时需要额外的安全设置。
+许多第三方供应商使用GPG对软件包进行安全保护。
+如果您想在自定义通道中使用GPG保护的软件包，您需要信任用于签署元数据的GPG密钥。
+然后，您可以选中 `Has Signed Metadata?` 复选框，以将软件包元数据与受信任的 GPG 密钥进行匹配。
+
+如果远程通道和储存库使用GPG密钥进行签名，您可以导入并信任这些GPG密钥。
+例如，在 `spacewalk-repo-sync` 服务器的命令行上执行 {productname}：
+
+----
+/usr/bin/spacewalk-repo-sync -c <channellabelname> -t yum
+----
+
+此命令和程序仅用于临时GPG密钥同步。
+要永久存储密钥，请参见后面的部分。
+
+如果可用，底层的 `zypper` 调用将导入密钥。
+{webui}不提供此功能。
+
+仅当您要镜像的储存库以特殊方式设置并在储存库中提供"密钥"与签名并排时，此方法才有效。
+所有由开放构建服务（OBS）生成的储存库均符合此条件。
+对于其他储存库，需要特殊的准备步骤，如下所述。
+
+
+[IMPORTANT]
+====
+默认情况下，当您创建新通道时，`Enable GPG Check` 字段是选中的。
+如果您想向频道添加自定义软件包和应用程序，请确保取消选中此字段，以便能够安装未签名的软件包。
+如果软件包来自不受信任的来源，禁用GPG检查是一个安全风险。
+====
+
+您只能在{productname}中使用{webui}添加有效的软件储存库。
+请提前检查所需的储存库元数据是否可用。
+诸如 `createrepo` 和 `reprepro` 之类的工具在这方面很有用。`mgrpush` 可以帮助将单个 RPM 推送到通道中，而无需创建储存库。
+
+* 有关 `createrepo_c` 的详细信息，请参见 `https://manpages.opensuse.org/Leap-15.6/createrepo_c/`。
+
+* 有关 `reprepro` 的详细信息，请参见 `https://manpages.opensuse.org/Leap-15.6/reprepro/`。
+
+
+.过程：升级添加软件储存库
+[role=procedure]
+____
+. 在{productname} {webui}中，导航到menu:软件[管理> 储存库]，然后单击btn:[创建储存库]。
+
+. 在 `Create Repository` 页面上，为您的储存库指定一个标签（例如 `my-tools-sles15sp1-x86_64-repo`）。
+
+. 在 `Repository URL` 字段中，提供包含 `repodata` 文件的目录路径（例如 `file:///opt/mytools/`）。
+  您可以在此字段中使用任何有效的寻址协议。
+
+. 取消选中 `Has Signed Metadata?` 复选框。
+
+. 可选：如果您的储存库需要客户端证书身份验证，请填写 SSL 字段。
+
+. 点击btn:[创建储存库]。
+____
+
+上述过程仅在您要镜像的储存库在签名旁边提供"密钥"时有效。
+对于 OBS 生成的所有储存库都是如此，但对于 OBS 不提供的操作系统的储存库通常不是这样。
+
+如果您要使用的储存库没有 GPG 密钥，您可以自己提供一个并手动将 GPG 密钥导入密钥环。
+如果您使用 `/var/lib/spacewalk/gpgdir` 命令行工具将密钥导入 `gpg` 密钥环，它将被永久存储。
+如果 chroot 环境被清理，密钥也会保留。
+// Not sure how it is possible to import the key into the RPM DB which is used for syncing.
+
+
+.过程：升级使用 GPG 密钥创建软件储存库
+[role=procedure]
+____
+. 在容器主机上，用于将密钥导入密钥环的命令是：
+
++
+
+[source,shell]
+----
+mgradm gpg add /path/to/gpg.key
+----
+
+. 有关更多信息，请参见xref:client-configuration:autoinst-owngpgkey.adoc[]。
+
+[NOTE]
+====
+使用 `uyuni_suite`、`uyuni_component` 和 `uyuni_arch` 查询参数添加 Debian 非平面储存库。
+====
+____
+
+`uyuni_suite`::
+是必需的。
+在 Debian 文档中，这也被称为 `distribution`。
+通过此参数，您可以指定 apt 源。
+没有此参数时，将使用原始方法。
+如果参数以 `/` 结尾，则该储存库被识别为平面。
+
+`uyuni_component`::
+是可选的。
+此参数只能指定一个组件。
+无法列出组件。
+apt 源条目允许指定多个组件，但对于 Uyuni 来说这是不可能的。
+相反，您必须为每个组件创建一个单独的储存库。
+
+`uyuni_arch`::
+是可选的。
+如果省略，架构名称将通过对数据库中通道的 SQL 查询计算得出。
+如果它与通道的架构不匹配，请明确指定 `uyuni_arch`（有时架构命名是模糊的）。
+
+下面提供了一些示例：
+
+[[debian-nonflat-repo]]
+[cols="1,1", options="header"]
+.Debian 非平面储存库映射
+|===
+| 类型             | 源行 / URL
+| apt 源行  | `deb https://pkg.jenkins.io/debian-stable binary/`
+| URL 映射      | `https://pkg.jenkins.io/debian-stable?uyuni_suite=binary/`
+| {nbsp}           |
+| apt 源行  | `deb https://deb.debian.org/debian/dists stable main`
+| URL 映射      | `https://deb.debian.org/debian/dists?uyuni_suite=stable&uyuni_component=main`
+|===
+
+
+[NOTE]
+====
+以下关于 Debian 储存库定义格式的信息基于 https://wiki.debian.org/DebianRepository/Format#Overview.
+
+储存库定义格式如下：
+
+----
+deb uri suite [component1] [component2] [...]
+----
+
+例如：
+
+----
+deb https://deb.debian.org/debian/dists stable main
+----
+
+或
+
+----
+deb https://pkg.jenkins.io/debian-stable binary/
+----
+
+对于每一对 `suite` 和 `component`，规范定义了一个基于基础 URL `+ suite + component` 计算出的不同 URL。
+====
+
+
+
+.过程：升级将储存库指派到通道
+[role=procedure]
+____
+. 通过导航到 menu:软件[管理 > 通道]，并单击新建的自定义通道的名称，将新储存库指派到自定义通道。
+
+. 导航到 `Repositories` 选项卡，确保已选中您要指派到该通道的储存库。
+  单击 btn:[保存储存库]。
+
+. 默认情况下，同步过程会立即开始。
+
+____
+
+有关通道同步的更多信息，请参见 xref:administration:custom-channels.adoc#custom-channel-sync[]。
+
+
+
+.过程：升级将自定义通道添加到激活密钥
+[role=procedure]
+____
+. 在 {productname} {webui} 中，导航到 menu:系统[激活密钥]，并选择您要添加自定义通道的密钥。
+
+. 在 `Details` 选项卡中，在 `Child Channels` 列表中，选择要关联的通道。
+    如果需要，您可以选择多个通道。
+
+. 单击 btn:[更新激活密钥]。
+
+____
+
+
+[[custom-channel-sync]]
+== 自定义通道同步
+
+为了避免错过重要更新，{suse} 建议保持您的自定义通道与远程储存库的更改保持同步。
+
+默认情况下，您创建的所有自定义通道将自动同步。
+具体而言，在以下情况下将发生同步：
+
+* 在 UI 中或者使用 `spacewalk-common-channels` 将储存库添加到通道后
+* 作为日常任务 `mgr-sync-refresh-default` 的一部分，这将同步您所有的自定义通道和供应商通道。
+
+要禁用此默认行为，请在 `/etc/rhn/rhn.conf` 中设置：
+
+----
+java.unify_custom_channel_management = 0
+----
+
+关闭此属性后，将不会自动执行同步，要使自定义通道保持最新，您需要：
+
+* 通过导航到 `Sync` 选项卡并单击 btn:[立即同步] 来手动同步它，
+* 在 `Repositories` 选项卡中设置自动同步日程安排。
+
+该过程开始后，可通过多种方式检查通道是否已完成同步：
+
+* 在 {productname} {webui} 中，导航到 menu:管理员[设置向导] 并选择 `Products` 选项卡。
+    产品同步时，此对话框将为每个产品显示一个完成栏。
+* 在 {productname} {webui} 中，导航到 menu:软件[管理> 通道]，然后单击与储存库关联的通道。
+    导航到菜单：[储存库 > 同步] 选项卡。
+    `Sync Status` 显示在储存库名称旁边。
+* 在命令提示符下检查同步日志文件：
++
+----
+tail -f /var/log/rhn/reposync/<channel-label>.log
+----
++
+每个子通道在同步过程中都会生成自己的日志。
+您需要检查所有基础通道和子通道日志文件，以确保同步已完成。
+
+可使用以下自定义通道同步选项：
+
+保留已从储存库中去除的通道中的软件包::
+这会关闭 `strict` 模式。
+不同步勘误::
+不要同步补丁。
+仅同步最新软件包::
+仅同步最新的软件包版本。
+创建可无人值守安装树::
+此选项会预先准备好目录树，以便 {kickstart} 自动安装。
+出现任何错误时终止::
+如果发生错误，则停止同步。
+
+这些选项将为每个通道持久保存。
+btn:[立即同步] 按钮在执行同步之前也会保存通道选项。
+
+
+
+== 将软件包和补丁添加到自定义通道
+
+当您创建一个新的自定义通道而不从现有通道克隆时，它不包含任何软件包或补丁。
+您可以使用 {productname} {webui} 添加所需的软件包和补丁。
+
+自定义通道只能包含克隆或自定义的软件包或补丁，并且它们必须与通道的基础架构匹配。
+添加到自定义通道的补丁必须适用于通道中存在的软件包。
+
+
+.过程：升级将软件包添加到自定义通道
+[role=procedure]
+____
+. 在 {productname} {webui} 中，导航到 menu:软件[管理 > 通道]，并转到 `Packages` 选项卡。
+
+. 可选：通过导航到 `List/Remove` 选项卡查看当前包含在通道中的所有软件包。
+
+. 通过导航到 `Add` 选项卡将新软件包添加到通道。
+
+. 选择要为其提供软件包的父通道，然后单击btn:[查看软件包]以填充列表。
+
+. 检查要添加到自定义通道的软件包，然后单击btn:[添加软件包]。
+
+. 如果您觉得选择合适，请单击btn:[确认添加]以将软件包添加到通道。
+
+. 可选：可以通过导航到menu:软件[管理 > 通道]，然后转到menu:软件包[比较]选项卡，将当前通道中的软件包与其他通道中的软件包进行比较。
+    要使两个通道相同，请单击btn:[合并差异]按钮，然后解决任何冲突。
+____
+
+
+.过程：升级将补丁添加到自定义通道
+[role=procedure]
+____
+. 在 {productname} {webui} 中，导航到 menu:软件[管理 > 通道]，并转到 `Patches` 选项卡。
+
+. 可选：通过导航到 `List/Remove` 选项卡查看当前包含在通道中的所有补丁。
+
+. 通过导航到 `Add` 选项卡，然后选择要添加的补丁类型，将新补丁添加到通道。
+
+. 选择要为其提供补丁的父通道，然后单击btn:[查看关联补丁]以填充列表。
+
+. 检查要添加到自定义通道的补丁，然后单击btn:[确认]。
+
+. 如果您觉得选择合适，请单击btn:[确认]以将补丁添加到通道。
+____
+
+
+== 管理自定义通道
+
+{productname}管理员和通道管理员可以更改或删除任何通道。
+
+要授予其他用户更改或删除通道的权限，请导航到menu:软件[管理 > 通道]并选择要编辑的通道。
+导航到 `Managers` 选项卡，并勾选用户以授予权限。
+点击 btn:[更新] 以保存更改。
+
+
+[IMPORTANT]
+====
+如果您删除一个已分配给一组客户端的通道，将立即触发与已删除通道相关的任何客户端的通道状态更新。
+这确保更改准确反映在储存库文件中。
+====
+
+您不能使用{productname}删除{webui}通道。
+只能删除自定义通道。
+
+
+.过程：升级删除自定义通道
+[role=procedure]
+____
+. 在{productname} {webui}中，导航到menu:软件[管理> 通道]，并选择您要删除的通道。
+
+. 单击btn:[删除软件通道]。
+
+. 在 `Delete Channel` 页面上，检查您要删除的通道的详细信息，并选中 `Unsubscribe Systems` 复选框，以从任何可能仍已订阅的系统中移除该自定义通道。
+
+. 单击btn:[删除通道]。
+____
+
+当通道被删除时，属于已删除通道的软件包不会自动去除。
+您无法更新已删除通道的软件包。
+
+您可以删除在{productname} {webui}中与通道无关的软件包。
+导航到menu:软件[管理> 软件包]，检查要去除的软件包，然后单击btn:[删除软件包]。

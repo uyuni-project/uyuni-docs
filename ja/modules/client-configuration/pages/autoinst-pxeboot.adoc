@@ -1,0 +1,142 @@
+[[autoinst-pxeboot]]
+= ネットワークを通じてインストールする(PXEブート)
+:description: PXEを使用してDHCPでクライアントにIPアドレス、マスク、インストールサーバー、およびブートローダーファイルを自動的に提供するネットワークブートインストールを構成します。
+:revdate: 2026-03-02
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+
+ネットワークブートによるインストール中に、次の処理が実行されます。
+
+. クライアントがPXEモードでブートされます。
+
+. DHCPサーバが、IPアドレスとマスク、インストールサーバのアドレス、サーバ上のブートローダファイルの名前をクライアントに提供します。
+
+. クライアントは、インストールサーバからTFTPプロトコルを通じてブートローダファイルをダウンロードし、実行します。
+
+. クライアントは、インストールに使用できるプロファイルをメニューから選択するか、いずれかのプロファイルで自動インストールを開始します。
+
+. クライアントは、TFTPプロトコルを通じて、そのプロファイルと一致するディストリビューション用のカーネルと初期RAMディスクをダウンロードします。
+
+. インストールカーネルは、{kickstart}または{ay}のいずれかのインストールプログラムを開始します。
+  これ以降は、HTTPプロトコルを介してサーバーが提供するリソースを使用します。
+
+. ディストリビューションは、{kickstart}または{ay}プロファイルに従って自動的にインストールされます。
+
+. プロファイルは、クライアントを{productname}サーバーに登録するコードスニペットを呼び出します。
+
+image::cobbler_menu.png[scaledwidth=100%]
+
+インストールサーバーは、{productname}サーバーまたはそのプロキシのいずれかである可能性があります。
+// To install from a proxy, you must synchronize the TFTP tree between the server and the proxy before you begin.
+
+Dhcpdサーバーは、ホスト名、ルーターのアドレス、ネームサーバのアドレスなど、クライアントに他の設定情報を提供することもあります。
+この情報の一部は、自動インストールに必要な場合があります。たとえば、インストールサーバーをドメイン名で指定する場合です。
+
+PXEブートメニューでは、最初の選択肢は`Local boot`です。
+これを選択すると、ブートプロセスはローカルディスクドライブから続行されます。
+一定の時間内にプロファイルが選択されなかった場合、このオプションが自動的に選択されます。
+これは、プロファイルのいずれかを選択するために人間のオペレーターがいない場合に、自動インストールを開始するのを防ぐためのセキュリティ対策です。
+
+または、手動での操作なしで、いずれかのプロファイルからインストールを自動的に開始することもできます。
+これは「無人プロビジョニング」と呼ばれます。
+
+
+
+.プロシージャ:PXEブートによるインストール
+[role=procedure]
+____
+. Keaサーバーを準備します。詳細はxref:client-configuration:autoinst-pxeboot.adoc#prepare-the-dhcp-server[Dhcpdサーバーの準備]を参照してください。
+
+. 自動インストール可能なディストリビューションを準備します。詳細はxref:client-configuration:autoinst-distributions.adoc[自動インストール可能なディストリビューション]を参照してください。
+
+. 自動インストールプロファイルを準備します。詳細はxref:client-configuration:autoinst-profiles.adoc[自動インストールプロファイル]を参照してください。
+
+. クライアントを再起動し、インストールするプロファイルを選択します。
+____
+
+他のいくつかのステップはオプションです。
+
+プロキシをインストールサーバとして使用するには、xref:client-configuration:autoinst-pxeboot.adoc#synchronize-the-tftp-tree-with-proxies[プロキシとTFTPツリーを同期する]を参照してください。
+無人プロビジョニングについては、xref:client-configuration:autoinst-unattended.adoc[無人プロビジョニング]を参照してください。
+
+
+[[prepare-the-dhcp-server]]
+== DHCPサーバを準備する
+
+PXEブートプロセスは、TFTPサーバを見つけるためにDhcpdを使用します。
+{productname}サーバまたはそのプロキシは、そのようなTFTPサーバとして機能できます。
+
+ネットワークのDhcpdサーバに管理者アクセス権が必要です。
+Dhcpd設定ファイルを編集して、TFTPブートサーバとしてインストールサーバを指すようにします。
+
+
+.例:Kea Dhcpd サーバーの設定
+. Dhcpdサーバ上で、ルートとして`/etc/dhcpd.conf`ファイルを開きます。
+. クライアントに対する宣言を次のように変更します。
++
+----
+  host myclient { (...)
+                  next-server 192.168.2.1;
+                  filename "grub/grub.0"; }
+----
+. ファイルを保存し、`dhcpd`サービスを再起動します。
+
+
+この例では、PXEクライアント`myclient`を`192.168.2.1`のインストールサーバに指定し、`grub/grub.0`ブートローダファイルの取得を指示しています。
+
+また、Dhcpdサーバが{productname}に登録されている場合は、その代わりにDhcpd式を使用して設定できます。
+
+
+.例:Dhcpd式を使用したKea Dhcpd サーバーの設定
+. menu:システム[システム一覧]に移動し、変更するクライアントを選択し、`Formulas`タブに移動してDhcpdフォーミュラを有効にします。
+. フォーミュラの`Dhcpd`タブに移動し、`Next Server`フィールドに、インストールサーバのホスト名またはIPアドレスを入力します。
+. `Filename EFI`フィールドに`grub/shim.efi`と入力して、EFI PXEサポートを有効にします。
+. `Filename`フィールドに`grub/grub.0`と入力して、レガシーBIOSサポートを有効にします。
+. btn:[Save Formula]をクリックして設定を保存します。
+. highstateを適用します。
+
+
+[NOTE]
+====
+* セキュアブートを使用していない場合は、`Filename EFI`フィールドで`grub/shim.efi`の代わりに`grub/grubx86.efi`と入力してください。
+
+* 異なるアーキテクチャについては、表<<grub-efi-arch>>を参照してください。
+
+* {cobbler}管理されたDhcpdの使用は{productname}ではサポートされていません。
+====
+
+これにより、すべてのホストに対してグローバルPXEサーバーが設定されます。また、ホストごとの設定も可能です。
+Dhcpd Formulaに関する詳細は、xref:specialized-guides:salt/salt-formula-dhcpd.adoc[Dhcpd Formula]を参照してください。
+
+
+
+[[synchronize-the-tftp-tree-with-proxies]]
+== プロキシを使用してTFTPツリーを同期する
+
+{productname} 5.xプロキシと同期する必要はありません。
+
+{productname}サーバー上のTFTPツリーを{productname}プロキシ4.3と同期できます。
+同期のために、HTTPSポート443を開いておく必要があります。
+プロキシを追加するたびに、ツリーの同期が遅くなります。
+
+[WARNING]
+====
+{productname}プロキシ4.3を使用している場合は、バージョン4.3のドキュメント`https://documentation.suse.com/suma/4.3/en/suse-manager/client-configuration/autoinst-pxeboot.html`を参照してください。
+====
+
+
+[[grub-efi-arch]]
+== 異なるアーキテクチャ用のGRUB EFIバイナリ名
+
+[cols="1,1", options="header"]
+.異なるアーキテクチャ用のGRUB EFIバイナリ名
+|===
+| アーキテクチャ | GRUB EFIバイナリ名
+| aarch64      | grubaa64.efi
+| x86-64       | grubx86.efi
+| ppc64le      | grub.ppc64le
+|===
