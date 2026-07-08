@@ -1,3 +1,5 @@
+- Update the OpenSCAP packages table in the
+  System Security with OpenSCAP article in the Administration guide (bsc#1269316)
 - Document the repository value for helm charts on MLM (bsc#1269667)
 - Removed unsupported {raspberrypios} 12 from Client Configuration Guide
 - Added a common workflow to setup crypto policies in the server container (bsc#1253505)
