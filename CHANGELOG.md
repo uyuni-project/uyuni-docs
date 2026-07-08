@@ -1,3 +1,4 @@
+- Documented SLES 15 SP7 to SLES 16.0 major upgrade via product migration in Client Configuration Guide
 - Added a common workflow to setup crypto policies in the server container (bsc#1253505)
 - Added mass migration using UI to Client Configuration Guide (bsc#1259594)
 - Enhanced proxy migration procedure (bsc#1269408)
