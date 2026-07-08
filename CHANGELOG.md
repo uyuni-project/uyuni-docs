@@ -1,4 +1,5 @@
 - Added a common workflow to setup crypto policies in the server container (bsc#1253505)
+- Added mass migration using UI to Client Configuration Guide (bsc#1259594)
 - Enhanced proxy migration procedure (bsc#1269408)
 - Added procedure for allowing uploading of large files to Specialized
   Guides (bsc#1268673)
