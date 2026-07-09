@@ -1,5 +1,6 @@
 - Update the OpenSCAP packages table in the
   System Security with OpenSCAP article in the Administration guide (bsc#1269316)
+- Documented SLES 15 SP7 to SLES 16.0 major upgrade via product migration in Client Configuration Guide
 - Document the repository value for helm charts on MLM (bsc#1269667)
 - Removed unsupported {raspberrypios} 12 from Client Configuration Guide
 - Added a common workflow to setup crypto policies in the server container (bsc#1253505)
