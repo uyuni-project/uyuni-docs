@@ -3,107 +3,86 @@ name: Build and archive documentation from release branches
 on:
   push:
     branches:
-      - 'uyuni-20[0-9][0-9].[0-9][0-9]' # Only master will build both Uyuni and SUSE Multi-Linux Manager documentations
-      - 'manager-4.3-MU-4.3.[0-9][0-9]?' # Other branches will only build SUSE Manager documentation
-      - 'manager-5.0-alpha[0-9]' # Other branches will only build SUSE Multi-Linux Manager documentation
-      - 'manager-5.0-beta[0-9]' # Other branches will only build SUSE Multi-Linux Manager documentation
-      - 'manager-5.0-rc[0-9]' # Other branches will only build SUSE Multi-Linux Manager documentation
-      - 'manager-5.0-gmc[0-9]' # Other branches will only build SUSE Multi-Linux Manager documentation
-      - 'manager-5.0-gm' # Other branches will only build SUSE Multi-Linux Manager documentation
-      - 'manager-5.0' # Other branches will only build SUSE Multi-Linux Manager documentation
+      - 'uyuni-20[0-9][0-9].[0-9][0-9]'
+      - 'manager-4.3-MU-4.3.[0-9][0-9]?'
+      - 'manager-5.0-alpha[0-9]'
+      - 'manager-5.0-beta[0-9]'
+      - 'manager-5.0-rc[0-9]'
+      - 'manager-5.0-gmc[0-9]'
+      - 'manager-5.0-gm'
+      - 'manager-5.0'
       - 'manager-5.0-MU-5.0.[0-9][0-9]?'
+      - 'manager-5.1-alpha[0-9]'
+      - 'manager-5.1-beta[0-9]'
+      - 'manager-5.1-rc[0-9]'
+      - 'manager-5.1-gmc[0-9]'
+      - 'manager-5.1-gm'
+      - 'manager-5.1-MU-5.1.[0-9][0-9]?'
+      - 'manager-5.2-alpha[0-9]'
+      - 'manager-5.2-beta[0-9]'
+      - 'manager-5.2-rc[0-9]'
+      - 'manager-5.2-gmc[0-9]'
+      - 'manager-5.2-gm'
+      - 'manager-5.2-MU-5.2.[0-9][0-9]?'
 
 jobs:
-  run:
+
+  # ── Uyuni OBS packages ─────────────────────────────────────────────────────
+  uyuni-obs:
     runs-on: ubuntu-latest
+    if: startsWith(github.ref_name, 'uyuni-')
+
+    container:
+      image: ghcr.io/uyuni-project/uyuni-docs-builder:latest
 
     steps:
-    - name: Checkout this repository
+    - name: Checkout repository
       uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 #v7.0.0
-      with:
-        path: uyuni-docs
 
-    - name: Checkout uyuni-docs-helper repository
+    - name: Build toolchain binary and generate configs
+      run: task setup && task gen
+
+    - name: Build Uyuni OBS packages (HTML + PDF tarballs)
+      run: task obs:uyuni
+
+    - name: Archive Uyuni OBS packages
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
+      with:
+        name: uyuni-obs-packages-${{ github.ref_name }}
+        path: build/packages/
+
+    - name: Archive changelog
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
+      with:
+        name: changelog-${{ github.ref_name }}
+        path: CHANGELOG.md
+
+  # ── MLM OBS packages ───────────────────────────────────────────────────────
+  mlm-obs:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref_name, 'manager-')
+
+    container:
+      image: ghcr.io/uyuni-project/uyuni-docs-builder:latest
+
+    steps:
+    - name: Checkout repository
       uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 #v7.0.0
-      with:
-        path: uyuni-docs-helper
-        repository: uyuni-project/uyuni-docs-helper
 
-    - name: Configure environment
-      run: |
-        alias docker='podman'
-        mkdir outputs
+    - name: Build toolchain binary and generate configs
+      run: task setup && task gen
 
-    - name: Build the Uyuni site documentation
-      run: |
-        rm -rf ./uyuni # Always clean before building
-        cd uyuni-docs-helper
-        ./uyuni-docs-helper -r ${{ github.ref_name }} -g https://github.com/${{ github.repository}}.git -o /tmp -c antora-uyuni -p uyuni
-        cd ..
-        mkdir ./uyuni # Required so the folder name is included later in the archive
-        cp -r /tmp/build ./uyuni/uyuni-site
-      if: startsWith(github.ref_name, 'uyuni-')
+    - name: Build SUSE Multi-Linux Manager OBS packages (HTML + PDF tarballs)
+      run: task obs:mlm
 
-    - name: Archive Uyuni site Documentation
+    - name: Archive SUSE Multi-Linux Manager OBS packages
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
       with:
-        name: documentation-uyuni-site-${{ github.ref_name }}
-        path: uyuni/
-      if: startsWith(github.ref_name, 'uyuni-')
+        name: mlm-obs-packages-${{ github.ref_name }}
+        path: build/packages/
 
-    - name: Build the Uyuni package documentation
-      run: |
-        rm -rf ./uyuni # Always clean before building
-        cd uyuni-docs-helper
-        ./uyuni-docs-helper -r ${{ github.ref_name }} -g https://github.com/${{ github.repository}}.git -o /tmp -c obs-packages-uyuni -p uyuni
-        cd ..
-        mkdir ./uyuni # Required so the folder name is included later in the archive
-        cp -r /tmp/build/packages ./uyuni/uyuni-package
-      if: startsWith(github.ref_name, 'uyuni-')
-
-    - name: Archive Uyuni package Documentation
+    - name: Archive changelog
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
       with:
-        name: documentation-uyuni-package-${{ github.ref_name }}
-        path: uyuni/
-      if: startsWith(github.ref_name, 'uyuni-')
-
-    - name: Build the SUSE Multi-Linux Manager site documentation
-      run: |
-        rm -rf ./susemanager # Always clean before building
-        cd uyuni-docs-helper
-        ./uyuni-docs-helper -r ${{ github.ref_name }} -g https://github.com/${{ github.repository}}.git -o /tmp -c antora-mlm -p mlm
-        cd ..
-        mkdir ./susemanager # Required so the folder name is included later in the archive
-        cp -r /tmp/build ./susemanager/susemanager-site
-      if: startsWith(github.ref_name, 'manager-')
-
-    - name: Archive SUSE Multi-Linux Manager site Documentation
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
-      with:
-        name: documentation-suse-multi-linux-manager-site-${{ github.ref_name }}
-        path: suse-multi-linux-manager/
-      if: startsWith(github.ref_name, 'manager-')
-
-    - name: Build the SUSE Multi-Linux Manager package documentation (only english)
-      run: |
-        rm -rf ./suse-multi-linux-manager # Always clean before building
-        cd uyuni-docs-helper
-        ./uyuni-docs-helper -r ${{ github.ref_name }} -g https://github.com/${{ github.repository}}.git -o /tmp -c obs-packages-mlm-en -p mlm
-        cd ..
-        mkdir ./suse-multi-linux-manager # Required so the folder name is included later in the archive
-        cp -r /tmp/build/packages/ ./suse-multi-linux-manager/suse-multi-linux-manager-package
-      if: startsWith(github.ref_name, 'manager-')
-
-    - name: Archive SUSE Multi-Linux Manager package Documentation (only english)
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
-      with:
-        name: documentation-suse-multi-linux-manager-package-${{ github.ref_name }}
-        path: suse-multi-linux-manager/
-      if: startsWith(github.ref_name, 'manager-')
-
-    - name: Archive the changelog
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
-      with:
-        name: changelog
-        path: uyuni-docs/CHANGELOG.md
+        name: changelog-${{ github.ref_name }}
+        path: CHANGELOG.md
