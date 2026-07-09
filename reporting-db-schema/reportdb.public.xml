@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><database name="reportdb" schema="public" type="PostgreSQL - 16.9">
+<?xml version="1.0" encoding="UTF-8"?><database name="reportdb" schema="public" type="PostgreSQL - 16.14">
    <tables>
       <table name="account" remarks="The list of the user authorized to access a Uyuni instance" schema="public" type="TABLE">
          <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="mgm_id" nullable="false" remarks="The id of the Uyuni instance that contains this data" size="0" type="numeric" typeCode="2">
@@ -106,12 +106,14 @@
             <child column="mgm_id" foreignKey="channelerrata_channel_fkey" implied="false" onDeleteCascade="false" schema="public" table="channelerrata"/>
             <child column="mgm_id" foreignKey="channelpackage_channel_fkey" implied="false" onDeleteCascade="false" schema="public" table="channelpackage"/>
             <child column="mgm_id" foreignKey="channelrepository_channel_fkey" implied="false" onDeleteCascade="false" schema="public" table="channelrepository"/>
+            <child column="mgm_id" foreignKey="clmenvironmentdifference_channel_fkey" implied="false" onDeleteCascade="false" schema="public" table="clmenvironmentdifference"/>
             <child column="mgm_id" foreignKey="systemchannel_channel_fkey" implied="false" onDeleteCascade="false" schema="public" table="systemchannel"/>
          </column>
          <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="channel_id" nullable="false" remarks="The id of the channel" size="0" type="numeric" typeCode="2">
             <child column="channel_id" foreignKey="channelerrata_channel_fkey" implied="false" onDeleteCascade="false" schema="public" table="channelerrata"/>
             <child column="channel_id" foreignKey="channelpackage_channel_fkey" implied="false" onDeleteCascade="false" schema="public" table="channelpackage"/>
             <child column="channel_id" foreignKey="channelrepository_channel_fkey" implied="false" onDeleteCascade="false" schema="public" table="channelrepository"/>
+            <child column="channel_id" foreignKey="clmenvironmentdifference_channel_fkey" implied="false" onDeleteCascade="false" schema="public" table="clmenvironmentdifference"/>
             <child column="channel_id" foreignKey="systemchannel_channel_fkey" implied="false" onDeleteCascade="false" schema="public" table="systemchannel"/>
          </column>
          <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="name" nullable="true" remarks="The unique name of this channel" size="256" type="varchar" typeCode="12"/>
@@ -230,6 +232,43 @@
          <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="number_of_packages" nullable="true" remarks="The number of packages provided by the channel" size="19" type="int8" typeCode="-5"/>
          <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="organization" nullable="true" remarks="The organization that owns this data" size="128" type="varchar" typeCode="12"/>
          <column autoUpdated="false" defaultValue="null" digits="6" id="6" name="synced_date" nullable="true" remarks="The timestamp of when this data was last refreshed." size="35" type="timestamptz" typeCode="93"/>
+      </table>
+      <table name="clmenvironmentdifference" remarks="The differences in Content Lifecycle Management Environments compared it its originals" schema="public" type="TABLE">
+         <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="mgm_id" nullable="false" remarks="The id of the Uyuni instance that contains this data" size="0" type="numeric" typeCode="2">
+            <parent column="mgm_id" foreignKey="clmenvironmentdifference_channel_fkey" implied="false" onDeleteCascade="false" schema="public" table="channel"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="diff_id" nullable="false" remarks="The id of the difference entry" size="19" type="int8" typeCode="-5"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="project_label" nullable="false" remarks="The label of the Content Lifecycle Management project" size="24" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="environment_label" nullable="false" remarks="The label of the Content Lifecycle Management environment" size="16" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="channel_id" nullable="false" remarks="The id of the channel which belong to the Content Lifecycle Management environment" size="0" type="numeric" typeCode="2">
+            <parent column="channel_id" foreignKey="clmenvironmentdifference_channel_fkey" implied="false" onDeleteCascade="false" schema="public" table="channel"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="diff_action" nullable="false" remarks="The action which will be done with the next build or promote of the environment (&quot;+&quot; for adding to the environment, &quot;-&quot; for removing or &quot;x&quot; for excluded by a filter)" size="8" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="entry_id" nullable="false" remarks="The id of the entry of the specific type (for type &quot;package&quot; the package_id or errata_id for type &quot;errata&quot;)" size="0" type="numeric" typeCode="2"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="7" name="entry_type" nullable="false" remarks="The type of the entry (either &quot;package&quot; or &quot;errata&quot;)" size="16" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="8" name="entry_name" nullable="false" remarks="The name of the entry" size="256" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="9" name="entry_description" nullable="false" remarks="The description of the entry" size="2147483647" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="CURRENT_TIMESTAMP" digits="6" id="10" name="synced_date" nullable="true" remarks="The timestamp of when this data was last refreshed." size="35" type="timestamptz" typeCode="93"/>
+         <primaryKey column="mgm_id" sequenceNumberInPK="1"/>
+         <primaryKey column="diff_id" sequenceNumberInPK="2"/>
+         <index name="clmenvironmentdifference_pk" unique="true">
+            <column ascending="true" name="mgm_id"/>
+            <column ascending="true" name="diff_id"/>
+         </index>
+         <index name="clmenvironmentdifference_eidt_idx" unique="false">
+            <column ascending="true" name="entry_id"/>
+            <column ascending="true" name="entry_type"/>
+         </index>
+         <index name="clmenvironmentdifference_ped_idx" unique="false">
+            <column ascending="true" name="project_label"/>
+            <column ascending="true" name="environment_label"/>
+         </index>
+         <checkConstraint constraint="(((diff_action)::text &lt;&gt; ''::text))" name="vn_clmenvironmentdifference_diff_action"/>
+         <checkConstraint constraint="(((entry_description)::text &lt;&gt; ''::text))" name="vn_clmenvironmentdifference_entry_description"/>
+         <checkConstraint constraint="(((entry_name)::text &lt;&gt; ''::text))" name="vn_clmenvironmentdifference_entry_name"/>
+         <checkConstraint constraint="(((entry_type)::text &lt;&gt; ''::text))" name="vn_clmenvironmentdifference_entry_type"/>
+         <checkConstraint constraint="(((environment_label)::text &lt;&gt; ''::text))" name="vn_clmenvironmentdifference_environment_label"/>
+         <checkConstraint constraint="(((project_label)::text &lt;&gt; ''::text))" name="vn_clmenvironmentdifference_project_label"/>
       </table>
       <table name="clonedchannelsreport" numRows="0" remarks="List of cloned channels with their original channel." schema="public" type="VIEW" viewSql=" SELECT original.mgm_id,&#10;    original.channel_id AS original_channel_id,&#10;    original.label AS original_channel_label,&#10;    original.name AS original_channel_name,&#10;    cloned.channel_id AS new_channel_id,&#10;    cloned.label AS new_channel_label,&#10;    cloned.name AS new_channel_name,&#10;    cloned.synced_date&#10;   FROM (channel original&#10;     JOIN channel cloned ON (((cloned.mgm_id = original.mgm_id) AND (cloned.original_channel_id = original.channel_id))))&#10;  ORDER BY original.mgm_id, original.channel_id;">
          <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="mgm_id" nullable="true" remarks="The id of the Uyuni instance that contains this data" size="0" type="numeric" typeCode="2"/>
@@ -429,7 +468,7 @@
          <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="guest" nullable="true" remarks="The id of the guest system" size="0" type="numeric" typeCode="2"/>
          <column autoUpdated="false" defaultValue="null" digits="6" id="3" name="synced_date" nullable="true" remarks="The timestamp of when this data was last refreshed." size="35" type="timestamptz" typeCode="93"/>
       </table>
-      <table name="inventoryreport" numRows="0" remarks="List of all registered systems, together with hardware and software information." schema="public" type="VIEW" viewSql=" WITH entitlements AS (&#10;         SELECT systementitlement.mgm_id,&#10;            systementitlement.system_id,&#10;            string_agg(((systementitlement.system_group_id || ' - '::text) || (systementitlement.name)::text), ';'::text) AS entitlements&#10;           FROM systementitlement&#10;          GROUP BY systementitlement.mgm_id, systementitlement.system_id&#10;        ), groups AS (&#10;         SELECT systemgroupmember.mgm_id,&#10;            systemgroupmember.system_id,&#10;            string_agg(((systemgroupmember.system_group_id || ' - '::text) || (systemgroupmember.group_name)::text), ';'::text) AS system_groups&#10;           FROM systemgroupmember&#10;          GROUP BY systemgroupmember.mgm_id, systemgroupmember.system_id&#10;        ), configchannels AS (&#10;         SELECT systemconfigchannel.mgm_id,&#10;            systemconfigchannel.system_id,&#10;            string_agg(((systemconfigchannel.config_channel_id || ' - '::text) || (systemconfigchannel.name)::text), ';'::text) AS configuration_channels&#10;           FROM systemconfigchannel&#10;          GROUP BY systemconfigchannel.mgm_id, systemconfigchannel.system_id&#10;        ), channels AS (&#10;         SELECT systemchannel.mgm_id,&#10;            systemchannel.system_id,&#10;            string_agg(((systemchannel.channel_id || ' - '::text) || (systemchannel.name)::text), ';'::text) AS software_channels&#10;           FROM systemchannel&#10;          GROUP BY systemchannel.mgm_id, systemchannel.system_id&#10;        ), v6addresses AS (&#10;         SELECT systemnetaddressv6.mgm_id,&#10;            systemnetaddressv6.system_id,&#10;            systemnetaddressv6.interface_id,&#10;            string_agg(((((systemnetaddressv6.address)::text || ' ('::text) || (systemnetaddressv6.scope)::text) || ')'::text), ';'::text) AS ip6_addresses&#10;           FROM systemnetaddressv6&#10;          GROUP BY systemnetaddressv6.mgm_id, systemnetaddressv6.system_id, systemnetaddressv6.interface_id&#10;        )&#10; SELECT system.mgm_id,&#10;    system.system_id,&#10;    system.profile_name,&#10;    system.hostname,&#10;    system.minion_id,&#10;    system.machine_id,&#10;    system.registered_by,&#10;    system.registration_time,&#10;    system.last_checkin_time,&#10;    system.kernel_version,&#10;    system.organization,&#10;    system.architecture,&#10;    system.hardware,&#10;    systemnetinterface.name AS primary_interface,&#10;    systemnetinterface.hardware_address,&#10;    systemnetaddressv4.address AS ip_address,&#10;    v6addresses.ip6_addresses,&#10;    configchannels.configuration_channels,&#10;    entitlements.entitlements,&#10;    groups.system_groups,&#10;    systemvirtualdata.host_system_id AS virtual_host,&#10;    (systemvirtualdata.virtual_system_id IS NULL) AS is_virtualized,&#10;    systemvirtualdata.instance_type_name AS virt_type,&#10;    channels.software_channels,&#10;    COALESCE(systemoutdated.packages_out_of_date, (0)::bigint) AS packages_out_of_date,&#10;    COALESCE(systemoutdated.errata_out_of_date, (0)::bigint) AS errata_out_of_date,&#10;    system.synced_date&#10;   FROM (((((((((system&#10;     LEFT JOIN systemvirtualdata ON (((system.mgm_id = systemvirtualdata.mgm_id) AND (system.system_id = systemvirtualdata.virtual_system_id))))&#10;     LEFT JOIN systemoutdated ON (((system.mgm_id = systemoutdated.mgm_id) AND (system.system_id = systemoutdated.system_id))))&#10;     LEFT JOIN systemnetinterface ON (((system.mgm_id = systemnetinterface.mgm_id) AND (system.system_id = systemnetinterface.system_id) AND systemnetinterface.primary_interface)))&#10;     LEFT JOIN systemnetaddressv4 ON (((system.mgm_id = systemnetaddressv4.mgm_id) AND (system.system_id = systemnetaddressv4.system_id) AND (systemnetinterface.interface_id = systemnetaddressv4.interface_id))))&#10;     LEFT JOIN v6addresses ON (((system.mgm_id = v6addresses.mgm_id) AND (system.system_id = v6addresses.system_id) AND (systemnetinterface.interface_id = v6addresses.interface_id))))&#10;     LEFT JOIN entitlements ON (((system.mgm_id = entitlements.mgm_id) AND (system.system_id = entitlements.system_id))))&#10;     LEFT JOIN groups ON (((system.mgm_id = groups.mgm_id) AND (system.system_id = groups.system_id))))&#10;     LEFT JOIN configchannels ON (((system.mgm_id = configchannels.mgm_id) AND (system.system_id = configchannels.system_id))))&#10;     LEFT JOIN channels ON (((system.mgm_id = channels.mgm_id) AND (system.system_id = channels.system_id))))&#10;  ORDER BY system.mgm_id, system.system_id;">
+      <table name="inventoryreport" numRows="0" remarks="List of all registered systems, together with hardware and software information." schema="public" type="VIEW" viewSql=" WITH entitlements AS (&#10;         SELECT systementitlement.mgm_id,&#10;            systementitlement.system_id,&#10;            string_agg(((systementitlement.system_group_id || ' - '::text) || (systementitlement.name)::text), ';'::text) AS entitlements&#10;           FROM systementitlement&#10;          GROUP BY systementitlement.mgm_id, systementitlement.system_id&#10;        ), groups AS (&#10;         SELECT systemgroupmember.mgm_id,&#10;            systemgroupmember.system_id,&#10;            string_agg(((systemgroupmember.system_group_id || ' - '::text) || (systemgroupmember.group_name)::text), ';'::text) AS system_groups&#10;           FROM systemgroupmember&#10;          GROUP BY systemgroupmember.mgm_id, systemgroupmember.system_id&#10;        ), configchannels AS (&#10;         SELECT systemconfigchannel.mgm_id,&#10;            systemconfigchannel.system_id,&#10;            string_agg(((systemconfigchannel.config_channel_id || ' - '::text) || (systemconfigchannel.name)::text), ';'::text) AS configuration_channels&#10;           FROM systemconfigchannel&#10;          GROUP BY systemconfigchannel.mgm_id, systemconfigchannel.system_id&#10;        ), channels AS (&#10;         SELECT systemchannel.mgm_id,&#10;            systemchannel.system_id,&#10;            string_agg(((systemchannel.channel_id || ' - '::text) || (systemchannel.name)::text), ';'::text) AS software_channels&#10;           FROM systemchannel&#10;          GROUP BY systemchannel.mgm_id, systemchannel.system_id&#10;        ), v6addresses AS (&#10;         SELECT systemnetaddressv6.mgm_id,&#10;            systemnetaddressv6.system_id,&#10;            systemnetaddressv6.interface_id,&#10;            string_agg(((((systemnetaddressv6.address)::text || ' ('::text) || (systemnetaddressv6.scope)::text) || ')'::text), ';'::text) AS ip6_addresses&#10;           FROM systemnetaddressv6&#10;          GROUP BY systemnetaddressv6.mgm_id, systemnetaddressv6.system_id, systemnetaddressv6.interface_id&#10;        )&#10; SELECT system.mgm_id,&#10;    system.system_id,&#10;    system.profile_name,&#10;    system.hostname,&#10;    system.minion_id,&#10;    system.machine_id,&#10;    system.registered_by,&#10;    system.registration_time,&#10;    system.last_checkin_time,&#10;    system.last_boot_time,&#10;    system.kernel_version,&#10;    system.organization,&#10;    system.architecture,&#10;    system.hardware,&#10;    systemnetinterface.name AS primary_interface,&#10;    systemnetinterface.hardware_address,&#10;    systemnetaddressv4.address AS ip_address,&#10;    v6addresses.ip6_addresses,&#10;    configchannels.configuration_channels,&#10;    entitlements.entitlements,&#10;    groups.system_groups,&#10;    systemvirtualdata.host_system_id AS virtual_host,&#10;    (systemvirtualdata.virtual_system_id IS NOT NULL) AS is_virtualized,&#10;    systemvirtualdata.instance_type_name AS virt_type,&#10;    channels.software_channels,&#10;    COALESCE(systemoutdated.packages_out_of_date, (0)::bigint) AS packages_out_of_date,&#10;    COALESCE(systemoutdated.errata_out_of_date, (0)::bigint) AS errata_out_of_date,&#10;    COALESCE(systemoutdated.extra_pkg_count, (0)::bigint) AS extra_pkg_count,&#10;    systemoutdated.status,&#10;    system.synced_date&#10;   FROM (((((((((system&#10;     LEFT JOIN systemvirtualdata ON (((system.mgm_id = systemvirtualdata.mgm_id) AND (system.system_id = systemvirtualdata.virtual_system_id))))&#10;     LEFT JOIN systemoutdated ON (((system.mgm_id = systemoutdated.mgm_id) AND (system.system_id = systemoutdated.system_id))))&#10;     LEFT JOIN systemnetinterface ON (((system.mgm_id = systemnetinterface.mgm_id) AND (system.system_id = systemnetinterface.system_id) AND systemnetinterface.primary_interface)))&#10;     LEFT JOIN systemnetaddressv4 ON (((system.mgm_id = systemnetaddressv4.mgm_id) AND (system.system_id = systemnetaddressv4.system_id) AND (systemnetinterface.interface_id = systemnetaddressv4.interface_id))))&#10;     LEFT JOIN v6addresses ON (((system.mgm_id = v6addresses.mgm_id) AND (system.system_id = v6addresses.system_id) AND (systemnetinterface.interface_id = v6addresses.interface_id))))&#10;     LEFT JOIN entitlements ON (((system.mgm_id = entitlements.mgm_id) AND (system.system_id = entitlements.system_id))))&#10;     LEFT JOIN groups ON (((system.mgm_id = groups.mgm_id) AND (system.system_id = groups.system_id))))&#10;     LEFT JOIN configchannels ON (((system.mgm_id = configchannels.mgm_id) AND (system.system_id = configchannels.system_id))))&#10;     LEFT JOIN channels ON (((system.mgm_id = channels.mgm_id) AND (system.system_id = channels.system_id))))&#10;  ORDER BY system.mgm_id, system.system_id;">
          <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="mgm_id" nullable="true" remarks="The id of the Uyuni instance that contains this data" size="0" type="numeric" typeCode="2"/>
          <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="system_id" nullable="true" remarks="The id of the system" size="0" type="numeric" typeCode="2"/>
          <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="profile_name" nullable="true" remarks="The unique descriptive name of the system" size="128" type="varchar" typeCode="12"/>
@@ -439,24 +478,27 @@
          <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="registered_by" nullable="true" remarks="The user account who onboarded this system" size="64" type="varchar" typeCode="12"/>
          <column autoUpdated="false" defaultValue="null" digits="6" id="7" name="registration_time" nullable="true" remarks="When this system was onboarded" size="35" type="timestamptz" typeCode="93"/>
          <column autoUpdated="false" defaultValue="null" digits="6" id="8" name="last_checkin_time" nullable="true" remarks="When this system was visible and reachable last time" size="35" type="timestamptz" typeCode="93"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="9" name="kernel_version" nullable="true" remarks="The version of the kernel installed on this system" size="64" type="varchar" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="10" name="organization" nullable="true" remarks="The organization that owns this data" size="128" type="varchar" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="11" name="architecture" nullable="true" remarks="The architecture of the system" size="64" type="varchar" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="12" name="hardware" nullable="true" remarks="A brief description of the hardware specification of this system" size="2147483647" type="text" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="13" name="primary_interface" nullable="true" remarks="The name of the system primary network interface" size="32" type="varchar" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="14" name="hardware_address" nullable="true" remarks="The MAC address of the network interface" size="96" type="varchar" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="15" name="ip_address" nullable="true" remarks="The IPv4 address of the primary network interface of the system" size="64" type="varchar" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="16" name="ip6_addresses" nullable="true" remarks="The list of IPv6 addresses and their scopes of the primary network interface of the system, separated by ;" size="2147483647" type="text" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="17" name="configuration_channels" nullable="true" remarks="The list of configuration channels the system is subscribed to, separated by ;" size="2147483647" type="text" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="18" name="entitlements" nullable="true" remarks="The list of entitlements of the system, separated by ;" size="2147483647" type="text" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="19" name="system_groups" nullable="true" remarks="The list of groups of the system, separated by ;" size="2147483647" type="text" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="20" name="virtual_host" nullable="true" remarks="The id of the host of the system, if any" size="0" type="numeric" typeCode="2"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="21" name="is_virtualized" nullable="true" remarks="True if the system is virtualized" size="1" type="bool" typeCode="-7"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="22" name="virt_type" nullable="true" remarks="The type of virtualization, if the system is virualized" size="128" type="varchar" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="23" name="software_channels" nullable="true" remarks="THe list of software channels the system is subscribed to, separated by ;" size="2147483647" type="text" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="24" name="packages_out_of_date" nullable="true" remarks="The number of packages installed on the system that can be updated" size="19" type="int8" typeCode="-5"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="25" name="errata_out_of_date" nullable="true" remarks="The number of patches that can be applied to the system" size="19" type="int8" typeCode="-5"/>
-         <column autoUpdated="false" defaultValue="null" digits="6" id="26" name="synced_date" nullable="true" remarks="The timestamp of when this data was last refreshed." size="35" type="timestamptz" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="6" id="9" name="last_boot_time" nullable="true" remarks="When this system was last time booted" size="35" type="timestamptz" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="10" name="kernel_version" nullable="true" remarks="The version of the kernel installed on this system" size="64" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="11" name="organization" nullable="true" remarks="The organization that owns this data" size="128" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="12" name="architecture" nullable="true" remarks="The architecture of the system" size="64" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="13" name="hardware" nullable="true" remarks="A brief description of the hardware specification of this system" size="2147483647" type="text" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="14" name="primary_interface" nullable="true" remarks="The name of the system primary network interface" size="32" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="15" name="hardware_address" nullable="true" remarks="The MAC address of the network interface" size="96" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="16" name="ip_address" nullable="true" remarks="The IPv4 address of the primary network interface of the system" size="64" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="17" name="ip6_addresses" nullable="true" remarks="The list of IPv6 addresses and their scopes of the primary network interface of the system, separated by ;" size="2147483647" type="text" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="18" name="configuration_channels" nullable="true" remarks="The list of configuration channels the system is subscribed to, separated by ;" size="2147483647" type="text" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="19" name="entitlements" nullable="true" remarks="The list of entitlements of the system, separated by ;" size="2147483647" type="text" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="20" name="system_groups" nullable="true" remarks="The list of groups of the system, separated by ;" size="2147483647" type="text" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="21" name="virtual_host" nullable="true" remarks="The id of the host of the system, if any" size="0" type="numeric" typeCode="2"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="22" name="is_virtualized" nullable="true" remarks="True if the system is virtualized" size="1" type="bool" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="23" name="virt_type" nullable="true" remarks="The type of virtualization, if the system is virualized" size="128" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="24" name="software_channels" nullable="true" remarks="THe list of software channels the system is subscribed to, separated by ;" size="2147483647" type="text" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="25" name="packages_out_of_date" nullable="true" remarks="The number of packages installed on the system that can be updated" size="19" type="int8" typeCode="-5"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="26" name="errata_out_of_date" nullable="true" remarks="The number of patches that can be applied to the system" size="19" type="int8" typeCode="-5"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="27" name="extra_pkg_count" nullable="true" remarks="The number of packages which do not exist in a channel assigned to this system" size="19" type="int8" typeCode="-5"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="28" name="status" nullable="true" remarks="The status of this system: unentitled, awol, kickstarting, reboot needed, updates scheduled, actions scheduled, up2date, critical or updates" size="20" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="6" id="29" name="synced_date" nullable="true" remarks="The timestamp of when this data was last refreshed." size="35" type="timestamptz" typeCode="93"/>
       </table>
       <table name="package" remarks="The list of the packages managed by a Uyuni instance" schema="public" type="TABLE">
          <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="mgm_id" nullable="false" remarks="The id of the Uyuni instance that contains this data" size="0" type="numeric" typeCode="2">
@@ -538,7 +580,7 @@
             <child column="repository_id" foreignKey="channelrepository_repository_fkey" implied="false" onDeleteCascade="false" schema="public" table="channelrepository"/>
          </column>
          <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="label" nullable="true" remarks="The unique label of the repository" size="128" type="varchar" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="url" nullable="true" remarks="The url where the repository is reachable" size="2048" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="url" nullable="true" remarks="The url where the repository is reachable" size="4096" type="varchar" typeCode="12"/>
          <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="type" nullable="true" remarks="The type of the repository. Possible values: yum, uln, deb" size="32" type="varchar" typeCode="12"/>
          <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="metadata_signed" nullable="true" remarks="True if the metadata of this repositories is signed" size="1" type="bool" typeCode="-7"/>
          <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="organization" nullable="true" remarks="The organization that owns this data" size="128" type="varchar" typeCode="12"/>
@@ -598,6 +640,7 @@
             <child column="mgm_id" foreignKey="systementitlement_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="systementitlement"/>
             <child column="mgm_id" foreignKey="systemerrata_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="systemerrata"/>
             <child column="mgm_id" foreignKey="systemgroupmember_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="systemgroupmember"/>
+            <child column="mgm_id" foreignKey="systemhardware_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="systemhardware"/>
             <child column="mgm_id" foreignKey="systemhistory_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="systemhistory"/>
             <child column="mgm_id" foreignKey="systemnetinterface_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="systemnetinterface"/>
             <child column="mgm_id" foreignKey="systemoutdated_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="systemoutdated"/>
@@ -614,6 +657,7 @@
             <child column="system_id" foreignKey="systementitlement_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="systementitlement"/>
             <child column="system_id" foreignKey="systemerrata_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="systemerrata"/>
             <child column="system_id" foreignKey="systemgroupmember_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="systemgroupmember"/>
+            <child column="system_id" foreignKey="systemhardware_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="systemhardware"/>
             <child column="system_id" foreignKey="systemhistory_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="systemhistory"/>
             <child column="system_id" foreignKey="systemnetinterface_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="systemnetinterface"/>
             <child column="system_id" foreignKey="systemoutdated_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="systemoutdated"/>
@@ -632,23 +676,24 @@
          <column autoUpdated="false" defaultValue="null" digits="0" id="8" name="registered_by" nullable="true" remarks="The user account who onboarded this system" size="64" type="varchar" typeCode="12"/>
          <column autoUpdated="false" defaultValue="null" digits="6" id="9" name="registration_time" nullable="true" remarks="When this system was onboarded" size="35" type="timestamptz" typeCode="93"/>
          <column autoUpdated="false" defaultValue="null" digits="6" id="10" name="last_checkin_time" nullable="true" remarks="When this system was visible and reachable last time" size="35" type="timestamptz" typeCode="93"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="11" name="kernel_version" nullable="true" remarks="The version of the kernel installed on this system" size="64" type="varchar" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="12" name="architecture" nullable="true" remarks="The architecture of the system" size="64" type="varchar" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="false" digits="0" id="13" name="is_proxy" nullable="false" remarks="True if this system is a Uyuni Proxy instance" size="1" type="bool" typeCode="-7"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="14" name="proxy_system_id" nullable="true" remarks="The id of the Uyuni proxy that this system is connected to, if any" size="0" type="numeric" typeCode="2"/>
-         <column autoUpdated="false" defaultValue="false" digits="0" id="15" name="is_mgr_server" nullable="false" remarks="True of this system is a Uyuni instance" size="1" type="bool" typeCode="-7"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="16" name="organization" nullable="true" remarks="The organization that owns this data" size="128" type="varchar" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="17" name="hardware" nullable="true" remarks="A brief description of the hardware specification of this system" size="2147483647" type="text" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="18" name="machine" nullable="true" remarks="The machine on which this system is located" size="64" type="varchar" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="19" name="rack" nullable="true" remarks="The rack on which this system is located" size="64" type="varchar" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="20" name="room" nullable="true" remarks="The room where this system is located" size="32" type="varchar" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="21" name="building" nullable="true" remarks="The building where this system is located" size="128" type="varchar" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="22" name="address1" nullable="true" remarks="The first row of the address where this system is located" size="128" type="varchar" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="23" name="address2" nullable="true" remarks="The second row of the address where this system is located" size="128" type="varchar" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="24" name="city" nullable="true" remarks="The city where this system is located" size="128" type="varchar" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="25" name="state" nullable="true" remarks="The state where this system is located" size="60" type="varchar" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="26" name="country" nullable="true" remarks="The country where this system is located" size="2" type="varchar" typeCode="12"/>
-         <column autoUpdated="false" defaultValue="CURRENT_TIMESTAMP" digits="6" id="27" name="synced_date" nullable="true" remarks="The timestamp of when this data was last refreshed." size="35" type="timestamptz" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="6" id="11" name="last_boot_time" nullable="true" remarks="When this system was last time booted" size="35" type="timestamptz" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="12" name="kernel_version" nullable="true" remarks="The version of the kernel installed on this system" size="64" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="13" name="architecture" nullable="true" remarks="The architecture of the system" size="64" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="false" digits="0" id="14" name="is_proxy" nullable="false" remarks="True if this system is a Uyuni Proxy instance" size="1" type="bool" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="15" name="proxy_system_id" nullable="true" remarks="The id of the Uyuni proxy that this system is connected to, if any" size="0" type="numeric" typeCode="2"/>
+         <column autoUpdated="false" defaultValue="false" digits="0" id="16" name="is_mgr_server" nullable="false" remarks="True of this system is a Uyuni instance" size="1" type="bool" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="17" name="organization" nullable="true" remarks="The organization that owns this data" size="128" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="18" name="hardware" nullable="true" remarks="A brief description of the hardware specification of this system" size="2147483647" type="text" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="19" name="machine" nullable="true" remarks="The machine on which this system is located" size="64" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="20" name="rack" nullable="true" remarks="The rack on which this system is located" size="64" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="21" name="room" nullable="true" remarks="The room where this system is located" size="32" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="22" name="building" nullable="true" remarks="The building where this system is located" size="128" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="23" name="address1" nullable="true" remarks="The first row of the address where this system is located" size="128" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="24" name="address2" nullable="true" remarks="The second row of the address where this system is located" size="128" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="25" name="city" nullable="true" remarks="The city where this system is located" size="128" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="26" name="state" nullable="true" remarks="The state where this system is located" size="60" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="27" name="country" nullable="true" remarks="The country where this system is located" size="2" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="CURRENT_TIMESTAMP" digits="6" id="28" name="synced_date" nullable="true" remarks="The timestamp of when this data was last refreshed." size="35" type="timestamptz" typeCode="93"/>
          <primaryKey column="mgm_id" sequenceNumberInPK="1"/>
          <primaryKey column="system_id" sequenceNumberInPK="2"/>
          <index name="system_pk" unique="true">
@@ -721,8 +766,8 @@
       </table>
       <table name="systemchannel" remarks="The list of channels a system is subscribed to" schema="public" type="TABLE">
          <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="mgm_id" nullable="false" remarks="The id of the Uyuni instance that contains this data" size="0" type="numeric" typeCode="2">
-            <parent column="mgm_id" foreignKey="systemchannel_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="system"/>
             <parent column="mgm_id" foreignKey="systemchannel_channel_fkey" implied="false" onDeleteCascade="false" schema="public" table="channel"/>
+            <parent column="mgm_id" foreignKey="systemchannel_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="system"/>
          </column>
          <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="system_id" nullable="false" remarks="The id of the system" size="0" type="numeric" typeCode="2">
             <parent column="system_id" foreignKey="systemchannel_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="system"/>
@@ -827,8 +872,8 @@
       </table>
       <table name="systemerrata" remarks="The list of patches applicable to a system" schema="public" type="TABLE">
          <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="mgm_id" nullable="false" remarks="The id of the Uyuni instance that contains this data" size="0" type="numeric" typeCode="2">
-            <parent column="mgm_id" foreignKey="systemerrata_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="system"/>
             <parent column="mgm_id" foreignKey="systemerrata_errata_fkey" implied="false" onDeleteCascade="false" schema="public" table="errata"/>
+            <parent column="mgm_id" foreignKey="systemerrata_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="system"/>
          </column>
          <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="system_id" nullable="false" remarks="The id of the system" size="0" type="numeric" typeCode="2">
             <parent column="system_id" foreignKey="systemerrata_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="system"/>
@@ -890,8 +935,8 @@
       </table>
       <table name="systemgroupmember" remarks="The list of system group a system is member of" schema="public" type="TABLE">
          <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="mgm_id" nullable="false" remarks="The id of the Uyuni instance that contains this data" size="0" type="numeric" typeCode="2">
-            <parent column="mgm_id" foreignKey="systemgroupmember_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="system"/>
             <parent column="mgm_id" foreignKey="systemgroupmember_group_fkey" implied="false" onDeleteCascade="false" schema="public" table="systemgroup"/>
+            <parent column="mgm_id" foreignKey="systemgroupmember_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="system"/>
          </column>
          <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="system_id" nullable="false" remarks="The id of the system" size="0" type="numeric" typeCode="2">
             <parent column="system_id" foreignKey="systemgroupmember_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="system"/>
@@ -915,8 +960,8 @@
       </table>
       <table name="systemgrouppermission" remarks="The list of additional user accounts allowed to access a system group" schema="public" type="TABLE">
          <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="mgm_id" nullable="false" remarks="The id of the Uyuni instance that contains this data" size="0" type="numeric" typeCode="2">
-            <parent column="mgm_id" foreignKey="systemgrouppermission_user_fkey" implied="false" onDeleteCascade="false" schema="public" table="account"/>
             <parent column="mgm_id" foreignKey="systemgrouppermission_group_fkey" implied="false" onDeleteCascade="false" schema="public" table="systemgroup"/>
+            <parent column="mgm_id" foreignKey="systemgrouppermission_user_fkey" implied="false" onDeleteCascade="false" schema="public" table="account"/>
          </column>
          <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="system_group_id" nullable="false" remarks="The id of this system group" size="0" type="numeric" typeCode="2">
             <parent column="system_group_id" foreignKey="systemgrouppermission_group_fkey" implied="false" onDeleteCascade="false" schema="public" table="systemgroup"/>
@@ -951,6 +996,102 @@
          <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="system_id" nullable="true" remarks="The id of the system" size="0" type="numeric" typeCode="2"/>
          <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="system_name" nullable="true" remarks="The unique descriptive name of the system" size="128" type="varchar" typeCode="12"/>
          <column autoUpdated="false" defaultValue="null" digits="6" id="5" name="synced_date" nullable="true" remarks="The timestamp of when this data was last refreshed." size="35" type="timestamptz" typeCode="93"/>
+      </table>
+      <table name="systemhardware" remarks="The list of hardware information of managed systems" schema="public" type="TABLE">
+         <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="mgm_id" nullable="false" remarks="The id of the Uyuni instance that contains this data" size="0" type="numeric" typeCode="2">
+            <parent column="mgm_id" foreignKey="systemhardware_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="system"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="system_id" nullable="false" remarks="The id of the system" size="0" type="numeric" typeCode="2">
+            <parent column="system_id" foreignKey="systemhardware_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="system"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="machine_id" nullable="true" remarks="The identifier of the machine" size="256" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="architecture" nullable="true" remarks="The architecture of the system" size="64" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="cpu_bogomips" nullable="true" remarks="The CPU bogomips value" size="16" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="cpu_cache" nullable="true" remarks="The CPU cache size in KiB" size="16" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="cpu_family" nullable="true" remarks="The CPU family" size="32" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="7" name="cpu_mhz" nullable="true" remarks="The CPU frequence in MHz" size="16" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="8" name="cpu_stepping" nullable="true" remarks="The CPU stepping" size="16" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="9" name="cpu_flags" nullable="true" remarks="The CPU flags" size="2048" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="10" name="cpu_model" nullable="true" remarks="The CPU model" size="64" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="11" name="cpu_version" nullable="true" remarks="The CPU version" size="32" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="12" name="cpu_vendor" nullable="true" remarks="The CPU vendor" size="32" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="1" digits="0" id="13" name="nrcpu" nullable="true" remarks="The total number of CPUs of the system - sometimes called vCPUs" size="0" type="numeric" typeCode="2"/>
+         <column autoUpdated="false" defaultValue="1" digits="0" id="14" name="nrsocket" nullable="true" remarks="The total number of CPU Sockets of the system" size="0" type="numeric" typeCode="2"/>
+         <column autoUpdated="false" defaultValue="1" digits="0" id="15" name="nrcore" nullable="true" remarks="The number of Cores of a single CPU" size="0" type="numeric" typeCode="2"/>
+         <column autoUpdated="false" defaultValue="1" digits="0" id="16" name="nrthread" nullable="true" remarks="The number of Threads of a single Core" size="0" type="numeric" typeCode="2"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="17" name="ram" nullable="true" remarks="The amount of RAM of the system in MiB" size="0" type="numeric" typeCode="2"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="18" name="swap" nullable="true" remarks="The amount of swap space of the system in MiB" size="0" type="numeric" typeCode="2"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="19" name="vendor" nullable="true" remarks="The system vendor" size="256" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="20" name="system" nullable="true" remarks="Additional information about the system" size="256" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="21" name="product" nullable="true" remarks="The Product information of the system" size="256" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="22" name="bios_vendor" nullable="true" remarks="The bios vendor" size="256" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="23" name="bios_version" nullable="true" remarks="The bios version" size="256" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="24" name="bios_release" nullable="true" remarks="The bios release date" size="256" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="25" name="asset" nullable="true" remarks="The assets of the system" size="256" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="26" name="board" nullable="true" remarks="The board information of the system" size="256" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="CURRENT_TIMESTAMP" digits="6" id="27" name="synced_date" nullable="true" remarks="The timestamp of when this data was last refreshed." size="35" type="timestamptz" typeCode="93"/>
+         <primaryKey column="mgm_id" sequenceNumberInPK="1"/>
+         <primaryKey column="system_id" sequenceNumberInPK="2"/>
+         <index name="systemhardware_pk" unique="true">
+            <column ascending="true" name="mgm_id"/>
+            <column ascending="true" name="system_id"/>
+         </index>
+         <checkConstraint constraint="(((architecture)::text &lt;&gt; ''::text))" name="vn_systemhardware_architecture"/>
+         <checkConstraint constraint="(((asset)::text &lt;&gt; ''::text))" name="vn_systemhardware_asset"/>
+         <checkConstraint constraint="(((bios_release)::text &lt;&gt; ''::text))" name="vn_systemhardware_bios_release"/>
+         <checkConstraint constraint="(((bios_vendor)::text &lt;&gt; ''::text))" name="vn_systemhardware_bios_vendor"/>
+         <checkConstraint constraint="(((bios_version)::text &lt;&gt; ''::text))" name="vn_systemhardware_bios_version"/>
+         <checkConstraint constraint="(((board)::text &lt;&gt; ''::text))" name="vn_systemhardware_board"/>
+         <checkConstraint constraint="(((cpu_bogomips)::text &lt;&gt; ''::text))" name="vn_systemhardware_cpu_bogomips"/>
+         <checkConstraint constraint="(((cpu_cache)::text &lt;&gt; ''::text))" name="vn_systemhardware_cpu_cache"/>
+         <checkConstraint constraint="(((cpu_family)::text &lt;&gt; ''::text))" name="vn_systemhardware_cpu_family"/>
+         <checkConstraint constraint="(((cpu_flags)::text &lt;&gt; ''::text))" name="vn_systemhardware_cpu_flags"/>
+         <checkConstraint constraint="(((cpu_mhz)::text &lt;&gt; ''::text))" name="vn_systemhardware_cpu_mhz"/>
+         <checkConstraint constraint="(((cpu_model)::text &lt;&gt; ''::text))" name="vn_systemhardware_cpu_model"/>
+         <checkConstraint constraint="(((cpu_stepping)::text &lt;&gt; ''::text))" name="vn_systemhardware_cpu_stepping"/>
+         <checkConstraint constraint="(((cpu_vendor)::text &lt;&gt; ''::text))" name="vn_systemhardware_cpu_vendor"/>
+         <checkConstraint constraint="(((cpu_version)::text &lt;&gt; ''::text))" name="vn_systemhardware_cpu_version"/>
+         <checkConstraint constraint="(((machine_id)::text &lt;&gt; ''::text))" name="vn_systemhardware_machine_id"/>
+         <checkConstraint constraint="(((product)::text &lt;&gt; ''::text))" name="vn_systemhardware_product"/>
+         <checkConstraint constraint="(((system)::text &lt;&gt; ''::text))" name="vn_systemhardware_system"/>
+         <checkConstraint constraint="(((vendor)::text &lt;&gt; ''::text))" name="vn_systemhardware_vendor"/>
+      </table>
+      <table name="systemhardwarereport" numRows="0" remarks="List of all registered systems, together with hardware information." schema="public" type="VIEW" viewSql=" WITH v6addresses AS (&#10;         SELECT systemnetaddressv6.mgm_id,&#10;            systemnetaddressv6.system_id,&#10;            systemnetaddressv6.interface_id,&#10;            string_agg(((((systemnetaddressv6.address)::text || ' ('::text) || (systemnetaddressv6.scope)::text) || ')'::text), ';'::text) AS ip6_addresses&#10;           FROM systemnetaddressv6&#10;          GROUP BY systemnetaddressv6.mgm_id, systemnetaddressv6.system_id, systemnetaddressv6.interface_id&#10;        )&#10; SELECT system.mgm_id,&#10;    system.system_id,&#10;    system.profile_name,&#10;    system.hostname,&#10;    systemhardware.machine_id,&#10;    systemhardware.architecture,&#10;    systemhardware.nrcpu AS cpus,&#10;    systemhardware.nrsocket AS sockets,&#10;    systemhardware.nrcore AS cores,&#10;    systemhardware.nrthread AS threads,&#10;    systemhardware.cpu_bogomips,&#10;    systemhardware.cpu_cache,&#10;    systemhardware.cpu_family,&#10;    systemhardware.cpu_mhz,&#10;    systemhardware.cpu_stepping,&#10;    systemhardware.cpu_flags,&#10;    systemhardware.cpu_model,&#10;    systemhardware.cpu_version,&#10;    systemhardware.cpu_vendor,&#10;    systemhardware.ram AS memory_size,&#10;    systemhardware.swap AS swap_size,&#10;    systemhardware.vendor,&#10;    systemhardware.system,&#10;    systemhardware.product,&#10;    systemhardware.bios_vendor,&#10;    systemhardware.bios_version,&#10;    systemhardware.bios_release,&#10;    systemhardware.asset,&#10;    systemhardware.board,&#10;    systemnetinterface.name AS primary_interface,&#10;    systemnetinterface.hardware_address,&#10;    systemnetaddressv4.address AS ip_address,&#10;    v6addresses.ip6_addresses,&#10;    (systemvirtualdata.virtual_system_id IS NOT NULL) AS is_virtualized,&#10;    systemhardware.synced_date&#10;   FROM (((((system&#10;     LEFT JOIN systemhardware ON (((system.mgm_id = systemhardware.mgm_id) AND (system.system_id = systemhardware.system_id))))&#10;     LEFT JOIN systemvirtualdata ON (((system.mgm_id = systemvirtualdata.mgm_id) AND (system.system_id = systemvirtualdata.virtual_system_id))))&#10;     LEFT JOIN systemnetinterface ON (((system.mgm_id = systemnetinterface.mgm_id) AND (system.system_id = systemnetinterface.system_id) AND systemnetinterface.primary_interface)))&#10;     LEFT JOIN systemnetaddressv4 ON (((system.mgm_id = systemnetaddressv4.mgm_id) AND (system.system_id = systemnetaddressv4.system_id) AND (systemnetinterface.interface_id = systemnetaddressv4.interface_id))))&#10;     LEFT JOIN v6addresses ON (((system.mgm_id = v6addresses.mgm_id) AND (system.system_id = v6addresses.system_id) AND (systemnetinterface.interface_id = v6addresses.interface_id))))&#10;  ORDER BY system.mgm_id, system.system_id;">
+         <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="mgm_id" nullable="true" remarks="The id of the Uyuni instance that contains this data" size="0" type="numeric" typeCode="2"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="system_id" nullable="true" remarks="The id of the system" size="0" type="numeric" typeCode="2"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="profile_name" nullable="true" remarks="The unique descriptive name of the system" size="128" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="hostname" nullable="true" remarks="The hostname that identifies this system" size="128" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="machine_id" nullable="true" remarks="The identifier of the machine" size="256" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="architecture" nullable="true" remarks="The architecture of the system" size="64" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="cpus" nullable="true" remarks="The total number of CPUs of the system - sometimes called vCPUs" size="0" type="numeric" typeCode="2"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="7" name="sockets" nullable="true" remarks="The total number of CPU Sockets of the system" size="0" type="numeric" typeCode="2"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="8" name="cores" nullable="true" remarks="The number of Cores of a single CPU" size="0" type="numeric" typeCode="2"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="9" name="threads" nullable="true" remarks="The number of Threads of a single Core" size="0" type="numeric" typeCode="2"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="10" name="cpu_bogomips" nullable="true" remarks="The CPU bogomips value" size="16" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="11" name="cpu_cache" nullable="true" remarks="The CPU cache size in KiB" size="16" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="12" name="cpu_family" nullable="true" remarks="The CPU family" size="32" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="13" name="cpu_mhz" nullable="true" remarks="The CPU frequence in MHz" size="16" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="14" name="cpu_stepping" nullable="true" remarks="The CPU stepping" size="16" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="15" name="cpu_flags" nullable="true" remarks="The CPU flags" size="2048" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="16" name="cpu_model" nullable="true" remarks="The CPU model" size="64" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="17" name="cpu_version" nullable="true" remarks="The CPU version" size="32" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="18" name="cpu_vendor" nullable="true" remarks="The CPU vendor" size="32" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="19" name="memory_size" nullable="true" remarks="The amount of RAM of the system in MiB" size="0" type="numeric" typeCode="2"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="20" name="swap_size" nullable="true" remarks="The amount of swap space of the system in MiB" size="0" type="numeric" typeCode="2"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="21" name="vendor" nullable="true" remarks="The system vendor" size="256" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="22" name="system" nullable="true" remarks="Additional information about the system" size="256" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="23" name="product" nullable="true" remarks="The Product information of the system" size="256" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="24" name="bios_vendor" nullable="true" remarks="The bios vendor" size="256" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="25" name="bios_version" nullable="true" remarks="The bios version" size="256" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="26" name="bios_release" nullable="true" remarks="The bios release date" size="256" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="27" name="asset" nullable="true" remarks="The assets of the system" size="256" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="28" name="board" nullable="true" remarks="The board information of the system" size="256" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="29" name="primary_interface" nullable="true" remarks="The name of the system primary network interface" size="32" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="30" name="hardware_address" nullable="true" remarks="The MAC address of the network interface" size="96" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="31" name="ip_address" nullable="true" remarks="The IPv4 address of the primary network interface of the system" size="64" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="32" name="ip6_addresses" nullable="true" remarks="The list of IPv6 addresses and their scopes of the primary network interface of the system, separated by ;" size="2147483647" type="text" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="33" name="is_virtualized" nullable="true" remarks="True if the system is virtualized" size="1" type="bool" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="null" digits="6" id="34" name="synced_date" nullable="true" remarks="The timestamp of when this data was last refreshed." size="35" type="timestamptz" typeCode="93"/>
       </table>
       <table name="systemhistory" remarks="The history events associated to a system" schema="public" type="TABLE">
          <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="mgm_id" nullable="false" remarks="The id of the Uyuni instance that contains this data" size="0" type="numeric" typeCode="2">
@@ -1164,13 +1305,16 @@
          </column>
          <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="packages_out_of_date" nullable="true" remarks="The number of outdated packages installed on this system" size="19" type="int8" typeCode="-5"/>
          <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="errata_out_of_date" nullable="true" remarks="The number of outdated patches associated to this system" size="19" type="int8" typeCode="-5"/>
-         <column autoUpdated="false" defaultValue="CURRENT_TIMESTAMP" digits="6" id="4" name="synced_date" nullable="true" remarks="The timestamp of when this data was last refreshed." size="35" type="timestamptz" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="extra_pkg_count" nullable="true" remarks="The number of packages which do not exist in a channel assigned to this system" size="19" type="int8" typeCode="-5"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="status" nullable="true" remarks="The status of this system: unentitled, awol, kickstarting, reboot needed, updates scheduled, actions scheduled, up2date, critical or updates" size="20" type="varchar" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="CURRENT_TIMESTAMP" digits="6" id="6" name="synced_date" nullable="true" remarks="The timestamp of when this data was last refreshed." size="35" type="timestamptz" typeCode="93"/>
          <primaryKey column="mgm_id" sequenceNumberInPK="1"/>
          <primaryKey column="system_id" sequenceNumberInPK="2"/>
          <index name="systemoutdated_pk" unique="true">
             <column ascending="true" name="mgm_id"/>
             <column ascending="true" name="system_id"/>
          </index>
+         <checkConstraint constraint="(((status)::text &lt;&gt; ''::text))" name="vn_systemoutdated_status"/>
       </table>
       <table name="systempackageinstalled" remarks="The list of the packages installed on a system" schema="public" type="TABLE">
          <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="mgm_id" nullable="false" remarks="The id of the Uyuni instance that contains this data" size="0" type="numeric" typeCode="2">
@@ -1216,8 +1360,8 @@
       </table>
       <table name="systempackageupdate" remarks="The list of packages that can be updated for a system" schema="public" type="TABLE">
          <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="mgm_id" nullable="false" remarks="The id of the Uyuni instance that contains this data" size="0" type="numeric" typeCode="2">
-            <parent column="mgm_id" foreignKey="systempackageupdate_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="system"/>
             <parent column="mgm_id" foreignKey="systempackageupdate_package_fkey" implied="false" onDeleteCascade="false" schema="public" table="package"/>
+            <parent column="mgm_id" foreignKey="systempackageupdate_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="system"/>
          </column>
          <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="system_id" nullable="false" remarks="The id of the system" size="0" type="numeric" typeCode="2">
             <parent column="system_id" foreignKey="systempackageupdate_system_fkey" implied="false" onDeleteCascade="false" schema="public" table="system"/>
