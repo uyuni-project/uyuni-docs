@@ -1,0 +1,78 @@
+[[script-client-proxy]]
+= 使用引导脚本将客户端注册到代理
+:description: 使用在 SUSE Multi-Linux Manager 服务器上创建的启动脚本配置客户端以连接到代理服务器，使用 mgr-bootstrap 命令行工具。
+:revdate: 2025-03-20
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+
+客户端可以通过 {productname} 代理使用启动脚本进行注册。
+这与直接使用 {productname} 服务器注册客户端的方式几乎相同。
+
+在 {productname} 服务器容器中，使用 `mgr-bootstrap` 命令行工具创建启动脚本。`mgr-bootstrap` 需要诸如代理的完全限定域名 (FQDN)、激活密钥或 GPG 密钥等参数。
+代理的 FQDN 是必需的。
+所有其他参数取决于具体的设置。
+
+
+然后，引导脚本会将所有必要信息部署到客户端。
+
+
+
+.过程：升级使用启动脚本将客户端注册到代理
+
+. 在 {productname} 服务器上使用 {webui} 创建客户端激活密钥。
+  有关详细信息，请参见 xref:client-configuration:activation-keys.adoc[]。
+. 在服务器的容器主机上，在容器内启动终端：
+
++
+
+[source,shell]
+----
+mgrctl term
+----
+
++
+
+--
+.. 在容器中，执行 `mgr-bootstrap` 命令以创建启动脚本，例如，使用以下选项：
+
++
+
+[source,shell]
+----
+mgr-bootstrap --hostname=MLM_PROXY --activation-keys=ACTIVATION_KEY \
+  --script bootstrap-MLM_PROXY.sh
+----
+
++
+
+请将 `MLM_PROXY` 替换为代理的主机名。
+
++
+使用 `--script` 选项可以将启动脚本保存为描述性名称。
+   如有需要，使用其他命令行选项自定义您的启动脚本。
+   要查看可用选项，请在命令行中输入 `mgr-bootstrap --help`。
+
+.. 可选：编辑生成的启动脚本。
+--
+
+. 执行启动脚本。
+  有两个选项：
+
++
+
+* 将脚本传输到客户端并直接在客户端上运行。
+  或者，由于代理会将请求转发到服务器，客户端可以从 http://MLM_PROXY/pub/bootstrap-MLM_PROXY.sh. 下载它。请将 `MLM_PROXY` 替换为代理的主机名。
+
+* 使用 `ssh` 从代理执行脚本。
+  请将 `MLM_PROXY` 替换为代理的主机名，并将 ` <client.example.com>` 替换为客户端的主机名：
+
++
+
+[source,shell]
+----
+cat /srv/www/htdocs/pub/bootstrap/bootstrap-MLM_PROXY.sh | ssh root@<client.example.com> /bin/bash
+----

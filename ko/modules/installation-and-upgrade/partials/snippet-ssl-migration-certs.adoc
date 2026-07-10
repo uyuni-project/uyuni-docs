@@ -1,0 +1,157 @@
+마이그레이션을 수행할 때, {productname}은 기본적으로 자체 서명된 인증서를 사용합니다.
+외부 PKI(인증 기관)의 인증서를 사용하려면, `{migration-command}` 실행 시 `--ssl*` 플래그를 사용하여 모든 인증서 파일을 제공할 수 있습니다.
+
+.빠른 참조: 마이그레이션에 필요한 플래그는 무엇인가요?
+[cols="1,5"]
+|===
+|마이그레이션 상황|필요한 플래그
+
+|자체 서명된 CA, 모든 것이 변경되지 않음
+|없음
+
+|새 서버 인증서(동일한 CA)
+|`--ssl-server-cert`, `--ssl-server-key`
+
+|새 데이터베이스 인증서(동일한 CA)
+|`--ssl-db-cert`, `--ssl-db-key`
+
+|새 서버 및 데이터베이스 인증서(동일한 CA)
+|`--ssl-server-cert`, `--ssl-server-key`, `--ssl-db-cert`, `--ssl-db-key`
+
+|새 서버 인증서 + 새 CA
+|`--ssl-server-cert`, `--ssl-server-key`, `--ssl-ca-root`, `--ssl-ca-intermediate`
+
+|새 데이터베이스 인증서 + 새 CA
+|`--ssl-db-cert`, `--ssl-db-key`, `--ssl-db-ca-root`, `--ssl-db-ca-intermediate`
+
+|CA만 변경(동일한 인증서 파일, 다른 CA 체인)
+|`--ssl-ca-root`, `--ssl-ca-intermediate`, `--ssl-db-ca-root`, `--ssl-db-ca-intermediate`
+
+|전체 교체 — 두 구성 요소 모두에 대한 새 인증서 및 CA
+|아래의 "외부 PKI의 모든 인증서"를 참조하십시오.
+|===
+
+지정되지 않은 `--ssl*` 플래그는 소스 서버의 해당 값을 사용합니다.
+현재 설정과 다른 파일에 대해서만 플래그를 제공하십시오.
+
+=== 플래그 참조
+
+ifeval::[{migration-source} == 4.3]
+다음 `--ssl*` 플래그는 `mgradm migrate`에서 지원됩니다:
+endif::[]
+
+ifeval::[{migration-source} == 5.0]
+다음 `--ssl*` 플래그는 `mgradm migrate` 및 `mgradm upgrade`에서 지원됩니다:
+endif::[]
+
+[cols="1,5"]
+|===
+|플래그|설명
+
+|`--ssl-ca-root`
+|서버 인증서를 서명한 루트 CA 인증서의 경로(기본값: 소스 서버 CA)
+
+|`--ssl-ca-intermediate`
+|체인 내 중간 CA 인증서의 경로(여러 번 지정할 수 있음; 기본값: 소스 서버)
+
+|`--ssl-server-cert`
+|서버 인증서의 경로(기본값: 소스 서버 인증서)
+
+|`--ssl-server-key`
+|서버 개인 키의 경로(기본값: 소스 서버 키)
+
+|`--ssl-db-ca-root`
+|데이터베이스 인증서를 서명한 루트 CA 인증서의 경로
+
+|`--ssl-db-ca-intermediate`
+|데이터베이스 인증서 체인의 중간 CA 인증서 경로(여러 번 지정할 수 있음)
+
+|`--ssl-db-cert`
+|데이터베이스 인증서의 경로
+
+|`--ssl-db-key`
+|데이터베이스 개인 키의 경로
+|===
+
+[IMPORTANT]
+====
+데이터베이스 인증서 체인은 서버 인증서 체인과 완전히 별개입니다.
+같은 CA를 사용할 때에도 `--ssl-db-*` 플래그를 제공해야 하며, 데이터베이스 컨테이너는 마이그레이션 중에 생성된 자체 인증서를 필요로 합니다.
+====
+
+=== 인증서 요구 사항
+
+다음 요구 사항은 `mgradm migrate`와 함께 사용되는 모든 인증서 파일에 적용됩니다:
+
+* 모든 인증서 파일은 PEM 형식이어야 합니다.
+  인증서가 DER 형식인 경우, 먼저 변환해야 합니다.
+
+* 인증서의 `X509v3 Subject Alternative Name` 섹션에 있는 호스트 이름은 인증서가 배포된 머신의 완전한 호스트 이름과 일치해야 합니다.
+
+* 데이터베이스 인증서에는 `reportdb` 및 `db`가 `Subject Alternative Name`(SAN)으로 필요합니다.
+
+* 지원되는 키 유형은 `RSA` 및 `EC`(타원 곡선)입니다.
+
+* CA 체인을 사용할 때는 인증서를 서버 또는 데이터베이스 인증서를 먼저 두고, 그 다음에 모든 중간 CA 인증서를 순서대로 이어 붙입니다.
+루트 CA 인증서는 별도의 파일로 제공해야 합니다.
+파일을 결합하려면 다음 명령을 사용할 수 있습니다:
+
++
+
+[source,shell]
+----
+cat server.pem intermediate-ca1.pem intermediate-ca2.pem > combined-server.pem
+----
+
+인증서 준비에 대한 자세한 내용은 xref:administration:ssl-certs-imported.adoc[SSL 인증서 가져오기]를 참조하십시오.
+
+=== 시나리오: 외부 PKI의 모든 인증서
+
+이 시나리오는 웹 및 데이터베이스 구성 요소가 제3자 CA의 인증서를 사용하는 서버로의 마이그레이션을 다룹니다.
+조직은 다음 인증서 파일을 수집해야 합니다.
+
+* 웹 구성 요소용 루트 CA 인증서
+* 웹 구성 요소용 중간 CA 인증서(해당되는 경우)
+* 웹 구성 요소용 서버 인증서
+* 웹 구성 요소용 개인 키
+* 데이터베이스 구성 요소용 루트 CA 인증서
+* 데이터베이스 구성 요소용 중간 CA 인증서(해당되는 경우)
+* 데이터베이스 구성 요소용 서버 인증서(`reportdb` 및 `db`를 SAN으로 포함)
+* 데이터베이스 구성 요소용 개인 키
+
+대부분의 배포에서 단일 CA가 서버 및 데이터베이스 구성 요소 모두에 서비스를 제공합니다.
+이 경우 동일한 인증서 파일이 `--ssl-*` 및 `--ssl-db-*` 플래그 모두에 사용됩니다.
+아래 예제는 명확성을 위해 별도의 파일 이름을 사용합니다.
+
+.모든 `--ssl*` 플래그가 포함된 예제 마이그레이션 명령입니다.
+[source,shell,subs="attributes+"]
+----
+{migration-command} podman <oldserver.fqdn> \
+  --ssl-ca-root rootCAweb.pem \
+  --ssl-ca-intermediate intermediateCAweb.pem \
+  --ssl-server-cert webcert.pem \
+  --ssl-server-key webkey.key \
+  --ssl-db-ca-root rootCAdb.pem \
+  --ssl-db-ca-intermediate intermediateCAdb.pem \
+  --ssl-db-cert dbcert.pem \
+  --ssl-db-key dbkey.key
+----
+
+.외부 CA 인증서의 클라이언트 배포
+[NOTE]
+====
+외부 PKI 인증서로 성공적으로 마이그레이션한 후, 모든 클라이언트에 CA 인증서를 배포하여 새로운 서버 인증서를 검증할 수 있도록 합니다.
+
+[source,shell]
+----
+mgrctl exec -- 'salt -b 50 * state.apply certs'
+----
+====
+
+=== 시나리오: 혼합된 외부 및 자체 서명된 인증서
+
+외부 및 자체 서명된 인증서가 혼합된 상태로 마이그레이션할 때, 서버 또는 데이터베이스 인증서와 해당 개인 키도 동일한 체인에서 교체되는 경우에만 인증서 체인의 CA를 교체하십시오.
+예를 들어, 서버 인증서와 키를 외부 PKI 버전으로 교체할 때, 해당 CA 인증서도 제공해야 합니다.
+그러나 데이터베이스 인증서만 교체할 경우, 원래 CA를 재사용하는 경우에는 자체 서명된 CA 비밀번호가 여전히 필요합니다.
+
+전체 절차에 대한 내용은 https://support.scc.suse.com/s/kb/SUSE-Multi-Linux-Manager-Server-migration-fails-due-to-unknown-or-lost-CA-password?language=en_US[SCC 문서: SUSE Multi-Linux Manager 서버 마이그레이션 실패 원인 (또는 분실된) CA 비밀번호]를 참조하십시오.

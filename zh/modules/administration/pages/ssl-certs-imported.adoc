@@ -1,0 +1,211 @@
+[[ssl-certs-import]]
+= 导入 SSL 证书
+:description: 按照这些步骤为您的 SUSE Multi-Linux Manager 安装配置 SSL 证书或替换现有证书
+:revdate: 2025-06-20
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+//By default, {productname} uses a self-signed certificate.
+//For additional security, you can import a custom certificate, signed by a third party certificate authority (CA).
+
+本节介绍如何为新的 {productname} 安装配置 SSL 证书，以及如何替换现有证书。
+
+在开始之前，请确保已准备好：
+
+* 证书颁发机构 (CA) 的 SSL 公共证书。
+  如果您使用 CA 链，则所有中间 CA 也必须可用。
+* 一个 SSL 服务器私用密钥
+* 一个 SSL 服务器证书
+* 一个 SSL 数据库私用密钥
+* 一个 SSL 数据库证书
+
+所有文件必须采用 PEM 格式。
+
+SSL 服务器证书的主机名必须与其部署到的计算机的完全限定主机名相匹配。
+您可以在证书的 `X509v3 Subject Alternative Name` 部分中设置主机名。
+如果您的环境需要，您还可以列出多个主机名。
+支持的密钥类型为 `RSA` 和 `EC`（椭圆曲线）。
+
+[IMPORTANT]
+====
+在以前的版本中，数据库 SSL 证书需要 `reportdb` 和 `db` 作为 `Subject Alternative Name`。
+这已经不再需要。
+====
+
+第三方机构通常使用中间 CA 来签署请求的服务器证书。
+在这种情况下，链中的所有 CA 都需要可用。
+`mgrdadm` 命令负责排序证书。
+理想情况下，根 CA 应该在其自己的文件中。
+服务器证书文件应首先包含服务器证书，然后按顺序包含所有中间 CA 证书。
+
+
+
+== 为新安装导入证书
+
+
+默认情况下，{productname} 使用自签名证书。
+证书可以在安装时与第三方证书一起导入。
+
+.过程：升级在新的 {productname} 服务器上导入证书
+[role=procedure]
+____
+. 根据 {productname} 中的说明部署 xref:installation-and-upgrade:install-server.adoc[] 服务器。
+  确保将正确的文件作为参数传递给 `mgradm install podman`。
+  这些参数是：
+
++
+
+----
+3rd Party SSL Certificate Flags:
+      --ssl-ca-intermediate strings    Intermediate CA certificate path
+      --ssl-ca-root string             Root CA certificate path
+      --ssl-server-cert string         Server certificate path
+      --ssl-server-key string          Server key path
+      --ssl-db-ca-intermediate strings Intermediate CA certificate path for the database if different from the server one
+      --ssl-db-ca-root string          Root CA certificate path for the database if different from the server one
+      --ssl-db-cert string             Database certificate path
+      --ssl-db-key string              Database key path
+----
+____
+
+中间 CA 可以在指定的 `--ssl-ca-root` 文件中可用，或者作为额外选项指定 `--ssl-ca-intermediate`。
+`--ssl-ca-intermediate` 选项可以多次指定。
+
+
+
+== 为新的 Proxy 安装导入证书
+
+代理证书嵌入在生成的配置中。
+为了使用第三方证书，需要在配置期间提供该证书。
+
+.过程：升级在新的 {productname} 代理上导入证书
+[role=procedure]
+____
+. 根据 {productname} 中的说明安装 xref:installation-and-upgrade:install-proxy.adoc[] 代理。
+
+. 按照提示完成设置。
+
++
+
+[NOTE]
+====
+使用相同的证书颁发机构（CA）为服务器和代理签署所有证书。
+使用不同 CA 签署的证书不匹配。
+====
+
+____
+
+
+[[ssl-certs-import-replace]]
+== 替换证书
+
+
+您可以用新证书替换 {productname} 安装上的活动证书。
+需要考虑两种情况：仅替换服务器或数据库证书，以及替换根 CA。
+
+
+替换根证书需要更多时间并进行更多规划，以避免服务中断，因为在服务器层面切换至新证书前，所有已注册的代理和系统都需要在其数据库中导入新的 CA 证书。
+
+使用由中间 CA 签名的第三方证书时，需要将中间 CA 证书追加至服务器或数据库证书文件中。
+
+顺序很重要：首先是服务器证书，然后是从签署证书的 CA 到根 CA 签署的 CA。
+根 CA 证书不应附加到服务器证书文件中。
+
+
+.过程：升级替换所有现有证书
+[role=procedure]
+____
+. 以下内容假设您拥有 `root-ca.pem`、`intermediate-ca1.pem`、`intermediate-ca2.pem`、`server.pem` 和 `server.key` 文件。
+  这可能会因服务器证书签名链中中间 CA 的数量而有所不同。
+
+. 组合中间 CA 和服务器证书。
+  顺序很重要，服务器必须在前，中间 CA 按顺序排列。
+  请勿将 root CA 最后添加到链中，因为它将分别传递给 `uyuni-ca` 和 `uyuni-db-ca` 机密。
+  如果没有中间 CA，则可以在接下来的步骤中使用 `server.pem` 而不是组合文件。
+
++
+[source,shell]
+----
+cat server.pem intermediate-ca1.pem intermediate-ca2.pem >combined-server.pem
+----
+
+. 在 {productname} 容器主机的命令提示符处，重新创建 Podman 证书机密并传递文件路径：
+
++
+
+[source,shell]
+----
+podman secret create --replace uyuni-ca $path_to_ca_certificate
+podman secret create --replace uyuni-cert $path_to_combined_server_certificate
+podman secret create --replace uyuni-key $path_to_server_key
+
+podman secret create --replace uyuni-db-ca $path_to_database_ca_certificate
+podman secret create --replace uyuni-db-cert $path_to_combined_database_certificate
+podman secret create --replace uyuni-db-key $path_to_database_key
+----
+____
+
+
+.过程：升级重启服务器
+[role=procedure]
+____
+. 在容器主机上，重启服务以应用更改：
+
++
+
+[source,shell]
+----
+mgradm restart
+----
+____
+
+
+如果您使用代理，则需要为每个代理生成一个服务器证书 RPM，使用它们的主机名和 cname。
+生成一个新的配置tarball，并进行部署。
+
+ifeval::[{mlm-content} == true]
+有关更多信息，请参见 xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc#_generate_proxy_configuration[]。
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+有关更多信息，请参见 xref:installation-and-upgrade:container-deployment/uyuni/proxy-deployment-uyuni.adoc#proxy-setup-containers-generate-config[]。 +
+proxy-deployment-uyuni.adoc
+endif::[]
+
+
+
+如果根 CA 已更改，则需要将其部署到与 {productname} 连接的所有客户端。
+理想情况下，应提前完成此操作以最小化干扰。
+
+[NOTE]
+====
+如果 CA 证书已更新，则需重新打包包含 Kiwi 证书的 RPM 文件。
+
+在 {productname} 服务器容器主机上，执行以下命令：
+
+[source,shell]
+----
+mgrctl exec mgr-package-rpm-certificate-osimage
+----
+
+完成上述操作后，请在映像构建主机上应用 highstate，以部署新证书供 Kiwi 使用。
+====
+
+
+
+.过程：升级在客户端上部署根 CA
+[role=procedure]
+____
+. 在 {productname} {webui} 中，导航到 menu:系统[概述]。
+
+. 选中所有客户端以将其添加到系统集管理器。
+
+. 导航到 menu:系统[系统设置管理器> 概述]。
+
+. 在 `States` 字段中，单击 btn:[应用] 以应用系统状态。
+
+. 在 `Highstate` 页面中，单击 btn:[应用高状态] 以将更改传播到客户端。
+____

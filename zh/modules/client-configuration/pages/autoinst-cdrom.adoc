@@ -1,0 +1,188 @@
+[[autoinst-cdrom]]
+= 通过 CD-ROM 或 USB 密钥安装
+:description: 使用 Cobbler 或 KIWI 工具配置可引导的 CD-ROM 或 USB 密钥以部署 SUSE 系统，允许用户创建具有特定配置的定制 ISO 映像。
+:revdate: 2024-11-27
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+对于尚未注册到 {productname} 的客户端，如果无法通过 PXE 进行网络引导，可以使用可引导 CD-ROM 或 USB 密钥来安装系统。
+
+准备这种可移动介质的一个选项是使用 {cobbler}。
+有关使用 {cobbler} 准备 ISO 映像的信息，请参见 xref:client-configuration:autoinst-cdrom.adoc#build-iso-with-cobbler[使用 {cobbler} 构建 ISO 映像]。
+
+对于 {suse} 系统，通常建议使用 KIWI 准备 ISO 映像。
+有关更多信息，请参见 xref:client-configuration:autoinst-cdrom.adoc#build-iso-with-kiwi[使用 KIWI 构建 SUSE ISO 映像]。
+
+在所有情况下，您都需要使用生成的映像刻录 CD-ROM 或准备 USB 密钥。
+
+
+[[build-iso-with-cobbler]]
+== 使用 {cobbler} 构建 ISO 映像
+
+
+{cobbler} 可创建包含一组发行套件、内核和菜单的 ISO 引导映像，该映像的工作方式与 PXE 安装类似。
+
+[NOTE]
+====
+在 {cobbler} 上不支持使用 {ibmz} 构建 ISO。
+====
+
+为了使用 {cobbler} 准备 ISO 映像，您需要准备一个发行套件和一个控制文件，类似于使用 PXE 进行网络引导。
+有关创建发行套件的信息，请参见 xref:client-configuration:autoinst-distributions.adoc[可自动安装的发行套件]。
+有关创建控制文件的信息，请参见 xref:client-configuration:autoinst-profiles.adoc[自动安装控制文件]。
+
+{cobbler} `buildiso` 命令接受用于定义引导 ISO 映像的名称和输出位置的参数。
+运行 `buildiso` 命令时，必须使用 `--distro` 指定发行版。`--iso` 是输出位置：
+
+----
+mgrctl exec -- cobbler buildiso --iso=/path/to/boot.iso --distro=<your-distro-label>
+----
+
+必须按 {cobbler} 中所列的名称（而不是简单地按 {webui} 中所示）使用发行套件和控制文件标签。
+要列出 {cobbler} 存储的发行套件和控制文件的名称，请运行以下命令：
+
+----
+mgrctl exec -- cobbler distro list
+mgrctl exec -- cobbler profile list
+----
+
+引导 ISO 默认包含所有控制文件和系统。
+您可以使用 `--profiles` 和 `--systems` 选项限制使用的控制文件和系统：
+
+----
+mgrctl exec -- cobbler buildiso --systems="system1 system2 system3" \
+  --profiles="<your-profile1-label> <your-profile2-label> <your-profile3-label>" \
+  --distro=<your-distro-label>
+----
+
+
+使用 `--esp`，您可以启用带有安全启动的引导 ISO 映像。
+您明确指定 EFI 系统分区 (ESP)。
+默认情况下，{cobbler} 会生成 ESP 分区，这会禁用安全启动。
+
+----
+mgrctl exec -- cobbler buildiso \
+  --esp="/usr/share/tftpboot-installation/SLE-15-SP6-x86_64/boot/x86_64/efi" \
+  --iso=/path/to/boot.iso --distro=<your-distro-label>
+----
+
+
+
+.过程：升级查找 `efi`
+
+. 在容器主机上执行以下命令以获取 `distro` 名称：
++
+----
+mgrctl exec -- cobbler distro list
+----
++
+此命令输出诸如 `sles15-sp6:1:SUSE` 之类的字符串。
+
+. 在容器主机上执行以下命令，以获取 `distro` 文件位置的相关信息：
++
+----
+mgrctl exec -- cobbler distro report --name sles15-sp6:1:SUSE
+----
++
+此命令会输出类似如下的报告：
++
+----
+Name                  : sles15-sp6:1:SUSE
+Architecture          : x86_64
+...output omitted...
+Initrd                : /usr/share/tftpboot-installation/SLE-15-SP6-x86_64/boot/x86_64/loader/initrd
+Kernel                : /usr/share/tftpboot-installation/SLE-15-SP6-x86_64/boot/x86_64/loader/linux
+...output omitted...
+----
+
+. 查看引导目录的内容。
+  在上面的示例中，引导分区是 `/usr/share/tftpboot-installation/SLE-15-SP6-x86_64/boot/x86_64/efi` 文件，但这可能会根据 ISO 发行商而有所不同。
+
+
+
+[NOTE]
+====
+如果您无法将 ISO 映像写入公共 `tmp` 目录，请检查 `/usr/lib/systemd/system/cobblerd.service` 中的 systemd 设置。
+====
+
+
+
+[[build-iso-with-kiwi]]
+== 使用 KIWI 构建 SUSE ISO 映像
+
+KIWI 是一个映像创建系统。
+您可以使用 KIWI 创建可由目标系统用于安装 {suse} 系统的可启动 ISO 映像。
+当系统重启或开机时，它会从映像启动，从您的 {ay} 加载 {productname} 配置，并根据 {ay} 控制文件安装 {sles}。
+
+要使用 ISO 映像，请启动系统并在提示符下输入 `autoyast`（假设您将 {ay} 启动的标签保留为 `autoyast`）。
+按 kbd:[Enter] 开始 {ay} 安装。
+
+////
+we would love a bit more details - ebischoff
+////
+
+有关 KIWI 的更多信息，请参见 http://doc.opensuse.org/projects/kiwi/doc/.。
+
+
+
+[[build-iso-with-cobbler-rh]]
+== 使用 {cobbler} 构建 Red Hat ISO 映像。
+
+有关更多信息，请参见 xref:client-configuration:autoinst-cdrom.adoc#build-iso-with-cobbler[]。
+
+
+
+////
+[[build-iso-with-mkisofs]]
+== Build a RedHat ISO Image With mkisofs
+
+You can use `mkisofs` to create a bootable ISO image to be used by the target system for installation of a {redhat} system.
+When the system is rebooted or switched on, it boots from the image, loads the {kickstart} configuration from your {productname}, and installs {rhel} according to the {kickstart} profile.
+
+
+
+.Procedure: Building a Bootable ISO With mkisofs
+. Copy the contents of `/isolinux` from the first CD-ROM of the target distribution.
+. Edit the `isolinux.cfg` file to default to 'ks'.
+  Change the 'ks' section to read:
++
+----
+label ks
+kernel vmlinuz
+  append text ks=`url` initrd=initrd.img lang= devfs=nomount \
+    ramdisk_size=16438 `ksdevice`
+----
++
+IP address-based {kickstart} URLs look like this:
++
+----
+http://`my.manager.server`/kickstart/ks/mode/ip_range
+----
++
+The {kickstart} distribution defined via the IP range should match the distribution from which you are building, to prevent errors occurring.
+. OPTIONAL: If you want to use the `ksdevice`, it looks like this:
++
+----
+ksdevice=eth0
+----
++
+It is possible to change the distribution for a Kickstart profile within a family, such as {rhel} AS 4 to {rhel} ES 4, by specifying the new distribution label.
+Note that you cannot move between versions (4 to 5) or between updates (U1 to U2).
+. Customize `isolinux.cfg` further as required.
+  For example, you can add multiple options, different boot messages, or shorter timeout periods.
+. Create the ISO with this command:
++
+----
+mkisofs -o file.iso -b isolinux.bin -c boot.cat -no-emul-boot \
+  -boot-load-size 4 -boot-info-table -R -J -v -T isolinux/
+----
++
+Note that `isolinux/` is the relative path to the directory containing the modified isolinux files copied from the distribution CD, while `file.iso` is the output ISO file, which is placed into the current directory.
+. Burn the ISO to CD-ROM and insert the disk.
+  Alternatively prepare an USB key and insert it.
+. Boot the system and type `ks` at the prompt (if you left the label for the Kickstart boot as 'ks').
+. Press kbd:[Enter] to start {kickstart}.
+////

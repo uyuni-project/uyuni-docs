@@ -1,0 +1,350 @@
+[[installation-proxy-containers]]
+= {productname} {leapmicro}におけるプロキシデプロイメント {microversion}
+:description: SUSE Multi-Linux Manager 5.1のプロキシデプロイメントをopenSUSE Leap Micro 6.1のステップバイステップガイドを使用して構成します。
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+
+このガイドは、{productname} {productnumber}プロキシのデプロイプロセスを概説しています。
+このガイドは、すでに{productname} {productnumber}サーバを正常にデプロイしていることを前提としています。
+正常に配備するには、次のアクションを実行します。
+
+
+.チェックリスト:プロキシデプロイメント
+. ハードウェア要件を確認します。
++
+// . Synchronize the {leapmicro} {microversion} parent channel and the Proxy extension child channel on the server.
+. ベアメタルマシンに{leapmicro} {microversion}をインストールします。
++
+// . Create a {salt} activation key.
+. プロキシを{salt}ミニオンとしてブートストラップします。
+. プロキシ設定を生成します。
+. サーバからプロキシへのプロキシ設定の転送
+. プロキシ設定を使用して、{salt}ミニオンを{productname}にプロキシとして登録します。
+
+
+.プロキシコンテナホストでサポートされるオペレーティングシステム
+[NOTE]
+====
+コンテナホストでサポートされるオペレーティングシステムは{leapmicro} {microversion}です。
+
+コンテナホスト:: コンテナホストは、Podmanのようなコンテナエンジンを備えたサーバで、コンテナを管理およびデプロイすることができます。これらのコンテナは、アプリケーションとその必須部分（ライブラリなど）を保持しますが、完全なオペレーティングシステムは含まれておらず、軽量です。このセットアップにより、アプリケーションは異なる環境で同じように実行されます。コンテナホストは、これらのコンテナに必要なリソース（CPU、メモリ、ストレージなど）を提供します。
+====
+
+
+== プロキシのハードウェア要件
+
+
+次の表に、{productname}プロキシをデプロイするためのハードウェア要件を示します。
+
+[cols="1,3,2", options="header"]
+.プロキシのハードウェア要件
+|===
+
+| ハードウェア
+| 詳細
+| 推奨
+
+| CPU
+| {x86_64}、{arm}
+| 最低2つの専用64ビットCPUコア
+
+| RAM
+| 最小
+| 2GB
+
+|
+| 推奨
+| 8GB
+
+| ディスク領域
+| `/`（ルートディレクトリ）
+| 最低40GB
+
+|
+| `/var/lib/containers/storage/volumes`
+| 最低100GB、ストレージ要件は、使用するISOディストリビューションイメージ、コンテナ、およびブートストラップリポジトリの数に基づいて計算する必要があります。
+
+|===
+
+
+
+== コンテナホストの一般的な要件
+
+一般的な要件については、xref:installation-and-upgrade:general-requirements.adoc[一般的な要件]を参照してください。
+
+{leapmicro} {microversion}サーバは、インストールメディアからインストールする必要があります。
+このプロシージャは以下で説明されます。
+
+
+
+[[installation-proxy-containers-requirements]]
+== コンテナホストの要件
+
+CPU、RAM、およびストレージ要件については、xref:installation-and-upgrade:hardware-requirements.adoc[ハードウェア要件]を参照してください。
+
+
+[IMPORTANT]
+====
+クライアントがFQDNドメイン名を解決できることを保証するために、コンテナ化されたサーバとホストマシンの両方が機能するDNSサーバにリンクされている必要があります。さらに、逆引きの正しい構成を確保することが重要です。
+====
+
+
+== コンテナで使用するためにUyuniツールをインストールする
+
+
+.プロシージャ:{leapmicro} {microversion}にUyuniツールをインストールする
+. ローカルホストで、端末のウィンドウを開くか、{leapmicro} {microversion}が実行される仮想マシンを起動します。
+
+. ログインします。
+
+. `transactional-update shell`を入力してください：
++
+----
+transactional-update shell
+----
+
+. 次のリポジトリを{leapmicro} {microversion}サーバに追加します:
++
+
+----
+zypper ar https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable/images/repo/Uyuni-Proxy-POOL-$(arch)-Media1/ uyuni-proxy-stable
+----
+
+. リポジトリのリストを更新してキーを受け入れます。
++
+----
+zypper ref
+----
+
+. コンテナツールをインストールします。
++
+
+[source, shell]
+----
+zypper in mgrpxy mgrpxy-bash-completion uyuni-storage-setup-proxy
+----
++
+[NOTE]
+====
+あるいは、`mgrpxy-zsh-completion`または`mgrpxy-fish-completion`をインストールすることもできます。
+====
+
+. トランザクションシェルを終了します。
++
+----
+transactional update # exit
+----
+
+. ホストを再起動します。
+
+////
+// In master, we had already this reduced variant:
+
+----
+transactional-update
+----
+
+. Reboot the system.
+. Log in as root.
+. Install the container utilities:
++
+
+[source, shell]
+----
+transactional-update pkg install mgrpxy mgrpxy-bash-completion uyuni-storage-setup-proxy
+----
++
+
+[NOTE]
+====
+Alternatively you may install `mgrpxy-zsh-completion` or `mgrpxy-fish-completion`.
+====
+
+////
+
+Uyuniコンテナユーティリティに関する詳細は、link:https://build.opensuse.org/repositories/systemsmanagement:Uyuni:Stable:ContainerUtils[Uyuni Container Utilities]を参照してください。
+
+
+== カスタム永続ストレージの設定
+
+このステップはオプションです。
+ただし、ご使用のインフラストラクチャにカスタム永続ストレージが必要な場合は、`mgr-storage-proxy`ツールを使用します。
+
+* 詳細については、`mgr-storage-proxy --help`を参照してください。
+このツールは、コンテナストレージとSquidキャッシュボリュームの作成を簡素化します。
+
+このコマンドは次のように使用します。
+
+----
+mgr-storage-proxy <storage-disk-device>
+----
+
+例:
+
+----
+mgr-storage-proxy /dev/nvme1n1
+----
+
+
+[NOTE]
+====
+このコマンドにより、`/var/lib/containers/storage/volumes`に永続ストレージボリュームが作成されます。
+
+詳細については、以下を参照してください。
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+====
+
+
+== Minionとしてのプロキシホストのブートストラップ
+
+.タスク:プロキシホストのブートストラップ
+. menu:システム[ブートストラップ]を選択します。
+. プロキシホストのフィールドに入力します。
+. ドロップダウンから、前のステップで作成したアクティベーションキーを選択します。
+. btn:[+ ブートストラップ]をクリックします。
+. ブートストラッププロセスが正常に完了するまで待ちます。
+  menu:Salt[]メニューを確認し、{salt}ミニオンキーがリストされていることを確認します。
+. プロキシホストを再起動します。
+. すべてのイベントが終了したら、menu:システム[]の一覧からホストを選択し、2回目の再起動をトリガしてオンボーディングを完了します。
+
+
+.タスク:プロキシホストを更新します
+. menu:システム[]一覧からホストを選択し、すべてのパッチを適用してホストを更新します。
+. プロキシホストを再起動します。
+
+
+
+// FIXME 2024-12-10, ke: use the snippet also here (see MLM equiv)
+[[proxy-setup-containers-generate-config]]
+== プロキシ設定の生成
+
+{productname}プロキシの設定アーカイブは、{productname}サーバによって生成されます。
+追加のプロキシごとに独自の設定アーカイブが必要です。
+
+[IMPORTANT]
+====
+{productname}プロキシのコンテナホストは、このプロキシ設定を生成する前に、{productname}サーバにSaltミニオンとして登録する必要があります。
+====
+
+
+次のタスクを実行します。
+
+.プロシージャ:
+. プロキシ設定ファイルを生成します。
+. 設定をプロキシに転送します。
+. `mgrpxy`コマンドでプロキシを起動します。
+
+[[proc-proxy-containers-setup-webui]]
+.タスク:Web UIを使用したプロキシコンテナ設定の生成
+
+. {webui}で、menu:システム[プロキシ設定]に移動し、必要なデータを入力します:
+. `Proxy FQDN`フィールドに、プロキシの完全修飾ドメイン名を入力します。
+. `Parent FQDN`フィールドに、{productname}サーバまたは別の {productname}プロキシの完全修飾ドメイン名を入力します。
+. `Proxy SSH port`フィールドに、{productname}プロキシでSSHサービスがリッスンしているSSHポートを入力します。推奨されるのは、デフォルトの8022を維持することです。
+. `Max Squid cache size [MB]`フィールドに、Squidキャッシュに許可される最大サイズを入力します。通常、これはコンテナ用の利用可能なストレージの最大60%までにするのが一般的です。
+. `SSL certificate`の選択リストで、{productname}プロキシ用に新しいサーバー証明書を生成するか、既存のものを使用するかを選択します。
+生成された証明書は、{productname}組み込み（自己署名）証明書と見なすことができます。
++
+選択に応じて、新しい証明書を生成するための署名CA証明書へのパス、またはプロキシ証明書として使用される既存の証明書とそのキーへのパスのいずれかを指定します。
++
+サーバ上で生成されたCA証明書は、`/var/lib/containers/storage/volumes/root/ssl-build`ディレクトリに保存されます。
++
+既存の証明書またはカスタム証明書、および企業証明書と中間証明書の概念の詳細については、xref:administration:ssl-certs-imported.adoc[]を参照してください。
+
+. btn:[生成]をクリックして、{productname}サーバに新しいプロキシFQDNを登録し、コンテナホストの詳細を含む設定アーカイブを生成します。
+. しばらくすると、ダウンロードするファイルが表示されます。このファイルをローカルに保存します。
+
+
+[[proxy-deploy-containers-transfer-config]]
+== プロキシ設定の転送
+
+{webui}は設定アーカイブを生成します。
+このアーカイブはプロキシコンテナホストで利用可能にする必要があります。
+
+
+.タスク:プロキシ設定をコピー
+. サーバコンテナからサーバのホストOSにファイルをコピーします。
++
+----
+mgrctl cp server:/root/config.tar.gz .
+----
+
+. サーバのホストOSからプロキシホストにファイルをコピーします。
++
+----
+scp config.tar.gz <proxy-FQDN>:/root
+----
+
+. 次のコマンドを使用してプロキシをインストールします。
++ 
+
+----
+mgrpxy install podman config.tar.gz
+----
+
+
+
+[[proxy-deploy-containers-transfer-start]]
+== {productname} {productnumber}プロキシを起動します。
+
+コンテナは、`mgrpxy`コマンドで起動できるようになりました。
+
+[[proc-install-containers-setup-start]]
+.タスク:プロキシの起動とステータスの確認
+
+. 次のコマンドを呼び出してプロキシを起動します。
++
+
+----
+mgrpxy start
+----
+
+. 次のコマンドを呼び出してコンテナのステータスを確認します。
++
+
+----
+mgrpxy status
+----
++
+
+５つの{productname}プロキシコンテナが存在し、`proxy-pod`コンテナポッドの一部である必要があります。
+
+* proxy-salt-broker
+* proxy-httpd
+* proxy-tftpd
+* proxy-squid
+* proxy-ssh
+
+
+
+=== サービスにカスタムコンテナイメージを使用する
+
+デフォルトでは、{productname}プロキシスイートは、各サービスに対して同じイメージバージョンとレジストリパスを使用するように設定されています。
+ただし、特定のサービスに対してデフォルト値を上書きすることは、`-tag`および`-image`で終わるインストールパラメータを使用することで可能です。
+
+たとえば、次のように使用します。
+
+----
+mgrpxy install podman --httpd-tag 0.1.0 --httpd-image registry.opensuse.org/uyuni/proxy-httpd /path/to/config.tar.gz
+----
+
+これはhttpdサービスの設定ファイルを調整します。ここで、`registry.opensuse.org/uyuni/proxy-httpds`は使用するイメージ、`0.1.0`はバージョンタグであり、調整後にサービスを再起動します。
+
+値をデフォルトにリセットするには、これらのパラメータを指定せずにもう一度installコマンドを実行します。
+
+----
+mgrpxy install podman /path/to/config.tar.gz
+----
+
+このコマンドは、すべてのサービスの設定をグローバルデフォルトにリセットして再ロードします。

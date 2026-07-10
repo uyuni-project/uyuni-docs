@@ -1,0 +1,169 @@
+[[backup-restore-db]]
+= 磁盘空间管理
+:description: 学习如何使用 \`mgradm` 管理 {productname} 服务器的在线数据库备份。
+:revdate: 2026-03-17
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-product-name: {productname}
+:page-product-version: {productnumber}
+
+本指南描述了如何使用 {productname} 管理 `mgradm` 服务器的在线数据库备份。
+备份系统基于 {postgresql} 持续归档的预写日志（WAL），类似于以前版本中的 `smdba`。
+
+[IMPORTANT]
+====
+* 为了确保系统能够完全恢复，请定期备份数据库和其他系统卷。
+
+* 定期将备份卷和 WAL 文件复制到外部存储设备或异地位置以进行灾难恢复。
+====
+
+
+
+== 概览
+
+持续归档通过不断将事务日志（WAL）备份到专用卷来降低数据丢失的风险。
+
+备份系统利用名为 `var-pgsql-walbackup` 的专用 Podman 卷来存储：
+
+* 基础备份（数据库的完整快照）。
+* WAL 段（自上次基础备份以来的增量更改）。
+
+
+[NOTE]
+====
+当前 `mgradm` 不支持时间点恢复，并需要手动工作流程。
+
+
+仅支持 `mgradm` 工具的完全恢复。
+恢复过程将从备份位置恢复所有内容。
+====
+
+
+
+== 先决条件
+
+* `mgradm`在主机上安装的 工具。
+* 在 Podman 环境中运行的 {productname} 服务器。
+
+
+
+== 启用备份
+
+运行以下命令生成证书文件。
+
+[source,shell]
+----
+mgradm backup db enable
+----
+
+运行以下命令：
+
+* 验证备份是否尚未启用。
+
+* 配置 {postgresql} (`postgresql.conf`) 以启用 `archive_mode` 并设置 `archive_command`。
+
+* 为数据库服务配置 `var-pgsql-walbackup` 卷。
+
+* 重启 spacewalk 服务以应用更改：
+
+* 在容器内执行初始基础备份。
+
+如果备份已配置但需要重新初始化，请使用 `--force` 标志。
+
+
+
+== mgradm backup create $path
+
+您可以随时验证数据库备份系统的当前状态：
+
+[source,shell]
+----
+mgradm backup db status
+----
+
+认证报告处于下列状态之一：
+
+* *已启用*：备份已正确配置并处于活动状态。
+* *已禁用*：连续归档已明确关闭。
+* *配置错误*：配置与运行时状态之间存在差异（例如，缺少卷，归档命令不正确）。
+
+
+
+== 维护备份（重基）
+
+随着时间的推移，WAL段的数量可能会显著增加，消耗磁盘空间并延长恢复时间。
+建议定期通过创建新的基础备份并启动新的WAL链来“重基”备份。
+
+[source,shell]
+----
+mgradm backup db rebase
+----
+
+此命令创建数据库的全新快照，而无需重新启动服务。
+
+[IMPORTANT]
+====
+定期使用命令 `mgradm backup db rebase` 重基您的数据库备份，以最小化恢复操作所需的时间。
+====
+
+
+== 从备份中还原
+
+从备份中恢复是一个 *破坏性操作*，它用备份的内容替换当前数据库数据。
+
+[source,shell]
+----
+mgradm backup db restore
+----
+
+恢复过程：
+
+* 使用以下命令启动数据库：
+
+* 挂载新的数据库目录：
+
+* 从备份卷中提取基础备份。
+
+* 为恢复配置 {postgresql}。
+
+*  使用以下命令启动数据库：
+
+* 重放 WAL 段以将数据库恢复到最新状态。
+
+该命令将等待直到数据库完全恢复并准备好接受连接。
+
+[IMPORTANT]
+====
+在执行恢复之前，请确保您在 `var-pgsql-walbackup` 卷中拥有最近的基础备份和所有必要的 WAL 段。
+====
+
+
+
+== 禁用备份
+
+关闭连续归档：
+
+[source,shell]
+----
+mgradm backup db disable
+----
+
+默认情况下，此命令在配置中禁用归档并重启数据库，但保留备份卷。
+
+要同时删除备份卷和所有存储的备份，请使用：
+
+[source,shell]
+----
+mgradm backup db disable --purge-volume
+----
+
+[IMPORTANT]
+====
+定期测试您的恢复程序以验证数据完整性，并确保您为恢复做好准备。
+====
+
+
+
+== 外部文档
+
+有关{postgresql}的更多信息，请参见 https://www.postgresql.org/docs/{postgresql-version}/continuous-archiving.html[{postgresql} {postgresql-version}: 连续归档和时间点恢复（PITR）]

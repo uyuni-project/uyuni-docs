@@ -1,0 +1,75 @@
+[[registering.clients.webui]]
+= {webui}でクライアントを登録する
+:description: Web UIのシステムブートストラッピングに移動し、指定された詳細と選択した認証方法でクライアントを登録して構成します。
+:revdate: 2025-07-09
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+== 概要
+
+
+{webui}を使用してクライアントをブートストラップすることは、xref:specialized-guides:salt/salt-ssh.adoc[Salt SSH]を使用してクライアント上でブートストラッププロセスを実行することです。
+Salt SSHは、Pythonインタープリタを含むSaltバンドルを使用します。
+したがって、クライアントに他のPythonインタープリタをインストールする必要はありません。
+
+Saltバンドルは、ブートストラップリポジトリと一緒に提供されます。したがって、クライアントのブートストラッププロセスを開始する前に、ブートストラップリポジトリを作成する必要があります。
+シェルスクリプトは、クライアント上のオペレーティングシステムを検出し、ブートストラップスクリプトと同じロジックを使用して、適切なブートストラップリポジトリからSaltバンドルをデプロイします。
+
+詳細については、xref:client-configuration:bootstrap-repository.adoc#_prepare_to_create_a_bootstrap_repository[ブートストラップリポジトリの作成準備]を参照してください。
+
+[IMPORTANT]
+====
+{productname}サーバを自分自身に登録しないでください。
+{productname}サーバは個別に管理する必要があるか、別の{productname}サーバを使用して管理する必要があります。
+複数のサーバを使用することに関する詳細は、xref:specialized-guides:large-deployments/hub-multi-server.adoc[]を参照してください。
+====
+
+== {webui}でクライアントを登録する
+
+.プロシージャ:{webui}でクライアントを登録する
+
+. {productname} {webui}で、menu:システム[ブートストラッピング]に移動します。
+. `Host`フィールドに、起動するクライアントの完全修飾ドメイン名(FQDN)を入力します。
+. `SSH Port`フィールドに、クライアントに接続して起動するために使用するSSHポート番号を入力します。
+    デフォルトでは、SSHポートは`22`です。
+. `User`フィールドに、クライアントにログインするユーザ名を入力します。
+    デフォルトでは、ユーザ名は`root`です。
+. `Authentication`メソッドを選択します。
+.. SSHキーでクライアントを起動するには、`Authentication`フィールドで`SSH Private Key`にチェックを付け、クライアントへのログインに使用するSSH秘密鍵をアップロードします。
+    SSH秘密鍵でパスフレーズが必要な場合、`SSH Private Key Passphrase`フィールドに入力します。パスフレーズがない場合は空白のままにします。
+.. パスワードでクライアントを起動するには、`Authentication`フィールドで`Password`にチェックを付け、クライアントへのログインに使用するパスワードを入力します。
+. `Activation Key`フィールドで、クライアントの起動に使用するソフトウェアチャンネルに関連付けられているアクティベーションキーを選択します。
+    詳細については、xref:client-configuration:activation-keys.adoc[]を参照してください。
+. オプション:`Proxy`フィールドで、クライアントの登録先にするプロキシを選択します。
+. デフォルトでは、`Disable SSH Strict Key Host Checking`チェックボックスは選択されています。
+    このチェックボックスにチェックが付いていると、ブートストラッププロセスは、手動認証なしでSSHホストキーを自動的に受け入れます。
+. オプション:`Manage System Completely via SSH`チェックボックスにチェックを付けます。
+    このオプションにチェックを付けると、サーバへの接続にSSHを使用するようにクライアントは設定され、その他の接続メソッドは設定されません。
++
+連絡方法に関する詳細については、xref:client-configuration:contact-methods-intro.adoc[]を参照してください。
+. btn:[起動]をクリックして、登録を開始します。
+. ブートストラッププロセスが完了したら、あなたのクライアントはmenu:システム[システム一覧]にリストされます。
+
+
+[IMPORTANT]
+====
+* SSHプライベートキーは、ブートストラッププロセスの期間中のみ保存されます。
+  ブートストラッププロセスが完了すると、{productname}サーバーから削除されます。
+* {productname}を使用してクライアントに新しいパッケージや更新がインストールされると、ライセンス条項（EULA）が自動的に受け入れられます。
+  パッケージのEULAを確認するには、{webui}のパッケージ詳細ページを開きます。
+====
+
+
+== ローカルで割り当てられたリポジトリの取り扱い
+
+{productname}によって提供されていないクライアントに直接リポジトリを割り当てることは一般的な使用ケースではありません。
+それは問題を引き起こす可能性があります。
+したがって、Salt経由でのブートストラップは、ブートストラッププロセスの開始時にすべてのローカルリポジトリを無効にします。
+
+その後、Highstateやパッケージのインストールを実行するなど、チャンネルの状態を使用するたびに、ローカルに割り当てられたすべてのリポジトリが再び無効になります。
+
+クライアントで使用されるすべてのソフトウェアパッケージは、{productname}によって提供されるチャンネルから取得されるべきです。
+カスタムチャンネルの作成に関する詳細については、`Custom Channels`をxref:administration:custom-channels.adoc[]で参照してください。

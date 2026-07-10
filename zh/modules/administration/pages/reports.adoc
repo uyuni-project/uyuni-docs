@@ -1,0 +1,145 @@
+[[reports]]
+= 生成报告
+:description: 学习如何使用 SUSE Multi-Linux Manager 中的 Hub Reporting 工具生成自定义报告，然后连接支持您需求的报告工具。
+:revdate: 2026-06-24
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+{productname} 允许用户生成各种报告。
+这些报告对于盘点您订阅的系统、用户和组织非常有帮助。
+使用报告通常比从 {productname} {webui} 手动收集信息更简单，尤其是当您管理许多系统时。
+
+虽然命令行工具 `spacewalk-report` 可用于生成预配置的报告，但随着 xref:administration:reporting-database.adoc[Reporting Database] 的引入，现在也可以生成完全自定义的报告。
+这可以通过将任何支持 SQL 语言的报告工具连接到报告数据库并直接提取数据来实现。
+有关数据可用性和结构的更多信息，请参见报告数据库架构文档。
+
+== 使用 `spacewalk-report`
+
+
+[IMPORTANT]
+====
+在服务器容器内运行步骤之前，请使用 `mgrctl term`。
+====
+
+要生成报告，必须安装 `spacewalk-reports` 软件包。
+`spacewalk-report` 命令允许您组织和显示有关内容、系统和用户资源的报告，跨越 {productname}。
+
+[IMPORTANT]
+====
+由于引入了 xref:administration:reporting-database.adoc[Reporting Database]，`spacewalk-report` 现在默认从报告数据库中收集数据。
+有关更多信息，请参见<<spacewalk-report-reporting-db>>。
+====
+
+可以针对以下各项生成报告：
+
+系统清单::
+列出所有已注册到 {productname} 的系统。
+
+补丁:: 
+列出所有与已注册系统相关的补丁。
+可以按严重性以及适用于特定补丁的系统将补丁排序。
+
+用户:: 
+列出所有已注册用户以及与特定用户关联的所有系统。
+
+要获取 CSV 格式的报告，请在服务器上的命令提示符下运行以下命令：
+
+[source]
+----
+spacewalk-report <report_name>
+----
+
+[[spacewalk-report-reporting-db]]
+== `spacewalk-report` 和报告数据库
+
+`spacewalk-report` 默认使用新的报告数据库提取数据。
+这意味着新生成的报告在数据的结构和格式上会有一些差异。
+所有报告的共同差异是：
+
+- 报告数据不会实时更改，而只能通过执行安排的任务来更新；
+- 数据重复已被去除，之前被视为“multival”的列现在包含多个用 `;` 分隔的值。这也意味着命令行选项 `--multival-on-rows` 和 `--multival-separator` 不再适用于新报告，因为它们的行为现在是默认的；
+- 在所有报告中引入了新列 `mgm_id` 和 `synced_date`，以标识中心方案中的管理服务器，以及上次从应用程序数据库更新信息的时间；
+- 现在，所有布尔数据类型值都由 `True`/`False` 表示，而不是由 `1`/`0` 值表示；
+- `org_id` 列已被 `organization` 取代，后者包含组织名称而不是数字标识符；
+- 术语 "server" 已被 "system" 取代。因此，例如，`server_id` 列现在称为 `system_id`。
+
+有关特定于报告的更改，请参见 <<report-list>>。
+
+[IMPORTANT]
+====
+如果这种行为更改造成了问题，可以使用新选项 `--legacy-report` 回退到针对应用程序数据库执行的旧报告。
+====
+
+有关报告数据库的更多信息，请参阅 xref:administration:reporting-database.adoc[]。
+有关在中心方案下对多个服务器数据进行特定聚合的更多信息，请参阅 xref:specialized-guides:large-deployments/hub-reporting.adoc[]。
+
+[[report-list]]
+== 可用报告列表
+
+下表列出了可用报告：
+
+
+[[tab.bp.troubleshooting.spacewalk-report]]
+.`spacewalk-report` 报告
+[cols="1,1,1,1,1", options="header"]
+|===
+|报告 | 作为调用 | 说明 | 使用报告数据库 | 具体差异
+| 操作 | `actions` | 所有操作。| 是 | `id` 列现在称为 `action_id`
+| 激活密钥 | `activation-keys` | 所有激活密钥，以及与之相关的权利、频道、配置频道、系统组和软件包。| 否 |
+| 激活密钥：通道 | `activation-keys-channels` | 所有激活密钥及与每个密钥相关的实体。| 否 |
+| 激活密钥：配置 | `activation-keys-config` | 所有激活密钥及与每个密钥相关的配置频道。| 否 |
+| 激活密钥：系统组 | `activation-keys-groups` | 所有激活密钥及与每个密钥相关的系统组。| 否 |
+| 激活密钥：软件包 | `activation-keys-packages` | 所有激活密钥及每个密钥可以部署的软件包。| 否 |
+| 通道软件包 | `channel-packages` | 通道中的所有软件包。| 是 |
+| 通道报告 | `channels` | 给定通道的详细报告。| 是 |
+| 克隆通道报告 | `cloned-channels` | 克隆通道的详细报告。| 是 |
+| 配置文件 | `config-files` | 所有组织的所有配置文件修订，包括文件内容和文件信息。| 否 |
+| 最新配置文件 | `config-files-latest` | 所有组织的最新配置文件修订，包括文件内容和文件信息。| 否 |
+| 自定义通道 | `custom-channels` | 特定组织拥有的所有通道的通道元数据。| 是 | `id` 列现在称为 `channel_id`
+| 自定义信息 | `custom-info` | 客户端自定义信息。| 是 |
+| 通道中的补丁 | `errata-channels` | 通道中的所有补丁。| 是 |
+| 补丁详情 | `errata-list` | 所有影响注册客户端的补丁。| 是 |
+| 所有补丁 | `errata-list-all` | 所有补丁。| 否 |
+| 客户端补丁 | `errata-systems` | 适用的补丁和任何受影响的注册客户端。| 是 |
+| 主机客户机 | `host-guests` | 主机和客户机映射。| 是 |
+| 非活动客户端 | `inactive-systems` | 非活动客户端。| 是 | 强制参数现在称为 `threshold`。
+| 系统清单 | `inventory` | 注册到系统的客户端，以及硬件和软件信息。| 是 | `osad_status` 列已被去除。
+| Kickstart 脚本 | `kickstart-scripts` | 所有 Kickstart 脚本及其详细信息。| 否 |
+| Kickstart 树 | `kickstartable-trees` | 可无人值守安装树。| 否 |"
+| 所有可升级版本 | `packages-updates-all` | 所有可以升级的新版本软件包。| 是 |
+| 最新可升级版本 | `packages-updates-newest` | 最新可以升级的软件包版本。| 是 |
+| 代理概览 | `proxies-overview` | 所有代理及其注册的客户端。| 是 |
+| 储存库 | `repositories` | 所有安装源及其相关的SSL详细信息和任何过滤器。| 否 |
+| SCAP结果 | `scap-scan` | OpenSCAP `sccdf` 评估的结果。| 是 |
+| SCAP结果 | `scap-scan-results` | OpenSCAP `sccdf` 评估的结果，以不同格式呈现。| 是 |
+| 系统数据 | `splice-export` | 进行拼接集成所需的客户端数据。| 否 |
+| 系统货币 | `system-currency` | 每个注册客户端可用补丁的数量。| 否 |
+| 系统额外软件包 | `system-extra-packages` | 所有在所有客户端上安装的、但不在客户端订阅的频道中可用的软件包。| 是 |
+| 系统组 | `system-groups` | 系统组。| 是 |
+| 系统硬件 | `system-hardware` | 系统硬件信息。| 否 |
+| 系统组的激活密钥 | `system-groups-keys` | 系统组的激活密钥。| 否 |
+| 系统组中的系统 | `system-groups-systems` | 系统组中的客户端。| 是 |
+| 系统组用户 | `system-groups-users` | 具有权限的系统组和用户。| 否 |
+| 历史：系统 | `system-history` | 每个客户端的事件历史。| 是 |
+| 历史：通道 | `system-history-channels` | 频道事件历史。| 是 |
+| 历史：配置 | `system-history-configuration` | 配置事件历史。| 是 | `created_date` 列已被去除。
+| 历史：权利 | `system-history-entitlements` | 系统授权事件历史。| 是 |
+| 历史：勘误 | `system-history-errata` | 勘误事件历史。| 是 | `created_date` 列已被去除。
+| 历史：Kickstart | `system-history-kickstart` | Kickstart 事件历史。| 是 | `created_date` 列已被去除。
+| 历史：软件包 | `system-history-packages` | 软件包事件历史。 | 是 | `created_date` 列已被去除。
+| 历史：SCAP | `system-history-scap` | OpenSCAP 事件历史。 | 是 | `created_date` 列已被去除。
+| MD5 证书 | `system-md5-certificates` | 所有使用 MD5 校验和的证书的注册客户端。| 否 |
+| 安装的软件包 | `system-packages-installed` | 在客户端上安装的软件包。 | 是 |
+| 系统控制文件 | `system-profiles` | 所有注册到系统的客户端，包含软件和系统组信息。| 否 |
+| 用户 | `users` | 所有注册到 {productname} 的用户。| 是 | `organization_id` 列已被去除。
+| MD5 用户 | `users-md5` | 所有使用 MD5 加密密码的组织的所有用户及其详细信息和角色。| 是 | `organization_id` 列已被去除。
+| 管理的系统 | `users-systems` | 个别用户可以管理的客户端。| 是 | `organization_id` 列已被去除。
+|===
+
+有关单个报告的更多信息，请运行 `spacewalk-report`，并带上 `--info` 或 `--list-fields-info` 选项以及报告名称。
+这显示了报告中可能的字段的描述和列表。
+
+有关程序调用和选项的更多信息，请参阅 `spacewalk-report(8)` 手册页以及 `spacewalk-report` 命令的 `--help` 参数。

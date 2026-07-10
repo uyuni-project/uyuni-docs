@@ -1,0 +1,275 @@
+[[auditing]]
+= 監査
+:description: SUSE Multi-Linux Manager内でのタスク監査を通じて、クライアント関係を効果的に管理します。これには、セキュリティパッチの確認やコンプライアンスの確保が含まれます。
+:revdate: 2026-06-24
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+
+
+{productname}では、一連の監査タスクを通じてクライアントを追跡できます。
+クライアントがすべての公開セキュリティパッチ（CVE）を最新の状態に保っているか確認し、サブスクリプションの照合を行い、OpenSCAPを使用して仕様のコンプライアンスを確認できます。
+
+{productname} {webui}では、`Audit`に移動して監査タスクを実行します。
+
+
+
+
+== CVE監査
+
+
+CVE (共通脆弱性識別子)は、一般に知られているセキュリティの脆弱性に対する修正です。
+
+[IMPORTANT]
+====
+CVEが利用可能になったらすぐにクライアントに適用する必要があります。
+====
+
+各CVEには、識別番号、脆弱性の説明、およびさらなる情報へのリンクが含まれています。
+CVE識別番号は、`CVE-YEAR-XXXX`の形式を使用します。
+
+{productname} {webui}では、menu:Audit[CVE監査]に移動して、すべてのクライアントとその現在のパッチステータスのリストを表示します。
+
+デフォルトでは、パッチデータは毎日23:00に更新されます。
+CVE監査を開始する前に、最新のパッチを確保するためにデータを更新することをお勧めします。
+
+.プロシージャ:パッチデータの更新
+[role=procedure]
+____
+. {productname} {webui}で、menu:管理[タスクスケジュール]に移動し、`cve-server-channels-default`スケジュールを選択します。
+
+. btn:[cve-server-channels-bunch]をクリックします。
+
+. btn:[1回のみの実行スケジュール]をクリックしてタスクをスケジュールします。
+  CVE監査を続行する前に、タスクを完了させてください。
+____
+
+.プロシージャ:パッチステータスの確認
+[role=procedure]
+____
+. {productname} {webui}では、menu:Audit[CVE監査]に移動します。
+
+. 特定のCVEのパッチステータスを確認するには、`CVE Number`フィールドにCVE識別子を入力します。
+
+. 検索するパッチステータスを選択するか、すべてのステータスをオンのままにしてすべてを検索します。
+
+. btn:[監査サーバ]をクリックしてすべてのシステムを確認するか、btn:[監査イメージ]をクリックしてすべてのイメージを確認します。
+____
+
+このページで使用されているパッチステータスアイコンに関する詳細情報は、xref:reference:audit/audit-cve-audit.adoc[]を参照してください。
+
+各システムについて、`Actions`列は脆弱性に対処するために必要な情報を提供します。
+該当する場合、候補となるチャネルやパッチのリストも提供されます。
+システムを`System Set`に割り当てて、さらにバッチ処理を行うこともできます。
+
+{productname} APIを使用して、クライアントのパッチステータスを確認できます。
+`audit.listSystemsByPatchStatus` APIメソッドを使用します。
+このメソッドに関する詳細は、{productname} APIガイドを参照してください。
+
+
+== OVAL
+
+CVE監査操作は、チャネルとOVAL（オープン脆弱性評価言語）の2つの主要なデータソースに依存しています。
+これら2つのソースは、CVE監査を実施するためのメタデータを提供し、それぞれ異なる目的を果たします。
+
+チャンネル::
+チャンネルには、パッチを含む更新されたソフトウェアパッケージが含まれており、脆弱性に対処するために必要な重要なパッチに関する洞察を提供します。
+
+OVAL::
+対照的に、OVALデータは、脆弱性そのものに関する情報、およびシステムをCVEに対して脆弱にするパッケージに関する情報を提供します。
+
+CVE監査はチャンネルデータのみを使用して実施できますが、OVALデータを同期させることで、特に、ゼロデイ脆弱性や部分的にパッチが適用された脆弱性に関連するケースで、結果の精度が向上します。
+
+OVALデータはチャネルデータよりもはるかに軽量です。
+例えば、{opensuse} Leap 15.4のOVALデータは約50{nbsp}MBです。
+
+OVALデータを同期しただけで、すでに CVE 監査を実施し、システムがCVEに対して脆弱かどうかを確認できます。ただし、パッチはチャンネルから取得されるため、パッチを適用することはできません。
+
+
+[NOTE]
+====
+OVAL機能の主な特徴は次のとおりです。
+
+* *デフォルトで有効*:この機能はデフォルトで有効になっており、追加の設定は不要です。
+* *元に戻せる*:必要に応じて、ユーザーはOVALデータを無効にし、標準のチャネルベースのCVE監査に戻すことができます。
+  以下の<<disable-oval-data,OVALデータサポートの無効化>>を参照してください。
+
+* デフォルトでは、OVALデータは毎日23:00に更新されます。
+  CVE監査を開始する前に、データを更新して最新の脆弱性メタデータが適用されていることを確認することをお勧めします。
+====
+
+以下のプロシージャを使用して、OVALデータを有効、無効、または更新できます。
+
+.プロシージャ:OVALデータサポートを有効にする
+[role=procedure]
+____
+. コンテナ内のファイル`/etc/rhn/rhn.conf`に次の設定を追加または編集します。
+
++
+----
+java.cve_audit.enable_oval_metadata=true
+----
++
+. TomcatおよびTaskomaticサービスを再起動します。
+
++
+----
+systemctl restart tomcat taskomatic
+----
+____
+
+あるいは、OVALデータサポートを無効にするためのプロシージャを使用します。
+ 
+[[disable-oval-data]]
+.プロシージャ:OVALデータサポートの無効化
+[role=procedure]
+____
+. `rhn.conf`に次の設定を追加または編集します。
+
++
+
+----
+java.cve_audit.enable_oval_metadata=false
+----
+
++
+
+. TomcatおよびTaskomaticサービスを再起動します。
+
++
+----
+systemctl restart tomcat taskomatic
+----
+____
+
+
+.プロシージャ:OVALデータの更新
+[role=procedure]
+____
+. {productname} {webui}で、menu:管理[タスクスケジュール]に移動し、`oval-data-sync-default`スケジュールを選択します。
+
+. btn:[oval-data-sync-bunch]をクリックします。
+
+. btn:[1回のみの実行スケジュール]をクリックしてタスクをスケジュールします。
+
+CVE監査を続行する前に、タスクを完了させてください。
+____
+
+
+=== CPEの収集
+
+特定のクライアントに適用される脆弱性を正確に特定するために、そのクライアントが使用しているオペレーティングシステム製品を特定する必要があります。
+そのために、クライアントのCPE（共通プラットフォーム列挙）を{salt}グレインとして収集し、それをデータベースに保存します。
+
+新しく登録されたクライアントのCPEは自動的に収集され、データベースに保存されます。
+ただし、既存のクライアントについては、少なくとも一度は`Update Packages List`アクションを実行する必要があります。
+
+.プロシージャ:パッケージリストの更新
+[role=procedure]
+____
+. {productname} {webui}で、menu:システム[システムリスト> すべて]に移動し、クライアントを選択します。
+
+. 次に、`Software`タブに移動し、`Packages`サブタブを選択します。
+
+. btn:[パッケージリストの更新]をクリックして、パッケージを更新し、クライアントのCPEを収集します。
+____
+
+
+=== OVALソース
+
+OVALデータの整合性と最新性を確保するために、{productname}はすべての製品の公式メンテナーからのみOVALデータを消費します。以下に、OVALデータソースのリストを示します。
+
+[[oval-sources]]
+[cols="2,3,2", options="header"]
+.OVALソース
+|===
+| 製品 | ソースURL | OVALがサポートするバージョンは{productname}です。
+| openSUSE Leap .7+.^| https://ftp.suse.com/pub/projects/security/oval |
+| openSUSE Leap Micro |
+| SUSE Linux Enterprise Server
+a|
+SUSE Linux Enterprise Server 16 +
+SUSE Linux Enterprise Server 15 +
+SUSE Linux Enterprise Server 12
+| SUSE Linux Enterprise Desktop | SUSE Linux Enterprise Desktop 15
+| SUSE Linux Enterprise Micro
+a|
+SUSE Linux Enterprise Micro 5.5 +
+SUSE Linux Enterprise Micro 5.4 +
+SUSE Linux Enterprise Micro 5.3 +
+SUSE Linux Enterprise Micro 5.2
+| SUSE Linux Micro
+a|
+SUSE Linux Micro 6.2 +
+SUSE Linux Micro 6.1 +
+SUSE Linux Micro 6.0
+| SUSE Liberty Linux
+a|
+SUSE Liberty Linux 10 +
+SUSE Liberty Linux 9 +
+SUSE Liberty Linux 8 +
+SUSE Liberty Linux 7
+| RedHat Enterprise Linux | https://www.redhat.com/security/data/oval/v2
+a|
+RedHat Enterprise Linux 9 +
+RedHat Enterprise Linux 8 +
+RedHat Enterprise Linux 7
+| Debian | https://www.debian.org/security/oval
+a|
+Debian 13 +
+Raspberry Pi OS
+| Ubuntu | https://security-metadata.canonical.com/oval
+a|
+Ubuntu 24.04 +
+Ubuntu 22.04
+| AlmaLinux | https://security.almalinux.org/oval
+a|
+AlmaLinux 10 +
+AlmaLinux 9 +
+AlmaLinux 8
+| Oracle Linux | https://linux.oracle.com/security/oval/
+a|
+Oracle Linux 10 +
+Oracle Linux 9 +
+Oracle Linux 8 +
+Oracle Linux 7
+|===
+
+
+[NOTE]
+====
+OVALメタデータは、openSUSE Leap、SUSE Linux Enterprise Server製品、RHEL、Debian、またはUbuntuを使用するクライアントの一部に対するCVE監査にのみ使用されます。これは、他の製品に対するOVAL脆弱性定義メタデータが存在しないためです。
+====
+
+
+== CVEステータス
+
+クライアントのCVEステータスは、通常`affected`、`not affected`、または`patched`のいずれかです。
+これらのステータスは、{productname}に利用可能な情報のみに基づいています。
+
+{productname}内では、これらの定義が適用されます：
+
+特定の脆弱性の影響を受けるシステム::
+脆弱性がマークされた関連パッチ内の同じパッケージのバージョンより前のバージョンのパッケージがインストールされているシステム。
+
+特定の脆弱性の影響を受けないシステム::
+脆弱性がマークされた関連パッチにも含まれているパッケージがインストールされていないシステム。
+
+特定の脆弱性に対するパッチが適用されたシステム::
+脆弱性がマークされた関連パッチ内の同じパッケージのバージョン以上のバージョンのパッケージがインストールされているシステム。
+
+関連パッチ::
+関連するチャンネルで{productname}として知られているパッチ。
+
+関連するチャンネル::
+{productname}によって管理されているチャンネルで、システムに割り当てられているもの、システムに割り当てられているクローンチャンネルのオリジナル、システムにインストールされている製品にリンクされたチャンネル、またはシステムの過去または将来のサービスパックチャンネルのいずれかです。
+
+
+[NOTE]
+====
+{productname}内で使用される定義のため、CVE監査結果は状況によっては不正確である可能性があります。
+例えば、管理されていないチャンネル、管理されていないパッケージ、または準拠していないシステムは、不正確に報告される可能性があります。
+====

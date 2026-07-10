@@ -1,0 +1,45 @@
+[[troubleshooting-rh-cdn-channel-and-multiple-certs]]
+= 对 Red Hat CDN 通道和多个证书进行查错
+:description: 通过将有效证书合并到单个 PEM 文件中，为 SUSE Multi-Linux Manager 配置 Red Hat CDN 通道和多个证书。
+:revdate: 2022-10-18
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+{redhat} 内容分发网络 (CDN) 通道有时会提供多个证书，但 {productname} {webui} 只能导入单个证书。
+如果 CDN 提供的证书与 {productname} {webui} 已知的证书不同，则验证失败，访问储存库的权限被拒绝，即使证书是准确的。
+收到的错误消息是：
+
+----
+[error]
+Repository '<repo_name>' is invalid.
+<repo.pem> Valid metadata not found at specified URL
+History:
+ - [|] Error trying to read from '<repo.pem>'
+ - Permission to access '<repo.pem>' denied.
+Please check if the URIs defined for this repository are pointing to a valid repository.
+Skipping repository '<repo_nam' because of the above error.
+Could not refresh the repositories because of errors.
+HH:MM:SS RepoMDError: Cannot access repository. Maybe repository GPG keys are not imported
+----
+
+要解决此问题，请将所有有效证书合并到单个 `.pem` 文件中，然后重新构建证书以供 {productname} 使用：
+
+
+
+.过程：升级解决多个 {redhat} CDN 证书的问题
+. 在 {redhat} 客户端上，在命令提示符处，以 root 身份，将 `/etc/pki/entitlement/` 中的所有当前证书收集到单个 `rh-cert.pem` 文件中：
++
+----
+cat 866705146090697087.pem 3539668047766796506.pem redhat-entitlement-authority.pem > rh-cert.pem
+----
+. 将 `/etc/pki/entitlement/` 中的所有当前密钥收集到单个 `rh-key.pem` 文件中：
++
+----
+cat 866705146090697087-key.pem 3539668047766796506-key.pem > rh-key.pem
+----
+
+您现在可以使用 xref:client-configuration:clients-rh-cdn.adoc[] 中的说明将新证书导入到 {productname} 服务器。
+

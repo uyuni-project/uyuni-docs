@@ -1,0 +1,215 @@
+[[autoinst-distributions]]
+= 可自动安装的发行套件
+:description: 创建可自动安装的发行版，可以通过多种方法配置客户端安装
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+自动安装过程依赖于多个文件来启动安装。
+这些文件包括 Linux 内核、初始 RAM 磁盘以及其他在安装模式下启动操作系统所需的文件。
+
+{productname} 使用 `mgradm` 工具将安装文件从源复制到服务器容器。
+
+您可以从 DVD 映像中提取所需的文件。
+有关信息，请参见 xref:client-configuration:autoinst-distributions.adoc#based-on-iso-image[基于 ISO 映像的发行版]。
+
+或者，您可以安装 `tftpboot-installation` 软件包。
+有关信息，请参见 xref:client-configuration:autoinst-distributions.adoc#based-on-rpm-package[基于 RPM 软件包的发行版]。
+
+对于与这些文件相同的操作系统版本，您还必须在 {productname} 服务器上同步基础通道。
+
+当您准备好文件并同步基础通道时，您需要声明该发行版。
+此操作将安装文件与基础通道关联。
+该发行版可以通过一个或多个安装控制文件进行引用。
+有关信息，请参见 xref:client-configuration:autoinst-distributions.adoc#declare-distribution[声明可自动安装的发行版]。
+
+
+
+[[based-on-iso-image]]
+== 基于 ISO 映像的发行套件
+
+
+此方法假设您拥有要在客户端上安装的操作系统的安装介质。
+这通常是一个 DVD `.iso` 映像，其中包含 Linux 内核、`initrd` 文件以及在安装模式下启动操作系统所需的其他文件。
+
+
+
+.过程：升级从安装介质导入文件
+. 使用 `mgradm` 从 ISO 映像导入安装数据：
++
+----
+# mgradm distribution copy <image_name>.iso <image_name>
+----
++
+. 记录 `mgradm` 报告的发行版路径。
+  在您向 {productname} 声明发行版时，您将需要它。
+
+
+
+=== 发行套件自动检测和注册
+
+`mgradm` 能够自动检测发行版名称并将其注册到服务器。
+提供的 ISO 映像需要包含 `.treeinfo` 文件。
+
+.过程：升级导入发行版文件并执行自动检测和注册
+. 使用 `mgradm`：
++
+----
+# mgradm distribution copy --api-user <username> --api-password <password> <image_name>.iso
+----
+
+
+[[based-on-rpm-package]]
+== 基于 RPM 软件包的发行套件
+
+此方法适用于 {suse} 系统。
+它比从安装媒体导入内容更简单，因为它使用的是安装系统的预打包文件。
+
+
+
+.过程：升级从安装软件包提取文件
+. 在 {productname} 服务器上，安装名称以 `tftpboot-installation` 开头的软件包。
+  您可以使用命令 `zypper se tftpboot-installation` 确定其确切名称。
+. 可使用以下命令将软件包安装到其他根目录，以避免重启：
++
+----
+# mkdir /opt/tftpinstall
+# zypper --installroot /opt/tftpinstall install tftpboot-installation-SLE-Micro-5.5-x86_64
+----
+. 使用命令 `ls -d /opt/tftpinstall/usr/share/tftpboot-installation/*` 查找安装文件。
+. 使用 `mgradm` 复制安装文件：
++
+----
+# mgradm distribution copy /opt/tftpinstall/usr/share/tftpboot-installation/SLE-Micro-5.5-x86_64 SLE-Micro-5.5-x86_64
+----
+. 记录 `mgradm` 工具报告的发行版路径。
+  在您向 {productname} 声明发行版时，您将需要它。
+. `mgradm` 工具完成后，您可以去除 `/opt/tftpinstall` 目录。
+
+此过程准备安装与您 {productname} 服务器上运行的操作系统版本相同的操作系统。
+如果您想在客户端安装不同的操作系统或版本，您需要手动从其所属的发行版中获取软件包 `tftpboot-installation-*`。
+在 `Package Search` 输入框 {productname} 中，搜索名称以 `tftpboot-installation` 开头的软件包，然后查看该软件包的详细信息。
+它们显示了 `/var/spacewalk/` 下方的本地路径。
+
+
+
+[[declare-distribution]]
+== 声明可自动安装的发行套件
+
+提取自动安装文件后，接下来要声明可自动安装的发行套件。
+
+
+
+.过程：升级声明可自动安装的发行版
+. 在 {productname} {webui} 中，导航到 menu:系统[自动安装> 发行版]。
+. 单击 `Create Distribution`，并填写以下字段：
++
+* 在 `Distribution Label` 字段中，输入用于识别可自动安装的发行版的名称。
+* 在 `Tree Path` 字段中，输入保存在您的 {productname} 服务器上的安装媒体的路径。
+* 选择匹配的 `Base Channel`。
+  此项必须与安装媒体匹配。
+* 选择 `Installer Generation`。
+  此项必须与安装媒体匹配。
+* 可选：指定引导此发行版时要使用的内核选项。
+  提供内核选项有多种方式。
+  在此仅添加对发行版通用的选项。
+. 单击 btn:[创建可自动安装的发行版]。
+
+您准备的安装文件可能不包含您需要安装的软件包。
+如果未包含它们，请将 `useonlinerepo=1` 添加到 `Kernel Options` 字段中。
+
+软件包仓库包含可能未签名的元数据。
+如果元数据未签名，请将 `insecure=1` 添加到 `Kernel Options` 字段中，或者按照 xref:client-configuration:autoinst-owngpgkey.adoc[使用您自己的 GPG 密钥] 中的说明使用您自己的 GPG 密钥。
+
+例如，当您使用“联机安装程序”ISO 映像而非完整 DVD 时，或者当您使用 `tpboot-installation` 软件包时，需要这些内核选项。
+
+导航到 menu:系统[自动安装> 发行版] 以管理您的可自动安装的发行版。
+
+ifeval::[{mlm-content} == true]
+[NOTE]
+====
+您可以以与{sle}客户端相同的方式自动安装{productname}代理4.3。
+确保您使用 {sle} 安装介质，并选择 `SLE-Product-SUSE-Manager-Proxy-4.3-Pool for x86_64` 基础频道。
+====
+endif::[]
+
+== 处理发行套件和配置文件的内核选项
+
+{productname}能够组合您分配的内核选项。
+这是通过特殊的继承逻辑完成的。
+有三种对象类型与此相关：
+
+. 发行套件（简称“Distro”）
+. 配置文件
+. 系统
+
+Cobbler 设置文件 `/etc/cobbler/settings.yaml` 是影响最终内核选项的第四个特殊因素。
+Cobbler 设置文件定义了所有发行版的默认内核选项。
+在 {productname} 的上下文中不支持此功能。
+
+了解原始值和解析后的值对于有效管理内核选项至关重要。
+
+. **原始值**：这些值是直接附加到特定 Cobbler 项并原样存储在 Cobbler 的内部数据库中的。
+. **解析后的值**：这些值在运行时动态生成，遵循 Cobbler 项的继承层次结构。
+
+如果您在某个选项前加上 `!`，该选项将从最终内核命令行中去除。
+
+{productname} 将为您管理控制文件和系统的内核选项。
+因此，您只能编辑发行版的内核选项。
+
+=== 示例
+
+==== 基本的继承示例
+
+发行套件原始值
+
+----
+install=http://uyuni.server/ks/dist/SLES15SP4 self_update=0
+----
+
+配置文件原始值
+
+----
+console=tty1
+----
+
+系统原始值
+
+----
+console=ttyS0
+----
+
+*解析后* 值用于继承此控制文件的系统。
+
+----
+install=http://uyuni.server/ks/dist/SLES15SP4 self_update=0 console=ttyS0
+----
+
+==== 选项去除示例
+
+发行套件原始值
+
+----
+install=http://uyuni.server/ks/dist/SLES15SP4 self_update=0
+----
+
+配置文件原始值
+
+----
+console=tty1
+----
+
+系统原始值
+
+----
+!self_update
+----
+
+*解析后* 值用于继承此控制文件的系统。
+
+----
+install=http://uyuni.server/ks/dist/SLES15SP4 console=ttyS0
+----

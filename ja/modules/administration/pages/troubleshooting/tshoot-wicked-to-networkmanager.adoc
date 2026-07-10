@@ -1,0 +1,393 @@
+[[tshoot-wicked-to-networkmanager]]
+= ホストOSのアップグレード後にwickedをNetworkManagerに置き換えます
+:revdate: 2026-06-08
+:page-revdate: {revdate}
+
+////
+Applies to: SUSE Multi-Linux Manager 5.0 / 5.1 on SL Micro 6.1
+Platform: Microsoft Azure (cloud image deployments)
+
+Cause: After upgrading the host OS from SLE Micro 5.5 to SL Micro 6.1, wicked remains active.
+Consequence: Wicked packages become orphaned with no repository or security updates.
+Fix: Install NetworkManager inside a transactional shell, remove wicked, enable NetworkManager, and reboot.
+Result: NetworkManager manages the network and the system is in a supported configuration.
+////
+
+
+== 問題の説明
+
+場合によっては、{productname}ホストOSをSLE Micro 5.5からSL Micro 6.1にアップグレードした後、システムがアクティブなネットワークマネージャーとしてwickedを実行し続けることがあります。
+
+これはサポートされていない設定です。
+
+以前のインストールから持ち越されたwickedパッケージは、SL Micro 6.1のリポジトリにはもはや存在せず、セキュリティ更新も受けられないため、孤立状態になります。
+ 
+[NOTE]
+====
+{productname}はSL Microホスト上でコンテナとして実行されます。
+ネットワーク管理はホストOSによって完全に処理されます。
+この手順中、{productname}コンテナに変更は必要ありません。
+====
+ 
+次の症状がシステムが影響を受けていることを確認します：
+ 
+* `systemctl status wicked` 表示 `active (exited)`
+* `systemctl status NetworkManager` 表示 `Unit NetworkManager.service could not be found`
+* `systemctl show -p Id network.service` は `Id=wicked.service` を返します
+* `sudo zypper se -s wicked` は、リポジトリなしで `(System Packages)` の下にwickedがリストされていることを示します
+ 
+[WARNING]
+====
+この手順は、{productname}クラウドイメージの標準設定であるDHCPを使用しているシステムに適用されます。
+デプロイメントが静的IPアドレス、VLAN、カスタムボンディング、またはその他の非標準ネットワーク設定を使用している場合は、手続きを進めないでください。
+あなたの設定に特有のガイダンスについては、SUSEサポートに連絡してください。
+====
+ 
+ 
+== 範囲と影響
+ 
+[cols="1,2", options="header"]
+|===
+| [アイテム] | 詳細
+ 
+| 適用項目
+| {productname}SL Micro 6.1上の 5.0および5.1
+ 
+| ネットワークの中断
+| この手順の最後の再起動中にシステムが一時的に到達不能になります。
+ 
+| {productname} コンテナ
+| 常に実行されています。
+コンテナに変更は必要ありません。
+ 
+| IP アドレス
+| クラウドプロバイダーを使用してDHCPを利用する場合、移行後も変更はありません。
+DHCPリースは通常、MACアドレスにバインドされています。
+ 
+| ミニオン
+| 再構成は必要ありません。
+ミニオンは移行後も同じIPアドレスに接続します。
+|===
+ 
+ 
+== 前提条件
+ 
+開始前に：
+ 
+* システムへのアウトオブバンドコンソールアクセスを確保してください（例えば、クラウドプラットフォームやハイパーバイザーが提供するシリアルコンソール）。
+ネットワークが再起動後に正しく戻らない場合のリカバリーパスです。
+* {productname} コンテナが実行中で正常であることを確認してください：
+
++
+
+----
+sudo podman ps
+----
+
+* ホスト上の現在のIPアドレスとルーティングテーブルを記録してください。
+移行後にこれらが変更されていないことを確認します：
+
++
+
+----
+ip addr show eth0
+ip route show
+----
+ 
+ 
+== マイグレーションの手順
+
+.プロシージャ:wickedをNetworkManagerに移行する
+[role=procedure]
+____
+
+. 変更を加える前にスナップショットを取ってください。
+  何か問題が発生した場合のロールバックポイントです。
+
++
+
+----
+sudo snapper create -d "Pre-NetworkManager-Migration"
+----
+
++ 
+
+出力からスナップショット番号をメモしてください。
+ロールバックが必要な場合に必要です。
+
++ 
+----
+sudo snapper list
+----
+
+. 変更を適用するためにトランザクション更新シェルを開いてください。
+
++
+
+[IMPORTANT]
+====
+ここで行われたすべての変更は原子的にステージされ、次のステップで再起動後にのみ有効になります。
+====
+
++
+
+----
+sudo transactional-update shell
+----
+
++
+ 
+シェル内で、NetworkManagerをインストールします：
+ 
++
+
+----
+zypper in NetworkManager
+----
+
++
+ 
+プロンプトが表示されたら、`y` で確認してください。
+NetworkManagerとその依存関係はSL Micro-6.1リポジトリからインストールされます。
+
++
+ 
+孤立したwickedパッケージを削除します：
+
++
+ 
+----
+zypper rm wicked wicked-service cockpit-wicked
+----
+
++
+ 
+プロンプトが表示されたら、`y` で確認してください。
+
++
+ 
+[NOTE]
+====
+wickedの削除中に、以下のような警告が表示されます：
+ 
+ warning: file wicked: remove failed: No such file or directory
+ 
+これらの警告は予想されるものです。
+OSのアップグレード後、いくつかのwickedファイルはすでに存在しませんでした。
+削除は成功裏に完了します。
+重要なシンボリックリンクが削除されたことを確認するために、以下の行を探してください：
+ 
+ Removed "/etc/systemd/system/network.service".
+ Removed "/etc/systemd/system/multi-user.target.wants/wicked.service".
+====
+
++
+ 
+NetworkManagerを有効にして、次回のブート時に起動するようにします：
+
++ 
+
+----
+systemctl enable NetworkManager
+----
+
++
+ 
+以下のシンボリックリンクが作成されているのがわかります：
+ 
+ Created symlink /etc/systemd/system/network.service → /usr/lib/systemd/system/NetworkManager.service.
+ Created symlink /etc/systemd/system/multi-user.target.wants/NetworkManager.service → ...
+
++
+ 
+トランザクションシェルを終了します。
+
++
+ 
+----
+exit
+----
+
+ 
+. 再起動します。
+
++
+ 
+[WARNING]
+====
+システムは再起動中にネットワーク接続を失います。
+SSHセッションは終了します。
+必要に応じて、アウトオブバンドコンソールを使用して再起動を監視してください。
+====
+
++
+
+----
+sudo reboot
+----
+
+ 
+. システムが再起動した後、移行を確認してください。
+  ホストで以下のチェックを実行します。
+
++
+ 
+`network.service` がNetworkManagerを指していることを今すぐ確認してください。
+
++
+ 
+----
+systemctl show -p Id network.service
+----
+
++
+ 
+予想される出力:
+ 
+ Id=NetworkManager.service
+
++
+ 
+wickedパッケージが完全に削除されていることを確認してください：
+
++
+ 
+----
+rpm -q wicked wicked-service
+----
+
++
+ 
+予想される出力:
+ 
+ package wicked is not installed
+ package wicked-service is not installed
+
++
+ 
+IPアドレスが変更されていないことを確認してください：
+
++
+ 
+----
+ip addr show eth0
+----
+
++
+ 
+IPアドレスは、移行前に記録されたものと一致する必要があります。
+変更されている場合、ミニオンは{productname}への接続を失います。
+// For more information, see xref:tshoot-wicked-to-networkmanager.adoc#ts-ip-changed[IP Address Changed After Reboot].
+
++
+ 
+ルーティングテーブルが完全であることを確認してください：
+
++
+ 
+----
+ip route show
+----
+
++
+ 
+出力を移行前に記録されたルーティングテーブルと比較し、すべてのルートが存在することを確認してください。
+
++
+ 
+[NOTE]
+====
+ブート後にルートが欠落している場合は、90秒待って再度確認してください。
+`cloud-netconfig` サービスは60秒のタイマーで動作し、欠落しているクラウドプロバイダー固有のルートを自動的に復元します。
+====
+
++
+ 
+{productname} コンテナが実行中であることを確認してください：
+
++
+ 
+----
+sudo podman ps
+----
+
++
+ 
+コンテナはブートから数分以内に状態 `healthy` を表示する必要があります。
+
+____
+
+ 
+ 
+== 移行後の変更
+ 
+[cols="1,2", options="header"]
+|===
+| [アイテム] | メモ
+ 
+| IP アドレス
+| DHCPを使用している場合は変更なし。
+NetworkManagerはDHCPを介して同じアドレスを取得します。
+ 
+| スレーブまたはボンドインタフェース
+| スレーブインターフェースは存在し続け、マスターに接続されています。
+NetworkManagerはスレーブインターフェースをそこに表示しないため、`ip addr show` にはもはや表示されません。
+`ip link show <interface>` を使用して、それらが存在することを確認します。
+これは期待される動作であり、ネットワークパフォーマンスには影響しません。
+ 
+| クラウドプロバイダー固有のルート
+| `cloud-netconfig` によって管理されており、ネットワークマネージャーとは独立して動作し、スイッチ後もそのままです。
+ブート後に欠落している場合、60秒以内にルートが復元されます。
+ 
+| IPv6リンクローカルアドレス
+| プライマリインターフェースのリンクローカルアドレスは、NetworkManagerがwickedとは異なる方法で生成するため、変更されます。
+これは、IPv4を使用する標準{productname}デプロイメントには影響を与えません。
+ 
+| デフォルトルートメトリック
+| NetworkManagerは、デフォルトルートに明示的な`metric 100`を追加します。
+これは正しい動作であり、悪影響はありません。
+ 
+| NetworkManager接続ファイル
+| NetworkManagerは、tmpfsの場所である `/var/run/NetworkManager/system-connections/` に接続定義を自動生成します。
+これらは、DHCPからのすべてのブート時に再生成されます。
+元のwicked設定は `/etc/sysconfig/network/ifcfg-*` に残されていますが、NetworkManagerによって読み取られません。
+ 
+| {productname} コンテナ
+| 影響を受けません。
+変更や再起動なしで実行を続けます。
+|===
+ 
+ 
+== ロールバック
+ 
+システムが再起動後に正しく戻らない場合は、ステップ1で取得したスナップショットを使用してロールバックしてください。
+ 
+
+=== ブートメニューからロールバック
+
+.プロシージャ:ブートメニューからのロールバック
+[role=procedure]
+____
+. アウトオブバンドコンソールを使用してシステムに接続します。
+
+. ブート中にGRUBメニューが表示されたら、ステップ1で取得したスナップショットを選択します。
+
+. システムは、wickedがアクティブなプレマイグレーション状態でブートします。
+____
+
+ 
+=== コマンドラインからロールバック
+ 
+システムがブートするが、ネットワークが正しく機能しない場合：
+ 
+----
+sudo transactional-update rollback <snapshot-number>
+sudo reboot
+----
+ 
+[NOTE]
+====
+ロールバック後、システムは孤立したwicked状態に戻ります。
+システムは機能しますが、wickedはサポートされていません。
+移行が引き続き失敗する場合は、SUSEサポートに連絡してください。
+====

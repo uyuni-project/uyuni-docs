@@ -1,0 +1,385 @@
+= {productname} コンテナ化された環境へのサーバ移行
+:description: SUSE Multi-Linux Manager 4.3サーバをコンテナに移行するために、ホストシステムを準備し、クライアントとGPGキーを移行し、その後mgradmを実行する方法を学びます。
+:revdate: 2025-10-19
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメントチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+// container host = new server = new server machine with the {productname} {productnumber} Server container(s)
+// old server = {productname} 4.3 Server
+
+// We need to figure out which mlm versions prior to the container release can or should be migrated. Something like any version prior to yyyy.mm and later than.
+
+
+== 要件と考慮事項
+
+
+=== 一般的な要件
+
+* {productname} 4.3サーバをコンテナに移行するには、{sl-micro} {microversion}または{sles} {bci-mlm}と`mgradm`がインストールされた新しいマシンが必要です。
+
+* {productname} 4.3から{productnumber}へのインプレース移行は、選択したホストオペレーティングシステムが{sl-micro} {microversion}または{sles} {bci-mlm}であってもサポートされていません。
+
+* {productname} 4.3から{productnumber}に移行する前に、従来のプロキシを含む既存の従来のクライアントを{salt}に移行する必要があります。
+従来の{productname} 4.3クライアントを{salt}クライアントに移行する方法についての詳細は、 https://documentation.suse.com/suma/4.3/en/suse-manager/client-configuration/contact-methods-migrate-traditional.html[従来のクライアントをSaltクライアントに移行する]を参照してください。
+
+* 従来の接続プロトコルは、{productname} 5.0以降ではサポートされなくなりました。
+
+[IMPORTANT]
+====
+このガイドは、{productname} 4.3から{productnumber}への移行のみを扱っています。
+
+ホストオペレーティングシステムを{sl-micro} {microversion}から{sles} {bci-mlm}に切り替えながら、既存の{productname} {productnumber}インスタンスを同じバージョンに移行することは、`mgradm migrate`コマンドでは処理されません。
+====
+
+
+=== ホスト名
+
+* 現在の移行手順には、ホスト名を変更する機能は含まれていません。
+  その結果、新しいサーバの完全修飾ドメイン名（FQDN）は、古いサーバのものと同じままになります。
+
+* クライアントがサーバに確実に接続できるよう、IPアドレスは変更しないままにする必要があります。
+
+
+[IMPORTANT]
+====
+移行後、新しいサーバを指すようにDHCPおよびDNSレコードを手動で更新する必要があります。
+====
+
+
+=== GPGキー
+
+* 自己信頼GPGキーは移行されません。
+* RPMデータベースでのみ信頼されているGPGキーは移行されません。
+  そのため、`spacewalk-repo-sync`とのチャネルの同期が失敗する可能性があります。
+* 管理者は、サーバを実際に移行した後にこれらのキーを4.3のインストールからコンテナホストに手動で移行する必要があります。
++
+.プロシージャ:4.3 GPGキーの新しいサーバへの手動移行
+[role=procedure]
+____
+. 4.3サーバから新しいサーバのコンテナホストにキーをコピーします。
+
+. その後、`mgradm gpg add <PATH_TO_KEY_FILE>`コマンドを使用して、移行したサーバーに各キーを追加します。
+____
+
+
+=== SSL証明書
+
+移行中に、サーバSSL証明書とCAチェーンがソースサーバからコピーされるため、データベース証明書のみが必要となります。
+
+[NOTE]
+====
+SUSE Multi-Linux Manager 5.1以降、PostgreSQLデータベースは別のコンテナで実行され、移行中に独自のSSL証明書が必要です。
+これは、サーバ証明書とCAチェーンがソースからコピーされる場合でも、データベース証明書が必要な理由です。
+====
+
+[IMPORTANT]
+====
+すでに{productname} 4.3インストールで使用されているサードパーティの証明書は、移行中に自動的にコピーされます。
+ほとんどのシナリオでは、追加の設定は必要ありません。
+====
+
+:migration-source: 4.3
+:migration-command: mgradm migrate
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ssl-migration-certs.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-ssl-migration-certs.adoc[leveloffset=+1]
+endif::[]
+
+== 移行
+
+===  {productname} {productnumber}サーバーホストの準備
+
+[IMPORTANT]
+====
+準備された{sl-micro} {microversion}または{sles} {bci-mlm}システムに{productname}を事前にインストールしないでください。
+
+移行プロセスは、サーバーのインストールを自動的に実行するように設計されています。
+`mgradm install`を実行してから`mgradm migrate`を実行することはサポートされておらず、サポート対象外のシステム状態になります。
+
+以下のステップでは、ホストシステムの準備のみを行い、実際の{productname} {productnumber}サーバーのインストールは行いません。
+====
+
+{sl-micro} {microversion}に基づくVMイメージを移行ターゲットとして使用できます。
+そのようなシナリオでは、以下に記載されているようにホストシステムを準備できます。
+
+* xref:installation-and-upgrade:container-deployment/mlm/server-deployment-vm-mlm.adoc[] 
+
++
+
+または
+
++
+
+* xref:installation-and-upgrade:container-deployment/mlm/server-deployment-vmdk-mlm.adoc[].
+
+ただし、最後のステップでは、`mgradm migrate <FQDN>`の代わりにコマンド`mgradm install <FQDN>`を実行します。
+
+
+
+[[prepare-micro-host]]
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-prepare-micro-host.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-prepare-micro-host.adoc[leveloffset=+2]
+endif::[]
+
+[[deploy-sles-host]]
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-prepare-sles-host.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-prepare-sles-host.adoc[leveloffset=+2]
+endif::[]
+
+
+=== SSH接続の準備
+
+このステップでは、新しい{productname} {productnumber}サーバーが既存の4.3サーバーにSSH経由でパスワードなしで接続できることを確認します。
+SSHキーの生成と設定、SSHエージェントのセットアップ、公開鍵を古いサーバーにコピーすることが含まれます。
+このセットアップは、手動による介入なしに移行プロセスを実行するために必要です。
+
+.プロシージャ:SSH接続の準備
+[role=procedure]
+____
+. 新しい`root`サーバー上の{productnumber}にはSSHキーが存在することを確認してください。
+  キーが存在しない場合は、次のコマンドで作成します:
+
++
+
+----
+ssh-keygen -t rsa
+----
+
+. パスワードを要求しない4.3サーバへの接続のために、新しいサーバ上でSSH設定とエージェントを準備する必要があります。
+
++
+
+----
+eval $(ssh-agent); ssh-add
+----
+
++
+
+[NOTE]
+====
+パスワードを要求しない接続を確立するために、移行スクリプトは新しいサーバー上で実行されているSSHエージェントに依存します。
+エージェントがまだアクティブでない場合は、`eval $(ssh-agent)`を実行して開始します。
+次に、`ssh-add`を使用して実行中のエージェントにSSHキーを追加し、プライベートキーへのパスを続けて入力します。
+このプロセス中にプライベートキーのパスワードを入力するように求められます。
+====
+
+. 公開SSHキーを{productname} 4.3サーバ（`<oldserver.fqdn>`）に`ssh-copy-id`を使用してコピーします。
+  `<oldserver.fqdn>`を4.3サーバのFQDNに置き換えます:
++
+----
+ssh-copy-id <old server.fqdn>
+----
++
+SSHキーは古いサーバの`~/.ssh/authorized_keys`ファイルにコピーされます。
+詳細については、`ssh-copy-id`のマニュアルページを参照してください。
++
+// . This step is optional:
+//   The migration script only uses the 4.3 server's FQDN in the SSH command.
+//   This means that every other configuration required to connect, needs to be defined in the `~/.ssh/config` file.
+. 新しいサーバーから古い{productname}サーバーにSSH接続を確立し、パスワードが不要であることを確認します。
+  ホストフィンガープリントに問題がないことも確認してください。
+  問題が発生した場合は、`~/.ssh/known_hosts`ファイルから古いフィンガープリントを削除してください。
+  もう一度やり直してください。
+  フィンガープリントはローカルの`~/.ssh/known_hosts`ファイルに保存されます。
+
+____
+
+
+=== 移行の実行
+
+SUSE Manager 4.3から{productname} {productnumber}への移行を計画する際は、ターゲットのインスタンスが古いセットアップの仕様を満たしているか、上回っていることを確認します。
+
+これには、メモリ(RAM)、CPUコア、ストレージ、ネットワーク帯域幅が含まれますが、これらに限定されません。
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+
+
+[IMPORTANT]
+====
+SUSE Manager 4.3から移行する場合、`Password for the CA key to generate`の入力を求められます。
+SUSE Manager 4.3のインストールで使用したのと同じCAパスワードを入力することが重要です。
+
+間違ったパスワードを入力すると、データベース証明書の生成に失敗して、移行が中止され、次のエラーが表示されます。
+
+----
+Error: cannot configure db container: Cannot generate database certificate: CA validation failed!
+----
+
+移行プロセスを開始する前に、正しいCAパスワードが使用可能であることを確認します。
+====
+
+
+.プロシージャ:移行を実行する
+[role=procedure]
+____
+. このステップはオプションです。
+  インフラストラクチャにカスタム永続ストレージが必要な場合は、`mgr-storage-server`ツールを使用してください。
+  `mgr-storage-server`の詳細については、xref:installation-and-upgrade:hardware-requirements.adoc#install-hardware-requirements-storage[こちら]を参照してください。
+
+. 次のコマンドを実行して、新しい{productname} {productnumber}サーバーを移行および設定します。
+  `<oldserver.fqdn>`を4.3サーバのFQDNに置き換えます:
+
++
+
+[IMPORTANT]
+====
+移行プロセスを開始する前に、4.3サーバーをアップグレードし、利用可能なすべての更新を適用してください。
+さらに、全体の移行時間を短縮するために、不要なチャネルを削除してください。
+====
+
++
+
+[NOTE]
+====
+移行には、複製する必要のあるデータの量に応じて非常に長い時間がかかる場合があります。
+ダウンタイムを減らすために、_初期複製_、_再複製_、または_最終複製と切り替え_のプロセスで移行を複数回実行することが可能であり、古い4.3サーバ上のすべてのサービスは稼働し続けることができます。
+
+最終移行時のみ、古いサーバ上のプロセスを停止する必要があります。
+
+最終複製以外のすべてに対して、パラメータ`--prepare`を追加し、古い4.3サーバ上のサービスが自動的に停止するのを防ぎます。
+====
++ 
+
++
+
+[IMPORTANT]
+====
+失敗した移行を再実行すると、複数の大きなバックアップディレクトリが作成され、これらは蓄積されて大量のスペースを消費します。これは、各失敗した移行が`/var/lib/containers/storage/volumes`内に新しいバックアップディレクトリを作成するためです。
+
+これらのバックアップは、移行ツールによって自動的に削除されることはありません。
+移行が失敗した場合、次の試行のために十分なスペースが確保されるように、古いバックアップディレクトリを手動で確認し、クリーンアップする必要があります。
+
+このスペースの管理に失敗すると、次の移行の試行が失敗する可能性があります。
+
+移行とすべての検証が完了したら、`var-pgsql-backup`ボリュームを削除できます。
+====
+
++
+
+[WARNING]
+====
+* `--prepare`ステップは、最終移行が開始されていない限り、複数回実行できます。
+* 最終移行が開始され、データベースアップグレード段階に達したら、データ破損につながる可能性があるため、`--prepare`コマンドを再度実行しないでください。
+====
+
++
+
+----
+mgradm migrate podman <oldserver.fqdn> --prepare
+----
+____
+
+
+.プロシージャ:最終移行
+[role=procedure]
+____
+. 4.3サーバ上の\{productname}サービスを停止します。
+
++
+
+----
+spacewalk-service stop
+----
+
+. 4.3サーバ上のPostgreSQLサービスを停止します。
+
++
+
+----
+systemctl stop postgresql
+----
+
+. {productname} {productnumber} サーバで最終移行を実行します。
+
++
+
+----
+mgradm migrate podman <oldserver.fqdn>
+----
+
+. 信頼されているSSL CA証明書を移行します。
+
+____
+
+
+==== 証明書の移行
+
+RPMの一部としてインストールされ、{productname} 4.3の`/usr/share/pki/trust/anchors/`ディレクトリに保存された信頼されたSSL CA証明書は移行されません。
+{suse}はコンテナ内にRPMパッケージをインストールしないため、管理者は移行後にSUSE Manager 4.3サーバからこれらの証明書ファイルを手動で移行する必要があります。
+
+.プロシージャ:証明書の移行
+[role=procedure]
+____
+. SUSE Manager 4.3サーバから新しい{productname} {productnumber} サーバにファイルをコピーします。
+   例えば、`/local/ca.file`などです。
+
+. 次のコマンドを使用してファイルをコンテナにコピーします。
+
++
+
+----
+mgrctl cp /local/ca.file server:/etc/pki/trust/anchors/
+----
+____
+
+
+[IMPORTANT]
+====
+`mgradm migrate`コマンドを正常に実行した後も、すべてのクライアント上の{salt}セットアップは古い4.3サーバを指したままです。
+
+これらを{productnumber} サーバにリダイレクトするために、新しいサーバの名前をインフラストラクチャレベル (DHCPおよびDNS) で変更し、4.3サーバと同じFQDNとIPアドレスを使用する必要があります。
+
+クライアントにminionの最新バージョンがインストールされている場合、IPアドレスの調整は不要です。新しいバージョンではFQDNのみを使用してサーバに自動的に再接続できるためです。
+
+====
+
+// uncomment when kubernetes support is added
+//----
+//mgradm migrate kubernetes <oldserver.fqdn>
+//----
+
+
+== クライアントツールのブランド変更
+
+{productname} {productnumber} は、すべてのサポートされているオペレーティングシステム向けに再ブランドされたクライアントツールのセットを導入します。
+この移行はシームレスであり、新しい製品の同期を行うユーザーは更新されたチャンネル名のみを認識するべきです。
+
+以前に`SUSE Manager Client Tools for XYZ` 4.3または5.0に登録されていたクライアントが使用していた{productname}という名前のチャンネルは、バージョン5.1では利用できなくなり、5.1では更新されなくなります。
+
+移行後もレガシチャンネルは既存のクライアントに割り当てられたままですが、対応するリポジトリは削除されています。
+
+継続的な更新を確実に行うには、ユーザは以下の操作を実行する必要があります。
+
+* 関連する製品の新しい`SUSE Multi-Linux Manager Client Tools for XYZ`チャンネルをミラーリングし、適切なクライアントに割り当てます。
+
+* 古い`SUSE Manager Client Tools for XYZ`チャンネルの割り当てを解除します。
+
+これにより、古いクライアントツールに基づくCLMプロジェクトも適宜調整する必要があります。
+
+ワークフローの例については、xref:common-workflows:workflow-switch-to-new-client-tools-channels.adoc[]を参照してください。

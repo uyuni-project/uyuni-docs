@@ -1,0 +1,400 @@
+[[install-hardware-requirements]]
+= 硬件要求
+:description: 学习如何根据您的架构和存储需求配置 SUSE Multi-Linux Manager Server 和 Proxy 的硬件要求，并考虑相关因素。
+:revdate: 2025-07-03
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+下表概述了 {productname} Server 与 Proxy 在 {x86_64}、{arm}、{ppc64le} 和 {s390x} 体系结构上的硬件和软件要求。
+
+
+[WARNING]
+====
+基于 {ppc64le} 或 {s390x} 体系结构的 {productname} 安装无法使用安全启动来网络启动客户端。
+此限制存在是因为这两种架构都没有可用的 shim 启动加载程序。
+====
+
+//For {ibmz} hardware requirements, see xref:installation-and-upgrade:install-ibmz.adoc[].
+
+有关 {productname} {smr} 硬件要求，请参见 xref:retail:retail-requirements.adoc[]。
+
+
+
+[[server-hardware-requirements]]
+== 服务器要求
+
+
+{sl-micro} {microversion} 或 {sles} {bci-mlm} 中的一个是容器主机的操作系统。
+
+在以下内容中，仅在重要时明确提及 {sles} 作为已安装的主机操作系统。
+否则我们要么写 {sl-micro}，要么仅写主机操作系统。
+
+操作系统为 {sl-micro} 的容器主机具有如下可用磁盘空间要求：
+
+* 至少 100 GB 用于基础安装
+* 再加上至少 130 GB 用于储存库数据
+
+使用 {sles} 操作系统时所需的磁盘空间可能要多很多，具体取决于所选软件的数量。
+
+默认情况下，{productname} Server 容器将镜像储存库（软件包或产品）、数据库和其他数据存储在 `/var/lib/containers/storage/volumes/` 目录的子目录中。
+如果此目录的磁盘空间用尽，储存库同步将失败。
+根据您计划镜像的客户端和存储库的数量和类型，估算 `/var/lib/containers/storage/volumes/` 目录所需的空间。
+
+有关文件系统和分区详细信息的更多信息，请参见 xref:installation-and-upgrade:hardware-requirements.adoc#install-hardware-requirements-storage[] 以及本指南安装和部署部分中的详细安装说明。
+
+[cols="1,3,2", options="header"]
+.服务器硬件要求
+|===
+
+| 硬件
+| 细节
+| 推荐
+
+| CPU
+| {x86_64}、{arm}、{ppc64le} 或 {s390x}
+| 最低 4 个专用 64 位 CPU 核心
+
+| RAM
+| 最低
+| 16 GB
+
+|
+| 推荐
+| 32 GB
+
+| 磁盘空间
+| `/`（根目录）
+| 40 GB
+
+|
+| `/var/lib/containers/storage/volumes`
+| 最低 150 GB（具体取决于产品数量）
+
+|
+| `/var/lib/containers/storage/volumes/var-pgsql`
+| 最少 50 GB
+
+| 交换空间
+| 系统可以从额外的交换空间中受益。 {suse} 建议使用交换文件而不是交换分区。 有关交换空间的更多信息，请参见 xref:installation-and-upgrade:hardware-requirements.adoc#installation-swap-space[]。
+| 8 到 12 GB
+|===
+
+// |
+// | `/var/lib/containers/storage/volumes/var-cache`
+// | Minimum 10 GB.
+// Add 100 MB per {suse} product, 1 GB per {redhat} or other product.
+// Consider to double the space if the server is used for Inter-Server Synchronization (ISS)
+// 
+// |
+// | `/var/lib/containers/storage/volumes/srv-www`
+// | Minimum 100 GB
+// 
+// * Storage requirments should be calculated for the number of ISO distribution images, containers, and bootstrap repositories you will use.
+
+
+默认情况下，镜像具有 40 GB `/` 分区。
+{sl-micro} {microversion} 的云镜像仅具有 5 GB `/` 分区。
+两者与 {productname} 完美兼容。
+只要外部存储已挂载到 `/var/lib/containers/storage/volumes`，{productname} 就不会在 `/` 分区上使用存储，而是由容器主机自行管理。
+
+
+
+////
+// When uncommenting verify the details! (POWER)
+
+ifeval::[{mlm-content} == true]
+[cols="1,3,2", options="header"]
+.Server Hardware Requirements for IBM POWER8 or higher processor–based server in Little Endian mode (ppc64le)
+|===
+
+| Hardware
+| Details
+| Recommendation
+
+| CPU
+|
+| Minimum 4 dedicated cores
+
+| RAM
+| Minimum
+| 16 GB
+
+|
+| Recommended
+| 32 GB
+
+| Disk Space
+| `/` (root directory)
+| Minimum 100 GB
+
+|
+| `/var/lib/containers/storage/volumes/var-pgsql`
+| Minimum 50 GB
+
+|
+| `/var/lib/containers/storage/volumes/var-spacewalk`
+| Minimum storage required: 100 GB (this will be verified by the implemented check)
+
+* 50 GB for each {suse} product and Package Hub
+
+* 360 GB for each {redhat} product
+
+|
+| `/var/lib/containers/storage/volumes/var-cache`
+| Minimum 10{nbsp}GB.
+Add 100{nbsp}MB per {suse} product, 1{nbsp}GB per {redhat} or other product.
+Double the space if the server is an ISS Master.
+
+|
+| `/var/lib/containers/storage/volumes/srv-www`
+| Minimum 100 GB
+
+* Storage requirements should be calculated for the number of ISO distribution images, containers, and bootstrap repositories you will use.
+
+|
+| Swap space
+| 3{nbsp}GB. Systems can benefit from additional swap space.   {suse} recommends using a swap file instead of a swap partition.  For more information about swap space, see xref:installation-and-upgrade:hardware-requirements.adoc#installation-swap-space[].
+
+|===
+
+endif::[]
+
+// end POWER
+////
+
+
+
+[IMPORTANT]
+====
+{productname} 性能取决于硬件资源、网络带宽、客户端与服务器之间的延迟等。
+
+根据经验和不同的部署，建议在适当数量的代理下，{productname} 服务器的最佳性能是每台服务器不超过 10,000 个客户端。
+强烈建议在客户端超过 10,000 时迁移到 Hub 设置并寻求咨询。
+即使经过微调和适当数量的代理，这么多客户端也可能导致性能问题。
+
+有关管理大量客户端的更多信息，请参见 xref:specialized-guides:large-deployments/hub-multi-server.adoc[]。
+====
+
+
+[[proxy-hardware-requirements]]
+== 代理要求
+
+{sl-micro} {microversion} 或 {sles} {bci-mlm} 中的一个是容器主机的操作系统。
+
+[NOTE]
+====
+最低要求适用于快速测试安装，例如包含一个客户端的代理。
+如果您想使用生产环境，请从推荐值开始。
+====
+
+
+[cols="1,3,2", options="header"]
+.代理硬件要求
+|===
+
+| 硬件
+| 细节
+| 推荐
+
+| CPU
+| {x86_64}、{arm}
+| 最少 2 个专用 64 位 CPU 核心
+
+|
+| 推荐
+| 与最低值相同
+
+| RAM
+| 最低
+| 2 GB
+
+|
+| 推荐
+| 8 GB
+
+| 磁盘空间
+| `/`（根目录）
+| 最少 40 GB
+
+|
+| `/var/lib/containers/storage/volumes`
+| 最少 100 GB
+
+| 交换空间
+| 系统可以从额外的交换空间中受益。 {suse} 建议使用交换文件而不是交换分区。 有关交换空间的更多信息，请参见 xref:installation-and-upgrade:hardware-requirements.adoc#installation-swap-space[]。
+| 4 到 8 GB
+
+|===
+
+默认情况下，{productname} Proxy 容器将软件包缓存在 `/var/lib/containers/storage/volumes/uyuni-proxy-squid-cache/` 目录中。
+如果可用空间不足，代理将删除旧的未使用软件包，并用更新的软件包替换它们。
+
+鉴于这种行为：
+
+* 代理上的 `/var/lib/containers/storage/volumes/uyuni-proxy-squid-cache/` 目录越大，代理与 {productname} 服务器之间的流量就越少。
+* 使代理上的 `/var/lib/containers/storage/volumes/uyuni-proxy-squid-cache/` 目录与 `/var/lib/containers/storage/volumes/var-spacewalk/` 在 {productname} 服务器上保持相同的大小，可以避免在首次同步后出现大量的流量。
+* 与代理相比，`/var/lib/containers/storage/volumes/uyuni-proxy-squid-cache/` 服务器上的 {productname} 目录可能较小。
+  有关大小估算的指南，请参见 <<server-hardware-requirements>> 部分。
+
+[NOTE]
+====
+一般来说，{suse} 建议将缓存目录的值调整为可用空闲空间的约 80%。
+在服务器上生成代理配置时设置 `cache_dir` 值。
+您不能直接在 `squid.conf` 中设置该选项。
+====
+
+
+
+[[installation-swap-space]]
+== 交换空间
+
+工作负载因系统而异。
+无论总内存如何，具有重负载或不可预测工作负载的系统都可以从额外的交换空间中受益。
+建议将交换文件放在最快的可用存储上（例如，SSD）。{suse} 建议使用交换文件而不是交换分区。
+
+有关交换空间大小建议，请参见上文表格。
+
+以下外壳命令片段可创建一个 8GiB 大小的交换文件。
+
+[NOTE]
+====
+BtrFS 文件系统中的交换文件会导致无法创建该卷的快照。在下面的示例中，`/var` 已排除在 snapper 快照范围之外，因此使用 `/var/swap` 是安全的。
+====
+
+[source,shell]
+----
+## setup swapfile at /var/swap
+# run following as a root user
+
+# allocate 8GiB for swap file
+fallocate -l 8G /var/swap
+# ensure CoW is disabled for the swap file
+chattr +C /var/swap
+# allow only root access
+chmod 600 /var/swap
+# make swap file based on allocated file
+mkswap /var/swap
+# activate swap use for the running system
+swapon /var/swap
+# activate swap during the next boots
+echo "/var/swap swap swap defaults 0 0" >> /etc/fstab
+----
+
+
+
+
+[[installation-postgresql-requirements]]
+== 数据库要求
+
+{postgresql} 是唯一支持的数据库。
+不支持使用远程 {postgresql} 数据库或远程文件系统（如 NFS）与 {postgresql} 数据库。
+换句话说，{postgresql} 应该位于 {productname} 的最快可用存储设备上。
+
+[IMPORTANT]
+====
+由于潜在的性能问题，不建议将 {postgresql} 数据库远程运行于 {productname}。
+虽然这样的环境在许多情况下是可能的，甚至是稳定的，但如果出现问题，总是存在数据丢失的风险。
+
+ifeval::[{mlm-content} == true]
+{suse} 可能无法在这种情况下提供帮助。
+endif::[]
+====
+
+
+
+[[install-hardware-requirements-storage]]
+== 永久性存储和权限
+
+默认情况下，在部署容器时会创建永久性卷。
+
+然而，建议将卷存储在一个或多个单独的存储设备上。
+这样的设置有助于避免在生产环境中数据丢失。
+这可以在容器部署后完成。
+
+存储设备最好在首次部署容器后进行设置。
+有关详细信息，请参见 xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[持久容器卷]。
+
+我们建议您将 XFS 用作所有卷的文件系统类型。
+存储库所使用的磁盘大小取决于您打算用 {productname} 管理的发行版和频道数量。
+请参阅本节中的表格以估算所需的大小。
+
+[IMPORTANT]
+====
+请勿在 {cobbler} 或 {postgresql} 存储中使用 NFS，也不要在 SELinux 环境中使用 NFS。
+这些场景不受支持。
+====
+
+在 {productname} 服务器上，使用以下命令找到所有可用的存储设备：
+
+[source, shell]
+----
+hwinfo --disk | grep -E "Device File:"
+----
+
+使用 `lsblk` 命令查看每个设备的名称和大小。
+
+使用 `mgr-storage-server` 命令并加上设备名，可将外部磁盘设置为数据存储位置，也可以选择将数据库单独放在一个磁盘上。
+
+[source, shell]
+----
+mgr-storage-server <storage-disk-device> [<database-disk-device>]
+----
+
+例如：
+
+[source, shell]
+----
+mgr-storage-server /dev/nvme1n1 /dev/nvme2n1
+----
+
+外部存储卷被设置为挂载在 `/manager_storage` 和 `/pgsql_storage` 的 XFS 分区。
+
+[NOTE]
+====
+此命令将在 `/var/lib/containers/storage/volumes` 创建持久存储卷。
+
+有关更多信息，请参见 xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]。
+====
+
+可以将同一存储设备用于频道数据和数据库。
+这并不推荐，因为增长的频道存储库可能会填满存储，从而对数据库完整性构成风险。
+使用单独的存储设备也可能提高性能。
+如果您想使用单个存储设备，请使用单个设备名参数运行 `mgr-storage-server`。
+
+如果您安装的是代理，`mgr-storage-proxy` 命令只接受单个设备名参数，并将外部存储位置设置为 Squid 缓存。
+
+
+
+== 逻辑卷管理 (LVM)
+
+
+// container-deployment/mlm/server-deployment-vm-mlm.adoc etc.
+对于所有类型的虚拟机（VM），通常不需要 LVM，也不推荐使用。
+磁盘设置是虚拟的，卷的单独磁盘是可能的并且推荐使用。
+
+// container-deployment/mlm/server-deployment-mlm.adoc
+对于其他部署，也建议为卷使用单独的磁盘。
+
+在 {productname} Server 的容器主机上，`mgr-storage-server` 命令将 `/var/lib/containers/storage/volumes` 目录的全部内容移动到单独的磁盘，并将其重新挂载到 `/var/lib/containers/storage/volumes`。
+
+或者，如果指定了第二个设备名称，`mgr-storage-server` 会将 `/var/lib/containers/storage/volumes/var-pgsql` 数据库目录的内容移动到第二个单独的磁盘，并将其重新挂载到 `/var/lib/containers/storage/volumes/var-pgsql`。
+
+同样，在 {productname} 代理的容器主机上，`mgr-storage-proxy` 命令会将 `/var/lib/containers/storage/volumes` 目录的全部内容移动到单独的磁盘，并将其重新挂载到 `/var/lib/containers/storage/volumes`。
+
+
+
+////
+// *** The following is commented, and can probably deleted ***
+
+// When installation takes place on bare metal (on-premise), `cockpit` can be used to create an LVM setup.
+// In such a case, the disk setup needs to be performed manually.
+
+// With containers {productname} now has `/var/lib/containers/storage/volumes` as an extra disk.
+////

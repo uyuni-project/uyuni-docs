@@ -1,0 +1,79 @@
+[[installation-proxy-containers-k3s]]
+= {productname} {productnumber} K3s에서의 프록시 배포
+:description: K3s 위에 SUSE 멀티 리눅스 매니저 프록시를 배포하고 구성하는 방법을 알아봅니다.
+:revdate: 2025-06-26
+:page-revdate: {revdate}
+:page-author: SUSE 제품 및 솔루션 문서팀
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+
+[[installation-proxy-containers-k3s-k3s]]
+== K3s 설치
+
+
+[NOTE]
+====
+{productname} 프록시는 {sl-micro} 위에서 실행되는 K3s의 단일 노드 클러스터에서 지원됩니다.
+다른 Kubernetes 환경에 배포해야 하는 경우, 평가를 위해 지원팀에 문의하십시오.
+====
+
+컨테이너 호스트 머신에서 `K3s`를 설치하십시오 (여기서 `<K3S_HOST_FQDN>`는 K3s 호스트의 FQDN으로 교체하십시오):
+
+[source,shell]
+----
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--tls-san=<K3S_HOST_FQDN>" sh -
+----
+
+[[installation-proxy-containers-k3s-helm]]
+== 도구 설치
+
+설치하려면 `mgrpxy` 및 `helm` 패키지가 필요합니다.
+
+`mgrpxy` 및 `helm` 패키지는 {productname} 프록시 제품 리포지토리에서 사용할 수 있습니다.
+
+. 설치하려면 다음을 실행:
+
++
+
+[source,shell]
+----
+transactional-update pkg install helm mgrpxy
+----
+
+. 재부팅
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-generate_proxy_config.adoc[tags=generate-proxy-config-section]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-generate_proxy_config.adoc[tags=generate-proxy-config-section]
+endif::[]
+
+
+[[installation-proxy-containers-k3s-deploy]]
+== {productname} 프록시 헬름 차트 배포하기
+
+{productname} 프록시 포드에서 사용할 볼륨의 저장소를 구성하려면 다음 클레임에 대해 영구 볼륨을 정의하십시오.
+저장소 구성을 사용자 지정하지 않으면 K3s가 자동으로 저장소 볼륨을 생성합니다.
+
+영구 볼륨 클레임의 이름은 다음과 같습니다.
+
+* `squid-cache-pv-claim`
+* `package-cache-pv-claim`
+* `tftp-boot-pv-claim`
+
+{productname}에 문서화된 대로 xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc[] 프록시의 구성을 생성하십시오.
+구성 파일 `tar.gz`을 복사한 후 설치하십시오:
+
+----
+mgrpxy install kubernetes /path/to/config.tar.gz
+----
+
+자세한 정보는 link:https://kubernetes.io/docs/concepts/storage/persistent-volumes/[] (kubernetes) 또는 link:https://rancher.com/docs/k3s/latest/en/storage/[] (K3s) 문서를 참조하십시오.
