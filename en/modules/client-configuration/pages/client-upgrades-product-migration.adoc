@@ -46,6 +46,36 @@ Product migration requires that all repositories which are enabled on the client
 | {rhel} to {sll}
 |===
 
+[NOTE]
+====
+You cannot use product migration to migrate from {sles}{nbsp}12 to {sles}{nbsp}15.
+To upgrade from {sles}{nbsp}12 to {sles}{nbsp}15, see xref:client-configuration:client-upgrades-major.adoc[].
+====
+
+
+=== Major version upgrade to {sles}{nbsp}16.0
+
+The following applies specifically to the major version upgrade from {sles}{nbsp}15{nbsp}SP7 to {sles}{nbsp}16.0.
+
+[IMPORTANT]
+====
+* The upgrade to {sles}{nbsp}16.0 is supported from {sles}{nbsp}15{nbsp}SP7 only.
+  Bring the client up to {sles}{nbsp}15{nbsp}SP7, with all the latest updates applied, before you migrate.
+
+* The migration is currently supported for regular (Salt) minions only.
+  Clients managed with Salt SSH cannot yet be migrated.
+
+* The dry run option is not available when migrating from {sles}{nbsp}15{nbsp}SP7 to {sles}{nbsp}16.0.
+====
+
+The migration to {sles}{nbsp}16.0 happens in two steps:
+
+. The migration action performs the actual product migration on the client.
+. Once the migration action has finished, whether it passed or failed, the system is rebooted automatically.
+  After the reboot, when the Salt minion connects to the {productname} Server again, the verification step starts automatically.
+
+To perform this upgrade, use the standard product migration procedures described in this page: the <<single-system-migration>> procedure for a single client, or the <<product-mass-migration>> procedure for many clients at once.
+
 
 In {sles}{nbsp}12 and later, {suse} supports service pack skipping if {scclongform} provides it.
 For example, you can upgrade from {sles}{nbsp}15 to SP2, without installing SP1.
@@ -61,7 +91,7 @@ For supported {sles} upgrade paths, see link:https://documentation.suse.com/en-u
 ====
 
 
-
+[[single-system-migration]]
 == Single System Migration
 
 Before starting the product migration:
@@ -93,14 +123,12 @@ To migrate openSUSE Leap to {sles}, you must check the `Allow Vendor Change` opt
 . Click btn:[Schedule Migration] when your channels have been configured properly.
 ____
 
-
-
+[[product-mass-migration]]
 == Product Mass Migration
 
 If you want to migrate a large number of clients to the next SP version, you can use {productname} API calls or System Set Manager (SSM).
 
 The `spacecmd` commandline tool provides a `system_scheduleproductmigration` sub command, which can be used to schedule a migration for a large number of clients to the next minor version.
-
 
 === Perform a Product Mass Migration using System Set Manager (SSM)
 
@@ -109,12 +137,11 @@ The `spacecmd` commandline tool provides a `system_scheduleproductmigration` sub
 ____
 . Add the systems you want to migrate to the System Set Manager (SSM) as described in xref:client-configuration:system-groups.adoc[].
 . In the {productname} {webui}, navigate to menu:Systems[System Set Manager].
-. Navigate to the [guimenu]``Product Migration`` tab. 
+. Navigate to the `Product Migration` tab. 
 . Choose a target product and then click btn:[Select Channels].
 . On the next page, click btn:[Schedule Migration].
 . If you want, click btn:[Dry Run] to do a dry run first, and if everything is correct, click btn:[Migrate] to start the migration.
 ____
-
 
 === Perform a Product Mass Migration using API calls
 
@@ -171,12 +198,12 @@ ____
 * Only systems subscribed to the same base channel should be added to the created group.
   In the example, only systems subscribed to `SLE-Product-SLES15-SP2-Pool for x86_64` should be added to the group.
 +
-____
 For more information about adding clients to groups, see xref:client-configuration:system-groups.adoc[].
 
 ////
 Note or warning about taking normal precautions (backups, make sure fully patched, etc)
 ////
+____
 
 .Procedure: Adding Systems to the Group
 [role=procedure]
@@ -281,3 +308,4 @@ If there are any failures during the dry run, the system should be investigated.
 
 If all is well, the `-d` option can be removed from the command to run the real migration.
 After the migration is complete, you can reboot the system from the {productname} {webui}.
+
