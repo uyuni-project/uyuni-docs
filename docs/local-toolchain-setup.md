@@ -116,9 +116,13 @@ asciidoctor-pdf --version
 
 ---
 
-## 5. Install po4a (for translation builds only)
+## 5. po4a (legacy — not required for builds)
 
-You only need this if you work on translated builds.
+The build no longer uses po4a or Weblate. Translations are committed as AsciiDoc under
+`{lang}/modules/` at the repo root. See [L10N-AI-MIGRATION.md](../L10N-AI-MIGRATION.md).
+
+po4a is not included in the builder container image. Install locally only if you need to
+run the deprecated `scripts/make_pot.sh` manually:
 
 **openSUSE / SLES:**
 ```bash

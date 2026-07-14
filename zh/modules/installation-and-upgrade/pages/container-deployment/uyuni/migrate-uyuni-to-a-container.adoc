@@ -1,0 +1,259 @@
+= 遗留 {productname} 服务器迁移到容器
+:description: 了解如何将遗留的 SUSE Multi-Linux Manager 服务器迁移到容器，并在此过程中准备您的新机器
+:revdate: 2025-07-30
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+要将遗留 {productname} 服务器迁移到容器，需要新机器。
+
+在此迁移的背景下，遗留 {productname} 服务器（RPM 安装）有时也称为 _旧服务器_。
+
+
+== 要求和注意事项
+
+
+
+=== 主机名
+
+目前，该迁移过程既不支持就地迁移，也不提供主机名重命名功能。
+
+当前的迁移过程不包括重命名主机名的功能。因此，新服务器的完全限定域名 (FQDN) 将与旧服务器保持相同。此外，IP 地址必须保持不变，以确保客户端可以连接到服务器。迁移之后，需要手动更新 DHCP 和 DNS 记录以指向新的服务器。
+
+[IMPORTANT]
+====
+迁移之后，需要手动更新 DHCP 和 DNS 记录以指向新的服务器。
+
+有关详细信息，请访问 <<migration-finalization>>。
+====
+
+
+== GPG 密钥
+
+* 自信任 GPG 密钥不会被迁移。
+* 仅在 RPM 数据库中受信任的 GPG 密钥不会被迁移。
+  因此与 `spacewalk-repo-sync` 同步频道可能会失败。
+* 在完成服务器的实际迁移后，管理员必须手动将这些密钥从遗留 {productname} 安装迁移到容器主机。
+
+
+.过程：升级将 GPG 密钥手动迁移到新服务器
+. 将 4.3 服务器中的密钥复制到新服务器的容器主机。
+. 稍后，使用命令 `mgradm gpg add <PATH_TO_KEY_FILE>` 将每个密钥添加到迁移的服务器。
+
+
+
+
+=== 源服务器上的初始准备
+
+迁移可能需要很长时间，具体取决于需要复制的数据量。
+为了减少停机时间，可以在 _初始复制_、_重新复制_ 或 _最终复制和切换_ 的过程中多次运行迁移，同时所有传统服务器上的服务可以保持运行。
+
+只有在最终迁移期间才需要停止旧版服务器上的进程。
+
+对于所有非最终复制，请添加参数 `--prepare`，以防止自动停止遗留服务器上的服务。
+例如：
+
+[source,shell]
+----
+mgradm migrate podman <oldserver.fqdn> --prepare
+----
+
+
+.过程：升级源服务器上的初始准备
+
+. 停止 {productname} 服务：
++
+----
+spacewalk-service stop
+----
+. 停止 PostgreSQL 服务：
++
+----
+systemctl stop postgresql
+----
+
+
+=== SSH 连接准备
+
+.过程：升级准备 SSH 连接
+. 确保在新 {productnumber} 服务器上为 `root` 存在 SSH 密钥。
+  如果密钥不存在，请使用以下命令创建它：
++
+----
+ssh-keygen -t rsa
+----
+. 新服务器上的 SSH 配置和代理应准备就绪，以便能够与 4.3 服务器建立无口令连接。
++
+----
+eval $(ssh-agent); ssh-add
+----
++
+[NOTE]
+====
+为了在不提示输入密码的情况下建立连接，迁移脚本依赖于在新服务器上运行的 SSH 代理。
+如果代理尚未激活，请通过运行 `eval $(ssh-agent)` 来启动它。
+然后使用 `ssh-add` 将 SSH 密钥添加到正在运行的代理中，后面跟上私钥的路径。
+在此过程中，系统会提示您输入私钥的密码。
+====
+
+. 使用 `ssh-copy-id` 将 SSH 公钥复制到遗留 {productname} 服务器 (`<oldserver.fqdn>`)。
+  将 `<oldserver.fqdn>` 替换为遗留服务器的 FQDN：
++
+----
+ssh-copy-id <oldserver.fqdn>
+----
++
+SSH 密钥将被复制到遗留服务器的 `~/.ssh/authorized_keys` 文件中。
+有关更多信息，请参见 `ssh-copy-id` 手册页。
+. 从新服务器建立到遗留 {productname} 服务器的 SSH 连接，以检查是否不需要密码。
+  此外，主机指纹也不能有任何问题。
+  如果出现问题，请从 `~/.ssh/known_hosts` 文件中去除旧指纹。
+  然后再试一次。
+  指纹将存储在本地 `~/.ssh/known_hosts` 文件中。
+
+
+
+=== 执行迁移
+
+在规划从遗留 {productname} 迁移到容器化 {productname} 时，请确保您的目标实例达到或超过遗留设置的规格。
+这包括但不限于内存 (RAM)、CPU 核心、存储和网络带宽。
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+
+// Unify the following with matching MLM section and => snippet
+
+==== 配置自定义永久性存储
+
+配置永久性存储是可选的，但这是避免容器因磁盘已满而引发严重问题的唯一方法。
+强烈建议使用 `mgr-storage-server` 工具配置自定义持久存储。
+
+有关详细信息，请参见 `mgr-storage-server --help`。
+此工具可以简化容器存储和数据库卷的创建。
+
+如下所示使用命令：
+
+[source,shell]
+----
+mgr-storage-server <storage-disk-device> [<database-disk-device>]
+----
+
+[NOTE]
+====
+设备不得有任何文件系统。
+如果存储设备上存在文件系统，则命令将中止。
+====
+
+例如：
+
+[source,shell]
+----
+mgr-storage-server /dev/nvme1n1 /dev/nvme2n1
+----
+
+[NOTE]
+====
+此命令将在 `/var/lib/containers/storage/volumes` 处创建持久存储卷。
+
+有关详细信息，请参见
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+====
+
+
+==== 执行迁移
+
+
+. 执行以下命令以安装新的 {productname} 服务器。
+  将 `<oldserver.fqdn>` 替换为遗留服务器的 FQDN：
++
+----
+mgradm migrate podman <oldserver.fqdn>
+----
+. 迁移可信 SSL CA 证书。
+
+
+==== 证书的迁移
+
+作为 RPM 安装的一部分并存储在遗留 {productname} 的 `/usr/share/pki/trust/anchors/` 目录中的受信任 SSL CA 证书将不会被迁移。
+因为 {suse} 不会在容器中安装 RPM 软件包，管理员必须在迁移后手动从遗留安装中迁移这些证书文件：
+
+.过程：升级迁移证书
+. 在容器主机上以 \`root` 身份登录。
+   例如，作为 `/local/ca.file`。
+. 使用以下命令将文件复制到容器中：
++
+----
+mgrctl cp /local/ca.file server:/etc/pki/trust/anchors/
+----
+
+
+
+[[migration-finalization]]
+==== zypper migration
+
+[IMPORTANT]
+====
+成功运行 `mgradm migrate` 命令后，所有客户端上的 {salt} 设置仍会指向遗留服务器。
+
+要将其重定向到新的 {productnumber} 服务器，需要在基础架构级别（DHCP 和 DNS）重命名新服务器，以使用与遗留服务器相同的完全限定域名和 IP 地址。
+====
+
+
+[IMPORTANT]
+====
+如果迁移过程中出现问题，可以重新启动旧系统。
+作为 root 用户，使用以下命令重启 {postgresql} 和 spacewalk 服务：
+
+[source,shell]
+----
+service postgresql start
+spacewalk-service start
+----
+
+====
+
+
+
+// FIXME: check the following!  Partially probably already covered above.!
+== 部署准备工作
+
+在使用 `mgradm migrate` 命令执行迁移之前，必须预先定义 **Persistent Volumes**，尤其是考虑到迁移作业会从头开始启动容器。
+
+有关更多信息，请参见 xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[] 中关于准备这些卷的安装部分。
+
+
+
+== 迁移
+
+执行以下命令来安装新的 {productname} 服务器（请将 **<oldserver.fqdn>** 替换为旧服务器的相应 FQDN）：
+
+----
+mgradm migrate podman <oldserver.fqdn>
+----
+
+或
+
+----
+mgradm migrate kubernetes <oldserver.fqdn>
+----
+
+[IMPORTANT]
+====
+
+成功运行 `mgradm migrate` 命令后，所有客户端上的 {salt} 设置仍会指向遗留服务器。
+要将其重定向到新服务器，需要在基础架构级别（DHCP 和 DNS）重命名新服务器，以使用与遗留服务器相同的完全限定域名和 IP 地址。
+====

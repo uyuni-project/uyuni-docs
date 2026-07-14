@@ -3,19 +3,12 @@
 ## Overview
 
 ```
-l10n-weblate/{lang}.po
-    │
-    ▼
-scripts/use_po.sh  (po4a)
-    │  reads l10n-weblate/*.cfg
-    │  applies .po files to en/modules/**
-    │
-    └──► translations/{lang}/modules/**/*.adoc   (translated AsciiDoc)
-
-en/modules/**/*.adoc  ──► cp -an (no-clobber fallback for untranslated pages)
-    │
-    ▼
-translations/{lang}/modules/**/*.adoc  (translated + English fallback)
+Committed source trees (repo root)          Build staging (gitignored)
+─────────────────────────────────          ──────────────────────────
+en/modules/  ──┐
+ja/modules/  ──┼──► task stage-content ──► translations/{lang}/modules/
+ko/modules/  ──┤      (en base + lang overlay)
+zh/modules/  ──┘
 
 config.yml
     │
@@ -41,16 +34,18 @@ cmd/docbuild/main.go  (Go binary)
     {output}.site.yml      {product}_{book}_guide.pdf
 ```
 
+**Legacy po4a/Weblate flow** (`scripts/use_po.sh`, `l10n-weblate/`) is retained in the repo but
+no longer invoked by the build. See [L10N-AI-MIGRATION.md](../../L10N-AI-MIGRATION.md).
+
 ### HTML build pipeline (`draft:mlm-dsc`, `draft:uyuni-website`, etc.)
 
 ```
 task draft:mlm-dsc
-  1. task setup      → compile .bin/docbuild from Go source
-  2. task translations → po4a: l10n-weblate/*.po → translations/{lang}/modules/
+  1. task setup       → compile .bin/docbuild from Go source
+  2. task stage-content → en/modules/ base + {content_dir}/modules/ overlay → translations/{lang}/modules/
   3. for each LANG:
        docbuild gen-site    → translations/{lang}/mlm-dsc.site.yml
        docbuild gen-antora  → translations/{lang}/antora.yml
-       cp -an en/modules/.  → translations/{lang}/modules/ (English fallback, no-clobber)
        antora               → build/{lang}/   (HTML output)
 ```
 
@@ -58,10 +53,10 @@ task draft:mlm-dsc
 
 ```
 task pdf:mlm
-  1. task gen        → setup + docbuild gen-all + write .bin/xref-converter.rb
-  2. task translations → po4a: l10n-weblate/*.po → translations/{lang}/modules/
+  1. task gen         → setup + docbuild gen-all + write .bin/xref-converter.rb
+  2. task stage-content → merge committed translations into translations/{lang}/modules/
   3. for each LANG × BOOK:
-       cp -an en/modules/.            → translations/{lang}/modules/ (fallback)
+       (per-book staging in task pdf for single-lang calls)
        docbuild gen-pdf-nav           → nav-{book}-guide.pdf.{lang}.adoc
        docbuild gen-entities          → translations/{lang}/branding/pdf/entities.adoc
        asciidoctor-pdf (theme={lang}) → build/{lang}/pdf/{product}_{book}_guide.pdf
@@ -71,8 +66,8 @@ task pdf:mlm
 
 ```
 task publish:dsc
-  1. task draft:mlm-dsc     → HTML for all languages (includes translations)
-  2. task pdf:mlm           → PDFs for all languages (includes translations, cached)
+  1. task draft:mlm-dsc     → HTML for all languages (includes stage-content)
+  2. task pdf:mlm           → PDFs for all languages
   3. task pdf-collect:mlm   → build/{lang}/pdf/ → build/pdf/{lang}/
   4. task pdf-zip:mlm       → build/pdf/{lang}/ → build/{lang}/*-pdf.zip
 ```
@@ -237,6 +232,7 @@ asciidoc_extensions:
 |---|---|---|
 | `docbuild gen-all [-content-dir <dir>]` | All configs for all languages | `configure` Python script |
 | `docbuild gen-site -product <p> -output <o> -lang <code>` | `translations/{lang}/{output}.site.yml` | `site.yml.j2` + sed block in `Makefile.j2` |
+| `docbuild get-content-dir -lang <code>` | stdout: content source dir (e.g. `zh` for `zh_CN`) | — |
 | `docbuild gen-antora -product <p> -lang <code> [-content-dir <dir>]` | `translations/{lang}/antora.yml` | `antora.yml.j2` |
 | `docbuild gen-entities -product <p> -lang <code>` | `translations/{lang}/branding/pdf/entities.adoc` | `entities.adoc.j2` + `entities.specific.adoc.j2` |
 | `docbuild gen-pdf-nav -book <b> -lang <code> -dir <path>` | `{path}/nav-{book}-guide.pdf.{lang}.adoc` | PDF nav generation in `Makefile.section.functions` |
@@ -254,7 +250,9 @@ asciidoc_extensions:
 ```
 task setup                         Build the Go binary (.bin/docbuild)
 task gen                           Run docbuild gen-all + write .bin/xref-converter.rb
-task translations                  Run use_po.sh (po4a) → translations/{lang}/modules/
+task stage-content                  Merge en/modules/ + {content_dir}/modules/ → translations/{lang}/modules/
+task translations                  [DEPRECATED] Aliases to stage-content
+task pot                           [DEPRECATED] po4a template update (not used in build)
 
 task draft:mlm-dsc                 MLM HTML — documentation.suse.com branding (all languages)
 task draft:mlm-webui               MLM HTML — WebUI branding with language selector (all languages)
@@ -263,8 +261,8 @@ task draft:uyuni-webui             Uyuni HTML — WebUI branding with language s
 task draft:all                     All four HTML output targets (sequential)
 
 task pdf BOOK=<b> PRODUCT=<p> LANG=<l>   Single book PDF
-task pdf:mlm                       All 8 books × 4 languages — MLM (runs translations first)
-task pdf:uyuni                     All 8 books × 4 languages — Uyuni (runs translations first)
+task pdf:mlm                       All 8 books × 4 languages — MLM (runs stage-content first)
+task pdf:uyuni                     All 8 books × 4 languages — Uyuni (runs stage-content first)
 task pdf:all                       Both products
 
 task publish:dsc                   Full MLM publish — HTML + PDFs + zip archives

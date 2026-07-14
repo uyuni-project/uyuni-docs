@@ -1,0 +1,159 @@
+[[space-management]]
+= ディスク容量管理
+:description: SUSE Multi-Linux Managerでディスクスペースの監視と警告設定を構成し、ディスクスペース不足に対するタイムリーな警告と通知を確保します。
+:revdate: 2026-03-10
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメントチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+ディスク容量が不足すると、{productname}データベースとファイル構造に深刻な影響を及ぼす可能性があり、場合によっては回復できなくなります。
+
+{productname}は、いくつかのディレクトリの空きディスクスペースを監視します。
+監視するディレクトリや、systemdサービスのオーバーライドファイル内の環境変数を使用して作成される警告を変更できます。
+
+監視対象ディレクトリのいずれかの使用可能容量が警告しきい値を下回ると、設定された電子メールアドレスにメッセージが送信され、サインインページの上部に通知が表示されます。
+
+
+
+== 監視対象ディレクトリ
+
+
+デフォルトでは、{productname}サーバーコンテナは次のディレクトリを監視します：
+
+* `/var/spacewalk`
+* `/var/cache`
+* `/srv`
+
+サーバーコンテナのsystemdサービス内で`DISKCHECKDIRS`環境変数を設定することで、監視するディレクトリを変更できます。
+複数のディレクトリを指定するには、スペースで区切ります。
+
+[NOTE]
+====
+`DISKCHECKDIRS`環境変数は、サーバーコンテナにのみ適用されます。
+データベースコンテナは常に`/var/lib/pgsql/data`を監視し、これはオーバーライドできません。
+====
+
+.プロシージャ:監視ディレクトリの構成
+. サーバーサービスのsystemdオーバーライドディレクトリを作成します：
++
+----
+mkdir -p /etc/systemd/system/uyuni-server.service.d/
+----
+
+. カスタムディレクトリを含む設定ファイルを作成します：
++
+----
+cat > /etc/systemd/system/uyuni-server.service.d/diskcheck.conf << 'EOF'
+[Service]
+Environment="DISKCHECKDIRS=/var/spacewalk /var/cache /srv"
+EOF
+----
+
+. {productname}を再起動して構成を適用します：
++
+----
+mgradm restart
+----
+
+コンテナボリュームに関する詳細は、xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]を参照してください。
+
+== しきい値
+
+デフォルトでは、{productname}は監視ディレクトリが90%のディスク使用量に達したときに警告を作成します。
+監視されているディレクトリが95%のディスク使用量に達すると、重要なアラートが作成され、コンテナのヘルスチェックが失敗します。
+
+`DISKCHECKALERT`および`DISKTHRESHOLD`環境変数を設定することで、これらのアラートしきい値を変更できます。
+
+.プロシージャ:ディスクチェックの閾値の設定
+. systemdオーバーライドディレクトリを作成します：
++
+----
+mkdir -p /etc/systemd/system/uyuni-server.service.d/
+mkdir -p /etc/systemd/system/uyuni-db.service.d/
+----
+
+. サーバーおよびデータベースサービスのための設定ファイルを作成します：
++
+----
+cat > /etc/systemd/system/uyuni-server.service.d/diskcheck.conf << 'EOF'
+[Service]
+Environment="DISKCHECKALERT=90"
+Environment="DISKTHRESHOLD=95"
+EOF
+
+cat > /etc/systemd/system/uyuni-db.service.d/diskcheck.conf << 'EOF'
+[Service]
+Environment="DISKCHECKALERT=90"
+Environment="DISKTHRESHOLD=95"
+EOF
+----
+
+. {productname}を再起動して構成を適用します：
++
+----
+mgradm restart
+----
+
+
+[IMPORTANT]
+====
+マルチテラバイトのストレージボリュームを持つ大規模なデプロイメントの場合、ディスクスペースをより効率的に使用するために、より高い閾値を使用することをお勧めします。
+例えば、10{nbsp}TBのボリュームでは、5%の空き容量を維持することは500{nbsp}GBの未使用を意味します。
+大規模なデプロイメントのための調整推奨事項については、xref:specialized-guides:large-deployments/tuning.adoc#diskcheck-thresholds[]を参照してください。
+====
+
+
+== データベースディスクチェック
+
+データベースコンテナには、PostgreSQLデータディレクトリ（`/var/lib/pgsql/data`）のみを監視する独自のディスクチェックがあります。
+このディレクトリは常に監視されており、`DISKCHECKDIRS`環境変数で変更またはオーバーライドすることはできません。
+
+データベースのディスクチェックは、`uyuni-db`サービス用に設定された`DISKCHECKALERT`および`DISKTHRESHOLD`環境変数を使用します。
+
+データベースディスクチェックはPostgreSQL関数として実行され、コンテナのヘルスチェック中に呼び出されます。
+閾値が超過すると、ヘルスチェックが失敗し、データの破損を防ぐためにコンテナが自動的に停止します。
+
+[IMPORTANT]
+====
+データベースコンテナは`/var/lib/pgsql/data`のみを監視します。
+`DISKCHECKDIRS`を使用して、データベースコンテナで監視する追加のディレクトリを設定することはできません。
+他のディレクトリを監視するには、サーバーコンテナの設定を使用してください。
+====
+
+
+
+== スペースチェックの無効化
+
+スペースチェックツールはデフォルトで有効になっており、Taskomaticのスケジュールされたタスクを介して毎時実行されます。
+通知は、diskcheck-task-queue-default Taskomaticジョブを無効にすることで無効にできます。
+ディスクスペースの監視を効果的に無効にするには、閾値を99（パーセント）に設定してください。
+
+.プロシージャ:ディスクスペース監視の無効化
+. 非常に高い閾値を設定するためにsystemdオーバーライドファイルを編集してください：
++
+----
+cat > /etc/systemd/system/uyuni-server.service.d/diskcheck.conf << 'EOF'
+[Service]
+Environment="DISKCHECKALERT=99"
+Environment="DISKTHRESHOLD=99"
+EOF
+
+cat > /etc/systemd/system/uyuni-db.service.d/diskcheck.conf << 'EOF'
+[Service]
+Environment="DISKCHECKALERT=99"
+Environment="DISKTHRESHOLD=99"
+EOF
+----
+
+. {productname}を再起動して構成を適用します：
++
+----
+mgradm restart
+----
+
+[WARNING]
+====
+ディスクスペース監視を無効にすることは、プロダクション環境では推奨されません。ディスクスペースが不足すると、データベースに深刻で回復不可能な損害を引き起こす可能性があります。
+====

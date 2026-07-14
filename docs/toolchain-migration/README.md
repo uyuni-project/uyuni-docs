@@ -16,10 +16,11 @@ Tracking the replacement of the GNU Make + Python + Jinja2 build system with Go 
 ## What is NOT changing
 
 - `branding/` — all UI bundles, supplemental UI, PDF themes, and fonts are untouched
-- `l10n-weblate/` — all `.po`, `.pot`, and `.cfg` files are untouched (see note on `update-cfg-files` below)
+- `l10n-weblate/` — retained but no longer used by the build (see [L10N-AI-MIGRATION.md](../../L10N-AI-MIGRATION.md))
 - `extensions/` — xref-converter.rb stays as-is
 - `modules/` content — only the directory is renamed to `en/modules/`; file content is unchanged
-- `translations/` — still the output directory for non-English builds during this migration
+- `translations/` — gitignored build staging for merged content + generated Antora configs
+- `ja/modules/`, `ko/modules/`, `zh/modules/` — committed AI translations (partial; English fallback at build time)
 
 ## Output targets
 
@@ -88,10 +89,13 @@ Run `task --list` to see all 25 user-facing targets.
 ## Repository layout
 
 ```
-en/modules/                  ← English AsciiDoc source (moved from modules/)
-translations/{lang}/modules/ ← Generated translated AsciiDoc (unchanged)
+en/modules/                  ← English AsciiDoc source
+ja/modules/                  ← Japanese AI translation (partial)
+ko/modules/                  ← Korean AI translation (partial)
+zh/modules/                  ← Chinese AI translation (partial; build code zh_CN)
+translations/{lang}/         ← Build staging: merged content + generated configs (gitignored)
 branding/                    ← UI bundles, PDF themes (unchanged)
-l10n-weblate/                ← Weblate .po/.pot/.cfg files (unchanged)
+l10n-weblate/                ← Weblate .po/.pot/.cfg (retained, not used in build)
 scripts/                     ← enforcing_checkstyle, find_unused, make_pot.sh, use_po.sh
 docs/legacy-toolchain/      ← Old Makefile*, *.j2, configure, parameters.yml (preserved)
 config.yml                   ← Single build configuration file

@@ -1,0 +1,400 @@
+[[install-hardware-requirements]]
+= 하드웨어 요구사항
+:description: 아키텍처 및 저장 요구 사항에 따라, 다양한 요소를 고려하여 SUSE Multi-Linux Manager 서버 및 프록시의 하드웨어 요구 사항을 구성하는 방법을 배우십시오.
+:revdate: 2025-07-03
+:page-revdate: {revdate}
+:page-author: SUSE 제품 및 솔루션 문서 팀
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+이 표는 {productname} 서버 및 프록시의 하드웨어 및 소프트웨어 요구 사항을 {x86_64}, {arm}, {ppc64le} 및 {s390x} 아키텍처에 대해 정리하고 있습니다.
+
+
+[WARNING]
+====
+{productname} 설치는 {ppc64le} 또는 {s390x} 아키텍처를 기반으로 할 경우 네트워크 부팅 클라이언트를 위한 보안 부팅을 사용할 수 없습니다.
+이 제한은 이 두 아키텍처에 대해 shim 부트로더를 사용할 수 없기 때문에 존재합니다.
+====
+
+//For {ibmz} hardware requirements, see xref:installation-and-upgrade:install-ibmz.adoc[].
+
+{productname} {smr} 하드웨어 요구 사항에 대한 내용은 xref:retail:retail-requirements.adoc[]을(를) 참조하십시오.
+
+
+
+[[server-hardware-requirements]]
+== 서버 요구사항
+
+
+{sl-micro} {microversion} 또는 {sles} {bci-mlm} 중 하나가 컨테이너 호스트의 운영 체제입니다.
+
+다음에서 {sles}이 설치된 호스트 운영 체제로 명시되는 경우는 중요할 때만 해당됩니다.
+그렇지 않으면 {sl-micro} 또는 단순히 호스트 운영 체제라고 작성합니다.
+
+운영 체제로 {sl-micro}을(를) 사용하는 컨테이너 호스트에는 디스크 여유 공간이 필요합니다:
+
+* 기본 설치 시 최소 100GB
+* 리포지토리 데이터용 공간 최소 130GB
+
+선택한 소프트웨어의 양에 따라 운영 체제로 {sles}을(를) 사용하려면 상당히 많은 디스크 공간이 필요할 수 있습니다.
+
+기본적으로 {productname} 서버 컨테이너는 미러링된 리포지토리(패키지 또는 제품), 데이터베이스 및 기타 데이터를 `/var/lib/containers/storage/volumes/` 디렉토리의 하위 디렉토리에 저장합니다.
+이 디렉토리가 디스크 공간이 부족하면 리포지토리 동기화가 실패합니다.
+미러링할 클라이언트 및 리포지토리의 수와 종류에 따라 `/var/lib/containers/storage/volumes/` 디렉토리에 필요한 공간을 추정하십시오.
+
+파일 시스템 및 파티셔닝 세부정보에 대한 자세한 내용은 xref:installation-and-upgrade:hardware-requirements.adoc#install-hardware-requirements-storage[] 및 이 가이드의 설치 및 배포 섹션에 있는 자세한 설치 지침을 참조하십시오.
+
+[cols="1,3,2", options="header"]
+.서버 하드웨어 요구사항
+|===
+
+| 하드웨어
+| 상세 정보
+| 권장 사항
+
+| CPU
+| {x86_64}, {arm}, {ppc64le} 또는 {s390x}
+| 최소 4개의 전용 64비트 CPU 코어
+
+| RAM
+| 최소
+| 16 GB
+
+|
+| 권장
+| 32 GB
+
+| 디스크 공간
+| `/` (루트 디렉토리)
+| 40 GB
+
+|
+| `/var/lib/containers/storage/volumes`
+| 최소 150 GB (제품 수에 따라 다름)
+
+|
+| `/var/lib/containers/storage/volumes/var-pgsql`
+| 최소 50 GB
+
+| 스왑 공간
+| 시스템은 추가 스왑 공간의 이점을 누릴 수 있습니다. {suse}은 스왑 파티션 대신 스왑 파일을 사용하는 것을 권장합니다.  스왑 공간에 대한 자세한 내용은 xref:installation-and-upgrade:hardware-requirements.adoc#installation-swap-space[]를 참조하십시오.
+| 8에서 12 GB
+|===
+
+// |
+// | `/var/lib/containers/storage/volumes/var-cache`
+// | Minimum 10 GB.
+// Add 100 MB per {suse} product, 1 GB per {redhat} or other product.
+// Consider to double the space if the server is used for Inter-Server Synchronization (ISS)
+// 
+// |
+// | `/var/lib/containers/storage/volumes/srv-www`
+// | Minimum 100 GB
+// 
+// * Storage requirments should be calculated for the number of ISO distribution images, containers, and bootstrap repositories you will use.
+
+
+이미지는 기본적으로 40 GB `/` 파티션을 가지고 있습니다.
+{sl-micro} {microversion}의 클라우드 이미지는 단 5 GB `/` 파티션을 가지고 있습니다.
+두 시스템 모두 {productname}와 완벽하게 작동합니다.
+외부 스토리지가 `/var/lib/containers/storage/volumes`에 마운트되어 있는 한, {productname}은 `/` 파티션에서 스토리지를 필요로 하거나 사용하지 않으며, 컨테이너 호스트 자체의 관리에 맡깁니다.
+
+
+
+////
+// When uncommenting verify the details! (POWER)
+
+ifeval::[{mlm-content} == true]
+[cols="1,3,2", options="header"]
+.Server Hardware Requirements for IBM POWER8 or higher processor–based server in Little Endian mode (ppc64le)
+|===
+
+| Hardware
+| Details
+| Recommendation
+
+| CPU
+|
+| Minimum 4 dedicated cores
+
+| RAM
+| Minimum
+| 16 GB
+
+|
+| Recommended
+| 32 GB
+
+| Disk Space
+| `/` (root directory)
+| Minimum 100 GB
+
+|
+| `/var/lib/containers/storage/volumes/var-pgsql`
+| Minimum 50 GB
+
+|
+| `/var/lib/containers/storage/volumes/var-spacewalk`
+| Minimum storage required: 100 GB (this will be verified by the implemented check)
+
+* 50 GB for each {suse} product and Package Hub
+
+* 360 GB for each {redhat} product
+
+|
+| `/var/lib/containers/storage/volumes/var-cache`
+| Minimum 10{nbsp}GB.
+Add 100{nbsp}MB per {suse} product, 1{nbsp}GB per {redhat} or other product.
+Double the space if the server is an ISS Master.
+
+|
+| `/var/lib/containers/storage/volumes/srv-www`
+| Minimum 100 GB
+
+* Storage requirements should be calculated for the number of ISO distribution images, containers, and bootstrap repositories you will use.
+
+|
+| Swap space
+| 3{nbsp}GB. Systems can benefit from additional swap space.   {suse} recommends using a swap file instead of a swap partition.  For more information about swap space, see xref:installation-and-upgrade:hardware-requirements.adoc#installation-swap-space[].
+
+|===
+
+endif::[]
+
+// end POWER
+////
+
+
+
+[IMPORTANT]
+====
+{productname} 성능은 하드웨어 리소스, 네트워크 대역폭, 클라이언트와 서버 간의 대기 시간 등에 따라 달라집니다.
+
+사용 중인 경험과 다양한 배포를 기반으로, 적절한 수의 프록시와 함께 {productname} 서버의 최적 성능을 위한 조언은 단일 서버당 10,000 클라이언트를 초과하지 않는 것입니다.
+10,000 클라이언트가 넘는 경우 Hub 설정으로 이동하고 컨설팅을 받는 것이 강력히 권장됩니다.
+세밀한 조정과 적절한 수의 프록시가 있더라도, 그렇게 많은 클라이언트는 성능 문제를 일으킬 수 있습니다.
+
+많은 클라이언트를 관리하는 방법에 대한 자세한 내용은 xref:specialized-guides:large-deployments/hub-multi-server.adoc[]를 참조하십시오.
+====
+
+
+[[proxy-hardware-requirements]]
+== 프록시 요구사항
+
+{sl-micro} {microversion} 또는 {sles} {bci-mlm} 중 하나가 컨테이너 호스트의 운영 체제입니다.
+
+[NOTE]
+====
+최소 요구 사항은 클라이언트가 1개인 프록시와 같은 빠른 테스트 설치에 적합합니다.
+생산 환경을 사용하려면 권장 값을 사용하여 시작하십시오.
+====
+
+
+[cols="1,3,2", options="header"]
+.프록시 하드웨어 요구사항
+|===
+
+| 하드웨어
+| 상세 정보
+| 권장 사항
+
+| CPU
+| {x86_64}, {arm}
+| 최소 2개의 전용 64비트 CPU 코어
+
+|
+| 권장
+| 최소 값과 동일합니다.
+
+| RAM
+| 최소
+| 2 GB
+
+|
+| 권장
+| 8 GB
+
+| 디스크 공간
+| `/` (루트 디렉토리)
+| 최소 40 GB
+
+|
+| `/var/lib/containers/storage/volumes`
+| Minimum 100 GB
+
+| 스왑 공간
+| 시스템은 추가 스왑 공간의 이점을 누릴 수 있습니다. {suse}은 스왑 파티션 대신 스왑 파일을 사용하는 것을 권장합니다.  스왑 공간에 대한 자세한 내용은 xref:installation-and-upgrade:hardware-requirements.adoc#installation-swap-space[]를 참조하십시오.
+| 4 GB에서 8 GB
+
+|===
+
+기본적으로 {productname} 프록시 컨테이너는 `/var/lib/containers/storage/volumes/uyuni-proxy-squid-cache/` 디렉토리에 패키지를 캐시합니다.
+사용 가능한 공간이 충분하지 않으면 프록시는 오래된 사용하지 않는 패키지를 제거하고 새로운 패키지로 교체합니다.
+
+이 동작의 결과:
+
+* 프록시의 `/var/lib/containers/storage/volumes/uyuni-proxy-squid-cache/` 디렉토리가 클수록, 프록시와 {productname} 서버 간의 트래픽은 줄어듭니다.
+* 프록시에서 `/var/lib/containers/storage/volumes/uyuni-proxy-squid-cache/` 디렉토리의 크기를 `/var/lib/containers/storage/volumes/var-spacewalk/` 서버의 {productname}과 동일하게 설정하면, 최초 동기화 후 대규모 트래픽이 발생하는 것을 방지할 수 있습니다.
+* `/var/lib/containers/storage/volumes/uyuni-proxy-squid-cache/` 디렉토리는 프록시에 비해 {productname} 서버에서 작을 수 있습니다.
+  크기 추정에 대한 가이드는 <<server-hardware-requirements>> 섹션을 참조하십시오.
+
+[NOTE]
+====
+일반적으로 {suse}은 캐시 디렉토리의 값을 사용 가능한 여유 공간의 약 80%로 조정할 것을 권장합니다.
+`cache_dir` 값은 서버에서 프록시 구성을 생성할 때 설정됩니다.
+옵션을 `squid.conf`에서 직접 설정할 수 없습니다.
+====
+
+
+
+[[installation-swap-space]]
+== 스왑 공간
+
+작업 부하는 시스템마다 다릅니다.
+무거운 또는 예측할 수 없는 작업 부하가 있는 시스템은 총 RAM에 관계없이 추가 스왑 공간의 이점을 누릴 수 있습니다.
+가장 빠른 사용 가능한 저장소(예: SSD)에 스왑을 배치하는 것이 좋습니다. {suse}은 스왑 파티션 대신 스왑 파일을 사용하는 것을 권장합니다.
+
+크기 권장 사항은 위 표를 참조하십시오.
+
+다음 셸 명령 조각은 8GiB 스왑 파일을 생성합니다.
+
+[NOTE]
+====
+BtrFS 파일 시스템상의 스왑 파일은 해당 볼륨의 스냅샷 생성을 방지합니다. `/var`은 다음 예시에서 이미 snapper 스냅샷에서 제외되어 있으므로, `/var/swap`을 안전하게 사용할 수 있습니다.
+====
+
+[source,shell]
+----
+## setup swapfile at /var/swap
+# run following as a root user
+
+# allocate 8GiB for swap file
+fallocate -l 8G /var/swap
+# ensure CoW is disabled for the swap file
+chattr +C /var/swap
+# allow only root access
+chmod 600 /var/swap
+# make swap file based on allocated file
+mkswap /var/swap
+# activate swap use for the running system
+swapon /var/swap
+# activate swap during the next boots
+echo "/var/swap swap swap defaults 0 0" >> /etc/fstab
+----
+
+
+
+
+[[installation-postgresql-requirements]]
+== 데이터베이스 요구사항
+
+{postgresql}은 지원되는 유일한 데이터베이스입니다.
+원격 {postgresql} 데이터베이스 또는 {postgresql} 데이터베이스와 함께 원격 파일 시스템(NFS 등)을 사용하는 것은 지원되지 않습니다.
+다시 말해, {postgresql}는 {productname}를 위해 가장 빠른 저장 장치에 있어야 합니다.
+
+[IMPORTANT]
+====
+잠재적인 성능 문제로 인해, {productname}에서 원격으로 {postgresql} 데이터베이스를 실행하는 것은 권장되지 않습니다.
+이러한 환경이 가능하고 많은 경우 안정적이긴 하지만, 문제가 발생할 경우 데이터 손실의 위험이 항상 존재합니다.
+
+ifeval::[{mlm-content} == true]
+{suse}은 이러한 경우에 지원을 제공하지 못할 수 있습니다.
+endif::[]
+====
+
+
+
+[[install-hardware-requirements-storage]]
+== 영구 스토리지 및 권한
+
+컨테이너를 배포할 때 기본적으로 영구 볼륨이 생성됩니다.
+
+그러나 볼륨은 하나 이상의 별도의 저장 장치에 저장하는 것이 권장됩니다.
+이러한 설정은 생산 환경에서 데이터 손실을 방지하는 데 도움이 됩니다.
+컨테이너 배포 후에 이 작업을 수행할 수 있습니다.
+
+저장 장치는 컨테이너를 처음 배포한 후에 설정하는 것이 가장 좋습니다.
+자세한 내용은 xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[Persistent Container Volumes]을 참조하십시오.
+
+모든 볼륨에 대해 XFS를 파일 시스템 유형으로 사용하는 것을 권장합니다.
+리포지토리 저장용 디스크의 크기는 {productname}으로 관리할 배포판 및 채널의 수에 따라 다릅니다.
+필요한 크기를 추정하는 가이드는 이 섹션의 표를 참조하십시오.
+
+[IMPORTANT]
+====
+{cobbler} 또는 {postgresql} 저장소에 NFS를 사용하지 마십시오. SELinux 환경에서도 NFS를 사용하지 마십시오.
+이러한 시나리오는 지원되지 않습니다.
+====
+
+{productname} 서버에서 이 명령을 사용하여 사용할 수 있는 모든 저장 장치를 찾습니다:
+
+[source, shell]
+----
+hwinfo --disk | grep -E "Device File:"
+----
+
+`lsblk` 명령을 사용하여 각 장치의 이름 및 크기를 확인하십시오.
+
+장치 이름과 함께 `mgr-storage-server` 명령을 사용하여 외부 디스크를 저장소의 위치로 설정하고, 선택적으로 자체 디스크에 데이터베이스의 위치로 설정하십시오:
+
+[source, shell]
+----
+mgr-storage-server <storage-disk-device> [<database-disk-device>]
+----
+
+예:
+
+[source, shell]
+----
+mgr-storage-server /dev/nvme1n1 /dev/nvme2n1
+----
+
+외부 스토리지 볼륨은 `/manager_storage` 및 `/pgsql_storage`에 마운트된 XFS 파티션으로 설정됩니다.
+
+[NOTE]
+====
+이 명령은 `/var/lib/containers/storage/volumes`에 영구 스토리지 볼륨을 생성합니다.
+
+자세한 내용은 xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]을 참조하십시오.
+====
+
+채널 데이터와 데이터베이스에 동일한 저장 장치를 사용할 수 있습니다.
+그러나 이는 권장되지 않으며, 채널 저장소가 증가하면 저장소가 가득 차 데이터베이스 무결성에 위험을 초래할 수 있습니다.
+별도의 저장 장치를 사용하는 것이 성능을 향상시킬 수도 있습니다.
+단일 저장 장치를 사용하려면 `mgr-storage-server`를 단일 장치 이름 파라미터와 함께 실행하십시오.
+
+프록시를 설치하는 경우에는 `mgr-storage-proxy` 명령에서 1개의 장치 이름 파라미터만 사용할 수 있으며 외부 저장소 위치는 Squid 캐시로 설정됩니다.
+
+
+
+== 논리 볼륨 관리(LVM)
+
+
+// container-deployment/mlm/server-deployment-vm-mlm.adoc etc.
+모든 종류의 가상 머신(VM)에 대해 LVM은 일반적으로 필요하지 않으며 권장되지 않습니다.
+디스크 설정은 가상이며 볼륨을 위한 별도의 디스크가 가능하고 권장됩니다.
+
+// container-deployment/mlm/server-deployment-mlm.adoc
+다른 배포의 경우 볼륨에 대한 별도의 디스크도 권장됩니다.
+
+{productname} 서버의 컨테이너 호스트에서 `mgr-storage-server` 명령은 `/var/lib/containers/storage/volumes` 디렉토리의 전체 내용을 별도의 디스크로 이동하고 `/var/lib/containers/storage/volumes`에 다시 마운트합니다.
+
+선택적으로, 두 번째 장치 이름이 지정된 경우 `mgr-storage-server`은(는) `/var/lib/containers/storage/volumes/var-pgsql` 데이터베이스 디렉토리의 콘텐츠를 두 번째 별도 디스크로 이동하고 `/var/lib/containers/storage/volumes/var-pgsql`에 다시 마운트합니다.
+
+마찬가지로, {productname} 프록시의 컨테이너 호스트에서 `mgr-storage-proxy` 명령은 `/var/lib/containers/storage/volumes` 디렉토리의 전체 내용물을 별도의 디스크로 이동하고 `/var/lib/containers/storage/volumes`에 재마운트합니다.
+
+
+
+////
+// *** The following is commented, and can probably deleted ***
+
+// When installation takes place on bare metal (on-premise), `cockpit` can be used to create an LVM setup.
+// In such a case, the disk setup needs to be performed manually.
+
+// With containers {productname} now has `/var/lib/containers/storage/volumes` as an extra disk.
+////

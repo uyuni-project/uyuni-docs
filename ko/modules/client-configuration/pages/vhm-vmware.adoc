@@ -1,0 +1,88 @@
+[[virt-vmware]]
+= VMware를 사용한 가상화
+:description: SUSE Multi-Linux Manager를 사용하여 서버에 설정된 가상 호스트 관리자(VHM)를 통해 VMware vSphere 가상 머신을 구성하고 호스트를 목록화합니다.
+:revdate: 2024-09-03
+:page-revdate: {revdate}
+:page-author: SUSE 제품 및 솔루션 문서 팀
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+가상 호스트 관리자(VHM)를 설정하여 {productname}에서 ESXi 및 vCenter를 포함한 VMware vSphere 가상 머신을 사용할 수 있습니다.
+
+시작하려면 {productname} 서버에 VHM을 설정하고 사용 가능한 VM 호스트를 목록화해야 합니다.
+그런 다음 Taskomatic은 VMs API를 사용하여 데이터 수집을 시작할 수 있습니다.
+
+
+
+== VHM 설정
+
+
+
+가상 호스트 관리자(VHM)는 {productname} 서버에서 실행됩니다.
+
+VHM을 실행하려면 {productname} 서버가 포트 443을 열어 VMware API에 액세스해야 합니다.
+
+VMware 호스트는 액세스 역할 및 권한을 사용하여 호스트 및 게스트에 대한 액세스를 제어합니다.
+VHM이 목록화할 VMware 객체나 리소스는 최소한 `read-only` 권한을 가져야 합니다.
+제외할 객체나 리소스가 있는 경우 `no-access`로 표시하십시오.
+
+새 호스트를 {productname}에 추가할 때 사용자 및 객체에 할당된 역할 및 권한이 {productname}에 의해 목록화되어야 하는지 고려해야 합니다.
+
+사용자, 역할 및 권한에 대한 자세한 내용은 VMware vSphere 문서를 참조하십시오: https://techdocs.broadcom.com/us/en/vmware-cis/vsphere.html
+
+
+.절차 VMware VHM 생성
+
+. {productname} {webui}에서 menu:Systems[Virtual Host Managers]로 이동합니다.
+. btn:[생성]을 클릭하고 `VMware-based`을 선택합니다.
+. `Add a VMware-based Virtual Host Manager` 섹션에서 다음 매개변수를 사용합니다.
+* `Label` 필드에 VHM의 사용자 지정 이름을 입력합니다.
+* `Hostname` 필드에 전체 도메인 이름(FQDN) 또는 호스트 IP 주소를 입력합니다.
+* `Port` 필드에 사용할 ESXi API 포트를 입력합니다(예: `443`).
+* `Username` 필드에 VM 호스트와 연결된 사용자 이름을 입력합니다.
+* `Password` 필드에 VM 호스트 사용자와 연결된 비밀번호를 입력합니다.
+. btn:[Create]를 클릭하여 변경 사항을 저장하고 VHM을 생성합니다.
+. `Virtual Host Managers` 페이지에서 새 VHM을 선택합니다.
+. `Properties` 페이지에서 btn:[데이터 새로 고침]을 클릭하여 새 VHM을 목록에 추가합니다.
+
+어떤 객체 및 리소스가 목록에 포함되었는지 확인하려면 menu:시스템[시스템 목록> 가상 시스템]으로 이동하십시오.
+
+
+[NOTE]
+====
+브라우저에서 HTTPS를 사용하여 ESXi 서버에 연결하면 때때로 `invalid certificate` 오류가 발생할 수 있습니다.
+이 경우 가상 호스트 서버에서 데이터를 새로 고치는 데 실패합니다.
+문제를 해결하려면 ESXi 서버에서 인증서를 추출하고 `/etc/pki/trust/anchors`로 복사합니다.
+명령줄에서 `update-ca-certificates` 명령을 실행하여 인증서를 다시 신뢰하고 spacewalk 서비스를 다시 시작합니다.
+====
+
+VHM이 생성되고 구성된 후, Taskomatic이 자동으로 데이터 수집을 실행합니다.
+데이터 수집을 수동으로 수행하려면 menu:시스템[가상 호스트 관리자]로 이동하여 적절한 VHM을 선택하고 btn:[데이터 새로 고침]을 클릭하십시오.
+
+{productname}은 `virtual-host-gatherer`라는 도구와 함께 제공되며, 이 도구는 API를 사용하여 VHM에 연결하고 가상 호스트에 대한 정보를 요청할 수 있습니다.
+`virtual-host-gatherer`는 각 모듈이 특정 VHM을 활성화하는 선택적 모듈 개념을 유지합니다.
+이 도구는 Taskomatic에 의해 매일 밤 자동으로 호출됩니다.
+`virtual-host-gatherer` 도구의 로그 파일은 `/var/log/rhn/gatherer.log`에 있습니다.
+
+
+
+== VMware에서 SSL 오류 문제 해결
+
+VMware 설치를 구성하는 중에 SSL 오류가 발생한 경우 VMware에서 CA 인증서 파일을 다운로드하여 {productname}에서 신뢰해야 합니다.
+
+
+
+.절차 VMware CA 인증서 신뢰
+. VMware 설치에서 CA 인증서를 다운로드합니다.
+    vCenter {webui}에 로그인하여 btn:[신뢰할 수 있는 루트 CA 인증서 다운로드]를 클릭하여 다운로드할 수 있습니다.
+. 다운로드한 CA 인증서 파일이 `.zip` 형식인 경우 아카이브를 압축 해제합니다.
+    인증서 파일에는 숫자가 확장자로 포함되어 있습니다.
+    예: `certificate.0`.
+. 인증서 파일을 {productname} 서버로 복사하고 `/etc/pki/trust/anchors/` 디렉토리에 저장합니다.
+. 복사한 인증서의 파일 이름 접미사를 `.crt` 또는 `.pem`로 변경합니다.
+. {productname} 서버의 명령 프롬프트에서 CA 인증서 레코드를 업데이트합니다:
++
+----
+update-ca-certificates
+----

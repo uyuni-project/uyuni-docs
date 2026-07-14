@@ -1,0 +1,189 @@
+[[install-vm-vmware]]
+= {productname} {productnumber} 作为虚拟机的服务器部署 - VMware
+:description: 为 SUSE Multi-Linux Manager 5.1 服务器部署配置 VMware 虚拟机，包含详细设置和注册
+:revdate: 2025-07-09
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+本章提供了部署 {productname} {productnumber} 作为映像所需的虚拟机设置。
+将使用 VMware 作为此安装的沙箱。
+
+
+// FIXME: make this and later sections a snippet or move it to a general
+//        intro for both, KVM and VMware
+== 可用映像
+
+
+[IMPORTANT]
+====
+部署 {productname} {productnumber} 服务器的首选方法是使用以下可用映像之一。
+所有工具都包含在这些映像中，大大简化了部署。
+====
+
+{productname} {productnumber} 的映像可在 link:https://www.suse.com/download/suse-manager/[{productname} {productnumber} 虚拟机映像] 获取。
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-warn-images-sl-micro.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-warn-images-sl-micro.adoc[]
+endif::[]
+
+[NOTE]
+====
+有关准备原始映像的详细信息，请参见 https://documentation.suse.com/sle-micro/6.1/html/Micro-deployment-raw-images-virtual-machines/index.html#deployment-preparing-configuration-device[]。
+// For the 5.0 backport:
+// For more information on preparing raw images, see link:https://documentation.suse.com/en-us/sle-micro/5.5/single-html/SLE-Micro-deployment/#sec-raw-preparation[].
+
+有关自安装映像的详细信息，请参见 https://documentation.suse.com/sle-micro/6.1/html/Micro-deployment-selfinstall-images/index.html。
+====
+
+.可用服务器映像
+[cols="3, 3", options="header"]
+|===
+| 体系结构 | 映像格式
+
+| aarch64| qcow2, vmdk
+
+| x86_64  | qcow2，vmdk，raw，自安装程序
+
+| ppc64le | raw，自安装程序
+
+| s390x * | qcow2, raw
+|===
+
+__* s390x 有两个可用存储选项：CDL DASD 和 FBA.__
+
+
+
+
+
+[[quickstart.sect.vmware.settings]]
+== {productname} 虚拟机设置 - VMware
+
+本节描述 VMware 配置，重点介绍如何在 VMware 环境中创建对 {productname} 存储分区至关重要的额外虚拟磁盘。
+
+.过程：升级创建 VMware 虚拟机
+
+. 下载 {productname} 服务器 `.vmdk` 文件，然后将副本传输到您的 VMware 存储。
+
+. 使用VMware Web界面复制上传的`.vmdk`文件。
+  这将把提供的`.vmdk`文件转换为适合vSphere超级管理程序的格式。
+
+. 创建并命名一个新的虚拟机，基于Guest OS Family `Linux`和Guest OS Version {sle} 15（64位）。
+
+// FIXME: do we want to keep this size here? \/
+
++
+
+. 添加一个额外的 `Hard Disk 2`（500 GB 或更多）。
+
+. 配置 RAM 和 CPU 数量（至少 16 GB RAM，4 个 CPU）。
+
+. 根据需要设置网络适配器。
+
+. 启动 VM，然后按照首次引导对话框中的提示操作（键盘布局、许可协议、时区、root 的口令）。
+
+. 安装完成后，以 root 身份登录。
+
+. 继续阅读下一节。
+
+*) 有关最小值，请参见 xref:installation-and-upgrade:hardware-requirements.adoc#proxy-hardware-requirements[]。
+
+
+[[minimal.susemgr.prep]]
+== 注册 {sl-micro} 和 {productname} {productnumber} 服务器
+
+在开始之前，从 {productname} - {scclongform} 获取您的 https://scc.suse.com. 注册代码
+
+[NOTE]
+====
+{sl-micro} {microversion} 授权包含在 {productname} 授权中，因此不需要单独的注册代码。
+====
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+.过程：升级注册 {sl-micro} 和 {productname} {productnumber}
+. 引导虚拟机。
+. 以 `root` 身份登录。
+. 在 {sl-micro} 上注册 {scc}。
++
+
+----
+transactional-update register -r <REGCODE> -e <your_email>
+----
+
+. 重引导。
+
+. 使用 注册 {productname} {productnumber} {scclongform}。
++
+
+----
+transactional-update register -p Multi-Linux-Manager-Server/5.1/x86_64 -r <REGCODE>
+----
+
+. 重引导
+. 更新系统：
++
+
+----
+transactional-update
+----
+
+. 如果已应用更新，请重引导。
+
+. 该步骤可选。
+  但是，如果您的基础设施需要自定义的永久性存储，请使用 `mgr-storage-server` 工具。
+
++
+
+有关详细信息，请参见 `mgr-storage-server --help`。
+此工具可以简化容器存储和数据库卷的创建。
+如下所示使用命令：
+
++
+
+----
+mgr-storage-server <storage-disk-device> [<database-disk-device>]
+----
+
++
+例如：
++
+
+----
+mgr-storage-server /dev/nvme1n1 /dev/nvme2n1
+----
+
++
+[NOTE]
+====
+此命令将在 `/var/lib/containers/storage/volumes` 处创建持久存储卷。
+
+有关详细信息，请参见
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+====
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-step-deploy-podman-certs.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-step-deploy-podman-certs.adoc[]
+endif::[]

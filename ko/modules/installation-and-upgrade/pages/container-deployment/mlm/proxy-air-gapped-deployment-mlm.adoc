@@ -1,0 +1,107 @@
+= {productname} 프록시 에어갭 배포
+:description: SUSE Multi-Linux Manager 도구를 사용하여 고보안 환경에서 안전한 에어갭 시스템을 구성하고 배포합니다.
+:revdate: 2025-04-28
+:page-revdate: {revdate}
+:page-author: SUSE 제품 및 솔루션 문서팀
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+== air-gapped 배포란?
+
+
+에어갭 배포란 물리적으로 불안전한 네트워크, 특히 인터넷과 격리된 네트워크 시스템의 설정 및 운영을 의미합니다.
+이러한 유형의 배포는 군사 시설, 금융 시스템, 중요 인프라, 그리고 민감한 데이터가 처리되어 외부 위협으로부터 보호되어야 하는 모든 곳과 같은 고보안 환경에서 일반적으로 사용됩니다.
+
+[NOTE]
+====
+현재 에어갭 배포는 {sl-micro}에서만 사용할 수 있습니다.
+====
+
+
+== 가상 머신으로 배포
+
+필요한 모든 도구와 컨테이너 이미지가 미리 로드되어 있어 즉시 사용할 수 있으므로, 제공되는 {productname} 가상 머신 이미지 옵션을 사용하여 설치하는 방법을 권장합니다.
+
+{productname} 프록시 가상 머신 설치에 대한 자세한 내용은 xref:container-deployment/mlm/proxy-deployment-vm-mlm.adoc[프록시를 가상 머신으로 배포]를 참조하세요.
+
+{productname} 프록시를 업그레이드하려면 사용자는 xref:container-management/updating-proxy-containers.adoc[프록시 업그레이드]에 정의된 절차를 따라야 합니다.
+
+
+== {productname}을 {sl-micro}에 배포합니다.
+
+{productname}은 시스템에 설치할 수 있는 RPM 패키지 형태로 필요한 모든 컨테이너 이미지를 제공합니다.
+
+.절차 에어갭 환경에서 {productname}에 {sl-micro}을 설치합니다.
+[role=procedure]
+____
+. {sl-micro}을 설치합니다.
+
+. {productname} 서버에서 프록시 호스트 OS를 클라이언트로 부팅합니다.
+
+. 시스템을 업데이트합니다.
+
+. 도구 패키지 및 이미지 패키지 설치($ARCH$를 올바른 아키텍처로 대체)
+
++
+
+[source,shell]
+----
+transactional-update pkg install mgrpxy* mgrctl* suse-multi-linux-manager-5.1-$ARCH$-proxy-*
+----
+
+. 재부팅합니다.
+
+. mgrpxy를 사용하여 {productname}을 배포합니다.
+____
+
+
+{productname} 프록시를 {sl-micro}에 설치하는 방법에 대한 자세한 내용은 xref:container-deployment/mlm/proxy-deployment-mlm.adoc[프록시를 가상 머신으로 배포]를 참조하세요.
+
+{productname} 프록시를 업그레이드하려면 사용자는 xref:container-management/updating-proxy-containers.adoc[프록시 업그레이드]에 정의된 절차를 따라야 합니다.
+
+
+== 사용 가능한 이미지
+
+Bind 및 DHCP(Kea)와 같은 일부 포뮬러는 컨테이너를 사용합니다.
+에어갭 환경에서 사용하려는 경우 해당 이미지를 가져오고, 아카이브에 저장한 후 {productname} 프록시 또는 다른 관리 시스템에 로드해야 합니다.
+
+이미지는 `registry.suse.com`에서 사용할 수 있습니다.
+
+.절차 에어갭 환경에서 포뮬러 이미지 가져오기
+[role=procedure]
+____
+. 인터넷에 연결된 시스템에서 필요한 이미지를 당겨옵니다.
+
++
+
+[source,shell]
+----
+podman pull registry.suse.com/suse/bind:latest
+podman pull registry.suse.com/suse/kea:2.6
+----
+
+. 이미지를 TAR 아카이브에 저장합니다.
+
++
+
+[source,shell]
+----
+podman save -m -o formula-images.tar registry.suse.com/suse/bind:latest registry.suse.com/suse/kea:2.6
+----
+
+. `formula-images.tar` 파일을 에어갭 시스템으로 전송합니다.
+
+. air-gapped 시스템에 이미지를 로드합니다.
+
++
+
+[source,shell]
+----
+podman load -i formula-images.tar
+----
+____

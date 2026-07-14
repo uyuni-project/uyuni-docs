@@ -1,0 +1,177 @@
+[[troubleshooting-register-clones]]
+= 对注册克隆的客户端时出现的问题进行查错
+:description: 解决重复的机器 ID 并在 SUSE Multi-Linux Manager 中正确注册克隆客户端，然后了解执行此操作的步骤
+:revdate: 2025-04-24
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+
+如果您使用 {productname} 来管理虚拟机，您可能会发现创建虚拟机的克隆是有用的。
+克隆是一个虚拟机，它使用的主磁盘是现有磁盘的精确副本。
+
+虽然克隆 VM 可以节省大量时间，但磁盘上复制的标识信息有时会导致问题。
+
+如果您有一个已经注册的客户端，您创建该客户端的克隆，然后尝试注册该克隆，您可能希望 {productname} 将它们注册为两个独立的客户端。
+然而，如果原始客户端和克隆中的机器 ID 相同，{productname} 会将两个客户端注册为一个系统，并且现有客户端数据会被克隆的数据覆盖。
+
+可以通过更改克隆的机器 ID 来解决此问题，以便 {productname} 将它们识别为两个不同的客户端。
+
+[NOTE]
+====
+此过程的每一步都在克隆客户端上执行。
+此过程不操作原始客户端，原始客户端仍然注册到 {productname}。
+====
+
+
+
+.过程：升级解决克隆的 Salt 客户端中的重复机器 ID
+[role=procedure]
+____
+
+. *初始系统配置*
+
+
+.. 在克隆的计算机上，更改主机名和 IP 地址。
+    确保`/etc/hosts`包含您所做的更改和正确的主机项。
+
+
+. *解决重复机器 ID*
+
+.. _对于支持 systemd 的发行版：_
+
+...   如果您的计算机具有相同的计算机 ID，请以 root 身份删除每个重复客户端上的文件，然后重新创建这些文件：
+
++
+
+----
+rm /etc/machine-id
+rm /var/lib/dbus/machine-id
+rm /var/lib/zypp/AnonymousUniqueId
+dbus-uuidgen --ensure
+systemd-machine-id-setup
+----
+
++
+
+... 如果克隆的机器在`/var/log/journal/`中也有一个文件夹，则需要根据新的机器 ID 进行相应重命名。如果名称不匹配，`journalctl`将无法检索任何日志，并且`podman logs`也不会显示任何内容。
+
++
+
+----
+mv /var/log/journal/* /var/log/journal/$(cat /etc/machine-id)
+----
+
++
+
+.. _对于不支持 systemd 的发行版：_
+
+...  以 root 身份从 dbus 生成计算机 ID：
+
++
+
+----
+rm /var/lib/dbus/machine-id
+rm /var/lib/zypp/AnonymousUniqueId
+dbus-uuidgen --ensure
+----
+
++ 
+
+[IMPORTANT]
+====
+
+* 如果您正在克隆一台稍后将解放至 {sll} 的 {rhel} 8.10 服务器，则必须执行额外步骤修复内核配置文件。
+
+
+* {rhel}使用机器 ID 在`/boot/loader/entries`中生成内核条目。
+不执行这些步骤将导致解放后旧内核条目和新内核条目的混合，因为 {sll} 内核将创建新条目而不是替换旧条目。
+
+
+* 在更改计算机 ID 后、执行系统适配迁移前，请运行以下命令：
+
++
+
+----
+sudo rm -rf /boot/loader/entries/
+sudo for ver in $(rpm -q kernel --qf '%{VERSION}-%{RELEASE}.%{ARCH}\n'); do echo "Reinstalling kernel $ver..."; sudo kernel-install add $ver /lib/modules/$ver; done
+sudo grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg
+----
+
+* 有关解放 {rhel} 8.10 服务器的更多信息和示例，请参见 xref:common-workflows:workflow-liberate-rhel-with-secureboot.adoc[]。
+
+====
+
+. *重新配置 {salt} 客户端*
+
+.. 如果您的客户端仍保留相同的 Salt 客户端 ID，请删除每个客户端上的 `minion_id` 文件（客户端重启时将重新生成 FQDN）。
+
+...  对于 Salt 捆绑包客户端：
+
++
+
+----
+rm /etc/salt/minion_id
+rm -rf /etc/salt/pki
+----
+
++
+
+... 对于 Salt 捆绑包客户端：
+
++
+
+----
+rm /etc/venv-salt-minion/minion_id
+rm -rf /etc/venv-salt-minion/pki
+----
+
++
+
+.. 从初始配置页面中删除接受的密钥并从 {productname} 中删除系统控制文件，然后重启客户端。
+
+... 对于 Salt 捆绑包客户端：
+
++
+
+----
+service salt-minion restart
+----
+
++
+
+... 对于 Salt 捆绑包客户端：
+
+
++
+
+----
+service venv-salt-minion restart
+----
+
++
+
+.. 重新注册客户端。
+   每个客户端现在都有一个不同的`/etc/machine-id`，并且应该在`System Overview`页面上正确显示。
+
+____

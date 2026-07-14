@@ -1,0 +1,79 @@
+[[installation-proxy-containers-k3s]]
+= {productname} {productnumber} 在 K3s 上部署代理
+:description: 学习如何在 K3s 上部署和配置 SUSE Multi-Linux Manager 代理，以优化 Kubernetes 管理
+:revdate: 2025-06-26
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+
+[[installation-proxy-containers-k3s-k3s]]
+== 安装 K3s
+
+
+[NOTE]
+====
+{productname} 代理在 {sl-micro} 上运行的 K3s 单节点集群中受支持。
+如果您需要在其他 Kubernetes 环境中部署，请联系支持进行评估。
+====
+
+在容器主机上，安装 `K3s`（将 `<K3S_HOST_FQDN>` 替换为您的 K3s 主机的 FQDN）：
+
+[source,shell]
+----
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--tls-san=<K3S_HOST_FQDN>" sh -
+----
+
+[[installation-proxy-containers-k3s-helm]]
+== 安装工具
+
+安装需要 `mgrpxy` 和 `helm` 软件包。
+
+`mgrpxy` 软件包和 `helm` 软件包可在 {productname} 代理产品仓库中找到。
+
+. 要进行安装，请运行以下命令：
+
++
+
+[source,shell]
+----
+transactional-update pkg install helm mgrpxy
+----
+
+. 重引导
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-generate_proxy_config.adoc[tags=generate-proxy-config-section]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-generate_proxy_config.adoc[tags=generate-proxy-config-section]
+endif::[]
+
+
+[[installation-proxy-containers-k3s-deploy]]
+== 部署 {productname} 代理 Helm 图表
+
+要配置 {productname} 代理 pod 使用的卷的存储，请为以下声明定义持久卷。
+如果您不自定义存储配置，K3s 将自动为您创建存储卷。
+
+永久性卷声明已命名为：
+
+* `squid-cache-pv-claim`
+* `package-cache-pv-claim`
+* `tftp-boot-pv-claim`
+
+按照 xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc[] 中的文档创建 {productname} 代理的配置。
+复制配置文件 `tar.gz`，然后安装：
+
+----
+mgrpxy install kubernetes /path/to/config.tar.gz
+----
+
+有关更多信息，请参见 link:https://kubernetes.io/docs/concepts/storage/persistent-volumes/[]（kubernetes）或 link:https://rancher.com/docs/k3s/latest/en/storage/[]（K3s）文档。

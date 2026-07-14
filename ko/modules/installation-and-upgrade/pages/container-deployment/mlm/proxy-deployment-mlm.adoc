@@ -1,0 +1,279 @@
+[[installation-proxy-containers]]
+= {productname} 프록시 배포
+:description: 이 배포 가이드를 사용하여 SL Micro 또는 SLES에서 SUSE Multi-Linux Manager 5.1 프록시 컨테이너를 구성하면, 완전한 기능을 갖춘 설정을 구축할 수 있습니다.
+:revdate: 2026-04-29
+:page-revdate: {revdate}
+:page-author: SUSE 제품 및 솔루션 문서 팀
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+
+이 가이드는 {sl-micro} {microversion} 또는 {sles} {bci-mlm}에서 {productname} {productnumber} 프록시 컨테이너의 배포 프로세스를 설명합니다.
+이 가이드는 이미 {productname} {productnumber} 서버를 성공적으로 배포했다고 가정합니다.
+
+[IMPORTANT]
+====
+현재로서는 {sl-micro}이(가) 일반 미니언(`default` 연락 방법)으로만 지원됩니다.
+또한 Salt SSH 클라이언트(`salt-ssh` 연락 방법)로 관리하는 작업도 진행 중입니다.
+====
+
+[NOTE]
+====
+기존 클라이언트를 프록시로 변환하는 것이 가능합니다.
+자세한 내용은 xref:installation-and-upgrade:container-deployment/mlm/proxy-conversion-from-client-mlm.adoc[]을 참조하십시오.
+====
+
+새로운 프록시를 성공적으로 배포하려면 다음 절차를 따르십시오:
+
+
+// Add certificate tasks item
+.절차 프록시 배포
+[role=procedure]
+_____
+
+. 하드웨어 요구사항을 검토합니다.
+
+. 서버에서 {sl-micro} {microversion} 또는 {sles} {bci-mlm} 상위 채널과 프록시 확장 프로그램 하위 채널을 동기화합니다.
+
+. 운영 체제 미설치 컴퓨터에 {sl-micro} 또는 {sles}를 설치합니다.
+
+. 프록시 확장 프로그램으로 {salt} 활성화 키를 생성합니다.
+
+. `default`연결 방법을 사용하여 프록시를 클라이언트로 부팅합니다.
+
+. 프록시 구성을 생성합니다.
+
+. 프록시 구성을 서버에서 프록시로 전송합니다.
+
+. \{webui}를 사용하여 패키지 설치
+
+. 프록시 구성을 사용하여 클라이언트를 {productname}의 프록시로 등록합니다.
+
+_____
+
+.프록시 컨테이너 호스트에 지원되는 운영 체제
+[NOTE]
+====
+컨테이너 호스트에 지원되는 운영 체제는 {sl-micro} {microversion} 및 {sles} {bci-mlm}입니다.
+
+컨테이너 호스트::
+컨테이너 호스트는 Podman과 같은 컨테이너 엔진이 장착된 서버로, 컨테이너를 관리하고 배포할 수 있게 해줍니다.
+이 컨테이너는 응용 프로그램과 라이브러리와 같은 필수 구성 요소를 포함하지만 전체 운영 체제는 포함하지 않아 경량입니다.
+이 설정은 응용 프로그램이 서로 다른 환경에서도 동일하게 실행되도록 보장합니다.
+컨테이너 호스트는 이러한 컨테이너에 필요한 CPU, 메모리 및 저장소와 같은 자원을 제공합니다.
+====
+
+
+== 프록시의 하드웨어 요구사항
+
+
+{productname} 프록시 배포를 위한 하드웨어 요구사항에 대한 자세한 내용은 xref:installation-and-upgrade:hardware-requirements.adoc#proxy-hardware-requirements[]를 참조하십시오.
+
+
+
+== 상위 및 프록시 확장 프로그램 하위 채널 동기화
+
+이 섹션은 서버의 {webui}에서 menu:관리자[설정 마법사> 조직 자격 증명] 아래에 조직 자격 증명을 이미 입력했다고 가정합니다.
+제품은 menu:관리자[설정 마법사> 제품] 페이지에 나열됩니다.
+이 채널은 서버에서 완전히 동기화되어야 하며, 하위 채널 `Proxy`이 확장 프로그램 옵션으로 선택되어야 합니다.
+
+
+.절차 상위 채널 및 프록시 확장 프로그램 동기화
+[role=procedure]
+_____
+
+. {productname} {webui}에서 menu:관리자[제품]을 선택합니다.
+
+. 제품 페이지에서 필터 필드에 {sl-micro} 또는 {sles}를 입력합니다.
+
+. 다음으로 드롭다운을 사용하여 필요한 아키텍처를 선택합니다.
+  이 예제의 경우 {x86_64}입니다.
+
+. `Product Description` 필드에서 {sl-micro} {microversion} 또는 {sles} {bci-mlm} 체크박스를 선택한 다음 드롭다운을 사용하여 `{productname} Proxy Extension 5.1 x86_64` 확장 프로그램을 선택하십시오.
+
+. btn:[제품 추가] 버튼을 클릭합니다.
+
+. 동기화가 완료될 때까지 기다립니다.
+
+_____
+
+
+[[deploy-mlm-proxy-host]]
+==  {productname} 프록시 호스트를 준비합니다.
+
+다음 하위 섹션에서는 {sle-micro} 또는 {sles}를 사용하여 프록시 호스트를 준비합니다.
+
+[[deploy-mlm-proxy-micro]]
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-prepare-micro-proxy-host.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-prepare-micro-proxy-host.adoc[leveloffset=+1]
+endif::[]
+
+배포를 계속하려면 xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc#deploy-mlm-proxy-persistent-storage[]을 참조하십시오.
+
+
+
+[[deploy-mlm-proxy-sles]]
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-prepare-sles-proxy-host.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-prepare-sles-proxy-host.adoc[leveloffset=+1]
+endif::[]
+
+배포를 계속하려면 xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc#deploy-mlm-proxy-persistent-storage[]을 참조하십시오.
+
+
+
+[[deploy-mlm-proxy-persistent-storage]]
+== 사용자 정의 영구 스토리지 구성
+
+영구 스토리지를 구성하는 것은 선택 사항이지만, 이는 컨테이너의 디스크 가득 차는 문제를 피하는 유일한 방법입니다.
+인프라에 사용자 정의 영구 저장소가 필요한 경우 `mgr-storage-proxy` 도구를 사용하십시오.
+
+* 자세한 내용은 `mgr-storage-proxy --help`을 참조하십시오.
+이 도구는 컨테이너 스토리지 및 Squid 캐시 볼륨 생성을 간소화합니다.
+
+다음 방법으로 명령 사용:
+
+[source,shell]
+----
+mgr-storage-proxy <storage-disk-device>
+----
+
+예:
+
+[source, shell]
+----
+mgr-storage-proxy /dev/nvme1n1
+----
+
+
+
+[NOTE]
+====
+이 명령은 `/var/lib/containers/storage/volumes`에 영구 스토리지 볼륨을 생성합니다.
+
+자세한 내용은 다음을 참조하십시오.
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+====
+
+// Snippet for creating activation key only
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-actkey-bootstrap-proxy-mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-actkey-bootstrap-proxy-mlm.adoc[]
+endif::[]
+
+// (New) Snippet for bootsrapping the proxy
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-bootstrap-proxy-client.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-bootstrap-proxy-client.adoc[]
+endif::[]
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-generate_proxy_config.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-generate_proxy_config.adoc[]
+endif::[]
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-transfer_proxy_config.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-transfer_proxy_config.adoc[]
+endif::[]
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ensure-proxy-prerequisites.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-ensure-proxy-prerequisites.adoc[]
+endif::[]
+
+
+
+[[proxy-setup-containers-transfer-start]]
+== {productname} 프록시 시작
+
+이제 `mgrpxy` 명령으로 컨테이너를 시작할 수 있습니다:
+
+[[proc-setup-containers-setup-start]]
+.절차 프록시 시작 및 상태 확인
+[role=procedure]
+_____
+
+. 다음을 호출하여 프록시 시작:
+
++
+
+----
+mgrpxy start
+----
+
+. 다음을 호출하여 컨테이너 상태 확인:
+
++
+
+----
+mgrpxy status
+----
+
++
+
+5개의 {productname} 프록시 컨테이너가 있어야 하며, `proxy-pod` 컨테이너 파드의 일부여야 합니다:
+
+* proxy-salt-broker
+* proxy-httpd
+* proxy-tftpd
+* proxy-squid
+* proxy-ssh
+
+_____
+
+
+
+== 서비스에 사용자 정의 컨테이너 이미지 사용
+
+기본적으로 {productname} 프록시 스위트는 각 서비스에 대해 동일한 이미지 버전과 레지스트리 경로를 사용하도록 구성되어 있습니다.
+그러나 `-tag` 및 `-image`으로 끝나는 설치 매개변수를 사용하여 특정 서비스에 대한 기본값을 재정의할 수 있습니다.
+
+예:
+
+[source, shell]
+----
+mgrpxy install podman --httpd-tag 0.1.0 --httpd-image registry.opensuse.org/uyuni/proxy-httpd /path/to/config.tar.gz
+----
+
+httpd 서비스에 대한 구성 파일을 조정하며, 여기서 `registry.opensuse.org/uyuni/proxy-httpds`은(는) 사용할 이미지이고 `0.1.0`은(는) 버전 태그이며, 그 후 서비스를 다시 시작합니다.
+
+값을 기본값으로 재설정하려면 해당 파라미터 없이 설치 명령을 다시 실행합니다.
+
+[source,shell]
+----
+mgrpxy install podman /path/to/config.tar.gz
+----
+
+이 명령은 먼저 모든 서비스의 구성을 전역 기본값으로 재설정한 다음 다시 로드합니다.

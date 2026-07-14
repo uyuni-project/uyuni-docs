@@ -1,0 +1,67 @@
+[[troubleshooting-taskomatic]]
+= 문제 해결 Taskomatic
+:description: Taskomatic, 중앙 집중식 리포지토리 관리 시스템의 문제 해결에 대해 알아보세요.
+:revdate: 2024-05-15
+:page-revdate: {revdate}
+:page-author: SUSE 제품 및 솔루션 문서 팀
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+
+리포지토리 메타데이터 재생성은 상대적으로 집약적인 프로세스이므로, Taskomatic은 완료하는 데 몇 분이 걸릴 수 있습니다.
+또한, Taskomatic이 충돌하면 리포지토리 메타데이터 재생성이 중단될 수 있습니다.
+
+[IMPORTANT]
+====
+Server 컨테이너 내부의 셸에 접근하려면 컨테이너 호스트에서 `mgrctl term`을(를) 실행합니다.
+====
+
+Taskomatic이 여전히 실행 중이거나 프로세스가 충돌한 경우, {webui}에서 패키지 업데이트가 가능한 것처럼 보이지만 클라이언트에는 나타나지 않으며, 클라이언트를 업데이트하려고 하면 실패합니다.
+이 경우, `zypper ref` 명령은 다음과 같은 오류를 표시합니다:
+
+----
+Valid metadata not found at specified URL
+----
+
+이를 수정하려면 Taskomatic이 여전히 리포지토리 메타데이터를 생성하는 중인지, 아니면 충돌이 발생했는지 확인하십시오.
+메타데이터 재생성이 완료될 때까지 기다리거나 충돌 후 Taskomatic을 재시작하여 클라이언트 업데이트가 올바르게 수행되도록 하십시오.
+
+
+
+.절차 Taskomatic 문제 해결
+
+. {productname} 서버에서 `/var/log/rhn/rhn_taskomatic_daemon.log` 파일을 확인하여 메타데이터 재생성 프로세스가 아직 실행 중인지 또는 충돌이 발생했는지 확인합니다.
+. taskomatic을 재시작합니다.
++
+----
+service taskomatic restart
+----
++
+. Taskomatic 로그 파일에서 다음과 같은 여는 라인 및 닫는 라인을 찾아 메타데이터 재생성과 관련된 섹션을 식별할 수 있습니다.
++
+----
+<YYYY-DD-MM> <HH:MM:SS>,174 [Thread-584] INFO  com.redhat.rhn.taskomatic.task.repomd.RepositoryWriter - Generating new repository metadata for channel 'cloned-2018-q1-sles12-sp3-updates-x86_64'(sha256) 550 packages, 140 errata
+
+...
+
+<YYYY-DD-MM> <HH:MM:SS>,704 [Thread-584] INFO  com.redhat.rhn.taskomatic.task.repomd.RepositoryWriter - Repository metadata generation for 'cloned-2018-q1-sles12-sp3-updates-x86_64' finished in 4 seconds
+----

@@ -1,0 +1,107 @@
+= {productname}プロキシ エアギャップ(された)デプロイメント
+:description: SUSE Multi-Linux Manager ツールを使用して、高セキュリティ環境で安全なエアギャップ(された)システムを構成およびデプロイします。
+:revdate: 2025-04-28
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+== Air-gapped配備とは
+
+
+エアギャップ(された)デプロイメントとは、特にインターネットなどの不安全なネットワークから物理的に隔離されたネットワークシステムのセットアップと運用を指します。
+このタイプのデプロイメントは、軍事施設、金融システム、重要なインフラストラクチャ、および機密データが取り扱われ、外部の脅威から保護されなければならない場所など、高セキュリティ環境で一般的に使用されます。
+
+[NOTE]
+====
+現時点では、エアギャップ(された)デプロイメントは{sl-micro}でのみ利用可能です。
+====
+
+
+== 仮想マシンでの配備
+
+推奨されるインストール方法は、提供されている{productname}の仮想マシンイメージオプションを使用する方法です。必要なツールとコンテナイメージがすべてプリロードされていて、すぐに動作するためです。
+
+{productname}プロキシ仮想マシンのインストールに関する詳細情報は、xref:container-deployment/mlm/proxy-deployment-vm-mlm.adoc[プロキシを仮想マシンとしてデプロイする]を参照してください。
+
+{productname}プロキシをアップグレードするには、ユーザーはxref:container-management/updating-proxy-containers.adoc[プロキシアップグレード]に定義された手順に従う必要があります。
+
+
+== {productname}を{sl-micro}にデプロイします。
+
+{productname}では、必要なコンテナイメージはすべてRPMとしても提供されており、これらのRPMをシステムにインストールすることができます。
+
+.プロシージャ:エアギャップ(された)環境で{productname}を{sl-micro}にインストールします。
+[role=procedure]
+____
+. {sl-micro}をインストールします。
+
+. {productname}サーバ上のクライアントとしてプロキシホストOSを起動します。
+
+. システムを更新します。
+
+. ツールのパッケージとイメージパッケージをインストールします($ARCH$は適切なアーキテクチャと置き換えます)。
+
++
+
+[source,shell]
+----
+transactional-update pkg install mgrpxy* mgrctl* suse-multi-linux-manager-5.1-$ARCH$-proxy-*
+----
+
+. 再起動します。
+
+. mgrpxyを使用して{productname}をデプロイします。
+____
+
+
+{productname}プロキシを{sl-micro}にインストールするための詳細情報は、xref:container-deployment/mlm/proxy-deployment-mlm.adoc[プロキシを仮想マシンとしてデプロイする]を参照してください。
+
+{productname}プロキシをアップグレードするには、ユーザーはxref:container-management/updating-proxy-containers.adoc[プロキシアップグレード]に定義された手順に従う必要があります。
+
+
+== 利用可能なイメージ
+
+BindやDHCP（Kea）などの一部のフォーミュラもコンテナを使用します。
+エアギャップ(された)環境でそれらを使用する予定がある場合は、イメージをプルし、アーカイブに保存し、{productname}プロキシまたは他の管理されたシステムにロードする必要があります。
+
+イメージは`registry.suse.com`から入手できます。
+
+.プロシージャ:エアギャップ(された)環境におけるフォーミュライメージの取得
+[role=procedure]
+____
+. インターネットにアクセスできるシステムで、必要なイメージをプルします。
+
++
+
+[source,shell]
+----
+podman pull registry.suse.com/suse/bind:latest
+podman pull registry.suse.com/suse/kea:2.6
+----
+
+. アーカイブからイメージをロードします。
+
++
+
+[source,shell]
+----
+podman save -m -o formula-images.tar registry.suse.com/suse/bind:latest registry.suse.com/suse/kea:2.6
+----
+
+. `formula-images.tar`ファイルをエアギャップ(された)システムに転送してください。
+
+. アーカイブからイメージをロードします。
+
++
+
+[source,shell]
+----
+podman load -i formula-images.tar
+----
+____

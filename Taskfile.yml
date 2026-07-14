@@ -20,8 +20,9 @@
 #    task publish:webui-uyuni    Uyuni WebUI publish
 #    task validate:mlm           Antora xref validation — MLM
 #    task validate:uyuni         Antora xref validation — Uyuni
-#    task translations           Apply .po files (generates translated AsciiDoc)
-#    task pot                    Update .pot/.po translation templates
+#    task stage-content          Stage translated content for build (en fallback + lang overlay)
+#    task translations           [DEPRECATED] Use stage-content instead
+#    task pot                    [DEPRECATED] po4a template update — no longer used in build
 #    task clean                  Remove build/, translations/, .cache/
 #
 #  OPTION B — Container (only requires Podman or Docker, nothing else to install)
@@ -47,8 +48,9 @@
 #    task container:publish:webui-uyuni Uyuni WebUI publish
 #    task container:validate:mlm        Antora xref validation — MLM
 #    task container:validate:uyuni      Antora xref validation — Uyuni
-#    task container:translations        Apply .po files
-#    task container:pot                 Update translation templates
+#    task container:stage-content       Stage translated content for build
+#    task container:translations        [DEPRECATED] Use container:stage-content instead
+#    task container:pot                 [DEPRECATED] po4a template update
 #    task container:run -- <target>     Run any task (escape hatch)
 #
 
@@ -175,14 +177,12 @@ tasks:
     desc: "[Draft] MLM HTML — documentation.suse.com branding (all languages)"
     deps: [setup]
     cmds:
-      - task: translations
+      - task: stage-content
       - for: {var: LANGUAGES}
         cmd: |
           echo "==> Building mlm-dsc / {{.ITEM}}"
           {{.DOCBUILD}} gen-site -product mlm -output mlm-dsc -lang {{.ITEM}}
           {{.DOCBUILD}} gen-antora -product mlm -lang {{.ITEM}}
-          mkdir -p translations/{{.ITEM}}/modules
-          cp -an en/modules/. translations/{{.ITEM}}/modules/ || true
           DOCSEARCH_ENABLED=true SITE_SEARCH_PROVIDER=lunr \
             npx antora translations/{{.ITEM}}/mlm-dsc.site.yml --stacktrace
 
@@ -190,14 +190,12 @@ tasks:
     desc: "[Draft] MLM HTML — WebUI branding with language selector (all languages)"
     deps: [setup]
     cmds:
-      - task: translations
+      - task: stage-content
       - for: {var: LANGUAGES}
         cmd: |
           echo "==> Building mlm-webui / {{.ITEM}}"
           {{.DOCBUILD}} gen-site -product mlm -output mlm-webui -lang {{.ITEM}}
           {{.DOCBUILD}} gen-antora -product mlm -lang {{.ITEM}}
-          mkdir -p translations/{{.ITEM}}/modules
-          cp -an en/modules/. translations/{{.ITEM}}/modules/ || true
           cp -a branding/supplemental-ui/mlm/webui-2025/ translations/{{.ITEM}}/supplemental-ui/
           {{.DOCBUILD}} inject-lang-selector -hbs translations/{{.ITEM}}/supplemental-ui/partials/header-content.hbs
           DOCSEARCH_ENABLED=true SITE_SEARCH_PROVIDER=lunr \
@@ -207,14 +205,12 @@ tasks:
     desc: "[Draft] Uyuni HTML — website branding (all languages)"
     deps: [setup]
     cmds:
-      - task: translations
+      - task: stage-content
       - for: {var: LANGUAGES}
         cmd: |
           echo "==> Building uyuni-website / {{.ITEM}}"
           {{.DOCBUILD}} gen-site -product uyuni -output uyuni-website -lang {{.ITEM}}
           {{.DOCBUILD}} gen-antora -product uyuni -lang {{.ITEM}}
-          mkdir -p translations/{{.ITEM}}/modules
-          cp -an en/modules/. translations/{{.ITEM}}/modules/ || true
           DOCSEARCH_ENABLED=true SITE_SEARCH_PROVIDER=lunr \
             npx antora translations/{{.ITEM}}/uyuni-website.site.yml --stacktrace
 
@@ -222,14 +218,12 @@ tasks:
     desc: "[Draft] Uyuni HTML — WebUI branding with language selector (all languages)"
     deps: [setup]
     cmds:
-      - task: translations
+      - task: stage-content
       - for: {var: LANGUAGES}
         cmd: |
           echo "==> Building uyuni-webui / {{.ITEM}}"
           {{.DOCBUILD}} gen-site -product uyuni -output uyuni-webui -lang {{.ITEM}}
           {{.DOCBUILD}} gen-antora -product uyuni -lang {{.ITEM}}
-          mkdir -p translations/{{.ITEM}}/modules
-          cp -an en/modules/. translations/{{.ITEM}}/modules/ || true
           cp -a branding/supplemental-ui/uyuni/uyuni-2023/ translations/{{.ITEM}}/supplemental-ui/
           {{.DOCBUILD}} inject-lang-selector -hbs translations/{{.ITEM}}/supplemental-ui/partials/header-content.hbs
           DOCSEARCH_ENABLED=true SITE_SEARCH_PROVIDER=lunr \
@@ -249,7 +243,7 @@ tasks:
   # --------------------------------------------------------------------------
   pdf:
     desc: "[Local] Build a single PDF book — usage: task pdf BOOK=<book> PRODUCT=<product> LANG=<lang>"
-    deps: [gen]
+    deps: [gen, setup]
     vars:
       BOOK: '{{default "administration" .BOOK}}'
       PRODUCT: '{{default "mlm" .PRODUCT}}'
@@ -298,12 +292,16 @@ tasks:
         OUTDIR="build/${LANG}/pdf"
         mkdir -p "${OUTDIR}"
 
+        # Stage content for this language (en base + translated overlay)
+        CONTENT_DIR=$({{.DOCBUILD}} get-content-dir -lang ${LANG})
+        mkdir -p "${SRCDIR}/modules"
+        cp -a en/modules/. "${SRCDIR}/modules/"
+        if [ -d "${CONTENT_DIR}/modules" ]; then
+          cp -a "${CONTENT_DIR}/modules/." "${SRCDIR}/modules/"
+        fi
+
         # Resolve PDF filename prefix from config.yml (e.g. suse_multi_linux_manager or uyuni)
         PDF_PREFIX=$({{.DOCBUILD}} get-pdf-prefix -product ${PRODUCT})
-
-        # Ensure English source modules are staged as fallback without overwriting translated files
-        mkdir -p "${SRCDIR}/modules"
-        cp -an en/modules/. "${SRCDIR}/modules/" || true
 
         # Generate PDF nav file from Antora nav
         {{.DOCBUILD}} gen-pdf-nav -book ${BOOK} -lang ${LANG} -dir ${SRCDIR}/modules/${BOOK}
@@ -336,7 +334,7 @@ tasks:
     desc: "[Local] Build all MLM PDFs — all books, all languages"
     deps: [gen]
     cmds:
-      - task: translations
+      - task: stage-content
       - for: {var: LANGUAGES}
         cmd: |
           LANG_CODE="{{.ITEM}}"
@@ -348,7 +346,7 @@ tasks:
     desc: "[Local] Build all Uyuni PDFs — all books, all languages"
     deps: [gen]
     cmds:
-      - task: translations
+      - task: stage-content
       - for: {var: LANGUAGES}
         cmd: |
           LANG_CODE="{{.ITEM}}"
@@ -535,22 +533,41 @@ tasks:
           NODE_PATH="$(npm -g root)" antora --generator @antora/xref-validator uyuni-website.site.yml
 
   # --------------------------------------------------------------------------
-  # Translations
+  # Content staging — merge committed translations with English fallback
+  # --------------------------------------------------------------------------
+  stage-content:
+    desc: "[Dev] Stage translated content for build (en base + lang overlay → translations/{lang}/modules/)"
+    deps: [setup]
+    cmds:
+      - for: {var: LANGUAGES}
+        cmd: |
+          LANG="{{.ITEM}}"
+          CONTENT_DIR=$({{.DOCBUILD}} get-content-dir -lang "${LANG}")
+          echo "==> Staging content for ${LANG} (source: ${CONTENT_DIR}/modules/)"
+          mkdir -p translations/${LANG}/modules
+          cp -a en/modules/. translations/${LANG}/modules/
+          if [ -d "${CONTENT_DIR}/modules" ]; then
+            cp -a "${CONTENT_DIR}/modules/." translations/${LANG}/modules/
+          fi
+
+  # --------------------------------------------------------------------------
+  # Translations (deprecated — po4a/Weblate workflow)
   # --------------------------------------------------------------------------
   translations:
-    desc: "[Dev] Apply .po translation files (generates translated AsciiDoc)"
-    sources:
-      - l10n-weblate/**/*.po
-      - l10n-weblate/**/*.cfg
-    generates:
-      - translations/**/*.adoc
+    desc: "[DEPRECATED] Use stage-content instead — po4a .po workflow is no longer used in builds"
     cmds:
-      - bash scripts/use_po.sh
+      - |
+        echo "WARNING: task translations is deprecated. Use 'task stage-content' instead."
+        echo "See L10N-AI-MIGRATION.md for details."
+      - task: stage-content
 
   pot:
-    desc: "[Dev] Update .pot/.po translation templates"
+    desc: "[DEPRECATED] po4a .pot/.po template update — no longer used in builds"
     cmds:
-      - bash scripts/make_pot.sh
+      - |
+        echo "WARNING: task pot is deprecated. The build no longer uses po4a/Weblate."
+        echo "See L10N-AI-MIGRATION.md for details."
+        echo "The script scripts/make_pot.sh is retained for reference only."
 
   # --------------------------------------------------------------------------
   # Clean
@@ -700,14 +717,20 @@ tasks:
     cmds:
       - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task validate:uyuni"
 
-  # Translations
-  container:translations:
-    desc: "[Container] Apply .po translation files, via container"
+  # Content staging
+  container:stage-content:
+    desc: "[Container] Stage translated content for build"
     cmds:
-      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task translations"
+      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task stage-content LANGUAGES='{{.LANGUAGES}}'"
+
+  # Translations (deprecated)
+  container:translations:
+    desc: "[DEPRECATED] Use container:stage-content instead"
+    cmds:
+      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task translations LANGUAGES='{{.LANGUAGES}}'"
 
   container:pot:
-    desc: "[Container] Update .pot/.po translation templates, via container"
+    desc: "[DEPRECATED] po4a template update — no longer used in builds"
     cmds:
       - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task pot"
 
