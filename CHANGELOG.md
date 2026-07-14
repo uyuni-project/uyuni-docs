@@ -1,3 +1,5 @@
+- Added documentation for migrating legacy ISS v1 and ISS v2 peripheral servers
+  to ISS v3 (Hub Online Synchronization) and detailed Report DB/XMLRPC API dependencies in Specialized Guides
 - Update data file storage locations for Uyuni in Installation and Upgrade Guide
 - Documented SLES 15 SP7 to SLES 16.0 major upgrade via product migration in Client Configuration Guide
 - Added a common workflow to setup crypto policies in the server container (bsc#1253505)
