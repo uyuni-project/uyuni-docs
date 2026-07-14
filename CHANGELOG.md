@@ -1,3 +1,4 @@
+- Documented Grafana reporting database automated setup and Hub Overview in Administration and Specialized Guides (#30174)
 - Added documentation for migrating legacy ISS v1 and ISS v2 peripheral servers
   to ISS v3 (Hub Online Synchronization) and detailed Report DB/XMLRPC API dependencies in Specialized Guides
 - Documented SLES 15 SP7 to SLES 16.0 major upgrade via product migration in Client Configuration Guide
