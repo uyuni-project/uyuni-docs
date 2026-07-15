@@ -1,4 +1,4 @@
-- Documented Grafana reporting database automated setup and Hub Overview in Administration and Specialized Guides (#30174)
+- Documented Grafana reporting database automated setup and Hub Overview in Administration and Specialized Guides
 - Added documentation for migrating legacy ISS v1 and ISS v2 peripheral servers
   to ISS v3 (Hub Online Synchronization) and detailed Report DB/XMLRPC API dependencies in Specialized Guides
 - Update data file storage locations for Uyuni in Installation and Upgrade Guide
