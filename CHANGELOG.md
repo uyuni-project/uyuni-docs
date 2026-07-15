@@ -1,5 +1,7 @@
 - Update the OpenSCAP packages table in the
   System Security with OpenSCAP article in the Administration guide (bsc#1269316)
+- Added documentation for migrating legacy ISS v1 and ISS v2 peripheral servers
+  to ISS v3 (Hub Online Synchronization) and detailed Report DB/XMLRPC API dependencies in Specialized Guides
 - Documented SLES 15 SP7 to SLES 16.0 major upgrade via product migration in Client Configuration Guide
 - Document the repository value for helm charts on MLM (bsc#1269667)
 - Removed unsupported {raspberrypios} 12 from Client Configuration Guide
