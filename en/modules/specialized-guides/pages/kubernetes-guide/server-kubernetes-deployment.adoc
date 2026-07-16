@@ -559,14 +559,6 @@ metadata:
 spec:
   valuesContent: |-
     ports:
-      reportdb-pgsql:
-        port: 5432
-        expose:
-          default: true
-        exposedPort: 5432
-        protocol: TCP
-        hostPort: 5432
-        containerPort: 5432
       salt-publish:
         port: 4505
         expose:
@@ -593,6 +585,16 @@ This means that there are only two possible ways to use the TFTP server:
 * using a load balancer compatible with TFTP,
 
 * using the host network for the TFTP pod. This can be achieved by setting the `tftp.hostNetwork` helm chart value to `true`.
+
+[IMPORTANT]
+====
+Exposing the report database externally requires configuring the [literal]``reportdb`` service as a [literal]``NodePort`` or [literal]``LoadBalancer`` (via the [literal]``services.reportdb`` value).
+
+Be aware of a critical security behavior: external database connections require SSL, whereas internal cluster connections do not.
+However, Traefik ingress TCP routes mask client IPs, causing PostgreSQL to view external traffic as internal.
+
+If you expose the database using a Traefik ingress TCP route and endpoint, you risk allowing clients to establish unencrypted, insecure connections.
+====
 
 [[security-framework-setup]]
 === Security framework setup
