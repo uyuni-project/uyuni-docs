@@ -1,0 +1,338 @@
+[[registering.clients.bootstrap]]
+= ブートストラップスクリプトを使用してクライアントを登録する
+:description: クライアントをSUSE Multi-Linux Manager Serverに登録するためのブートストラップスクリプトを作成し、カスタマイズする方法を学びます。（注意：私はそのための単語を削除しました）
+:revdate: 2025-06-10
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+== 概要
+
+
+ブートストラップスクリプトでクライアントを登録すると、パラメータを制御できるようになり、同時に多数のクライアントを登録する必要がある場合に役立ちます。
+
+クライアントをブートストラップスクリプトを使用して登録するには、まずテンプレートブートストラップスクリプトを作成することをお勧めします。これをコピーして修正することができます。
+作成したブートストラップスクリプトは、クライアントが登録されるときに実行され、必要なすべてのパッケージがクライアントにデプロイされることを保証します。
+ブートストラップスクリプト内のいくつかのパラメータは、アクティベーションキーとGPGキーを使用して、クライアントシステムがそのベースチャネルに割り当てられることを保証します。
+
+リポジトリ情報がベースチャネルリポジトリと一致することを確認するために、慎重に確認することが重要です。
+リポジトリ情報が正確に一致しない場合、起動スクリプトは正しいパッケージをダウンロードできません。
+
+追加の考慮事項:
+
+* すべてのクライアントには起動リポジトリが必要です。
+  これは、製品が同期されるときに {productname} サーバー上で自動的に作成および再生成されます。
+  起動リポジトリには、クライアントに{salt}をインストールするためのパッケージと、クライアントを登録するためのパッケージが含まれています。
+  起動リポジトリの作成に関する詳細情報は、xref:client-configuration:bootstrap-repository.adoc[]を参照してください。
+
+* openSUSE Leap 15およびSLE 15は、デフォルトでPython 3を使用します。
+  Python 2に基づく起動スクリプトは、openSUSE Leap 15およびSLE 15システム用に再作成する必要があります。
+  Python 2を使用してopenSUSE Leap 15またはSLE 15システムを登録すると、起動スクリプトは失敗します。
+
+
+ifeval::[{uyuni-content} == true]
+
+[IMPORTANT]
+.GPGキーおよびUyuniクライアントツール
+====
+Uyuni Client Toolsによって使用されるGPGキーは、デフォルトでは信頼されていません。
+ブートストラップスクリプトを作成する際には、`ORG_GPG_KEY`パラメータを使用して、公開鍵フィンガープリントを含むファイルへのパスを追加してください。
+====
+
+endif::[]
+
+
+ifeval::[{mlm-content} == true]
+
+[IMPORTANT]
+====
+旧バージョンの{productname}から新バージョンに移行した後は、新しいシステムをオンボーディングする前に、潜在的な問題を避けるために起動スクリプトを再生成することを強くお勧めします。
+====
+
+endif::[]
+
+[IMPORTANT]
+====
+サーバーコンテナ内でシェルにアクセスするには、コンテナホストで`mgrctl term`を実行します。
+そこから、CLIツールを通常通り実行できます。
+====
+
+
+[[registering.clients.bootstrap.mgr-bootstrap]]
+== `mgr-bootstrap`を使用してブートストラップスクリプトを作成します。
+
+`mgr-bootstrap`コマンドは、カスタムブートストラップスクリプトを生成します。
+ブートストラップスクリプトは、{productname}クライアントシステムによって初期登録と設定を簡素化するために使用されます。
+
+引数`--activation-keys`と`--script`は、必須の引数です。
+{productname}サーバー上で、rootとしてコマンドラインで必須引数を使って実行します。
+`<ACTIVATION_KEY`と`<EDITED_NAME>`を実際の値に置き換えてください：
+
+. {productname}コンテナホストのコマンドプロンプトから、ルートユーザとして次のコマンドを実行してサーバコンテナに入ります:
+
++
+----
+mgrctl term
+----
++
+. 次のコマンドを実行します(必要に応じて値を調整します)。
++
+----
+mgr-bootstrap --activation-keys=<ACTIVATION_KEY> --script=bootstrap-<EDITED_NAME>.sh
+----
+
+`mgr-bootstrap`コマンドには、特定のホスト名を設定したり、特定のGPGキーを設定したり、登録方法（salt-minionまたはsalt-bundle）を設定したりするオプションがいくつかあります。
+
+[NOTE]
+====
+
+* ユーザがプロキシに登録するためのブートストラップ スクリプトを作成したい場合は、サーバコンテナから次のコマンドを使用して作成できます。
+
++ 
+
+----
+mgr-boostrap --hostname <PROXY_FQDN>
+----
+
++ 
+
+このコマンドは、デフォルト名`bootstrap.sh`を持つ新しいブートストラップスクリプトを作成し、サーバーで使用されている既存の`bootstrap.sh`ファイルを上書きします。
+
+
+* 別のスクリプトを指定するには、次のコマンドを使用します。
+
++
+
+----
+mgr-bootstrap --hostname <PROXY_FQDN> --script=boostrap-<PROXY-SCRIPT>.sh
+----
+
+====
+
+詳細については、`mgr-bootstrap`のマニュアルページを参照するか、`mgr-bootstrap --help`を実行してください。
+
+
+
+== {webui}からブートストラップスクリプトを作成します。
+
+{productname} {webui}を使用して編集可能なブートストラップスクリプトを作成できます。
+
+// 2022-10-26, ke: In step 2, check whether we can use {productname} macro.
+
+.プロシージャ:ブートストラップスクリプトの作成
+[role=procedure]
+_____
+
+. {productname} {webui}で、menu:Admin[Manager Configuration > ブートストラップスクリプト]に移動します。
+
+. 必須フィールドには、前のインストール手順から取り出した値が事前に入力されています。
+  各設定の詳細については、xref:reference:admin/bootstrap-script.adoc[]を参照してください。
+
+. btn:[Update]をクリックしてスクリプトを作成します。
+
+. ブートストラップスクリプトは生成され、サーバー上の`/srv/www/htdocs/pub/bootstrap`ディレクトリに保存されます。
+  また、HTTPS経由でブートストラップスクリプトにアクセスすることもできます。
+  `<example.com>`をお使いの{productname}サーバーのホスト名に置き換えてください：
+
++
+
+----
+https://<example.com>/pub/bootstrap/bootstrap.sh
+----
+
+_____
+
+
+[IMPORTANT]
+====
+ブートストラップスクリプトでSSLを無効にしないでください。
+`Enable SSL`が{webui}でチェックされていること、または`USING_SSL=1`設定がブートストラップスクリプト内に存在することを確認してください。
+SSLを無効にすると、登録プロセスにはカスタムSSL証明書が必要になります。
+
+カスタム証明書の詳細については、xref:administration:ssl-certs.adoc[]を参照してください。
+====
+
+
+
+[[modify.bootstrap.script]]
+== ブートストラップスクリプトの編集
+
+作成したテンプレートのブートストラップスクリプトをコピーして変更することで、カスタマイズできます。
+{productname}で使用するためにブートストラップスクリプトを修正する際には、最低限、アクティベーションキーを含める必要があります。
+ほとんどのパッケージはGPGで署名されているため、それらをインストールするには、システムに信頼されたGPGキーが必要です。
+
+この手順では、アクティベーションキーの正確な名前を知っておく必要があります。
+menu:Home[Overview]に移動し、`Tasks`ボックスで`Manage Activation Keys`をクリックします。
+チャンネル用に作成されたすべてのキーは、このページに一覧表示されます。
+ブートストラップスクリプトで使用するキーのフルネームを、キー欄に表示されている通りに正確に入力する必要があります。
+アクティベーションキーの詳細については、xref:client-configuration:activation-keys.adoc[]を参照してください。
+
+
+
+.プロシージャ:ブートストラップスクリプトの変更
+[role=procedure]
+_____
+
+. {productname}コンテナホストのコマンドプロンプトから、ルートユーザとして次のコマンドを実行してサーバコンテナに入ります：
++
+
+----
+mgrctl term
+----
++
+
+. {productname}サーバのコマンドラインでルートユーザとして、ブートストラップディレクトリを次のように変更します：
+
++
+
+----
+cd /srv/www/htdocs/pub/bootstrap/
+----
+
+. 各クライアントで使用するブートストラップスクリプトのテンプレートのコピーを2つ作成し、名前を変更します。
+
++
+
+----
+cp bootstrap.sh bootstrap-sles12.sh
+cp bootstrap.sh bootstrap-sles15.sh
+----
+
+. `bootstrap-sles15.sh`を開いて変更します。
+    下に示すテキストが見えるまでスクロールします。
+    ファイルに`exit 1`が存在する場合は、行の先頭にハッシュまたはポンド記号(&#35;)を入力してコメントアウトします。
+    これによりスクリプトが有効化されます。
+    このスクリプトのキーの名前を`ACTIVATION_KEYS=`フィールドに入力してください：
+
++
+
+----
+echo "Enable this script: comment (with #'s) this block (or, at least just"
+echo "the exit below)"
+echo
+#exit 1
+
+# can be edited, but probably correct (unless created during initial install):
+# NOTE: ACTIVATION_KEYS *must* be used to bootstrap a client machine.
+ACTIVATION_KEYS=1-sles15
+ORG_GPG_KEY=
+----
+
++
+
+[NOTE]
+====
+スクリプトを手動で編集する代わりに、ユーザは実行時に次の環境変数を渡すことができます。
+
+- `ACTIVATION_KEYS`:登録に使用するアクティベーションキー
+- `ORG_GPG_KEY`:GPGキーのパスまたは識別子
+- `REACTIVATION_KEY`:以前に登録されたシステム用の再アクティベーションキー
+- `MGR_SERVER_HOSTNAME`:クライアントを登録するサーバまたはプロキシのホスト名
+
+環境変数を使用すると、実行時に動的な入力が可能になり、異なるシステムや環境間で同じブートストラップスクリプトを再利用しやすくなります。
+====
+
++
+
+. 完了したら、ファイルを保存し、2つ目のブートストラップスクリプトでこの手順を繰り返します。
+
+_____
+
+
+[NOTE]
+====
+デフォルトでは、ブートストラップスクリプトは、ブートストラップリポジトリに利用可能な場合、`venv-salt-minion`をインストールしようとし、ブートストラップリポジトリに`salt-minion`バンドルがない場合は{salt}をインストールします。
+何らかの理由で{salt}バンドルのインストールを避け、`salt-minion`を引き続き使用することも可能です。
+
+詳細については、xref:client-configuration:contact-methods-saltbundle.adoc[Salt Bundle]を参照してください。
+====
+
+
+
+[[registering.clients.bootstrap.register]]
+== ブートストラップスクリプトを実行してクライアントを登録する
+
+スクリプトの作成を完了したら、このスクリプトを使用してクライアントを登録できます。
+
+
+.プロシージャ:起動スクリプトの実行
+[role=procedure]
+_____
+
+. {productname}コンテナホストのコマンドプロンプトから、ルートユーザとして次のコマンドを実行してサーバコンテナに入ります:
++
+
+----
+mgrctl term
+----
++
+
+. {productname}サーバで、起動ディレクトリに変更します:
+
++
+
+----
+cd /srv/www/htdocs/pub/bootstrap/
+----
+
++
+
+. 次のコマンドを実行して、クライアントでブートストラップスクリプトを実行します。`EXAMPLE.COM`をクライアントのホスト名に置き換えてください：
+
++
+
+----
+cat bootstrap-sles15.sh | ssh root@EXAMPLE.COM /bin/bash
+----
+
++
+
+. または、クライアントで次のコマンドを実行します。
+
++
+
+----
+ACTIVATION_KEYS="17-someactivationkey" \
+MGR_SERVER_HOSTNAME="proxy.example.com" \
+ORG_GPG_KEY="mykey" \
+REACTIVATION_KEY=my-reactivation-key \
+curl -Sks https://server_hostname/pub/bootstrap/bootstrap.sh | /bin/bash
+----
+
++
+
+値を上書きする必要がない場合は、環境変数を完全に省略できます。
+
++
+
+----
+curl -Sks https://server_hostname/pub/bootstrap/bootstrap.sh | /bin/bash
+----
+
++
+
+[IMPORTANT]
+====
+問題を回避するには、ブートストラップスクリプトが`bash`を使用して実行されていることを確認してください。
+====
+
++
+
+このスクリプトは、前に作成したリポジトリディレクトリにある必要な依存関係をダウンロードします。
+
++
+
+. スクリプトの実行が完了したら、クライアントが正しく登録されているか確認できます。
+  {productname} {webui}を開き、menu:システム[概要]に移動して、新しいクライアントがリストに表示されていることを確認してください。
+  クライアントがリストに表示されていない場合は、{productname} {webui}でmenu:Salt[Keys]に移動し、クライアントキーが受け入れられているか確認してください。
+
+_____
+
+[WARNING]
+====
+クライアントで{productname}を使用して新しいパッケージや更新がインストールされると、ライセンス条項（EULA）が自動的に受け入れられます。
+パッケージのEULAを確認するには、{webui}のパッケージ詳細ページを開いてください。
+====
+

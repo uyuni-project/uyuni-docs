@@ -1,0 +1,81 @@
+[[ssl-certs-hsts]]
+= HTTP Strict Transport Security
+:description: SUSE 멀티 리눅스 매니저 서버와 관련된 프록시에서 HSTS 설정을 구성하여 안전한 웹 트래픽을 보장합니다.
+:revdate: 2024-07-31
+:page-revdate: {revdate}
+:page-author: SUSE 제품 및 솔루션 문서팀
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+HTTP Strict Transport Security(https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security[HSTS])는 프로토콜 다운그레이드 공격 및 쿠키 하이재킹과 같은 가로채기 공격으로부터 웹 사이트를 보호하는 데 도움이 되는 정책 메커니즘입니다.
+
+{productname}에서 HSTS는 기본적으로 활성화되어 있습니다.
+서버에서 이를 비활성화해야 하는 경우 다음 절차를 따르십시오.
+
+
+.절차 서버에서 HSTS 비활성화
+[role=procedure]
+_____
+. 서버 컨테이너 호스트에서 루트 사용자로 다음 명령을 실행하여 `max-age=0` 설정이 포함된 새 구성 파일을 생성합니다.
+
++
+
+[source,shell]
+----
+mgrctl exec -- \
+  echo 'Header always set Strict-Transport-Security "max-age=0; includeSubDomains"' \
+  > /etc/apache2/conf.d/zz-spacewalk-www-hsts.conf
+----
+
+. 다음 명령으로 Apache를 재시작합니다.
+
++
+
+[source,shell]
+----
+mgrctl exec -- systemctl restart apache2
+----
+
+_____
+
+프록시에서 이를 비활성화해야 하는 경우 다음 절차를 따르십시오.
+
+.절차 프록시에서 HSTS 비활성화
+[role=procedure]
+_____
+. 서버 컨테이너 호스트에서 루트 사용자로 다음 명령을 실행하여 `max-age=0` 설정이 포함된 새 구성 파일을 생성합니다.
+
++
+
+[source,shell]
+----
+echo 'Header always set Strict-Transport-Security "max-age=0; includeSubDomains' \
+  > /etc/uyuni/custom-httpd.conf
+----
+
+. 다음 명령 실행:
+
++
+
+[source,shell]
+----
+mgrpxy install podman --tuning-httpd /etc/uyuni/custom-httpd.conf config.tar.gz
+----
+
+_____
+
+
+[WARNING]
+====
+새 구성 파일 `<filename>.conf`의 이름을 지정할 때 적절한 시점에 로드되도록 해야 합니다.
+예를 들어, `spacewalk-www.conf`에 정의된 내용을 덮어쓰려면 새 파일이 이 파일보다 알파벳 순으로 뒤에 와야 합니다.
+Apache가 파일을 로드하는 방법에 대한 자세한 정보는 https://httpd.apache.org/docs.를 참조하십시오.
+====
+
+
+[IMPORTANT]
+====
+HSTS가 {productname}에 의해 생성된 기본 SSL 인증서 또는 자체 서명된 인증서를 사용할 때 활성화되면, 브라우저는 이러한 인증서를 서명하는 CA가 브라우저에 의해 신뢰되지 않는 한 HTTPS로 연결을 거부합니다.
+{productname}에 의해 생성된 SSL 인증서를 사용하는 경우, `http://<SERVER-HOSTNAME>/pub/RHN-ORG-TRUSTED-SSL-CERT`에 위치한 파일을 모든 사용자의 브라우저에 가져와 신뢰할 수 있습니다.
+====

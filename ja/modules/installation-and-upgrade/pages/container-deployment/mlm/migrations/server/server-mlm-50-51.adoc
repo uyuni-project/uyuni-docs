@@ -1,0 +1,501 @@
+= ディストリビューションのアップグレードとサーバ移行
+:description: SUSE Multi-Linux Manager 5.0からバージョン5.1への移行とホストOSをアップグレードする方法、さらに現在の製品を確認する手順について学びます。
+:revdate: 2025-10-19
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメントチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+
+[IMPORTANT]
+====
+* {productname} 5.0は、アップグレードする前に停止する必要があります。
+* {productname} 5.0は、{sl-micro} 6.1および{sles} 15 SP7のホストOS上ではサポートされていません。
+====
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+== 要件と考慮事項
+
+=== SSL証明書
+
+[NOTE]
+====
+SUSE Multi-Linux Manager 5.1から、PostgreSQLデータベースは別のコンテナで実行され、移行中に独自のSSL証明書が必要です。
+これは、サーバー証明書とCAチェーンがソースからコピーされる場合でも、データベース証明書が必要な理由です。
+====
+
+:migration-source: 5.0
+:migration-command: mgradm アップグレードする
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ssl-migration-certs.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-ssl-migration-certs.adoc[leveloffset=+1]
+endif::[]
+
+移行中に、サーバーSSL証明書とCAチェーンがソースサーバーからコピーされます。
+
+
+
+== クライアントツールのブランド変更
+
+{productname} {productnumber} は、すべてのサポートされているオペレーティングシステム向けに再ブランドされたクライアントツールのセットを導入します。この移行はシームレスであり、新しい製品の同期を行うユーザーは更新されたチャンネル名のみを認識するべきです。
+
+以前に`SUSE Manager Client Tools for XYZ` 4.3または5.0に登録されていたクライアントが使用していた{productname}という名前のチャンネルは、バージョン5.1では利用できなくなり、5.1では更新されなくなります。
+
+移行後もレガシチャンネルは既存のクライアントに割り当てられたままですが、対応するリポジトリは削除されています。
+
+継続的な更新を確実に行うには、ユーザは以下の操作を実行する必要があります。
+
+* 関連する製品の新しい`SUSE Multi-Linux Manager Client Tools for XYZ`チャンネルをミラーリングし、適切なクライアントに割り当てます。
+* 古い`SUSE Manager Client Tools for XYZ`チャンネルの割り当てを解除します。
+
+これにより、古いクライアントツールに基づくCLMプロジェクトも適宜調整する必要があります。
+
+ワークフローの例については、xref:common-workflows:workflow-switch-to-new-client-tools-channels.adoc[]を参照してください。
+
+
+
+== {sle-micro} 5.5から{sl-micro} 6.1
+
+
+
+この文書は、{productname} 5.0サーバーでデプロイされた{sle-micro} 5.5ホストを{sl-micro} 6.1にアップグレードし、{productname} {productnumber}に移行するためのテスト済み手順を提供します。
+
+
+=== 前提条件
+
+* {productname} 5.0は{sle-micro} 5.5にインストールされ、実行中です。
+* システムは登録済みであり、{scc}にアクティブなサブスクリプションがあります。
+
+
+=== ディストリビューションのアップグレードとサーバ移行
+
+.プロシージャ:{productname} 5.0から{productname} {productnumber}への移行
+[role=procedure]
+____
+
+. 現在の製品ステータスを確認する
+
++
+
+[source,console]
+----
+SUSEConnect --status-text
+----
+
++
+
+確認:
+
+* ベースOS: `SUSE Linux Enterprise Micro 5.5`
+
+* 拡張機能: `SUSE Manager Server 5.0 Extension`
+
++
+
+. システムが更新されていることを確認する
+
++
+
+[source,console]
+----
+transactional-update patch
+----
+
++
+
+--
+
+* パッチが適用された場合、移行を続行する前に\\**システムを再起動**してください。
+
++
+
+[source,console]
+----
+mgradm stop
+reboot
+----
+
+* 更新が見つからなかった場合、移行ステップに直接進むことができます。
+
+--
+
++
+
+. 移行を開始する:
+
++
+
+[source,console]
+----
+transactional-update migration --auto-agree-with-licenses --gpg-auto-import-keys
+----
+
++
+
+プロンプトに従って、**SUSE Linux Micro 6.1**および**{productname} Server Extension 5.1**への利用可能な移行を選択します。
+
++
+
+. サーバを停止し、再起動して変更を適用します。
+
++
+
+[source,console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. 再起動後のチェック:
+
++
+
+アップグレードされたOSと{productname}拡張機能を確認してください：
+
++
+
+[source,console]
+----
+cat /etc/os-release
+SUSEConnect --status-text
+----
+
++
+
+以下が表示されるはずです。
+
+* `PRETTY_NAME="SUSE Linux Micro 6.1"`
+
+* `SUSE Multi-Linux Manager Server 5.1 Extension`
+
++
+
+. ルートSSHアクセスを有効にします（_必要な場合_）。
++
+
+SL Micro 6.1はデフォルトでSSH経由のルートログインを無効にします。
++
+`/etc/ssh/sshd_config.d/sshd.conf`を編集します：
+
++
+
+[source,console]
+----
+PermitRootLogin yes
+----
+
++
+
+サービスを再起動します。
+
++
+
+[source,shell]
+----
+systemctl restart sshd
+----
+
++
+
+詳細については、xref:administration:troubleshooting/tshoot-remote-root-on-micro.adoc[]を参照してください。
+
++
+
+. {productname}ツールを確認してください：
+
++
+
+[source,console]
+----
+mgradm --version
+----
+
++
+
+予想される出力:
+
++
+
+* バージョン`5.1.11`以上
+
+* 参照`5.1.0`以上
+
+. サーバコンテナをアップグレードする
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
++
+
+[source,console]
+----
+mgradm start
+mgradm upgrade podman
+----
+
++
+
+プロンプトに従い、新しい5.1.0コンテナをプルして設定します。
+
+
+. 実行中のコンテナを確認する:
+
++
+
+[source,console]
+----
+podman ps
+----
+
++
+
+以下が表示されるはずです。
+
+* `server:5.1.0`以上
+
+* `server-postgresql:5.1.0`以上
+
+____
+
+
+[NOTE]
+====
+アップグレード時に、以前にインストールされていなかった`uyuni-db`や`saline`などのサービスが原因で発生するエラーは、無視して構いません。
+====
+
+
+=== 移行の完了
+
+システムは現在、SL Micro 6.1上で{productname} 5.1を実行しています。
+生産運用を再開する前に、セットアップを確認してください。
+このサーバーに接続されている{productname} 5.0プロキシがある場合は、プロキシホストをアップグレードするためのxref:installation-and-upgrade:container-deployment/mlm/migrations/proxy/proxy-mlm-50-51.adoc[]ガイドに進んでください。
+
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+
+
+== {sles} 15 SP6から15 SP7へ
+
+このドキュメントでは、SUSE Multi-Linux Manager 5.0 Serverが配備されたSUSE Linux Enterprise Server 15 SP6ホストをSUSE Multi-Linux Manager 5.1を備えたSUSE Linux Enterprise Server 15 SP7にアップグレードするためのテスト済みプロシージャについて説明します。
+
+
+=== 前提条件
+
+* SUSE Multi-Linux Manager 5.0がSUSE Linux Enterprise Server 15 SP6 にインストールされ、実行されている。
+* システムはSUSEカスタマーセンター(SCC)に登録済みで、有効なサブスクリプションがある。
+* 続行する前にバックアップ作成されていることを確認する。
+
+
+
+=== ディストリビューションのアップグレードとサーバ移行
+
+.プロシージャ: {productname} 5.0から{productname} {productnumber}への移行
+[role=procedure]
+____
+
+. 現在の製品ステータスを確認する
+
++
+
+[source,console]
+----
+SUSEConnect --status-text
+----
+
++
+
+確認:
+
++
+
+* ベースOS: `SUSE Linux Enterprise Server 15 SP6`
+
+* 拡張機能: `SUSE Manager Server 5.0 Extension`
+
++
+
+. すべてのシステムパッチを適用します。
+
++
+
+[source,console]
+----
+zypper patch
+----
+
++
+
+. サーバを停止し、更新スタックが更新された場合は再起動します。
+
++
+
+[source,console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. Zypperの移行ツールを起動する
+
++
+
+[source,console]
+----
+zypper migration
+----
+
++
+
+Zypperは、可能な移行ターゲットと詳細を表示します。
+
++
+
+. 適切なターゲットを選択し、プロンプトに従って移行を実行します。
+
+. アップグレードが完了したら、システムを再起動する:
+
++
+
+[source,console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. 再起動後のチェック:
+
++
+
+アップグレードされたOSと{productname}拡張機能を確認してください。
++
+
+[source,console]
+----
+cat /etc/os-release
+SUSEConnect --status-text
+----
+
++
+
+以下が表示されるはずです。
+
+* `VERSION="15-SP7"`
+
+* `SUSE Multi-Linux Manager Server 5.1 Extension for SLE`
+
++
+
+. {productname}ツールのバージョンを確認してください。
+
++
+
+[source,console]
+----
+mgradm --version
+----
+
++
+
+予想される出力:
+
+* バージョン`5.1.11`以上
+
+* イメージタグ `5.1.0` 以上
+
++
+
+. サーバコンテナをアップグレードする
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
++
+
+[source,console]
+----
+mgradm start
+mgradm upgrade podman
+----
+
++
+
+プロンプトに従って新しいコンテナイメージを取得し、環境を再設定します。
+
++
+
+. 実行中のコンテナを確認する:
+
++
+
+[source,console]
+----
+podman ps
+----
+
++
+
+予想されるコンテナ:
+
+* `server:5.1.0`以上
+
+* `server-postgresql:5.1.0`以上
+
+____
+
+
+=== 移行の完了
+
+システムは現在、SUSE Linux Enterprise Server 15 SP7上で{productname} 5.1を実行しています。
+生産運用を再開する前に、セットアップを確認してください。
+このサーバーに接続されている{productname} 5.0 プロキシがある場合は、xref:installation-and-upgrade:container-deployment/mlm/migrations/proxy/proxy-mlm-50-51.adoc[]を続行してください。
+
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+

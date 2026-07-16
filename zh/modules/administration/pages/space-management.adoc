@@ -1,0 +1,159 @@
+[[space-management]]
+= 磁盘空间管理
+:description: 在 SUSE Multi-Linux Manager 中配置磁盘空间监控和警报设置，以确保及时警告和通知磁盘空间不足的情况
+:revdate: 2026-03-10
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+磁盘空间不足可能会对 {productname} 数据库和文件结构造成严重影响，在某些情况下，这种影响不可恢复。
+
+{productname} 监控某些目录的可用磁盘空间。
+您可以通过在 systemd 服务覆盖文件中使用环境变量来修改监控的目录和生成的警告。
+
+当某个受监控目录的可用空间低于警告阈值时，会向配置的电子邮件地址发送一条消息，并在登录页面顶部显示一条通知。
+
+
+
+== 受监控的目录
+
+
+默认情况下，{productname} 服务器容器监控以下目录：
+
+* `/var/spacewalk`
+* `/var/cache`
+* `/srv`
+
+您可以通过在服务器容器的 systemd 服务中设置 `DISKCHECKDIRS` 环境变量来更改被监控的目录。
+您可以通过用空格分隔多个目录来指定多个目录。
+
+[NOTE]
+====
+`DISKCHECKDIRS` 环境变量仅适用于服务器容器。
+数据库容器始终监控 `/var/lib/pgsql/data`，且无法被覆盖。
+====
+
+.过程：升级配置监控目录
+. 为服务器服务创建 systemd 覆盖目录：
++
+----
+mkdir -p /etc/systemd/system/uyuni-server.service.d/
+----
+
+. 创建包含自定义目录的配置文件：
++
+----
+cat > /etc/systemd/system/uyuni-server.service.d/diskcheck.conf << 'EOF'
+[Service]
+Environment="DISKCHECKDIRS=/var/spacewalk /var/cache /srv"
+EOF
+----
+
+. 通过重启{productname}应用配置：
++
+----
+mgradm restart
+----
+
+有关容器卷的更多信息，请参见 xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]。
+
+== 阈值
+
+默认情况下，当监控目录的磁盘使用率达到 90% 时，{productname} 会生成警告。
+当监控目录的磁盘使用率达到 95% 时，会生成严重警报，并且容器健康检查将失败。
+
+您可以通过设置 `DISKCHECKALERT` 和 `DISKTHRESHOLD` 环境变量来更改这些警报阈值。
+
+.过程：升级配置磁盘检查阈值
+. 创建 systemd 覆盖目录：
++
+----
+mkdir -p /etc/systemd/system/uyuni-server.service.d/
+mkdir -p /etc/systemd/system/uyuni-db.service.d/
+----
+
+. 为服务器和数据库服务创建配置文件：
++
+----
+cat > /etc/systemd/system/uyuni-server.service.d/diskcheck.conf << 'EOF'
+[Service]
+Environment="DISKCHECKALERT=90"
+Environment="DISKTHRESHOLD=95"
+EOF
+
+cat > /etc/systemd/system/uyuni-db.service.d/diskcheck.conf << 'EOF'
+[Service]
+Environment="DISKCHECKALERT=90"
+Environment="DISKTHRESHOLD=95"
+EOF
+----
+
+. 通过重启{productname}应用配置：
++
+----
+mgradm restart
+----
+
+
+[IMPORTANT]
+====
+对于具有多 TB 存储卷的大型部署，您可能希望使用更高的阈值以更有效地利用磁盘空间。
+例如，在一个10{nbsp}TB卷上，保持5%的空闲意味着有500{nbsp}GB未使用。
+有关大型部署的调优建议，请参见xref:specialized-guides:large-deployments/tuning.adoc#diskcheck-thresholds[]。
+====
+
+
+== 数据库磁盘检查
+
+数据库容器有自己的磁盘检查，仅监控 PostgreSQL 数据目录（`/var/lib/pgsql/data`）。
+此目录始终受到监控，无法通过 `DISKCHECKDIRS` 环境变量进行更改或覆盖。
+
+数据库磁盘检查使用为 `uyuni-db` 服务配置的 `DISKCHECKALERT` 和 `DISKTHRESHOLD` 环境变量。
+
+数据库磁盘检查作为PostgreSQL函数运行，并在容器健康检查期间被调用。
+当超过阈值时，健康检查将失败，容器将自动停止以防止数据损坏。
+
+[IMPORTANT]
+====
+数据库容器仅监控 `/var/lib/pgsql/data`。
+您无法使用 `DISKCHECKDIRS` 在数据库容器中配置其他要监控的目录。
+要监控其他目录，请使用服务器容器配置。
+====
+
+
+
+== 禁用空间检查
+
+空间检查工具默认启用，并通过Taskomatic计划任务每小时运行。
+可以通过禁用 diskcheck-task-queue-default Taskomatic 作业来禁用通知。
+要有效禁用磁盘空间监控，请将阈值设置为99（百分比）。
+
+.过程：升级禁用磁盘空间监控
+. 编辑 systemd 覆盖文件以设置非常高的阈值：
++
+----
+cat > /etc/systemd/system/uyuni-server.service.d/diskcheck.conf << 'EOF'
+[Service]
+Environment="DISKCHECKALERT=99"
+Environment="DISKTHRESHOLD=99"
+EOF
+
+cat > /etc/systemd/system/uyuni-db.service.d/diskcheck.conf << 'EOF'
+[Service]
+Environment="DISKCHECKALERT=99"
+Environment="DISKTHRESHOLD=99"
+EOF
+----
+
+. 通过重启{productname}应用配置：
++
+----
+mgradm restart
+----
+
+[WARNING]
+====
+在生产环境中不建议禁用磁盘空间监控，因为磁盘空间耗尽可能会对数据库造成严重且可能无法恢复的损坏。
+====

@@ -1,0 +1,239 @@
+[[proxy-install-vm]]
+= {productname} 프록시를 가상 머신으로 배포 - KVM
+:description: SUSE Multi-Linux Manager 5.1을 사용하여 KVM 및 Virtual Machine Manager(virt-manager)를 활용해 프록시를 가상 머신으로 배포하도록 구성하여 성공적인 배포를 보장합니다.
+:revdate: 2025-06-26
+:page-revdate: {revdate}
+:page-author: SUSE 제품 및 솔루션 문서팀
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+이 장에서는 {productname} {productnumber} 프록시의 이미지를 배포하기 위한 가상 머신 설정을 제공합니다.
+KVM은 이 설치를 위한 샌드박스로 Virtual Machine Manager (_virt-manager_)와 결합됩니다.
+
+
+
+// FIXME: make this section a snippet or move it to a general intro for both,
+//        KVM and VMware
+== 사용 가능한 이미지
+
+
+[IMPORTANT]
+====
+{productname} 프록시를 배포하는 가장 권장되는 방법은 다음의 사용 가능한 이미지 중 하나를 사용하는 것입니다.
+모든 도구는 이러한 이미지에 포함되어 있어 배포를 단순화합니다.
+====
+
+// 2025-02-17, ke: as of today, suse-manager directory is still in use
+{productname} {productnumber} 프록시에 대한 이미지는 link:https://www.suse.com/download/suse-manager/[{productname} {productnumber} VM 이미지]에서 사용할 수 있습니다.
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-warn-images-sl-micro.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-warn-images-sl-micro.adoc[]
+endif::[]
+
+[NOTE]
+====
+Raw 이미지 준비에 대한 자세한 내용은 https://documentation.suse.com/sle-micro/6.1/html/Micro-deployment-raw-images-virtual-machines/index.html#deployment-preparing-configuration-device[]을 참조하십시오.
+
+자체 설치 이미지에 대한 추가 정보는 https://documentation.suse.com/sle-micro/6.1/html/Micro-deployment-selfinstall-images/index.html을 참조하십시오.
+====
+
+// FIXME more archs supported?
+
+.사용할 수 있는 프록시 이미지
+[cols="3, 3", options="header"]
+|===
+| 아키텍처 | 이미지 형식
+
+| aarch64| qcow2, vmdk
+
+| x86_64  | qcow2, vmdk, raw, 자체 설치 프로그램
+
+|===
+
+
+[[proxy-quickstart.sect.kvm.settings]]
+== 가상 머신 관리자(virt-manager) 설정
+
+*virt-manager*를 사용하여 새 가상 머신을 생성할 때 다음 설정을 입력합니다.
+
+[NOTE]
+====
+이 표에는 최소 요구 사항이 명시되어 있습니다.
+이는 단일 클라이언트를 대상으로 한 프록시의 빠른 테스트 설치에 적합합니다.
+
+생산 환경을 사용하고 디스크 공간에 대한 배경 정보가 필요한 경우 xref:installation-and-upgrade:hardware-requirements.adoc[]을 참조하십시오.
+====
+
+
+[cols="1,1", options="header"]
+|===
+2+<| KVM 설정
+| 설치 방법 | 기존 디스크 이미지 가져오기
+| OS:                 | Linux
+| 버전:            | {productname}-Proxy.x86_64-5.1.*.qcow2
+| 메모리:             | 최소 *)
+| CPU의:              | 최소 *)
+| 스토리지 형식:     | _.qcow2_ 40 GB (기본값) 루트 파티션
+| 이름:               | 테스트 설정
+| 네트워크             | 브리지 _br0_
+|===
+
+*) 최소 값은 xref:installation-and-upgrade:hardware-requirements.adoc#proxy-hardware-requirements[]을 참조하십시오.
+
+
+[NOTE]
+====
+`/var/lib/containers/storage/volumes`
+최소 100 GB.
+스토리지 요구사항은 사용할 ISO 배포 이미지, 컨테이너 및 부팅 리포지토리 수에 따라 계산해야 합니다.
+====
+
+
+
+[[proxy-minimmal.kvm.setup]]
+== 초기 KVM 설정
+
+설정은 xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-vm-mlm.adoc#proxy-quickstart.sect.kvm.settings[]을 참조하십시오.
+
+.절차 초기 설정 생성 중
+. 다운로드한 {minimal} KVM 이미지를 사용하여 새 가상 머신을 생성하고 `Import existing disk image`를 선택합니다.
+. RAM 및 CPU 수(RAM 16GB 및 CPU 4개 이상)를 구성합니다.
+. KVM 머신의 이름을 지정하고 `Customize configuration before install` 확인란을 선택합니다.
+. btn:[설치 시작]을 클릭하여 이미지에서 부팅합니다.
+. JeOS 첫 부팅 화면에서 시작을 선택하여 계속합니다.
++
+
+image::jeos-firstboot.png[]
+
+. 키보드 레이아웃을 선택합니다.
++
+
+image::select-keyboard.png[]
+
+.  라이선스 계약에 동의합니다.
++
+
+image::accept-license-agreement.png[]
+
+. 시간대를 선택합니다.
++
+
+image::enter-timezone.png[]
+
+. 루트의 비밀번호를 입력합니다.
++
+
+image::root-password.png[]
+
+. 설치가 완료되면 루트로 로그인합니다.
+
+. 다음 섹션을 진행합니다.
+
+*) 최소 값은 xref:installation-and-upgrade:hardware-requirements.adoc#proxy-hardware-requirements[]을 참조하십시오.
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-register-proxy-mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-register-proxy-mlm.adoc[]
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-actkey-bootstrap-proxy-mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-actkey-bootstrap-proxy-mlm.adoc[]
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-generate_proxy_config.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-generate_proxy_config.adoc[]
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-transfer_proxy_config.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-transfer_proxy_config.adoc[]
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-start-proxy.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-start-proxy.adoc[]
+endif::[]
+
+
+////
+[[installation-proxy-containers-services]]
+== Install container services on the host system
+ifeval::[{mlm-content} == true]
+
+[NOTE]
+====
+`Containers Module` is required to be available for container host on a {sles} machine.
+====
+endif::[]
+
+{productname} Proxy containers are using `podman` and `systemd` to run and manage all proxy containers.
+
+First step is to install the `mgrpxy` utility provided by the package of the same name.
+
+ifeval::[{mlm-content} == true]
+The `mgrpxy` package is available in the {productname} Proxy product repositories.
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+The `mgrpxy` package is available in the container utils repository: pick the one matching the distribution in: https://download.opensuse.org/repositories/systemsmanagement:Uyuni:/Stable:/ContainerUtils/.
+endif::[]
+
+To install them run:
+
+----
+zypper in helm mgrpxy
+----
+////
+
+
+=== 서비스에 사용자 정의 컨테이너 이미지 사용
+
+기본적으로 {productname} 프록시 스위트는 각 서비스에 대해 동일한 이미지 버전과 레지스트리 경로를 사용하도록 설정되어 있습니다.
+그러나 `-tag` 및 `-image`으로 끝나는 설치 매개변수를 사용하여 특정 서비스에 대한 기본값을 재정의할 수 있습니다.
+
+예를 들어, 다음과 같이 사용합니다.
+
+----
+mgrpxy install podman --httpd-tag 0.1.0 --httpd-image registry.opensuse.org/uyuni/proxy-httpd /path/to/config.tar.gz
+----
+
+httpd 서비스에 대한 구성 파일을 조정하며, 여기서 `registry.opensuse.org/uyuni/proxy-httpds`은(는) 사용할 이미지이고 `0.1.0`은(는) 버전 태그이며, 그 후 서비스를 다시 시작합니다.
+
+값을 기본값으로 재설정하려면 해당 파라미터 없이 설치 명령을 다시 실행합니다.
+
+----
+mgrpxy install podman /path/to/config.tar.gz
+----
+
+이 명령은 먼저 모든 서비스의 구성을 전역 기본값으로 재설정한 다음 다시 로드합니다.

@@ -1,0 +1,79 @@
+[[installation-proxy-containers-k3s]]
+= {productname} {productnumber} プロキシのK3sへのデプロイ
+:description: K3s上にSUSE® Multi-Linux Manager プロキシをデプロイおよび構成する方法を学び、最適化されたKubernetes管理を実現します。
+:revdate: 2025-06-26
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+
+[[installation-proxy-containers-k3s-k3s]]
+== K3sのインストール
+
+
+[NOTE]
+====
+{productname} プロキシは、{sl-micro}上で動作するK3sの単一ノードクラスターでサポートされています。
+他のKubernetes環境にデプロイする必要がある場合は、評価のためにサポートに連絡してください。
+====
+
+コンテナホストマシンに、`K3s`をインストールします（`<K3S_HOST_FQDN>`をK3sホストのFQDNに置き換えます）：
+
+[source,shell]
+----
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--tls-san=<K3S_HOST_FQDN>" sh -
+----
+
+[[installation-proxy-containers-k3s-helm]]
+== ツールのインストール
+
+インストールには、`mgrpxy`および`helm`パッケージが必要です。
+
+`mgrpxy`および`helm`パッケージは、{productname}プロキシ製品リポジトリで利用可能です。
+
+. インストールするには、次のコマンドを実行します。
+
++
+
+[source,shell]
+----
+transactional-update pkg install helm mgrpxy
+----
+
+. 再起動
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-generate_proxy_config.adoc[tags=generate-proxy-config-section]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-generate_proxy_config.adoc[tags=generate-proxy-config-section]
+endif::[]
+
+
+[[installation-proxy-containers-k3s-deploy]]
+== {productname} プロキシHelmチャートのデプロイ
+
+{productname} プロキシポッドで使用されるボリュームのストレージを構成するには、次のクレームのために永続ボリュームを定義します。
+ストレージ構成をカスタマイズしない場合、K3sは自動的にストレージボリュームを作成します。
+
+永続ボリュームのクレームの名前は次のとおりです。
+
+* `squid-cache-pv-claim`
+* `package-cache-pv-claim`
+* `tftp-boot-pv-claim`
+
+xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc[]に記載されているように、{productname} プロキシの設定を作成します。
+設定`tar.gz`ファイルをコピーしてからインストールします:
+
+----
+mgrpxy install kubernetes /path/to/config.tar.gz
+----
+
+詳細については、link:https://kubernetes.io/docs/concepts/storage/persistent-volumes/[]（kubernetes）またはlink:https://rancher.com/docs/k3s/latest/en/storage/[]（K3s）のドキュメントを参照してください。

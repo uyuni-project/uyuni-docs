@@ -1,0 +1,165 @@
+[[connect.payg.instances]]
+= 连接 {payg} 实例
+:description: 将您的云实例连接到 SUSE Multi-Linux Manager，以访问其他产品和存储库
+:revdate: 2026-05-06
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+在主要公有云提供商（AWS、Azure）中，SUSE：
+
+* 提供定制的 {payg} 产品映像，用于 SLES、SLES for SAP 等。
+* 按区域操作 RMT 服务器，镜像以 {payg} 形式提供的产品的存储库
+
+本文档描述了如何将现有的 {payg} 实例连接到 {productname} 服务器，并提供有关从实例收集凭据的基本信息。
+此连接的目标是提取身份验证数据，以便 {productname} 服务器可以连接到云 RMT 主机。
+然后 {productname} 服务器可以访问 RMT 主机上未通过 {scc} 组织凭据提供的产品。
+
+
+在使用 {payg} 功能之前，请确保：
+
+* {payg} 实例是从正确的 SUSE 产品映像（例如 SLES、SLES for SAP 或 SLE HPC）启动的，以便能够访问所需的存储库
+
+* {productname} 服务器可以直接或通过堡垒连接到 {payg} 实例（最好位于同一区域）
+
+* 需要一个基本的 {scc} 账户。在 {scc}menu:管理员[设置向导> 组织凭据] 中输入您的有效 凭据。此账户是访问 {productname} 客户端工具以进行启动所必需的，无论 {payg} 实例如何。
+
+* 如果您将 {payg} 实例启动到 {productname}，它将禁用其 {payg} 存储库，然后添加从 RMT 服务器镜像数据的存储库。最终结果将是 {payg} 实例从 RMT 服务器获取相同的存储库，但通过 {productname} 服务器本身。当然，存储库仍然可以主要从 SCC 设置。
+
+
+
+== 连接 {payg} 实例
+
+
+[[proc-connecting-new-payg]]
+.过程：升级连接新的 {payg} 实例
+[role=procedure]
+. 在 {productname} {webui} 中，导航到 menu:管理员[设置向导> {payg}]，然后单击 btn:[添加 {payg}]。
+. 从页面部分 `{payg} connection Description`开始。
+. 在 `Description`字段中，添加描述。
+. 移动到页面部分 `Instance SSH connection data`。
+. 在 `Host`字段中，输入要从 {productname}连接的实例 DNS 或 IP 地址。
+. 在 `SSH Port`字段中输入端口号或使用默认值 22。
+. 在 `User`字段中输入云中指定的用户名。
+. 在 `Password`字段中输入密码。
+. 在 `SSH Private Key`字段中输入实例密钥。
+. 在 `SSH Private Key Passphrase`字段中输入密钥密码。
+
+[IMPORTANT]
+====
+身份验证密钥必须采用 PEM 格式。
+====
+
+如果您不是直接连接到实例，而是通过 SSH 堡垒连接，请继续进行 <<proc-adding-ssh-bastion-connection-data>>。
+
+否则，继续<<proc-finishing-payg-connecting>>。
+
+[[proc-adding-ssh-bastion-connection-data]]
+.过程：升级添加 SSH 堡垒连接数据
+[role=procedure]
+. 导航至页面部分 `Bastion SSH connection data`。
+. 在 `Host`字段中输入堡垒主机名。
+. 在 `SSH Port`字段中输入堡垒端口号。
+. 在 `User`字段中输入堡垒用户名。
+. 在 `Password`字段中输入堡垒密码。
+. 在 `SSH Private Key`字段中输入堡垒密钥。
+. 在 `SSH Private Key Passphrase`字段中输入堡垒密钥密码。
+
+使用 <<proc-finishing-payg-connecting>> 完成设置过程。
+
+[[proc-finishing-payg-connecting]]
+.过程：升级完成 {payg} 连接。
+[role=procedure]
+. 要完成添加新 {payg} 连接数据的过程，请单击 btn:[]创建。
+. 返回 {payg}连接数据 `Details`页面。
+    更新的连接状态显示在名为 `Information`的顶部部分。
+. 连接状态也会显示在 `Admin > Setup Wizard > Pay-as-you-go`屏幕中。
+. 如果实例的身份验证数据正确，`Status`列会显示“凭证已成功更新”。
+
+[IMPORTANT]
+====
+如果在任何时候输入了无效数据，新创建的实例会显示在 `Admin > Setup Wizard > {payg}`中，同时 `Status`列会显示错误消息。
+====
+
+
+一旦服务器上有可用的身份验证信息，可用产品列表即会更新。
+
+可用产品是与安装在 {payg} 实例中的产品相同产品系列和架构的所有版本。
+例如，如果实例安装了 {sles}{nbsp}15 SP1 产品，则 {sles}{nbsp}15 SP2、{sles}{nbsp}15 SP3、{sles}{nbsp}15 SP4 和 {sles}{nbsp}15 SP5 会自动显示在 `Admin > Setup Wizard > Products`中。
+
+当产品显示为可用时，用户可以通过选中产品名称旁边的复选框并单击 btn:[添加产品]将产品添加到 {productname} 中。
+
+成功消息显示后，您可以在 {webui}中，通过导航到 `Software > Channel List > All`来验证新添加的通道。
+
+要监控每个通道的同步进度，请在 {productname}服务器的 `/var/log/rhn/reposync`目录中检查日志文件。
+
+[IMPORTANT]
+====
+如果 {payg} 实例和某个 {scc} 订阅都提供了某个产品，该产品在产品列表中只会显示一次。
+
+同步属于该产品的通道后，相关数据可能仍会来自 \{scc} 订阅，而不会来自 Pay-As-You-Go 实例。
+====
+
+== 实例身份凭证收集状态
+
+{productname} 服务器使用从实例收集的凭证连接到 RMT 服务器，并使用 reposync 下载软件包。
+这些凭证每10分钟由 taskomatic 使用定义的 SSH 连接数据刷新一次。连接到 RMT 服务器始终使用从 {payg} 实例收集的最后已知身份验证凭证。
+
+{payg}实例凭证收集的状态显示在 `Status`列或实例详细信息页面上。
+当实例无法访问时，凭证更新过程将失败。
+
+当实例无法访问时，凭证更新过程将失败，并且凭证将在第二次刷新失败后变为无效。
+当凭证无效时，通道的同步将失败。
+为避免这种情况，请保持连接的实例运行。
+
+{payg} 实例保持与 {productname} 服务器的连接，除非 SSH 连接数据被明确删除。
+要删除与实例的 SSH 连接数据，请使用 <<proc-deleting-connection-data-to-instance>>。
+ 
+
+{payg} 实例可能并非在任何时间都可从 {productname} 服务器访问。
+
+* 如果实例存在但已停止，系统将使用最新的已知身份凭证尝试连接实例。
+    身份凭证的有效时长取决于云提供商。
+
+* 如果实例不再存在，但在 SUMA 中仍保持注册状态，其身份凭证将不再有效，身份验证将会失败。
+    “状态”列中会显示错误消息。
++
+[WARNING]
+====
+错误消息仅表示实例不可用。
+需要在云提供商上进一步诊断实例的状态。
+====
+
+[IMPORTANT]
+====
+以下任何操作或对 {payg}实例的更改将导致凭证失效： +
+* 删除 zypper 凭证文件 +
+* 删除导入的证书 +
+* 从 `/etc/hosts`中删除云特定条目
+====
+
+
+== 将 {payg} 系统注册为客户端
+
+您可以从收集凭证的地方将 {payg} 实例注册为 {salt} 客户端。
+实例需要注册有效的云连接，否则将无法访问通道。
+如果用户删除云软件包，凭证收集可能会停止工作。
+
+首先，将 {payg} 实例设置为收集身份验证数据，以使其可以同步通道。
+
+该过程的其余步骤与非公有云客户端的步骤相同，包括同步通道、自动创建引导脚本、创建激活密钥，以及启动注册。
+
+有关注册客户端的更多信息，请参见 xref:client-configuration:registration-overview.adoc[]。
+
+
+== 查错 
+
+检查身份凭证::
+* 如果脚本无法收集凭证，将会在日志和 {webui} 中提供正确的错误消息。
+* 如果凭证无法工作，`reposync`应该会显示正确的错误消息。
+
+使用 `registercloudguest`::
+* 刷新或更改 `registercloudguest`与公有云更新基础架构的连接不应影响凭证的使用。
+* 如果未使用 cloud guest 命令注册新的云连接，运行 `registercloudguest --clean` 将会导致问题。

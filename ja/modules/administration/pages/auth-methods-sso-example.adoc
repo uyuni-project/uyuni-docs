@@ -1,0 +1,160 @@
+[[auth-methods-sso-example]]
+= SSOの実装例
+:description: SUSE Multi-Linux Managerを使用してエンドポイントを公開し、KeycloakをIDサービスプロバイダとして使用することで、セキュアなシングルサインオンを実現します。
+:revdate: 2026-06-24
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+この例では、3つのエンドポイントを{productname}で公開し、Keycloak 26.5.3以降をIDサービスプロバイダ(IdP)として使用することによってSSOが実装されています。
+
+{productname}とKeycloakでシングルサインオン(SSO)を設定するには、まずKeycloak IDプロバイダを設定し、そのSAML公開証明書を取得して、クライアントとユーザーを設定します。その後、{productname}サーバーがKeycloakを信頼するように設定します。
+
+[WARNING]
+====
+この例は、説明のみを目的としています。{suse}は、サードパーティのIDサービスプロバイダを推奨またはサポートしておらず、Keycloakとは提携していません。
+Keycloakのサポートについては、 https://www.keycloak.org/.を参照してください。
+====
+
+Keycloakを直接マシンにインストールするか、コンテナで実行できます。
+この例では、PodmanコンテナでKeycloakを実行します。
+Keycloakのインストールに関する詳細は、 https://www.keycloak.org/guides#getting-started.のKeycloakドキュメントを参照してください。
+
+[#how-to-set-up-keycloak]
+== IDサービスプロバイダ(Keycloak)の設定
+
+まず、Keycloakを実行し、レルムを作成し、SAML公開証明書を取得して、クライアントを設定します。
+
+[#pro-setting-up-keycloak]
+.プロシージャ:Keycloakの設定
+[role=procedure]
+____
+. Keycloakのドキュメントに従って、PodmanコンテナにKeycloakをインストールします。
+. `-td`引数を使用してコンテナを実行し、処理が実行され続けることを確認します:
++
+----
+podman run -td --name keycloak -p 8080:8080 -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin quay.io/keycloak/keycloak:26.1.1 start-dev
+----
+. `admin`ユーザーとしてKeycloak管理コンソールにサインインします。
+. 認証レルムを作成します:
+* 左上隅で、レルムセレクタのドロップダウン(`master`と表示)をクリックし、`Manage realms`を選択します。
+* `Manage realms`ページで、右上隅にあるbtn:[Create realm]ボタンをクリックします。
+* `Realm name`フィールドに名前(例: `MLM`)を入力します。
+* btn:[作成]をクリックします。
+. SAML公開証明書を取得します:
+* 左側のナビゲーションメニューから、menu:Realm settings[]をクリックします。
+* `Keys`タブをクリックします。
+* アクティブなキーのテーブルで、アクティブな**RSA**キー(プロバイダ`rsa-generated`)を見つけます。
+* その行にあるbtn:[Certificate]ボタンをクリックします。
+* 開いたモーダルから、Base64エンコードされた証明書全体をコピーします。この証明書は、サーバーの設定に備えて手元に保管しておいてください。
+. {productname}をクライアントとして追加します:
+* 左側のナビゲーションメニューから、menu:Clients[]をクリックします。
+* btn:[Create client]をクリックします。
+* `Client type`フィールドで、`SAML`を選択します。
+* `Client ID`フィールドに、{productname}メタデータエンドポイントを入力します。
+  次に例を示します。`https://<FQDN_MLM>/rhn/manager/sso/metadata`
+* btn:[次へ]をクリックします。
+* `Valid redirect URIs`フィールドに、{productname} Assertion Consumer Service (ACS) エンドポイントを入力します。
+  次に例を示します。`https://<FQDN_MLM>/rhn/manager/sso/acs`
+* btn:[保存]をクリックします。
+. クライアント設定の微調整:
+* `Settings`タブの下で、`SAML capabilities`セクションまでスクロールダウンします。
+** `Sign assertions`を`On`に切り替えます。
+** `Signature algorithm`フィールドで、`RSA_SHA1`を選択します。
+** `SAML Signature Key Name`フィールドで、`Key ID`を選択します。
+** ［**保存**］をクリックします。
+* `Keys`タブの下で:
+** `Client signature required`を`Off`に切り替えます。
+* `Advanced`タブの下で、`Fine Grain SAML Endpoint Configuration`セクションまでスクロールダウンします。
+** `Assertion Consumer Service POST Binding URL`フィールドと`Assertion Consumer Service Redirect Binding URL`フィールドの両方に、{productname} ACSエンドポイントを入力します。
+  次に例を示します。`https://<FQDN_MLM>/rhn/manager/sso/acs`
+** `Logout Service POST Binding URL`フィールドに、{productname} SLSエンドポイントを入力します。
+  次に例を示します。`https://<FQDN_MLM>/rhn/manager/sso/sls`
+** `Logout Service Redirect Binding URL`フィールドに、{productname}インスタンスのルートURLを入力します。
+  次に例を示します。`https://<FQDN_MLM>/`
+** ［**保存**］をクリックします。
+. クライアントスコープとマッパーの設定:
+* 左側のナビゲーションメニューから、menu:Client scopes[]をクリックします。
+* リスト内の`role_list`をクリックします。
+* `Mappers`タブをクリックし、`role list`マッパーをクリックします。
+* `Single Role Attribute`を`On`に切り替え、btn:[Save]をクリックします。
+* menu:Clients[]に戻り、{productname}クライアントID（`https://<FQDN_MLM>/rhn/manager/sso/metadata`）をクリックして、`Client scopes`タブをクリックします。
+* 専用スコープ（例: `https://<FQDN_MLM>/rhn/manager/sso/metadata-dedicated`）をクリックします。
+* btn:[Configure a new mapper]をクリックします。
+* リストから `User Attribute` を選択し、以下の詳細を使用してマッパーを設定します。
+** `Name` フィールドに `uid` を入力します。
+** `Property`フィールドで、`username`を選択します。
+** `SAML Attribute Name` フィールドに `uid` を入力します。
+* btn:[保存]をクリックします。
+. ユーザの作成:
+* 左側のナビゲーションメニューから、menu:ユーザ[]をクリックします。
+* btn:[ユーザの追加] をクリックします。
+* `Username` フィールドに、既存の {productname} ユーザ（管理ユーザなど）と一致するユーザ名を入力します。
+* btn:[作成]をクリックします。
+* `Credentials` タブをクリックし、btn:[パスワードの設定] をクリックしてユーザのパスワードを設定し、`Temporary` を `Off` に切り替えてから、btn:[保存] をクリックし、btn:[パスワードの保存] をクリックして確定します。
+____
+
+
+[#how-to-configure-{productname}-server]
+== {productname} サーバの設定
+
+Keycloak の準備ができたら、{productname} サーバがシングルサインオンを使用するように設定します。
+
+[IMPORTANT]
+====
+SSOを使用して認証するユーザが {productname} に既に存在することを確認してください。ユーザは {productname} {webui} で手動作成するか、コマンドラインインタフェースまたはAPI（PAM有効またはパスワードなし認証を使用）を使用して作成できます。
+====
+
+[#pro-setting-up-server]
+.プロシージャ:{productname} サーバの設定
+[role=procedure]
+____
+. {productname} サーバ上で、`/etc/rhn/rhn.conf` 設定ファイルを開きます。
+. 次のパラメータを追加します。`<FQDN_MLM>` を {productname} インストールの完全修飾ドメイン名に、`<FQDN_IDP>` を Keycloak サーバの FQDN に、`<REALM>` をレルム名（例: `MLM`）に、`<CERTIFICATE>` を前の手順で Keycloak から取得した SAML 公開証明書の Base64 エンコード文字列に置き換えます。
++
+----
+java.sso = true
+
+java.sso.onelogin.saml2.debug = true
+
+java.sso.onelogin.saml2.sp.entityid                       = https://<FQDN_MLM>/rhn/manager/sso/metadata
+java.sso.onelogin.saml2.sp.assertion_consumer_service.url = https://<FQDN_MLM>/rhn/manager/sso/acs
+java.sso.onelogin.saml2.sp.single_logout_service.url      = https://<FQDN_MLM>/rhn/manager/sso/sls
+
+java.sso.onelogin.saml2.idp.entityid                   = http://<FQDN_IDP>:8080/realms/<REALM>
+java.sso.onelogin.saml2.idp.single_sign_on_service.url = http://<FQDN_IDP>:8080/realms/<REALM>/protocol/saml
+java.sso.onelogin.saml2.idp.single_logout_service.url  = http://<FQDN_IDP>:8080/realms/<REALM>/protocol/saml
+
+java.sso.onelogin.saml2.idp.x509cert = -----BEGIN CERTIFICATE----- <CERTIFICATE> -----END CERTIFICATE-----
+
+# Organization Metadata (Optional)
+java.sso.onelogin.saml2.organization.name = SUSE Multi-Linux Manager
+java.sso.onelogin.saml2.organization.displayname = SUSE Multi-Linux Manager
+java.sso.onelogin.saml2.organization.url = https://<FQDN_MLM>
+java.sso.onelogin.saml2.organization.lang =
+
+# Contacts (Optional)
+java.sso.onelogin.saml2.contacts.technical.given_name = SUSE Multi-Linux Manager Admin
+java.sso.onelogin.saml2.contacts.technical.email_address = admin@example.com
+java.sso.onelogin.saml2.contacts.support.given_name = SUSE Multi-Linux Manager Admin
+java.sso.onelogin.saml2.contacts.support.email_address = admin@example.com
+----
+. 変更を保存し、spacewalkサービスを再起動して変更を適用します。
++
+----
+mgradm restart
+----
+. {productname} {webui} に移動します。Keycloak ログイン画面にリダイレクトされ、認証後に {productname} に正常にログインできるはずです。
+____
+
+[#how-to-troubleshoot-sso]
+== トラブルシューティング
+
+シングルサインオンでの認証時に問題が発生した場合は、次の手順で診断してください。
+
+* **ログの確認:**`/var/log/rhn/rhn_web_ui.log` で SSO エラーを探します。`java.sso.onelogin.saml2.debug = true` が `/etc/rhn/rhn.conf` に設定されている場合、詳細ログが有効になります。
+* **ユーザが見つかりません:**Keycloak 認証後に「User not found」と表示されるか、リダイレクトが失敗する場合は、Keycloak のユーザ名が {productname} のユーザ名と完全に一致していることを確認してください。ユーザはあらかじめ {productname} に作成しておく必要があります。
+* **署名および証明書エラー:**「Signature verification failed」と表示される場合は、`java.sso.onelogin.saml2.idp.x509cert` の証明書がKeycloakのレルム設定の `Keys` タブに表示されているアクティブなRSA証明書と一致していることを確認し、クライアント設定で `Sign assertions` が `On` に切り替えられていることを確認してください。
+* **無効なリダイレクトURI:**リダイレクト時にKeycloakに「Invalid parameter: redirect_uri」と表示される場合は、Keycloakのクライアント設定の `Valid redirect URIs` が `https://<FQDN_MLM>/rhn/manager/sso/acs` に設定されていることを確認してください。

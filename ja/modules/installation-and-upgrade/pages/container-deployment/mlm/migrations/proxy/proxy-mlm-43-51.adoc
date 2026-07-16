@@ -1,0 +1,189 @@
+= プロキシの移行
+:description: 新しいFQDNを持つ新しいプロキシをデプロイし、概説された移行手順に従うことで、SUSE Manager 4.3プロキシをSUSE Manager 5.1に移行します。（削除）
+:revdate: 2025-10-19
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメントチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+== 要件と考慮事項
+
+SUSE Manager 4.3プロキシを{productname} {productnumber}に移行するには、{sl-micro} {microversion}または{sles} {bci-mlm}、および`mgrpxy`がインストールされた新しいマシンが必要です。
+
+SUSE Manager 4.3から{productnumber}へのインプレース移行は、選択したホストオペレーティングシステムが{sl-micro} {microversion}または{sles} {bci-mlm}のいずれであっても、ホストオペレーティングシステムの再インストールが必要です。
+
+SUSE Manager 4.3から{productnumber}に移行する前に、従来のプロキシを含む既存の従来のクライアントを{salt}に移行する必要があります。
+従来の{productname} 4.3クライアントを{salt}クライアントに移行する方法についての詳細は、 https://documentation.suse.com/suma/4.3/en/suse-manager/client-configuration/contact-methods-migrate-traditional.html.を参照してください。
+
+従来の接続プロトコルは、{productname} 5.0以降ではサポートされなくなりました。
+
+SUSE Manager 4.3プロキシを{productname} {productnumber}に移行する前に、まずSUSE Manager 4.3サーバーを移行する必要があります。詳細はxref:installation-and-upgrade:container-deployment/mlm/migrations/server/server-mlm-43-51.adoc[]を参照してください。
+
+
+== 概要
+
+{productname} {productnumber}では、プロキシを展開するための2つの異なる方法があります：
+
+* Podman上でコンテナ化して実行
+* k3sへのコンテナ化された\{productname}プロキシのインストール
+
+{productname} {productnumber}では、RPMベースのサポートが削除され、podmanまたはk3sで実行されるコンテナ化されたバージョンのみがサポートされています。
+Podmanで実行されるコンテナ化されたプロキシの管理は、`mgrpxy`ツールを使用して行います。
+
+image::43-proxy-migration.mmaid.svg[scalewidth=80%]
+
+
+[[proxy-backup-43]]
+== 既存の{susemgrproxy}データをバックアップします。
+
+{productname} {smr} 5.1.2には、両方の種類の{susemgrproxy}バリアントのための自動バックアップ移行手順が含まれています。この手順は、必要なすべてのデータを収集し、それを{productname}サーバーにアップロードします。{susemgrbranch}のために、このツールは{saltboot}関連のエンティティを作成し、移行します。詳細はxref:retail:migration-from-43.adoc[]を参照してください。
+
+{susemgrproxy} 4.3の移行を開始する方法は複数あります：
+
+* API呼び出し
++
+`$proxyid`をブランチプロキシのサーバID、またはカンマで区切られた複数のサーバIDに置き換えます。
++
+[code]
+----
+mgrctl api login +
+mgrctl api post proxy/backupConfiguration '{\"sids\":[$proxyid]}'
+----
+* {salt} コール
++
+以下のコマンドの`$proxy`をブランチプロキシのミニオンIDに置き換えるか、複数のブランチプロキシを対象とする場合は`-L proxyminionid1,proxyminionid2,...`に置き換えます。
++
+[code]
+----
+salt $proxy proxy.backup
+----
+
+[NOTE]
+====
+特にカスタム変更がある場合は、プロキシの手動バックアップも実行することをお勧めします。
+====
+
+[IMPORTANT]
+====
+{susemgrproxy}はバックアップステップ後も以前と同様に動作し続けますが、潜在的な不整合を防ぐために、バックアップステップの実行後できるだけ早くサーバホストを移行してください。
+====
+
+== 新しい{susemgrproxy}をデプロイします。
+
+既存のホストをAutoYaSTを使用して{sles} 15 SP7にアップグレードするか、{sl-micro} 6.1の新規インストールを行うことができます。
+
+=== AutoYaSTを使用して{sles} 15 SP7にアップグレードします。
+
+AutoYASTプロファイルを作成して使用し、プロキシホストを移行または再インストールします。
+
+==== {sles} 15 SP7に基づいて自動インストールのディストリビューションを準備します。
+
+- {sles} 15 SP7インストールISOをサーバホストにダウンロードまたは取得します。
+- インストールファイルをコンテナにコピーするには`mgradm distribution copy $path_to_the_iso`を使用します。
+- 自動インストールディストリビューションを登録します。詳細はxref:client-configuration:autoinst-distributions.adoc[]を参照してください。
+
+==== インストールメディアへのアクセス
+
+詳細については、xref:client-configuration:autoinst-profiles.adoc[]を参照してください。
+
+- 以前に作成したディストリビューションに基づいて自動インストールプロファイルを作成します。
+プロファイルとして https://github.com/SUSE/manager-build-profiles/blob/master/AutoYaST/SUSE-Multi-Linux-Manager/SUSE%20Multi-Linux%20Manager%20Proxy/MLM_Proxy-51-SLES-Install.xmlで提供されたプロファイルを使用します。
+- プロファイルを作成したら、`Variables`タブに切り替えて必要な変数を入力します。
++
+[code]
+----
+org='organization_id'
+distrotree='autoinstallation_distribution_label_from_previous_step'
+channel_prefix='clm_channel_prefix' またはSCCチャネル用に空白
+registration_key='activation_key_for_post_upgrade'
+----
+- `Autoinstallation File`タブでは、追加の確認用に、レンダリングされた完全なプロファイルを参照できます。
+
+==== プロキシの自動インストールのプロビジョニング
+
+以前のステップで作成したプロファイルを使用して、古い{susemgr} Proxy 4.3における自動インストールをスケジュールします。
+
+- 移行するブランチサーバーの`System`ビューにあるWeb UIインターフェースの`Provisioning`タブを使用します
+- または、API呼び出し`system/provisionSystem`を使用して移行をスケジュールします。例として、{productname}ホストから次のスニペットを実行してください：
++
+[code]
+----
+mgrctl api login
+mgrctl api post system/provisionSystem '{\"sid\":$proxyid,\"profileName\":\"$profileName\"}'
+----
+
+=== {sl-micro} 6.1を再インストールします。
+
+{sl-micro} 6.1はホストに新規インストールが必要です。
+
+[IMPORTANT]
+====
+ホストの再インストールを進める前に、既存の4.3プロキシのバックアップを実施してください。
+詳細については、xref:#proxy-backup-43[]を参照してください。
+====
+
+include::installation-and-upgrade:partial$snippet-prepare-micro-proxy-host.adoc[leveloffset=+1]
+
+==== プロキシを登録してデプロイします。
+
+.プロシージャ:プロキシの登録とデプロイ
+[role=procedure]
+____
+
+. ホストの準備が整ったら、新しい{sl-micro} 6.1システムを{productname}サーバーにクライアントとして登録します。
+  元の4.3プロキシと同じミニオンIDを使用することをお勧めします。
+  詳細については、xref:client-configuration:registration-overview.adoc[]を参照してください。
+. {productname}サーバーで、新しいプロキシサーバーのプロキシ設定を生成します。
+  詳細については、xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc#generate-proxy-config[]を参照してください。
+. 設定を{sl-micro} 6.1ホストに転送し、プロキシをインストールします：
++
+[source,bash]
+----
+mgrpxy install podman config.tar.gz
+----
+. プロキシを起動します：
++
+[source,bash]
+----
+mgrpxy start
+----
+. プロキシが稼働すると、{productname}サーバーは次の`Hardware Refresh`ステップ中にバックアップされた設定を自動的にデプロイします。
+
+____
+
+
+
+== プロキシコンテナを検証する
+
+移行が完了しsaltが初めて起動されると、バックアップされたプロキシ設定が`Hardware refresh`ステップ中に自動的にデプロイされます。
+
+すべてのオンボーディングステップが完了したら、必要なプロキシ機能を検証します。
+
+
+== TFTPファイルの同期
+
+コンテナ化されたプロキシは、tftpsyncメカニズムを使用してtftprootファイルを転送しません。
+代わりに、これらのファイルは透過的にダウンロードされ、必要に応じてキャッシュされます。
+
+`cobbler sync`の実行中の誤検知エラーを防ぐため、移行された4.3プロキシをtftpsyncメカニズムから削除する必要があります。
+
+以前にTFTPファイルを受信するように4.3プロキシを設定していた場合は、以下の設定オプションのいずれかが必要です。
+
+[NOTE]
+====
+コンテナ内のシェルに移動するには、コンテナホストで次のコマンドを実行します。
+----
+mgrctl term
+----
+====
+
+{productname} {productnumber}サーバーコンテナ内で、残りの4.3プロキシのリストを引数として`configure-tftpsync.sh`を実行してください。
+4.3プロキシが残っていない場合は、引数なしで`configure-tftpsync.sh`を実行してください。
+
+{productname} {productnumber}サーバーコンテナ内で、`/etc/cobbler/settings.yaml`ファイルの`proxies`設定から該当するプロキシを手動で削除してください。
+4.3プロキシが残っていない場合は、`proxies`リストを完全に手動で削除してください。

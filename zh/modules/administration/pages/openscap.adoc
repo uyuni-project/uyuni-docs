@@ -1,0 +1,572 @@
+[[ch-openscap]]
+= 使用 OpenSCAP 确保系统安全
+:description: 通过 SUSE Multi-Linux Manager 使用 OpenSCAP 配置系统安全，该管理器支持为客户端调度和查看合规性扫描。
+:revdate: 2026-05-12
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+
+{productname}使用OpenSCAP对客户端进行审计。
+它允许您为任何客户端调度和查看合规性扫描。
+
+
+== 关于 SCAP
+
+
+安全内容自动化协议（SCAP）是基于社区思想的可互操作规范的综合。
+这是由国家标准与技术研究院（NIST）维护的一系列规范，用于维护企业系统的系统安全。
+
+SCAP的创建旨在提供维护系统安全的标准化方法，所使用的标准不断变化，以满足社区和企业的需求。
+新规范由NIST的SCAP发布周期管理，以提供一致和可重复的修订工作流程。
+有关更多信息，请参见：
+
+* https://csrc.nist.gov/projects/security-content-automation-protocol 
+* https://www.open-scap.org/features/standards/
+* https://ncp.nist.gov/repository?scap
+
+{productname}使用OpenSCAP来实施SCAP规范。
+OpenSCAP是一个审计工具，利用可扩展配置检查清单描述格式（XCCDF）。
+XCCDF是一种表达检查清单内容的标准方式，并定义安全检查清单。
+它还与其他规范结合，如通用平台枚举（CPE）、通用配置枚举（CCE）和开放漏洞与评估语言（OVAL），创建一个可以被SCAP验证产品处理的SCAP表达的检查清单。
+
+OpenSCAP通过使用{suse}安全团队生成的内容来验证补丁的存在。
+OpenSCAP 检查系统安全配置设置，并通过基于标准和规范的规则检测系统是否存在被入侵的迹象。
+有关{suse}安全团队的更多信息，请参见 https://www.suse.com/support/security.。
+
+
+
+== 为 SCAP 扫描准备客户端
+
+在开始之前，需要为客户端系统的 SCAP 扫描做好准备。
+
+[NOTE]
+====
+OpenSCAP 审计在使用 SSH 联系方法的 Salt 客户端上不可用。
+====
+
+[IMPORTANT]
+====
+扫描客户端可能会消耗被扫描客户端的大量内存和计算能力。
+对于{redhat}客户端，请确保每个要扫描的客户端至少有2{nbsp}GB的可用RAM。
+====
+
+在开始之前，请在客户端上安装OpenSCAP扫描器和SCAP安全指南（内容）软件包。
+根据操作系统，这些软件包要么包含在基础操作系统中，要么包含在{productname}客户端工具中。
+
+下表列出了所需的软件包：
+
+.OpenSCAP 软件包
+[%header,cols=3]
+|===
+| 操作系统 | 扫描程序 | 内容
+| SLES | openscap-utils | scap-security-guide
+| openSUSE | openscap-utils | scap-security-guide
+| RHEL | openscap-utils | scap-security-guide-redhat
+| CentOS | openscap-utils | scap-security-guide-redhat
+| Oracle Linux | openscap-utils | scap-security-guide-redhat
+| Ubuntu | libopenscap8 | scap-security-guide-ubuntu
+| Debian | libopenscap8 | scap-security-guide-debian
+|===
+
+RHEL 7 及兼容系统提供了一个 `scap-security-guide` 软件包，其中包含过时的内容。
+建议您使用在 {productname} 客户端工具中找到的 `scap-security-guide-redhat` 软件包。
+
+
+[IMPORTANT]
+====
+{suse} 为不同的 openscap 控制文件提供了 `scap-security-guide` 软件包。
+在 `scap-security-guide` 的当前版本中，{suse} 支持以下控制文件：
+
+* 适用于 {sles} 12 和 15 的 DISA STIG 控制文件
+* 适用于 {sles} 12 和 15 的 ANSSI-BP-028 控制文件
+* 适用于 {sles} 12 和 15 的 PCI-DSS 控制文件
+* 适用于 {sles} 15 的 HIPAA 控制文件
+* {sles} for SAP Applications 15 的公有云映像安全强化
+* {sle} 15 的公有云安全强化
+* SLE 12 和 15 的标准系统安全性配置文件
+
+对于非-{suse} 操作系统，包含的控制文件由社区提供。
+它们不被 {suse} 官方支持。
+====
+
+== OpenSCAP 内容文件
+
+OpenSCAP 使用 SCAP 内容文件来定义测试规则。
+这些内容文件是基于 XCCDF 或 OVAL 标准创建的。
+除了 SCAP 安全指南外，您还可以下载公开可用的内容文件并根据您的要求进行自定义。
+您可以安装 SCAP 安全指南包以获取默认内容文件模板。
+或者，如果您熟悉 XCCDF 或 OVAL，您可以创建自己的内容文件。
+
+
+[WARNING]
+====
+我们建议您使用模板来创建您的 SCAP 内容文件。
+如果您创建并使用自己的自定义内容文件，风险自负。
+如果您的系统因使用自定义内容文件而损坏，您可能无法获得 {suse} 的支持。
+====
+
+创建内容文件后，您需要将文件传输到客户端。
+您可以像移动其他文件一样进行此操作，使用物理存储介质，或通过网络使用 Salt（例如， https://docs.saltproject.io/en/latest/ref/cli/salt-cp.html[salt-cp] 或 https://docs.saltproject.io/en/latest/ref/file_server/index.html[Salt 文件服务器]），`ftp` 或 `scp`。
+
+我们建议您创建一个软件包，以将内容文件分发给您使用 {productname} 管理的客户端。
+软件包可以被签名和验证以确保其完整性。
+有关更多信息，请参见 xref:administration:custom-channels.adoc[]。
+
+
+
+== 查找 OpenSCAP 配置文件
+
+不同的操作系统提供不同的 OpenSCAP 内容文件和控制文件。一个内容文件可能包含多个控制文件。
+
+在基于 RPM 的操作系统上，可使用以下命令确定可用 SCAP 文件的位置：
+
+----
+rpm -ql <scap-security-guide-package-name-from-table>
+----
+
+在基于 DEB 的操作系统上，可使用以下命令确定可用 SCAP 文件的位置：
+
+----
+dpkg -L <scap-security-guide-package-name-from-table>
+----
+
+确定了一个符合您需求的 SCAP 内容文件后，列出客户端上可用的配置文件：
+
+----
+oscap info /usr/share/xml/scap/ssg/content/ssg-sle15-ds.xml
+Document type: Source Data Stream
+Imported: 2021-03-24T18:14:45
+
+Stream: scap_org.open-scap_datastream_from_xccdf_ssg-sle15-xccdf-1.2.xml
+Generated: (null)
+Version: 1.2
+Checklists:
+        Ref-Id: scap_org.open-scap_cref_ssg-sle15-xccdf-1.2.xml
+                Status: draft
+                Generated: 2021-03-24
+                Resolved: true
+                Profiles:
+                        Title: CIS SUSE Linux Enterprise 15 Benchmark
+                                Id: xccdf_org.ssgproject.content_profile_cis
+                        Title: Standard System Security Profile for SUSE Linux Enterprise 15
+                                Id: xccdf_org.ssgproject.content_profile_standard
+                        Title: DISA STIG for SUSE Linux Enterprise 15
+                                Id: xccdf_org.ssgproject.content_profile_stig
+                Referenced check files:
+                        ssg-sle15-oval.xml
+                                system: http://oval.mitre.org/XMLSchema/oval-definitions-5
+                        ssg-sle15-ocil.xml
+                                system: http://scap.nist.gov/schema/ocil/2
+                        https://ftp.suse.com/pub/projects/security/oval/suse.linux.enterprise.15.xml
+                                system: http://oval.mitre.org/XMLSchema/oval-definitions-5
+Checks:
+        Ref-Id: scap_org.open-scap_cref_ssg-sle15-oval.xml
+        Ref-Id: scap_org.open-scap_cref_ssg-sle15-ocil.xml
+        Ref-Id: scap_org.open-scap_cref_ssg-sle15-cpe-oval.xml
+Dictionaries:
+        Ref-Id: scap_org.open-scap_cref_ssg-sle15-cpe-dictionary.xml
+----
+
+
+记下用于执行扫描的文件路径和配置文件。
+
+
+
+== 执行审计扫描
+
+安装或传输内容文件后，您可以执行审计扫描。
+可以使用 {productname} {webui} 触发审计扫描。
+您还可以使用 {productname} API 来安排定期扫描。
+
+.过程：升级从 {webui} 运行审计扫描。
+[role=procedure]
+_____
+
+. 在 {productname} {webui} 中，导航到 menu:系统[系统列表]，选择您要扫描的客户端。
+
+. 导航到 `Audit` 选项卡和 `Schedule` 子选项卡。
+
+. 在 `Path to XCCDF Document` 字段中，输入要在客户端上使用的 SCAP 模板和控制文件的参数。
+  例如：
+
++
+
+  * `Command`: /usr/bin/oscap xccdf eval
+
+  * `Command-line arguments`: --profile xccdf_org.ssgproject.content_profile_stig
+
+  * `Path to XCCDF document`: /usr/share/xml/scap/ssg/content/ssg-sle15-ds.xml
+
++
+
+[NOTE]
+====
+如果您经常使用 `--fetch-remote-resources` 参数，则需要大量的 RAM。
+此外，您可能需要增加 `file_recv_max_size` 的值。
+====
+
+. 扫描将在客户端进行下一次安排的同步时运行。
+
+_____
+
+[IMPORTANT]
+====
+在远程系统上运行之前，XCCDF 内容文件会被验证。
+如果内容文件包含无效参数，则测试失败。
+====
+
+
+.过程：升级从 API 运行审计扫描。
+[role=procedure]
+_____
+
+. 在开始之前，请确保要扫描的客户端上已安装 Python 和 XML-RPC 库。
+
+. 选择现有的脚本或创建一个脚本，用于通过 `system.scap.scheduleXccdfScan` 安排系统扫描。
+  例如：
+
++
+
+----
+#!/usr/bin/python3
+import xmlrpc.client
+client = xmlrpc.client.ServerProxy('https://server.example.com/rpc/api')
+key = client.auth.login('username', 'password')
+client.system.scap.scheduleXccdfScan(key, <1000010001>,
+    '<path_to_xccdf_file.xml>',
+    '--profile <profile_name>')
+client.auth.logout(session_key)
+----
+
++
+
+在此示例中：
+
+* `<1000010001>` 是系统 ID (sid)。
+
+* `<path_to_xccdf_file.xml>` 是客户端上内容文件位置的路径。
+  例如，`/usr/share/xml/scap/ssg/content/ssg-sle15-ds.xml`。
+
+* `<profile_name>` 是 `oscap` 命令的附加参数。
+  例如，使用 `united_states_government_configuration_baseline` (USGCB)。
+
+. 在命令提示符下，对您要扫描的客户端运行该脚本。
+
+_____
+
+
+== 扫描结果
+
+
+您运行的扫描信息在 {productname} {webui} 中。
+导航到 menu:审计[OpenSCAP > 所有扫描] 以查看结果表。
+有关此表中数据的更多信息，请参见 xref:reference:audit/openscap-all-scans.adoc[]。
+
+要确保扫描的详细信息可用，您需要在客户端上启用它。
+在 {productname} {webui} 中，导航到 menu:管理员[组织]，然后单击客户端所属的组织。
+导航到 `Configuration` 选项卡，并勾选 `Enable Upload of Detailed SCAP Files` 选项。
+启用后，这将在每次扫描时生成一个额外的 HTML 文件，其中包含额外信息。
+结果显示一行类似于以下内容：
+
+----
+Detailed Results: xccdf-report.html xccdf-results.xml scap-yast2sec-oval.xml.result.xml
+----
+
+
+要从命令行检索扫描信息，请使用 `spacewalk-report` 命令：
+
+----
+spacewalk-report system-history-scap
+spacewalk-report scap-scan
+spacewalk-report scap-scan-results
+----
+
+
+您还可以使用 {productname} API 通过 `system.scap` 处理程序查看结果。
+
+[[removing-scap-scan-results]]
+== 删除 SCAP 扫描结果
+
+只有通过配置的保留期的 SCAP 扫描才能被删除。
+您可以在 `Organization Configuration` 部分中配置保留期。
+
+.过程：升级配置 SCAP 结果的保留期
+[role=procedure]
+_____
+
+. 导航到 menu:首页[我的组织> 配置]。
+
+. 在 `SCAP` 下，选中 `Allow Deletion of SCAP Results`。
+
+. 在 `Allow Deletion After` 中输入天数（默认值为 90）。
+
+_____
+
+.过程：升级删除 SCAP 扫描结果
+[role=procedure]
+_____
+
+. 导航到 menu:审计[OpenSCAP> 所有扫描]。
+
+. 选择您要删除的扫描的复选框。
+
+. 单击 btn:[确认]。
+_____
+
+
+[[remediation]]
+== 修复
+
+修复 Bash 脚本和 Ansible 剧本包含在相同的 SCAP 安全指南软件包中，以强化客户端系统。例如：
+例如：
+
+.bash 脚本
+----
+/usr/share/scap-security-guide/bash/sle15-script-cis.sh
+/usr/share/scap-security-guide/bash/sle15-script-standard.sh
+/usr/share/scap-security-guide/bash/sle15-script-stig.sh
+----
+
+.Ansible 剧本
+----
+/usr/share/scap-security-guide/ansible/sle15-playbook-cis.yml
+/usr/share/scap-security-guide/ansible/sle15-playbook-standard.yml
+/usr/share/scap-security-guide/ansible/sle15-playbook-stig.yml
+----
+
+在客户端系统中启用 Ansible 后，可以使用远程命令或 Ansible 运行这些脚本和剧本。
+
+
+=== 使用 Bash 脚本运行修复
+
+在所有目标系统上安装 `scap-security-guide` 软件包。
+有关更多信息，请参见 xref:administration:ansible-setup-control-node.adoc[]。
+
+每个操作系统和发行版的软件包、通道和脚本都是不同的。
+示例列在 <<scripts-for-os-types>> 部分。
+
+
+==== 在单个系统上将 Bash 脚本作为远程命令运行
+
+在单个系统上将 Bash 脚本作为远程命令运行。
+
+. 在 menu:系统[概述] 选项卡中，选择您的实例。
+  然后在 menu:详细信息[远程命令] 中，编写一个 Bash 脚本，例如：
++
+----
+#!/bin/bash
+chmod +x -R /usr/share/scap-security-guide/bash
+/usr/share/scap-security-guide/bash/sle15-script-stig.sh
+----
+
+. 单击 btn:[日程安排]。
+
+[NOTE]
+====
+文件夹和脚本名称在不同的发行版和版本之间会有所变化。
+示例列在 <<scripts-for-os-types>> 部分。
+====
+
+
+==== 在多个系统上使用系统集管理器运行 Bash 脚本
+
+一次性在多个系统上将 Bash 脚本作为远程命令运行。
+
+. 创建系统组后，单击 `System Groups`，然后从表中选择 `Use in SSM`。
+
+. 在 `System Set Manager` 中，在 menu:其他[远程命令] 下，编写一个 Bash 脚本，例如：
++
+
+----
+#!/bin/bash
+chmod +x -R /usr/share/scap-security-guide/bash
+/usr/share/scap-security-guide/bash/sle15-script-stig.sh
+----
+
+. 单击 btn:[日程安排]。
+
+
+
+[[scripts-for-os-types]]
+=== 修复 Bash 脚本示例
+
+==== {sle} {opensuse} 及其变体
+
+示例 {sle} 和 {opensuse} 脚本数据。
+
+软件包::
+scap-security-guide
+
+通道::
+* SLE12：SLES12 更新
+* SLE15：SLES15 模块 Basesystem 更新
+
+Bash 脚本目录::
+`/usr/share/scap-security-guide/bash/`
+
+Bash 脚本::
++
+----
+opensuse-script-standard.sh
+sle12-script-standard.sh
+sle12-script-stig.sh
+sle15-script-cis.sh
+sle15-script-standard.sh
+sle15-script-stig.sh
+----
+
+
+
+==== {rhel} 和 {centos} Bash 脚本数据
+
+示例 {rhel} 和 {centos} 脚本数据。
+
+[NOTE]
+====
+centos7-updates 中的 `scap-security-guide` 仅包含 {rhel} 脚本。
+====
+
+软件包::
+scap-security-guide-redhat
+
+通道::
+* SUSE Manager 工具
+
+Bash 脚本目录::
+`/usr/share/scap-security-guide/bash/`
+
+Bash 脚本::
++
+----
+centos7-script-pci-dss.sh
+centos7-script-standard.sh
+centos8-script-pci-dss.sh
+centos8-script-standard.sh
+fedora-script-ospp.sh
+fedora-script-pci-dss.sh
+fedora-script-standard.sh
+ol7-script-anssi_nt28_enhanced.sh
+ol7-script-anssi_nt28_high.sh
+ol7-script-anssi_nt28_intermediary.sh
+ol7-script-anssi_nt28_minimal.sh
+ol7-script-cjis.sh
+ol7-script-cui.sh
+ol7-script-e8.sh
+ol7-script-hipaa.sh
+ol7-script-ospp.sh
+ol7-script-pci-dss.sh
+ol7-script-sap.sh
+ol7-script-standard.sh
+ol7-script-stig.sh
+ol8-script-anssi_bp28_enhanced.sh
+ol8-script-anssi_bp28_high.sh
+ol8-script-anssi_bp28_intermediary.sh
+ol8-script-anssi_bp28_minimal.sh
+ol8-script-cjis.sh
+ol8-script-cui.sh
+ol8-script-e8.sh
+ol8-script-hipaa.sh
+ol8-script-ospp.sh
+ol8-script-pci-dss.sh
+ol8-script-standard.sh
+rhel7-script-anssi_nt28_enhanced.sh
+rhel7-script-anssi_nt28_high.sh
+rhel7-script-anssi_nt28_intermediary.sh
+rhel7-script-anssi_nt28_minimal.sh
+rhel7-script-C2S.sh
+rhel7-script-cis.sh
+rhel7-script-cjis.sh
+rhel7-script-cui.sh
+rhel7-script-e8.sh
+rhel7-script-hipaa.sh
+rhel7-script-ncp.sh
+rhel7-script-ospp.sh
+rhel7-script-pci-dss.sh
+rhel7-script-rhelh-stig.sh
+rhel7-script-rhelh-vpp.sh
+rhel7-script-rht-ccp.sh
+rhel7-script-standard.sh
+rhel7-script-stig_gui.sh
+rhel7-script-stig.sh
+rhel8-script-anssi_bp28_enhanced.sh
+rhel8-script-anssi_bp28_high.sh
+rhel8-script-anssi_bp28_intermediary.sh
+rhel8-script-anssi_bp28_minimal.sh
+rhel8-script-cis.sh
+rhel8-script-cjis.sh
+rhel8-script-cui.sh
+rhel8-script-e8.sh
+rhel8-script-hipaa.sh
+rhel8-script-ism_o.sh
+rhel8-script-ospp.sh
+rhel8-script-pci-dss.sh
+rhel8-script-rhelh-stig.sh
+rhel8-script-rhelh-vpp.sh
+rhel8-script-rht-ccp.sh
+rhel8-script-standard.sh
+rhel8-script-stig_gui.sh
+rhel8-script-stig.sh
+rhel9-script-pci-dss.sh
+rhosp10-script-cui.sh
+rhosp10-script-stig.sh
+rhosp13-script-stig.sh
+rhv4-script-pci-dss.sh
+rhv4-script-rhvh-stig.sh
+rhv4-script-rhvh-vpp.sh
+sl7-script-pci-dss.sh
+sl7-script-standard.sh
+----
+
+
+==== {ubuntu} Bash 脚本数据
+
+示例 {ubuntu} 脚本数据。
+
+软件包::
+scap-security-guide-ubuntu
+
+通道::
+* SUSE Manager 工具
+
+Bash 脚本目录::
+`/usr/share/scap-security-guide/`
+
+Bash 脚本::
++
+----
+ubuntu1804-script-anssi_np_nt28_average.sh
+ubuntu1804-script-anssi_np_nt28_high.sh
+ubuntu1804-script-anssi_np_nt28_minimal.sh
+ubuntu1804-script-anssi_np_nt28_restrictive.sh
+ubuntu1804-script-cis.sh
+ubuntu1804-script-standard.sh
+ubuntu2004-script-standard.sh
+----
+
+
+==== {debian} Bash 脚本数据
+
+示例 {debian} 脚本数据。
+
+软件包::
+scap-security-guide-debian
+
+通道::
+* SUSE Manager 工具
+
+Bash 脚本目录::
+`/usr/share/scap-security-guide/bash/`
+
+Bash 脚本::
++
+----
+# Debian 12
+debian12-script-anssi_np_nt28_average.sh
+debian12-script-anssi_np_nt28_high.sh
+debian12-script-anssi_np_nt28_minimal.sh
+debian12-script-anssi_np_nt28_restrictive.sh
+debian12-script-standard.sh
+----
