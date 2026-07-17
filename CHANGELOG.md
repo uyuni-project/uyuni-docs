@@ -1,3 +1,10 @@
+- Migrated the build to committed AI translation trees (`ja/`, `ko/`, `zh/modules/`)
+  with English fallback via `task stage-content`; po4a/Weblate are no longer used in the
+  build pipeline
+- Updated PDF builds to stage translated content from `{content_dir}/modules/` before
+  `gen-pdf-nav`; consolidated Uyuni CJK PDF output onto the shared `uyuni-cjk` theme
+- Fixed sibling `ifeval` blocks in SUSE Liberty Linux client registration
+  (`clients-sleses.adoc`) that caused unterminated conditional errors in CJK PDF builds
 - Update data file storage locations for Uyuni in Installation and Upgrade Guide
 - Documented SLES 15 SP7 to SLES 16.0 major upgrade via product migration in Client Configuration Guide
 - Added a common workflow to setup crypto policies in the server container (bsc#1253505)
