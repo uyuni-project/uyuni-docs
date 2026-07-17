@@ -5,6 +5,11 @@
   `gen-pdf-nav`; consolidated Uyuni CJK PDF output onto the shared `uyuni-cjk` theme
 - Fixed sibling `ifeval` blocks in SUSE Liberty Linux client registration
   (`clients-sleses.adoc`) that caused unterminated conditional errors in CJK PDF builds
+- Documented Grafana reporting database automated setup and Hub Overview in Administration and Specialized Guides
+- Update the OpenSCAP packages table in the
+  System Security with OpenSCAP article in the Administration guide (bsc#1269316)
+- Added documentation for migrating legacy ISS v1 and ISS v2 peripheral servers
+  to ISS v3 (Hub Online Synchronization) and detailed Report DB/XMLRPC API dependencies in Specialized Guides
 - Update data file storage locations for Uyuni in Installation and Upgrade Guide
 - Documented SLES 15 SP7 to SLES 16.0 major upgrade via product migration in Client Configuration Guide
 - Added a common workflow to setup crypto policies in the server container (bsc#1253505)
