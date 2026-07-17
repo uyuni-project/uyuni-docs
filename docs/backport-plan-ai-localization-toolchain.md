@@ -43,6 +43,10 @@ The build no longer depends on po4a/Weblate output during `task draft:*`, `task 
 7. **CI** decouples devel doc archives from Weblate/po4a push automation.
 8. **PDF themes and the `task pdf` pipeline** are updated for AI-staged CJK builds (see
    [PDF toolchain changes](#pdf-toolchain-changes) below).
+9. **OBS packaging tasks** (`task obs:mlm`, `task obs:uyuni`) inherit the new staging model
+   through their dependencies — no separate OBS task edits were required in
+   [#5103](https://github.com/uyuni-project/uyuni-docs/pull/5103) (see
+   [OBS packaging](#obs-packaging) below).
 
 ### Build flow (after migration)
 
@@ -162,6 +166,52 @@ are merged.
 
 ---
 
+## OBS packaging
+
+PR [#5103](https://github.com/uyuni-project/uyuni-docs/pull/5103) did **not** change the
+`obs:mlm` or `obs:uyuni` task definitions themselves. OBS builds are covered because those tasks
+call draft and PDF targets that were updated to use `stage-content`:
+
+| Task | Depends on | Staging path |
+|------|------------|--------------|
+| `obs:mlm` | `draft:mlm-webui`, `pdf:mlm` | Both run `stage-content` before build |
+| `obs:uyuni` | `draft:uyuni-website`, `pdf:uyuni` | Both run `stage-content` before build |
+
+After HTML and PDF builds complete, OBS tasks package the same artifact layout as before:
+
+- MLM: `susemanager-docs_{lang}.tar.gz` (HTML) and `susemanager-docs_{lang}-pdf.tar.gz` (PDFs
+  renamed to `suse_multi_linux_manager_*` prefix)
+- Uyuni: `uyuni-docs_{lang}.tar.gz` and `uyuni-docs_{lang}-pdf.tar.gz`
+
+Output targets are selected by `config.yml` `outputs.*.obs: true` (`mlm-webui` for MLM,
+`uyuni-website` for Uyuni). The `obs_name` fields under `products.*.pdf` are unchanged.
+
+### OBS CI
+
+| Path | Change |
+|------|--------|
+| `.github/workflows/build_and_archive_release_docs.yml` | **No Taskfile changes needed** — still runs `task obs:mlm` / `task obs:uyuni` on release-branch pushes. Inherits `stage-content` once draft/pdf deps are backported. |
+
+Container wrappers (`container:obs:mlm`, `container:obs:uyuni`) delegate to the same local tasks.
+
+### OBS validation after backport
+
+```bash
+# English-only smoke test (works without translation trees)
+task obs:mlm LANGUAGES=en
+task obs:uyuni LANGUAGES=en
+
+# CJK — requires committed {lang}/modules/ trees on the branch
+task obs:mlm LANGUAGES="ja ko zh_CN"
+task obs:uyuni LANGUAGES="ja ko zh_CN"
+```
+
+Confirm tarballs land in `build/packages/` with the expected names and that CJK HTML/PDF content
+inside reflects staged `{content_dir}/modules/` overlays, not po4a output under
+`l10n-weblate/`.
+
+---
+
 ## What to backport (toolchain only)
 
 Copy or merge these paths from `manager-5.1` (this branch) into `master` and `manager-5.2`.
@@ -173,7 +223,7 @@ toolchain (both targets already have the base migration from
 
 | Path | Change |
 |------|--------|
-| `Taskfile.yml` | Replace `task translations` with `task stage-content` in draft/pdf/publish deps; add `stage-content` task; deprecate `translations` / `pot`; **PDF task stages `{content_dir}/modules/` overlay** (see [PDF toolchain changes](#pdf-toolchain-changes)) |
+| `Taskfile.yml` | Replace `task translations` with `task stage-content` in draft/pdf/publish deps; add `stage-content` task; deprecate `translations` / `pot`; **PDF task stages `{content_dir}/modules/` overlay** (see [PDF toolchain changes](#pdf-toolchain-changes)); **`obs:mlm` / `obs:uyuni` unchanged but inherit staging via draft/pdf deps** (see [OBS packaging](#obs-packaging)) |
 | `config.yml` | Add `content_dir` per language block |
 | `cmd/docbuild/main.go` | Add `get-content-dir` subcommand |
 | `internal/config/config.go` | Add `ContentDir` field and `Language.ContentPath()` helper |
@@ -192,7 +242,7 @@ toolchain (both targets already have the base migration from
 |------|--------|
 | `.github/workflows/update_translation_files.yml` | Mark deprecated; **manual `workflow_dispatch` only**; remove push triggers |
 | `.github/workflows/build_and_archive_devel_docs.yml` | Remove `workflow_run` coupling to translation updates; add `manager-5.1` to push branches (adjust per target branch) |
-| `.github/workflows/build_and_archive_release_docs.yml` | Align with container + Task publish flow |
+| `.github/workflows/build_and_archive_release_docs.yml` | No obs-task changes — verify `task obs:mlm` / `task obs:uyuni` still run on release branches after draft/pdf staging backport |
 | `.github/workflows/test_pdf_translations.yml` | CJK PDF regression for `ja`/`ko`/`zh_CN`; runs `pdf:mlm`/`pdf:uyuni` (with `stage-content`); add target branch to push/`if` conditions |
 | `.github/workflows/tests.yml` | PR validation updates |
 | `.github/workflows/publish_builder_image.yml` | Builder image without po4a |
@@ -472,6 +522,8 @@ task stage-content
 task draft:mlm-dsc LANGUAGES="ja ko zh_CN"
 task pdf BOOK=administration PRODUCT=mlm LANG=ja
 task container:publish:dsc    # full container smoke test
+task obs:mlm LANGUAGES="ja ko zh_CN"
+task obs:uyuni LANGUAGES="ja ko zh_CN"
 ```
 
 ### Success criteria
@@ -480,6 +532,8 @@ task container:publish:dsc    # full container smoke test
 - `translations/{lang}/modules/` is populated by `stage-content`, not by `use_po.sh`
 - Missing translation files fall back to English content
 - CJK PDF builds pass `test_pdf_translations.yml`
+- `task obs:mlm` and `task obs:uyuni` produce expected tarballs in `build/packages/` (HTML +
+  PDF) with staged translation content
 - `update_translation_files.yml` does not run on push
 
 ---
@@ -496,6 +550,7 @@ Use when opening backport PRs to `master` or `manager-5.2`:
 - [ ] `task stage-content LANGUAGES=en` succeeds
 - [ ] English HTML + PDF build succeeds
 - [ ] CJK PDF smoke test: `task pdf BOOK=administration PRODUCT=mlm LANG=zh_CN`
+- [ ] OBS smoke test: `task obs:mlm LANGUAGES=en` and `task obs:uyuni LANGUAGES=en` (CJK when translation trees present)
 - [ ] `test_pdf_translations.yml` passes (Uyuni theme consolidation: delete `uyuni-{jp,ko,sc}-theme.yml` if present)
 - [ ] CI workflows updated for correct branch names
 - [ ] Builder container image rebuilt and published
