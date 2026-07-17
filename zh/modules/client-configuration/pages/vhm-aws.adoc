@@ -1,0 +1,111 @@
+[[vhm-aws]]
+= 虚拟主机管理器和 Amazon Web Services
+:description: 在 SUSE Multi-Linux Manager 中配置虚拟主机管理器 (VHM)，以从亚马逊网络服务 (AWS) 收集实例，包括获取和报告。
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+// 2024-04-04 OM: It had been decided in the conversation with the mlm PO 
+// that this Public Cloud related file can stay in the Uyuni books
+
+
+您可以使用虚拟主机管理器 (VHM) 收集 Amazon Web Services (AWS) 中的实例。
+
+VHM 允许 {productname} 获取和报告有关您的集群的信息。
+有关 VHM 的详细信息，请参见 xref:client-configuration:vhm.adoc[]。
+
+
+
+== 创建 Amazon EC2 VHM
+
+
+
+虚拟主机管理器 (VHM) 在 {productname} 服务器上运行。
+
+确保您已在 {productname} 服务器上安装了 `virtual-host-gatherer-libcloud` 软件包。
+
+
+.过程：升级创建 Amazon EC2 VHM
+
+. 在 {productname} {webui} 中，导航到 menu:系统[虚拟主机管理器]。
+. 单击 btn:[创建] 并从下拉菜单中选择 `Amazon EC2`。
+. 在 `Add an Amazon EC2 Virtual Host Manager` 部分中，使用以下参数：
+* 在 `Label` 字段中，为您的 VHM 输入自定义名称。
+* 在 `Access Key ID` 字段中，输入亚马逊提供的访问密钥 ID。
+* 在 `Secret Access Key` 字段中，输入与亚马逊实例关联的机密访问密钥。
+* 在 `Region` 字段中，输入要使用的区域。
+* 在 `Zone` 字段中，输入您的 VM 所在的可用区。
+  要使订阅匹配功能正常工作，就必须提供此信息。
+  有关设置区域和可用区的更多信息，请参见 <<susesupport_and_vm_zones>>。
+. 单击 btn:[创建] 以保存更改并创建 VHM。
+. 在 `Virtual Host Managers` 页面中，选择新 VHM。
+. 在 `Properties` 页面中，单击 btn:[刷新数据] 以清点新 VHM。
+
+要查看已清点的对象和资源，请导航到 menu:系统[系统列表> 虚拟系统]。
+
+
+在 Amazon 公有云上运行的实例会向 {productname} 服务器报告 UUID，其格式为一个 `i` 后跟 17 个十六进制数字：
+
+----
+I1234567890abcdef0
+----
+
+ifeval::[{mlm-content} == true]
+
+[[susesupport_and_vm_zones]]
+== SUSE 支持和 VM 可用区
+
+公有云提供商使用区域来定义提供虚拟机的数据中心的实际地理位置。
+例如，`US-East` 或 `Asia`。
+
+区域随后进一步划分为可用区。
+例如，`US-East` 区域可能包含名为 `us-east-2a` 和 `us-east-2b` 等的可用区。
+
+{suse} 使用虚拟机的可用区来确定提供的适当订阅。
+如果您的所有 VM 都由同一可用区提供，则您符合 `1-2 Virtual Machines` 订阅的条款和条件。
+
+如果您的 VM 是由不同可用区提供的，即使它们在同一区域内，您可能也不符合 `1-2 Virtual Machines` 订阅的条件。
+在这种情况下，请仔细检查您的订阅。
+
+[NOTE]
+====
+对于 {byos} 实例 ({byoslongform})，所有已安装的产品都会传递给订阅匹配器。
+如果您的公有云实例是 {payg} ({payglongform})，则其基础产品将不计入订阅匹配器的计算。
+计算实例是 {payg} 还是 {byos} 的过程在注册时或执行硬件刷新操作时完成。
+====
+
+有关更多信息，请参见 https://www.suse.com/products/terms_and_conditions.pdf 或联系 {suse}。
+
+endif::[]
+
+
+== 虚拟主机管理器的 AWS 权限
+
+出于安全原因，始终为执行的任务授予尽可能少的权限。
+不建议为连接到 AWS 的用户使用权限过大的访问密钥。
+
+为了让 {productname} 从 AWS 收集所需的信息，VHM 需要有权限描述 EC2 实例和地址。
+授予此权限的一种方法是创建一个新的 IAM 用户（身份和访问管理），专门用于此任务，创建如下策略并附加到该用户：
+
+----
+{
+    "Version": "2012-10-17",
+    "Statement":[
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:DescribeAddresses",
+                "ec2:DescribeInstances"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+----
+
+
+您可以通过限制对特定区域的访问来进一步限制权限。
+有关更多信息，请参见 https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ExamplePolicies_EC2.html#iam-example-read-only.

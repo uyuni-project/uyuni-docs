@@ -1,0 +1,81 @@
+[[ssl-certs-hsts]]
+= HTTP Strict Transport Security
+:description: SUSE Multi-Linux Managerサーバとその関連プロキシでHSTS設定を構成し、安全なWebトラフィックを確保します。
+:revdate: 2024-07-31
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+HTTP Strict Transport Security (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security[HSTS])は、プロトコルダウングレード攻撃やクッキーハイジャックなどの中間者攻撃からWebサイトを保護するのに役立つポリシーメカニズムです。
+
+{productname}では、HSTSはデフォルトで有効になっています。
+サーバで無効にする必要がある場合は、次の手順に従ってください:
+
+
+.プロシージャ:サーバでのHSTSの無効化
+[role=procedure]
+_____
+. サーバコンテナホストで、ルートとして、次のコマンドを実行して、設定`max-age=0`を含む新しい設定ファイルを作成します。
+
++
+
+[source,shell]
+----
+mgrctl exec -- \
+  echo 'Header always set Strict-Transport-Security "max-age=0; includeSubDomains"' \
+  > /etc/apache2/conf.d/zz-spacewalk-www-hsts.conf
+----
+
+. 次のコマンドでApacheを再起動します。
+
++
+
+[source,shell]
+----
+mgrctl exec -- systemctl restart apache2
+----
+
+_____
+
+ターゲットシステムの設定を再試行する必要がある場合、次の手順を実行します。
+
+.プロシージャ:プロキシでのHSTSの無効化
+[role=procedure]
+_____
+. サーバコンテナホストで、ルートとして、次のコマンドを実行して、設定`max-age=0`を含む新しい設定ファイルを作成します。
+
++
+
+[source,shell]
+----
+echo 'Header always set Strict-Transport-Security "max-age=0; includeSubDomains' \
+  > /etc/uyuni/custom-httpd.conf
+----
+
+. 次のコマンドを実行します。
+
++
+
+[source,shell]
+----
+mgrpxy install podman --tuning-httpd /etc/uyuni/custom-httpd.conf config.tar.gz
+----
+
+_____
+
+
+[WARNING]
+====
+新しい設定ファイル`<filename>.conf`に名前を付ける際は、適切なタイミングで読み込まれることを確認してください。
+例えば、`spacewalk-www.conf`で定義された内容を上書きするには、新しいファイルがアルファベット順でこのファイルの後に来る必要があります。
+Apacheがファイルを読み込む方法についての詳細は、 https://httpd.apache.org/docs.を参照してください。
+====
+
+
+[IMPORTANT]
+====
+HSTSが、{productname}によって生成されたデフォルトのSSL証明書または自己署名証明書を使用している間に有効になっている場合、ブラウザはそのような証明書に署名するために使用されたCAがブラウザによって信頼されていない限り、HTTPSで接続を拒否します。
+{productname}によって生成されたSSL証明書を使用している場合は、`http://<SERVER-HOSTNAME>/pub/RHN-ORG-TRUSTED-SSL-CERT`にあるファイルをすべてのユーザーのブラウザにインポートすることで信頼できます。
+====

@@ -1,0 +1,124 @@
+[[troubleshooting-disk-space]]
+= 磁盘空间查错
+:description: 学习如何通过去除未使用的软件频道、清理激活密钥和删除过时的数据库来恢复SUSE Multi-Linux Manager中的磁盘空间
+:revdate: 2024-06-19
+:page-revdate: {revdate}
+:page-author: SUSE产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+磁盘空间不足会对{productname}数据库和目录结构产生严重影响，在大多数情况下是无法恢复的。{productname}监控特定目录中的可用空间，并具有可配置的警报。
+有关空间管理的更多信息，请参见xref:administration:space-management.adoc[]。
+
+通常，容器卷与主机文件系统共享空间。
+当 `btrfs` 文件系统变满时，这可能会阻止您删除文件。
+为了解决此问题，您可以使用 `btrfs device add` 命令暂时向文件系统添加少量存储。
+这将允许您删除文件以为进一步的文件系统维护腾出空间。
+维护完成后，您可以使用 `btrfs device delete` 去除临时存储。
+有关该主题的更多信息，请参见 https://www.suse.com/support/kb/doc/?id=000018779.
+
+可以通过去除未使用的软件通道来恢复磁盘空间。
+
+* 有关如何删除供应商频道的说明，请参见xref:administration:channel-management.adoc[]。
+* 有关如何删除自定义频道的说明，请参见xref:administration:custom-channels.adoc[]。
+
+您还可以检查自定义频道的同步频率。
+有关如何处理自定义频道同步的说明，请参见xref:administration:custom-channels.adoc#_custom_channel_synchronization[]。
+
+还可以通过清理未使用的激活密钥、内容生命周期项目和客户端注册来恢复磁盘空间。
+还可以去除多余的数据库项：
+
+
+
+.过程：升级去除多余的数据库项
+. 使用 `spacewalk-data-fsck` 命令列出任何冗余的数据库条目。
+. 使用 `spacewalk-data-fsck --remove` 命令删除它们。
+
+
+
+== 磁盘检查警告：缺失目录
+
+在从5.0迁移到容器化部署后，或者在使用自定义磁盘检查配置时，您可能会看到关于不再存在的目录的警告。
+当 `DISKCHECKDIRS` 环境变量引用 `/var/lib/pgsql` 或其子目录时，通常会发生这种情况。
+
+在容器化部署中，PostgreSQL 数据库在其自己的容器中运行，而 `/var/lib/pgsql` 目录在服务器容器中不再存在。
+数据库文件存储在单独的数据库容器卷中。
+
+如果您在日志或通知中看到这样的警告：
+
+----
+DISKCHECK: Directory /var/lib/pgsql does not exist
+DISKCHECK: Directory /var/lib/pgsql/data does not exist
+----
+
+这表明磁盘检查配置包含在容器化部署中不再有效的目录。
+
+
+=== 原因
+
+在容器化之前，客户可以通过在 `/etc/rhn/rhn.conf` 中设置 `spacecheck_dirs` 参数来配置要监控的自定义目录。
+一个常见的配置包括 `/var/lib/pgsql` 以监控数据库磁盘空间。
+
+在容器化部署中：
+
+* `/etc/rhn/rhn.conf` 中的 `spacecheck_dirs` 参数仍会被读取，但如果设置了 `DISKCHECKDIRS` 环境变量，则会被其覆盖。
+* 如果未设置 `DISKCHECKDIRS`，系统将回退到配置文件中的 `spacecheck_dirs`。
+* 数据库在单独的容器中运行，并具有自己的专用磁盘检查。
+
+
+=== 修复
+
+从 `DISKCHECKDIRS` 环境变量中去除过时的目录引用。
+
+.过程：升级去除过时的目录引用
+
+. 检查您是否有一个带有自定义目录配置的systemd覆盖文件：
++
+----
+cat /etc/systemd/system/uyuni-server.service.d/diskcheck.conf
+----
+
+. 如果文件包含 `/var/lib/pgsql` 或其他不存在的目录，请更新它以仅使用有效目录：
++
+----
+cat > /etc/systemd/system/uyuni-server.service.d/diskcheck.conf << 'EOF'
+[Service]
+Environment="DISKCHECKDIRS=/var/spacewalk /var/cache /srv"
+EOF
+----
+
+. 通过重启{productname}应用配置：
++
+----
+mgradm restart
+----
+
+
+=== 结果
+
+缺失目录的磁盘检查警告将不再出现。
+服务器容器将仅监控容器内存在的目录。
+
+数据库容器具有自己的独立磁盘检查，用于监控数据库容器内的 PostgreSQL 数据目录（`/var/lib/pgsql/data`）。
+此检查会自动配置，无需手动干预。
+
+有关容器化部署中磁盘空间管理的更多信息，请参见xref:administration:space-management.adoc[]。

@@ -1,0 +1,107 @@
+[[auth-methods-pam]]
+= PAM으로 인증
+:description: SSSD를 SUSE Multi-Linux Manager에서 구성하여 PAM을 사용한 네트워크 기반 인증 시스템을 통합하여 안전한 사용자 관리를 수행합니다.
+:revdate: 2025-01-08
+:page-revdate: {revdate}
+:page-author: SUSE 제품 및 솔루션 문서팀
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+{productname}은 SSSD를 사용하여 플러그형 인증 모듈(PAM)을 사용하는 네트워크 기반 인증 시스템을 지원합니다.
+PAM은 {productname}를 중앙 집중식 인증 메커니즘과 통합할 수 있게 해주는 라이브러리 모음으로, 여러 비밀번호를 기억할 필요가 없습니다. {productname}은 LDAP, Kerberos 및 기타 네트워크 기반 인증 프로토콜을 지원합니다.
+
+
+== SSSD 구성
+
+
+.절차 SSSD 구성하기
+. {productname} {webui}에서 menu:사용자[사용자 생성]로 이동하여 새로운 사용자 또는 기존 사용자가 PAM으로 인증할 수 있도록 활성화합니다.
++
+[NOTE]
+====
+사용자 이름에는 영숫자 문자 외에도 `-`, `_`, `.` 및 `@`가 허용됩니다.
+====
+. `Pluggable Authentication Modules (PAM)` 확인란을 선택하십시오.
+. 서버 컨테이너에서 SSSD를 구성합니다.
+  {productname} 컨테이너 호스트의 명령 프롬프트에서 루트 사용자로 서버 컨테이너에 진입합니다:
++
+
+----
+mgrctl term
+----
+
+. 컨테이너 내에서 다음 단계를 실행하십시오.
++
+.. 구성에 따라 `/etc/sssd/sssd.conf`을(를) 편집하십시오.
+   예를 보려면 xref:administration:auth-methods-pam.adoc#auth-methods-pam-ad[]를 참조하십시오.
+.. 완료하면 컨테이너를 종료:
++
+----
+exit
+----
+. 다음 명령을 사용하여 {productname}을(를) 재시작합니다:
++
+----
+mgradm restart
+----
+
+
+
+[IMPORTANT]
+====
+{productname} {webui}에서 비밀번호를 변경하면 {productname} 서버의 로컬 비밀번호만 변경됩니다.
+해당 사용자에 대해 PAM이 활성화되어 있으면 로컬 비밀번호가 전혀 사용되지 않을 수 있습니다.
+위의 예에서 Kerberos 비밀번호는 변경되지 않습니다.
+이 사용자들의 비밀번호를 변경하려면 네트워크 서비스의 비밀번호 변경 메커니즘을 사용하십시오.
+====
+
+
+PAM 구성에 대한 자세한 내용은 {sles} 보안 가이드를 참조하십시오. 보안 가이드에는 다른 네트워크 기반 인증 방법에도 적용되는 일반적인 예가 포함되어 있습니다.
+Active Directory (AD) 서비스를 구성하는 방법도 설명합니다.
+자세한 내용은 {sles-base-os-documentation}/part-auth.html을 참조하십시오.
+
+
+
+[[auth-methods-pam-ad]]
+=== Active Directory와 LDAP 통합 예제
+
+Active Directory와 LDAP를 직접 통합하려면 다음 예제를 사용하면 됩니다.
+
+코드 조각에서 사용자 환경에 따라 다음 자리 표시자를 변경합니다.
+
+`$domain`::
+도메인 이름
+`$ad_server`::
+AD 서버의 FQDN (`$domain` `$uyuni-hostname`에서 자동으로 감지되지 않은 경우):
+이 AD 클라이언트가 알려져야 하는 머신의 이름입니다.
+설정하지 않으면 `uyuni-server.mgr.internal`이(가) 됩니다.
+
+
+`/etc/sssd/sssd.conf`에 대한 예제 코드 조각:
+
+----
+[sssd]
+config_file_version = 2
+services = nss, pam
+domains = $domain
+
+[nss]
+
+[pam]
+
+[domain/$domain]
+id_provider = ad
+chpass_provider = ad
+access_provider = ad
+auth_provider = ad
+
+ad_domain = $domain
+ad_server = $ad_server
+ad_hostname = $uyuni-hostname
+
+ad_gpo_map_network = +susemanager
+
+krb5_keytab = FILE:/etc/rhn/krb5.conf.d/krb5.keytab
+krb5_ccname_template = FILE:/tmp/krb5cc_%{uid}
+----

@@ -1,0 +1,190 @@
+= 代理迁移
+:description: 通过部署具有新 FQDN 的新代理并遵循概述的迁移程序，将您的 SUSE Manager 4.3 代理迁移到 SUSE Manager 5.1。（我已去除
+:revdate: 2025-10-19
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+== 要求和注意事项
+
+要将 SUSE Manager 4.3 代理迁移到 {productname} {productnumber}，您需要一台新机器，配备 {sl-micro} {microversion} 或 {sles} {bci-mlm} 并安装 `mgrpxy`。
+
+从 SUSE Manager 4.3 就地迁移到 {productnumber} 需要重新安装主机操作系统，无论所选主机操作系统是 {sl-micro} {microversion} 还是 {sles} {bci-mlm}。
+
+在从 SUSE Manager 4.3 迁移到 {productnumber} 之前，必须将所有现有的传统客户端（包括传统代理）迁移到 {salt}。
+有关将传统 {productname} 4.3 客户端迁移到 {salt} 客户端的更多信息，请参见 https://documentation.suse.com/suma/4.3/en/suse-manager/client-configuration/contact-methods-migrate-traditional.html.。
+
+{productname} 5.0 及更高版本不再支持传统联系协议。
+
+在将 SUSE Manager 4.3 代理迁移到 {productname} {productnumber} 之前，必须先迁移 SUSE Manager 4.3 服务器，请参见 xref:installation-and-upgrade:container-deployment/mlm/migrations/server/server-mlm-43-51.adoc[]。
+
+
+== 简介
+
+在 {productname} {productnumber} 中，可以使用两种不同的方法部署代理：
+
+* 基于 Podman 运行的容器化部署
+* 基于 k3s 运行的容器化部署
+
+在 {productname} {productnumber} 中，已移除基于 RPM 的支持，仅支持使用 podman 或 k3s 运行的容器化版本。
+使用 Podman 运行的容器化代理的管理是通过 `mgrpxy` 工具完成的。
+
+image::43-proxy-migration.mmaid.svg[scalewidth=80%]
+
+
+[[proxy-backup-43]]
+== 备份现有 {susemgrproxy} 数据
+
+{productname} {smr} 5.1.2 包括针对两种 {susemgrproxy} 变体的自动备份迁移程序。此程序收集所有所需数据并将其上传到 {productname} 服务器。对于 {susemgrbranch}，此工具还创建并迁移与 {saltboot} 相关的实体，请参见 xref:retail:migration-from-43.adoc[]。
+
+启动 {susemgrproxy} 4.3 迁移流程的方式有多种：
+
+* 调用 API
++
+将 `$proxyid` 替换为分支代理的服务器 ID，或用逗号分隔的多个服务器 ID。
++
+[code]
+----
+mgrctl api login
+mgrctl api post proxy/backupConfiguration '{\"sids\":[$proxyid]}'
+----
+* {salt} 调用
++
+将下方命令中的 `$proxy` 替换为分支代理 minion ID，或在寻址多个分支代理时替换为 `-L proxyminionid1,proxyminionid2,...`。
++
+[code]
+----
+salt $proxy proxy.backup
+----
+
+[NOTE]
+====
+建议您同时手动备份代理，尤其是当存在自定义修改时。
+====
+
+[IMPORTANT]
+====
+备份步骤完成后，{susemgrproxy} 仍然可以正常运行，但请在执行备份后尽快迁移服务器主机，以防止潜在的不一致性。
+====
+
+== 部署一个新的 {susemgrproxy}
+
+您可以使用 AutoYaST 将现有主机升级到 {sles} 15 SP7，或对 {sl-micro} 6.1 进行全新安装。
+
+=== 使用 AutoYaST 升级到 {sles} 15 SP7
+
+创建并使用 AutoYAST 控制文件以迁移或重新安装代理主机。
+
+==== 准备基于 {sles} 15 SP7 的自动安装发行版
+
+- 将 {sles} 15 SP7 安装 ISO 下载或放置到服务器主机中
+- 使用 `mgradm distribution copy $path_to_the_iso` 将安装文件复制到容器中
+- 注册自动安装发行版，参见 xref:client-configuration:autoinst-distributions.adoc[]。
+
+==== 能够访问安装媒体
+
+有关更多信息，请参见 xref:client-configuration:autoinst-profiles.adoc[]。
+
+- 创建基于先前创建的发行版的自动安装控制文件。
+作为控制文件使用在 https://github.com/SUSE/manager-build-profiles/blob/master/AutoYaST/SUSE-Multi-Linux-Manager/SUSE%20Multi-Linux%20Manager%20Proxy/MLM_Proxy-51-SLES-Install.xml 提供的控制文件
+- 控制文件创建完毕后，切换至 `Variables` 选项卡，填写所需变量：
++
+[code]
+----
+org='组织_id'
+distrotree='上一步中的自动安装发行套件标签'
+channel_prefix='clm_通道前缀'（如果使用 SCC 通道，则留空）
+registration_key='升级后的激活密钥'
+----
+- 在 `Autoinstallation File` 选项卡中，您可以查看完整的渲染控制文件以进行进一步检查。
+
+==== 置备代理的自动安装
+
+使用上一步创建的控制文件，在旧 {susemgr} SUSE Manager 4.3 代理上安排自动安装。
+
+- 使用迁移分支服务器的 `Provisioning` 视图中的 Web UI 界面 `System` 选项卡
+- 或者使用 API 调用 `system/provisionSystem` 来安排迁移。例如，从 {productname} 主机执行以下代码片段：
++
+[code]
+----
+mgrctl api login
+mgrctl api post system/provisionSystem '{\"sid\":$proxyid,\"profileName\":\"$profileName\"}'
+----
+
+=== 使用 {sl-micro} 6.1 重新安装
+
+{sl-micro} 6.1 需要在主机上进行全新安装。
+
+[IMPORTANT]
+====
+在继续主机重新安装之前，请备份现有的 4.3 代理。
+有关更多信息，请参见 xref:#proxy-backup-43[]。
+====
+
+include::installation-and-upgrade:partial$snippet-prepare-micro-proxy-host.adoc[leveloffset=+1]
+
+==== 注册并部署代理
+
+.过程：升级正在注册和部署代理
+[role=procedure]
+____
+
+. 一旦主机准备就绪，将新的 {sl-micro} 6.1 系统注册为 {productname} 服务器的客户端。
+  建议使用与原始 4.3 代理相同的从属 ID。
+  有关更多信息，请参见 xref:client-configuration:registration-overview.adoc[]。
+. 在 {productname} 服务器上，为新的代理服务器生成代理配置。
+  有关更多信息，请参见 xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc#generate-proxy-config[]。
+. 将配置传输到 {sl-micro} 6.1 主机并安装代理：
++
+[source,bash]
+----
+mgrpxy install podman config.tar.gz
+----
+. 启动代理：
++
+[source,bash]
+----
+mgrpxy start
+----
+. 一旦代理正常运行，{productname} 服务器将在下一个 `Hardware Refresh` 步骤中自动部署备份的配置。
+
+____
+
+
+
+== 验证代理容器
+
+迁移完成且 salt 首次启动后，备份的代理配置会在 `Hardware refresh` 步骤中自动部署。
+
+完成所有初始配置步骤后，验证代理的必要功能
+
+
+== TFTP 文件同步
+
+容器化代理不使用 tftpsync 机制来传输 tftproot 文件。
+相反，这些文件会根据需要透明地下载和缓存。
+
+为避免在 `cobbler sync` 运行期间出现误报错误，需要将迁移后的 4.3 代理从 tftpsync 机制中去除。
+
+如果您之前已将 4.3 代理配置为接收 TFTP 文件，则需要选择以下配置选项之一：
+
+[NOTE]
+====
+要在容器内访问外壳，请在容器主机上运行以下命令:
+
+----
+mgrctl term
+----
+====
+
+在 {productname} {productnumber} 服务器容器中，运行 `configure-tftpsync.sh`，并将剩余的 4.3 代理列表作为参数。
+如果没有剩余的 4.3 代理，请运行 `configure-tftpsync.sh` 且不带任何参数。
+
+在 {productname} {productnumber} 服务器容器中，手动从 `proxies` 文件的 `/etc/cobbler/settings.yaml` 设置中删除相关代理。
+如果没有剩余的 4.3 代理，则手动完全去除 `proxies` 列表。

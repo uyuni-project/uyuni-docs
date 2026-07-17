@@ -1,0 +1,52 @@
+[[troubleshooting-salt-clients-down-and-dns]]
+= 对 Salt 客户端显示为关闭状态的问题和 DNS 设置进行查错
+:description: 学习如何根据关于 DNS 设置和配置的指导来排查和解决 Salt 客户端问题，包括故障排除步骤。
+:revdate: 2024-05-15
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+即使 Salt 客户端正在运行，软件包刷新或应用状态这样的操作也可能会标示为失败，并显示以下消息：
+
+----
+Minion is down or could not be contacted.
+----
+
+在这种情况下，请尝试重新安排该操作。
+如果重新安排成功，问题的原因可能是错误的 DNS 配置。
+
+[IMPORTANT]
+====
+要在服务器容器内访问外壳，请在容器主机上运行 `mgrctl term`。
+====
+
+当 Salt 客户端重新启动，或者在 grains 刷新时，客户端会计算其 FQDN grains，并且在 grains 被处理之前它是无响应的。
+当 {productname} 服务器上的计划操作即将执行时，{productname} 服务器会在实际操作之前对客户端执行 `test.ping`，以确保客户端实际正在运行并且可以触发该操作。
+
+默认情况下，{productname} 服务器等待 5 秒以获取 `test.ping` 命令的响应。
+如果在 5 秒内未收到响应，则该操作将被设置为失败，并显示一条消息，指出客户端已停止运行或无法联系。
+
+要解决此问题，请修复客户端上的 DNS 解析，使客户端在解析其 FQDN 时不会卡顿 5 秒时间。
+
+如果无法实现这一点，请尝试在 {productname} 服务器上的 `/etc/rhn/rhn.conf` 文件中，将 `java.salt_presence_ping_timeout` 的值提高到大于 4。
+
+例如：
+
+----
+mgrctl term
+vim /etc/rhn/rhn.conf
+java.salt_presence_ping_timeout = 6
+----
+
+然后运行以下命令：
+
+----
+mgradm restart
+----
+
+[NOTE]
+====
+将此值增大会使 {productname} 服务器花费更长时间检查受控端是否无法连接或无响应，导致 {productname} 服务器总体速度更慢或响应能力更低。
+====

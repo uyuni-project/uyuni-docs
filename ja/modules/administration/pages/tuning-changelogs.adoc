@@ -1,0 +1,56 @@
+[[tuning-changelogs]]
+= 変更ログの調整
+:description: SUSE Multi-Linux Managerで変更ログメタデータを設定し、ダウンロード可能なデータを制限してディスクスペースを節約できます。パラメータ値は1から無制限まで設定可能です。
+:revdate: 2024-05-10
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+変更ログのエントリが多いパッケージもあります。
+このデータはデフォルトでダウンロードされますが、常に保持するのが有用な情報とは限りません。
+ダウンロードされる変更ログメタデータの量を制限し、ディスクスペースを節約するために、ディスクに保持するエントリの数に制限を設けることができます。
+
+[IMPORTANT]
+====
+サーバーコンテナ内でステップを実行する前に、`mgrctl term`を使用してください。
+====
+
+この設定オプションは、`/etc/rhn/rhn.conf`設定ファイルにあります。
+パラメータのデフォルト値は`20`です。
+この値を`0`に変更すると、無制限のエントリが提供されます。
+
+----
+java.max_changelog_entries = 20
+----
+
+このパラメータを設定すると、新しいパッケージが同期されるときにのみ有効になります。
+
+このパラメータを変更した後で、`mgradm restart`を使用してサービスを再起動してください。
+
+キャッシュされたデータを削除して再生成し、古いデータを削除したい場合があります。
+
+[IMPORTANT]
+====
+キャッシュデータを削除して再生成するには時間がかかる場合があります。
+持っているチャネルの数や削除するデータの量によっては、数時間かかる可能性があります。
+タスクはTaskomaticによってバックグラウンドで実行されるため、操作が完了するまで{productname}を使用し続けることができますが、パフォーマンスの低下が予想されます。
+====
+
+コマンドラインからキャッシュされたデータを削除して、再生成を要求できます。
+
+----
+spacewalk-sql -i
+----
+次に、SQLデータベースプロンプトで、次のように入力します。
+----
+DELETE FROM rhnPackageRepodata;
+INSERT INTO rhnRepoRegenQueue (id, CHANNEL_LABEL, REASON, FORCE)
+(SELECT sequence_nextval('rhn_repo_regen_queue_id_seq'),
+        C.label,
+        'cached data regeneration',
+        'Y'
+        FROM rhnChannel C);
+\q
+----

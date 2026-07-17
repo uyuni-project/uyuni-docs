@@ -1,3 +1,10 @@
+- Migrated the build to committed AI translation trees (`ja/`, `ko/`, `zh/modules/`)
+  with English fallback via `task stage-content`; po4a/Weblate are no longer used in the
+  build pipeline
+- Updated PDF builds to stage translated content from `{content_dir}/modules/` before
+  `gen-pdf-nav`; consolidated Uyuni CJK PDF output onto the shared `uyuni-cjk` theme
+- Fixed sibling `ifeval` blocks in SUSE Liberty Linux client registration
+  (`clients-sleses.adoc`) that caused unterminated conditional errors in CJK PDF builds
 - Documented Grafana reporting database automated setup and Hub Overview in Administration and Specialized Guides
 - Update the OpenSCAP packages table in the
   System Security with OpenSCAP article in the Administration guide (bsc#1269316)

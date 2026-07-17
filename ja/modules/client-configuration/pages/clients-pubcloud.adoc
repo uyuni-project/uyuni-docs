@@ -1,0 +1,96 @@
+[[clients-pubcloud]]
+= パブリッククラウドでのクライアントの登録
+:description: 自動登録を無効にし、SSHアクセスを有効にすることで、SUSE Multi-Linux Managerクライアントのクラウドゲストを登録します。
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+
+// 2024-04-04 OM: It had been decided in the conversation with the MLM PO 
+// that this Public Cloud related file can stay in the Uyuni books
+
+{productname}サーバを設定すると、クライアントの登録を開始できます。
+
+
+
+== 製品の追加とリポジトリの同期
+
+
+クライアントに対応する製品をすでに追加し、リポジトリを{productname}に同期していることを確認してください。
+これは、クライアントを登録するために使用されるブートストラップリポジトリを作成するために必要です。
+
+詳細については、xref:specialized-guides:public-cloud-guide/overview.adoc[]を参照してください。
+
+
+
+== オンデマンドイメージの準備
+
+{suse}が提供するオンデマンドイメージから開始されたインスタンスは自動的に登録され、更新インフラストラクチャと{sle}モジュールが有効化されます。
+オンデマンドイメージを{productname}クライアントとして使用するには、開始する前にこの自動化を無効にする必要があります。
+
+
+
+.プロシージャ:オンデマンドイメージの準備
+. オンデマンドインスタンスにログインします。
+. コマンドプロンプトでrootとして、登録データとリポジトリを削除します。
++
+----
+registercloudguest --clean
+----
+. 自動登録のトリガサービスを削除します。
++
+----
+systemctl disable guestregister.service
+----
+. Microsoft Azureでは、無効にする必要がある追加サービスがあります。
++
+----
+systemctl disable regionsrv-enabler-azure.timer
+----
+
+
+
+== クライアントの登録
+
+{productname} {webui}で、menu:Systems[起動する]に移動し、`Host`、`SSH Port`、`User`、および`Password`フィールドに入力します。
+`Host`フィールドには安定したFQDNsを使用してください。そうしないと、パブリッククラウドが異なる短命のFQDNsを提供したときに{productname}がホストを見つけられません。
+
+パブリッククラウドイメージは通常、ユーザー名とパスワードでのSSHログインを許可せず、証明書を使用したSSHのみを許可します。
+{webui}からブートストラップを使用したい場合は、ユーザー名とSSHキーでのSSHログインを有効にする必要があります。
+これを行うには、menu:システム[ブートストラッピング]に移動し、認証方法を変更します。
+
+クラウドプロバイダーがMicrosoft Azureの場合、ユーザー名とパスワードでログインできます。
+これを行うには、AzureUserがパスワードなしでルートとしてコマンドを実行できるようにする必要があります。
+これを行うには、`/etc/sudoers.d/waagent`ファイルを開き、次の行を追加または編集します。
+
+----
+AzureUser ALL=(ALL) NOPASSWD: ALL
+----
+
+[WARNING]
+====
+AzureUserがパスワードなしでルートとしてコマンドを実行できるようにすることは、セキュリティリスクを伴います。
+この方法はテストのみに使用してください。
+本番システムにはこれを行わないでください。
+====
+
+ブートストラッププロセスが正常に完了したら、クライアントはmenu:システム[システム一覧]にリストされます。
+
+* 処理をより詳細に制御したい場合や、多数のクライアントを登録する必要がある場合は、ブートストラップスクリプトを作成してください。
+  詳細については、xref:client-configuration:registration-bootstrap.adoc[]を参照してください。
+* Saltクライアントで、さらに詳細にプロセスを制御するには、コマンド行でsingleコマンドを実行すると便利です。
+  詳細については、xref:client-configuration:registration-cli.adoc[]を参照してください。
+* パブリッククラウドイメージ（例えば、AWS AMI）から起動されたクライアントを登録する際には、互いに上書きしないようにするための追加の設定が必要です。
+  クローンの登録に関する詳細については、xref:administration:troubleshooting/tshoot-registerclones.adoc[]をご覧ください。
+
+
+
+== アクティベーションキー
+
+アクティベーションキーは、クライアントが正しいソフトウェアの権利を持ち、適切なチャネルに接続し、関連するグループに登録されていることを確認するために使用されます。
+各アクティベーションキーは組織にバインドされており、キーを作成する際に設定できます。
+
+アクティベーションキーに関する詳細については、xref:client-configuration:activation-keys.adoc[]をご覧ください。

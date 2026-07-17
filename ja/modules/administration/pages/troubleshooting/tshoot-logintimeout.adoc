@@ -1,0 +1,86 @@
+[[troubleshooting-login-timeout]]
+= ログインタイムアウトのトラブルシューティング
+:description: SUSE Multi-Linux Manager Web UIのログインタイムアウトをトラブルシューティングし、rhn.confおよびweb.xmlファイルを調整する方法を学び、潜在的な原因を特定します。
+:revdate: 2025-07-16
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+デフォルトでは、{productname} {webui}は、30{nbsp}分後にユーザーに再ログインを要求します。
+環境に応じて、ログインタイムアウト値を調整したい場合があります。
+
+値を調整するには、`rhn.conf`と`web.xml`の両方で変更する必要があります。
+`/etc/rhn/rhn.conf`には秒単位で値を、`web.xml`には分単位で値を設定してください。
+2つの値は同じ時間でなければなりません。
+
+たとえば、タイムアウト値を1時間に変更するには、`rhn.conf`を3600秒に設定し、`web.xml`を60分に設定します。
+
+
+
+.プロシージャ:{webui}ログインタイムアウト値の調整
+. コンテナホストで、サーバコンテナ内でコマンドラインを開きます。
+
++
+
+[source,shell]
+----
+mgrctl term
+----
+
++
+
+--
+
+.. `/etc/rhn/rhn.conf`を開いて、次の行を追加または編集し、秒単位の新しいタイムアウト値を記載してください。
+
++
+
+----
+web.session_database_lifetime = <Timeout_Value_in_Seconds>
+----
+
+.. ファイルを保存して閉じます。
+
+.. `/etc/tomcat/web.xml`を開いて、次の行を追加または編集し、分単位の新しいタイムアウト値を記載してください。
+
++
+
+[source,xml]
+----
+<session-timeout>Timeout_Value_in_Minutes</session-timeout>
+----
+
+.. ファイルを保存して閉じます。
+
+--
+
++
+
+. コンテナホストでサーバを再起動して、新しい設定を適用します。
+
++
+
+[source,shell]
+----
+systemctl restart uyuni-server.service
+----

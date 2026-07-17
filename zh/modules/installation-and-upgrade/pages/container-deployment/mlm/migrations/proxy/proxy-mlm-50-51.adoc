@@ -1,0 +1,490 @@
+= 代理迁移
+:description: 使用经过验证的程序将代理和主机操作系统升级，从 SLE Micro 5.5 升级到 SLE Micro 6.1，从 SLES 15 SP6 升级到 SLES 15 SP7，
+:revdate: 2026-01-29
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+== 简介
+
+
+本文提供了经过测试和验证的步骤，用于在 **{productname}** 管理的环境中迁移 **主机操作系统** 和 **代理扩展**，特别是针对部署了 **{productname} 代理 5.0** 的系统。
+
+涵盖的升级场景包括：
+
+* 从 **SUSE Linux Enterprise Micro (SLE Micro) 5.5** 迁移到 **SLE Micro 6.1**
+* 从 **SUSE Linux Enterprise Server (SLES) 15 SP6** 迁移到 **SLES 15 SP7**
+* 将 **{productname} 代理扩展** 从 **版本 5.0** 升级到 **版本 {productnumber}**
+
+== {sle-micro} 5.5 到 {sl-micro} 6.1
+
+本节提供了经过测试的程序，将部署了 {sle-micro} 5.5 主机和 {productname} 5.0 代理升级到 {sl-micro} 6.1，并配合 {productname} {productnumber} 代理。
+
+
+=== 先决条件
+
+[IMPORTANT]
+====
+在迁移代理之前，需要先将 SUSE Manager 5.0 服务器迁移至 {productname} {productnumber}。
+====
+
+* {productname} 5.0 代理已安装并在 {sle-micro} 5.5 上运行。
+* 代理系统已在 {productname} 服务器上注册。
+
+
+=== 发行套件升级和代理迁移
+
+.过程：升级将 {productname} 5.0 代理迁移到 {productname} {productnumber} 代理
+[role=procedure]
+____
+
+. 验证系统和 {productname} 工具版本。
+
++
+
+[source,console]
+----
+cat /etc/os-release
+mgrpxy --version
+----
+
++
+
+确认以下信息：
+
+* 操作系统：`SLE Micro 5.5`
+* 工具版本：`mgrpxy version 0.1.29` 或更高版本
+
++
+
+. 检查正在运行的容器：
+
++
+
+[source,console]
+----
+podman ps
+----
+
++
+
+确保 spacewalk 服务正在运行：
+
+- `proxy-squid`
+- `proxy-ssh`
+- `proxy-httpd`
+- `proxy-tftpd`
+- `proxy-salt-broker`
+
++
+
+. 刷新产品目录
+
++
+
+* 在 {productname} {webui} 中，导航到 menu:管理员[设置向导> 产品]。
+* 单击右侧的 `Refresh` 按钮，从 SUSE Customer Center 更新产品目录。
+
+. 在 {productname} 服务器中同步新的代理产品。
+  有关更多信息，请参见 xref:client-configuration:products.adoc[]。
+
++
+
+使用 Web UI 进行同步：
+
+* `SUSE Linux Micro 6.1`
+* `{productname} Proxy Extension {productnumber}`
+
++
+
+. 执行迁移
+  有关更多信息，请参见 xref:client-configuration:client-upgrades-product-migration.adoc[]。
+
++
+
+导航至代理系统并选择 menu:系统[概览] > menu:软件[产品迁移]。
+
++
+
+将
+
+* `SLE Micro 5.5` + `SUSE Manager Proxy 5.0 Extension`
+
++
+
+迁移到
+
+* `SL Micro 6.1` + `{productname} Proxy Extension {productnumber}`
+
++
+
+[IMPORTANT]
+====
+出现提示时，除非您已确认可选通道是必需的，否则**请勿选择**可选通道。
+====
+
++
+
+[NOTE]
+====
+建议您在升级前备份该服务器。
+====
+
++
+
+. 监控迁移操作
+
++
+
+您可以在 menu:系统[详细信息> 事件] 选项卡中查看处理过程，位于 {webui}。
+
++
+
+. 完成升级后，停止代理容器，然后重引导系统。
+
++
+
+[source,console]
+----
+reboot
+mgrpxy stop
+----
+
++
+
+. 重引导后的检查：
+
++
+
+验证升级后的操作系统和 {productname} 扩展：
+
++
+
+[source,console]
+----
+cat /etc/os-release
+SUSEConnect --status-text
+----
+
++
+
+. 验证 {productname} 工具版本。
+
++
+
+[source,console]
+----
+mgrpxy --version
+----
+
++
+
+预期输出：
+
+- `mgrpxy version 5.1.11` 或更高版本
+
++
+
+. 启用根 SSH 访问（_如有需要_）。
+  SL Micro 6.1 默认禁用通过 SSH 的根登录。
+  编辑 `/etc/ssh/sshd_config.d/sshd.conf`：
+
++
+
+[source,console]
+----
+PermitRootLogin yes
+----
+
++
+
+重启该服务：
+
++
+
+[source,shell]
+----
+systemctl restart sshd
+----
+
++
+
+有关更多信息，请参见 xref:administration:troubleshooting/tshoot-remote-root-on-micro.adoc[]。
+
+
+. 以 RPM 软件包形式安装新的代理容器映像。
+
++
+
+[source,shell]
+----
+transactional-update pkg install suse-multi-linux-manager-5.1-<arch>-proxy*
+----
+
+. 重引导代理。
+
+. 升级代理容器：
+
++
+
+[source,console]
+----
+mgrpxy start
+mgrpxy upgrade podman
+----
+
++
+
+. 确认代理容器可正常运行
+
++
+
+[source,console]
+----
+podman ps
+----
+
++
+
+所有预期的代理容器均应正常启动并运行。
+
+- `proxy-salt-broker`
+- `proxy-httpd`
+- `proxy-squid`
+- `proxy-tftpd`
+- `proxy-ssh`
+
+____
+
+
+=== 迁移完成
+
+代理主机系统现在运行 {sl-micro} {microversion}，并更新了 {productname} {productnumber} 代理软件包和同步的产品通道。
+
+
+== {sles} 15 SP6 升级到 15 SP7
+
+本节提供将部署了 {productname} 5.0 代理的 {sles} SP6 主机升级到 {sles} {sp-version} 的过程，使用 {productname} {productnumber} 代理。
+
+
+=== 先决条件
+
+* {productname} 代理 5.0 已安装并在 {sles} 15 SP6 上运行。
+* 代理系统已在 {productname} 服务器上注册。
+
+
+=== 发行套件升级和代理迁移
+
+.过程：升级在 {sles} 15 SP6 上更新 {productname} 代理组件
+[role=procedure]
+____
+
+. 验证操作系统和 {productname} 工具版本。
+
++
+
+[source,console]
+----
+cat /etc/os-release
+mgrpxy --version
+----
+
++
+
+确认以下信息：
+
+* 操作系统：`SUSE Linux Enterprise Server 15 SP6`
+* 工具版本：`mgrpxy version 0.1.29` 或更高版本
+
+
++
+
+. 列出正在运行的代理容器
+
++
+
+[source,console]
+----
+podman ps
+----
+
++
+
+校验以下容器是否正在运行：
+
+- `proxy-salt-broker`
+- `proxy-httpd`
+- `proxy-squid`
+- `proxy-tftpd`
+- `proxy-ssh`
+- 支撑性基础架构容器
+
++
+
+. 在 {productname} 服务器中同步新的代理产品。
+  有关更多信息，请参见 xref:client-configuration:products.adoc[]。
+
++
+
+通过 {webui} 同步以下内容：
+
+* `SUSE Linux Enterprise Server 15 SP7`
+- `{productname} Proxy Extension for SLE 5.1`
+
++
+
+[NOTE]
+====
+代理扩展列在 `Basesystem Module 15 SP7` > `Containers Module 15 SP7` 下。
+====
+
++
+
+. 执行迁移
+  有关更多信息，请参见 xref:client-configuration:client-upgrades-product-migration.adoc[]。
+
++
+
+导航至代理系统并选择 menu:系统[概览 > 软件 > 产品迁移]。
+
++
+
+将
+
++
+
+* `SUSE Linux Enterprise Server 15 SP6` + `SUSE Manager Proxy Extension 5.0`
+
++
+
+迁移到
+
++
+
+* `SUSE Linux Enterprise Server 15 SP7` + `{productname} Proxy Extension for SLE 5.1`
+
++
+
+[IMPORTANT]
+====
+出现提示时，除非您已确认可选通道是必需的，否则**请勿选择**可选通道。
+====
+
++
+
+[NOTE]
+====
+建议您在升级前备份该服务器。
+====
+
++
+
+. 监控迁移操作
+
++
+
+您可以在 menu:系统[详细信息> 事件] 选项卡中查看处理过程，位于 {webui}。
+
++
+
+. 完成升级后，停止代理容器，然后重引导系统。
+
++
+
+[source,console]
+----
+reboot
+mgrpxy stop
+----
+
++
+
+. 重引导后的检查：
+
++
+
+验证升级后的操作系统和 {productname} 扩展。
+
++
+
+[source,console]
+----
+cat /etc/os-release
+SUSEConnect --status-text
+----
+
++
+
+您应看到以下内容：
+
+* `PRETTY_NAME="SUSE Linux Enterprise Server 15 SP7"`
+* `SUSE Multi-Linux Manager Proxy 5.1 Extension for SLE`
+
++
+
+. 验证 {productname} 工具版本。
+
++
+
+[source,console]
+----
+mgrpxy --version
+----
+
++
+
+预期输出：
+
+* `mgrpxy version 5.1.11` 或更高版本
+
+
++
+
+. 以 RPM 软件包形式安装新的代理容器映像。
+
++
+
+[source,shell]
+----
+zypper install suse-multi-linux-manager-5.1-x86_64-proxy*
+----
+
+. 升级代理容器：
+
++
+
+[source,console]
+----
+mgrpxy start
+mgrpxy upgrade podman
+----
+
++
+
+. 确认代理容器可正常运行
+
++
+
+[source,console]
+----
+podman ps
+----
+
++
+
+所有预期的代理容器均应正常启动并运行。
+
+- `proxy-salt-broker`
+- `proxy-httpd`
+- `proxy-squid`
+- `proxy-tftpd`
+- `proxy-ssh`
+
+____
+
+
+=== 迁移完成
+
+代理主机系统现已运行 {sles} 15 SP7，配备更新后的 {productname} {productnumber} 代理软件包及已同步的产品通道。

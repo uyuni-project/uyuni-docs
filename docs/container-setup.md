@@ -82,7 +82,11 @@ It takes a few minutes and only needs to be done once (or after `Dockerfile.bci`
 task container:build
 ```
 
-The image includes: Go, Task, Antora, Asciidoctor-PDF, po4a, and zip.
+The image includes: Go, Task, Antora, Asciidoctor-PDF, and zip.
+
+Translations are staged from committed `{lang}/modules/` trees (`task stage-content`).
+po4a is not installed in the builder image. Legacy po4a scripts remain in the repo under
+`scripts/` for manual use only.
 
 ---
 

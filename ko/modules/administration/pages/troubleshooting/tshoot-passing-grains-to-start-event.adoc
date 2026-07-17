@@ -1,0 +1,40 @@
+[[troubleshooting-passing-grains-to-start-event]]
+= 시작 이벤트로 입자 전달 문제 해결
+:description: Salt의 새로운 기능을 사용하여 시작 이벤트에 그레인을 전달할 때 발생할 수 있는 문제를 해결하고 잠재적인 지연을 방지하는 방법을 배우십시오.
+:revdate: 2022-10-18
+:page-revdate: {revdate}
+:page-author: SUSE 제품 및 솔루션 문서 팀
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+Salt 클라이언트가 시작될 때마다 `machine_id` 그레인을 {productname}에 전달합니다. {productname}은(는) 이 그레인을 사용하여 클라이언트가 등록되었는지 여부를 결정합니다.
+이 프로세스는 동기 Salt 호출이 필요합니다. 동기 Salt 호출은 다른 프로세스를 차단하므로, 많은 클라이언트가 동시에 시작되면 프로세스가 상당한 지연을 초래할 수 있습니다.
+
+이 문제를 해결하기 위해 별도의 동기 Salt 호출을 방지할 수 있는 새로운 기능이 Salt에 도입되었습니다.
+
+이 기능을 사용하려면 이 기능을 지원하는 클라이언트에서 클라이언트 구성에 구성 파라미터를 추가하면 됩니다.
+
+이 프로세스를 더 쉽게 만들려면 `mgr_start_event_grains.sls` 도우미 Salt 상태를 사용할 수 있습니다.
+
+[NOTE]
+====
+이것은 이미 등록된 클라이언트에만 적용됩니다.
+최근에 Salt 클라이언트를 등록한 경우, 이 구성 매개변수는 기본적으로 추가됩니다.
+====
+
+
+{productname} 서버의 명령 프롬프트에서 다음 명령을 사용해 `start_event_grains` 구성 도우미를 활성화합니다:
+
+----
+salt '*' state.sls util.mgr_start_event_grains
+----
+
+이 명령은 클라이언트의 구성 파일에 필요한 구성을 추가하고, 클라이언트를 재시작할 때 적용합니다.
+클라이언트 수가 많은 경우, 대신 배치 모드로 명령을 실행할 수 있습니다:
+
+----
+salt --batch-size 50 '*' state.sls mgr_start_event_grains
+----
+
+

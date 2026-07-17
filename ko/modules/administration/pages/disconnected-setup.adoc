@@ -1,0 +1,224 @@
+[[disconnected-setup]]
+= 연결이 해제된 설정
+:description: RMT 또는 SMT를 사용하여 연결이 해제된 환경에서 SUSE Multi-Linux Manager를 설정하고 관리합니다.
+:revdate: 2025-05-27
+:page-revdate: {revdate}
+:page-author: SUSE 제품 및 솔루션 문서 팀
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+{productname}를 인터넷에 연결할 수 없는 경우 연결이 해제된 환경 내에서 사용할 수 있습니다.
+
+리포지토리 미러링 도구(RMT)는 {sle}{nbsp}15 및 이후 버전에서 사용할 수 있습니다.
+RMT는 구형 {sle} 설치에서 사용할 수 있는 구독 관리 도구(SMT)를 대체합니다.
+
+연결이 해제된 {productname} 설정에서 RMT 또는 SMT는 외부 네트워크를 사용하여 {scclongform}에 연결합니다.
+모든 소프트웨어 채널과 리포지토리는 이동식 저장 장치에 동기화됩니다.
+그 후 저장 장치는 연결이 해제된 {productname} 설치를 업데이트하는 데 사용될 수 있습니다.
+
+이 설정을 사용하면 {productname} 설치를 연결이 해제된 오프라인 환경에서 유지할 수 있습니다.
+
+[NOTE]
+====
+RMT 또는 SMT 인스턴스를 사용하여 {productname} 서버를 직접 관리해야 합니다.
+두 번째 RMT 또는 SMT 인스턴스를 계단식으로 관리하는 데 사용할 수 없습니다.
+====
+
+RMT에 대한 자세한 내용은 {sles-base-os-documentation}/book-rmt.html을 참조하십시오.
+
+
+
+[[disconnected-setup-sync-scc]]
+== {scc}에서 채널 및 리포지토리 동기화
+
+
+=== RMT 동기화
+
+{sle} 15 설치에서 RMT를 사용하여 {sle} 12 이상을 실행하는 클라이언트를 관리할 수 있습니다.
+
+각 {productname} 설치에 대해 전용 RMT 인스턴스를 설정하는 것이 좋습니다.
+
+
+
+.절차 RMT 설정하기
+. RMT 인스턴스에서 다음 RMT 패키지를 설치합니다.
++
+----
+zypper in rmt-server
+----
+. {yast}를 사용하여 RMT를 구성합니다:
++
+----
+yast2 rmt
+----
+. 프롬프트에 따라 설치를 완료합니다.
+
+RMT 설정에 대한 자세한 내용은 {sles-base-os-documentation}/book-rmt.html을 참조하십시오.
+
+
+
+.절차 {scc}과 RMT 동기화하기
+. RMT 인스턴스에서 조직에 대해 사용할 수 있는 모든 제품 및 리포지토리 나열:
++
+----
+rmt-cli products list --all
+rmt-cli repos list --all
+----
+. 조직에 대해 사용할 수 있는 모든 업데이트를 동기화합니다.
++
+----
+rmt-cli sync
+----
+systemd를 사용하여 정기적으로 동기화하도록 RMT를 구성할 수도 있습니다.
+. 필요한 제품을 활성화합니다.
+    예를 들어, SLES 15를 동기화하려면 다음을 수행해야 합니다.
++
+----
+rmt-cli product enable sles/15/x86_64
+----
+. 동기화된 데이터를 이동식 스토리지로 엑스포트합니다.
+    이 예에서 스토리지 매체의 탑재 지점은 `/mnt/usb`입니다:
++
+----
+rmt-cli export data /mnt/usb
+----
+. 활성화된 리포지토리를 이동식 스토리지로 엑스포트합니다.
++
+----
+rmt-cli export settings /mnt/usb
+rmt-cli export repos /mnt/usb
+----
+
+
+[IMPORTANT]
+====
+외부 저장 장치가 RMT 사용자가 쓸 수 있는 디렉토리에 마운트되어 있는지 확인하십시오.
+`cli` 섹션의 `/etc/rmt.conf`에서 RMT 사용자 설정을 변경할 수 있습니다.
+====
+
+
+
+=== SMT 동기화
+
+
+SMT는 {sle} 12에 포함되어 있으며 {sle} 10 이상을 실행하는 클라이언트를 관리하기 위한 용도로 사용할 수 있습니다.
+
+SMT를 사용하려면 리포지토리와 패키지를 동기화하기 위해 SMT 인스턴스에 로컬 미러 디렉토리를 생성해야 합니다.
+
+SMT 설치 및 구성에 대한 자세한 내용은 https://documentation.suse.com/sles/12-SP5/html/SLES-all/book-smt.html.을(를) 참조하십시오.
+
+
+
+.절차 {scc}과(와) SMT 동기화하기
+. SMT 인스턴스에서 데이터베이스 대체 파일을 생성합니다.
++
+----
+smt-sync --createdbreplacementfile /tmp/dbrepl.xml
+----
+. 동기화된 데이터를 이동식 스토리지로 엑스포트합니다.
+  이 예에서 스토리지 매체의 탑재 지점은 `/mnt/usb`입니다:
++
+----
+smt-sync --todir /mnt/usb
+smt-mirror --dbreplfile /tmp/dbrepl.xml --directory /mnt/usb \
+           --fromlocalsmt -L /var/log/smt/smt-mirror-export.log
+curl https://scc.suse.com/multi-linux-manager/product_tree.json -o /mnt/usb/product_tree.json
+----
+
+
+[IMPORTANT]
+====
+외부 저장 장치가 RMT 사용자가 쓸 수 있는 디렉토리에 마운트되어 있는지 확인하십시오.
+`/etc/smt.conf`에서 SMT 사용자 설정을 변경할 수 있습니다.
+====
+
+
+
+== 필수 채널
+
+주어진 채널을 동기화하기 위해서는 해당 {productname} 클라이언트 도구 채널이 필요합니다. {productname}
+이 채널이 활성화되지 않으면 {productname}이(가) 해당 제품을 감지하지 못할 수 있습니다.
+
+다음 명령을 실행하여 해당 필수 채널을 활성화합니다.
+
+SLES 12 및 SLES for SAP 또는 SLE HPC와 같은 제품 기반 제품::
+RMT: `rmt-cli products enable sle-manager-tools/12/x86_64`
++
+SMT: `smt repos -p sle-manager-tools,12,x86_64`
+
+SLES 15 및 SLES for SAP 또는 SLE HPC와 같은 제품 기반 제품::
+RMT: `rmt-cli products enable sle-manager-tools/15/x86_64`
++
+SMT: `smt repos -p sle-manager-tools,15,x86_64`
+
+그런 다음 채널을 미러링하고 엑스포트합니다.
+
+다른 배포판이나 아키텍처를 활성화할 수 있습니다.
+제품 채널이나 리포지토리를 미러링하도록 활성화하는 방법에 대한 자세한 내용은 문서를 참조하십시오:
+
+RMT:: {sles-base-os-documentation}/cha-rmt-mirroring.html#sec-rmt-mirroring-enable-disable
+
+SMT:: https://documentation.suse.com/sles/12-SP5/single-html/SLES-smt/index.html#smt-mirroring-manage-domirror
+
+
+
+
+[[disconnected-setup-server]]
+== 연결 해제된 서버
+
+{productname}을(를) 연결 해제된 서버로 설정하려면 air-gapped 배포 지침을 따르십시오.
+
+
+=== 배포
+
+제공된 이미지를 사용하여 연결 해제된 서버를 가상 머신(VM)으로 배포하는 것이 권장됩니다.
+{productname} 서버의 air-gapped 배포에 대한 내용은 xref:installation-and-upgrade:container-deployment/mlm/server-air-gapped-deployment-mlm.adoc[]를 참조하십시오.
+
+마지막 명령을 `--mirror` 옵션으로 실행하고 `</media/disk>`를 탑재 지점으로 바꿔야 합니다:
+
+----
+mgradm install podman --mirror </media/disk>
+----
+
+
+
+=== 동기화
+
+{scclongform} 데이터가 로드된 이동식 미디어를 사용하는 경우 이를 사용하여 연결이 끊긴 서버를 동기화할 수 있습니다.
+
+[WARNING]
+====
+동기화에 사용하는 이동식 미디어는 항상 동일한 탑재 지점에서 사용 가능해야 합니다.
+저장 매체가 마운트되지 않은 경우 동기화를 트리거하지 마십시오.
+이로 인해 데이터 손상이 발생합니다.
+====
+
+
+.절차 연결이 끊긴 서버 동기화
+
+. Tomcat 서비스를 재시작합니다.
++
+----
+mgrctl exec -ti -- systemctl restart tomcat
+----
+. 로컬 데이터를 새로 고침합니다.
++
+----
+mgrctl exec -ti -- mgr-sync refresh
+----
+. 동기화를 실행합니다.
++
+----
+mgrctl exec -ti -- mgr-sync list channels
+mgrctl exec -ti -- mgr-sync add channel channel-label
+----
+
+[NOTE]
+====
+`server.susemanager.fromdir`가 설정되어 있으면 {productname}는 {scclongform} 자격 증명이 유효한지 여부를 확인할 수 없습니다.
+대신 경고 표시가 나타나고 {scc} 온라인 검사가 수행되지 않습니다.
+====
+
+연결이 끊긴 설정의 대안은 Inter-Server Synchronization (ISS)를 사용하여 서버 간에 콘텐츠를 복사하는 것입니다.
+자세한 내용은 xref:specialized-guides:large-deployments/iss_v2.adoc[Inter-Server Synchronization - Version 2]를 참조하십시오.

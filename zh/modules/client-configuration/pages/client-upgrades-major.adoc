@@ -1,0 +1,157 @@
+[[client-upgrades-major]]
+= 主要版本升级
+:description: 学习如何通过使用 YaST 工具准备安装媒体、声明自动安装发行版，成功将客户端从 SLE12 迁移到 SLE15
+:revdate: 2024-06-12
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+客户端必须安装最新可用的服务包（SP），并应用所有最新更新。
+在开始之前，请确保系统已更新，并且所有更新已成功安装。
+
+升级由 {yast} 和 {ay} 控制，该过程不使用 Zypper。
+
+
+
+== 准备迁移
+
+
+在将客户端从 SLE{nbsp}12 迁移到 SLE{nbsp}15 之前，您需要：
+
+. 准备安装媒体
+. 声明自动安装发行套件
+. 创建激活密钥
+. 创建自动安装配置文件
+
+
+
+=== 准备安装媒体
+
+.过程：升级准备安装媒体
+. 在容器主机上，下载包含安装源的 ISO 映像。
+
+. 使用 `mgradm` 从 ISO 映像导入安装数据：
++
+----
+mgradm distribution copy <image_name>.iso <image_name>
+----
+
+. 请注意 `mgradm` 报告的发行版路径。
+  在您向 {productname} 声明发行版时，您将需要它。
+
+
+[NOTE]
+====
+此映像可用于多个自动安装发行版。
+====
+
+有关详细信息，请参见 xref:client-configuration:autoinst-distributions.adoc[]。
+
+
+
+=== 声明自动安装发行套件
+
+.过程：升级声明自动安装发行版
+. 在 {productname} {webui} 中，导航到 menu:系统[自动安装> 发行版]。
+. 单击 `Create  Distribution`，并填写以下字段：
++
+在 `Distribution Label` 字段中，输入用于识别您的自动安装发行版的名称。
+  例如，`sles15sp6-x86_64`。
+* 在 `Tree Path` 字段中，输入您已保存的安装媒体的路径。
+* 选择匹配的 `Base Channel`。
+  此项必须与安装媒体匹配。
+* 选择 `Installer Generation`。
+  此项必须与安装媒体匹配。
+* 可选：指定引导此发行版时要使用的内核选项。
+  提供内核选项有多种方式。
+  在此仅添加对发行版通用的选项。
+. 单击 btn:[创建可自动安装的发行版]。
+
+
+=== 创建激活密钥
+
+例如，要从旧 SLE{nbsp}12 基础通道切换到新的 SLE{nbsp}15 通道，需要有激活密钥。
+
+
+.过程：升级创建激活密钥
+. 在 {productname} 服务器 {webui} 中，导航到 menu:系统[激活密钥]，然后单击 `Create Key`。
+. 输入密钥说明。
+. 输入密钥或将其留空以生成自动密钥。
+. 可选：如果您要限制使用次数，请在 `Usage` 文本字段中输入值。
+. 选择 `SLE-Product-SLES15-SP6-Pool for x86_64` 基础频道。
+. 可选：选择任何 `Add-On System Types`。
+    有关更多信息，请参见 {sles-base-os-documentation}/article-modules.html。
+. 单击 btn:[创建激活密钥]。
+. 单击 `Child Channels` 选项卡并选择所需的频道。
+. 单击 btn:[更新密钥]。
+
+
+
+=== 创建自动安装配置文件
+
+自动安装配置文件包含安装系统所需的所有安装和配置数据。
+它们还可以包含在安装完成后执行的脚本。
+例如，作为起始点的脚本，请参见 https://github.com/SUSE/manager-build-profiles/tree/master/AutoYaST..
+
+有关有效的 {ay} 升级设置，请参见 https://doc.opensuse.org/projects/autoyast/#CreateProfile-upgrade.。
+
+
+.过程：升级创建自动安装配置文件
+. 在{productname} {webui}中，导航到menu:系统[自动安装 > 配置文件]并上传您的自动安装配置文件脚本。
++
+有关可用作着手点的示例脚本，请参见：
++
+https://github.com/SUSE/manager-build-profiles/tree/master/AutoYaST.
+
+. 在 `Kernel Options` 字段中，键入 `autoupgrade=1`。
++
+可选地，您还可以添加 `Y2DEBUG=1` 选项。
+调试设置不是必需的，但可以帮助调查您可能遇到的任何未来问题。
++
+
+[IMPORTANT]
+====
+在 Azure 云中运行的客户端必须将 `textmode=1 console=ttyS0` 添加到 `Kernel Options`。
+====
+
+. 粘贴自动安装配置文件或使用文件上载字段。
+. 单击btn:[创建]以保存。
+. 当上传的配置文件需要设置变量时，导航到 menu:系统[自动安装 > 配置文件]，选择要编辑的配置文件，然后导航到 `Variables` 选项卡。
++
+使用以下格式指定所需的变量：
++
+----
+<key>=<value>
+----
+
+
+
+== 迁移
+
+在开始前，需检查自动安装配置文件中引用的所有通道是否可用并已完全同步。
+
+您可以在 `/var/log/rhn/reposync/<channel-label>.log` 中监控镜像进度。
+
+
+.过程：升级迁移
+. 在 {productname} 服务器 {webui} 中，导航到 `Systems` 并选择要升级的客户端。
+. 导航到 `Provisioning` 选项卡，然后选择您上传的自动安装配置文件。
+. 单击btn:[安排自动安装并完成]。
+  系统会下载所需的文件，更改引导加载程序项，重启并开始升级。
+
+
+下次客户端与{productname}服务器同步时，它会接收一个重新安装任务。
+重新安装任务获取新的内核和initrd软件包。
+它还会写入一个新的 `/boot/grub/menu.lst` (GRUB Legacy) 或 `/boot/grub2/grub.cfg` (GRUB 2)，其中包含指向新内核和 initrd 软件包的指针。
+
+当客户端下次启动时，它使用grub启动新的内核及其initrd。
+在此过程中不使用PXE引导。
+
+提取作业约 3 分钟后，客户端会关闭以重引导。
+
+[NOTE]
+====
+对于客户端，请在迁移完成后使用 `spacewalk/minion_script` 代码段再次注册客户端。
+====

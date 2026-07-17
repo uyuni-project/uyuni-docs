@@ -138,3 +138,15 @@ Output must be functionally equivalent (attribute values, xref resolution, PDF s
 - [ ] `manager-4.3` — parity check vs. existing Makefile output
 - [ ] `manager-4.3` — merge and tag
 
+## Phase 8 — AI translation directories
+
+See [L10N-AI-MIGRATION.md](../../L10N-AI-MIGRATION.md) at repo root.
+
+- [x] Merge PR #5090 `ja/`, `ko/`, `zh/modules/` trees
+- [x] Add `content_dir` to `config.yml` and `docbuild get-content-dir`
+- [x] Implement `task stage-content`
+- [x] Deprecate `task translations`/`task pot` and Weblate CI workflow
+- [x] Container validation: stage-content, draft (en, ja), PDF (ja, ko, zh_CN)
+- [ ] Full matrix: all 4 langs × 4 HTML targets, full PDF batch, publish, obs
+- [x] Update architecture docs
+

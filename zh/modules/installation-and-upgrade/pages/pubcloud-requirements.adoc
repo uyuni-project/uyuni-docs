@@ -1,0 +1,90 @@
+[[install-pubcloud-requirements]]
+= 公有云要求
+:description: 在公有云基础设施上配置 SUSE Multi-Linux Manager，需遵循这些经过验证的要求，以确保安全设置。
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+本节提供在公有云基础设施上安装 {productname} 的要求。
+我们已在 Amazon EC2、Google Compute Engine 和 Microsoft Azure 上测试了这些说明，但它们也应适用于其他提供商，可能会有一些变化。
+
+在开始之前，请注意以下一些事项：
+
+* {productname} 的设置过程执行正向确认的反向 DNS 查找。
+  此步骤必须成功，以便设置过程完成并使 {productname} 按预期运行。
+  在设置 {productname} 之前，进行主机名和 IP 配置非常重要。
+* {productname} 服务器和 Proxy 实例需要在一个允许您控制 DNS 记录的网络配置中运行，但不能从互联网直接访问。
+* 在此网络配置中必须提供 DNS 解析：`hostname -f` 必须返回完全限定的域名 (FQDN)。
+* DNS 解析对于连接客户端也很重要。
+* DNS 取决于您选择的云框架。
+  请参考云服务提供商文档以获取详细说明。
+* 我们建议将软件仓库、服务器数据库和代理 squid 缓存放置在外部虚拟磁盘上。
+  这可以防止实例意外终止时的数据丢失。
+  本节包括设置外部虚拟磁盘的说明。
+
+
+
+== 网络要求
+
+
+在公有云上使用 {productname} 时，必须使用受限网络。
+我们建议使用具有适当防火墙设置的 VPC 私有子网。
+只有在您指定的 IP 范围内的机器才能访问该实例。
+
+[WARNING]
+====
+在公有云上运行 {productname} 意味着实施强有力的安全措施。限制、过滤、监控和审计对实例的访问至关重要。{SUSE} 强烈建议不要使用缺乏足够边界防护的全球可访问 {productname} 实例。
+====
+
+要访问 {productname} {webui}，在配置网络访问控制时允许 HTTPS。
+这使您能够访问 {productname} {webui}。
+
+在 EC2 和 Azure 中，创建一个新的安全组，并为 HTTPS 添加入站和出站规则。
+在 GCE 中，勾选 `Allow HTTPS traffic` 复选框，位于 `Firewall` 部分下。
+
+
+
+== 准备存储卷
+
+我们建议将 {productname} 的存储库和数据库存放在与 root 卷不同的存储设备上。
+这将有助于避免数据丢失，并可能提高性能。
+
+{productname} 容器使用默认的存储位置。这些位置应在部署之前配置以用于自定义存储。
+有关更多信息，请参见 xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[持久容器卷]。
+
+[IMPORTANT]
+====
+不要使用逻辑卷管理 (LVM) 进行公有云安装。
+====
+
+
+存储库所使用的磁盘大小取决于您打算用 {productname} 管理的发行版和频道数量。
+当您附加虚拟磁盘时，它们将在您的实例中显示为 Unix 设备节点。
+设备节点的名称将根据您的提供商和所选实例类型而有所不同。
+
+确保 {productname} 服务器的 root 卷为 100{nbsp}GB 或更大。
+添加一个额外的存储磁盘，容量为500{nbsp}GB或更大，如果可以的话选择SSD存储。
+{productname} 服务器的云镜像使用脚本在实例启动时分配此单独的卷。
+
+当您启动实例时，您可以登录到 {productname} 服务器，并使用此命令查找所有可用的存储设备：
+
+----
+hwinfo --disk | grep -E "Device File:"
+----
+
+如果您不确定选择哪个设备，请使用 `lsblk` 命令查看每个设备的名称和大小。
+选择与您要查找的虚拟磁盘大小匹配的名称。
+
+您可以使用 `mgr-storage-server` 命令设置外部磁盘。
+这会创建一个挂载在 `/manager_storage` 的 XFS 分区，并将其用作数据库和存储库的位置：
+
+----
+/usr/bin/mgr-storage-server <devicename>
+----
+
+ifeval::[{mlm-content} == true]
+有关设置存储卷和分区的更多信息，包括建议的最小大小，请参见 xref:installation-and-upgrade:hardware-requirements.adoc[]。
+endif::[]

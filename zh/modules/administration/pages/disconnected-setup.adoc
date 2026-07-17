@@ -1,0 +1,224 @@
+[[disconnected-setup]]
+= 断开连接的设置
+:description: 在断开连接的环境中使用 RMT 或 SMT 设置和管理您的 SUSE Multi-Linux Manager
+:revdate: 2025-05-27
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+无法将 {productname} 连接到互联网时，您可以在断开连接的环境中使用它。
+
+Repository Mirroring Tool (RMT) 可在 {sle}{nbsp}15 及更高版本上使用。
+RMT 替代了 Subscription Management Tool（SMT），后者可用于较旧的 {sle} 安装。
+
+在断开连接的 {productname} 设置中，RMT 或 SMT 使用外部网络连接到 {scclongform}。
+所有软件通道和储存库都同步到可移动存储设备。
+然后可以使用该存储设备更新断开连接的 {productname} 安装。
+
+此设置可让您的 {productname} 安装保留在断开连接的脱机环境中。
+
+[NOTE]
+====
+您的 RMT 或 SMT 实例必须直接用于管理 {productname} 服务器。
+它不能用于以级联方式管理第二个 RMT 或 SMT 实例。
+====
+
+有关 RMT 的更多信息，请参见 {sles-base-os-documentation}/book-rmt.html。
+
+
+
+[[disconnected-setup-sync-scc]]
+== 从 {scc} 同步通道和储存库
+
+
+=== 同步 RMT
+
+可以在 {sle} 15 安装中使用 RMT 来管理运行 {sle} 12 或更高版本的客户端。
+
+我们建议您为每个 {productname} 安装设置一个专用 RMT 实例。
+
+
+
+.过程：升级设置 RMT
+. 在 RMT 实例上安装 RMT 软件包：
++
+----
+zypper in rmt-server
+----
+. 使用 {yast} 配置 RMT：
++
+----
+yast2 rmt
+----
+. 按照提示完成安装。
+
+有关设置 RMT 的更多信息，请参见 {sles-base-os-documentation}/book-rmt.html。
+
+
+
+.过程：升级与 {scc} 同步 RMT
+. 在 RMT 实例上，列出您的组织可用的所有产品和储存库：
++
+----
+rmt-cli products list --all
+rmt-cli repos list --all
+----
+. 同步您的组织可用的所有更新：
++
+----
+rmt-cli sync
+----
+还可以使用 systemd 将 RMT 配置为定期同步。
+. 启用所需的产品。
+    例如，要启用 SLES 15，请运行以下命令：
++
+----
+rmt-cli product enable sles/15/x86_64
+----
+. 将已同步的数据导出到可卸存储。
+    在此示例中，存储介质的安装点为 `/mnt/usb`：
++
+----
+rmt-cli export data /mnt/usb
+----
+. 将已启用的储存库导出到可卸存储：
++
+----
+rmt-cli export settings /mnt/usb
+rmt-cli export repos /mnt/usb
+----
+
+
+[IMPORTANT]
+====
+确保外部存储已挂载到 RMT 用户可写的目录。
+您可以在 `cli` 的 `/etc/rmt.conf` 部分中更改 RMT 用户设置。
+====
+
+
+
+=== 同步 SMT
+
+
+SMT 已随附在 {sle} 12 中，可用于管理运行 {sle} 10 或更高版本的客户端。
+
+SMT 要求您在 SMT 实例上创建一个本地镜像目录以同步储存库和软件包。
+
+有关安装和配置 SMT 的更多详细信息，请参见 https://documentation.suse.com/sles/12-SP5/html/SLES-all/book-smt.html.。
+
+
+
+.过程：升级与 {scc} 同步 SMT。
+. 在 SMT 实例上，创建一个数据库替换文件：
++
+----
+smt-sync --createdbreplacementfile /tmp/dbrepl.xml
+----
+. 将已同步的数据导出到可卸存储。
+  在此示例中，存储介质的安装点为 `/mnt/usb`：
++
+----
+smt-sync --todir /mnt/usb
+smt-mirror --dbreplfile /tmp/dbrepl.xml --directory /mnt/usb \
+           --fromlocalsmt -L /var/log/smt/smt-mirror-export.log
+curl https://scc.suse.com/multi-linux-manager/product_tree.json -o /mnt/usb/product_tree.json
+----
+
+
+[IMPORTANT]
+====
+确保外部存储已挂载到 RMT 用户可写的目录。
+您可以在 `/etc/smt.conf` 中更改 SMT 用户设置。
+====
+
+
+
+== 必需通道
+
+需要相应的 {productname} 客户端工具通道，以便 {productname} 能够同步给定通道。
+如果这些通道未启用，{productname} 可能无法检测到该产品。
+
+运行以下命令启用这些必需的通道：
+
+SLES 12 和基于它的产品，例如 SLES for SAP 或 SLE HPC::
+RMT：`rmt-cli products enable sle-manager-tools/12/x86_64`
++
+SMT：`smt repos -p sle-manager-tools,12,x86_64`
+
+SLES 15 和基于它的产品，例如 SLES for SAP 或 SLE HPC::
+RMT：`rmt-cli products enable sle-manager-tools/15/x86_64`
++
+SMT：`smt repos -p sle-manager-tools,15,x86_64`
+
+然后镜像通道并导出。
+
+可以启用其他发行版或架构。
+有关启用产品通道或储存库以进行镜像的更多信息，请参见文档：
+
+RMT:: {sles-base-os-documentation}/cha-rmt-mirroring.html#sec-rmt-mirroring-enable-disable
+
+SMT:: https://documentation.suse.com/sles/12-SP5/single-html/SLES-smt/index.html#smt-mirroring-manage-domirror
+
+
+
+
+[[disconnected-setup-server]]
+== 不联网服务器
+
+要将 {productname} 设置为不联网服务器，请按照隔离部署的说明操作。
+
+
+=== 部署
+
+建议使用提供的映像将不联网服务器部署为虚拟机 (VM)。
+有关 {productname} 服务器的隔离部署，请参见 xref:installation-and-upgrade:container-deployment/mlm/server-air-gapped-deployment-mlm.adoc[]。
+
+请注意，执行最后一个命令时要包含 `--mirror` 选项，并将 `</media/disk>` 替换为您的安装点：
+
+----
+mgradm install podman --mirror </media/disk>
+----
+
+
+
+=== 同步
+
+如果您有加载了 {scclongform} 数据的可移动存储设备，可以使用它来同步已断开连接的服务器。
+
+[WARNING]
+====
+用于同步的可移动存储设备必须始终在相同的安装点可用。
+如果存储介质未挂载，则不要触发同步。
+这会导致数据损坏。
+====
+
+
+.过程：升级同步已断开连接的服务器
+
+. 重启 Tomcat 服务：
++
+----
+mgrctl exec -ti -- systemctl restart tomcat
+----
+. 刷新本地数据：
++
+----
+mgrctl exec -ti -- mgr-sync refresh
+----
+. 执行同步：
++
+----
+mgrctl exec -ti -- mgr-sync list channels
+mgrctl exec -ti -- mgr-sync add channel channel-label
+----
+
+[NOTE]
+====
+请注意，如果 `server.susemanager.fromdir` 被设置，{productname} 将无法检查 {scclongform} 的凭据是否有效。
+相反，将显示警告标志，并且不会执行 {scc} 的在线检查。
+====
+
+断开连接设置的替代方案可能是使用服务器间同步（ISS）在服务器之间复制内容。
+有关更多信息，请参见 xref:specialized-guides:large-deployments/iss_v2.adoc[服务器间同步 - 版本 2].

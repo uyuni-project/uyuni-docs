@@ -1,0 +1,140 @@
+[[contact-methods-saltbundle]]
+= Salt 捆绑包
+:description: 学习如何部署和配置 Salt 软件包，这是一个单一的二进制软件包，通过包含 Python 3 及其所需模块来简化 Salt 受控端的安装。
+:revdate: 2025-07-14
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+== 什么是 Salt 捆绑包？
+
+
+Salt 软件包是单个二进制软件包，包含 {salt} 受控端、Python 3、必需的 Python 模块和库。
+
+Salt 软件包随 Python 3 及 {salt} 运行所需的所有依赖项一起提供。因此，Salt 软件包不会将客户端上安装的 Python 版本作为系统软件使用。
+Salt 软件包可以安装在不满足特定 {salt} 版本要求的客户端上。
+
+此外，还可以在运行 {salt} 受控端连接到 {salt} 主控端以外的 {productname} {salt} 主控端的系统上使用 Salt 软件包。
+
+
+
+== 使用 Salt 捆绑包将客户端注册为受控端
+
+使用 Salt 软件包的注册方法是推荐的注册方法。
+本节解释了当前实现的优点和局限性。
+
+Salt 软件包以 `venv-salt-minion` 软件包的形式提供，该软件包包含 {salt}、Python 3 和 {salt} 所依赖的 Python 模块。
+
+使用 {webui} 启动也使用 Salt 软件包，因此使用 {webui} 启动不依赖于 Python。
+使用 Salt 软件包后，客户端不再需要提供任何 Python 解释器或模块。
+
+如果您启动新的客户端，使用 Salt 软件包的注册方法是默认方法。
+您可以将现有客户端切换到 Salt 软件包方法。
+如果您切换，`salt-minion` 软件包及其依赖项将保持安装。
+
+
+
+[[contact-methods-saltbundle-using]]
+=== 使用 {salt} 软件包与 {salt} 受控端。
+
+{salt} 软件包可以与由 {salt} 主控端管理的 {salt} 受控端同时使用，而该主控端不是 {productname} 服务器。
+如果 Salt 软件包安装在客户端上，{productname} 服务器将管理 Salt 软件包的配置文件，在这种情况下，`salt-minion` 的配置文件将不会被管理。
+有关更多信息，请参见 xref:client-configuration:registration-cli.adoc#_salt_bundle_configuration[Salt 软件包配置]。
+
+[IMPORTANT]
+====
+* 要启动一个由 {salt} 主控端管理的 {salt} 受控端，而该主控端不是 {productname} 服务器，建议在生成启动脚本时使用 `mgr-bootstrap` `--force-bundle`，或在启动脚本中将 `FORCE_VENV_SALT_MINION` 设为 `1`.
+* 对于使用 {webui} 进行启动，可以将 `mgr_force_venv_salt_minion` 设为 `true` pillar 并全局指定。
+  有关更多信息，请参见 xref:specialized-guides:salt/salt-states-and-pillars.adoc[]。
+====
+
+
+=== 从 {salt} 受控端切换到 Salt 软件包
+
+{salt} 状态 `util.mgr_switch_to_venv_minion` 可用于从 `salt-minion` 切换到 `venv-salt-minion`。
+建议分两步切换到 `venv-salt-minion`，以避免在切换过程中出现问题：
+
+.过程：升级使用 `util.mgr_switch_to_venv_minion` 状态切换到 `venv-salt-minion`
+
+. 首先应用 `util.mgr_switch_to_venv_minion` 且不指定 pillar。
+  这将导致切换到 `venv-salt-minion`，并复制配置文件等。
+  它不会清理原有的 `salt-minion` 配置文件及其软件包。
++
+----
+salt <minion_id> state.apply util.mgr_switch_to_venv_minion
+----
+. 应用 `util.mgr_switch_to_venv_minion` 并将 `mgr_purge_non_venv_salt` 设为 `True` 以移除 `salt-minion`，并将 `mgr_purge_non_venv_salt_files` 设为 `True` 以移除所有与 `salt-minion` 相关的文件。
+第二步确保第一步已处理，然后去除旧配置文件和现已过时的 `salt-minion` 软件包。
++
+----
+salt <minion_id> state.apply util.mgr_switch_to_venv_minion pillar='{"mgr_purge_non_venv_salt_files": True, "mgr_purge_non_venv_salt": True}'
+----
+
+
+=== 其他注意事项
+
+//[WARNING]
+//====
+* 如果仅运行第二步而跳过第一步，状态应用过程可能会失败，因为此过程需要停止用于在客户端执行命令的 `salt-minion`。
+//====
+
+* 也可以避免安装 Salt 软件包，而继续使用 `salt-minion`。
+  在这种情况下，请指定以下选项之一：
+
+** 执行带有 `--no-bundle` 选项的 `mgr-bootstrap`。
+** 在生成的启动脚本中将 `AVOID_VENV_SALT_MINION` 设为 `1`。
+** 对于启动状态，在 `/srv/pillar/salt_bundle_config.sls` 中将 `mgr_avoid_venv_salt_minion` pillar 设为 `True`。
+
+
+== 使用 Salt 捆绑包执行 SSH 推送
+
+在对客户端执行 SSH 推送操作时，也可使用 Salt 捆绑包。
+
+一个 shell 脚本在执行任何 `venv-salt-minion` 命令之前，将 Salt 软件包部署到目标系统，而不安装 {salt}。因为 Salt 软件包包含整个 {salt} 代码库，所以没有部署 `salt-thin`。
+SSH 推送（包括使用 {webui} 进行引导）在 Salt 软件包内使用 Python 3 解释器.
+目标系统不需要安装其他任何 Python 解释器。
+
+随 Salt 软件包部署的 Python 3 用于处理客户端上的 SSH 推送会话，因此 SSH 推送（包括使用 {webui} 进行引导）不依赖于在系统上安装的 Python.
+
+可以将 `salt-thin` 用作后备方法，但这需要在客户端上安装 Python 3。
+此方法不推荐使用，也不受支持，仅用于开发目的。
+在 配置文件中将 `web.ssh_use_salt_thin` 设置为 `true` `/etc/rhn/rhn.conf`。
+
+[IMPORTANT]
+====
+* 在使用 {webui} 进行引导客户端之前，必须创建引导储存库。
+  SSH 推送使用从引导储存库中获取的 Salt 捆绑包，基于检测到的目标操作系统。
+  有关更多信息，请参见 xref:client-configuration:bootstrap-repository.adoc#_prepare_to_create_a_bootstrap_repository[]。
+
+* SSH 推送使用 `/var/tmp` 将 Salt 软件包部署到客户端，并使用捆绑的 Python 执行 {salt} 命令。
+  因此，您不得使用 `noexec` 选项挂载 `/var/tmp`。
+  无法引导已挂载 `/var/tmp` 且使用 `noexec` 选项的客户端 {webui}，因为引导过程使用 SSH 推送来访问客户端。
+====
+
+
+
+== 使用 `pip` 通过 Python 软件包扩展 Salt 捆绑包
+
+Salt 捆绑包提供了 `pip`，使得可以通过额外的 Python 软件包扩展捆绑的 {salt} 受控端的功能。
+
+默认情况下，`salt <minion_id> pip.install <package-name>` 会将 `<package_name>` 指定的 Python 软件包安装到 `/var/lib/venv-salt-minion/local` 中。
+
+[NOTE]
+====
+如果需要，可以通过为 `/var/lib/venv-salt-minion/local` 设置 `VENV_PIP_TARGET` 环境变量来覆盖 `venv-salt-minion.service` 路径。
+建议为该服务使用 systemd drop-in 配置文件。
+这可以通过配置文件 `/etc/systemd/system/venv-salt-minion.service.d/10-pip-destination.conf` 来完成:
+
+----
+[Service]
+Environment=VENV_PIP_TARGET=/new/path/local/venv-salt-minion/pip
+----
+====
+
+[IMPORTANT]
+====
+通过 `pip` 安装的 Python 软件包在更新 Salt 捆绑包时不会发生变化。
+为了确保这些软件包在更新后依然可用且功能正常，建议在 Salt 捆绑包更新后应用 {salt} 状态来安装它们。
+====

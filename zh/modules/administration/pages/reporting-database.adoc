@@ -1,0 +1,115 @@
+[[reporting-database]]
+= Reporting 数据库
+:revdate: 2026-06-24
+:page-revdate: {revdate}
+
+{productname} 在每台服务器上都包含一个报告数据库。
+报告数据库是一个独立的 PostgreSQL 数据库，它存储了来自主 {productname} 数据库中最相关数据的非规范化、读取优化快照。
+外部报告工具可以直接连接到此数据库以查询和可视化数据。
+
+在中心部署中，中心会将所有已连接的外围服务器的报告数据库聚合到一个中央报告数据库中。
+有关中心特定的设置和聚合，请参见 xref:specialized-guides:large-deployments/hub-reporting.adoc[]。
+
+== 设置
+
+报告数据库和模式默认使用本地 PostgreSQL 服务器进行设置。
+报告数据库是一个可通过网络访问的独立数据库。
+
+[IMPORTANT]
+====
+在中心部署中，中心与外围服务器之间的连接是通过中心在线同步建立的。
+有关更多信息，请参见 xref:specialized-guides:large-deployments/hub-online-sync.adoc[]。
+====
+
+
+
+=== 为报告数据库创建数据库用户
+
+在将外部报告工具连接到数据库之前，请创建一个具有只读权限的用户。
+可以使用 `uyuni-setup-reportdb-user` 命令来完成此操作：
+
+----
+usage: uyuni-setup-reportdb-user [options]
+
+options:
+  --help
+            show this help message and exit
+  --non-interactive
+            Switches to non-interactive mode
+  --dbuser=DBUSER
+            Report DB User
+  --dbpassword=DBPASSWORD
+            Report DB Password
+  --add
+            Add the new user
+  --delete
+            Delete the user
+  --modify
+            Set a new password
+----
+
+== 数据库纲要
+
+该模式将主 {productname} 数据库中最重要的表导出为非规范化变体，其中仅包含与报告相关的数据。
+
+现成的报告以视图形式提供，可跨多个表聚合数据。
+
+每个表都有一个额外的列 (`mgm_id`)，用于指定提供数据的 {productname} 服务器。
+在单个 {productname} 服务器上，此列具有标准值 `1`，代表 `localhost`。
+在 {productname} 中心上，它被替换为受管服务器在中心数据库中拥有的实际服务器 ID。
+
+另一个常见的附加字段是 `synced_date`，它表示数据从主 {productname} 服务器数据库导出的时间。
+
+导航至 menu:帮助[报告数据库模式] 以查找模式文档。
+
+== 数据生成与更新
+
+{productname} 使用两个 Taskomatic 作业来管理报告数据：
+
+`update-reporting-default`::
+从主 {productname} 数据库生成并更新本地报告数据库。
+默认情况下，每天午夜在每台服务器上运行。
+
+`update-reporting-hub-default`::
+从所有已注册的外围服务器获取报告数据，并将其聚合到中心报告数据库中。
+此计划在所有服务器上均可见，但仅在 {productname} 中心执行有效工作。
+默认情况下，每天凌晨 1:30 运行。
+
+所有时间均为服务器的本地时区。
+
+有关跨时区中心聚合和计划对齐的更多信息，请参阅 xref:specialized-guides:large-deployments/hub-reporting.adoc[]。
+
+== 调优
+
+[[reportdb-batch-size]]
+=== `report_db_batch_size`
+
+[cols="1,1"]
+|===
+| 说明          | 一次性从一个数据库获取并写入另一个数据库的最大行数。
+| 调优时机            | 出现内存不足错误或处理速度问题时。
+| 默认值        | 2000
+| 建议值 | 500 - 5000
+| 位置             | `/etc/rhn/rhn.conf`
+| 示例              | `report_db_batch_size = 4000`
+| 更改后       | 更改前后请密切监控内存使用情况。
+|===
+
+== 使用 Grafana 可视化报告数据
+
+{productname} Grafana 公式可以直接连接到报告数据库，并部署用于 Fleet 管理和合规性报告的预构建仪表板。
+
+先决条件：
+
+* 使用监控公式配置的 Grafana 实例。
+  请参见 xref:specialized-guides:salt/salt-formula-monitoring.adoc[]。
+* 使用 `uyuni-setup-reportdb-user` 创建的报告数据库用户。
+  请参见<<Create a DB User for the Reporting Database>>。
+
+提供的三个报告仪表板为：
+
+* **Fleet 概览与安全** — Fleet 组成、安全态势、CVE 分析、补丁合规性、代理基础设施和虚拟化概览。
+* **报告与历史记录** — 通道、软件包、勘误、操作、系统清单、用户管理、系统历史记录和 SCAP 合规性。
+* **执行概览** — 动态统计信息，包括系统计数和软件包查询。
+
+有关配置步骤，请参见 xref:specialized-guides:salt/salt-formula-monitoring.adoc[监控公式]。
