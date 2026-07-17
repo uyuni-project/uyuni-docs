@@ -518,21 +518,29 @@ tasks:
   # --------------------------------------------------------------------------
   validate:mlm:
     desc: "[Local] Antora xref validation — MLM"
-    deps: [gen]
+    deps: [setup]
     cmds:
+      - task: stage-content
       - for: {var: LANGUAGES}
         cmd: |
-          cd translations/{{.ITEM}}
-          NODE_PATH="$(npm -g root)" antora --generator @antora/xref-validator mlm-dsc.site.yml
+          echo "==> Validating mlm-dsc / {{.ITEM}}"
+          {{.DOCBUILD}} gen-site -product mlm -output mlm-dsc -lang {{.ITEM}}
+          {{.DOCBUILD}} gen-antora -product mlm -lang {{.ITEM}}
+          npx antora --log-failure-level=error --to-dir build/{{.ITEM}}/validate-mlm \
+            translations/{{.ITEM}}/mlm-dsc.site.yml
 
   validate:uyuni:
     desc: "[Local] Antora xref validation — Uyuni"
-    deps: [gen]
+    deps: [setup]
     cmds:
+      - task: stage-content
       - for: {var: LANGUAGES}
         cmd: |
-          cd translations/{{.ITEM}}
-          NODE_PATH="$(npm -g root)" antora --generator @antora/xref-validator uyuni-website.site.yml
+          echo "==> Validating uyuni-website / {{.ITEM}}"
+          {{.DOCBUILD}} gen-site -product uyuni -output uyuni-website -lang {{.ITEM}}
+          {{.DOCBUILD}} gen-antora -product uyuni -lang {{.ITEM}}
+          npx antora --log-failure-level=error --to-dir build/{{.ITEM}}/validate-uyuni \
+            translations/{{.ITEM}}/uyuni-website.site.yml
 
   # --------------------------------------------------------------------------
   # Translations
@@ -693,12 +701,12 @@ tasks:
   container:validate:mlm:
     desc: "[Container] Antora xref validation — MLM"
     cmds:
-      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task validate:mlm"
+      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task validate:mlm LANGUAGES='{{.LANGUAGES}}'"
 
   container:validate:uyuni:
     desc: "[Container] Antora xref validation — Uyuni"
     cmds:
-      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task validate:uyuni"
+      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task validate:uyuni LANGUAGES='{{.LANGUAGES}}'"
 
   # Translations
   container:translations:
