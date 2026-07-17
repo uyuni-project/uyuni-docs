@@ -1,3 +1,7 @@
+- Fixed `task validate:mlm` and `task validate:uyuni` to use Antora 3 built-in xref
+  checking (`stage-content`, `gen-site`, `gen-antora`, `--log-failure-level=error`)
+  instead of the obsolete Antora 2.x `@antora/xref-validator` plugin, which was not
+  shipped in the builder image
 - Documented Grafana reporting database automated setup and Hub Overview in Administration and Specialized Guides
 - Update the OpenSCAP packages table in the
   System Security with OpenSCAP article in the Administration guide (bsc#1269316)
