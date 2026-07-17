@@ -1,3 +1,7 @@
+- Fixed `task validate:mlm` and `task validate:uyuni` to use Antora 3 built-in xref
+  checking (`stage-content`, `gen-site`, `gen-antora`, `--log-failure-level=error`)
+  instead of the obsolete Antora 2.x `@antora/xref-validator` plugin, which was not
+  shipped in the builder image
 - Migrated the build to committed AI translation trees (`ja/`, `ko/`, `zh/modules/`)
   with English fallback via `task stage-content`; po4a/Weblate are no longer used in the
   build pipeline
