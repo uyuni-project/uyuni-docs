@@ -1,0 +1,85 @@
+운영 체제는 자체 GPG 키를 직접 신뢰하거나 최소 시스템에 설치된 상태로 제공합니다.
+하지만 다른 GPG 키로 서명된 타사 패키지는 수동으로 처리해야 합니다.
+클라이언트는 GPG 키가 신뢰되지 않은 상태에서도 성공적으로 부팅될 수 있습니다.
+그러나 키가 신뢰될 때까지는 새로운 클라이언트 도구 패키지를 설치하거나 업데이트할 수 없습니다.
+
+클라이언트는 이제 소프트웨어 채널에 입력된 GPG 키 정보를 사용하여 신뢰할 수 있는 키를 관리합니다.
+GPG 키 정보가 포함된 소프트웨어 채널이 클라이언트에 할당되면, 채널이 새로 고쳐지거나 이 채널에서 첫 번째 패키지가 설치될 때 키가 신뢰됩니다.
+
+소프트웨어 채널 페이지의 GPG 키 URL 매개변수는 "공백"으로 구분된 여러 키 URL을 포함할 수 있습니다.
+파일 URL인 경우, 소프트웨어 채널을 사용하기 전에 GPG 키 파일이 클라이언트에 배포되어야 합니다.
+
+{redhat} 기반 클라이언트의 클라이언트 도구 채널에 대한 GPG 키는 클라이언트의 `/etc/pki/rpm-gpg/`에 배포되며 파일 URL로 참조할 수 있습니다.
+
+// SUSE Liberty Linux not available at Uyuni for now
+
+ifeval::[{mlm-content} == true]
+{sll} 클라이언트의 GPG 키에서도 동일합니다.
+endif::[]
+
+소프트웨어 채널이 클라이언트에 할당된 경우에만 시스템에서 가져와서 신뢰하게 됩니다.
+
+[NOTE]
+====
+Debian 기반 시스템은 메타데이터만 서명하므로 단일 채널에 대해 추가 키를 지정할 필요가 없습니다.
+사용자가 xref:administration:repo-metadata.adoc[]의 "자신의 GPG 키 사용"에 설명된 대로 메타데이터를 서명하기 위해 자신의 GPG 키를 구성하면, 해당 키의 배포 및 신뢰가 자동으로 실행됩니다.
+====
+
+
+== 사용자 정의 GPG 키
+
+사용자는 클라이언트에 배포할 사용자 정의 GPG 키를 정의할 수 있습니다.
+
+일부 pillar 데이터를 제공하고 {salt} 파일 시스템에 GPG 키 파일을 제공하면, 해당 키들은 클라이언트에 자동으로 배포됩니다.
+
+이 키들은 RPM 기반 운영 체제에서는 `/etc/pki/rpm-gpg/`에, Debian 시스템에서는 `/usr/share/keyrings/`에 배포됩니다:
+
+키를 배포할 클라이언트에 대한 pillar 키 [literal`custom_gpgkeys`]를 정의하고, 키 파일의 이름을 나열합니다.
+// I think the cat command is here to show the contents of the file.
+// In this case, the cat is superfluous.
+----
+cat /srv/pillar/mypillar.sls
+custom_gpgkeys:
+  - my_first_gpg.key
+  - my_second_gpgkey.gpg
+----
+
+추가적으로 {salt} 파일 시스템에서 `gpg`라는 이름의 디렉토리를 생성한 후, 해당 디렉토리에 `custom_gpgkeys` pillar 데이터에 지정된 이름으로 GPG 키 파일을 저장합니다.
+// I think the ls command is here to show the contents of the directory.
+// In this case, the ls is superfluous.
+
+----
+ls -la /srv/salt/gpg/
+/srv/salt/gpg/my_first_gpg.key
+/srv/salt/gpg/my_second_gpgkey.gpg
+----
+
+키는 클라이언트의 `/etc/pki/rpm-gpg/my_first_gpg.key` 및 `/etc/pki/rpm-gpg/my_second_gpgkey.gpg`에 배포됩니다.
+
+마지막 단계는 GPG 키 URL 필드에 URL을 추가하는 것입니다.
+menu:소프트웨어[관리> 채널]로 이동하여 수정할 채널을 선택합니다.
+`GPG key URL`에 `file:///etc/pki/rpm-gpg/my_first_gpg.key` 값을 추가합니다.
+
+
+== 부트스트랩 스크립트의 GPG 키
+
+.절차 부팅 스크립트를 사용한 클라이언트의 GPG 키 신뢰
+. {productname} 서버의 명령 프롬프트에서 `/srv/www/htdocs/pub/` 디렉토리의 내용을 확인합니다.
+  이 디렉토리에는 사용 가능한 모든 공개 키가 포함되어 있습니다.
+  등록 중인 클라이언트에 할당된 채널에 해당하는 키를 메모해 두십시오.
+. 관련 부팅 스크립트를 열고 `ORG_GPG_KEY=` 매개변수를 찾아 필요한 키를 추가합니다.
+  예:
++
+----
+uyuni-gpg-pubkey-0d20833e.key
+----
++
+이전에 저장한 키는 삭제하지 않아도 됩니다.
+
+
+[IMPORTANT]
+====
+GPG 키를 신뢰하는 것은 클라이언트의 보안을 위해 중요합니다.
+어떤 키가 필요하고 신뢰할 수 있는지는 관리자의 몫입니다.
+GPG 키가 신뢰되지 않을 때 소프트웨어 채널을 클라이언트에 할당할 수 없습니다.
+====

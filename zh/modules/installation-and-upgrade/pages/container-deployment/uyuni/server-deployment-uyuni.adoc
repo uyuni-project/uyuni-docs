@@ -1,0 +1,188 @@
+= {productname} 在 {leapmicro} {microversion} 上的服务器部署
+:description: 学习如何使用 Podman 将 SUSE Multi-Linux Manager 服务器作为容器进行部署，并使用 Uyuni 工具。
+:revdate: 2025-07-09
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+
+== 部署准备工作
+
+
+在本节中，您将掌握设置和部署 {productname} 服务器的专业知识。
+该处理包括安装 `Podman`、`Uyuni container utilities`、部署，然后通过 `mgrctl` 启动与容器的交互。
+
+[NOTE]
+====
+本节假设您已配置 {leapmicro} {microversion} 主机服务器（无论是在物理机还是虚拟环境中运行）。
+
+https://download.opensuse.org/distribution/leap-micro/
+====
+
+
+== 容器主机要求
+
+有关一般要求，请参见 xref:installation-and-upgrade:general-requirements.adoc[一般要求]。
+
+应从安装介质安装 {leapmicro} {microversion} 服务器。
+
+https://download.opensuse.org/distribution/leap-micro/
+
+下面介绍此过程。
+
+[[installation-server-containers-requirements]]
+== 容器主机要求
+
+有关 CPU、RAM 和存储要求，请参见 xref:installation-and-upgrade:hardware-requirements.adoc[硬件要求]。
+
+
+[IMPORTANT]
+====
+为了确保客户端能够解析 FQDN 域名，容器化服务器和主机机器必须连接到功能正常的 DNS 服务器。此外，确保反向查找的正确配置也是至关重要的。
+====
+
+
+== 安装用于容器的 Uyuni 工具
+
+
+.过程：升级在 {leapmicro} {microversion} 上安装 Uyuni 工具
+. 在本地主机上打开终端窗口，或启动一个运行 {leapmicro} {microversion} 的虚拟机。
+. 以 root 身份登录。
+. 输入 `transactional-update shell`：
++
+----
+transactional-update shell
+----
++
+. 将以下储存库添加到您的 {leapmicro} {microversion} 服务器：
++
+----
+zypper ar https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable/images/repo/Uyuni-Server-POOL-$(arch)-Media1/ uyuni-server-stable
+----
++
+. 刷新储存库列表并接受密钥：
++
+----
+zypper ref
+----
++
+. 安装容器工具：
++
+[source, shell]
+----
+zypper in mgradm mgrctl mgradm-bash-completion mgrctl-bash-completion uyuni-storage-setup-server
+----
++
+. 退出事务外壳：
++
+----
+transactional update # exit
+----
+. 重引导主机。
+
+有关 Uyuni 容器工具的更多信息，请参见 link:https://build.opensuse.org/repositories/systemsmanagement:Uyuni:Stable:ContainerUtils[Uyuni 容器工具]。
+
+
+== 配置自定义永久性存储
+
+该步骤可选。
+但是，如果您的基础设施需要自定义的永久性存储，请使用 `mgr-storage-server` 工具。
+
+* 有关详细信息，请参见 `mgr-storage-server --help`。
+此工具可以简化容器存储和数据库卷的创建。
+
+如下所示使用命令:
+
+----
+mgr-storage-server <storage-disk-device> [<database-disk-device>]
+----
+
+例如:
+
+----
+mgr-storage-server /dev/nvme1n1 /dev/nvme2n1
+----
+
+[NOTE]
+====
+此命令将在 `/var/lib/containers/storage/volumes` 处创建永久性存储卷。
+
+有关更多信息，请参见 xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]。
+====
+
+
+== 使用 Podman 部署 Uyuni 容器
+
+=== `mgradm` 概览
+
+{productname} 使用 `mgradm` 工具作为容器进行部署。
+有两种方法可以将 {productname} 服务器作为容器进行部署。
+在本节中，我们将重点介绍基本的容器部署。
+
+有关使用自定义配置文件进行部署的信息，请参见 xref:installation-and-upgrade:container-management/mgradm-yaml-custom-configuration.adoc[]。
+
+要获取更多信息，您可以在命令行中运行 `mgradm --help` 进行进一步探索。
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+.过程：升级使用 Podman 部署 Uyuni 容器
+. 在终端中以 sudo 或 root 用户身份运行以下命令。
++
+[source, shell]
+----
+sudo mgradm install podman
+----
++
+[IMPORTANT]
+====
+您必须以 sudo 或 root 身份部署容器。如果您错过此步骤，终端将显示以下错误。
+
+[source, shell]
+----
+INF Setting up uyuni network
+9:58AM INF Enabling system service
+9:58AM FTL Failed to open /etc/systemd/system/uyuni-server.service for writing error="open /etc/systemd/system/uyuni-server.service: permission denied"
+----
+====
+
+. 等待部署完成。
+. 打开浏览器并访问您的服务器 FQDN。
+
+//In this section you learned how to deploy an {productname} Server container.
+
+
+
+=== 永久性卷
+
+许多用户希望指定其永久性卷的位置。
+
+[NOTE]
+====
+如果您只是在试用 {productname}，则无需指定这些卷。默认情况下，`mgradm` 会设置正确的卷。
+
+通常只需为较大规模的生产部署指定卷位置。
+====
+
+默认情况下，`podman` 将其卷存储在 `/var/lib/containers/storage/volumes/` 中。
+
+您可以通过在此路径或其中预期的卷路径上挂载磁盘来提供自定义存储，例如：`/var/lib/containers/storage/volumes/var-spacewalk`。
+这对于数据库和软件包镜像尤其重要。
+
+有关容器中所有永久性卷的列表，请参见
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+
+

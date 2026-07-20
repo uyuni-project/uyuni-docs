@@ -23,7 +23,7 @@ import (
 )
 
 const defaultConfig = "config.yml"
-const defaultContentDir = "modules"
+const defaultContentDir = "modules" // Antora modules dir relative to start_path
 
 func main() {
 	if len(os.Args) < 2 {
@@ -58,6 +58,8 @@ func main() {
 		runCollectPDFs(repoRoot, args)
 	case "get-pdf-prefix":
 		runGetPDFPrefix(repoRoot, args)
+	case "get-content-dir":
+		runGetContentDir(repoRoot, args)
 	case "help", "-h", "--help":
 		usage()
 	default:
@@ -68,7 +70,7 @@ func main() {
 func runGenAll(repoRoot string, args []string) {
 	fs := flag.NewFlagSet("gen-all", flag.ExitOnError)
 	cfgPath := fs.String("config", defaultConfig, "path to config.yml")
-	contentDir := fs.String("content-dir", defaultContentDir, "relative path to English modules directory")
+	contentDir := fs.String("content-dir", defaultContentDir, "Antora modules directory relative to start_path")
 	_ = fs.Parse(args)
 
 	cfg := mustLoad(filepath.Join(repoRoot, *cfgPath))
@@ -98,7 +100,7 @@ func runGenAntora(repoRoot string, args []string) {
 	cfgPath := fs.String("config", defaultConfig, "path to config.yml")
 	product := fs.String("product", "", "product name (required)")
 	lang := fs.String("lang", "", "language code (required)")
-	contentDir := fs.String("content-dir", defaultContentDir, "relative path to English modules directory")
+	contentDir := fs.String("content-dir", defaultContentDir, "Antora modules directory relative to start_path")
 	_ = fs.Parse(args)
 
 	requireFlags(fs, "product", "lang")
@@ -195,6 +197,21 @@ func runGetPDFPrefix(repoRoot string, args []string) {
 	}
 }
 
+func runGetContentDir(repoRoot string, args []string) {
+	fs := flag.NewFlagSet("get-content-dir", flag.ExitOnError)
+	cfgPath := fs.String("config", defaultConfig, "path to config.yml")
+	lang := fs.String("lang", "", "language code, e.g. zh_CN (required)")
+	_ = fs.Parse(args)
+
+	requireFlags(fs, "lang")
+	cfg := mustLoad(filepath.Join(repoRoot, *cfgPath))
+	l, err := cfg.LanguageByCode(*lang)
+	if err != nil {
+		fatalf("get-content-dir: %v", err)
+	}
+	fmt.Print(l.ContentPath())
+}
+
 func mustLoad(path string) *config.Config {
 	cfg, err := config.Load(path)
 	if err != nil {
@@ -228,6 +245,7 @@ Subcommands:
   gen-pdf-nav -book B -lang L -dir D         Generate nav-{book}-guide.pdf.{lang}.adoc from Antora nav
   inject-lang-selector -hbs PATH             Inject language selector into header-content.hbs
   get-pdf-prefix -product P                              Print the PDF filename prefix for a product
+  get-content-dir -lang L                                Print the content source directory for a language
   collect-pdfs -product P [-src S] [-dest D] [-langs L]  Move PDFs into dest/{lang}/ structure
 
 Common flags:

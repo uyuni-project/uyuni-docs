@@ -1,0 +1,68 @@
+[[virt-nutanix]]
+= 使用 Nutanix 虚拟化
+:description: 使用 SUSE Multi-Linux Manager 的 VHM 设置和数据收集工具配置和管理 Nutanix 虚拟化，充分发挥其高效功能。
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+ifeval::[{mlm-content} == true]
+
+
+{suse} 是 Nutanix 的生态系统合作伙伴，{productname} 已获得 "Nutanix AHV integrated" 类别的 Nutanix Ready 认证。
+
+有关 Nutanix 集成的更多信息，请参见 https://www.nutanix.com/partners/technology-alliances/suse
+
+endif::[]
+
+您可以通过设置虚拟主机管理器 (VHM) 来在 {productname} 上使用 Nutanix AHV 虚拟机。
+首先，您需要在 {productname} 服务器上设置 VHM，并清点可用的 VM 主机。
+
+
+
+== VHM 设置
+
+
+
+虚拟主机管理器 (VHM) 在 {productname} 服务器上运行。
+
+确保您已在 `virtual-host-gatherer-Nutanix` 服务器上安装了 {productname} 软件包。
+
+要运行 VHM，您的 {productname} 服务器必须打开端口 9440 以访问 Nutanix Prism Element API。
+
+
+.过程：升级创建 Nutanix VHM
+
+. 在 {productname} {webui} 中，导航到 menu:系统[虚拟主机管理器]。
+. 单击 btn:[创建] 并选择 `Nutanix AHV`。
+. 在 `Add a Nutanix AHV Virtual Host Manager` 部分中，使用以下参数：
+* 在 `Label` 字段中，为您的 VHM 输入自定义名称。
+* 在 `Hostname` 字段中，输入完全限定的域名 (FQDN) 或主机 IP 地址。
+* 在 `Port` 字段中，输入要使用的 Prism Element API 端口（例如，`9440`）。
+* 在 `Username` 字段中，输入与 VM 主机关联的用户名。
+* 在 `Password` 字段中，输入与 VM 主机用户关联的密码。
+. 单击 btn:[创建] 以保存更改并创建 VHM。
+. 在 `Virtual Host Managers` 页面中，选择新 VHM。
+. 在 `Properties` 页面中，单击 btn:[刷新数据] 以清点新 VHM。
+
+要查看已清点的对象和资源，请导航到 menu:系统[系统列表> 虚拟系统]。
+
+
+[NOTE]
+====
+从浏览器使用 HTTPS 连接到 Nutanix Prism API 服务器有时会记录 `invalid certificate` 错误。
+如果发生这种情况，虚拟主机管理器刷新数据将失败。
+在您的 Nutanix API 服务器上需要一个有效的 SSL 证书（非自签名）。
+如果您为 Nutanix SSL 证书使用自定义 CA 机构，请将自定义 CA 证书复制到 `/etc/pki/trust/anchors`，位于 {productname} 服务器上。
+
+在命令行上运行 `update-ca-certificates` 命令以重新信任证书，然后重启 spacewalk 服务。
+====
+
+在创建和配置您的 VHM 后，Taskomatic 会自动运行数据收集。
+如果您想手动执行数据收集，请导航到 menu:系统[虚拟主机管理器]，选择适当的 VHM，然后点击 btn:[刷新数据]。
+
+{productname} 附带一个名为 `virtual-host-gatherer` 的工具，可以通过其 API 连接到虚拟主机管理器，并请求有关虚拟主机的信息。`virtual-host-gatherer` 维护可选模块的概念，每个模块启用特定的虚拟主机管理器。
+该工具由 Taskomatic 每晚自动调用。
+`virtual-host-gatherer` 工具的日志文件位于 `/var/log/rhn/gatherer.log`。

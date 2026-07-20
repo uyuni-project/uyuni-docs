@@ -1,0 +1,84 @@
+[[automatic-client-registration]]
+= 自动注册 Terraform 创建的客户端
+:description: 使用 cloud-init 或 Terraform 的远程执行置备器配置自动客户端注册
+:revdate: 2024-03-05
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+
+由 Terraform 创建的新客户端可以自动注册到 {productname}。
+注册可以通过两种方式实现：
+
+* 基于 `cloud-init` 的注册
+* 基于 remote-exec 置备器的注册
+
+
+
+[[cloud-init-based-client-registration]]
+== 基于 `cloud-init` 的客户端注册
+
+
+通过利用 `cloud-init` 进行注册是自动注册新创建虚拟机的首选方式。
+此解决方案避免了配置与主机的 SSH 连接。
+它也可以在创建客户端时使用任何工具。
+
+用户可以在使用 Terraform 部署映像时传递用户数据集，以便自动将虚拟机注册到 {productname}。`user_data` 只会在启动时运行一次，并且仅在虚拟机首次启动时运行。
+
+在使用 `cloud-init` 注册客户端之前，用户必须配置：
+
+* 启动脚本。
+  有关详细信息，请参见 xref:client-configuration:registration-bootstrap.adoc[]。
+* 激活密钥。
+  有关详细信息，请参见 xref:client-configuration:activation-keys.adoc[]。
+
+
+以下命令将在创建新机器时下载启动脚本并注册该机器。
+它应添加到 `cloud-init` 配置中：
+
+----
+curl -s http://hub-server.tf.local/pub/bootstrap/bootstrap-default.sh | bash -s
+----
+
+[NOTE]
+====
+每当更新 `user_data` 以改变预配时，Terraform 都会销毁现有虚拟机，然后重新创建，并分配新的 IP 地址等信息。
+====
+
+有关 AWS 上 `cloud-init` 的详细信息，请参见 https://registry.terraform.io/providers/hashicorp/template/latest/docs/data-sources/cloudinit_config.
+
+有关 `cloud-init` 示例，请参见 https://registry.terraform.io/providers/hashicorp/cloudinit/latest/docs/data-sources/cloudinit_config#example-usage.
+
+
+
+[[remote-exec-provisioner-based-client-registration]]
+== 基于 `remote-exec` 的置备器注册
+
+第二种自动注册新创建虚拟机的方法是使用 Terraform 的 `remote-exec` 置备器。
+
+`remote-exec` 置备器与新创建的虚拟机进行交互。
+它打开一个 SSH 连接，并可以在该机器上运行命令。
+
+[IMPORTANT]
+====
+使用 `remote-exec` 置备器注册客户端时，用户必须确保运行 Terraform 的机器在新虚拟机创建后可以访问该虚拟机。
+====
+
+其余要求与使用 <<cloud-init-based-client-registration>> 时相同：
+
+* 启动脚本。
+  有关详细信息，请参见 xref:client-configuration:registration-bootstrap.adoc[]。
+* 激活密钥。
+  有关详细信息，请参见 xref:client-configuration:activation-keys.adoc[]。
+
+以下命令将在创建新机器时下载启动脚本并注册该机器。
+它应被定义为要运行的远程命令：
+
+----
+curl -s http://hub-server.tf.local/pub/bootstrap/bootstrap-default.sh | bash -s
+----
+
+有关 `remote-exec` 置备器的详细信息，请参见 https://www.terraform.io/docs/provisioners/remote-exec.html.
+

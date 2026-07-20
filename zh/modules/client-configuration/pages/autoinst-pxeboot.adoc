@@ -1,0 +1,142 @@
+[[autoinst-pxeboot]]
+= 通过网络安装（PXE 引导）
+:description: 通过 PXE，并利用 DHCP，为客户端配置网络引导安装，以提供 IP 地址、子网掩码、安装服务器和引导加载程序文件以实现自动化安装。
+:revdate: 2026-03-02
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+
+在网络引导安装期间：
+
+. 客户端会以 PXE 模式引导。
+
+. DHCP 服务器会向客户端提供 IP 地址和掩码、安装服务器的地址，以及该服务器上引导加载程序文件的名称。
+
+. 客户端通过 TFTP 协议从安装服务器上下载引导加载程序文件，并执行该文件。
+
+. 客户端可以从菜单中选择要安装的配置文件，或者开始自动安装其中一个配置文件。
+
+. 客户端通过 TFTP 协议下载与该配置文件匹配的发行套件适用的内核和初始 RAM 磁盘。
+
+. 安装内核启动一个安装程序，可能是 {kickstart} 或 {ay}。
+  从现在开始，它使用通过 HTTP 协议在服务器上提供的资源。
+
+. 系统会根据 {kickstart} 或 {ay} 控制文件自动安装发行版。
+
+. 控制文件会调用一段代码来将客户端注册到 {productname} 服务器。
+
+image::cobbler_menu.png[scaledwidth=100%]
+
+安装服务器可以是 {productname} 服务器或其代理之一。
+// To install from a proxy, you must synchronize the TFTP tree between the server and the proxy before you begin.
+
+Dhcpd 服务器还可以向客户端提供其他配置信息，例如主机名、路由器地址和域名服务器地址。
+这些信息可能在自动安装中需要，例如如果您通过域名指定安装服务器。
+
+在 PXE 引导菜单中，第一个选项是 `Local boot`。
+如果您选择此项，启动过程将从本地磁盘驱动器继续。
+如果在一定时间内未选择任何控制文件，则自动选择此选项。
+这是一个安全措施，以防在没有人工操作员选择控制文件的情况下启动自动安装。
+
+安装也可以从其中一个控制文件自动启动，而无需手动干预。
+这称为“无人值守配置”。
+
+
+
+.过程：升级通过 PXE 引导安装
+[role=procedure]
+____
+. 准备 Kea 服务器，参见 xref:client-configuration:autoinst-pxeboot.adoc#prepare-the-dhcp-server[准备 Dhcpd 服务器]。
+
+. 准备可自动安装的发行版，参见 xref:client-configuration:autoinst-distributions.adoc[可自动安装的发行版]。
+
+. 准备自动安装控制文件，参见 xref:client-configuration:autoinst-profiles.adoc[自动安装控制文件]。
+
+. 重引导客户端，然后选择要安装的配置文件。
+____
+
+其他一些步骤是可选的。
+
+要将代理用作安装服务器，请参见 xref:client-configuration:autoinst-pxeboot.adoc#synchronize-the-tftp-tree-with-proxies[同步 TFTP 树与代理]。
+有关无人值守配置，请参见 xref:client-configuration:autoinst-unattended.adoc[无人值守配置]。
+
+
+[[prepare-the-dhcp-server]]
+== 准备 DHCP 服务器
+
+PXE 启动过程使用 Dhcpd 查找 TFTP 服务器。
+{productname} 服务器或其代理可以充当这样的 TFTP 服务器。
+
+您必须具有对网络 Dhcpd 服务器的管理访问权限。
+编辑 Dhcpd 配置文件，使其指向安装服务器作为 TFTP 启动服务器。
+
+
+.示例：配置 Kea Dhcpd 服务器
+. 在 DHCP 服务器上，以 root 用户身份打开 `/etc/dhcpd.conf` 文件。
+. 修改您的客户端的声明：
++
+----
+  host myclient { (...)
+                  next-server 192.168.2.1;
+                  filename "grub/grub.0"; }
+----
+. 保存该文件并重启 `dhcpd` 服务。
+
+
+此示例将 PXE 客户端 `myclient` 定向到位于 `192.168.2.1` 的安装服务器，并指示其检索 `grub/grub.0` 引导加载程序文件。
+
+或者，如果您的 Dhcpd 服务器已在 {productname} 注册，则可以改为使用 Dhcpd 公式进行配置：
+
+
+.示例：使用 Dhcpd 公式配置 Kea Dhcpd 服务器
+. 导航到 menu:系统[系统列表]，选择要更改的客户端，然后转到 `Formulas` 选项卡以启用 DHCP 公式。
+. 转到公式的 `Dhcpd` 选项卡，并在 `Next Server` 字段中输入安装服务器的主机名或 IP 地址。
+. 在 `Filename EFI` 字段中，输入 `grub/shim.efi` 以启用 EFI PXE 支持。
+. 在 `Filename` 字段中，输入 `grub/grub.0` 以启用传统 BIOS 支持。
+. 单击 btn:[保存公式] 以保存您的配置。
+. 应用 highstate。
+
+
+[NOTE]
+====
+* 如果您不使用安全引导 (Secure Boot)，请在 `Filename EFI` 字段中输入 `grub/grubx86.efi` 而不是 `grub/shim.efi`。
+
+* 有关不同的体系结构，请参见表 <<grub-efi-arch>>。
+
+* 使用 {cobbler} 管理的 Dhcpd 在 {productname} 中不受支持。
+====
+
+这为所有主机设置了一个全局 PXE 服务器，您还可以拥有每个主机的设置。
+有关 Dhcpd 公式的更多信息，请参见 xref:specialized-guides:salt/salt-formula-dhcpd.adoc[Dhcpd 公式]。
+
+
+
+[[synchronize-the-tftp-tree-with-proxies]]
+== 将 TFTP 树与代理同步
+
+无需与 {productname} 5.x 代理进行同步。
+
+您可以使用 {productname} 服务器与 {productname} 代理 4.3 同步 TFTP 树。
+为了进行同步，必须打开 HTTPS 端口 443。
+每添加一个代理，树同步速度都会有所降低。
+
+[WARNING]
+====
+如果您使用的是 {productname} 代理 4.3，请查阅 4.3 版本的文档 `https://documentation.suse.com/suma/4.3/en/suse-manager/client-configuration/autoinst-pxeboot.html`。
+====
+
+
+[[grub-efi-arch]]
+== 不同体系结构的 GRUB EFI 二进制文件名
+
+[cols="1,1", options="header"]
+.不同体系结构的 GRUB EFI 二进制文件名
+|===
+| 体系结构 | GRUB EFI 二进制文件名称
+| aarch64      | grubaa64.efi
+| x86-64       | grubx86.efi
+| ppc64le      | grub.ppc64le
+|===

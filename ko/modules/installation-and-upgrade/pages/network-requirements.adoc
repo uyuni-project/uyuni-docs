@@ -1,0 +1,389 @@
+[[installation-network-requirements]]
+= 네트워크 요구사항
+:description: SUSE Multi-Linux Manager의 네트워크 요구 사항을 구성하고 관리하는 방법, 설정 및 문제 해결 방법을 알아보세요.
+:revdate: 2025-07-08
+:page-revdate: {revdate}
+:page-author: SUSE 제품 및 솔루션 문서 팀
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+이 섹션에서는 {productname}의 네트워크 및 포트 요구 사항에 대한 자세한 설명을 제공합니다.
+
+[IMPORTANT]
+====
+IP 포워딩은 컨테이너화된 설치에 의해 활성화됩니다.
+이는 {productname} 서버와 프록시가 라우터처럼 동작함을 의미합니다.
+이 동작은 podman에 의해 직접 수행됩니다.
+IP 포워딩이 비활성화되면 Podman 컨테이너는 실행되지 않습니다.
+
+정책에 따라 {productname} 환경을 네트워크에서 격리시키는 것이 좋습니다.
+
+자세한 내용은 https://www.suse.com/support/kb/doc/?id=000020166.을 참조하십시오.
+====
+
+
+== FQDN(정규화된 도메인 이름)
+
+{productname} 서버는 정규화된 도메인 이름(FQDN)을 올바르게 해결해야 합니다.
+정규화된 도메인 이름(FQDN)을 해결할 수 없는 경우 여러 구성 요소에서 심각한 문제가 발생할 수 있습니다.
+
+호스트 이름 및 DNS 구성에 대한 자세한 내용은 {sles-base-os-documentation}/cha-network.html#sec-network-yast-change-host에서 확인할 수 있습니다.
+
+== 호스트 이름 및 IP 주소
+{productname} 도메인 이름이 클라이언트에 의해 해결될 수 있도록 하려면 서버와 클라이언트 머신 모두 작동하는 DNS 서버에 연결되어 있어야 합니다.
+역방향 조회가 올바르게 구성되었는지 확인해야 합니다.
+
+DNS 서버 설정에 대한 자세한 내용은 {sles-base-os-documentation}/cha-dns.html을 참조하십시오.
+
+
+== 라우터 알림 재활성화
+
+{productname}이(가) `mgradm install podman` 또는 `mgrpxy install podman`을(를) 사용하여 설치되면, IPv4 및 IPv6 포워딩을 활성화하는 Podman이 설정됩니다.
+이는 컨테이너 외부와의 통신에 필요합니다.
+
+그러나 시스템에서 `/proc/sys/net/ipv6/conf/eth0/accept_ra`이(가) `1`(으)로 설정되어 있었다면, 라우터 광고 사용이 중단됩니다.
+그 결과, 라우터 광고를 통해 더 이상 경로를 얻지 못하고 기본 IPv6 경로가 누락됩니다.
+
+IPv6 라우팅이 올바르게 작동하도록 복원하려면 다음 여부에 따라 절차를 따르십시오.
+
+ * 서버 및 프록시는 {bci-mlm}을(를) 기반으로 합니다(네트워크 관리자 사용 안 함).
+
+ * 서버 및 프록시는 {sl-micro} {microversion}}을(를) 기반으로 합니다(네트워크 관리자 사용).
+
+
+.절차 네트워크 관리자가 없는 라우터 광고 재활성화
+[role=procedure]
+____
+. `/etc/sysctl.d`에 파일(예: `99-ipv6-ras.conf`)을 생성합니다.
+. 다음 파라미터와 값을 파일에 추가:
+
++
+----
+net.ipv6.conf.eth0.accept_ra = 2
+----
+. 재부팅합니다.
+____
+
+
+[WARNING]
+====
+위키드가 없을 때 네트워크 관리가 작동하지 않습니다.
+====
+
+
+
+.절차 네트워크 관리자를 통한 라우터 광고 재활성화
+[role=procedure]
+____
+. `nmcli connection show`로 연결 목록을 확인합니다.
+
+. `/etc/NetworkManager/system-connections/<name of connection>.nmconnection` 파일을 생성하거나 수정하여 이 설정을 추가합니다:
+
++
+
+[source, shell]
+----
+[ipv6]
+addr-gen-mode=eui64
+----
+
+. 재부팅합니다.
+
+. 출력은 다음과 같아야 합니다.
+
++
+[source, shell]
+----
+[connection]
+id=Wired connection 1
+type=ethernet
+interface-name=eth0
+
+[ethernet]
+
+[ipv4]
+dns-priority=20
+method=auto
+
+[ipv6]
+addr-gen-mode=eui64
+method=auto
+
+----
+____
+
+
+== HTTP 또는 HTTPS OSI 레벨 7 프록시 후방 배포
+
+일부 환경에서는 HTTP 또는 HTTPS 프록시를 통해 인터넷 액세스를 강제합니다.
+이것은 스퀴드 서버 또는 유사한 것일 수 있습니다.
+이러한 구성에서 {productname} 서버의 인터넷 액세스를 허용하려면 다음을 구성해야 합니다.
+
+.절차 HTTP 또는 HTTPS OSI 레벨 7 프록시 구성
+
+. 운영 체제 인터넷 액세스를 위해 `/etc/sysconfig/proxy`를 필요에 따라 수정합니다:
+
++
+
+[source,shell]
+----
+PROXY_ENABLED="no"
+HTTP_PROXY=""
+HTTPS_PROXY=""
+NO_PROXY="localhost, 127.0.0.1"
+----
+
+. `Podman` 컨테이너 인터넷 액세스를 위해 `/etc/systemd/system/uyuni-server.service.d/custom.conf`를 필요에 따라 수정합니다.
+  예를 들어, 다음을 설정합니다:
+
++
+
+[source,shell]
+----
+[Service]
+Environment=TZ=Europe/Berlin
+Environment="PODMAN_EXTRA_ARGS="
+Environment="https_proxy=user:password@http://192.168.10.1:3128"
+----
+
+. Java 응용 프로그램 인터넷 액세스를 위해 `/etc/rhn/rhn.conf`를 필요에 따라 수정합니다.
+  컨테이너 호스트에서 `mgrctl term`를 실행하여 서버 컨테이너 내의 명령줄을 엽니다:
+
++
+
+--
+
+.. 필요에 따라 `/etc/rhn/rhn.conf`를 수정합니다.
+   예를 들어, 다음을 설정합니다:
+
++
+
+[source,shell]
+----
+# Use proxy FQDN, or FQDN:port
+server.satellite.http_proxy =
+server.satellite.http_proxy_username =
+server.satellite.http_proxy_password =
+# no_proxy is a comma seperated list
+server.satellite.no_proxy =
+----
+
+--
+
++
+
+. 컨테이너 호스트에서 서버를 다시 시작하여 새 구성을 강제 적용합니다.
+
++
+
+[source,shell]
+----
+systemctl restart uyuni-server.service
+----
+
+
+
+== air-gapped 배포
+내부 네트워크에 있고 {scclongform}에 접근할 수 없는 경우, xref:installation-and-upgrade:container-deployment/mlm/server-air-gapped-deployment-mlm.adoc[Air-gapped Deployment]를 사용할 수 있습니다.
+
+
+생산 환경에서는 {productname} 서버와 클라이언트가 항상 방화벽을 사용해야 합니다.
+필요한 포트의 전체 목록은 xref:installation-and-upgrade:network-requirements.adoc#ports[]를 참조하십시오.
+
+
+//For more information on disconnected setup and port configuration, see xref:administration:disconnected-setup.adoc[].
+
+[[ports]]
+== 필수 네트워크 포트
+
+이 섹션에서는 {productname} 내에서 다양한 통신을 위해 사용되는 전체 포트 목록이 제공됩니다.
+
+이 포트들을 모두 열 필요는 없습니다.
+일부 포트는 해당 서비스를 사용하는 경우에만 열어야 합니다.
+
+
+
+=== 개요
+
+==== 서버
+
+image::ports_diagram.png[]
+
+==== 프록시
+
+image::ports_proxy_diagram.png[]
+
+
+
+=== 외부 인바운드 서버 포트
+
+무단 액세스로부터 서버를 보호하려면 {productname} 서버에서 외부 인바운드 포트를 열어 방화벽을 구성해야 합니다.
+
+이러한 포트를 열면 외부 네트워크 트래픽이 {productname} 서버에 액세스할 수 있습니다.
+
+// | 22          |          |            | Only required if the user wants to manage the server host with {salt} SSH.
+
+[cols="1,1,1,3", options="header"]
+.{productname} 서버에 대한 외부 포트 요구 사항
+|===
+| 포트 번호 | 프로토콜 | 사용 주체    | 알림
+| 67          | TCP/UDP  | DHCP       | 클라이언트가 서버에서 IP 주소를 요청하는 경우에만 필요합니다.
+| 69          | TCP/UDP  | TFTP       | 서버가 자동 클라이언트 설치를 위한 PXE 부팅 서버로 사용되는 경우 필요합니다.
+| 80          | TCP      | HTTP       | 일부 부팅 리포지토리 및 자동 설치를 위해 일시적으로 필요합니다.
+| 443         | TCP      | HTTPS      | {webui}, 클라이언트, 서버 및 프록시 (`tftpsync`) 요청을 처리합니다.
+| 4505        | TCP      | salt       | 클라이언트로부터의 통신 요청을 수락하기 위해 필요합니다.
+클라이언트가 연결을 시작하고, Salt 마스터로부터 명령을 받기 위해 열려 있습니다.
+| 4506        | TCP      | salt       | 클라이언트로부터의 통신 요청을 수락하기 위해 필요합니다.
+클라이언트가 연결을 시작하고, Salt 마스터에게 결과를 보고하기 위해 열려 있습니다.
+| 5432        | TCP      | PostgreSQL | 보고 데이터베이스에 접근하기 위해 필요합니다.
+| 5556        | TCP      | Prometheus | Taskomatic JMX 메트릭을 수집하기 위해 필요합니다.
+| 5557        | TCP      | Prometheus | Tomcat JMX 메트릭을 수집하기 위해 필요합니다.
+| 9100        | TCP      | Prometheus | Node exporter 메트릭을 수집하기 위해 필요합니다.
+| 9187        | TCP      | Prometheus | PostgreSQL 메트릭을 수집하기 위해 필요합니다.
+| 9800        | TCP      | Prometheus | Taskomatic 메트릭을 수집하기 위해 필요합니다.
+|===
+
+
+
+=== 외부 아웃바운드 서버 포트
+
+서버가 액세스할 수 있는 대상을 제한하려면 {productname} 서버에서 외부 아웃바운드 포트를 열어 방화벽을 구성해야 합니다.
+
+이러한 포트를 열면 {productname} 서버로부터의 네트워크 트래픽이 외부 서비스와 통신할 수 있습니다.
+
+[cols="1,1,1,3", options="header"]
+.{productname} 서버에 대한 외부 포트 요구 사항
+|===
+| 포트 번호 | 프로토콜 | 사용 주체 | 알림
+| 80          | TCP | HTTP       | {scclongform}에 필요합니다.
+포트 80은 {webui}를 제공하는 데 사용되지 않습니다.
+| 443         | TCP | HTTPS      | {scclongform}에 필요합니다.
+|===
+
+
+
+=== 내부 서버 포트
+
+내부 포트는 {productname} 서버에서 내부적으로 사용됩니다.
+내부 포트는 `localhost`에서만 접근할 수 있습니다.
+
+대부분의 경우에는 이러한 포트를 조정할 필요가 없습니다.
+
+[cols="1,3", options="header"]
+.{productname} 서버의 내부 포트 요구 사항
+|===
+| 포트 번호 | 알림
+| 2828        | Tomcat 및 Taskomatic에서 RHN 응용 프로그램에서 사용되는 위성 검색 API입니다.
+| 2829        | Tomcat에서 RHN 응용 프로그램에서 사용되는 Taskomatic API입니다.
+| 8005        | Tomcat 종료 포트입니다.
+| 8009        | Tomcat에서 Apache HTTPD(AJP)로의 연결입니다.
+| 8080        | Tomcat에서 Apache HTTPD(HTTP)로의 연결입니다.
+| 9080        | Tomcat 및 Taskomatic에서 RHN 응용 프로그램에서 사용되는 Salt-API입니다.
+| 32000       | Taskomatic 및 위성 검색을 실행하는 Java 가상 머신(JVM)과의 TCP 연결을 위한 포트입니다.
+|===
+
+
+포트 32768 이상은 임시 포트로 사용됩니다.
+이들은 대부분 TCP 연결을 수신하는 데 사용됩니다.
+TCP 연결 요청이 수신되면, 발신자는 목적지 포트와 일치하는 이러한 임시 포트 번호 중 하나를 선택합니다.
+
+다음 명령을 사용하여 임시 포트인 포트를 찾을 수 있습니다.
+
+----
+cat /proc/sys/net/ipv4/ip_local_port_range
+----
+
+
+
+=== 외부 인바운드 프록시 포트
+
+무단 액세스로부터 프록시를 보호하려면 {productname} 프록시에서 외부 인바운드 포트를 열어 방화벽을 구성해야 합니다.
+
+이러한 포트를 열면 외부 네트워크 트래픽이 {productname} 프록시에 액세스할 수 있습니다.
+
+[cols="1,1,1,3", options="header"]
+.{productname} 프록시의 외부 포트 요구 사항
+|===
+| 포트 번호 | 프로토콜 | 사용 주체 | 알림
+| 22          |          |         | 사용자가 {salt} SSH로 프록시 호스트를 관리하려는 경우에만 필요합니다.
+| 67          | TCP/UDP  | DHCP    | 클라이언트가 서버에서 IP 주소를 요청하는 경우에만 필요합니다.
+| 69          | TCP/UDP  | TFTP    | 서버가 자동 클라이언트 설치를 위한 PXE 부팅 서버로 사용되는 경우 필요합니다.
+| 443         | TCP      | HTTPS   | {webui}, 클라이언트, 서버 및 프록시 (`tftpsync`) 요청입니다.
+| 4505        | TCP      | salt    | 클라이언트로부터의 통신 요청을 수락하기 위해 필요합니다.
+클라이언트가 연결을 시작하고, Salt 마스터로부터 명령을 받기 위해 열려 있습니다.
+| 4506        | TCP      | salt    | 클라이언트로부터의 통신 요청을 수락하기 위해 필요합니다.
+클라이언트가 연결을 시작하고, Salt 마스터에게 결과를 보고하기 위해 열려 있습니다.
+| 8022        |          |         | ssh-push 및 ssh-push-tunnel 연락 방법에 필요합니다. 프록시에 연결된 클라이언트는 서버에 체크인하고 클라이언트로 이동합니다.
+|===
+
+
+
+=== 외부 아웃바운드 프록시 포트
+
+프록시가 액세스할 수 있는 대상을 제한하려면 {productname} 프록시에서 외부 아웃바운드 포트를 열어 방화벽을 구성해야 합니다.
+
+이러한 포트를 열면 {productname} 프록시로부터의 네트워크 트래픽이 외부 서비스와 통신할 수 있습니다.
+
+[cols="1,1,1,3", options="header"]
+.{productname} 프록시의 외부 포트 요구 사항
+|===
+| 포트 번호 | 프로토콜 | 사용 주체 | 알림
+| 80          |          |         | 서버에 도달하는 데 사용됩니다.
+| 443         | TCP      | HTTPS   | {scclongform}에 필요합니다.
+| 4505        | TCP      | Salt    | Salt 마스터에 직접 또는 프록시를 통해 연결하는 데 필요합니다.
+| 4506        | TCP      | Salt    | Salt 마스터에 직접 또는 프록시를 통해 연결하는 데 필요합니다.
+|===
+
+
+
+=== 외부 클라이언트 포트
+
+{productname} 서버와 클라이언트 사이에서 방화벽을 구성하려면 외부 클라이언트 포트가 열려 있어야 합니다.
+
+대부분의 경우에는 이러한 포트를 조정할 필요가 없습니다.
+
+[cols="1,1,1,3", options="header"]
+.{productname} 클라이언트를 위한 외부 포트 요구 사항
+|===
+| 포트 번호 | 방향 | 프로토콜 | 알림
+| 22          | 인바운드   | SSH      | ssh-push 및 ssh-push-tunnel 연결 방법에 필요합니다.
+| 80          | 아웃바운드  |          | 서버 또는 프록시에 도달하는 데 사용됩니다.
+| 443         | 아웃바운드  |          | 서버 또는 프록시에 도달하는 데 사용됩니다.
+| 4505        | 아웃바운드  | TCP      | Salt 마스터에 직접 또는 프록시를 통해 연결하는 데 필요합니다.
+| 4506        | 아웃바운드  | TCP      | Salt 마스터에 직접 또는 프록시를 통해 연결하는 데 필요합니다.
+| 9090        | 아웃바운드  | TCP      | Prometheus 사용자 인터페이스에 필요합니다.
+| 9093        | 아웃바운드  | TCP      | Prometheus 경고 관리자에 필요합니다.
+| 9100        | 아웃바운드  | TCP      | Prometheus 노드 익스포터에 필요합니다.
+| 9117        | 아웃바운드  | TCP      | Prometheus Apache 익스포터에 필요합니다.
+| 9187        | 아웃바운드  | TCP      | Prometheus PostgreSQL에 필요합니다.
+|===
+
+
+
+=== 필수 URL
+
+클라이언트를 등록하고 업데이트를 수행하기 위해 {productname}이(가) 액세스할 수 있어야 하는 URL이 있습니다.
+대부분의 경우 이러한 URL에 대한 액세스를 허용하는 것으로 충분합니다:
+
+* `scc.suse.com`
+* `updates.suse.com`
+* `installer-updates.suse.com`
+* `registry.suse.com`
+* `registry-storage.suse.com`
+* `opensuse.org`
+
+또한 SUSE 제품이 아닌 제품의 경우 다음 URL에 액세스해야 할 수도 있습니다.
+
+* `download.nvidia.com`
+* `public.dhe.ibm.com`
+* `nu.novell.com`
+
+지정된 URL 및 관련 IP 주소를 허용 목록에 추가하는 자세한 내용은 이 문서에서 확인할 수 있습니다: https://support.scc.suse.com/s/kb/SUSE-Customer-Center-and-SUSE-registry-URLs-for-access-behind-a-firewall-and-or-through-a-proxy[방화벽 뒤에서 및/또는 프록시를 통해 {scclongform} 및 SUSE 레지스트리에 액세스].
+
+비-{suse} 클라이언트를 사용하는 경우 해당 운영 체제를 위한 특정 패키지를 제공하는 다른 서버에 대한 액세스를 허용해야 할 수도 있습니다.
+예를 들어, {ubuntu} 클라이언트가 있는 경우 {ubuntu} 서버에 액세스할 수 있어야 합니다.
+
+비-{suse} 클라이언트의 방화벽 액세스 문제 해결에 대한 자세한 내용은 xref:administration:troubleshooting/tshoot-firewalls.adoc[]를 참조하십시오.
+
+

@@ -1,0 +1,85 @@
+[[client-proxy]]
+= 将客户端注册到代理
+:description: 通过包括 Web UI 注册、命令行命令或启动脚本的程序在代理服务器上配置客户端注册。移动客户端
+:revdate: 2024-03-05
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+
+代理服务器可以充当客户端的中介和软件包缓存。
+将客户端注册到代理与直接将其注册到 {productname} 服务器类似，但有一些关键区别。
+
+这些部分包含有关使用 {webui}、命令行命令或启动脚本将客户端注册到代理的信息。
+还有程序说明如何将客户端从一个 {productname} 代理移动到另一个代理或 {productname} 服务器。
+
+在 {webui} 中，代理页面显示有关客户端的信息。
+您可以通过单击 menu:系统[系统列表> 代理] 中代理的名称来查看连接到代理的客户端列表，然后在 `Details` 选项卡的 `Proxy` 子选项卡中进行选择。
+
+在 menu:系统[所有] 中单击某个客户端的名称，然后在 `Details` 选项卡的 `Connection` 子选项卡中，可以查看该客户端关联的链式代理列表。
+
+
+
+== 在代理之间移动客户端
+
+
+您无需重复注册过程，即可在代理之间移动 ({salt}) 和 {salt} SSH 推送客户端。
+
+[IMPORTANT]
+====
+链式代理无法移动。
+您应创建新代理，移动客户端，然后删除旧代理，而不是移动链式代理。
+====
+
+
+
+.过程：升级在代理之间移动客户端或 {salt} SSH 推送客户端
+
+. 在 {productname} {webui} 中，导航到客户端的 `System Details` 页面，以便在代理之间移动。
+. 导航到 `Connection` 选项卡。
+  然后点击 `Change proxy` 链接以显示下拉菜单。
+. 从 `New Proxy` 下拉菜单中选择要将客户端移动到的代理，然后单击 btn:[更改代理]。
+
+
+
+.过程：升级使用 SSM 在代理之间移动多个客户端或 {salt} SSH 推送客户端
+
+. 在 {productname} {webui} 中，导航到 menu:系统[系统列表]，并选中要移动的每个客户端，这将把这些客户端添加到系统集管理器中。
+. 导航到 menu:系统[系统集管理器]，并转到 menu:杂项[代理] 选项卡。
+. 从 `New Proxy` 下拉菜单中选择要将客户端移动到的代理，然后单击 btn:[更改代理]。
+
+同样，也可以通过调用 `system.changeProxy` API 来实现相同的功能。
+
+
+
+=== 背景信息
+此功能对常规 Salt 客户端与 Salt SSH Push 客户端的作用有所不同。
+
+
+==== 默认客户端
+
+该功能调度一个 {salt} 状态操作，将 `master:` 客户端配置文件中的 `susemanager.conf`{salt} 设置修改为指向新的代理。
+然后该功能重启 {salt} 客户端。
+
+[NOTE]
+====
+通过手动编辑 `master:` 文件来更改 `susemanager.conf` 也能达到相同的效果，并且受支持。
+====
+
+当客户端重启并通过新代理重新连接时，服务器会在数据库中更新代理路径，并安排另一项操作来刷新通道 URL。
+
+
+
+==== {salt} SSH 推送客户端
+
+该功能会立即在数据库中更新代理路径，并安排新的操作来刷新通道 URL。
+
+
+
+== 将客户端从代理移到服务器
+
+如果您要将客户端从代理移到服务器，请从代理列表中选择 `None`。
+
+

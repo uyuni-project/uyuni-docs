@@ -1,0 +1,233 @@
+[[install-vm-kvm]]
+= {productname} {productnumber} 以虚拟机形式部署服务器 - KVM
+:description: 了解如何使用 KVM 部署 SUSE Multi-Linux Manager 5.1 作为虚拟机，遵循其设置和配置程序以确保成功。
+:revdate: 2025-07-09
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+本章提供了部署 {productname} {productnumber} 作为映像所需的虚拟机设置。
+KVM 将与虚拟机管理器 (_virt-manager_) 结合使用，作为此安装的沙箱。
+
+
+
+// FIXME: make this section a snippet or move it to a general intro for both,
+//        KVM and VMware
+== 可用映像
+
+
+[IMPORTANT]
+====
+部署 {productname} {productnumber} 服务器的首选方法是使用以下可用映像之一。
+所有工具都包含在这些映像中，大大简化了部署。
+====
+
+{productname} {productnumber} 的映像可在 link:https://www.suse.com/download/suse-manager/[{productname} {productnumber} 虚拟机映像] 获取。
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-warn-images-sl-micro.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-warn-images-sl-micro.adoc[]
+endif::[]
+
+////
+// FIXME: For the moment, disable misleading info about raw image here.
+// [NOTE]
+// ====
+// For more information on preparing raw images, see:
+//
+// * link:https://documentation.suse.com/en-us/sle-micro/5.5/single-html/SLE-Micro-deployment/#sec-raw-preparation[]
+// * link:https://documentation.suse.com/en-us/sle-micro/5.5/single-html/SLE-Micro-deployment/#cha-images-procedure[]
+
+Remember to resize the default size of the partition before deploying.
+For more information on preparing raw images, see https://documentation.suse.com/sle-micro/6.1/html/Micro-deployment-raw-images-virtual-machines/index.html#deployment-preparing-configuration-device[].
+// For the 5.0 backport:
+// For more information on preparing raw images, see link:https://documentation.suse.com/en-us/sle-micro/5.5/single-html/SLE-Micro-deployment/#sec-raw-preparation[].
+
+For additional information on the self install images, see https://documentation.suse.com/sle-micro/6.1/html/Micro-deployment-selfinstall-images/index.html
+====
+////
+
+.可用服务器映像
+[cols="3, 3", options="header"]
+|===
+| 体系结构 | 映像格式
+
+| aarch64| qcow2, vmdk
+
+| x86_64  | qcow2，vmdk，raw，自安装程序
+
+| ppc64le | raw，自安装程序
+
+| s390x * | qcow2, raw
+|===
+
+__* s390x 有两个可用存储选项：CDL DASD 和 FBA.__
+
+
+[[quickstart.sect.kvm.settings]]
+== 虚拟机管理器 (virt-manager) 设置
+
+使用 *virt-manager* 创建新虚拟机时请输入以下设置。
+
+[NOTE]
+====
+此表指定了最低要求。
+这些适合快速测试安装，例如一个客户端的服务器。
+如果您想使用生产环境并需要有关磁盘空间的背景信息，请参见 xref:installation-and-upgrade:hardware-requirements.adoc[]。
+====
+
+
+[cols="1,1", options="header"]
+|===
+2+<| KVM 设置
+| 安装方法 | 导入现有磁盘映像
+| OS：                 | Linux
+| 版本：            | {productname}-Server.x86_64-{productnumber}.*.qcow2
+| 内存：             | 最小值 *)
+| 处理器：              | 最小值 *)
+| 存储格式：    | _.qcow2_ 40 GB（默认）根分区
+| 名称：               | 测试设置
+| 网络             | 桥接 _br0_
+|===
+
+*) 有关最小值，请参见 xref:installation-and-upgrade:hardware-requirements.adoc#server-hardware-requirements[]。
+
+
+[[minimmal.kvm.settings]]
+== 初始 KVM 设置
+
+.过程：升级创建初始设置
+. 使用下载的 {minimal} KVM 映像创建一个新虚拟机，并选择 `Import existing disk image`。
+. 配置 RAM 和 CPU 数量（至少 16 GB RAM，4 个 CPU）。
+. 为您的 KVM 计算机命名。
+. 单击 btn:[开始安装] 以从映像引导。
+. 在 JeOS 首次引导屏幕上选择“开始”以继续。
++
+
+image::jeos-firstboot.png[]
+
+. 选择键盘布局。
++
+
+image::select-keyboard.png[]
+
+.  接受许可协议。
++
+
+image::accept-license-agreement.png[]
+
+. 选择您的时区。
++
+
+image::enter-timezone.png[]
+
+. 输入 root 口令。
++
+
+image::root-password.png[]
+
+. 安装完成后，以 root 身份登录。
+
+. 继续阅读下一节。
+
+
+
+== 注册 {sl-micro} 和 {productname} {productnumber} 服务器
+
+// note for 5.0 backport: 5.0 should have sle-micro
+
+[NOTE]
+====
+{sl-micro} {microversion} 权利包含在 {productname} 权利中，因此不需要单独的注册代码。
+====
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+.过程：升级注册 {sl-micro} 和 {productname} {productnumber}
+. 引导虚拟机。
+. 以 `root` 身份登录。
++
+// note for 5.0 backport: 5.0 should have sle-micro
+. 使用 SCC 注册 {sl-micro}。
++
+
+----
+transactional-update register -r <REGCODE> -e <your_email>
+----
+
+. 重引导。
+
+. 使用 注册 {productname} {productnumber} {scclongform}。
++
+
+----
+transactional-update register -p Multi-Linux-Manager-Server/5.1/x86_64 -r <REGCODE>
+----
+
+. 重引导。
+
+. 更新系统：
++
+
+----
+transactional-update
+----
+
+. 如果已应用更新，请重引导。
+
+. 该步骤可选。
+  但是，如果您的基础设施需要自定义的永久性存储，请使用 `mgr-storage-server` 工具。
+
++
+
+有关详细信息，请参见 `mgr-storage-server --help`。
+此工具可以简化容器存储和数据库卷的创建。
+如下所示使用命令：
+
++
+
+----
+mgr-storage-server <storage-disk-device> [<database-disk-device>]
+----
++
+例如：
++
+
+----
+mgr-storage-server /dev/nvme1n1 /dev/nvme2n1
+----
+
++
+[NOTE]
+====
+此命令会将 `/var/lib/containers/storage/volumes` 处的永久性存储卷移动到指定的存储设备。
+
+有关详细信息，请参见
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+====
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-step-deploy-podman-certs.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-step-deploy-podman-certs.adoc[]
+endif::[]

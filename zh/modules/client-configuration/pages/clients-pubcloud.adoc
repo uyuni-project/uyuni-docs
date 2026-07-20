@@ -1,0 +1,96 @@
+[[clients-pubcloud]]
+= 在公有云上注册客户端
+:description: 通过禁用自动注册并为 SUSE Multi-Linux Manager 客户端启用 SSH 访问来注册云客户机
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+
+// 2024-04-04 OM: It had been decided in the conversation with the MLM PO 
+// that this Public Cloud related file can stay in the Uyuni books
+
+设置好 {productname} 服务器后，您便可开始注册客户端。
+
+
+
+== 添加产品并同步储存库
+
+
+确保您已经为您的客户端添加了相应的产品，并将仓库同步到 {productname}。
+这是创建用于注册客户端的引导储存库所必需的。
+
+有关详细信息，请参见 xref:specialized-guides:public-cloud-guide/overview.adoc[]。
+
+
+
+== 准备按需映像
+
+从 {suse} 提供的按需映像启动的实例会自动注册，并激活更新基础设施和 {sle} 模块。
+要将您的按需映像用作 {productname} 客户端，您需要在开始之前禁用此自动化。
+
+
+
+.过程：升级准备按需映像
+. 登录到按需实例。
+. 在命令提示符处，以 root 身份去除注册数据和储存库：
++
+----
+registercloudguest --clean
+----
+. 去除自动注册的触发服务：
++
+----
+systemctl disable guestregister.service
+----
+. 在 Microsoft Azure 中，还需要禁用另一项服务：
++
+----
+systemctl disable regionsrv-enabler-azure.timer
+----
+
+
+
+== 注册客户端
+
+在 {productname} {webui} 中，导航至 menu:系统[启动]，然后填写 `Host`、`SSH Port`、`User` 和 `Password` 字段。
+确保您在 `Host` 字段中使用稳定的 FQDN，否则当您的公有云提供不同的短期 FQDNs 时，{productname} 将无法找到您的主机。
+
+公共云映像通常不允许使用用户名和密码进行 SSH 登录，而只允许使用证书进行 SSH 登录。
+如果您想利用 {webui} 的启动功能，则需要启用使用用户名和 SSH 密钥进行 SSH 登录。
+您可以通过导航到 menu:系统[启动] 并更改身份验证方法来实现。
+
+如果您的云提供商是 Microsoft Azure，您可以使用用户名和密码登录。
+为此，您需要允许 AzureUser 以 root 身份运行命令而无需密码。
+为此，请打开 `/etc/sudoers.d/waagent` 文件，并添加或编辑此行：
+
+----
+AzureUser ALL=(ALL) NOPASSWD: ALL
+----
+
+[WARNING]
+====
+允许 AzureUser 以 root 身份运行命令而无需密码存在安全风险。
+仅将此方法用于测试。
+请勿在生产系统中执行此操作。
+====
+
+启动过程成功完成时，您的客户端会列在menu:系统[系统列表]中。
+
+* 如果您想更好地控制注册过程或必须注册许多客户端，请创建启动脚本。
+  有关详细信息，请参见 xref:client-configuration:registration-bootstrap.adoc[]。
+* 如果要注册 Salt 客户端而且想更好地控制注册过程，在命令行上执行单个命令较为合适。
+  有关详细信息，请参见 xref:client-configuration:registration-cli.adoc[]。
+* 当从公有云映像（例如，AWS AMI）启动客户端时，您需要进行一些额外的配置，以防止它们相互覆盖。
+  有关注册克隆的更多信息，请参见xref:administration:troubleshooting/tshoot-registerclones.adoc[]。
+
+
+
+== 激活密钥
+
+激活密钥用于确保您的客户端拥有正确的软件授权，连接到适当的频道，并订阅相关的组。
+每个激活密钥都绑定到一个组织，您可以在创建密钥时设置该组织。
+
+有关激活密钥的更多信息，请参见xref:client-configuration:activation-keys.adoc[]。

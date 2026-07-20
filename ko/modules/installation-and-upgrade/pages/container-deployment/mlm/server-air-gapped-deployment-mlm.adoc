@@ -1,0 +1,167 @@
+= {productname} 서버 에어갭 배포
+:description: 지원되는 설치 및 업그레이드 절차를 사용하여 안전한 에어갭 환경에서 SUSE 멀티 리눅스 관리자를 배포합니다.
+:revdate: 2025-05-14
+:page-revdate: {revdate}
+:page-author: SUSE 제품 및 솔루션 문서 팀
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+== air-gapped 배포란?
+
+
+에어갭 배포란 물리적으로 불안전한 네트워크, 특히 인터넷과 격리된 네트워크 시스템의 설정 및 운영을 의미합니다.
+이러한 유형의 배포는 군사 시설, 금융 시스템, 중요 인프라, 그리고 민감한 데이터가 처리되고 외부 위협으로부터 보호되어야 하는 모든 고보안 환경에서 일반적으로 사용됩니다.
+
+
+
+== 배포
+
+{productname}은(는) 두 가지 배포 방식을 지원합니다.
+
+
+=== 가상 머신으로 배포
+
+필요한 모든 도구 및 컨테이너 이미지가 미리 로드되어 있고 즉시 작동하므로, 제공되는 {productname} 가상 머신 이미지 옵션을 사용하여 설치하는 방법을 권장합니다.
+
+{productname} 서버 가상 머신 설치에 대한 자세한 내용은 xref:container-deployment/mlm/server-deployment-vm-mlm.adoc[서버를 가상 머신으로 배포]를 참조하십시오.
+
+{productname} 서버를 업그레이드하려면 사용자는 시스템의 모든 패키지를 업그레이드하고 xref:container-management/updating-server-containers.adoc[서버 업그레이드]에 정의된 절차를 따라야 합니다.
+
+
+=== {productname}을(를) {sl-micro}에 배포합니다.
+
+또한 {productname}은(는) 필요한 모든 컨테이너 이미지를 시스템에 설치할 수 있는 RPM으로 제공합니다.
+
+[NOTE]
+====
+사용자는 내부 네트워크에서 필요한 RPM을 사용할 수 있어야 합니다.
+이는 두 번째 {productname} 서버 또는 RMT 서버를 사용하여 수행할 수 있습니다.
+====
+
+.절차 에어갭 배포 환경에서 {sl-micro}에 {productname}을(를) 설치합니다.
+[role=procedure]
+____
+. {sl-micro}을(를) 설치합니다.
+
+. 시스템을 업데이트합니다.
+
+. 도구 패키지 및 이미지 패키지 설치($ARCH$를 올바른 아키텍처로 대체)
+
++
+
+[source,shell]
+----
+transactional-update pkg install mgradm* mgrctl* suse-multi-linux-manager-5.1-$ARCH$-server-*
+----
+
++
+
+. 재부팅합니다.
+
+. {productname}을(를) 사용하여 `mgradm`을(를) 배포합니다.
+
+____
+
+{sl-micro}에 {productname} 서버를 설치하는 방법에 대한 자세한 내용은 xref:container-deployment/mlm/server-deployment-mlm.adoc[서버를 가상 머신으로 배포]를 참조하십시오.
+
+{productname} 서버를 업그레이드하려면 사용자는 시스템의 모든 패키지를 업그레이드하고 xref:container-management/updating-server-containers.adoc[서버 업그레이드]에 정의된 절차를 따라야 합니다.
+
+
+== PTF
+
+PTF 이미지는 패키지로 제공되지 않습니다.
+즉, 인터넷에 액세스할 수 있는 머신에서 `podman`을(를) 사용하여 가져온 다음 아카이브에 저장하고 에어갭 머신으로 전송한 후 해당 위치에서 로드해야 합니다.
+
+.절차 인터넷에 액세스할 수 있는 머신에서 이미지를 가져옵니다.
+[role=procedure]
+____
+. `podman`을(를) 설치합니다.
+
+. SCC 자격 증명을 사용하여 {suse} 레지스트리에 대해 인증합니다:
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-login-into-suse-registry.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-login-into-suse-registry.adoc[]
+endif::[]
+
++
+
+. 다음 명령을 실행하여 \{productname}을(를) 배포합니다.
+
++
+
+[NOTE]
+====
+이 예제는 PTF가 `server` 이미지에 대한 것이라고 가정하며, PTF가 다른 이미지와 관련된 경우 예제를 조정하십시오.
+====
+
++
+
+[source,shell]
+----
+SCC_USERID=aXXXX
+PTFID=12345
+echo "registry.suse.com/a/$SCC_USERID/$PTFID/suse/multi-linux-manager/5.1/x86_64/server:latest-ptf-$PTFID" >>/tmp/ptf-images
+----
+
++
+
+
+. 파일에 PTF 이미지의 전체 경로가 포함되어 있는지 확인합니다.
+  필요한 경우, 다른 이미지의 전체 경로를 파일에 한 줄씩 추가할 수 있습니다.
+
+. PTF의 각 컨테이너 이미지를 당겨와서 tar 아카이브에 저장합니다.
+
+
++
+
+[source,shell]
+----
+for image in `cat /tmp/ptf-images`; do
+    podman pull $image
+done
+podman save -o /tmp/ptf-images.tar $(cat /tmp/ptf-images)
+----
+. 서버에 있는 `/tmp/ptf-images.tar` 이미지 아카이브를 패치로 전송합니다.
+
+____
+
+.절차 패치할 서버에 이미지를 로드합니다.
+[role=procedure]
+____
+. `ptf-images.tar` 파일이 서버에서 사용 가능한지 확인합니다.
+
+. 이미지를 아카이브에서 로드:
+
++
+
+[source,shell]
+----
+podman load -i ptf-images.tar
+----
+
++
+
+. 연결된 시스템에서 수행하는 것과 동일한 방식으로 다음 명령을 사용하여 PTF를 설치합니다.
+
++
+
+[shell, source]
+----
+mgradm support ptf podman [--test|--ptf] NUMBER --user SCC_ACCOUNT
+----
+
++
+
+이미지가 이미 로드되었기 때문에 다시 당겨오지 않습니다.
+____

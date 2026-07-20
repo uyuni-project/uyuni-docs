@@ -1,4 +1,15 @@
 - Documented apache2 parameter used for large deployments (bsc#1268673)
+- Fixed `task validate:mlm` and `task validate:uyuni` to use Antora 3 built-in xref
+  checking (`stage-content`, `gen-site`, `gen-antora`, `--log-failure-level=error`)
+  instead of the obsolete Antora 2.x `@antora/xref-validator` plugin, which was not
+  shipped in the builder image
+- Migrated the build to committed AI translation trees (`ja/`, `ko/`, `zh/modules/`)
+  with English fallback via `task stage-content`; po4a/Weblate are no longer used in the
+  build pipeline
+- Updated PDF builds to stage translated content from `{content_dir}/modules/` before
+  `gen-pdf-nav`; consolidated Uyuni CJK PDF output onto the shared `uyuni-cjk` theme
+- Fixed sibling `ifeval` blocks in SUSE Liberty Linux client registration
+  (`clients-sleses.adoc`) that caused unterminated conditional errors in CJK PDF builds
 - Documented Grafana reporting database automated setup and Hub Overview in Administration and Specialized Guides
 - Update the OpenSCAP packages table in the
   System Security with OpenSCAP article in the Administration guide (bsc#1269316)

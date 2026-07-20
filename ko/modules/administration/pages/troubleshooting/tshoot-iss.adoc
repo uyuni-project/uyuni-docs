@@ -1,0 +1,76 @@
+[[troubleshooting-iss]]
+= 서버 간 동기화 문제 해결
+:description: ISS 마스터와 슬레이브 시스템에서 오래되었거나 최신이 아닌 캐시 항목을 삭제하여 서버 간 동기화 문제를 구성하고 문제를 해결합니다.
+:revdate: 2024-05-15
+:page-revdate: {revdate}
+:page-author: SUSE 제품 및 솔루션 문서 팀
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+////
+Cause: Caches on the ISS slave and master can contain old or out-of-date entries.
+Consequence: Synchronizing fails, with `ERROR: Encountered IntegrityError`.
+Fix: Delete the cache on the slave and the master
+Result: Synchronization completes successfully.
+////
+
+
+서버 간 동기화는 ISS 마스터와 슬레이브를 관리하기 위해 캐시를 사용합니다.
+이 캐시는 유효하지 않은 항목을 생성하는 버그에 취약할 수 있습니다.
+이 경우, 캐시가 여전히 유효하지 않은 항목을 사용하고 있기 때문에 버그를 해결하는 버전으로 업데이트한 후에도 버그가 나타날 수 있습니다.
+ISS의 새 버전으로 업그레이드했지만 여전히 문제가 발생하는 경우, 모든 캐시를 지워서 더 이상 오래된 항목이 문제를 일으키지 않도록 합니다.
+
+캐시 오류는 다양한 오류와 함께 동기화 실패로 이어질 수 있지만, 오류 메시지는 일반적으로 다음과 같은 항목을 보고합니다.
+
+----
+consider removing satellite-sync cache at /var/cache/rhn/satsync/* and re-run satellite-sync with same options.
+----
+
+ISS 마스터 및 ISS 슬레이브에서 캐시를 삭제하여 이 문제를 해결할 수 있으므로 동기화가 성공적으로 완료됩니다.
+
+[IMPORTANT]
+====
+Server 컨테이너 내부의 셸에 접근하려면 컨테이너 호스트에서 `mgrctl term`을(를) 실행합니다.
+====
+
+
+.절차 ISS 캐싱 오류 해결
+. ISS 마스터의 명령 프롬프트에서 루트 사용자로 마스터에 대한 캐시 파일을 삭제합니다:
++
+----
+rm -rf /var/cache/rhn/xml-*
+----
+. 서비스를 다시 시작합니다.
++
+----
+rcapache2 restart
+----
+. ISS 마스터의 명령 프롬프트에서 루트 사용자로 슬레이브에 대한 캐시 파일을 삭제합니다:
++
+----
+rm -rf /var/cache/rhn/satsync/*
+----
+. 서비스를 다시 시작합니다.
++
+----
+rcapache2 restart
+----
