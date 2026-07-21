@@ -1,3 +1,4 @@
+- Clarified CA certificate migration requirements
 - Documented apache2 parameter used for large deployments (bsc#1268673)
 - Documented Grafana reporting database automated setup and Hub Overview in Administration and Specialized Guides
 - Update the OpenSCAP packages table in the
