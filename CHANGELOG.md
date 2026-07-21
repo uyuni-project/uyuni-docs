@@ -1,3 +1,4 @@
+- Removed legacy mgradm and mgrpxy commands
 - Documented Grafana reporting database automated setup and Hub Overview in Administration and Specialized Guides
 - Update the OpenSCAP packages table in the
   System Security with OpenSCAP article in the Administration guide (bsc#1269316)
