@@ -1,3 +1,4 @@
+- Consolidated multiple duplicated activation key creation procedures into a single reusable partial snippet
 - Documented apache2 parameter used for large deployments (bsc#1268673)
 - Documented Grafana reporting database automated setup and Hub Overview in Administration and Specialized Guides
 - Update the OpenSCAP packages table in the
