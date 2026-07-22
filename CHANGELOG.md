@@ -1,3 +1,4 @@
+- Clarified CA certificate migration requirements (bsc#1271841)
 - Added instructions for enabling reporting dashboards in Specialized Guides
   (bsc#1268228)
 - Remove legacy mgradm and mgrpxy commands
