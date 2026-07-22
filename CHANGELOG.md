@@ -1,3 +1,5 @@
+- Added instructions for enabling reporting dashboards in Specialized Guides
+  (bsc#1268228)
 - Documented apache2 parameter used for large deployments (bsc#1268673)
 - Fixed `task validate:mlm` and `task validate:uyuni` to use Antora 3 built-in xref
   checking (`stage-content`, `gen-site`, `gen-antora`, `--log-failure-level=error`)
