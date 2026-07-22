@@ -1,3 +1,5 @@
+- Added instructions for enabling reporting dashboards in Specialized Guides
+  (bsc#1268228)
 - Add the --set tag parameter to helm install/upgrade commands as a workaround (bsc#1271902)
 - Removed legacy mgradm and mgrpxy commands
 - Documented apache2 parameter used for large deployments (bsc#1268673)
