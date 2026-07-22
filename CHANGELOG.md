@@ -1,5 +1,7 @@
 - Added instructions for enabling reporting dashboards in Specialized Guides
   (bsc#1268228)
+- Remove legacy mgradm and mgrpxy commands
+- Added the --set tag parameter to helm install/upgrade commands as a workaround (bsc#1271902)
 - Documented apache2 parameter used for large deployments (bsc#1268673)
 - Documented Grafana reporting database automated setup and Hub Overview in Administration and Specialized Guides
 - Update the OpenSCAP packages table in the
