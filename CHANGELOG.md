@@ -1,3 +1,5 @@
+- Extended configuration instructions for Saline formula in Specialized Guides
+  (bsc#1268587)
 - Enhanced instructions for Liberate formula and reactivation key in Specialized
   Guides (bsc#1268473)
 - Consolidated multiple duplicated activation key creation procedures into a single reusable partial snippet
