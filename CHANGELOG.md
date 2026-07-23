@@ -1,3 +1,4 @@
+- Consolidated multiple duplicated activation key creation procedures into a single reusable partial snippet
 - Fixed Traefik installation documentation in Specialized Guides
 - Clarified CA certificate migration requirements (bsc#1271841)
 - Added instructions for enabling reporting dashboards in Specialized Guides
