@@ -1,3 +1,5 @@
+- Enhanced instructions for Liberate formula and reactivation key in Specialized
+  Guides (bsc#1268473)
 - Consolidated multiple duplicated activation key creation procedures into a single reusable partial snippet
 - Added instructions for enabling reporting dashboards in Specialized Guides
   (bsc#1268228)
