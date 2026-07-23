@@ -19,7 +19,7 @@ The history of the past checks is also stored and available per request.
 
 [IMPORTANT]
 ====
-{CoCo} Attestation is only available on x86_64 architecture.
+{CoCo} Attestation is only available when {productname} is running on {x86_64} architecture.
 ====
 
 
@@ -28,18 +28,31 @@ The history of the past checks is also stored and available per request.
 
 {CoCo} can be set up in an environment with the following characteristics:
 
-* Attested system (virtual machine) is SLES15 SP6 and bootstrapped to {productname}
-* Hardware must have `AMD EPYC Milan CPU` or `AMD EPYC Genoa CPU`
-* BIOS must be configured to allow {CoCo} attestation
-* Host OS and the virtualization software (KVM and libvirt) must support {CoCo}.
+* Attested system (virtual machine) is bootstrapped to {productname} and runs on one of the following systems:
+** {sle} 15 SP6
+** {sle} 15 SP7
+** {sle} 16
+** {leap} 15 SP6
+** {leap} 15 SP7
+** {leap} 16
 
+* Hardware must have one of the following CPUs:
+** `AMD EPYC Milan`
+** `AMD EPYC Genoa`
+** `AMD EPYC Bergamo`
+** `AMD EPYC Siena`
+** `AMD EPYC Turin`
+** `IBM z16`
+** `IBM z17`
+* BIOS must be configured to allow {CoCo} attestation
+* Host OS and the virtualization software (KVM and libvirt) must support {CoCo}
+
+* For information about required URLs when performing confidential computing attestation for IBM, see see xref:installation-and-upgrade:network-requirements.adoc#required-urls[Required URLs].
 
 == Limitations
 
-* SLES15 SP6 has {CoCo} attestation as technology preview.
-* {productname} has {CoCo} attestation as technology preview.
-* Secure boot is attested. 
-  However, currently KVM secure boot and SNP Guest are not working together. 
+Secure boot is attested. 
+However, currently KVM secure boot and AMD attestation tool `snpguest` are not working together. 
 
 
 == Use {CoCo} in {productname}
@@ -86,7 +99,28 @@ mgradm scale uyuni-server-attestation --replicas 0
 . For the selected system, go to tab menu:Audit[Confidential Computing > Settings].
 . Enable the attestation by selecting the toggle button.
 . In the field `Environment Type` select the correct option from the drop-down list.
-//. (PLACEHOLDER) Enable the automatic attestaion at reboot by selecting the toggle button `Execution`.
+. If the field `Environment Type` is set to one of the `IBM z-series` CPU values, two more settings are required, `Host Key Document` and `Secure Execution Header`.
+
++
+
+[NOTE]
+====
+`Host Key Document` is a public key certificate of the IBM hypervisor server instance where the attested system is going to run.
+
+`Secure Execution Header` is a binary file needed to build the IBM secure VM image of the attested system.
+
+Both files should be requested by the administrator creating the attested system VM running on the IBM hypervisor.
+====
+
++
+
+[IMPORTANT]
+====
+`Host Key Document` and `Secure Execution Header` are not security sensitive, therefore it is safe to store them on the {productname} server.
+====
+
++
+
 . Click button btn:[Save] to save the changes.
 
 .Procedure: Scheduling New Attestation
@@ -103,8 +137,8 @@ mgradm scale uyuni-server-attestation --replicas 0
 . For the selected system, go to tab menu:Audit[Confidential Computing > List Attestations].
 . Find and select the report you want to view.
 . After clicking the selected attestation report tab `Overview` will open.
-. Move to the next tab `SEV-SNP`.
-. Finally, move to the next tab `Secure Boot`.
+.. If the selected CPU is `AMD` you will be shown additional tabs `SEV-SNP` and `Secure boot`.
+.. If the selected CPU is `IBM` you will be shown additional tab `IBM SELPVATTEST`.
 
 
 .Procedure: Viewing Attestation Reports from Audit
