@@ -491,37 +491,14 @@ RKE2 ships with nginx as the default ingress controller.
 The `server-helm` chart requires Traefik, so nginx must be disabled and Traefik installed before proceeding.
 This is a task for the {kube} cluster administrator.
 
-Disable the nginx ingress controller by adding the following to `/etc/rancher/rke2/config.yaml` on each RKE2 server node (create the file if it does not exist):
+Set the nginx ingress controller to be Traefik by adding the following to `/etc/rancher/rke2/config.yaml` on each RKE2 server node (create the file if it does not exist):
 
 [source,yaml]
 ----
-disable:
-  - rke2-ingress-nginx
+ingress-controller: traefik
 ----
 
-Install Traefik by creating `/var/lib/rancher/rke2/server/manifests/traefik.yaml` on the RKE2 server node with the following content:
-
-[source,yaml]
-----
-apiVersion: helm.cattle.io/v1
-kind: HelmChart
-metadata:
-  name: traefik
-  namespace: kube-system
-spec:
-  chart: traefik
-  repo: https://traefik.github.io/charts
-  targetNamespace: kube-system
-----
-
-[IMPORTANT]
-====
-The `metadata.name` must be `traefik`.
-The `server-helm` chart creates Ingress resources with `ingressClassName: traefik`, which must match the IngressClass name created by the Helm release.
-Using a different name (such as `rke2-traefik`) causes Traefik to silently ignore all {productname} ingresses, resulting in 404 responses even when all pods are running.
-====
-
-Restart RKE2 to apply both changes:
+Restart RKE2 to apply the changes:
 
 [source,shell]
 ----
@@ -554,7 +531,7 @@ Traefik takes a few seconds to be reconfigured after the file is saved.
 apiVersion: helm.cattle.io/v1
 kind: HelmChartConfig
 metadata:
-  name: traefik
+  name: rke2-traefik
   namespace: kube-system
 spec:
   valuesContent: |-
@@ -680,6 +657,7 @@ helm install smlm-server \
      --set "global.fqdn=the.server.fqdn" \
      --set "registrySecret=scc-credentials" \
      --set "repository=registry.suse.com/suse/multi-linux-manager/5.2/$ARCH$/"
+     --set tag={productchartversion} \
      --version {productchartversion}
 ----
 endif::[]
@@ -692,6 +670,7 @@ helm install uyuni-server \
      -n $NAMESPACE \
      --description "Server installation" \
      --set "global.fqdn=the.server.fqdn" \
+     --set tag={productnumber} \
      --version {productchartversion}
 ----
 endif::[]
