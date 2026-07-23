@@ -1,4 +1,9 @@
 - Consolidated multiple duplicated activation key creation procedures into a single reusable partial snippet
+- Clarified CA certificate migration requirements (bsc#1271841)
+- Fixed Traefik installation documentation in Specialized Guides
+- Added instructions for enabling reporting dashboards in Specialized Guides
+  (bsc#1268228)
+- Add the --set tag parameter to helm install/upgrade commands as a workaround (bsc#1271902)
 - Removed legacy mgradm and mgrpxy commands
 - Documented apache2 parameter used for large deployments (bsc#1268673)
 - Documented Grafana reporting database automated setup and Hub Overview in Administration and Specialized Guides
