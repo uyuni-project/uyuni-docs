@@ -1,3 +1,4 @@
+- Consolidated multiple duplicated activation key creation procedures into a single reusable partial snippet
 - Added instructions for enabling reporting dashboards in Specialized Guides
   (bsc#1268228)
 - Documented apache2 parameter used for large deployments (bsc#1268673)
