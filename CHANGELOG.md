@@ -1,3 +1,5 @@
+- Enhanced instructions for Liberate formula and reactivation key in Specialized
+  Guides (bsc#1268473)
 - Clarified CA certificate migration requirements (bsc#1271841)
 - Fixed Traefik installation documentation in Specialized Guides
 - Added instructions for enabling reporting dashboards in Specialized Guides
