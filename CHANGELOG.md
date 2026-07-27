@@ -1,3 +1,4 @@
+- Fixed the snippet to reflect the correct produst version (bsc#1272538)
 - Enhanced instructions for Liberate formula and reactivation key in Specialized
   Guides (bsc#1268473)
 - Fixed missing line end escapes in kubernetes helm install commands
