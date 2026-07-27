@@ -1,4 +1,5 @@
 - Fixed the snippet to reflect the correct produst version (bsc#1272538)
+- Corrected verification step order in MLM 5.0 to 5.2 upgrade guide for SL-Micro (bsc#1271678)
 - Extended configuration instructions for Saline formula in Specialized Guides
   (bsc#1268587)
 - Enhanced instructions for Liberate formula and reactivation key in Specialized
