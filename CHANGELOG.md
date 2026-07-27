@@ -1,3 +1,4 @@
+- Fixed procedures for OpenSCAP in Administration Guide (bsc#1270047)
 - Fixed the snippet to reflect the correct produst version (bsc#1272538)
 - Added the missing TFTP image in airgap install command
 - Corrected verification step order in MLM 5.0 to 5.2 upgrade guide for SL-Micro (bsc#1271678)
