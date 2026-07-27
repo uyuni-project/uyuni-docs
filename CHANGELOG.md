@@ -1,3 +1,4 @@
+- Added documentation support for Ubuntu 26.04 client systems
 - Corrected verification step order in MLM 5.0 to 5.2 upgrade guide for SL-Micro (bsc#1271678)
 - Extended configuration instructions for Saline formula in Specialized Guides
   (bsc#1268587)
