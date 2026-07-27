@@ -1,3 +1,4 @@
+- Fixed procedures for OpenSCAP in Administration Guide (bsc#1270047)
 - Extended configuration instructions for Saline formula in Specialized Guides
   (bsc#1268587)
 - Enhanced instructions for Liberate formula and reactivation key in Specialized
