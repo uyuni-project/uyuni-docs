@@ -1,4 +1,4 @@
-- Add the missing TFTP image in airgap install command
+- Added the missing TFTP image in airgap install command
 - Enhanced instructions for Liberate formula and reactivation key in Specialized
   Guides (bsc#1268473)
 - Fixed missing line end escapes in kubernetes helm install commands
