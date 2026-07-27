@@ -1,3 +1,4 @@
+- Corrected verification step order in MLM 5.0 to 5.2 upgrade guide for SL-Micro (bsc#1271678)
 - Enhanced instructions for Liberate formula and reactivation key in Specialized
   Guides (bsc#1268473)
 - Fixed missing line end escapes in kubernetes helm install commands
