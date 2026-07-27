@@ -1,3 +1,5 @@
+- Extended configuration instructions for Saline formula in Specialized Guides
+  (bsc#1268587)
 - Enhanced instructions for Liberate formula and reactivation key in Specialized
   Guides (bsc#1268473)
 - Fixed missing line end escapes in kubernetes helm install commands
