@@ -1,3 +1,4 @@
+- Added documentation support for Ubuntu 26.04 client systems
 - Extended configuration instructions for Saline formula in Specialized Guides
   (bsc#1268587)
 - Enhanced instructions for Liberate formula and reactivation key in Specialized
