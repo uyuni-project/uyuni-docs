@@ -1,3 +1,4 @@
+- Added documentation support for Ubuntu 26.04 client systems
 - Enhanced instructions for Liberate formula and reactivation key in Specialized
   Guides (bsc#1268473)
 - Fixed missing line end escapes in kubernetes helm install commands
