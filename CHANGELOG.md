@@ -1,3 +1,4 @@
+- Added documentation support for Ubuntu 26.04 client systems
 - Fixed procedures for OpenSCAP in Administration Guide (bsc#1270047)
 - Fixed the snippet to reflect the correct produst version (bsc#1272538)
 - Added the missing TFTP image in airgap install command
