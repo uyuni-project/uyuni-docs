@@ -1,7 +1,7 @@
 // jsc#spacewalk-29351
 [[workflow-cert-rotation-acme]]
 = Set Up and Rotate Certificates using ACME
-:description: Setting up and automatically rotating third-party SSL/TLS certificates using the ACME protocol, such as Let's Encrypt, in containerized environments.
+:description: Setup and automatic rotation of third-party SSL/TLS certificates using the ACME protocol in containerized environments.
 :revdate: 2026-07-29
 :page-revdate: {revdate}
 :page-author: SUSE Product & Solution Documentation Team
@@ -9,31 +9,30 @@
 :page-product-name: SUSE Multi-Linux Manager
 :page-product-version: 5.2
 
-This workflow shows you how to set up and automatically rotate third-party SSL/TLS certificates using the ACME protocol, such as Let's Encrypt, on containerized installations.
-It ensures that your custom certificates are correctly configured for both the server and database components, and are automatically renewed and updated without manual intervention.
+Set up and automatically rotate third-party SSL/TLS certificates using the ACME protocol (such as Let's Encrypt) on containerized installations.
 
 
 == Use case
 
-This workflow is beneficial when:
+Configure ACME certificate rotation to:
 
-* You want to secure your containerized server using valid public certificates signed by Let's Encrypt or other ACME-supporting Certificate Authorities.
-* You need to automate certificate rotation to prevent server downtime and connection issues caused by expired certificates.
-* You want to use the same certificate authority (CA) and certificate chain for both the server and database containers.
+* Secure the containerized server with valid public CA-signed certificates.
+* Automate certificate renewal and rotation to prevent downtime.
+* Use the same CA and certificate chain for both server and database containers.
 
 
 == Outcome
 
-When you have completed this workflow, your containerized server will be secured by valid third-party certificates, and these certificates will automatically rotate before they expire, automatically updating the Podman secrets and restarting the containerized services.
+The containerized server uses valid public certificates that automatically rotate on renewal, updating Podman secrets and restarting services without manual intervention.
 
 
 == Preparation
 
-Before you start, you should have:
+Ensure you have:
 
 * Root access to the server container host.
-* The `acme.sh` tool installed on the container host (or another ACME client of your choice).
-* An active DNS challenge provider or method configured in `acme.sh` to handle certificate requests for the server FQDN.
+* The `acme.sh` tool installed on the host.
+* An active DNS challenge provider configured in `acme.sh` for the server FQDN.
 * The fully qualified domain name (FQDN) of your server.
 
 
@@ -41,23 +40,22 @@ Before you start, you should have:
 
 [IMPORTANT]
 ====
-When using third-party certificates signed by an intermediate CA, all certificates in the chain must be available.
-The server certificate file must contain the server certificate first, followed by all intermediate CA certificates in order.
+If using an intermediate CA, the certificate file must contain the server certificate first, followed by all intermediate CAs in order.
 ====
 
-.Procedure: Setting up and rotating certificates with ACME
+.Procedure: Configuring ACME certificate rotation
 [role="procedure"]
 _____
-. Open a terminal on your server container host as the `root` user.
+. Open a terminal on the server container host as `root`.
 
-. Create the target directory where the certificates and keys will be stored:
+. Create the certificate directory:
 +
 [source,shell]
 ----
 mkdir -p /root/ssl-build
 ----
 
-. Export the required API environment variables for your DNS challenge provider. For example, if you are using Cloudflare (`dns_cf`):
+. Export the DNS challenge credentials. For example, for Cloudflare:
 +
 [source,shell]
 ----
@@ -67,12 +65,10 @@ export CF_Account_ID="your_cloudflare_account_id"
 +
 [NOTE]
 ====
-Replace these variables with the ones required by your specific DNS challenge provider as documented in the `acme.sh` wiki.
+Replace with credentials for your specific DNS provider.
 ====
 
-. Issue the certificate using `acme.sh` with your configured DNS challenge provider.
-  Make sure to specify a `--reloadcmd` that replaces the Podman secrets and restarts the services automatically upon successful certificate renewal:
-
+. Issue the certificate and define `--reloadcmd` to replace secrets and restart services on renewal:
 +
 [source,shell]
 ----
@@ -89,31 +85,24 @@ Replace these variables with the ones required by your specific DNS challenge pr
    --reloadcmd "podman secret create --replace uyuni-ca /root/ssl-build/ca.pem && podman secret create --replace uyuni-cert /root/ssl-build/fullchain.pem && podman secret create --replace uyuni-key /root/ssl-build/server.key && podman secret create --replace uyuni-db-ca /root/ssl-build/ca.pem && podman secret create --replace uyuni-db-cert /root/ssl-build/fullchain.pem && podman secret create --replace uyuni-db-key /root/ssl-build/server.key && mgradm restart"
 ----
 
-. If you are running `acme.sh` for the first time, verify that the initial certificate generation succeeds, the secrets are created or replaced successfully, and the server restarts without errors.
+. Verify the initial run completes successfully, replaces secrets, and restarts the server.
 _____
 
 [NOTE]
 ====
-The same root CA, server certificate, and server key can be used for the database container as well, which is handled automatically in the command above by replacing `uyuni-db-ca`, `uyuni-db-cert`, and `uyuni-db-key` with the same files.
+Reusing the same certificates for the database container is recommended, as handled in the command above.
 ====
 
 
 == Troubleshooting: CA password prompt during upgrades
 
-During server upgrade (for example, when upgrading from a legacy release to a split database release like 2025.05), `mgradm` prompts for the CA password to sign the new database certificates.
+If upgrading a legacy server to a split database release (such as 2025.05), `mgradm` prompts for the CA password to sign database certificates.
 
-* **Using Self-Signed Certificates**: If you are using the default self-signed CA and forgot your password, you can retrieve the correct password from:
-+
-----
-/var/lib/containers/storage/volumes/root/_data/spacewalk-answers
-----
-+
-Search for the `ssl-password` value in this file.
-
-* **Using ACME/Third-Party Certificates**: If you are using ACME or other third-party certificates, no password is required for self-signed certificate generation. Instead, you can specify your third-party database certificates directly during upgrade by passing the `--ssl-db-*` flags to the upgrade command, or let `mgradm` complete with placeholder self-signed certs and then update the Podman secrets as shown in this guide.
+* **Self-signed certificates**: Retrieve the password from `/var/lib/containers/storage/volumes/root/_data/spacewalk-answers` (`ssl-password` value).
+* **Third-party/ACME certificates**: No password is required. Pass `--ssl-db-*` flags to the upgrade command, or let the upgrade complete using self-signed placeholders and then update secrets using this guide.
 
 
 == Related topics
 
-* For more details on importing custom certificates, see xref:administration:ssl-certs-imported.adoc[].
-* For more information on migrating Certificate Authorities, see xref:administration:ssl-certs-ca-migration.adoc[].
+* For details on importing custom certificates, see xref:administration:ssl-certs-imported.adoc[].
+* For CA migration information, see xref:administration:ssl-certs-ca-migration.adoc[].
