@@ -1,0 +1,80 @@
+[[mcp-server-concepts]]
+= Concepts and Architecture
+:revdate: 2026-07-29
+:page-revdate: {revdate}
+
+This chapter introduces the components, request flow, deployment models, and capabilities of the {productname} MCP Server.
+
+The Model Context Protocol (MCP) is an open protocol that allows an AI application to discover and call tools exposed by an external server.
+The {productname} MCP Server implements MCP tools that translate structured tool calls into {productname} HTTP API requests.
+
+The MCP Server integrates with the existing {productname} authorization model.
+The authenticated account determines which content is visible and which operations are permitted.
+
+== Components
+
+An MCP integration contains the following components:
+
+MCP host::
+The AI application in which the user works.
+
+MCP client::
+The protocol client maintained by the host.
+It discovers tools, sends tool calls, displays progress and results, and can request user approval.
+
+{productname} MCP Server::
+The process that exposes tools over stdio or streamable HTTP and calls the {productname} API.
+
+{productname} Server::
+The managed infrastructure service and authorization boundary.
+
+Identity provider::
+An optional OAuth 2.0/OpenID Connect provider used for a shared HTTP deployment.
+
+== Request flow
+
+For a read-only request, the flow is:
+
+. The user asks the AI assistant to retrieve information from {productname}.
+. The AI assistant selects an MCP tool and supplies structured arguments.
+. The MCP client sends the tool call to the MCP Server.
+. The MCP Server authenticates to {productname}, calls the corresponding API, and normalizes the response.
+. The MCP client returns the structured result to the AI assistant.
+
+State-changing tools add an approval step when the MCP client supports MCP elicitation.
+For more information, see xref:mcp-server-security.adoc#write-tool-controls[Write tool controls].
+
+== Deployment models
+
+[cols="1,2,2", options="header"]
+|===
+|Model
+|Use case
+|Characteristics
+
+|Client-managed stdio
+|One user or one local AI application
+|The MCP client starts one server process. Communication remains on stdin and stdout. {productname} credentials are normally supplied to that process.
+
+|Standalone HTTP
+|A persistent service shared by multiple users or clients
+|Clients connect to `/mcp` over streamable HTTP. OAuth is strongly recommended. Production deployments should expose the endpoint only over TLS.
+|===
+
+Use client-managed stdio unless the MCP Server must be shared or centrally operated.
+The smaller network surface and process lifetime make stdio easier to secure.
+
+== Capabilities and limitations
+
+The server exposes MCP tools for systems, updates, CVEs, actions, activation keys, and system groups.
+Write tools are disabled by default.
+The server does not expose MCP resources or prompts.
+
+Tool results can be paginated to reduce context usage.
+For fleet-wide questions, use summary tools first and request detailed update or CVE data only when required.
+
+[IMPORTANT]
+====
+An AI-generated explanation is not an authoritative record of system state.
+Review the structured tool result and confirm important changes in the {productname} {webui}, especially after scheduling updates, rebooting, bootstrapping, or removing systems.
+====

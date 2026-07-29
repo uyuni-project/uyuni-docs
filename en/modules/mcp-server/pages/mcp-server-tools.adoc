@@ -1,0 +1,173 @@
+[[mcp-server-tools]]
+= Tool Reference
+:revdate: 2026-07-29
+:page-revdate: {revdate}
+
+This chapter provides a reference to the tools exposed by the {productname} MCP Server, including their arguments, results, and effects.
+
+The {productname} MCP Server exposes read-only tools by default.
+Tools in the state-changing section are available only when `UYUNI_MCP_WRITE_TOOLS_ENABLED=true`.
+
+Most tools that accept `system_identifier` support a system name or system ID.
+If a name is not found or is ambiguous, call `find_systems_by_name` and use the returned ID.
+
+== Systems and events
+
+[cols="2,3,4", options="header"]
+|===
+|Tool
+|Arguments
+|Result
+
+|`list_systems`
+|`limit=50`, `offset=0`
+|Paged active systems. `limit` is capped at 500.
+
+|`get_system_details`
+|`system_identifier`
+|System ID, name, last boot time, UUID, CPU, network, and installed products.
+
+|`get_system_event_history`
+|`system_identifier`, `offset=0`, `limit=10`, optional `earliest_date`
+|Newest-first event history.
+
+|`get_system_event_details`
+|`system_identifier`, `event_id`
+|Status, timestamps, result fields, and additional information for one event.
+
+|`find_systems_by_name`
+|`name`, `limit=50`, `offset=0`
+|Paged hostname matches.
+
+|`find_systems_by_ip`
+|`ip_address`, `limit=50`, `offset=0`
+|Paged systems matching an IP address.
+
+|`list_systems_needing_reboot`
+|`limit=50`, `offset=0`
+|Paged systems requiring a reboot. `limit` is capped at 500.
+|===
+
+== Updates and CVEs
+
+The supported advisory type values are `Security Advisory`, `Product Enhancement Advisory`, and `Bug Fix Advisory`.
+
+[cols="2,3,4", options="header"]
+|===
+|Tool
+|Arguments
+|Result
+
+|`get_system_updates`
+|`system_identifier`
+|Compact pending update list and counts. CVE expansion is omitted.
+
+|`summarize_system_updates`
+|`system_identifier`, optional `advisory_types`
+|Pending and queued update counts without update details.
+
+|`query_system_updates`
+|`system_identifier`, `limit=25`, `offset=0`, `include_cves=false`, optional `advisory_types`
+|Paged pending updates. A positive `limit` is capped at 200; a non-positive value returns counts without items.
+
+|`check_all_systems_for_updates`
+|`include_updates=false`, `include_cves=false`, `system_limit=25`, `system_offset=0`, `updates_per_system=10`
+|Paged systems with pending updates. `system_limit` is capped at 200.
+
+|`summarize_fleet_updates`
+|`system_limit=25`, `system_offset=0`
+|Paged systems and update counts without update details. `system_limit` is capped at 200.
+
+|`list_systems_needing_update_for_cve`
+|`cve_identifier`, `limit=50`, `offset=0`
+|Paged systems affected by the specified CVE.
+
+|`get_unscheduled_errata`
+|`system_id`
+|Applicable patches that are not scheduled. `system_id` must be a numeric string.
+|===
+
+== Actions, activation keys, and groups
+
+[cols="2,3,4", options="header"]
+|===
+|Tool
+|Arguments
+|Result
+
+|`list_all_scheduled_actions`
+|`limit=50`, `offset=0`, optional `action_types`, optional `scheduler`
+|Paged actions after exact-match filtering. `limit` is capped at 500. The metadata lists observed action types and schedulers for subsequent filters.
+
+|`list_activation_keys`
+|None
+|Activation keys available to the current user.
+
+|`list_system_groups`
+|None
+|Group ID, name, description, and system count.
+
+|`list_group_systems`
+|`group_name`
+|System IDs and names in the specified group.
+|===
+
+== State-changing tools
+
+[WARNING]
+====
+These tools change managed infrastructure.
+Review all arguments and the intended targets before approving a call.
+====
+
+[cols="2,3,4", options="header"]
+|===
+|Tool
+|Arguments
+|Effect
+
+|`schedule_pending_updates_to_system`
+|`system_identifier`
+|Schedules all pending updates for one system.
+
+|`schedule_specific_update`
+|`system_identifier`, `errata_id`
+|Schedules one patch for one system.
+
+|`add_system`
+|`host`, optional `activation_key`, `ssh_port=22`, `ssh_user=root`, `proxy_id`, `salt_ssh=false`
+|Bootstraps and registers a system over SSH. Requires `UYUNI_SSH_PRIV_KEY`. If the client supports elicitation, a missing activation key can be requested interactively.
+
+|`remove_system`
+|`system_identifier`, `cleanup=true`
+|Removes a system. `cleanup=true` requests forced deletion and cleanup; `false` requests no cleanup.
+
+|`schedule_system_reboot`
+|`system_identifier`
+|Schedules an immediate reboot.
+
+|`cancel_action`
+|`action_id`
+|Cancels the specified scheduled action.
+
+|`create_system_group`
+|`name`, optional `description`
+|Creates a system group.
+
+|`add_systems_to_group`
+|`group_name`, `system_identifiers`
+|Adds the specified systems to a group.
+
+|`remove_systems_from_group`
+|`group_name`, `system_identifiers`
+|Removes the specified systems from a group.
+|===
+
+The `add_system` API can continue processing after the MCP Server request timeout.
+When the tool reports that the addition process has started, check the system list later rather than immediately repeating the call.
+
+== Pagination controls
+
+Tools that can return large result sets support pagination with `limit` and `offset` arguments.
+Paginated responses include a `meta` object that describes the current page and provides `next_offset` when more results are available.
+Pagination limits response size, reduces latency, and lowers AI context usage.
