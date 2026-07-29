@@ -1,0 +1,77 @@
+[[mcp-server-client-configuration]]
+= MCP Client Configuration
+:revdate: 2026-07-29
+:page-revdate: {revdate}
+
+This chapter provides example stdio and HTTP client configurations and explains how to verify the integration.
+
+MCP configuration formats differ across various clients.
+Use the examples in this chapter as a template and consult the client documentation for the exact property names and configuration file location.
+
+[[client-stdio]]
+== Configure a stdio client
+
+The following generic configuration starts a container for each MCP client session:
+
+[source,json]
+----
+{
+  "mcpServers": {
+    "mcp-server-uyuni": {
+      "command": "podman",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "--env-file",
+        "/absolute/path/to/mcp.env",
+        "registry.suse.com/suse/agentic/mcp/multi-linux-manager:<version>"
+      ]
+    }
+  }
+}
+----
+
+The `-i` option is required because MCP uses the container's standard input and output.
+Use an absolute path to the environment file.
+
+== Configure an HTTP client
+
+After deploying the standalone server, configure the client with its streamable HTTP endpoint:
+
+[source,json]
+----
+{
+  "mcpServers": {
+    "mcp-server-uyuni": {
+      "url": "https://mcp.example.com/mcp",
+      "type": "http"
+    }
+  }
+}
+----
+
+The client must be able to complete OAuth authorization against the issuer configured with `UYUNI_AUTH_SERVER`.
+The exact transport name in a client configuration can be `http` or `streamable-http`, depending on the client.
+
+== Verify the integration
+
+Restart the MCP client after changing its configuration.
+Then make low-risk, read-only requests, for example:
+
+* "List the first five active systems."
+* "Find systems with `web` in the hostname."
+* "List the first ten systems that need a reboot."
+
+Confirm that the returned system names and IDs are aligned with the {productname} {webui}.
+
+== Use tools efficiently
+
+MCP tool output consumes AI context.
+When explicitly selecting tools, directing an assistant to use a particular tool, or implementing an agent workflow, apply these practices:
+
+* Start with `summarize_system_updates` or `summarize_fleet_updates`.
+* Use pagination parameters and follow `meta.next_offset`.
+* Set `include_cves` or `include_updates` only when details are required.
+* Use `find_systems_by_name` before a tool call when a hostname is ambiguous.
+* Ask the assistant to show the target system ID, action ID, or erratum ID before a state-changing call.
