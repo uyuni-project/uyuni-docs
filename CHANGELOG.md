@@ -1,3 +1,4 @@
+- Added Multi-Linux Manager MCP Server book
 - Made every build task select languages with LANGUAGES
 - Added a CI check for the revision date of changed documentation pages
 - Removed a second copy of the container image inspection section, which was published as a page with no title
