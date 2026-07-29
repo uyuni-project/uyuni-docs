@@ -1,3 +1,4 @@
+- Added Multi-Linux Manager MCP Server book
 - Documented requirements and limitations for container image inspection on SLES 15 and SLES 16 (bsc#1274720)
 - Documented proxy certificate replacement using spacecmd (bsc#1271329)
 - Documented certificate setup and rotation with unified mgradm ssl rotate command
