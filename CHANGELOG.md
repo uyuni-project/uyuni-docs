@@ -1,3 +1,4 @@
+- Documented how VMs are listed and referenced by virtual hosts (bsc#1273073)
 - Extended configuration instructions for Saline formula in Specialized Guides
   (bsc#1268587)
 - Enhanced instructions for Liberate formula and reactivation key in Specialized
