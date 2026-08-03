@@ -1,3 +1,4 @@
+- Documented how VMs are listed and referenced by virtual hosts (bsc#1273073)
 - Added documentation support for Ubuntu 26.04 client systems
 - Added the missing TFTP image in airgap install command
 - Fixed procedures for OpenSCAP in Administration Guide (bsc#1270047)
