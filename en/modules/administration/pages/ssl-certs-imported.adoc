@@ -1,6 +1,6 @@
 [[ssl-certs-import]]
 = Import SSL Certificates
-:revdate: 2026-06-12
+:revdate: 2026-08-04
 :page-revdate: {revdate}
 
 //By default, {productname} uses a self-signed certificate.
@@ -76,8 +76,8 @@ By default, {productname} uses a self-signed certificate.
 Certificates can be imported with third-party certificates at the installation time.
 
 .Procedure: Importing certificates on a new {productname} server
-[role=procedure]
-____
+[role="procedure"]
+_____
 . Deploy the {productname} Server according to the instructions in xref:installation-and-upgrade:install-server.adoc[].
   Make sure to pass the correct files as parameters to `mgradm install`.
   The parameters are:
@@ -95,7 +95,7 @@ ____
       --ssl-db-cert string             Database certificate path
       --ssl-db-key string              Database key path
 ----
-____
+_____
 
 Intermediate CAs can either be available in the file which is specified with `--ssl-ca-root`, or specified as extra options with `--ssl-ca-intermediate`.
 The `--ssl-ca-intermediate` option can be specified multiple times.
@@ -108,8 +108,8 @@ The proxy certificates are embedded in the generated configuration.
 In order to use a third-party certificate, it needs to be provided during the configuration.
 
 .Procedure: Importing certificates on a new {productname} Proxy
-[role=procedure]
-____
+[role="procedure"]
+_____
 . Install the {productname} Proxy according to the instructions in xref:installation-and-upgrade:install-proxy.adoc[].
 
 . Follow the prompts to complete setup.
@@ -122,7 +122,7 @@ Use the same certificate authority (CA) to sign all certificates for servers and
 Certificates signed with different CAs do not match.
 ====
 
-____
+_____
 
 
 [[ssl-certs-import-replace]]
@@ -142,8 +142,8 @@ The root CA certificate should not be appended to the server certificate file.
 
 
 .Procedure: Replacing all existing certificates
-[role=procedure]
-____
+[role="procedure"]
+_____
 . The following considers that you have `root-ca.pem`, `intermediate-ca1.pem`, `intermediate-ca2.pem`, `server.pem` and `server.key` files.
   It may be different depending on the number of intermediate CAs in the server certificate signature chain.
 
@@ -158,35 +158,17 @@ ____
 cat server.pem intermediate-ca1.pem intermediate-ca2.pem >combined-server.pem
 ----
 
-. On the {productname} container host, at the command prompt, recreate podman certificate secrets passing the files paths:
+. On the {productname} container host, at the command prompt, rotate the certificates using `mgradm ssl rotate`:
 
 +
-
 [source,shell]
 ----
-podman secret create --replace uyuni-ca $path_to_ca_certificate
-podman secret create --replace uyuni-cert $path_to_combined_server_certificate
-podman secret create --replace uyuni-key $path_to_server_key
-
-podman secret create --replace uyuni-db-ca $path_to_database_ca_certificate
-podman secret create --replace uyuni-db-cert $path_to_combined_database_certificate
-podman secret create --replace uyuni-db-key $path_to_database_key
+mgradm ssl rotate \
+   --ssl-ca-root $path_to_ca_certificate \
+   --ssl-server-cert $path_to_combined_server_certificate \
+   --ssl-server-key $path_to_server_key
 ----
-____
-
-
-.Procedure: Restarting the server
-[role=procedure]
-____
-. On the container host, restart the server to pick up the changes:
-
-+
-
-[source,shell]
-----
-mgradm restart
-----
-____
+_____
 
 
 If you are using a proxy, you need to generate a server certificate RPM for each proxy, using their hostnames and cnames.
@@ -208,8 +190,8 @@ This is ideally done in advance to minimize the disruption.
 
 [[ssl-certs-import-deploy-root-ca]]
 .Procedure: Deploying the root CA on clients
-[role=procedure]
-____
+[role="procedure"]
+_____
 . In the {productname} {webui}, navigate to menu:Systems[Overview].
 
 . Check all your clients to add them to the system set manager.
@@ -219,4 +201,4 @@ ____
 . In the `States` field, click btn:[Apply] to apply the system states.
 
 . In the `Highstate` page, click btn:[Apply Highstate] to propagate the changes to the clients.
-____
+_____
