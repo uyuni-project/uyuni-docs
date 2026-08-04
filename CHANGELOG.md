@@ -1,4 +1,5 @@
 - Documented how VMs are listed and referenced by virtual hosts (bsc#1273073)
+- Added a common workflow for certificate setup and rotation with ACME
 - Extended configuration instructions for Saline formula in Specialized Guides
   (bsc#1268587)
 - Enhanced instructions for Liberate formula and reactivation key in Specialized
