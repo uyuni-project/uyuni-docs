@@ -1,0 +1,108 @@
+// jsc#spacewalk-29351
+[[workflow-cert-rotation-acme]]
+= Set up and rotate certificates using ACME
+:description: Setup and automatic rotation of third-party SSL/TLS certificates using the ACME protocol in containerized environments.
+:revdate: 2026-08-04
+:page-revdate: {revdate}
+:page-author: SUSE Product & Solution Documentation Team
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.2
+
+Set up and automatically rotate third-party SSL/TLS certificates using the ACME protocol (such as Let's Encrypt) on containerized installations.
+
+
+== Use case
+
+Configure ACME certificate rotation to:
+
+* Secure the containerized server with valid public CA-signed certificates.
+* Automate certificate renewal and rotation to prevent downtime.
+* Use the same CA and certificate chain for both server and database containers.
+
+
+== Outcome
+
+The containerized server uses valid public certificates that automatically rotate on renewal, updating Podman secrets and restarting services without manual intervention.
+
+
+== Preparation
+
+Ensure you have:
+
+* Root access to the server container host.
+* The `acme.sh` tool installed on the host.
+* An active DNS challenge provider configured in `acme.sh` for the server FQDN.
+* The fully qualified domain name (FQDN) of your server.
+
+
+== Step-by-step workflow instructions
+
+[IMPORTANT]
+====
+If using an intermediate CA, the certificate file must contain the server certificate first, followed by all intermediate CAs in order.
+====
+
+.Procedure: Configuring ACME certificate rotation
+[role="procedure"]
+_____
+. Open a terminal on the server container host as `root`.
+
+. Create the certificate directory:
++
+[source,shell]
+----
+mkdir -p /root/ssl-build
+----
+
+. Export the DNS challenge credentials. For example, for Cloudflare:
++
+[source,shell]
+----
+export CF_Token="your_cloudflare_api_token"
+export CF_Account_ID="your_cloudflare_account_id"
+----
++
+[NOTE]
+====
+Replace with credentials for your specific DNS provider.
+====
+
+. Issue the certificate and define `--reloadcmd` to rotate the certificates using `mgradm ssl rotate` on renewal:
++
+[source,shell]
+----
+./acme.sh \
+   --issue \
+   --force \
+   --dns dns_cf \
+   --keylength 4096 \
+   --domain <SERVER_FQDN> \
+   --cert-file /root/ssl-build/server.crt \
+   --key-file /root/ssl-build/server.key \
+   --ca-file /root/ssl-build/ca.pem \
+   --fullchain-file /root/ssl-build/fullchain.pem \
+   --reloadcmd "mgradm ssl rotate --ssl-ca-root /root/ssl-build/ca.pem --ssl-server-cert /root/ssl-build/fullchain.pem --ssl-server-key /root/ssl-build/server.key"
+----
+
+. Verify the initial run completes successfully, updating the server and database certificates and restarting the services.
+_____
+
+[NOTE]
+====
+The `mgradm ssl rotate` command automatically reads the server CA, certificate, and key, updates both the server (`uyuni-ca`, `uyuni-cert`, `uyuni-key`) and database (`uyuni-db-ca`, `uyuni-db-cert`, `uyuni-db-key`) secrets, and restarts the services.
+====
+
+
+== Troubleshooting: CA password prompt during upgrades
+
+If upgrading a legacy server to a split database release (such as 2025.05), `mgradm` prompts for the CA password to sign database certificates.
+
+* **Self-signed certificates**: Retrieve the password from `/var/lib/containers/storage/volumes/root/_data/spacewalk-answers` (`ssl-password` value).
+* **Third-party/ACME certificates**: No password is required. Pass `--ssl-db-*` flags to the upgrade command, or let the upgrade complete using self-signed placeholders and then update secrets using this guide.
+
+
+== Related topics
+
+* For details on importing custom certificates, see xref:administration:ssl-certs-imported.adoc[].
+* For CA migration information, see xref:administration:ssl-certs-ca-migration.adoc[].
