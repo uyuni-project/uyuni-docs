@@ -16,8 +16,13 @@ Before deployment, ensure that:
 * A supported MCP client is installed.
 * The MCP client supports streamable HTTP and OAuth when these features are required.
 
-Create a protected environment file for the server configuration:
+== Client-managed container with stdio
 
+In this model, the MCP client starts the container and communicates with it over stdio.
+No host port is published.
+
+. Create a protected environment file for the server configuration:
++
 [source,ini,subs="attributes"]
 ----
 UYUNI_SERVER=https://server.example.com
@@ -26,23 +31,18 @@ UYUNI_PASS=replace-me
 UYUNI_MCP_SSL_VERIFY=true
 UYUNI_MCP_WRITE_TOOLS_ENABLED=false
 ----
-
++
 Restrict access to this file because it contains credentials.
 See xref:mcp-server-configuration.adoc[Server Configuration] for all settings.
 
-== Client-managed container with stdio
-
-In this model, the MCP client starts the container and communicates with it over stdio.
-No host port is published.
-
-Configure the MCP client to run:
-
+. Configure the MCP client to run:
++
 ----
 podman run -i --rm \
   --env-file /absolute/path/to/mcp.env \
   registry.suse.com/suse/agentic/mcp/multi-linux-manager:<version>
 ----
-
++
 Replace `<version>` with a tested release tag.
 Pin a release tag instead of using `latest` in a production configuration.
 
@@ -52,15 +52,21 @@ Continue with xref:mcp-server-client-configuration.adoc#client-stdio[stdio clien
 
 Use HTTP mode when a persistent service must support multiple clients.
 
-. Add these settings to the environment file:
+. Create a protected environment file for the server configuration:
 +
 ----
+UYUNI_SERVER=https://server.example.com
+UYUNI_MCP_SSL_VERIFY=true
+UYUNI_MCP_WRITE_TOOLS_ENABLED=false
 UYUNI_MCP_TRANSPORT=http
 UYUNI_MCP_HOST=0.0.0.0
 UYUNI_MCP_PORT=8000
 UYUNI_MCP_PUBLIC_URL=https://mcp.example.com
 UYUNI_AUTH_SERVER=https://idp.example.com/realms/mcp
 ----
++
+When `UYUNI_AUTH_SERVER` is set, the MCP Server uses each client's OAuth token to authenticate to the {productname} API.
+In this configuration, `UYUNI_USER` and `UYUNI_PASS` are not required.
 
 . Start the container:
 +
@@ -84,7 +90,7 @@ Do not expose it directly to an untrusted network.
 
 [WARNING]
 ====
-If `UYUNI_AUTH_SERVER` is not set, HTTP requests are unauthenticated.
+If `UYUNI_AUTH_SERVER` is not set, HTTP requests to the MCP Server are unauthenticated.
 Only omit authentication for temporary testing on an isolated interface or network.
 ====
 
