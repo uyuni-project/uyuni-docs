@@ -1,3 +1,4 @@
+- Clarified availability of Salt's "virt" module in the Salt Bundle (bsc#1270694)
 - Documented how VMs are listed and referenced by virtual hosts (bsc#1273073)
 - Added a common workflow for certificate setup and rotation with ACME
 - Extended configuration instructions for Saline formula in Specialized Guides
