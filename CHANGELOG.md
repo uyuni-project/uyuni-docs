@@ -1,3 +1,4 @@
+- Documented allowing diskcheck environment variables into containers (bsc#1270033)
 - Documented how VMs are listed and referenced by virtual hosts (bsc#1273073)
 - Added a common workflow for certificate setup and rotation with ACME
 - Extended configuration instructions for Saline formula in Specialized Guides
