@@ -1,3 +1,4 @@
+- Documented allowing diskcheck environment variables into containers (bsc#1270033)
 - Added instruction for obtaining the certificate when renaming the server (bsc#1273853)
 - Added a common workflow for certificate setup and rotation with ACME
 - Documented how VMs are listed and referenced by virtual hosts (bsc#1273073)
