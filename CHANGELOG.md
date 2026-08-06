@@ -1,3 +1,4 @@
+- Clarified availability of Salt's "virt" module in the Salt Bundle (bsc#1270694)
 - Added a common workflow for certificate setup and rotation with ACME
 - Documented how VMs are listed and referenced by virtual hosts (bsc#1273073)
 - Added documentation support for Ubuntu 26.04 client systems
