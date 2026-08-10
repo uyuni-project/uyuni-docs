@@ -1,11 +1,13 @@
+- Refined clarification of Salt's "virt" module availability in the Salt Bundle (bsc#1270694)
 - Clarified availability of Salt's "virt" module in the Salt Bundle (bsc#1270694)
+- Documented allowing diskcheck environment variables into containers (bsc#1270033)
 - Added instruction for obtaining the certificate when renaming the server (bsc#1273853)
-- Documented how VMs are listed and referenced by virtual hosts (bsc#1273073)
 - Added a common workflow for certificate setup and rotation with ACME
+- Documented how VMs are listed and referenced by virtual hosts (bsc#1273073)
 - Added documentation support for Ubuntu 26.04 client systems
-- Added the missing TFTP image in airgap install command
 - Fixed procedures for OpenSCAP in Administration Guide (bsc#1270047)
 - Fixed the snippet to reflect the correct produst version (bsc#1272538)
+- Added the missing TFTP image in airgap install command
 - Corrected verification step order in MLM 5.0 to 5.2 upgrade guide for SL-Micro (bsc#1271678)
 - Extended configuration instructions for Saline formula in Specialized Guides
   (bsc#1268587)
@@ -13,19 +15,18 @@
   Guides (bsc#1268473)
 - Fixed missing line end escapes in kubernetes helm install commands
 - Consolidated multiple duplicated activation key creation procedures into a single reusable partial snippet
-- Fixed Traefik installation documentation in Specialized Guides
 - Clarified CA certificate migration requirements (bsc#1271841)
+- Fixed Traefik installation documentation in Specialized Guides
 - Added instructions for enabling reporting dashboards in Specialized Guides
   (bsc#1268228)
-- Remove legacy mgradm and mgrpxy commands
-- Added the --set tag parameter to helm install/upgrade commands as a workaround (bsc#1271902)
+- Add the --set tag parameter to helm install/upgrade commands as a workaround (bsc#1271902)
+- Removed legacy mgradm and mgrpxy commands
 - Documented apache2 parameter used for large deployments (bsc#1268673)
 - Documented Grafana reporting database automated setup and Hub Overview in Administration and Specialized Guides
 - Update the OpenSCAP packages table in the
   System Security with OpenSCAP article in the Administration guide (bsc#1269316)
 - Added documentation for migrating legacy ISS v1 and ISS v2 peripheral servers
   to ISS v3 (Hub Online Synchronization) and detailed Report DB/XMLRPC API dependencies in Specialized Guides
-- Update data file storage locations for Uyuni in Installation and Upgrade Guide
 - Documented SLES 15 SP7 to SLES 16.0 major upgrade via product migration in Client Configuration Guide
 - Document the repository value for helm charts on MLM (bsc#1269667)
 - Removed unsupported {raspberrypios} 12 from Client Configuration Guide
