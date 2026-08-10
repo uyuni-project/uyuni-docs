@@ -102,7 +102,7 @@
     <div class="panels">
 <div class="nav-panel-menu is-active" data-panel="menu">
   <nav class="nav-menu">
-    <h3 class="title"><a href="../../index.html">Uyuni 2026.06</a></h3>
+    <h3 class="title"><a href="../../index.html">Uyuni 2026.08</a></h3>
 <ul class="nav-list">
   <li class="nav-item" data-depth="0">
 <ul class="nav-list">
@@ -168,9 +168,6 @@
 <ul class="nav-list">
   <li class="nav-item" data-depth="4">
     <a class="nav-link" href="../../installation-and-upgrade/container-deployment/uyuni/migrate-uyuni-server-from-micro55-tumbleweed.html">Migrate the Server to openSUSE Tumbleweed</a>
-  </li>
-  <li class="nav-item" data-depth="4">
-    <a class="nav-link" href="../../installation-and-upgrade/container-deployment/uyuni/migrate-uyuni-to-a-container.html">Legacy Server Migration to Container</a>
   </li>
 </ul>
   </li>
@@ -1730,7 +1727,13 @@
     <a class="nav-link" href="../../common-workflows/workflow-customize-apache-config.html">Customize Apache Configuration</a>
   </li>
   <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../common-workflows/workflow-customize-security-policies.html">Customize security policies on the server</a>
+  </li>
+  <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../../common-workflows/workflow-product-upgrade-webui.html">Product Upgrade via Web UI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../common-workflows/workflow-cert-rotation-acme.html">Set up and rotate certificates using ACME</a>
   </li>
 </ul>
   </li>
@@ -1962,12 +1965,12 @@
 </div>
 <div class="nav-panel-explore" data-panel="explore">
   <div class="context">
-    <span class="title">Uyuni 2026.06</span>
+    <span class="title">Uyuni 2026.08</span>
     <span class="version">default</span>
   </div>
   <ul class="components">
     <li class="component is-current">
-      <a class="title" href="../../index.html">Uyuni 2026.06</a>
+      <a class="title" href="../../index.html">Uyuni 2026.08</a>
       <ul class="versions">
         <li class="version is-current is-latest">
           <a href="../../index.html">default</a>
@@ -1985,7 +1988,7 @@
   <a href="../../index.html" class="home-link"></a>
 <nav class="breadcrumbs" aria-label="breadcrumbs">
   <ul>
-    <li><a href="../../index.html">Uyuni 2026.06</a></li>
+    <li><a href="../../index.html">Uyuni 2026.08</a></li>
     <li><a href="../uyuni-specialized-guides-overview.html">Specialized Guides</a></li>
     <li><a href="overview.html">Kubernetes Guide</a></li>
     <li><a href="proxy-kubernetes-deployment.html">Proxy Deployment on Kubernetes</a></li>
@@ -2004,12 +2007,12 @@
 <h2 id="_introduction"><a class="anchor" href="#_introduction"></a><a class="link" href="#_introduction">1. Introduction</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This document describes how to migrate a Uyuni Proxy deployed on K3s via <code class="command">mgrpxy install kubernetes</code> (the legacy path) to a deployment using the <code class="literal">proxy-helm</code> chart directly.</p>
+<p>This document describes how to migrate a Uyuni Proxy deployed on K3s via <code>mgrpxy install kubernetes</code> (the legacy path) to a deployment using the <code>proxy-helm</code> chart directly.</p>
 </div>
 <div class="paragraph">
-<p>The legacy path used <code class="command">mgrpxy</code> as a thin wrapper around <code class="command">helm</code> and installed the proxy with selector labels <code class="literal">app: uyuni-proxy</code>.
-The new path uses the <code class="literal">proxy-helm</code> chart directly with selector labels <code class="literal">app.kubernetes.io/component: proxy</code>.
-Since <code class="literal">spec.selector</code> is immutable in Kubernetes, the old deployment must be removed before the new one can be created.
+<p>The legacy path used <code>mgrpxy</code> as a thin wrapper around <code>helm</code> and installed the proxy with selector labels <code>app: uyuni-proxy</code>.
+The new path uses the <code>proxy-helm</code> chart directly with selector labels <code>app.kubernetes.io/component: proxy</code>.
+Since <code>spec.selector</code> is immutable in Kubernetes, the old deployment must be removed before the new one can be created.
 This causes a short downtime (approximately 30 to 60 seconds).
 The squid cache PVC can be preserved across the migration.</p>
 </div>
@@ -2021,10 +2024,10 @@ The squid cache PVC can be preserved across the migration.</p>
 <div class="ulist">
 <ul>
 <li>
-<p>The proxy is installed and running on a K3s cluster via <code class="command">mgrpxy install kubernetes</code>.</p>
+<p>The proxy is installed and running on a K3s cluster via <code>mgrpxy install kubernetes</code>.</p>
 </li>
 <li>
-<p><code class="command">helm</code> (3.x) and <code class="command">kubectl</code> are available on the K3s node.</p>
+<p><code>helm</code> (3.x) and <code>kubectl</code> are available on the K3s node.</p>
 </li>
 <li>
 <p>The proxy is registered with the Uyuni Server.</p>
@@ -2043,7 +2046,7 @@ The squid cache PVC can be preserved across the migration.</p>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Preserve the squid PVC by switching the PV reclaim policy to <code class="literal">Retain</code>.</p>
+<p>Preserve the squid PVC by switching the PV reclaim policy to <code>Retain</code>.</p>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">PV=$(kubectl -n &lt;namespace&gt; get pvc squid-cache -o jsonpath='{.spec.volumeName}')
@@ -2051,7 +2054,7 @@ kubectl patch pv $PV -p '{"spec":{"persistentVolumeReclaimPolicy":"Retain"}}'</c
 </div>
 </div>
 <div class="paragraph">
-<p>Replace <code class="literal">&lt;namespace&gt;</code> with the namespace where the legacy proxy is installed (often <code class="literal">default</code> for <code class="command">mgrpxy install kubernetes</code> deployments).</p>
+<p>Replace <code>&lt;namespace&gt;</code> with the namespace where the legacy proxy is installed (often <code>default</code> for <code>mgrpxy install kubernetes</code> deployments).</p>
 </div>
 </li>
 <li>
@@ -2073,7 +2076,7 @@ kubectl -n &lt;namespace&gt; exec deploy/uyuni-proxy -c ssh   -- cat /etc/uyuni/
 </div>
 </div>
 <div class="paragraph">
-<p>The <code class="literal">proxy-helm</code> chart creates the <code class="literal">proxy-cert</code> TLS secret and the <code class="literal">uyuni-ca</code> <code class="literal">ConfigMap</code> automatically from the tarball values at install time.</p>
+<p>The <code>proxy-helm</code> chart creates the <code>proxy-cert</code> TLS secret and the <code>uyuni-ca</code> <code>ConfigMap</code> automatically from the tarball values at install time.</p>
 </div>
 </li>
 </ol>
@@ -2086,9 +2089,9 @@ kubectl -n &lt;namespace&gt; exec deploy/uyuni-proxy -c ssh   -- cat /etc/uyuni/
 <h2 id="_update_traefik_no_downtime"><a class="anchor" href="#_update_traefik_no_downtime"></a><a class="link" href="#_update_traefik_no_downtime">3. Update Traefik (no downtime)</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The legacy <code class="command">mgrpxy</code> install configured the bundled K3s Traefik with entryPoint names <code class="literal">uyuni-ssh</code>, <code class="literal">uyuni-publish</code> and <code class="literal">uyuni-request</code>.
-The <code class="literal">proxy-helm</code> chart defaults to <code class="literal">ssh</code>, <code class="literal">salt-publish</code> and <code class="literal">salt-request</code>.
-Replace the Traefik <code class="literal">HelmChartConfig</code> so the new entryPoints exist before the cutover:</p>
+<p>The legacy <code>mgrpxy</code> install configured the bundled K3s Traefik with entryPoint names <code>uyuni-ssh</code>, <code>uyuni-publish</code> and <code>uyuni-request</code>.
+The <code>proxy-helm</code> chart defaults to <code>ssh</code>, <code>salt-publish</code> and <code>salt-request</code>.
+Replace the Traefik <code>HelmChartConfig</code> so the new entryPoints exist before the cutover:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -2133,7 +2136,7 @@ kubectl -n kube-system rollout status deploy/traefik</code></pre>
 </td>
 <td class="content">
 <div class="paragraph">
-<p>Until the cutover step below, the legacy proxy is still routed through the old entryPoint names that are no longer exposed; if its <code class="literal">IngressRouteTCP</code> objects reference them, traffic to the legacy proxy may already be interrupted.
+<p>Until the cutover step below, the legacy proxy is still routed through the old entryPoint names that are no longer exposed; if its <code>IngressRouteTCP</code> objects reference them, traffic to the legacy proxy may already be interrupted.
 If continuous service is required, defer this step until immediately before the cutover.</p>
 </div>
 </td>
@@ -2158,7 +2161,7 @@ If continuous service is required, defer this step until immediately before the 
 </div>
 </div>
 <div class="paragraph">
-<p>The release name created by <code class="command">mgrpxy install kubernetes</code> is typically <code class="literal">uyuni-proxy</code>.</p>
+<p>The release name created by <code>mgrpxy install kubernetes</code> is typically <code>uyuni-proxy</code>.</p>
 </div>
 </li>
 <li>
@@ -2171,7 +2174,7 @@ If continuous service is required, defer this step until immediately before the 
 </div>
 </li>
 <li>
-<p>Install the <code class="literal">proxy-helm</code> chart, binding to the existing squid PV.</p>
+<p>Install the <code>proxy-helm</code> chart, binding to the existing squid PV.</p>
 </li>
 </ol>
 </div>
@@ -2179,7 +2182,7 @@ If continuous service is required, defer this step until immediately before the 
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">helm upgrade --install uyuni-proxy \
     oci://registry.opensuse.org/uyuni/proxy-helm \
-    --version 2026.6.0 \
+    --version 2026.8.0 \
     --namespace uyuni-proxy \
     --set "registrySecret=the-scc-secret" \
     --set-file global.config=/root/proxy-config/config.yaml \
@@ -2202,8 +2205,8 @@ If continuous service is required, defer this step until immediately before the 
 </td>
 <td class="content">
 <div class="paragraph">
-<p>The example uses <code class="literal">ingress.class=traefik</code> for the case where the surrounding Traefik filters by class (for example <code class="literal">--providers.kubernetescrd.ingressclass=traefik</code>).
-On a vanilla K3S install the bundled Traefik picks up every <code class="literal">Ingress</code> regardless of class; set <code class="literal">ingress.class=""</code> instead.</p>
+<p>The example uses <code>ingress.class=traefik</code> for the case where the surrounding Traefik filters by class (for example <code>--providers.kubernetescrd.ingressclass=traefik</code>).
+On a vanilla K3S install the bundled Traefik picks up every <code>Ingress</code> regardless of class; set <code>ingress.class=""</code> instead.</p>
 </div>
 </td>
 </tr>
@@ -2226,7 +2229,7 @@ kubectl -n uyuni-proxy logs deploy/uyuni-proxy -c httpd --tail=20</code></pre>
 <div class="sect2">
 <h3 id="_migration_complete"><a class="anchor" href="#_migration_complete"></a><a class="link" href="#_migration_complete">5.1. Migration complete</a></h3>
 <div class="paragraph">
-<p>The proxy is now managed by the <code class="literal">proxy-helm</code> chart directly, reusing the legacy squid cache volume.</p>
+<p>The proxy is now managed by the <code>proxy-helm</code> chart directly, reusing the legacy squid cache volume.</p>
 </div>
 </div>
 </div>

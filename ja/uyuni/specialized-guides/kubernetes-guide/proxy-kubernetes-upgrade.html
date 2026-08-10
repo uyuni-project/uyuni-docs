@@ -102,7 +102,7 @@
     <div class="panels">
 <div class="nav-panel-menu is-active" data-panel="menu">
   <nav class="nav-menu">
-    <h3 class="title"><a href="../../index.html">Uyuni 2026.06</a></h3>
+    <h3 class="title"><a href="../../index.html">Uyuni 2026.08</a></h3>
 <ul class="nav-list">
   <li class="nav-item" data-depth="0">
 <ul class="nav-list">
@@ -168,9 +168,6 @@
 <ul class="nav-list">
   <li class="nav-item" data-depth="4">
     <a class="nav-link" href="../../installation-and-upgrade/container-deployment/uyuni/migrate-uyuni-server-from-micro55-tumbleweed.html">Migrate the Server to openSUSE Tumbleweed</a>
-  </li>
-  <li class="nav-item" data-depth="4">
-    <a class="nav-link" href="../../installation-and-upgrade/container-deployment/uyuni/migrate-uyuni-to-a-container.html">レガシサーバのコンテナへの移行</a>
   </li>
 </ul>
   </li>
@@ -1727,7 +1724,13 @@
     <a class="nav-link" href="../../common-workflows/workflow-customize-apache-config.html">Customize Apache Configuration</a>
   </li>
   <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../common-workflows/workflow-customize-security-policies.html">Customize security policies on the server</a>
+  </li>
+  <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../../common-workflows/workflow-product-upgrade-webui.html">Product Upgrade via Web UI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../common-workflows/workflow-cert-rotation-acme.html">Set up and rotate certificates using ACME</a>
   </li>
 </ul>
   </li>
@@ -1959,12 +1962,12 @@
 </div>
 <div class="nav-panel-explore" data-panel="explore">
   <div class="context">
-    <span class="title">Uyuni 2026.06</span>
+    <span class="title">Uyuni 2026.08</span>
     <span class="version">default</span>
   </div>
   <ul class="components">
     <li class="component is-current">
-      <a class="title" href="../../index.html">Uyuni 2026.06</a>
+      <a class="title" href="../../index.html">Uyuni 2026.08</a>
       <ul class="versions">
         <li class="version is-current is-latest">
           <a href="../../index.html">default</a>
@@ -1982,7 +1985,7 @@
   <a href="../../index.html" class="home-link"></a>
 <nav class="breadcrumbs" aria-label="breadcrumbs">
   <ul>
-    <li><a href="../../index.html">Uyuni 2026.06</a></li>
+    <li><a href="../../index.html">Uyuni 2026.08</a></li>
     <li><a href="../uyuni-specialized-guides-overview.html">Specialized Guides</a></li>
     <li><a href="overview.html">Kubernetes Guide</a></li>
     <li><a href="proxy-kubernetes-deployment.html">Proxy Deployment on Kubernetes</a></li>
@@ -2000,7 +2003,7 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>Proxies deployed via the <code class="literal">proxy-helm</code> chart (on either RKE2 or K3S) are upgraded by re-running <code class="command">helm upgrade --install</code> against a newer chart version. The chart values and the existing PVC binding are preserved between releases.</p>
+<p>Proxies deployed via the <code>proxy-helm</code> chart (on either RKE2 or K3S) are upgraded by re-running <code>helm upgrade --install</code> against a newer chart version. The chart values and the existing PVC binding are preserved between releases.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -2010,7 +2013,7 @@
 </td>
 <td class="content">
 <div class="paragraph">
-<p>This is the supported Kubernetes upgrade path. The legacy <code class="command">mgrpxy install kubernetes</code> / <code class="command">mgrpxy upgrade kubernetes</code> flow on K3S is replaced by the direct chart-based deployment; if you are still on that path, follow the one-time migration in <a href="migrate-proxy-mgrpxy-to-helm.html" class="xref page">Migrating the Uyuni Proxy on K3s from mgrpxy to proxy-helm</a> before the procedure below applies.</p>
+<p>This is the supported Kubernetes upgrade path. The legacy <code>mgrpxy install kubernetes</code> / <code>mgrpxy upgrade kubernetes</code> flow on K3S is replaced by the direct chart-based deployment; if you are still on that path, follow the one-time migration in <a href="migrate-proxy-mgrpxy-to-helm.html" class="xref page">Migrating the Uyuni Proxy on K3s from mgrpxy to proxy-helm</a> before the procedure below applies.</p>
 </div>
 </td>
 </tr>
@@ -2022,12 +2025,13 @@
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Run <code class="command">helm upgrade</code> against the new chart version, reusing the values from the previous release:</p>
+<p>Run <code>helm upgrade</code> against the new chart version, reusing the values from the previous release:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">helm upgrade uyuni-proxy \
     oci://registry.opensuse.org/uyuni/proxy-helm \
-    --version 2026.6.0 \
+    --version 2026.8.0 \
+    --set tag=2026.08 \
     --namespace uyuni-proxy \
     --reuse-values</code></pre>
 </div>
@@ -2040,10 +2044,10 @@
 </td>
 <td class="content">
 <div class="paragraph">
-<p><code class="literal">--reuse-values</code> keeps the values from the previous release intact (<code class="literal">global.config</code>/<code class="literal">global.httpd</code>/<code class="literal">global.ssh</code>, <code class="literal">ingress.class</code>, <code class="literal">tftp.hostNetwork</code>, <code class="literal">volumes.squid.volumeName</code>, <code class="literal">dnsConfig</code>, <code class="literal">registrySecret</code>, etc.), so no <code class="literal">--set</code> / <code class="literal">--set-file</code> flags need to be re-passed for a routine version bump.</p>
+<p><code>--reuse-values</code> keeps the values from the previous release intact (<code>global.config</code>/<code>global.httpd</code>/<code>global.ssh</code>, <code>ingress.class</code>, <code>tftp.hostNetwork</code>, <code>volumes.squid.volumeName</code>, <code>dnsConfig</code>, <code>registrySecret</code>, etc.), so no <code>--set</code> / <code>--set-file</code> flags need to be re-passed for a routine version bump.</p>
 </div>
 <div class="paragraph">
-<p>If the proxy configuration tarball changed since the last install (TLS certificate rotation, server FQDN change, re-registration), re-extract the files and overlay them on top of <code class="literal">--reuse-values</code>:</p>
+<p>If the proxy configuration tarball changed since the last install (TLS certificate rotation, server FQDN change, re-registration), re-extract the files and overlay them on top of <code>--reuse-values</code>:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -2054,7 +2058,7 @@ kubectl -n uyuni-proxy exec deploy/uyuni-proxy -c ssh   -- cat /etc/uyuni/ssh.ya
 </div>
 </div>
 <div class="paragraph">
-<p>Then add the matching <code class="literal">--set-file global.config=&#8230;&#8203;</code> / <code class="literal">--set-file global.httpd=&#8230;&#8203;</code> / <code class="literal">--set-file global.ssh=&#8230;&#8203;</code> flags to the <code class="command">helm upgrade</code> command above. The same pattern applies to any other value that needs to change: keep <code class="literal">--reuse-values</code> and overlay the override with <code class="literal">--set</code>.</p>
+<p>Then add the matching <code>--set-file global.config=&#8230;&#8203;</code> / <code>--set-file global.httpd=&#8230;&#8203;</code> / <code>--set-file global.ssh=&#8230;&#8203;</code> flags to the <code>helm upgrade</code> command above. The same pattern applies to any other value that needs to change: keep <code>--reuse-values</code> and overlay the override with <code>--set</code>.</p>
 </div>
 </td>
 </tr>

@@ -102,7 +102,7 @@
     <div class="panels">
 <div class="nav-panel-menu is-active" data-panel="menu">
   <nav class="nav-menu">
-    <h3 class="title"><a href="../index.html">Uyuni 2026.06</a></h3>
+    <h3 class="title"><a href="../index.html">Uyuni 2026.08</a></h3>
 <ul class="nav-list">
   <li class="nav-item" data-depth="0">
 <ul class="nav-list">
@@ -168,9 +168,6 @@
 <ul class="nav-list">
   <li class="nav-item" data-depth="4">
     <a class="nav-link" href="../installation-and-upgrade/container-deployment/uyuni/migrate-uyuni-server-from-micro55-tumbleweed.html">Migrate the Server to openSUSE Tumbleweed</a>
-  </li>
-  <li class="nav-item" data-depth="4">
-    <a class="nav-link" href="../installation-and-upgrade/container-deployment/uyuni/migrate-uyuni-to-a-container.html">レガシサーバのコンテナへの移行</a>
   </li>
 </ul>
   </li>
@@ -1727,7 +1724,13 @@
     <a class="nav-link" href="../common-workflows/workflow-customize-apache-config.html">Customize Apache Configuration</a>
   </li>
   <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../common-workflows/workflow-customize-security-policies.html">Customize security policies on the server</a>
+  </li>
+  <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../common-workflows/workflow-product-upgrade-webui.html">Product Upgrade via Web UI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../common-workflows/workflow-cert-rotation-acme.html">Set up and rotate certificates using ACME</a>
   </li>
 </ul>
   </li>
@@ -1959,12 +1962,12 @@
 </div>
 <div class="nav-panel-explore" data-panel="explore">
   <div class="context">
-    <span class="title">Uyuni 2026.06</span>
+    <span class="title">Uyuni 2026.08</span>
     <span class="version">default</span>
   </div>
   <ul class="components">
     <li class="component is-current">
-      <a class="title" href="../index.html">Uyuni 2026.06</a>
+      <a class="title" href="../index.html">Uyuni 2026.08</a>
       <ul class="versions">
         <li class="version is-current is-latest">
           <a href="../index.html">default</a>
@@ -1982,7 +1985,7 @@
   <a href="../index.html" class="home-link"></a>
 <nav class="breadcrumbs" aria-label="breadcrumbs">
   <ul>
-    <li><a href="../index.html">Uyuni 2026.06</a></li>
+    <li><a href="../index.html">Uyuni 2026.08</a></li>
     <li><a href="uyuni-client-config-overview.html">クライアント設定ガイド</a></li>
     <li><a href="client-upgrades.html">クライアントのアップグレード</a></li>
     <li><a href="client-upgrades-major.html"> メジャーバージョンのアップグレード</a></li>
@@ -1999,10 +2002,24 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>クライアントには、インストールされているオペレーティングシステムで利用できる最新のサービスパック(SP)があり、最新の更新がすべて適用されている必要があります。システムが最新でありすべての更新が正しくインストールされていることを開始前に確認してください。</p>
+<p>This method covers major version upgrades such as SUSE Linux Enterprise Server&#160;12 to SUSE Linux Enterprise Server&#160;15. The upgrade is controlled by YaST and AutoYaST, it does not use Zypper.</p>
 </div>
 <div class="paragraph">
-<p>アップグレードは、YaSTおよびAutoYaSTによって制御されます。Zypperは使用しません。</p>
+<p>クライアントには、インストールされているオペレーティングシステムで利用できる最新のサービスパック(SP)があり、最新の更新がすべて適用されている必要があります。システムが最新でありすべての更新が正しくインストールされていることを開始前に確認してください。</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>This method does not apply to the upgrade from SUSE Linux Enterprise Server&#160;15 to SUSE Linux Enterprise Server&#160;16. To upgrade from SUSE Linux Enterprise Server&#160;15&#160;SP7 to SUSE Linux Enterprise Server&#160;16.0, use product migration instead. For more information, see <a href="client-upgrades-product-migration.html" class="xref page">製品移行</a>.</p>
+</div>
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
@@ -2030,14 +2047,16 @@
 </div>
 <div class="sect2">
 <h3 id="_インストールメディアの準備"><a class="anchor" href="#_インストールメディアの準備"></a><a class="link" href="#_インストールメディアの準備">1.1. インストールメディアの準備</a></h3>
-<div class="olist arabic">
+<div class="quoteblock procedure">
 <div class="title">プロシージャ: インストールメディアを準備する</div>
+<blockquote>
+<div class="olist arabic">
 <ol class="arabic">
 <li>
 <p>コンテナホストで、インストールソースが含まれるISOイメージをダウンロードします。</p>
 </li>
 <li>
-<p><code class="command">mgradm</code>を使用して、ISOイメージからインストールデータをインポートします。</p>
+<p>Use <code>mgradm</code> to import the installation data from the ISO image:</p>
 <div class="listingblock">
 <div class="content">
 <pre>mgradm distribution copy &lt;image_name&gt;.iso &lt;image_name&gt;</pre>
@@ -2045,9 +2064,11 @@
 </div>
 </li>
 <li>
-<p><code class="command">mgradm</code>で報告されたディストリビューションのパスをメモしておいてください。このファイルパスは、ディストリビューションをUyuniに対して宣言するときに必要です。</p>
+<p>Take a note of the distribution path reported by <code>mgradm</code>. You will need it when you declare the distribution to Uyuni.</p>
 </li>
 </ol>
+</div>
+</blockquote>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -2069,22 +2090,24 @@
 </div>
 <div class="sect2">
 <h3 id="_自動インストールのディストリビューションを宣言する"><a class="anchor" href="#_自動インストールのディストリビューションを宣言する"></a><a class="link" href="#_自動インストールのディストリビューションを宣言する">1.2. 自動インストールのディストリビューションを宣言する</a></h3>
-<div class="olist arabic">
+<div class="quoteblock procedure">
 <div class="title">プロシージャ: 自動インストールのディストリビューションを宣言する</div>
+<blockquote>
+<div class="olist arabic">
 <ol class="arabic">
 <li>
 <p>UyuniのWeb UIで、<span class="menuseq"><b class="menu">システム</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="submenu">自動インストール</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">ディストリビューション</b></span>に移動します。</p>
 </li>
 <li>
-<p>［<code class="guimenu">ディストリビューションの作成</code>］をクリックし、次のフィールドに入力します。</p>
+<p>Click <code>Create Distribution</code> , and complete these fields:</p>
 <div class="paragraph">
-<p>［<code class="guimenu">ディストリビューションラベル</code>］フィールドに、自動インストールのディストリビューションを識別するための名前を入力します。
-たとえば、「<code>sles15sp6-x86_64</code>」と入力します。
-* ［<code class="guimenu">ツリーパス</code>］フィールドに、保存済みのインストールメディアへのパスを入力します。
-* 対応する［<code class="guimenu">ベースチャンネル</code>］を選択します。
-  このチャンネルはインストールメディアと一致する必要があります。
-* ［<code class="guimenu">インストーラ生成</code>］を選択します。
-  これはインストールメディアと一致する必要があります。
+<p>In the <code>Distribution Label</code> field, enter a name to identify your autoinstallation distribution.
+  For example, <code>sles15sp6-x86_64</code>.
+* In the <code>Tree Path</code> field, enter the path to the installation media you already saved.
+* Select the matching <code>Base Channel</code>.
+  This must match the installation media.
+* Select the <code>Installer Generation</code>.
+  This must match the installation media.
 * オプション: このディストリビューションをブートするときに使用するカーネルオプションを指定します。
   カーネルオプションを指定する方法は複数あります。
   ここにはディストリビューションに当てはまるオプションのみを追加します。</p>
@@ -2095,44 +2118,91 @@
 </li>
 </ol>
 </div>
+</blockquote>
+</div>
 </div>
 <div class="sect2">
 <h3 id="_アクティベーションキーの作成"><a class="anchor" href="#_アクティベーションキーの作成"></a><a class="link" href="#_アクティベーションキーの作成">1.3. アクティベーションキーの作成</a></h3>
 <div class="paragraph">
 <p>古いSLE&#160;12ベースチャンネルから新しいSLE&#160;15チャンネルに切り替えるには、アクティベーションキーが必要です。</p>
 </div>
+<div class="quoteblock procedure">
+<div class="title">Procedure: Creating an Activation Key</div>
+<blockquote>
 <div class="olist arabic">
-<div class="title">プロシージャ: アクティベーションキーの作成</div>
 <ol class="arabic">
 <li>
-<p>UyuniサーバのWeb UIで、<span class="menuseq"><b class="menu">システム</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">アクティベーションキー</b></span>に移動し、［<code class="guimenu">キーの作成</code>］をクリックします。</p>
+<p>In the Uyuni Web UI, as an administrator, navigate to <span class="menuseq"><b class="menu">Systems</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">Activation Keys</b></span>.</p>
 </li>
 <li>
-<p>キーの説明を入力します。</p>
+<p>Click the <b class="button">Create Key</b> button.</p>
 </li>
 <li>
-<p>キーを入力するか空白のままにし、自動キーを生成します。</p>
+<p>On the <code>Activation Key Details</code> page, in the <code>Description</code> field, enter a description of the activation key.</p>
 </li>
 <li>
-<p>オプション: 使用量を制限する場合、［<code class="guimenu">使用量</code>］テキストフィールドに値を入力します。</p>
+<p>In the <code>Key</code> field, enter a name for the activation key.
+For example, <code>SLES15-SP7</code> for SUSE Linux Enterprise Server&#160;15&#160;SP7.</p>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="ulist">
+<ul>
+<li>
+<p>Do not use commas or double quotes in the <code>Key</code> field for any SUSE products.
+However, you <strong>must</strong> use commas for Red Hat Products.</p>
 </li>
 <li>
-<p><code class="systemitem">SLE-Product-SLES15-SP6-Pool for x86_64</code>ベースチャンネルを選択します。</p>
+<p>All other characters are allowed, but <code>&lt;&gt; (){}</code> (this includes the space) are removed automatically.</p>
 </li>
 <li>
-<p>オプション: ［<code class="guimenu">付属エンタイトルメント</code>］を選択します。
-詳細については、<a href="https://documentation.suse.com/sles/15-SP7/html/SLES-all/article-modules.html" class="bare">https://documentation.suse.com/sles/15-SP7/html/SLES-all/article-modules.html</a>を参照してください。</p>
+<p>If the field is left empty, a random string is generated.</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
 </li>
 <li>
-<p><b class="button">アクティベーションキーの作成</b>をクリックします。</p>
+<p>In the <code>Usage</code> add number of times the key can be used, or leave it blank for unlimited usage.</p>
 </li>
 <li>
-<p>［<code class="guimenu">子チャンネル</code>］タブをクリックし、必要なチャンネルを選択します。</p>
+<p>In the <code>Base Channels</code> drop-down box, select the appropriate base software channel, and allow the relevant child channels to populate.
+For more information, see <a href="../reference/admin/setup-wizard.html" class="xref page">セットアップウィザード</a> and <a href="../administration/custom-channels.html" class="xref page">カスタムチャンネル</a>.</p>
 </li>
 <li>
-<p><b class="button">キーの更新</b>をクリックします。</p>
+<p>Select the <code>Child Channels</code> you need (for example, the mandatory SUSE Multi-Linux Manager tools and updates channels).</p>
+</li>
+<li>
+<p>Check the <code>Add-On System Types</code> checkbox if you need to enable any of the options.
+For more information about system types, see <a href="system-types.html" class="xref page">システムの種類</a>.</p>
+</li>
+<li>
+<p>We recommend you leave the <code>Contact Method</code> set to <code>Default</code>.
+For more information about contact methods, see <a href="contact-methods-intro.html" class="xref page">クライアントの接続メソッド</a>.</p>
+</li>
+<li>
+<p>We recommend you leave the <code>Universal Default</code> setting unchecked.</p>
+</li>
+<li>
+<p>Click <b class="button">Create Activation Key</b> to create the activation key.</p>
+</li>
+<li>
+<p>After the activation key is created, the page shows additional checkbox <code>Configuration File Deployment</code> below the list of <code>Add-On System Types</code>.
+To enable deploying configuration files to systems on registration, select this checkbox.</p>
+</li>
+<li>
+<p>Click <b class="button">Update Activation Key</b> to save the change.</p>
 </li>
 </ol>
+</div>
+</blockquote>
 </div>
 </div>
 <div class="sect2">
@@ -2143,8 +2213,10 @@
 <div class="paragraph">
 <p>AutoYaSTの有効なアップグレード設定については、<a href="https://doc.opensuse.org/projects/autoyast/#CreateProfile-upgrade" class="bare">https://doc.opensuse.org/projects/autoyast/#CreateProfile-upgrade</a>を参照してください。</p>
 </div>
-<div class="olist arabic">
+<div class="quoteblock procedure">
 <div class="title">プロシージャ: 自動インストールプロファイルの作成</div>
+<blockquote>
+<div class="olist arabic">
 <ol class="arabic">
 <li>
 <p>UyuniのWeb UIで、<span class="menuseq"><b class="menu">システム</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="submenu">自動インストール</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">プロファイル</b></span>に移動し、自動インストールプロファイルのスクリプトをアップロードします。</p>
@@ -2156,9 +2228,9 @@
 </div>
 </li>
 <li>
-<p>［<code>カーネルオプション</code>］フィールドに<code>autoupgrade=1</code>と入力します。</p>
+<p>In the <code>Kernel Options</code> field, type <code>autoupgrade=1</code>.</p>
 <div class="paragraph">
-<p><code>Y2DEBUG=1</code>オプションを含めることもできます。 デバッグ設定は不要ですが、問題が発生したときの調査に役立ちます。</p>
+<p>Optionally, you can also include the <code>Y2DEBUG=1</code> option. The debug setting is not required but can help with investigating any future problems you might encounter.</p>
 </div>
 <div class="admonitionblock important">
 <table>
@@ -2168,7 +2240,7 @@
 </td>
 <td class="content">
 <div class="paragraph">
-<p>Azureクラウドで実行されているクライアントは、［<code>カーネルオプション</code>］に<code>textmode=1 console=ttyS0</code>を追加する必要があります。</p>
+<p>Clients running in Azure cloud must add <code>textmode=1 console=ttyS0</code> to <code>Kernel Options</code>.</p>
 </div>
 </td>
 </tr>
@@ -2182,7 +2254,7 @@
 <p><b class="button">作成</b>をクリックして保存します。</p>
 </li>
 <li>
-<p>アップロードしたプロファイルで変数を設定する必要がある場合、<span class="menuseq"><b class="menu">システム</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="submenu">自動インストール</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">プロファイル</b></span>に移動し、編集するプロファイルを選択し、［<code class="guimenu">変数</code>］タブに移動します。</p>
+<p>When the uploaded profile requires variables to be set, navigate to <span class="menuseq"><b class="menu">Systems</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="submenu">Autoinstallation</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">Profiles</b></span>, select the profile to edit, and navigate to the <code>Variables</code> tab.</p>
 <div class="paragraph">
 <p>次のフォーマットを使用して必要な変数を指定します。</p>
 </div>
@@ -2194,6 +2266,8 @@
 </li>
 </ol>
 </div>
+</blockquote>
+</div>
 </div>
 </div>
 </div>
@@ -2204,24 +2278,28 @@
 <p>自動インストールプロファイルで参照するチャンネルがすべて使用可能で完全に同期していることを開始前に確認してください。</p>
 </div>
 <div class="paragraph">
-<p><code class="path">/var/log/rhn/reposync/&lt;channel-label&gt;.log</code>でミラーリングの進捗状況を監視できます。</p>
+<p>You can monitor the mirroring progress in <code>/var/log/rhn/reposync/&lt;channel-label&gt;.log</code>.</p>
 </div>
-<div class="olist arabic">
+<div class="quoteblock procedure">
 <div class="title">プロシージャ: 移行</div>
+<blockquote>
+<div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>UyuniサーバのWeb UIで、［<code class="guimenu">システム</code>］に移動し、アップグレードするクライアントを選択します。</p>
+<p>In the Uyuni Server Web UI, navigate to <code>Systems</code> and select the client to be upgraded.</p>
 </li>
 <li>
-<p>［<code class="guimenu">プロビジョニング</code>］タブに移動し、アップロードした自動インストールプロファイルを選択します。</p>
+<p>Navigate to the <code>Provisioning</code> tab, and select the autoinstallation profile you uploaded.</p>
 </li>
 <li>
 <p><b class="button">自動インストールをスケジュールしてから終了する</b>をクリックします。 システムによって、必要なファイルがダウンロードされ、ブートローダのエントリが変更され、再起動され、アップグレードが開始されます。</p>
 </li>
 </ol>
 </div>
+</blockquote>
+</div>
 <div class="paragraph">
-<p>クライアントは、Uyuniサーバと次に同期するときに、再インストールジョブを受け取ります。 再インストールジョブは、新しいカーネルパッケージおよびinitrdパッケージをフェッチします。 また、新しいカーネルパッケージおよびinitrdパッケージへのポインタを含む新しい<code class="path">/boot/grub/menu.lst</code> (GRUB Legacy)または<code class="path">/boot/grub2/grub.cfg</code> (GRUB 2)を書き込みます。</p>
+<p>Next time the client synchronizes with the Uyuni Server, it receives a re-installation job. The re-installation job fetches the new kernel and initrd packages. It also writes a new <code>/boot/grub/menu.lst</code> (GRUB Legacy) or <code>/boot/grub2/grub.cfg</code> (GRUB 2), containing pointers to the new kernel and initrd packages.</p>
 </div>
 <div class="paragraph">
 <p>クライアントが次にブートするとき、grubを使用して、新しいカーネルとそのinitrdをブートします。 PXEブートはこのプロセス中に使用されません。</p>
@@ -2237,7 +2315,7 @@
 </td>
 <td class="content">
 <div class="paragraph">
-<p>クライアントでは、移行が完了した後、<code>spacewalk/minion_script</code>スニペットを使用してクライアントを再登録します。</p>
+<p>For clients, use the <code>spacewalk/minion_script</code> snippet to register the client again after migration has completed.</p>
 </div>
 </td>
 </tr>
