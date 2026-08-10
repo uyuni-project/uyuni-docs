@@ -1,3 +1,4 @@
+- Refined clarification of Salt's "virt" module availability in the Salt Bundle (bsc#1270694)
 - Clarified availability of Salt's "virt" module in the Salt Bundle (bsc#1270694)
 - Documented allowing diskcheck environment variables into containers (bsc#1270033)
 - Added instruction for obtaining the certificate when renaming the server (bsc#1273853)
