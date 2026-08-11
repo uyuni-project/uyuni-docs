@@ -102,7 +102,7 @@
     <div class="panels">
 <div class="nav-panel-menu is-active" data-panel="menu">
   <nav class="nav-menu">
-    <h3 class="title"><a href="../index.html">Uyuni 2026.06</a></h3>
+    <h3 class="title"><a href="../index.html">Uyuni 2026.08</a></h3>
 <ul class="nav-list">
   <li class="nav-item" data-depth="0">
 <ul class="nav-list">
@@ -168,9 +168,6 @@
 <ul class="nav-list">
   <li class="nav-item" data-depth="4">
     <a class="nav-link" href="../installation-and-upgrade/container-deployment/uyuni/migrate-uyuni-server-from-micro55-tumbleweed.html">Migrate the Server to openSUSE Tumbleweed</a>
-  </li>
-  <li class="nav-item" data-depth="4">
-    <a class="nav-link" href="../installation-and-upgrade/container-deployment/uyuni/migrate-uyuni-to-a-container.html">Legacy Server Migration to Container</a>
   </li>
 </ul>
   </li>
@@ -1730,7 +1727,13 @@
     <a class="nav-link" href="../common-workflows/workflow-customize-apache-config.html">Customize Apache Configuration</a>
   </li>
   <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../common-workflows/workflow-customize-security-policies.html">Customize security policies on the server</a>
+  </li>
+  <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../common-workflows/workflow-product-upgrade-webui.html">Product Upgrade via Web UI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../common-workflows/workflow-cert-rotation-acme.html">Set up and rotate certificates using ACME</a>
   </li>
 </ul>
   </li>
@@ -1962,12 +1965,12 @@
 </div>
 <div class="nav-panel-explore" data-panel="explore">
   <div class="context">
-    <span class="title">Uyuni 2026.06</span>
+    <span class="title">Uyuni 2026.08</span>
     <span class="version">default</span>
   </div>
   <ul class="components">
     <li class="component is-current">
-      <a class="title" href="../index.html">Uyuni 2026.06</a>
+      <a class="title" href="../index.html">Uyuni 2026.08</a>
       <ul class="versions">
         <li class="version is-current is-latest">
           <a href="../index.html">default</a>
@@ -1985,7 +1988,7 @@
   <a href="../index.html" class="home-link"></a>
 <nav class="breadcrumbs" aria-label="breadcrumbs">
   <ul>
-    <li><a href="../index.html">Uyuni 2026.06</a></li>
+    <li><a href="../index.html">Uyuni 2026.08</a></li>
     <li><a href="uyuni-client-config-overview.html">Client Configuration Guide</a></li>
     <li><a href="client-upgrades.html">Client Upgrades</a></li>
     <li><a href="client-upgrades-major.html">Major Version Upgrade</a></li>
@@ -2002,11 +2005,28 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
+<p>This method covers major version upgrades such as SUSE Linux Enterprise Server&#160;12 to SUSE Linux Enterprise Server&#160;15.
+The upgrade is controlled by YaST and AutoYaST, it does not use Zypper.</p>
+</div>
+<div class="paragraph">
 <p>The clients must have the latest available service pack (SP) for the installed operating system, with all the latest updates applied.
 Before you start, ensure that the system is up to date and all updates have been installed successfully.</p>
 </div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
 <div class="paragraph">
-<p>The upgrade is controlled by YaST and AutoYaST, it does not use Zypper.</p>
+<p>This method does not apply to the upgrade from SUSE Linux Enterprise Server&#160;15 to SUSE Linux Enterprise Server&#160;16.
+To upgrade from SUSE Linux Enterprise Server&#160;15&#160;SP7 to SUSE Linux Enterprise Server&#160;16.0, use product migration instead.
+For more information, see <a href="client-upgrades-product-migration.html" class="xref page">Product Migration</a>.</p>
+</div>
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
@@ -2034,14 +2054,16 @@ Before you start, ensure that the system is up to date and all updates have been
 </div>
 <div class="sect2">
 <h3 id="_prepare_installation_media"><a class="anchor" href="#_prepare_installation_media"></a><a class="link" href="#_prepare_installation_media">1.1. Prepare Installation Media</a></h3>
-<div class="olist arabic">
+<div class="quoteblock procedure">
 <div class="title">Procedure: Preparing Installation Media</div>
+<blockquote>
+<div class="olist arabic">
 <ol class="arabic">
 <li>
 <p>On the container host, download an ISO image with the installation sources.</p>
 </li>
 <li>
-<p>Use <code class="command">mgradm</code> to import the installation data from the ISO image:</p>
+<p>Use <code>mgradm</code> to import the installation data from the ISO image:</p>
 <div class="listingblock">
 <div class="content">
 <pre>mgradm distribution copy &lt;image_name&gt;.iso &lt;image_name&gt;</pre>
@@ -2049,10 +2071,12 @@ Before you start, ensure that the system is up to date and all updates have been
 </div>
 </li>
 <li>
-<p>Take a note of the distribution path reported by <code class="command">mgradm</code>.
+<p>Take a note of the distribution path reported by <code>mgradm</code>.
 You will need it when you declare the distribution to Uyuni.</p>
 </li>
 </ol>
+</div>
+</blockquote>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -2074,21 +2098,23 @@ You will need it when you declare the distribution to Uyuni.</p>
 </div>
 <div class="sect2">
 <h3 id="_declare_an_autoinstallation_distribution"><a class="anchor" href="#_declare_an_autoinstallation_distribution"></a><a class="link" href="#_declare_an_autoinstallation_distribution">1.2. Declare an Autoinstallation Distribution</a></h3>
-<div class="olist arabic">
+<div class="quoteblock procedure">
 <div class="title">Procedure: Declaring an Autoinstallation Distribution</div>
+<blockquote>
+<div class="olist arabic">
 <ol class="arabic">
 <li>
 <p>In the Uyuni Web UI, navigate to <span class="menuseq"><b class="menu">Systems</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="submenu">Autoinstallation</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">Distributions</b></span>.</p>
 </li>
 <li>
-<p>Click <code class="guimenu">Create  Distribution</code> , and complete these fields:</p>
+<p>Click <code>Create  Distribution</code> , and complete these fields:</p>
 <div class="paragraph">
-<p>In the <code class="guimenu">Distribution Label</code> field, enter a name to identify your autoinstallation distribution.
+<p>In the <code>Distribution Label</code> field, enter a name to identify your autoinstallation distribution.
   For example, <code>sles15sp6-x86_64</code>.
-* In the <code class="guimenu">Tree Path</code> field, enter the path to the installation media you already saved.
-* Select the matching <code class="guimenu">Base Channel</code>.
+* In the <code>Tree Path</code> field, enter the path to the installation media you already saved.
+* Select the matching <code>Base Channel</code>.
   This must match the installation media.
-* Select the <code class="guimenu">Installer Generation</code>.
+* Select the <code>Installer Generation</code>.
   This must match the installation media.
 * OPTIONAL: Specify kernel options to use when booting this distribution.
   There are multiple ways to provide kernel options.
@@ -2100,44 +2126,91 @@ You will need it when you declare the distribution to Uyuni.</p>
 </li>
 </ol>
 </div>
+</blockquote>
+</div>
 </div>
 <div class="sect2">
 <h3 id="_create_an_activation_key"><a class="anchor" href="#_create_an_activation_key"></a><a class="link" href="#_create_an_activation_key">1.3. Create an Activation Key</a></h3>
 <div class="paragraph">
 <p>For example, to switch from the old SLE&#160;12 base channel to the new SLE&#160;15 channel, you need an activation key.</p>
 </div>
-<div class="olist arabic">
+<div class="quoteblock procedure">
 <div class="title">Procedure: Creating an Activation Key</div>
+<blockquote>
+<div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>In the Uyuni Server Web UI, navigate to <span class="menuseq"><b class="menu">Systems</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">Activation Keys</b></span> and click <code class="guimenu">Create Key</code>.</p>
+<p>In the Uyuni Web UI, as an administrator, navigate to <span class="menuseq"><b class="menu">Systems</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">Activation Keys</b></span>.</p>
 </li>
 <li>
-<p>Enter a description for your key.</p>
+<p>Click the <b class="button">Create Key</b> button.</p>
 </li>
 <li>
-<p>Enter a key or leave it blank to generate an automatic key.</p>
+<p>On the <code>Activation Key Details</code> page, in the <code>Description</code> field, enter a description of the activation key.</p>
 </li>
 <li>
-<p>OPTIONAL: If you want to limit the usage, enter your value in the <code class="guimenu">Usage</code> text field.</p>
+<p>In the <code>Key</code> field, enter a name for the activation key.
+For example, <code>SLES15-SP7</code> for SUSE Linux Enterprise Server&#160;15&#160;SP7.</p>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="ulist">
+<ul>
+<li>
+<p>Do not use commas or double quotes in the <code>Key</code> field for any SUSE products.
+However, you <strong>must</strong> use commas for Red Hat Products.</p>
 </li>
 <li>
-<p>Select the <code class="systemitem">SLE-Product-SLES15-SP6-Pool for x86_64</code> base channel.</p>
+<p>All other characters are allowed, but <code>&lt;&gt; (){}</code> (this includes the space) are removed automatically.</p>
 </li>
 <li>
-<p>OPTIONAL: Select any <code class="guimenu">Add-On System Types</code>.
-For more information, see <a href="https://documentation.suse.com/sles/15-SP7/html/SLES-all/article-modules.html" class="bare">https://documentation.suse.com/sles/15-SP7/html/SLES-all/article-modules.html</a>.</p>
+<p>If the field is left empty, a random string is generated.</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
 </li>
 <li>
-<p>Click <b class="button">Create Activation Key</b>.</p>
+<p>In the <code>Usage</code> add number of times the key can be used, or leave it blank for unlimited usage.</p>
 </li>
 <li>
-<p>Click the <code class="guimenu">Child Channels</code> tab and select the required channels.</p>
+<p>In the <code>Base Channels</code> drop-down box, select the appropriate base software channel, and allow the relevant child channels to populate.
+For more information, see <a href="../reference/admin/setup-wizard.html" class="xref page">Setup Wizard</a> and <a href="../administration/custom-channels.html" class="xref page">Custom Channels</a>.</p>
 </li>
 <li>
-<p>Click <b class="button">Update Key</b>.</p>
+<p>Select the <code>Child Channels</code> you need (for example, the mandatory SUSE Multi-Linux Manager tools and updates channels).</p>
+</li>
+<li>
+<p>Check the <code>Add-On System Types</code> checkbox if you need to enable any of the options.
+For more information about system types, see <a href="system-types.html" class="xref page">System Types</a>.</p>
+</li>
+<li>
+<p>We recommend you leave the <code>Contact Method</code> set to <code>Default</code>.
+For more information about contact methods, see <a href="contact-methods-intro.html" class="xref page">Client Contact Methods</a>.</p>
+</li>
+<li>
+<p>We recommend you leave the <code>Universal Default</code> setting unchecked.</p>
+</li>
+<li>
+<p>Click <b class="button">Create Activation Key</b> to create the activation key.</p>
+</li>
+<li>
+<p>After the activation key is created, the page shows additional checkbox <code>Configuration File Deployment</code> below the list of <code>Add-On System Types</code>.
+To enable deploying configuration files to systems on registration, select this checkbox.</p>
+</li>
+<li>
+<p>Click <b class="button">Update Activation Key</b> to save the change.</p>
 </li>
 </ol>
+</div>
+</blockquote>
 </div>
 </div>
 <div class="sect2">
@@ -2150,8 +2223,10 @@ For example scripts that you can use as a starting point, see <a href="https://g
 <div class="paragraph">
 <p>For valid AutoYaST upgrade settings, see <a href="https://doc.opensuse.org/projects/autoyast/#CreateProfile-upgrade" class="bare">https://doc.opensuse.org/projects/autoyast/#CreateProfile-upgrade</a>.</p>
 </div>
-<div class="olist arabic">
+<div class="quoteblock procedure">
 <div class="title">Procedure: Creating an Autoinstallation Profile</div>
+<blockquote>
+<div class="olist arabic">
 <ol class="arabic">
 <li>
 <p>In the Uyuni Web UI, navigate to <span class="menuseq"><b class="menu">Systems</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="submenu">Autoinstallation</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">Profiles</b></span> and upload your autoinstallation profile script.</p>
@@ -2190,7 +2265,7 @@ The debug setting is not required but can help with investigating any future pro
 <p>Click <b class="button">Create</b> to save.</p>
 </li>
 <li>
-<p>When the uploaded profile requires variables to be set, navigate to <span class="menuseq"><b class="menu">Systems</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="submenu">Autoinstallation</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">Profiles</b></span>, select the profile to edit, and navigate to the <code class="guimenu">Variables</code> tab.</p>
+<p>When the uploaded profile requires variables to be set, navigate to <span class="menuseq"><b class="menu">Systems</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="submenu">Autoinstallation</b>&#160;<i class="fa fa-angle-right caret"></i> <b class="menuitem">Profiles</b></span>, select the profile to edit, and navigate to the <code>Variables</code> tab.</p>
 <div class="paragraph">
 <p>Specify the required variables, using this format:</p>
 </div>
@@ -2202,6 +2277,8 @@ The debug setting is not required but can help with investigating any future pro
 </li>
 </ol>
 </div>
+</blockquote>
+</div>
 </div>
 </div>
 </div>
@@ -2212,16 +2289,18 @@ The debug setting is not required but can help with investigating any future pro
 <p>Before you begin, check that all the channels referenced in the autoinstallation profile are available and fully synchronized.</p>
 </div>
 <div class="paragraph">
-<p>You can monitor the mirroring progress in <code class="path">/var/log/rhn/reposync/&lt;channel-label&gt;.log</code>.</p>
+<p>You can monitor the mirroring progress in <code>/var/log/rhn/reposync/&lt;channel-label&gt;.log</code>.</p>
 </div>
-<div class="olist arabic">
+<div class="quoteblock procedure">
 <div class="title">Procedure: Migrating</div>
+<blockquote>
+<div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>In the Uyuni Server Web UI, navigate to <code class="guimenu">Systems</code> and select the client to be upgraded.</p>
+<p>In the Uyuni Server Web UI, navigate to <code>Systems</code> and select the client to be upgraded.</p>
 </li>
 <li>
-<p>Navigate to the <code class="guimenu">Provisioning</code> tab, and select the autoinstallation profile you uploaded.</p>
+<p>Navigate to the <code>Provisioning</code> tab, and select the autoinstallation profile you uploaded.</p>
 </li>
 <li>
 <p>Click <b class="button">Schedule Autoinstallation and Finish</b>.
@@ -2229,10 +2308,12 @@ The system downloads the required files, change the bootloader entries, reboot, 
 </li>
 </ol>
 </div>
+</blockquote>
+</div>
 <div class="paragraph">
 <p>Next time the client synchronizes with the Uyuni Server, it receives a re-installation job.
 The re-installation job fetches the new kernel and initrd packages.
-It also writes a new <code class="path">/boot/grub/menu.lst</code> (GRUB Legacy) or <code class="path">/boot/grub2/grub.cfg</code> (GRUB 2), containing pointers to the new kernel and initrd packages.</p>
+It also writes a new <code>/boot/grub/menu.lst</code> (GRUB Legacy) or <code>/boot/grub2/grub.cfg</code> (GRUB 2), containing pointers to the new kernel and initrd packages.</p>
 </div>
 <div class="paragraph">
 <p>When the client next boots, it uses grub to boot the new kernel with its initrd.

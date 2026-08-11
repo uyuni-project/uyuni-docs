@@ -102,7 +102,7 @@
     <div class="panels">
 <div class="nav-panel-menu is-active" data-panel="menu">
   <nav class="nav-menu">
-    <h3 class="title"><a href="../../../index.html">Uyuni 2026.06</a></h3>
+    <h3 class="title"><a href="../../../index.html">Uyuni 2026.08</a></h3>
 <ul class="nav-list">
   <li class="nav-item" data-depth="0">
 <ul class="nav-list">
@@ -168,9 +168,6 @@
 <ul class="nav-list">
   <li class="nav-item" data-depth="4">
     <a class="nav-link" href="migrate-uyuni-server-from-micro55-tumbleweed.html">Migrate the Server to openSUSE Tumbleweed</a>
-  </li>
-  <li class="nav-item" data-depth="4">
-    <a class="nav-link" href="migrate-uyuni-to-a-container.html">レガシサーバのコンテナへの移行</a>
   </li>
 </ul>
   </li>
@@ -1727,7 +1724,13 @@
     <a class="nav-link" href="../../../common-workflows/workflow-customize-apache-config.html">Customize Apache Configuration</a>
   </li>
   <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../../common-workflows/workflow-customize-security-policies.html">Customize security policies on the server</a>
+  </li>
+  <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../../../common-workflows/workflow-product-upgrade-webui.html">Product Upgrade via Web UI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../../common-workflows/workflow-cert-rotation-acme.html">Set up and rotate certificates using ACME</a>
   </li>
 </ul>
   </li>
@@ -1959,12 +1962,12 @@
 </div>
 <div class="nav-panel-explore" data-panel="explore">
   <div class="context">
-    <span class="title">Uyuni 2026.06</span>
+    <span class="title">Uyuni 2026.08</span>
     <span class="version">default</span>
   </div>
   <ul class="components">
     <li class="component is-current">
-      <a class="title" href="../../../index.html">Uyuni 2026.06</a>
+      <a class="title" href="../../../index.html">Uyuni 2026.08</a>
       <ul class="versions">
         <li class="version is-current is-latest">
           <a href="../../../index.html">default</a>
@@ -1982,7 +1985,7 @@
   <a href="../../../index.html" class="home-link"></a>
 <nav class="breadcrumbs" aria-label="breadcrumbs">
   <ul>
-    <li><a href="../../../index.html">Uyuni 2026.06</a></li>
+    <li><a href="../../../index.html">Uyuni 2026.08</a></li>
     <li><a href="../../uyuni-installation-and-upgrade-overview.html">インストールおよびアップグレードガイド</a></li>
     <li>配備とインストール</li>
     <li><a href="../../install-server.html">サーバ</a></li>
@@ -2004,13 +2007,13 @@
 <p>Air-gapped配備とは、安全ではないネットワーク、特にインターネットから物理的に隔離されたネットワークシステムをセットアップおよび運用することです。この種の配備は、一般的に高度なセキュリティ環境で使用されます。たとえば、軍事施設、金融システム、重要インフラストラクチャ、機密データを取り扱っていて外部の脅威から保護する必要がある場所などです。</p>
 </div>
 <div class="paragraph">
-<p><code class="systemitem">Podman</code>または<code class="systemitem">Docker</code>を使用して、インターネットにアクセスできるマシンにコンテナイメージを簡単にプルできます。</p>
+<p>You can easily pull container images using <code>Podman</code> or <code>Docker</code> on a machine with internet access.</p>
 </div>
 <div class="olist arabic">
 <div class="title">プロシージャ: イメージのプル</div>
 <ol class="arabic">
 <li>
-<p>目的のイメージをプルしてから、イメージを<code class="literal">tar</code>アーカイブとして保存します。例:</p>
+<p>Pull the desired images, then save the images as a <code>tar</code> archive. For example:</p>
 <div class="listingblock">
 <div class="title">Listing 1. Podman</div>
 <div class="content">
@@ -2027,7 +2030,7 @@ docker save --output images.tar registry.opensuse.org/uyuni/server:latest regist
 </div>
 </li>
 <li>
-<p>Transfer the resulting <code class="filename">images.tar</code> to the Server container host and load it using the following command:</p>
+<p>Transfer the resulting <code>images.tar</code> to the Server container host and load it using the following command:</p>
 <div class="listingblock">
 <div class="title">Listing 3. サーバイメージをロードする</div>
 <div class="content">
@@ -2113,12 +2116,22 @@ podman pull registry.opensuse.org/opensuse/kea:latest</code></pre>
 <p>ツールのパッケージとイメージパッケージをインストールします($ARCH$は適切なアーキテクチャに置き換えます)。</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-shell hljs" data-lang="shell">zypper install mgradm* mgrctl* uyuni-server*-image*</code></pre>
+<pre class="highlightjs highlight"><code class="language-shell hljs" data-lang="shell">zypper install mgradm* mgrctl* uyuni-server*-image* uyuni-server-proxy-tftpd-image*</code></pre>
 </div>
 </div>
 </li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The TFTPD image is now the same than on the proxy. If TFTPD is disabled on the server this image is not needed.</p>
+</div>
+<div class="paragraph">
+<p>+</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
 <li>
-<p><code class="command">mgradm</code>を使用してUyuniを配備します。エアギャップ環境では、<code class="command">--pullPolicy Never</code>オプションの使用をお勧めします。</p>
+<p>Deploy Uyuni with <code>mgradm</code>. In an Air-gapped environment you may want to use the option <code>--pullPolicy Never</code>.</p>
 </li>
 </ol>
 </div>
@@ -2126,7 +2139,7 @@ podman pull registry.opensuse.org/opensuse/kea:latest</code></pre>
 <p>For more detailed information about installing Uyuni Server on openSUSE Tumbleweed, see <a href="server-deployment-uyuni.html" class="xref page">Server Deployment</a>.</p>
 </div>
 <div class="paragraph">
-<p>To upgrade Uyuni Server, apply available host updates with <code class="command">transactional-update</code>, reboot if updates were applied, then run <code class="command">mgradm upgrade podman</code>. For air-gapped installations, upgrade the container RPM packages before running <code class="command">mgradm upgrade podman</code>.</p>
+<p>To upgrade Uyuni Server, apply available host updates with <code>transactional-update</code>, reboot if updates were applied, then run <code>mgradm upgrade</code>. For air-gapped installations, upgrade the container RPM packages before running <code>mgradm upgrade</code>.</p>
 </div>
 </div>
 </div>
