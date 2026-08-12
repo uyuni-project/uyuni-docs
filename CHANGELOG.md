@@ -1,3 +1,4 @@
+- Documented proxy certificate replacement using spacecmd (bsc#1271329)
 - Documented certificate setup and rotation with unified mgradm ssl rotate command
 - Added a common workflow for certificate setup and rotation with ACME
 - Documented how VMs are listed and referenced by virtual hosts (bsc#1273073)
