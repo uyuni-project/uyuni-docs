@@ -1,7 +1,7 @@
 [[ssl-certs-import]]
 = Import SSL Certificates
 :description: Follow these procedures to configure SSL certificates for your SUSE Multi-Linux Manager installation or to replace the existing certificates
-:revdate: 2026-08-04
+:revdate: 2026-08-12
 :page-revdate: {revdate}
 :page-author: SUSE Product & Solution Documentation Team
 :page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
@@ -145,17 +145,83 @@ mgradm ssl rotate \
 _____
 
 
-If you are using a proxy, you need to generate a server certificate RPM for each proxy, using their hostnames and cnames.
-Generate a new configuration tarball and deploy it.
+// bsc#1271329
+[[ssl-certs-import-replace-proxy]]
+== Replace certificates on a Proxy
 
-ifeval::[{mlm-content} == true]
-For more information, see xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc#_generate_proxy_configuration[].
-endif::[]
+If you are using a {productname} Proxy, you must regenerate and redeploy the Proxy's configuration after replacing the certificates on the {productname} Server.
+This ensures the Proxy trusts the Server's new CA and uses its own updated server certificate.
 
-ifeval::[{uyuni-content} == true]
-For more information, see xref:installation-and-upgrade:container-deployment/uyuni/proxy-deployment-uyuni.adoc#proxy-setup-containers-generate-config[].
-proxy-deployment-uyuni.adoc
-endif::[]
+Generating the Proxy configuration using the Web UI is not supported for replacing certificates. You must use `spacecmd` from the command line.
+
+.Procedure: Replacing certificates on a {productname} Proxy
+[role=procedure]
+_____
+. On your {productname} Server container host, copy the Root CA certificate (`ca.crt`), the Proxy certificate (`proxy.crt`), and the Proxy private key (`proxy.key`) into the server container:
++
+[source,shell]
+----
+for f in ca.crt proxy.crt proxy.key; do
+  mgrctl cp $f server:/tmp/$f
+done
+----
+
+. If your environment uses one or more intermediate CAs, also copy them into the container:
++
+[source,shell]
+----
+mgrctl cp intermediateCA.pem server:/tmp/intermediateCA.pem
+----
+
+. Execute `spacecmd proxy_container_config` inside the server container to generate the new configuration archive, replacing the FQDNs and admin email:
++
+[source,shell]
+----
+mgrctl exec -ti 'spacecmd proxy_container_config -- -p 8022 pxy.example.com srv.example.com 2048 email@example.com /tmp/ca.crt /tmp/proxy.crt /tmp/proxy.key -o /tmp/config.tar.gz'
+----
++
+If you copied an intermediate CA in the previous step, append the `-i` parameter:
++
+[source,shell]
+----
+mgrctl exec -ti 'spacecmd proxy_container_config -- -p 8022 -i /tmp/intermediateCA.pem pxy.example.com srv.example.com 2048 email@example.com /tmp/ca.crt /tmp/proxy.crt /tmp/proxy.key -o /tmp/config.tar.gz'
+----
+
+. Copy the generated configuration archive from the server container to the Server host:
++
+[source,shell]
+----
+mgrctl cp server:/tmp/config.tar.gz .
+----
+
+. Transfer the `config.tar.gz` archive to the Proxy host:
++
+[source,shell]
+----
+scp config.tar.gz root@pxy.example.com:/root/
+----
+
+. On the Proxy host, stop the Proxy:
++
+[source,shell]
+----
+mgrpxy stop
+----
+
+. Install the new configuration on the Proxy host:
++
+[source,shell]
+----
+mgrpxy install config.tar.gz
+----
+
+. Start the Proxy:
++
+[source,shell]
+----
+mgrpxy start
+----
+_____
 
 
 
