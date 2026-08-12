@@ -1,3 +1,4 @@
+- Documented proxy certificate replacement using spacecmd (bsc#1271329)
 - Documented certificate setup and rotation with unified mgradm ssl rotate command
 - Documented allowing diskcheck environment variables into containers (bsc#1270033)
 - Added instruction for obtaining the certificate when renaming the server (bsc#1273853)
