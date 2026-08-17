@@ -1,7 +1,7 @@
 [[ssl-certs-import]]
 = Import SSL Certificates
 :description: Follow these procedures to configure SSL certificates for your SUSE Multi-Linux Manager installation or to replace the existing certificates
-:revdate: 2025-06-20
+:revdate: 2026-08-12
 :page-revdate: {revdate}
 :page-author: SUSE Product & Solution Documentation Team
 :page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
@@ -51,7 +51,7 @@ Certificates can be imported with third-party certificates at the installation t
 
 .Procedure: Importing certificates on a new {productname} server
 [role=procedure]
-____
+_____
 . Deploy the {productname} Server according to the instructions in xref:installation-and-upgrade:install-server.adoc[].
   Make sure to pass the correct files as parameters to `mgradm install podman`.
   The parameters are:
@@ -69,7 +69,7 @@ ____
       --ssl-db-cert string             Database certificate path
       --ssl-db-key string              Database key path
 ----
-____
+_____
 
 Intermediate CAs can either be available in the file which is specified with `--ssl-ca-root`, or specified as extra options with `--ssl-ca-intermediate`.
 The `--ssl-ca-intermediate` option can be specified multiple times.
@@ -83,7 +83,7 @@ In order to use a third-party certificate, it needs to be provided during the co
 
 .Procedure: Importing certificates on a new {productname} Proxy
 [role=procedure]
-____
+_____
 . Install the {productname} Proxy according to the instructions in xref:installation-and-upgrade:install-proxy.adoc[].
 
 . Follow the prompts to complete setup.
@@ -96,7 +96,7 @@ Use the same certificate authority (CA) to sign all certificates for servers and
 Certificates signed with different CAs do not match.
 ====
 
-____
+_____
 
 
 [[ssl-certs-import-replace]]
@@ -117,7 +117,7 @@ The root CA certificate should not be appended to the server certificate file.
 
 .Procedure: Replacing all existing certificates
 [role=procedure]
-____
+_____
 . The following considers that you have `root-ca.pem`, `intermediate-ca1.pem`, `intermediate-ca2.pem`, `server.pem` and `server.key` files.
   It may be different depending on the number of intermediate CAs in the server certificate signature chain.
 
@@ -132,48 +132,96 @@ ____
 cat server.pem intermediate-ca1.pem intermediate-ca2.pem >combined-server.pem
 ----
 
-. On the {productname} container host, at the command prompt, recreate podman certificate secrets passing the files paths:
+. On the {productname} container host, at the command prompt, rotate the certificates using `mgradm ssl rotate`:
 
 +
-
 [source,shell]
 ----
-podman secret create --replace uyuni-ca $path_to_ca_certificate
-podman secret create --replace uyuni-cert $path_to_combined_server_certificate
-podman secret create --replace uyuni-key $path_to_server_key
-
-podman secret create --replace uyuni-db-ca $path_to_database_ca_certificate
-podman secret create --replace uyuni-db-cert $path_to_combined_database_certificate
-podman secret create --replace uyuni-db-key $path_to_database_key
+mgradm ssl rotate \
+   --ssl-ca-root $path_to_ca_certificate \
+   --ssl-server-cert $path_to_combined_server_certificate \
+   --ssl-server-key $path_to_server_key
 ----
-____
+_____
 
 
-.Procedure: Restarting the server
+// bsc#1271329
+[[ssl-certs-import-replace-proxy]]
+== Replace certificates on a Proxy
+
+If you are using a {productname} Proxy, you must regenerate and redeploy the Proxy's configuration after replacing the certificates on the {productname} Server.
+This ensures the Proxy trusts the Server's new CA and uses its own updated server certificate.
+
+Generating the Proxy configuration using the Web UI is not supported for replacing certificates. You must use `spacecmd` from the command line.
+
+.Procedure: Replacing certificates on a {productname} Proxy
 [role=procedure]
-____
-. On the container host, restart the server to pick up the changes:
-
+_____
+. On your {productname} Server container host, copy the Root CA certificate (`ca.crt`), the Proxy certificate (`proxy.crt`), and the Proxy private key (`proxy.key`) into the server container:
 +
-
 [source,shell]
 ----
-mgradm restart
+for f in ca.crt proxy.crt proxy.key; do
+  mgrctl cp $f server:/tmp/$f
+done
 ----
-____
 
+. If your environment uses one or more intermediate CAs, also copy them into the container:
++
+[source,shell]
+----
+mgrctl cp intermediateCA.pem server:/tmp/intermediateCA.pem
+----
 
-If you are using a proxy, you need to generate a server certificate RPM for each proxy, using their hostnames and cnames.
-Generate a new configuration tarball and deploy it.
+. Execute `spacecmd proxy_container_config` inside the server container to generate the new configuration archive, replacing the FQDNs and admin email:
++
+[source,shell]
+----
+mgrctl exec -ti 'spacecmd proxy_container_config -- -p 8022 pxy.example.com srv.example.com 2048 email@example.com /tmp/ca.crt /tmp/proxy.crt /tmp/proxy.key -o /tmp/config.tar.gz'
+----
++
+If you copied an intermediate CA in the previous step, append the `-i` parameter:
++
+[source,shell]
+----
+mgrctl exec -ti 'spacecmd proxy_container_config -- -p 8022 -i /tmp/intermediateCA.pem pxy.example.com srv.example.com 2048 email@example.com /tmp/ca.crt /tmp/proxy.crt /tmp/proxy.key -o /tmp/config.tar.gz'
+----
 
-ifeval::[{mlm-content} == true]
-For more information, see xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc#_generate_proxy_configuration[].
-endif::[]
+. Copy the generated configuration archive from the server container to the Server host:
++
+[source,shell]
+----
+mgrctl cp server:/tmp/config.tar.gz .
+----
 
-ifeval::[{uyuni-content} == true]
-For more information, see xref:installation-and-upgrade:container-deployment/uyuni/proxy-deployment-uyuni.adoc#proxy-setup-containers-generate-config[].
-proxy-deployment-uyuni.adoc
-endif::[]
+. Transfer the `config.tar.gz` archive to the Proxy host:
++
+[source,shell]
+----
+scp config.tar.gz root@pxy.example.com:/root/
+----
+
+. On the Proxy host, stop the Proxy:
++
+[source,shell]
+----
+mgrpxy stop
+----
+
+. Install the new configuration on the Proxy host:
++
+[source,shell]
+----
+mgrpxy install config.tar.gz
+----
+
+. Start the Proxy:
++
+[source,shell]
+----
+mgrpxy start
+----
+_____
 
 
 
@@ -198,7 +246,7 @@ After that, apply highstate on the Image Build hosts to deploy the new certifica
 
 .Procedure: Deploying the root CA on clients
 [role=procedure]
-____
+_____
 . In the {productname} {webui}, navigate to menu:Systems[Overview].
 
 . Check all your clients to add them to the system set manager.
@@ -208,4 +256,4 @@ ____
 . In the `States` field, click btn:[Apply] to apply the system states.
 
 . In the `Highstate` page, click btn:[Apply Highstate] to propagate the changes to the clients.
-____
+_____
