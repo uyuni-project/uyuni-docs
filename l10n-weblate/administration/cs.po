@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2026-08-10 12:53+0000\n"
+"POT-Creation-Date: 2026-08-17 17:01+0000\n"
 "PO-Revision-Date: 2026-04-29 15:51+0000\n"
 "Last-Translator: anonymous <noreply@weblate.org>\n"
 "Language-Team: Czech <https://l10n.opensuse.org/projects/uyuni/docs-"
@@ -2571,7 +2571,6 @@ msgstr ""
 #: en/modules/administration/pages/space-management.adoc:18
 #: en/modules/administration/pages/space-management.adoc:30
 #: en/modules/administration/pages/space-management.adoc:44
-#: en/modules/administration/pages/ssl-certs-imported.adoc:46
 #: en/modules/administration/pages/troubleshooting/tshoot-diskspace.adoc:32
 #: en/modules/administration/pages/troubleshooting/tshoot-salt-clients-down-and-dns.adoc:13
 #, no-wrap
@@ -18515,68 +18514,166 @@ msgstr ""
 #. type: Plain text
 #: en/modules/administration/pages/ssl-certs-imported.adoc:41
 msgid ""
-"On the {productname} container host, at the command prompt, recreate podman "
-"certificate secrets passing the files paths:"
+"On the {productname} container host, at the command prompt, rotate the "
+"certificates using `mgradm ssl rotate`:"
 msgstr ""
 
 #. type: delimited block -
 #: en/modules/administration/pages/ssl-certs-imported.adoc:42
 #, no-wrap
 msgid ""
-"podman secret create --replace uyuni-ca $path_to_ca_certificate\n"
-"podman secret create --replace uyuni-cert $path_to_combined_server_certificate\n"
-"podman secret create --replace uyuni-key $path_to_server_key\n"
+"mgradm ssl rotate \\\n"
+"   --ssl-ca-root $path_to_ca_certificate \\\n"
+"   --ssl-server-cert $path_to_combined_server_certificate \\\n"
+"   --ssl-server-key $path_to_server_key\n"
 msgstr ""
 
-#. type: delimited block -
+#.  bsc#1271329
+#. type: Title ==
 #: en/modules/administration/pages/ssl-certs-imported.adoc:43
 #, no-wrap
+msgid "Replace certificates on a Proxy"
+msgstr ""
+
+#. type: delimited block _
+#: en/modules/administration/pages/ssl-certs-imported.adoc:44
 msgid ""
-"podman secret create --replace uyuni-db-ca $path_to_database_ca_certificate\n"
-"podman secret create --replace uyuni-db-cert $path_to_combined_database_certificate\n"
-"podman secret create --replace uyuni-db-key $path_to_database_key\n"
+"If you are using a {productname} Proxy, you must regenerate and redeploy the "
+"Proxy's configuration after replacing the certificates on the {productname} "
+"Server.  This ensures the Proxy trusts the Server's new CA and uses its own "
+"updated server certificate."
+msgstr ""
+
+#. type: delimited block _
+#: en/modules/administration/pages/ssl-certs-imported.adoc:45
+msgid ""
+"Generating the Proxy configuration using the Web UI is not supported for "
+"replacing certificates. You must use `spacecmd` from the command line."
 msgstr ""
 
 #. type: Block title
-#: en/modules/administration/pages/ssl-certs-imported.adoc:44
+#: en/modules/administration/pages/ssl-certs-imported.adoc:46
 #, fuzzy, no-wrap
 #| msgid "Procedure: Creating an Activation Key"
-msgid "Procedure: Restarting the server"
+msgid "Procedure: Replacing certificates on a {productname} Proxy"
 msgstr "Postup: Vytvoření aktivačního klíče"
 
 #. type: Plain text
-#: en/modules/administration/pages/ssl-certs-imported.adoc:45
-msgid "On the container host, restart the server to pick up the changes:"
-msgstr ""
-
-#. type: delimited block _
 #: en/modules/administration/pages/ssl-certs-imported.adoc:47
 msgid ""
-"If you are using a proxy, you need to generate a server certificate RPM for "
-"each proxy, using their hostnames and cnames.  Generate a new configuration "
-"tarball and deploy it."
+"On your {productname} Server container host, copy the Root CA certificate "
+"(`ca.crt`), the Proxy certificate (`proxy.crt`), and the Proxy private key "
+"(`proxy.key`) into the server container:"
 msgstr ""
 
-#. type: delimited block _
+#. type: delimited block -
 #: en/modules/administration/pages/ssl-certs-imported.adoc:48
-#, fuzzy
+#, no-wrap
 msgid ""
-"For more information, see xref:installation-and-upgrade:container-deployment/"
-"mlm/proxy-deployment-mlm.adoc#_generate_proxy_configuration[]."
+"for f in ca.crt proxy.crt proxy.key; do\n"
+"  mgrctl cp $f server:/tmp/$f\n"
+"done\n"
 msgstr ""
-"Další informace o importovaných certifikátech najdete na stránce xref:"
-"administration:ssl-certs-imported.adoc[]."
 
-#. type: delimited block _
+#. type: Plain text
 #: en/modules/administration/pages/ssl-certs-imported.adoc:49
 msgid ""
-"For more information, see xref:installation-and-upgrade:container-deployment/"
-"uyuni/proxy-deployment-uyuni.adoc#proxy-setup-containers-generate-config[].  "
-"proxy-deployment-uyuni.adoc"
+"If your environment uses one or more intermediate CAs, also copy them into "
+"the container:"
+msgstr ""
+
+#. type: delimited block -
+#: en/modules/administration/pages/ssl-certs-imported.adoc:50
+#, no-wrap
+msgid "mgrctl cp intermediateCA.pem server:/tmp/intermediateCA.pem\n"
+msgstr ""
+
+#. type: Plain text
+#: en/modules/administration/pages/ssl-certs-imported.adoc:51
+msgid ""
+"Execute `spacecmd proxy_container_config` inside the server container to "
+"generate the new configuration archive, replacing the FQDNs and admin email:"
+msgstr ""
+
+#. type: delimited block -
+#: en/modules/administration/pages/ssl-certs-imported.adoc:52
+#, no-wrap
+msgid "mgrctl exec -ti 'spacecmd proxy_container_config -- -p 8022 pxy.example.com srv.example.com 2048 email@example.com /tmp/ca.crt /tmp/proxy.crt /tmp/proxy.key -o /tmp/config.tar.gz'\n"
+msgstr ""
+
+#. type: Plain text
+#: en/modules/administration/pages/ssl-certs-imported.adoc:53
+msgid ""
+"If you copied an intermediate CA in the previous step, append the `-i` "
+"parameter:"
+msgstr ""
+
+#. type: delimited block -
+#: en/modules/administration/pages/ssl-certs-imported.adoc:54
+#, no-wrap
+msgid "mgrctl exec -ti 'spacecmd proxy_container_config -- -p 8022 -i /tmp/intermediateCA.pem pxy.example.com srv.example.com 2048 email@example.com /tmp/ca.crt /tmp/proxy.crt /tmp/proxy.key -o /tmp/config.tar.gz'\n"
+msgstr ""
+
+#. type: Plain text
+#: en/modules/administration/pages/ssl-certs-imported.adoc:55
+msgid ""
+"Copy the generated configuration archive from the server container to the "
+"Server host:"
+msgstr ""
+
+#. type: delimited block -
+#: en/modules/administration/pages/ssl-certs-imported.adoc:56
+#, no-wrap
+msgid "mgrctl cp server:/tmp/config.tar.gz .\n"
+msgstr ""
+
+#. type: Plain text
+#: en/modules/administration/pages/ssl-certs-imported.adoc:57
+msgid "Transfer the `config.tar.gz` archive to the Proxy host:"
+msgstr ""
+
+#. type: delimited block -
+#: en/modules/administration/pages/ssl-certs-imported.adoc:58
+#, no-wrap
+msgid "scp config.tar.gz root@pxy.example.com:/root/\n"
+msgstr ""
+
+#. type: Plain text
+#: en/modules/administration/pages/ssl-certs-imported.adoc:59
+msgid "On the Proxy host, stop the Proxy:"
+msgstr ""
+
+#. type: delimited block -
+#: en/modules/administration/pages/ssl-certs-imported.adoc:60
+#, fuzzy, no-wrap
+#| msgid "spacewalk-service stop\n"
+msgid "mgrpxy stop\n"
+msgstr "spacewalk-service stop\n"
+
+#. type: Plain text
+#: en/modules/administration/pages/ssl-certs-imported.adoc:61
+msgid "Install the new configuration on the Proxy host:"
+msgstr ""
+
+#. type: delimited block -
+#: en/modules/administration/pages/ssl-certs-imported.adoc:62
+#, no-wrap
+msgid "mgrpxy install config.tar.gz\n"
+msgstr ""
+
+#. type: Plain text
+#: en/modules/administration/pages/ssl-certs-imported.adoc:63
+msgid "Start the Proxy:"
+msgstr ""
+
+#. type: delimited block -
+#: en/modules/administration/pages/ssl-certs-imported.adoc:64
+#, no-wrap
+msgid "mgrpxy start\n"
 msgstr ""
 
 #. type: delimited block _
-#: en/modules/administration/pages/ssl-certs-imported.adoc:50
+#: en/modules/administration/pages/ssl-certs-imported.adoc:65
 msgid ""
 "If the Root CA was changed, it needs to get deployed to all the clients "
 "connected to {productname}.  This is ideally done in advance to minimize the "
@@ -18584,34 +18681,34 @@ msgid ""
 msgstr ""
 
 #. type: Block title
-#: en/modules/administration/pages/ssl-certs-imported.adoc:51
+#: en/modules/administration/pages/ssl-certs-imported.adoc:66
 #, fuzzy, no-wrap
 #| msgid "Procedure: Creating an Activation Key"
 msgid "Procedure: Deploying the root CA on clients"
 msgstr "Postup: Vytvoření aktivačního klíče"
 
 #. type: Plain text
-#: en/modules/administration/pages/ssl-certs-imported.adoc:52
+#: en/modules/administration/pages/ssl-certs-imported.adoc:67
 msgid "In the {productname} {webui}, navigate to menu:Systems[Overview]."
 msgstr ""
 
 #. type: Plain text
-#: en/modules/administration/pages/ssl-certs-imported.adoc:53
+#: en/modules/administration/pages/ssl-certs-imported.adoc:68
 msgid "Check all your clients to add them to the system set manager."
 msgstr ""
 
 #. type: Plain text
-#: en/modules/administration/pages/ssl-certs-imported.adoc:54
+#: en/modules/administration/pages/ssl-certs-imported.adoc:69
 msgid "Navigate to menu:Systems[System Set Manager > Overview]."
 msgstr ""
 
 #. type: Plain text
-#: en/modules/administration/pages/ssl-certs-imported.adoc:55
+#: en/modules/administration/pages/ssl-certs-imported.adoc:70
 msgid "In the `States` field, click btn:[Apply] to apply the system states."
 msgstr ""
 
 #. type: Plain text
-#: en/modules/administration/pages/ssl-certs-imported.adoc:56
+#: en/modules/administration/pages/ssl-certs-imported.adoc:71
 msgid ""
 "In the `Highstate` page, click btn:[Apply Highstate] to propagate the "
 "changes to the clients."
@@ -25054,6 +25151,19 @@ msgstr ""
 
 #, fuzzy, no-wrap
 #~| msgid "Procedure: Creating an Activation Key"
+#~ msgid "Procedure: Restarting the server"
+#~ msgstr "Postup: Vytvoření aktivačního klíče"
+
+#, fuzzy
+#~ msgid ""
+#~ "For more information, see xref:installation-and-upgrade:container-"
+#~ "deployment/mlm/proxy-deployment-mlm.adoc#_generate_proxy_configuration[]."
+#~ msgstr ""
+#~ "Další informace o importovaných certifikátech najdete na stránce xref:"
+#~ "administration:ssl-certs-imported.adoc[]."
+
+#, fuzzy, no-wrap
+#~| msgid "Procedure: Creating an Activation Key"
 #~ msgid "Procedure: Creating an activation key"
 #~ msgstr "Postup: Vytvoření aktivačního klíče"
 
@@ -25075,11 +25185,6 @@ msgstr ""
 #, fuzzy, no-wrap
 #~| msgid "spacewalk-service stop\n"
 #~ msgid "mgrctl exec -ti -- spacewalk-hostname-rename <PUBLIC_IP_ADDRESS>\n"
-#~ msgstr "spacewalk-service stop\n"
-
-#, fuzzy, no-wrap
-#~| msgid "spacewalk-service stop\n"
-#~ msgid "mgradm stop\n"
 #~ msgstr "spacewalk-service stop\n"
 
 #, fuzzy
