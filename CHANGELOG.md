@@ -1,3 +1,4 @@
+- Documented requirements and limitations for container image inspection on SLES 15 and SLES 16 (bsc#1274720)
 - Clarified availability of Salt's "virt" module in the Salt Bundle (bsc#1270694)
 - Documented allowing diskcheck environment variables into containers (bsc#1270033)
 - Added instruction for obtaining the certificate when renaming the server (bsc#1273853)
