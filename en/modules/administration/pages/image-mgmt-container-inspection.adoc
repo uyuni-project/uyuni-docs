@@ -1,17 +1,32 @@
 ==== Image Inspection
 
+Base container images (BCIs) come with all the software to run them, but because they are lightweight, they may not include all the tools and libraries required for inspection.
 
-A base container image (BCI) comes with all the software to run it, but because BCIs are lightweight they may not come with all tools and libraries you may need for inspection.
+When performing container image inspection, {productname} copies and extracts the {salt} bundle (`venv-salt-minion`) from the build host (where the inspection is scheduled) into the target container, and then executes it inside the container.
+Therefore, the target container image must satisfy any dynamic dependencies of the build host's {salt} bundle.
 
-When inspecting a container image you can see an error message such as:
+If the target image is missing required dynamic libraries, the inspection fails.
+For example, you might see error messages like:
 
 ----
 libssl.so.1.1: cannot open shared object file: No such file or directory
 ----
 
-A BCI can be used in the other scenarios than with the container build host and using the {salt} bundle for the inspection, but if you need inspection to work you must add all needed software in advance.
+The most common dependency issue is with OpenSSL libraries, because the {salt} bundle's Python modules are dynamically linked against the build host's OpenSSL version.
+Because OpenSSL versions differ between major operating system versions (such as SLE 15 and SLE 16), compatibility depends on both the build host and the target image:
 
-To avoid such issues you must add `libopenssl` to the image with `Dockerfile` and rebuild the image.
+* **On a SLE 15 build host**:
+  The {salt} bundle is compiled against OpenSSL 1.1 (providing `libssl.so.1.1`).
+  Therefore, any image inspected on a SLE 15 build host must have OpenSSL 1.1 installed (typically via the `libopenssl1_1` package).
+  Since OpenSSL 1.1 is not available on SLE 16 and openSUSE Leap 16, a SLE 16 / Leap 16 image *cannot* be inspected on a SLE 15 build host.
 
-The same can happen with `libexpat`.
+* **On a SLE 16 build host**:
+  The {salt} bundle is compiled against OpenSSL 3 (providing `libssl.so.3`).
+  Therefore, any image inspected on a SLE 16 build host must have OpenSSL 3 installed (typically via the `libopenssl3` package).
 
+To ensure successful image inspection, follow these best practices:
+
+* Match the major operating system version of the build host and the target image. For example, use a SLE 16 / Leap 16 build host to inspect SLE 16 / Leap 16 images, and a SLE 15 build host to inspect SLE 15 images.
+* Install the correct version of OpenSSL inside your image (for example, by adding `libopenssl3` for SLE 16 or `libopenssl1_1` for SLE 15 to the `Dockerfile`) and rebuilding the image.
+
+The same dependency requirements apply to other dynamic libraries, such as `libexpat`.
