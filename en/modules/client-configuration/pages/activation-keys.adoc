@@ -1,6 +1,6 @@
 [[activation-keys]]
 = Activation Keys
-:revdate: 2026-07-21
+:revdate: 2026-08-19
 :page-revdate: {revdate}
 
 Activation keys are used to ensure that your clients have the correct software entitlements, are connecting to the appropriate channels, and are subscribed to the relevant groups.
@@ -48,9 +48,9 @@ These tabs are:
 * `AppStreams` (available whenever a modular channel is associated with the activation key)
 
 
+// bsc#1211440
 [[activation-keys-reactivation]]
 == Reactivation Keys
-
 
 Reactivation keys can be used once only to re-register a client and regain all {productname} settings.
 Reactivation keys are client-specific, and include the system ID, history, groups, and channels.
@@ -60,7 +60,7 @@ Click btn:[Generate New Key] to create the reactivation key.
 Record the details of the key for later use.
 Unlike typical activation keys, which are not associated with a specific system ID, keys created here do not show up on the menu:Systems[Activation Keys] page.
 
-After you have created a reactivation key, you can use it as the `management_key` grain in `/etc/salt/minion.d/susemanager.conf`.
+After you have created a reactivation key, you can use it as the `management_key` grain in `/etc/venv-salt-minion/minion.d/susemanager.conf` (or `/etc/salt/minion.d/susemanager.conf` for traditional clients).
 For example:
 
 ----
@@ -80,6 +80,23 @@ If you autoinstall a client with its existing {productname} profile, the profile
 Do not regenerate, delete, or use this key while a profile-based autoinstallation is in progress.
 Doing so causes the autoinstallation to fail.
 ====
+
+=== Reactivation Key Warnings and Behaviors
+
+System Deletion::
+Deleting a registered client from the server permanently invalidates its reactivation key. Do not delete the server record if you only intend to re-register or rebootstrap the client.
+
+Client-Side Unregistration::
+To rebootstrap without losing system history, unregister from the client side only (stop the minion service, purge local keys/configs), keeping the server record intact so the reactivation key can re-associate the system ID.
+
+Salt Key Conflicts::
+Re-bootstrapping fails if the old Salt key remains on the server. Delete the existing key via menu:Systems[Keys] in the {webui} or with `salt-key -d <minion_id>` on the server CLI before bootstrapping.
+
+Minion ID and Name Reversion::
+Bootstrapping with a reactivation key reverts any client-side or Web UI changes to the Minion ID and System Name back to their original values recorded during initial registration. The active client hostname is updated dynamically in System Info.
+
+Combining Activation Keys::
+Specifying both activation and reactivation keys appends the activation key's system groups and configuration channels to the reactivation profile rather than overwriting them. Leaving the activation key field at `None` has no negative impact.
 
 
 
