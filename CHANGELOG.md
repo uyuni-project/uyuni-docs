@@ -1,4 +1,6 @@
 - Added warning about known issues in Multi-Linux Manager 5.0 and 5.1 server upgrade guides (bsc#1274875)
+- Corrected and restored Debian 12 packages in the OpenSCAP packages table (bsc#1269316)
+- Documented Web UI Reactivation Key field, Salt Bundle configuration paths, and detailed warnings/behaviors for Reactivation Keys (bsc#1211440)
 - Documented requirements and limitations for container image inspection on SLES 15 and SLES 16 (bsc#1274720)
 - Documented proxy certificate replacement using spacecmd (bsc#1271329)
 - Documented certificate setup and rotation with unified mgradm ssl rotate command
