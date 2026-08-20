@@ -1,3 +1,4 @@
+- Documented deprecation and support limitations of plain salt-minion manual registration (bsc#1275658)
 - Corrected and restored Debian 12 packages in the OpenSCAP packages table (bsc#1269316)
 - Documented Web UI Reactivation Key field, Salt Bundle configuration paths, and detailed warnings/behaviors for Reactivation Keys (bsc#1211440)
 - Documented requirements and limitations for container image inspection on SLES 15 and SLES 16 (bsc#1274720)
