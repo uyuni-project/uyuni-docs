@@ -1,0 +1,40 @@
+[[registration-sudo]]
+= Root Access and sudo Configuration
+:revdate: 2026-08-24
+:page-revdate: {revdate}
+
+Many operating systems (such as {ubuntu}, {debian}, {raspberrypios}, and {sle} 16) disable SSH access for the `root` user by default, or are installed without configuring a `root` password.
+To onboard these clients, you can use a regular, unprivileged user that has passwordless `sudo` privileges configured for the necessary Python and Salt minion binaries.
+
+[IMPORTANT]
+====
+This configuration is required only for bootstrapping and registering the client.
+Once the client is successfully registered, the {productname} agent runs with `root` privileges, and this temporary passwordless `sudo` access is no longer required.
+For security reasons, we recommend removing these lines from the `sudoers` file after registration is complete.
+====
+
+
+== Grant non-root user sudo access
+
+To onboard a client using a non-root user, you must edit the `sudoers` file on the client system to grant passwordless privilege escalation for specific commands.
+
+.Procedure: Granting passwordless sudo access
+[role="procedure"]
+_____
+. On the client, edit the `sudoers` file by running:
++
+----
+sudo visudo
+----
+. At the end of the file, add the following line. Replace `<user>` with the name of the user that is bootstrapping the client:
++
+----
+<user>  ALL=NOPASSWD: /usr/bin/python, /usr/bin/python2, /usr/bin/python3, /var/tmp/venv-salt-minion/bin/python
+----
+_____
+
+[NOTE]
+====
+Self-installed versions of operating systems require passwordless privilege escalation because the {webui} and bootstrap scripts do not support interactive password entry during the privilege escalation step.
+For cloud instances, this is often handled automatically by `cloud-init`, which sets up sudoers configurations for default users.
+====

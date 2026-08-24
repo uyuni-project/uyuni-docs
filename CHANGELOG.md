@@ -1,3 +1,4 @@
+- Extracted and relocated general sudo configuration guidelines to a new central page, and added unprivileged onboarding support references for SLE 16 (bsc#1275794)
 - Added a CI check for the revision date of changed documentation pages
 - Removed a link to the SSL CA migration guide, which does not apply to this version
 - Fixed noindex guards so product-specific pages no longer appear in the other product's documentation search
