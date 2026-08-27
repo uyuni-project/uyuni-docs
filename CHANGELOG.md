@@ -1,3 +1,6 @@
+- Added ppc64le support for AlmaLinux 8 in Uyuni
+- Corrected the architectures of Rocky Linux 8 in Uyuni, which has no ppc64le build upstream
+- Corrected the s390x information for AlmaLinux and Rocky Linux 9 and 10 in Uyuni
 - Documented deprecation and support limitations of plain salt-minion manual registration (bsc#1275658)
 - Added warning about known issues in Multi-Linux Manager 5.0 and 5.1 server upgrade guides (bsc#1274875)
 - Corrected and restored Debian 12 packages in the OpenSCAP packages table (bsc#1269316)
