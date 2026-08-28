@@ -1,3 +1,5 @@
+- Fixed `l10n-weblate/update-cfg-files` failing when invoked from anywhere other than
+  the `l10n-weblate/` directory
 - Added ppc64le support for AlmaLinux 8 in Uyuni
 - Corrected the architectures of Rocky Linux 8 in Uyuni, which has no ppc64le build upstream
 - Corrected the s390x information for AlmaLinux and Rocky Linux 9 and 10 in Uyuni
