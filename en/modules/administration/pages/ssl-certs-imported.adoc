@@ -1,7 +1,7 @@
 [[ssl-certs-import]]
 = Import SSL Certificates
 :description: Follow these procedures to configure SSL certificates for your SUSE Multi-Linux Manager installation or to replace the existing certificates
-:revdate: 2026-08-12
+:revdate: 2026-08-28
 :page-revdate: {revdate}
 :page-author: SUSE Product & Solution Documentation Team
 :page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
@@ -132,15 +132,33 @@ _____
 cat server.pem intermediate-ca1.pem intermediate-ca2.pem >combined-server.pem
 ----
 
-. On the {productname} container host, at the command prompt, rotate the certificates using `mgradm ssl rotate`:
+. On the {productname} container host, at the command prompt, recreate podman certificate secrets passing the files paths:
 
 +
+
 [source,shell]
 ----
-mgradm ssl rotate \
-   --ssl-ca-root $path_to_ca_certificate \
-   --ssl-server-cert $path_to_combined_server_certificate \
-   --ssl-server-key $path_to_server_key
+podman secret create --replace uyuni-ca $path_to_ca_certificate
+podman secret create --replace uyuni-cert $path_to_combined_server_certificate
+podman secret create --replace uyuni-key $path_to_server_key
+
+podman secret create --replace uyuni-db-ca $path_to_database_ca_certificate
+podman secret create --replace uyuni-db-cert $path_to_combined_database_certificate
+podman secret create --replace uyuni-db-key $path_to_database_key
+----
+_____
+
+
+.Procedure: Restarting the server
+[role=procedure]
+_____
+. On the container host, restart the server to pick up the changes:
+
++
+
+[source,shell]
+----
+mgradm restart
 ----
 _____
 
