@@ -2,12 +2,12 @@
 [[workflow-cert-rotation-acme]]
 = Set up and rotate certificates using ACME
 :description: Setup and automatic rotation of third-party SSL/TLS certificates using the ACME protocol in containerized environments.
-:revdate: 2026-08-04
+:revdate: 2026-08-28
 :page-revdate: {revdate}
 :page-author: SUSE Product & Solution Documentation Team
 :page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
 :page-product-name: SUSE Multi-Linux Manager
-:page-product-version: 5.2
+:page-product-version: 5.1
 
 Set up and automatically rotate third-party SSL/TLS certificates using the ACME protocol (such as Let's Encrypt) on containerized installations.
 
@@ -68,7 +68,7 @@ export CF_Account_ID="your_cloudflare_account_id"
 Replace with credentials for your specific DNS provider.
 ====
 
-. Issue the certificate and define `--reloadcmd` to rotate the certificates using `mgradm ssl rotate` on renewal:
+. Issue the certificate and define `--reloadcmd` to replace secrets and restart services on renewal:
 +
 [source,shell]
 ----
@@ -82,15 +82,15 @@ Replace with credentials for your specific DNS provider.
    --key-file /root/ssl-build/server.key \
    --ca-file /root/ssl-build/ca.pem \
    --fullchain-file /root/ssl-build/fullchain.pem \
-   --reloadcmd "mgradm ssl rotate --ssl-ca-root /root/ssl-build/ca.pem --ssl-server-cert /root/ssl-build/fullchain.pem --ssl-server-key /root/ssl-build/server.key"
+   --reloadcmd "podman secret create --replace uyuni-ca /root/ssl-build/ca.pem && podman secret create --replace uyuni-cert /root/ssl-build/fullchain.pem && podman secret create --replace uyuni-key /root/ssl-build/server.key && podman secret create --replace uyuni-db-ca /root/ssl-build/ca.pem && podman secret create --replace uyuni-db-cert /root/ssl-build/fullchain.pem && podman secret create --replace uyuni-db-key /root/ssl-build/server.key && mgradm restart"
 ----
 
-. Verify the initial run completes successfully, updating the server and database certificates and restarting the services.
+. Verify the initial run completes successfully, replaces secrets, and restarts the server.
 _____
 
 [NOTE]
 ====
-The `mgradm ssl rotate` command automatically reads the server CA, certificate, and key, updates both the server (`uyuni-ca`, `uyuni-cert`, `uyuni-key`) and database (`uyuni-db-ca`, `uyuni-db-cert`, `uyuni-db-key`) secrets, and restarts the services.
+Reusing the same certificates for the database container is recommended, as handled in the command above.
 ====
 
 
