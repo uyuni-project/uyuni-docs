@@ -1,0 +1,228 @@
+[[mqtt-event-publishing]]
+= MQTT Event Publishing
+:revdate: 2026-08-29
+:page-revdate: {revdate}
+
+{productname} can publish lifecycle events to an MQTT broker as they happen.
+External tools can then subscribe to those events instead of polling the XML-RPC API on a timer.
+
+Publishing is disabled by default.
+No connection is opened and no threads are started unless you enable it explicitly.
+
+
+[[mqtt.overview]]
+== Feature Overview
+
+When enabled, {productname} publishes nine event types to an MQTT broker.
+
+Five events originate from the Salt reactor, and are only produced when a registered client causes them:
+
+* `systems/registered`
+* `jobs/returned`
+* `states/applied`
+* `images/deployed`
+* `batches/started`
+
+Four events are published directly by {productname} when the corresponding action occurs in the Web UI or through the API:
+
+* `users/created`
+* `orgs/created`
+* `clm/build_started`
+* `clm/build_completed`
+
+
+[[mqtt.topics]]
+== Topic Structure
+
+Events are published to topics of this form:
+
+----
+uyuni/<server-fqdn>/<category>/<event>
+----
+
+For example:
+
+----
+uyuni/server.example.com/systems/registered
+uyuni/server.example.com/jobs/returned
+----
+
+The fully qualified domain name is taken from the `java.hostname` setting in `rhn.conf`.
+Including it in the topic allows several {productname} Servers to publish to a single broker while subscribers can still tell them apart.
+
+To subscribe to one event type across every server, use a single-level wildcard:
+
+----
+uyuni/+/jobs/returned
+----
+
+To subscribe to everything from one server, name it:
+
+----
+uyuni/server.example.com/#
+----
+
+
+[[mqtt.payload]]
+== Message Format
+
+Every message uses the same envelope, so a subscriber parses one structure regardless of the event type.
+
+----
+{
+  "eventId":   "0f1c9d54-8b7a-4a1e-9c33-2b6f0a1d77e2",
+  "timestamp": "2026-08-28T09:36:29.652Z",
+  "topic":     "uyuni/server.example.com/jobs/returned",
+  "data": {
+    "minionId": "client.example.com",
+    "jid":      "20260828093628832627",
+    "fun":      "state.apply",
+    "success":  true,
+    "retcode":  0
+  }
+}
+----
+
+`eventId`:: A unique identifier for this message.
+`timestamp`:: The publication time in UTC.
+`topic`:: The topic the message was published to, repeated for convenience.
+`data`:: Fields specific to the event type.
+
+[NOTE]
+====
+Activation keys are never included in event payloads.
+An activation key can be used to register systems, so publishing one to a broadcast topic would distribute a credential.
+====
+
+
+[[mqtt.configuration]]
+== Configuration Parameters
+
+Publishing is configured with JVM system properties on the {productname} Server.
+
+[cols="1,1,3", options="header"]
+|===
+| Parameter | Default | Description
+
+| `uyuni.mqtt.enabled`
+| `false`
+| Master switch.
+Publishing is inactive unless this is `true`.
+
+| `uyuni.mqtt.broker.url`
+| `tcp://mosquitto:1883`
+| Broker connection URL.
+Use `tcp://` for plain connections.
+
+| `uyuni.mqtt.broker.username`
+| none
+| User name for broker authentication.
+Can also be supplied through the `UYUNI_MQTT_BROKER_USERNAME` environment variable.
+
+| `uyuni.mqtt.broker.password`
+| none
+| Password for broker authentication.
+Can also be supplied through the `UYUNI_MQTT_BROKER_PASSWORD` environment variable.
+
+| `uyuni.mqtt.events.enabled`
+| all events
+| Comma-separated list restricting which events are published, for example `jobs/returned,systems/registered`.
+When unset, all events are published.
+
+| `uyuni.mqtt.qos`
+| `1`
+| MQTT quality of service, `0`, `1` or `2`.
+Values outside that range fall back to `1`.
+
+| `uyuni.mqtt.queue.limit`
+| `10000`
+| Maximum number of pending publications held in memory.
+See <<mqtt.delivery>>.
+|===
+
+[IMPORTANT]
+====
+Passing the broker password as a system property makes it visible in the process list and in `catalina.out`, which logs every command line argument.
+Use the `UYUNI_MQTT_BROKER_PASSWORD` environment variable instead on any system where that matters.
+====
+
+
+[[mqtt.procedure]]
+== Enabling Event Publishing
+
+.Procedure: Enabling MQTT event publishing
+. Make an MQTT broker reachable from the {productname} Server.
+Any MQTT 3.1.1 broker is suitable.
+. On the {productname} Server, create a configuration file for the Tomcat options, for example `/etc/tomcat/conf.d/mqtt.conf`:
++
+----
+JAVA_OPTS="$JAVA_OPTS -Duyuni.mqtt.enabled=true \
+  -Duyuni.mqtt.broker.url=tcp://broker.example.com:1883 \
+  -Duyuni.mqtt.broker.username=uyuni-publisher"
+----
+. Restrict the file so that only Tomcat can read it:
++
+----
+chown root:tomcat /etc/tomcat/conf.d/mqtt.conf
+chmod 640 /etc/tomcat/conf.d/mqtt.conf
+----
+. Supply the broker password through the environment rather than the command line.
+. Restart Tomcat:
++
+----
+systemctl restart tomcat
+----
+. Confirm the connection in `/var/log/rhn/rhn_web_ui.log`.
+
+[NOTE]
+====
+Connection messages are logged at `INFO` level.
+The default root logger is `warn`, so you may need to raise the level for `com.suse.manager.reactor.mqtt` in `log4j2.xml` to see them.
+====
+
+For a containerized deployment, place the configuration file in the `etc-tomcat` volume so that it survives container recreation.
+
+
+[[mqtt.delivery]]
+== Delivery Behavior
+
+Understand these characteristics before relying on the event stream.
+
+Asynchronous::
+Publishing runs on a dedicated executor.
+A slow or unreachable broker does not block the reactor or any Web UI request.
+
+Published after commit::
+An event is only published once the database transaction that produced it has committed.
+A transaction that rolls back produces no event.
+
+Bounded queue::
+Pending publications are held in a queue limited by `uyuni.mqtt.queue.limit`.
+When the queue is full, the oldest pending publication is discarded and a warning is logged.
+
+Not persisted::
+Events are not stored.
+If the broker is unavailable for longer than the queue can absorb, those events are lost.
+Subscribers requiring a complete history should reconcile against the API.
+
+Automatic reconnection::
+The client reconnects on its own after a broker outage.
+
+
+[[mqtt.verify]]
+== Verifying the Configuration
+
+Subscribe with any MQTT client and trigger an event.
+
+----
+mosquitto_sub -h broker.example.com -t 'uyuni/#' -v \
+  -u uyuni-subscriber -P <password>
+----
+
+Creating a user in the Web UI produces:
+
+----
+uyuni/server.example.com/users/created {"eventId":"...","timestamp":"...", ...}
+----
+
+If nothing arrives, check that `uyuni.mqtt.enabled` is `true`, that the broker is reachable from the {productname} Server, and that the broker's access control list permits the publishing account to write to `uyuni/#`.
