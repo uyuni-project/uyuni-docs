@@ -546,12 +546,16 @@ tasks:
   stage-content:
     desc: "[Dev] Stage translated content for build (en base + lang overlay → translations/{lang}/modules/)"
     deps: [setup]
+    # Stage once per run: pdf:all invokes pdf:mlm and pdf:uyuni as parallel deps,
+    # and a concurrent removal of the tree makes the other invocation's cp fail.
+    run: once
     cmds:
       - for: {var: LANGUAGES}
         cmd: |
           LANG="{{.ITEM}}"
           CONTENT_DIR=$({{.DOCBUILD}} get-content-dir -lang "${LANG}")
           echo "==> Staging content for ${LANG} (source: ${CONTENT_DIR}/modules/)"
+          rm -rf translations/${LANG}/modules
           mkdir -p translations/${LANG}/modules
           cp -a en/modules/. translations/${LANG}/modules/
           if [ -d "${CONTENT_DIR}/modules" ]; then
