@@ -1,3 +1,4 @@
+- Fixed noindex guards so product-specific pages no longer appear in the other product's documentation search
 - Documented deprecation and support limitations of plain salt-minion manual registration (bsc#1275658)
 - Added warning about known issues in Multi-Linux Manager 5.0 and 5.1 server upgrade guides (bsc#1274875)
 - Corrected and restored Debian 12 packages in the OpenSCAP packages table (bsc#1269316)
