@@ -1,3 +1,4 @@
+- Added a CI check for the revision date of changed documentation pages
 - Fixed noindex guards so product-specific pages no longer appear in the other product's documentation search
 - Documented deprecation and support limitations of plain salt-minion manual registration (bsc#1275658)
 - Added warning about known issues in Multi-Linux Manager 5.0 and 5.1 server upgrade guides (bsc#1274875)
