@@ -196,7 +196,11 @@ def get_changed_files(base_ref, repo_root):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Check :revdate: on changed AsciiDoc pages"
+        description="Check :revdate: on changed AsciiDoc pages",
+        epilog="A page fails if its :revdate: is absent, is not in the "
+        "YYYY-MM-DD format, is not a correct calendar date, has no paired "
+        ":page-revdate:, is in the future, or is more than --grace-days days "
+        "older than the last change in git.",
     )
     parser.add_argument(
         "--grace-days",

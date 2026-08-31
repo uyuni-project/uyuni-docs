@@ -3,7 +3,11 @@
 # requires-python = ">=3.9"
 # dependencies = []
 # ///
-"""Tests for check_revdate.py."""
+"""
+Tests for check_revdate.py.
+
+Run with: task test:revdate
+"""
 
 import importlib.util
 import os
@@ -30,7 +34,11 @@ GIT_IDENTITY = [
 
 
 def git_env(author_date=None, committer_date=None):
-    """Pin identity, config and clock."""
+    """
+    Pin identity, config and clock.
+
+    Without this, the tests fail on a machine with different git config.
+    """
     env = os.environ.copy()
     env["GIT_CONFIG_GLOBAL"] = os.devnull
     env["GIT_CONFIG_SYSTEM"] = os.devnull
