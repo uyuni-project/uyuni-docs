@@ -4,13 +4,14 @@
 :page-revdate: {revdate}
 
 When configuring LDAP authentication in {productname}, the directory server must use specific group object classes and attributes depending on your server type.
+Without matching this structure, group resolution returns no results even when authentication succeeds.
 
 == Required Group Structure
 
 .OpenLDAP and FreeIPA
 For *OpenLDAP* and *FreeIPA* server types, groups must use:
 
-* Object class: `groupOfNames` or `groupOfUniqueNames`
+* Object class: `groupOfNames`
 * Member attribute: `member` with **full user DN values**
 
 .Example OpenLDAP Group Entry
@@ -28,6 +29,8 @@ member: uid=bob,ou=People,dc=example,dc=com
 The `member` attribute must contain the **complete Distinguished Name (DN)** of each user, not just the username.
 
 For example: `uid=alice,ou=People,dc=example,dc=com`, not `alice`.
+
+Groups that use `posixGroup` with `memberUid` (username only) are **not** matched by the default filters.
 ====
 
 .Active Directory
@@ -56,24 +59,26 @@ Each server type has a default group filter that {productname} uses to find a us
 
 The `{userDn}` placeholder is replaced with the user's full DN at search time.
 
-== Using posixGroup (Custom Configuration)
+== Custom Group Filters
 
-If your directory uses POSIX groups (`posixGroup` with `memberUid` attribute), you must configure a **custom group filter**:
+You can override the default group filter if your directory uses a compatible DN-based membership model.
+The custom filter **must** contain the `{userDn}` placeholder.
 
-.Example Custom Filter for posixGroup
+.Example Custom Filter for groupOfUniqueNames
 [source]
 ----
-(&(objectClass=posixGroup)(memberUid={login}))
+(&(objectClass=groupOfUniqueNames)(uniqueMember={userDn}))
 ----
 
 [NOTE]
 ====
-The `{login}` placeholder is replaced with the username (not the full DN).
+A filter such as `(&(objectClass=posixGroup)(memberUid={login}))` is **not** supported for group resolution.
+Group filters require `{userDn}`; they do not substitute `{login}`.
 
-The group's `cn` attribute is used as the group name for role mapping.
+If your directory only has `posixGroup`/`memberUid` entries, convert those groups to `groupOfNames` with full DN `member` values, or add equivalent `groupOfNames` groups for {productname}.
 ====
 
-.Example posixGroup Entry
+.Example posixGroup Entry That Will Not Match by Default
 [source,ldif]
 ----
 dn: cn=uyuni-admins,ou=Groups,dc=example,dc=com
@@ -86,9 +91,9 @@ memberUid: bob
 
 == Troubleshooting Group Resolution
 
-If group resolution is not working:
+If authentication works but group resolution returns no groups:
 
-. Use the *Test Group Resolution* function in menu:Admin[Setup Wizard > LDAP] to verify group membership for a test user.
-. Check that your groups match the required object class for your server type.
-. Verify that the member attribute uses **full DNs** (for `groupOfNames`) or **usernames** (for `posixGroup`).
-. If using a custom directory schema, configure a custom group filter that matches your structure.
+. Confirm the group uses `groupOfNames` (or Active Directory `group`) and `member` values are full user DNs.
+. Confirm the group base DN covers the organizational unit that contains those groups.
+. If you configured a custom group filter, confirm it includes `{userDn}` and matches your object class and membership attribute.
+. Use the *Test Group Resolution* action in menu:Admin[Setup Wizard > LDAP] once LDAP servers are configured in the Web UI.
