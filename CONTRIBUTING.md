@@ -135,8 +135,8 @@ To check your changes before you push them:
 task validate:revdate
 ```
 
-This command needs [uv](https://docs.astral.sh/uv/) on your computer. If you do
-not have uv, use a container instead:
+This command uses [uv](https://docs.astral.sh/uv/) if you have it, and `python3`
+if you do not. If you have neither, use a container:
 
 ```bash
 task container:validate:revdate

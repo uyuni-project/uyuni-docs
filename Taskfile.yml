@@ -63,6 +63,9 @@ vars:
   BOOKS: "installation-and-upgrade client-configuration administration reference retail common-workflows specialized-guides legal"
   CONTAINER_CMD:
     sh: which podman 2>/dev/null || which docker 2>/dev/null || echo "podman"
+  # Use uv if it is present.
+  PYTHON_CMD:
+    sh: which uv >/dev/null 2>&1 && echo "uv run" || echo "python3"
   BUILDER_IMAGE: "ghcr.io/uyuni-project/uyuni-docs-builder:latest"
   # The builder image has no Python.
   PYTHON_IMAGE: "registry.suse.com/bci/python:3.11"
@@ -519,14 +522,14 @@ tasks:
   # Validation
   # --------------------------------------------------------------------------
   validate:revdate:
-    desc: "[Local] Check :revdate: on changed AsciiDoc pages (needs uv)"
+    desc: "[Local] Check :revdate: on changed AsciiDoc pages (needs uv or python3)"
     cmds:
-      - uv run scripts/check_revdate.py --grace-days 7 {{.CLI_ARGS}}
+      - "{{.PYTHON_CMD}} scripts/check_revdate.py --grace-days 7 {{.CLI_ARGS}}"
 
   test:revdate:
     desc: "[Dev] Run the unit tests for scripts/check_revdate.py"
     cmds:
-      - uv run scripts/test_check_revdate.py
+      - "{{.PYTHON_CMD}} scripts/test_check_revdate.py"
 
   validate:mlm:
     desc: "[Local] Antora xref validation — MLM"
