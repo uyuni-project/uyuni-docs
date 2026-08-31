@@ -145,6 +145,22 @@ class CheckFileTests(unittest.TestCase):
         errors = self.repo.check(PAGE, today=day)
         self.assertTrue(any("in the future" in message for _, message in errors))
 
+    def test_tomorrow_is_allowed_for_authors_ahead_of_utc(self):
+        """
+        The runner clock is UTC. Someone in UTC+2 stamping their own local date
+        is a day ahead for two hours out of every day, which must not fail.
+        """
+        day = date(2026, 1, 1)
+        self.commit_page(page_body("2026-01-02"), day)
+        errors = self.repo.check(PAGE, today=day)
+        self.assertEqual([m for _, m in errors if "in the future" in m], [])
+
+    def test_two_days_ahead_is_still_an_error(self):
+        day = date(2026, 1, 1)
+        self.commit_page(page_body("2026-01-03"), day)
+        errors = self.repo.check(PAGE, today=day)
+        self.assertTrue(any("in the future" in message for _, message in errors))
+
     def test_missing_page_revdate_is_an_error(self):
         day = date(2026, 1, 1)
         self.commit_page(page_body("2026-01-01", page_revdate=None), day)
@@ -194,21 +210,24 @@ class CheckFileTests(unittest.TestCase):
             self.repo.check(PAGE, grace_days=7, today=date(2026, 3, 2)), []
         )
 
-    def test_include_fragment_under_pages_is_skipped(self):
+    def test_include_fragment_under_pages_is_an_error(self):
         """
-        A file under pages/ with no document title is included into a page,
-        not published as one. Requiring a :revdate: there would override the
-        including page's own value at the include point.
+        Antora publishes every .adoc under pages/, so a titleless file becomes
+        an orphan page at its own URL. This is how
+        administration/pages/image-mgmt-container-inspection.adoc came to be
+        published twice; the check exists partly to stop that recurring.
         """
         day = date(2026, 1, 1)
         fragment = "==== Image Inspection\n\nSome included content.\n"
         self.commit_page(fragment, day)
-        self.assertIsNone(self.repo.check(PAGE, today=day))
+        errors = self.repo.check(PAGE, today=day)
+        self.assertTrue(any("no document title" in m for _, m in errors))
 
     def test_a_title_with_no_text_does_not_count_as_a_document_title(self):
         day = date(2026, 1, 1)
         self.commit_page("=\n\nNot a real title.\n", day)
-        self.assertIsNone(self.repo.check(PAGE, today=day))
+        errors = self.repo.check(PAGE, today=day)
+        self.assertTrue(any("no document title" in m for _, m in errors))
 
     def test_title_after_an_anchor_and_blank_line_is_found(self):
         """workflow-liberate-rhel-with-secureboot.adoc has this shape."""
@@ -317,6 +336,32 @@ class BaseRefTests(unittest.TestCase):
             check_revdate.resolve_base_ref("origin/manager-5.2", self.root),
             "origin/manager-5.2",
         )
+
+
+class ChangedFileTests(unittest.TestCase):
+    """
+    Discovery has to see renamed pages. Git detects renames by default, so a page
+    that is moved and edited in one commit is reported as R, not M, and an
+    --diff-filter that omits R would let it skip the check entirely.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.repo = RepoFixture(self._tmp.name)
+        self.addCleanup(self._tmp.cleanup)
+
+    def test_renamed_page_is_discovered(self):
+        day = date(2026, 1, 1)
+        self.repo.write(PAGE, page_body("2026-01-01"))
+        self.repo.commit(day)
+        self.repo._git("branch", "base")
+
+        moved = "en/modules/administration/pages/renamed.adoc"
+        self.repo._git("mv", PAGE, moved)
+        self.repo.commit(day, message="rename")
+
+        changed = check_revdate.get_changed_files("base", self.repo.root)
+        self.assertIn(moved, changed)
 
 
 if __name__ == "__main__":

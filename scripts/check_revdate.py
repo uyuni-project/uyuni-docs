@@ -12,9 +12,9 @@ is out of scope by construction. Partials are excluded deliberately: an
 attribute entry inside an included file overrides the same attribute in the
 including page, so a :revdate: in a partial is actively wrong.
 
-Files under pages/ that have no level-1 heading are skipped for the same
-reason. A file with no document title is an include fragment, not a page --
-this is the rule scripts/revdate.sh already applies when stamping dates.
+A file under pages/ with no level-1 heading also fails. Antora publishes every
+.adoc under pages/, so such a file becomes a titleless orphan page at its own
+URL; it is an include fragment that belongs in the module's partials/.
 
 A page fails if its :revdate::
   - is missing
@@ -128,13 +128,25 @@ def check_file(rel_path, repo_root, grace_days, today):
     Validate one page.
 
     Returns a list of (line_number, message) errors; empty means the page is
-    fine. Returns None if the file is an include fragment and was not checked.
+    fine.
     """
     full_path = repo_root / rel_path
     content = full_path.read_text(encoding="utf-8")
 
+    # Antora publishes every .adoc under pages/, so a file with no document
+    # title becomes a titleless orphan page at its own URL. That is a real bug
+    # rather than a file to skip: it is exactly how
+    # administration/pages/image-mgmt-container-inspection.adoc came to be
+    # published twice. Include fragments belong in the module's partials/.
     if is_include_fragment(content):
-        return None
+        return [
+            (
+                1,
+                "no document title: Antora would publish this as a titleless "
+                "page of its own. If it is an include fragment, move it to the "
+                "module's partials/ directory",
+            )
+        ]
 
     revdate_match = REVDATE_RE.search(content)
     if revdate_match is None:
@@ -155,9 +167,11 @@ def check_file(rel_path, repo_root, grace_days, today):
 
     errors = []
 
-    if revdate > today:
+    # One day of slack: the runner's clock is UTC, so an author ahead of UTC who
+    # stamps their own local date would otherwise be told it is in the future.
+    if revdate > today + timedelta(days=1):
         errors.append(
-            (line_num, f"revdate ({revdate}) is in the future (today is {today})")
+            (line_num, f"revdate ({revdate}) is in the future (today is {today} UTC)")
         )
 
     page_revdate_match = PAGE_REVDATE_RE.search(content)
@@ -216,8 +230,11 @@ def resolve_base_ref(explicit, repo_root):
 
 def get_changed_files(base_ref, repo_root):
     """Repo-relative paths added or modified relative to the merge base."""
+    # R is included deliberately: git detects renames by default, so a page moved
+    # and edited in the same commit is reported as R, not M, and would otherwise
+    # skip the check entirely. With --name-only, git prints the destination path.
     out = run_git(
-        ["diff", "--name-only", "--diff-filter=AM", f"{base_ref}...HEAD"],
+        ["diff", "--name-only", "--diff-filter=AMR", f"{base_ref}...HEAD"],
         cwd=repo_root,
     )
     if out is None:
@@ -271,6 +288,22 @@ def main():
         p for p in candidates if in_scope(p) and (repo_root / p).exists()
     ]
 
+    # A path the user typed is meant to be checked, so a typo or an out-of-scope
+    # file has to be an error. Silently dropping it would report success for a
+    # file that was never opened. Paths discovered from a diff are different:
+    # most of them are legitimately out of scope and are meant to be ignored.
+    if args.paths:
+        unchecked = sorted(set(candidates) - set(pages))
+        if unchecked:
+            for rel_path in unchecked:
+                reason = (
+                    "does not exist"
+                    if not (repo_root / rel_path).exists()
+                    else f"is not under {SCOPE_GLOB}"
+                )
+                print(f"error: {rel_path} {reason}", file=sys.stderr)
+            return 2
+
     if not pages:
         print(f"No AsciiDoc pages under {SCOPE_GLOB} to check.")
         return 0
@@ -282,18 +315,12 @@ def main():
 
     today = date.today()
     error_count = 0
-    skipped = 0
     for rel_path in sorted(pages):
-        errors = check_file(rel_path, repo_root, args.grace_days, today)
-        if errors is None:
-            skipped += 1
-            continue
-        for line_num, message in errors:
+        for line_num, message in check_file(
+            rel_path, repo_root, args.grace_days, today
+        ):
             github_annotation("error", rel_path, line_num, message)
             error_count += 1
-
-    if skipped:
-        print(f"Skipped {skipped} include fragment(s) with no document title.")
 
     print()
     if error_count:
@@ -304,7 +331,7 @@ def main():
         )
         return 1
 
-    print(f"All {len(pages) - skipped} checked page(s) have a valid revdate.")
+    print(f"All {len(pages)} checked page(s) have a valid revdate.")
     return 0
 
 
