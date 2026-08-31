@@ -3,17 +3,7 @@
 # requires-python = ">=3.9"
 # dependencies = []
 # ///
-"""
-Tests for check_revdate.py.
-
-Run with:  task test:revdate
-       or: uv run scripts/test_check_revdate.py
-
-Deliberately hermetic: every commit gets an explicit identity and an explicit
-author/committer date, and nothing depends on the ambient git config or on
-today's real date. Without that, these would fail on a machine with no
-user.email configured.
-"""
+"""Tests for check_revdate.py."""
 
 import importlib.util
 import os
@@ -40,13 +30,7 @@ GIT_IDENTITY = [
 
 
 def git_env(author_date=None, committer_date=None):
-    """
-    Environment for a test commit.
-
-    Inherits the real environment so git stays findable, then pins everything
-    that would otherwise vary: the user's global/system config is ignored, and
-    the commit clock is fixed.
-    """
+    """Pin identity, config and clock."""
     env = os.environ.copy()
     env["GIT_CONFIG_GLOBAL"] = os.devnull
     env["GIT_CONFIG_SYSTEM"] = os.devnull
@@ -68,7 +52,7 @@ def page_body(revdate=None, page_revdate="{revdate}", title="Example"):
 
 
 class RepoFixture:
-    """A throwaway git repo with a controllable commit clock."""
+    """A throwaway git repo with fixed dates."""
 
     def __init__(self, root):
         self.root = Path(root)
@@ -123,7 +107,7 @@ class CheckFileTests(unittest.TestCase):
         self.commit_page(page_body(None), day)
         errors = self.repo.check(PAGE, today=day)
         self.assertEqual(len(errors), 1)
-        self.assertIn("missing :revdate:", errors[0][1])
+        self.assertIn(":revdate: attribute is absent", errors[0][1])
 
     def test_wrong_format_is_an_error(self):
         day = date(2026, 1, 1)
@@ -137,7 +121,7 @@ class CheckFileTests(unittest.TestCase):
         self.commit_page(page_body("2025-02-30"), day)
         errors = self.repo.check(PAGE, today=day)
         self.assertEqual(len(errors), 1)
-        self.assertIn("not a real calendar date", errors[0][1])
+        self.assertIn("not a correct calendar date", errors[0][1])
 
     def test_future_revdate_is_an_error(self):
         day = date(2026, 1, 1)
@@ -146,10 +130,7 @@ class CheckFileTests(unittest.TestCase):
         self.assertTrue(any("in the future" in message for _, message in errors))
 
     def test_tomorrow_is_allowed_for_authors_ahead_of_utc(self):
-        """
-        The runner clock is UTC. Someone in UTC+2 stamping their own local date
-        is a day ahead for two hours out of every day, which must not fail.
-        """
+        """An author east of UTC writes tomorrow."""
         day = date(2026, 1, 1)
         self.commit_page(page_body("2026-01-02"), day)
         errors = self.repo.check(PAGE, today=day)
@@ -173,7 +154,7 @@ class CheckFileTests(unittest.TestCase):
         self.commit_page(page_body("2026-01-01", page_revdate="2026-01-01"), day)
         errors = self.repo.check(PAGE, today=day)
         self.assertEqual(len(errors), 1)
-        self.assertIn("must be exactly", errors[0][1])
+        self.assertIn("page-revdate must be", errors[0][1])
 
     def test_revdate_within_grace_period_passes(self):
         commit_day = date(2026, 1, 8)
@@ -186,24 +167,20 @@ class CheckFileTests(unittest.TestCase):
         commit_day = date(2026, 1, 9)
         self.commit_page(page_body("2026-01-01"), commit_day)
         errors = self.repo.check(PAGE, grace_days=7, today=commit_day)
-        self.assertTrue(any("stale" in message for _, message in errors))
+        self.assertTrue(any("too old" in message for _, message in errors))
 
     def test_old_page_untouched_since_its_revdate_passes(self):
-        """A page last edited years ago is fine; only changes demand a bump."""
+        """Only a change needs a new revdate."""
         day = date(2020, 5, 10)
         self.commit_page(page_body("2020-05-10"), day)
         self.assertEqual(self.repo.check(PAGE, today=date(2026, 1, 1)), [])
 
     def test_rebase_does_not_make_a_page_look_stale(self):
-        """
-        Committer date moves on rebase, author date does not. Checking the
-        committer date would fail this page after a rebase.
-        """
+        """A rebase moves the committer date only."""
         self.repo.write(PAGE, page_body("2026-01-01"))
         self.repo._git("add", "-A")
         self.repo._git(
             "commit", "-q", "-m", "authored long ago",
-            # committer date is 60 days after the author date, as a rebase leaves it
             env=git_env(date(2026, 1, 1), date(2026, 3, 2)),
         )
         self.assertEqual(
@@ -211,12 +188,7 @@ class CheckFileTests(unittest.TestCase):
         )
 
     def test_include_fragment_under_pages_is_an_error(self):
-        """
-        Antora publishes every .adoc under pages/, so a titleless file becomes
-        an orphan page at its own URL. This is how
-        administration/pages/image-mgmt-container-inspection.adoc came to be
-        published twice; the check exists partly to stop that recurring.
-        """
+        """Antora publishes it as an orphan page."""
         day = date(2026, 1, 1)
         fragment = "==== Image Inspection\n\nSome included content.\n"
         self.commit_page(fragment, day)
@@ -240,7 +212,7 @@ class CheckFileTests(unittest.TestCase):
         self.assertEqual(self.repo.check(PAGE, today=day), [])
 
     def test_ifeval_preamble_before_the_title_is_fine(self):
-        """proxy-conversion-from-client-*.adoc open with an ifeval block."""
+        """proxy-conversion-from-client-*.adoc opens with ifeval."""
         day = date(2026, 1, 1)
         body = (
             "ifeval::[{uyuni-content} == true]\n\n:noindex:\nendif::[]\n\n"
@@ -305,11 +277,7 @@ class ScopeTests(unittest.TestCase):
 
 
 class BaseRefTests(unittest.TestCase):
-    """
-    GITHUB_BASE_REF is set-but-empty on non-pull_request events. The original
-    implementation let that empty string through, producing 'git diff ...HEAD',
-    which compares HEAD to itself, so workflow_dispatch silently passed.
-    """
+    """GITHUB_BASE_REF is empty outside a pull request."""
 
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
@@ -339,11 +307,7 @@ class BaseRefTests(unittest.TestCase):
 
 
 class ChangedFileTests(unittest.TestCase):
-    """
-    Discovery has to see renamed pages. Git detects renames by default, so a page
-    that is moved and edited in one commit is reported as R, not M, and an
-    --diff-filter that omits R would let it skip the check entirely.
-    """
+    """Git reports a moved page as renamed."""
 
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()

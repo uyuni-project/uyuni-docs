@@ -108,8 +108,8 @@ Update `CHANGELOG.md` with your changes. Add new entries at the top:
 
 ## Revision Dates
 
-Every page under `en/modules/*/pages/` carries the date it was last changed,
-written as two attributes immediately below the document title:
+Each page in `en/modules/*/pages/` has the date of its last change. Two
+attributes below the document title give this date:
 
 ```adoc
 = Some Page Title
@@ -117,24 +117,26 @@ written as two attributes immediately below the document title:
 :page-revdate: {revdate}
 ```
 
-When you edit a page, set `:revdate:` to the date you made the change. A pull
-request fails if a page it touches is missing the attributes, has a `revdate`
-that is not `YYYY-MM-DD`, or has one more than seven days older than the
-change itself.
+When you change a page, set `:revdate:` to the date of your change. A pull
+request fails if a page that it changes:
 
-The attributes belong on pages only. Do not add them to a file under
-`partials/`: an attribute entry inside an included file overrides the same
-attribute in the page that includes it, so a `revdate` in a partial silently
-replaces the date of every page it appears in.
+- has no `:revdate:` or no `:page-revdate:`
+- has a `revdate` that is not in the `YYYY-MM-DD` format
+- has a `revdate` more than seven days older than the change
 
-To check your changes before pushing:
+Use these attributes on pages only. Do not add them to a file in `partials/`.
+An attribute entry in an included file replaces the same attribute in the page
+that includes it. A `revdate` in a partial therefore replaces the date of each
+page that includes it.
+
+To check your changes before you push them:
 
 ```bash
 task validate:revdate
 ```
 
-This needs [uv](https://docs.astral.sh/uv/) on your machine; it does not run
-inside the documentation container.
+This command needs [uv](https://docs.astral.sh/uv/) on your computer. It does
+not run in the documentation container.
 
 ---
 
