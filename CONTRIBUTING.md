@@ -135,8 +135,12 @@ To check your changes before you push them:
 task validate:revdate
 ```
 
-This command needs [uv](https://docs.astral.sh/uv/) on your computer. It does
-not run in the documentation container.
+This command needs [uv](https://docs.astral.sh/uv/) on your computer. If you do
+not have uv, use a container instead:
+
+```bash
+task container:validate:revdate
+```
 
 ---
 
