@@ -1,3 +1,4 @@
+- Added a CI check for the revision date of changed documentation pages
 - Removed a link to the SSL CA migration guide, which does not apply to this version
 - Fixed noindex guards so product-specific pages no longer appear in the other product's documentation search
 - Documented deprecation and support limitations of plain salt-minion manual registration (bsc#1275658)
