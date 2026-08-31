@@ -1,3 +1,4 @@
+- Fixed the validate tasks to use Antora's built-in xref checking instead of the removed Antora 2 xref-validator plugin
 - Fixed noindex guards so product-specific pages no longer appear in the other product's documentation search
 - Added ppc64le support for AlmaLinux 8 in Uyuni
 - Corrected the architectures of Rocky Linux 8 in Uyuni, which has no ppc64le build upstream
