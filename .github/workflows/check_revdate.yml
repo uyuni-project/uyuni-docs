@@ -1,0 +1,31 @@
+name: Check revdate on AsciiDoc pages
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+  workflow_dispatch:
+
+# The job only reads the repository.
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/manager-5.2' }}
+
+jobs:
+  check-revdate:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 #v7.0.1
+      with:
+        # The diff needs the full history.
+        fetch-depth: 0
+
+    - name: Set up uv
+      uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d #v10.0.1
+
+    - name: Check revdate fields
+      run: uv run scripts/check_revdate.py --grace-days 7
