@@ -1,0 +1,186 @@
+= {productname} サーバーのアップグレード
+:description: ホストオペレーティングシステムを更新し、zypperを使用してソフトウェアリポジトリを更新することで、シームレスなアップグレードのためにサーバーを構成します。
+:revdate: 2026-02-16
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+アップグレードコマンドを実行する前に、ホストオペレーティングシステムを更新する必要があります。
+ホストオペレーティングシステムを更新すると、{productname}ツールや`mgradm`ツールなども更新されます。
+
+.プロシージャ:サーバーのアップグレード
+[role=procedure]
+____
+
+. `zypper`を使用してソフトウェアリポジトリを更新します:
+
++
+
+[source,shell]
+----
+zypper ref
+----
+
+ifeval::[{mlm-content} == true]
+
+. ホストオペレーティングシステムに応じて、以下のステップに進みます。
+
++
+
+{sl-micro}などのトランザクションシステムの場合: ::
+
++
+
+--
+
+. `transactional-update`を使用して利用可能な更新を適用します:
+
++
+
+[source,shell]
+----
+transactional-update
+----
+
+. 更新が適用された場合、`reboot`します。
+
+--
+
++
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+. `transactional-update`を使用して利用可能な更新を適用します:
+
++
+
+[source,shell]
+----
+transactional-update
+----
+
+. 更新が適用された場合、`reboot`します。
+
+endif::[]
+
+ifeval::[{mlm-content} == true]
+
+{sles} の場合: ::
+
++
+
+--
+
+`zypper`を使用してインストールされたソフトウェアを更新します:
+
+[source,shell]
+----
+zypper up
+----
+
+--
+
+endif::[]
+
++
+
+. {productname}サーバーコンテナは、次のコマンドを使用して更新できます:
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../partials/snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
++
+
+[source,shell]
+----
+mgradm upgrade podman
+----
+
++
+
+このコマンドは、コンテナのステータスを最新に更新してサーバを再起動します。
+
++
+. 未使用のコンテナイメージをクリーンアップし、ディスク容量を解放します。
+
++
+[source,shell]
+----
+podman image prune -a
+----
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-check-rpmnew-rpmsave.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../partials/snippet-check-rpmnew-rpmsave.adoc[]
+endif::[]
+
+____
+
+
+.インポートした証明書の削除
+[NOTE]
+====
+以前のバージョンでは、データベースコンテナには、次のサブジェクト代替名（SAN）が付与されたSSL証明書が必要でした:
+
+* `db`
+* `reportdb`
+
+現在は不要です。
+データベースコンテナには、外部に向けた完全修飾ドメイン名のみが必要です。
+`db`および`reportdb`のSANを持つ古い証明書は引き続き使用できます。
+
+同じ証明書をメインコンテナとデータベースコンテナの両方に使用できます。
+
+新しい証明書をアップグレードコマンドに渡すには、`--ssl-db-ca-root`、`--ssl-db-cert`、および`--ssl-db-key`パラメータを使用します。
+====
+
+.特定のバージョンへのアップグレード
+[NOTE]
+====
+タグパラメータを指定しない場合、最新バージョンへのアップグレードがデフォルトとなります。
+特定のバージョンにアップグレードするには、希望するイメージタグを持つタグパラメータを提供してください。
+====
+
+upgradeコマンドとそのパラメータの詳細については、次のコマンドを使用します。
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../partials/snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
+[source,shell]
+----
+mgradm upgrade podman -h
+----
+
+
+エアギャップ(された)インストールの場合、まずコンテナのRPMパッケージをアップグレードし、その後`mgradm`コマンドを実行します。
+
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-database-backup-volume.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../partials/snippet-database-backup-volume.adoc[leveloffset=+1]
+endif::[]

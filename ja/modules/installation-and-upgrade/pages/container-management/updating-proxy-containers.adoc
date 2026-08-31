@@ -1,0 +1,156 @@
+= {productname} プロキシをアップグレードする
+:description: ホストオペレーティングシステムとSUSE Multi-Linux Managerツールを最新バージョンに更新し、手順に従ってアップグレードしてください。
+:revdate: 2026-02-16
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+アップグレードコマンドを実行する前に、ホストオペレーティングシステムを更新する必要があります。
+ホストオペレーティングシステムを更新すると、{productname}ツールや`mgrpxy`ツールなどのツール類も更新されます。
+
+.プロシージャ:プロキシのアップグレード
+[role=procedure]
+____
+. `zypper`を使用してソフトウェアリポジトリを更新します:
+
++
+
+[source,shell]
+----
+zypper ref
+----
+
+ifeval::[{mlm-content} == true]
+
+. ホストオペレーティングシステムに応じて、以下のステップに進みます。
+
++
+
+{sl-micro}などのトランザクションシステムの場合: ::
+
++
+
+--
+
+. `transactional-update`を使用して利用可能な更新を適用します:
+
++
+
+[source,shell]
+----
+transactional-update
+----
+
+. 更新が適用された場合、`reboot`します。
+
+--
+
++
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+. `transactional-update`を使用して利用可能な更新を適用します:
+
++
+
+[source,shell]
+----
+transactional-update
+----
+
+. 更新が適用された場合、`reboot`します。
+
+endif::[]
+
+
+ifeval::[{mlm-content} == true]
+
+{sles} の場合: ::
+
++
+
+--
+
+`zypper`を使用してインストールされたソフトウェアを更新します:
+
+[source,shell]
+----
+zypper up
+----
+
+--
+
+endif::[]
+
++
+
+. {productname}のプロキシコンテナ（`podman`上で実行中）は、次のコマンドで更新できます:
+
++
+
+[source,shell]
+----
+mgrpxy upgrade podman
+----
+
++
+
+または、Kubernetesクラスタ上で実行されるプロキシコンテナは、次のコマンドを使用して更新できます。
+
++
+
+[source,shell]
+----
+mgrpxy upgrade kubernetes
+----
+
++
+
+. podman上で、未使用のコンテナイメージをクリーンアップしてディスク容量を解放します。
+
++
+
+[source,shell]
+----
+podman image prune -a
+----
++
+
+{kube}では、イメージのクリーンアップが自動的に行われるか、または{kube}ディストリビューションによってその処理方法が異なります。
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-check-rpmnew-rpmsave.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../partials/snippet-check-rpmnew-rpmsave.adoc[]
+endif::[]
+
+____
+
+
+
+
+[NOTE]
+====
+特定のバージョンにアップグレードする際にタグパラメータを指定しない場合、最新バージョンへのアップグレードがデフォルトとなります。
+特定のバージョンにアップグレードするには、希望するイメージタグを持つタグパラメータを指定してください。
+====
+
+[IMPORTANT]
+====
+
+ifeval::[{mlm-content} == true]
+
+特定のタグを使用して特定のコンテナをアップグレードするオプションはありますが、この機能はPTFの適用のみを意図しています。
+endif::[]
+
+通常の状況下では、すべてのプロキシコンテナに同じタグを使用して一貫性を確保することを強くお勧めします。
+====
+
+エアギャップ(された)環境でのインストールでは、まずコンテナのRPMパッケージをアップグレードし、その後`mgrpxy upgrade podman`コマンドを実行します。

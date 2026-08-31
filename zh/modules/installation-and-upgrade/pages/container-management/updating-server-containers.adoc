@@ -1,0 +1,186 @@
+= {productname} 服务器升级
+:description: 通过更新主机操作系统和使用 zypper 刷新软件储存库来配置您的服务器以实现无缝升级
+:revdate: 2026-02-16
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+在运行升级命令之前，必须更新主机操作系统。
+更新主机操作系统还会导致 {productname} 工具的更新，例如 `mgradm` 工具。
+
+.过程：升级升级服务器
+[role=procedure]
+____
+
+. 使用 `zypper` 刷新软件储存库：
+
++
+
+[source,shell]
+----
+zypper ref
+----
+
+ifeval::[{mlm-content} == true]
+
+. 根据主机操作系统执行以下步骤：
+
++
+
+对于 {sl-micro} 等事务型系统：::
+
++
+
+--
+
+. 使用 `transactional-update` 应用可用更新：
+
++
+
+[source,shell]
+----
+transactional-update
+----
+
+. 如果已应用更新，`reboot`。
+
+--
+
++
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+. 使用 `transactional-update` 应用可用更新：
+
++
+
+[source,shell]
+----
+transactional-update
+----
+
+. 如果已应用更新，`reboot`。
+
+endif::[]
+
+ifeval::[{mlm-content} == true]
+
+对于{sles}：::
+
++
+
+--
+
+使用 `zypper` 更新已安装的软件：
+
+[source,shell]
+----
+zypper up
+----
+
+--
+
+endif::[]
+
++
+
+. 可使用以下命令更新 {productname} 服务器容器：
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../partials/snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
++
+
+[source,shell]
+----
+mgradm upgrade podman
+----
+
++
+
+此命令可使容器保持最新状态并重启服务器。
+
++
+. 清理未使用的容器映像以释放磁盘空间：
+
++
+[source,shell]
+----
+podman image prune -a
+----
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-check-rpmnew-rpmsave.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../partials/snippet-check-rpmnew-rpmsave.adoc[]
+endif::[]
+
+____
+
+
+.去除导入的证书
+[NOTE]
+====
+在以前的版本中，数据库容器需要具有以下主题备用名称（SANs）的 SSL 证书：
+
+* `db`
+* `reportdb`
+
+而现在的版本不再有这项要求。
+数据库容器只需要外部完全限定的域名。
+带有 `db` 和 `reportdb` SAN 的旧证书仍然可以使用。
+
+同一证书可以用于主容器和数据库容器。
+
+为了将新证书传递给升级命令，请使用 `--ssl-db-ca-root`、`--ssl-db-cert` 和 `--ssl-db-key` 参数。
+====
+
+.升级到特定版本
+[NOTE]
+====
+如果您未指定标签参数，它将默认为升级到最新版本。
+要升级到特定版本，请提供带有所需镜像标签的标签参数。
+====
+
+要查看 upgrade 命令及其参数的详细信息，请使用以下命令：
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../partials/snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
+[source,shell]
+----
+mgradm upgrade podman -h
+----
+
+
+对于隔离的安装，请先升级容器 RPM 软件包，然后运行 `mgradm` 命令。
+
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-database-backup-volume.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../partials/snippet-database-backup-volume.adoc[leveloffset=+1]
+endif::[]
