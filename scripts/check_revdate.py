@@ -23,6 +23,9 @@ DOC_TITLE_RE = re.compile(r"^= \S", re.MULTILINE)
 
 PAGE_REVDATE_EXPECTED = "{revdate}"
 
+# This branch is manager-5.2.
+DEFAULT_BASE_REF = "manager-5.2"
+
 
 def github_annotation(level, file_path, line, message):
     """Print one error, for CI or locally."""
@@ -168,7 +171,7 @@ def resolve_base_ref(explicit, repo_root):
     base_ref = os.environ.get("GITHUB_BASE_REF") or ""
     base_ref = base_ref.strip()
     if not base_ref:
-        base_ref = "master"
+        base_ref = DEFAULT_BASE_REF
 
     if not base_ref.startswith("origin/"):
         remote_ref = f"origin/{base_ref}"
@@ -213,7 +216,7 @@ def main():
         "--base-ref",
         default=None,
         help="the ref to compare with (default: $GITHUB_BASE_REF, "
-        "or origin/master)",
+        f"or origin/{DEFAULT_BASE_REF})",
     )
     parser.add_argument(
         "paths",

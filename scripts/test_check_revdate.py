@@ -292,14 +292,15 @@ class BaseRefTests(unittest.TestCase):
         self.root = Path(self._tmp.name)
         self.addCleanup(self._tmp.cleanup)
 
-    def test_empty_env_var_falls_back_to_master(self):
+    def test_empty_env_var_falls_back_to_the_default(self):
         import os
 
         previous = os.environ.get("GITHUB_BASE_REF")
         os.environ["GITHUB_BASE_REF"] = ""
         try:
             self.assertEqual(
-                check_revdate.resolve_base_ref(None, self.root), "master"
+                check_revdate.resolve_base_ref(None, self.root),
+                check_revdate.DEFAULT_BASE_REF,
             )
         finally:
             if previous is None:
