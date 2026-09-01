@@ -109,10 +109,10 @@ export -f build_one
 echo "==> ${PRODUCT} PDFs — languages: ${LANGUAGES} — ${JOBS} at a time"
 
 # Stage each language one time, and wait for the result. The books below run
-# with STAGE=0 and need this step. It writes entities.adoc, which 'task
-# translations' removes with the rest of the translations tree, and it copies
-# the English fallback modules. Staging in each book makes all the books of a
-# language write these shared files at the same time.
+# with STAGE=0 and need this step. It writes entities-{product}.adoc, which
+# 'task translations' removes with the rest of the translations tree, and it
+# copies the English fallback modules. Staging in each book makes all the books
+# of a language write these shared files at the same time.
 task pdf-stage PRODUCT="${PRODUCT}" LANGUAGES="${LANGUAGES}" || exit 1
 
 for lang in ${LANGUAGES}; do
