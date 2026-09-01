@@ -37,7 +37,6 @@
 #    task container:draft:uyuni-webui               Uyuni HTML — product WebUI (all languages)
 #    task container:draft:all                       All four HTML output targets
 #    (All draft/publish/pdf container tasks accept LANGUAGES=en or LANGUAGES="en ja" to limit languages)
-#    (It is LANGUAGES, not LANG. LANG is the POSIX locale and selects no documentation language.)
 #    task container:pdf:mlm             All MLM PDFs
 #    task container:pdf:uyuni           All Uyuni PDFs
 #    task container:pdf:all             All PDFs
@@ -114,8 +113,7 @@ tasks:
         echo "    Example:  task container:draft:mlm-dsc LANGUAGES=en"
         echo "    Example:  task draft:uyuni-website LANGUAGES=\"en ja\""
         echo "    Example:  task publish:dsc LANGUAGES=en"
-        echo "    Note:     it is LANGUAGES, not LANG — LANG is the POSIX locale and selects"
-        echo "              nothing here. Every task, including 'task pdf', takes LANGUAGES."
+        echo "    Every task, including 'task pdf', takes LANGUAGES."
         echo ""
         echo "  ── LOCAL  (Go + Task + Antora + asciidoctor-pdf installed locally) ──────────"
         echo "    publish:dsc              Full MLM publish — HTML (d.s.c branding) + PDFs + zips"
@@ -153,30 +151,26 @@ tasks:
         echo ""
 
   # --------------------------------------------------------------------------
-  # Guard — LANGUAGES selects the documentation languages. LANG does not, and
-  # never did: it is the POSIX locale variable, every shell sets it, and Task
-  # exposes the environment as template variables. Nothing here reads LANG as a
-  # documentation code, so a stray LANG= is silently ignored and the build
-  # quietly does every language.
+  # Guard — LANGUAGES selects the documentation languages.
   #
-  # Only bare documentation codes trip this. An inherited locale is
-  # 'en_US.UTF-8' or 'C', never a bare 'en', so a normal shell never trips it.
+  # Matches bare documentation codes only, so an inherited POSIX locale
+  # ('en_US.UTF-8', 'C') passes straight through. The value reaches the script
+  # as an environment variable rather than as templated text, so a LANG holding
+  # shell metacharacters is compared, not executed.
   # --------------------------------------------------------------------------
   _guard-lang:
     internal: true
     silent: true
+    env:
+      GUARD_LANG: '{{.LANG}}'
     cmds:
       - |
         for L in {{.DOC_LANGUAGES}}; do
-          [ "$L" = "{{.LANG}}" ] || continue
-          echo ""                                                       >&2
-          echo "  ERROR: LANG={{.LANG}} does not select a documentation language." >&2
-          echo "         This build would have run every language:"     >&2
-          echo "           {{.LANGUAGES}}"                              >&2
-          echo ""                                                       >&2
-          echo "         Use LANGUAGES instead:"                        >&2
-          echo "           task <target> LANGUAGES={{.LANG}}"           >&2
-          echo ""                                                       >&2
+          [ "$L" = "${GUARD_LANG:-}" ] || continue
+          echo ""                                                          >&2
+          echo "  ERROR: use LANGUAGES to select documentation languages." >&2
+          echo "           task <target> LANGUAGES=${GUARD_LANG}"          >&2
+          echo ""                                                          >&2
           exit 1
         done
 
@@ -283,9 +277,8 @@ tasks:
   # Usage: task pdf BOOK=administration PRODUCT=mlm LANGUAGES=en
   #
   # Like every other task, this iterates LANGUAGES and defaults to all of them.
-  # LANG_CODE below is the documentation code; LANG is left alone so it keeps
-  # meaning what it means everywhere else — the POSIX locale, which this task
-  # does set, to the value in LOCALE, for date formatting and asciidoctor-pdf.
+  # LANG_CODE is the documentation code. LANG is the POSIX locale, set from
+  # LOCALE for date formatting and asciidoctor-pdf.
   # --------------------------------------------------------------------------
   pdf:
     desc: "[Local] Build one PDF book — usage: task pdf BOOK=<book> PRODUCT=<product> LANGUAGES=<langs>"
