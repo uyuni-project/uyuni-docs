@@ -186,9 +186,7 @@ task pdf BOOK=installation-and-upgrade PRODUCT=uyuni LANGUAGES=ja
 task pdf BOOK=administration PRODUCT=mlm LANGUAGES="en ja"
 ```
 
-Without `LANGUAGES=` this builds the book in every language. It is `LANGUAGES`,
-not `LANG`: `LANG` is the POSIX locale variable, every shell sets it, and no
-task reads it as a documentation language.
+Without `LANGUAGES=` this builds the book in every language.
 
 Available books: `installation-and-upgrade` `client-configuration` `administration` `reference` `retail` `common-workflows` `specialized-guides` `legal`
 
