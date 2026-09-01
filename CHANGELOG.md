@@ -1,4 +1,7 @@
 - Restored the server and proxy maintenance update procedures and defined maintenance update, upgrade and migration terminology
+- Added a CI check for the revision date of changed documentation pages
+- Removed a second copy of the container image inspection section, which was published as a page with no title
+- Fixed the validate tasks to use Antora's built-in xref checking instead of the removed Antora 2 xref-validator plugin
 - Fixed noindex guards so product-specific pages no longer appear in the other product's documentation search
 - Documented deprecation and support limitations of plain salt-minion manual registration (bsc#1275658)
 - Added warning about known issues in Multi-Linux Manager 5.0 and 5.1 server upgrade guides (bsc#1274875)
