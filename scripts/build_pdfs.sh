@@ -47,7 +47,7 @@ build_one() {
         flock 9
         cat "${log}"
         if [ ${rc} -ne 0 ] ; then
-            echo "==> FAILED: ${PRODUCT} / ${lang} / ${book} (exit ${rc})"
+            echo "==> FAILED: ${PRODUCT} / ${lang} / ${book} (exit ${rc})" >&2
         fi
     } 9< "${WORKDIR}/lock"
 
@@ -67,7 +67,7 @@ for lang in ${LANGUAGES}; do
     for book in ${BOOKS}; do
         printf '%s %s\n' "${book}" "${lang}"
     done
-done | xargs -P "${JOBS}" -L 1 bash -c 'build_one "$1" "$2"' bash
+done | xargs -r -P "${JOBS}" -L 1 bash -c 'build_one "$1" "$2"' bash
 rc=$?
 
 # xargs reports 123 when any invocation failed; normalise to a plain failure.

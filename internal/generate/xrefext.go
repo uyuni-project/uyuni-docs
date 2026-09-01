@@ -84,7 +84,9 @@ func WriteXrefExtension(destPath string) error {
 	if err := os.MkdirAll(filepath.Dir(destPath), 0o755); err != nil {
 		return fmt.Errorf("xref-converter: mkdir: %w", err)
 	}
-	if err := os.WriteFile(destPath, []byte(xrefConverterRuby), 0o644); err != nil {
+	// Atomic: every concurrently built book loads this file via asciidoctor's
+	// -r, so it must never be visible truncated.
+	if err := atomicWriteFile(destPath, []byte(xrefConverterRuby), 0o644); err != nil {
 		return fmt.Errorf("xref-converter: write %s: %w", destPath, err)
 	}
 	return nil
