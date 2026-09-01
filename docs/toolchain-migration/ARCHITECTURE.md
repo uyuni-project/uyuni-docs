@@ -260,7 +260,7 @@ task draft:uyuni-website           Uyuni HTML — website branding (all language
 task draft:uyuni-webui             Uyuni HTML — WebUI branding with language selector (all languages)
 task draft:all                     All four HTML output targets (sequential)
 
-task pdf BOOK=<b> PRODUCT=<p> LANG=<l>   Single book PDF
+task pdf BOOK=<b> PRODUCT=<p> LANGUAGES=<l>  One book PDF, one or more languages
 task pdf:mlm                       All 8 books × 4 languages — MLM (runs stage-content first)
 task pdf:uyuni                     All 8 books × 4 languages — Uyuni (runs stage-content first)
 task pdf:all                       Both products
