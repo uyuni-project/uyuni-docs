@@ -106,6 +106,44 @@ Update `CHANGELOG.md` with your changes. Add new entries at the top:
 
 ---
 
+## Revision Dates
+
+Each page in `en/modules/*/pages/` has the date of its last change. Two
+attributes below the document title give this date:
+
+```adoc
+= Some Page Title
+:revdate: 2026-08-31
+:page-revdate: {revdate}
+```
+
+When you change a page, set `:revdate:` to the date of your change. A pull
+request fails if a page that it changes:
+
+- has no `:revdate:` or no `:page-revdate:`
+- has a `revdate` that is not in the `YYYY-MM-DD` format
+- has a `revdate` more than seven days older than the change
+
+Use these attributes on pages only. Do not add them to a file in `partials/`.
+An attribute entry in an included file replaces the same attribute in the page
+that includes it. A `revdate` in a partial therefore replaces the date of each
+page that includes it.
+
+To check your changes before you push them:
+
+```bash
+task validate:revdate
+```
+
+This command uses [uv](https://docs.astral.sh/uv/) if you have it, and `python3`
+if you do not. If you have neither, use a container:
+
+```bash
+task container:validate:revdate
+```
+
+---
+
 ## Building the Documentation Locally
 
 To verify your changes before submitting a PR, build the documentation locally.
