@@ -75,6 +75,12 @@ vars:
   # The builder image has no Python.
   PYTHON_IMAGE: "registry.suse.com/bci/python:3.11"
 
+# 'task pdf:mlm JOBS=4' sets a Task variable, which the templates can see but
+# the commands' shell cannot. build_pdfs.sh and use_po.sh read JOBS from the
+# environment, so export it here rather than per task.
+env:
+  JOBS: '{{.JOBS}}'
+
 tasks:
   # --------------------------------------------------------------------------
   # Default — human-friendly help (runs when you type just: task)
@@ -371,9 +377,16 @@ tasks:
           PDF_PREFIX=$({{.DOCBUILD}} get-pdf-prefix -product ${PRODUCT})
 
           # Stage the English fallback modules and this product/language's
-          # entities.adoc, unless the caller already did it for the whole language.
+          # entities.adoc, unless the caller already did it for the whole
+          # language. A missing entities.adoc is only an ERROR to asciidoctor,
+          # and --failure-level FATAL would let it produce a PDF full of
+          # unresolved attributes, so check rather than trust STAGE=0.
           if [ "{{.STAGE}}" = "1" ]; then
             task pdf-stage PRODUCT=${PRODUCT} LANGUAGES=${LANG_CODE}
+          elif [ ! -f "${SRCDIR}/branding/pdf/entities.adoc" ]; then
+            echo "STAGE=0 but ${SRCDIR}/branding/pdf/entities.adoc is missing;" >&2
+            echo "run: task pdf-stage PRODUCT=${PRODUCT} LANGUAGES=${LANG_CODE}" >&2
+            exit 1
           fi
 
           # Generate PDF nav file from Antora nav (per book, so safe in parallel)
@@ -627,8 +640,9 @@ tasks:
   # --------------------------------------------------------------------------
   translations:
     desc: "[Dev] Apply .po translation files (generates translated AsciiDoc)"
-    # Run once per invocation: pdf:all invokes pdf:mlm and pdf:uyuni as parallel
-    # deps, and a concurrent rm -rf of the tree makes the other invocation fail.
+    # Run once per invocation: publish:* and obs:* reach this through several
+    # paths, and 'rm -rf translations' from a second invocation would delete the
+    # tree the first one is still writing.
     run: once
     sources:
       - l10n-weblate/**/*.po

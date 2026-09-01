@@ -182,7 +182,8 @@ task publish:uyuni LANGUAGES="en ja"
 
 ### Controlling concurrency
 
-PDF books and po4a both run in parallel, one job per core. Cap that with `JOBS=`:
+PDF books run in parallel, one job per core; po4a runs one job per translation
+config, currently nine. Cap both with `JOBS=`:
 
 ```bash
 task pdf:mlm LANGUAGES=en JOBS=4
