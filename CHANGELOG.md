@@ -1,3 +1,4 @@
+- Made every build task select languages with LANGUAGES, so the LANG locale variable no longer silently broke single-book PDF builds
 - Added a CI check for the revision date of changed documentation pages
 - Removed a second copy of the container image inspection section, which was published as a page with no title
 - Fixed the validate tasks to use Antora's built-in xref checking instead of the removed Antora 2 xref-validator plugin
