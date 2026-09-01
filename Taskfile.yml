@@ -36,6 +36,7 @@
 #    task container:draft:uyuni-webui               Uyuni HTML — product WebUI (all languages)
 #    task container:draft:all                       All four HTML output targets
 #    (All draft/publish/pdf/validate container tasks accept LANGUAGES=en or LANGUAGES="en ja" to limit languages)
+#    (PDF tasks build books concurrently, one per core; cap with JOBS=<n>.)
 #    task container:pdf:mlm             All MLM PDFs
 #    task container:pdf:uyuni           All Uyuni PDFs
 #    task container:pdf:all             All PDFs
@@ -112,6 +113,9 @@ tasks:
         echo "    Example:  task draft:uyuni-website LANGUAGES=\"en ja\""
         echo "    Example:  task publish:dsc LANGUAGES=en"
         echo "    Every task, including 'task pdf', takes LANGUAGES."
+        echo ""
+        echo "  Tip: PDF builds run books concurrently, one per core. Cap that with JOBS=<n>."
+        echo "    Example:  task container:pdf:mlm LANGUAGES=en JOBS=4"
         echo ""
         echo "  ── LOCAL  (Go + Task + Antora + asciidoctor-pdf installed locally) ──────────"
         echo "    publish:dsc              Full MLM publish — HTML (d.s.c branding) + PDFs + zips"
@@ -279,6 +283,26 @@ tasks:
       - task: draft:uyuni-webui
 
   # --------------------------------------------------------------------------
+  # Per-language PDF staging — the English fallback modules and the
+  # product/language entities file. Both are shared by every book of a
+  # language, and neither 'cp -an' nor a single shared entities.adoc is safe to
+  # run concurrently, so the parallel matrix does this once per language up
+  # front and then builds books with STAGE=0.
+  #
+  # Not marked internal: build_pdfs.sh and the 'pdf' task invoke it as a
+  # subprocess, which Task treats as a CLI call. Having no 'desc' keeps it out
+  # of 'task --list'.
+  # --------------------------------------------------------------------------
+  pdf-stage:
+    deps: [gen, _guard-lang]
+    cmds:
+      - for: {var: LANGUAGES}
+        cmd: |
+          mkdir -p "translations/{{.ITEM}}/modules"
+          cp -an en/modules/. "translations/{{.ITEM}}/modules/" || true
+          {{.DOCBUILD}} gen-entities -product {{.PRODUCT}} -lang {{.ITEM}}
+
+  # --------------------------------------------------------------------------
   # PDF builds — one book
   # Usage: task pdf BOOK=administration PRODUCT=mlm LANGUAGES=en
   #
@@ -292,6 +316,8 @@ tasks:
     vars:
       BOOK: '{{default "administration" .BOOK}}'
       PRODUCT: '{{default "mlm" .PRODUCT}}'
+      # STAGE=0 means the caller has already staged this language.
+      STAGE: '{{default "1" .STAGE}}'
     cmds:
       - for: {var: LANGUAGES}
         cmd: |
@@ -340,16 +366,14 @@ tasks:
           # Resolve PDF filename prefix from config.yml (e.g. suse_multi_linux_manager or uyuni)
           PDF_PREFIX=$({{.DOCBUILD}} get-pdf-prefix -product ${PRODUCT})
 
-          # Ensure English source modules are staged as fallback without overwriting translated files
-          mkdir -p "${SRCDIR}/modules"
-          cp -an en/modules/. "${SRCDIR}/modules/" || true
+          # Stage the English fallback modules and this product/language's
+          # entities.adoc, unless the caller already did it for the whole language.
+          if [ "{{.STAGE}}" = "1" ]; then
+            task pdf-stage PRODUCT=${PRODUCT} LANGUAGES=${LANG_CODE}
+          fi
 
-          # Generate PDF nav file from Antora nav
+          # Generate PDF nav file from Antora nav (per book, so safe in parallel)
           {{.DOCBUILD}} gen-pdf-nav -book ${BOOK} -lang ${LANG_CODE} -dir ${SRCDIR}/modules/${BOOK}
-
-          # Generate self-contained entities.adoc for this product/lang
-          # (written to translations/${LANG_CODE}/branding/pdf/entities.adoc)
-          {{.DOCBUILD}} gen-entities -product ${PRODUCT} -lang ${LANG_CODE}
 
           cd "${SRCDIR}"
           LANG=${LOCALE} LC_ALL=${LOCALE} asciidoctor-pdf \
@@ -371,29 +395,32 @@ tasks:
   # --------------------------------------------------------------------------
   # PDF builds — all books for a product
   # --------------------------------------------------------------------------
-  # Only the book loop lives here — 'pdf' iterates LANGUAGES itself, so the
-  # language loop exists in exactly one place.
+  # The language x book matrix is built concurrently — asciidoctor-pdf is
+  # single-threaded, so this is the only thing that uses more than one core.
+  # Cap it with JOBS=<n>; it defaults to nproc.
   pdf:mlm:
-    desc: "[Local] Build all MLM PDFs — all books, all languages"
+    desc: "[Local] Build all MLM PDFs — all books, all languages (JOBS=<n> caps concurrency)"
     deps: [gen, _guard-lang]
     cmds:
       - task: translations
-      - for: {var: BOOKS}
-        cmd: task pdf BOOK={{.ITEM}} PRODUCT=mlm LANGUAGES="{{.LANGUAGES}}"
+      - bash scripts/build_pdfs.sh mlm "{{.LANGUAGES}}" "{{.BOOKS}}"
 
   pdf:uyuni:
-    desc: "[Local] Build all Uyuni PDFs — all books, all languages"
+    desc: "[Local] Build all Uyuni PDFs — all books, all languages (JOBS=<n> caps concurrency)"
     deps: [gen, _guard-lang]
     cmds:
       - task: translations
-      - for: {var: BOOKS}
-        cmd: task pdf BOOK={{.ITEM}} PRODUCT=uyuni LANGUAGES="{{.LANGUAGES}}"
+      - bash scripts/build_pdfs.sh uyuni "{{.LANGUAGES}}" "{{.BOOKS}}"
 
+  # Sequential, not parallel deps: both products generate
+  # translations/{lang}/branding/pdf/entities.adoc, which is not product-scoped,
+  # so running them at once lets one product's entities land in the other's
+  # PDFs. Each product now saturates the cores on its own, so nothing is lost.
   pdf:all:
     desc: "[Local] Build all PDFs — both products, all languages"
-    deps:
-      - pdf:mlm
-      - pdf:uyuni
+    cmds:
+      - task: pdf:mlm
+      - task: pdf:uyuni
 
   # --------------------------------------------------------------------------
   # PDF collection — gather scattered build/{lang}/pdf/ into build/pdf/{lang}/
@@ -713,57 +740,57 @@ tasks:
     desc: "[Container] All MLM PDFs — all books, all languages (override with LANGUAGES=en)"
     deps: [_guard-lang]
     cmds:
-      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task pdf:mlm LANGUAGES='{{.LANGUAGES}}'"
+      - "{{.CONTAINER_CMD}} run --rm -e JOBS='{{.JOBS}}' -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task pdf:mlm LANGUAGES='{{.LANGUAGES}}'"
 
   container:pdf:uyuni:
     desc: "[Container] All Uyuni PDFs — all books, all languages (override with LANGUAGES=en)"
     deps: [_guard-lang]
     cmds:
-      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task pdf:uyuni LANGUAGES='{{.LANGUAGES}}'"
+      - "{{.CONTAINER_CMD}} run --rm -e JOBS='{{.JOBS}}' -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task pdf:uyuni LANGUAGES='{{.LANGUAGES}}'"
 
   container:pdf:all:
     desc: "[Container] All PDFs — both products, all languages (override with LANGUAGES=en)"
     deps: [_guard-lang]
     cmds:
-      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task pdf:all LANGUAGES='{{.LANGUAGES}}'"
+      - "{{.CONTAINER_CMD}} run --rm -e JOBS='{{.JOBS}}' -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task pdf:all LANGUAGES='{{.LANGUAGES}}'"
 
   # Publish targets
   container:publish:dsc:
     desc: "[Container] Full MLM publish — HTML (d.s.c branding) + PDFs + zips (override with LANGUAGES=en)"
     deps: [_guard-lang]
     cmds:
-      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task publish:dsc LANGUAGES='{{.LANGUAGES}}'"
+      - "{{.CONTAINER_CMD}} run --rm -e JOBS='{{.JOBS}}' -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task publish:dsc LANGUAGES='{{.LANGUAGES}}'"
 
   container:publish:uyuni:
     desc: "[Container] Full Uyuni publish — HTML (website branding) + PDFs + zips (override with LANGUAGES=en)"
     deps: [_guard-lang]
     cmds:
-      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task publish:uyuni LANGUAGES='{{.LANGUAGES}}'"
+      - "{{.CONTAINER_CMD}} run --rm -e JOBS='{{.JOBS}}' -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task publish:uyuni LANGUAGES='{{.LANGUAGES}}'"
 
   container:publish:webui-mlm:
     desc: "[Container] MLM WebUI publish — HTML (with language selector) + PDFs + zips (override with LANGUAGES=en)"
     deps: [_guard-lang]
     cmds:
-      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task publish:webui-mlm LANGUAGES='{{.LANGUAGES}}'"
+      - "{{.CONTAINER_CMD}} run --rm -e JOBS='{{.JOBS}}' -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task publish:webui-mlm LANGUAGES='{{.LANGUAGES}}'"
 
   container:publish:webui-uyuni:
     desc: "[Container] Uyuni WebUI publish — HTML (with language selector) + PDFs + zips (override with LANGUAGES=en)"
     deps: [_guard-lang]
     cmds:
-      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task publish:webui-uyuni LANGUAGES='{{.LANGUAGES}}'"
+      - "{{.CONTAINER_CMD}} run --rm -e JOBS='{{.JOBS}}' -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task publish:webui-uyuni LANGUAGES='{{.LANGUAGES}}'"
 
   # OBS packages
   container:obs:mlm:
     desc: "[Container] OBS source packages for MLM"
     deps: [_guard-lang]
     cmds:
-      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task obs:mlm LANGUAGES='{{.LANGUAGES}}'"
+      - "{{.CONTAINER_CMD}} run --rm -e JOBS='{{.JOBS}}' -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task obs:mlm LANGUAGES='{{.LANGUAGES}}'"
 
   container:obs:uyuni:
     desc: "[Container] OBS source packages for Uyuni"
     deps: [_guard-lang]
     cmds:
-      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task obs:uyuni LANGUAGES='{{.LANGUAGES}}'"
+      - "{{.CONTAINER_CMD}} run --rm -e JOBS='{{.JOBS}}' -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task obs:uyuni LANGUAGES='{{.LANGUAGES}}'"
 
   # Validation
   container:validate:mlm:

@@ -52,9 +52,21 @@ fi
 # GENERATE TRANSLATED ASCIIDOC FROM .PO FILES, WITHOUT UPDATING .POT/PO
 #######################################################################
 
-for f in $(ls $CURRENT_DIR/$PO_DIR/*.cfg); do
-    po4a --srcdir $CURRENT_DIR --destdir $CURRENT_DIR -k $TRANSLATION_THRESHOLD_PERCENTAGE -M UTF-8 -L UTF-8 --no-update -o nolinting $f
-done
+# There is one .cfg per module and each writes only into its own
+# translations/<lang>/modules/<module>/ subtree, so the configs are independent
+# and run in parallel. Set JOBS=1 to serialise.
+if [ -z "$JOBS" ] ; then
+	JOBS=$(nproc 2>/dev/null || echo 4)
+fi
+
+ls $CURRENT_DIR/$PO_DIR/*.cfg | xargs -P $JOBS -I{} \
+    po4a --srcdir $CURRENT_DIR --destdir $CURRENT_DIR -k $TRANSLATION_THRESHOLD_PERCENTAGE -M UTF-8 -L UTF-8 --no-update -o nolinting {}
+
+# The loop this replaced ignored po4a exit codes, so keep the build going and
+# just make a failure visible rather than silent.
+if [ $? -ne 0 ] ; then
+    echo "WARNING: at least one po4a invocation failed; translations may be incomplete." >&2
+fi
 
 
 

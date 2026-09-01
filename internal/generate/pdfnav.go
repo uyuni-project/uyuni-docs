@@ -2,6 +2,7 @@ package generate
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -43,20 +44,21 @@ func PDFNav(srcDir, book, lang string) error {
 	}
 	defer in.Close()
 
-	out, err := os.Create(outPath)
-	if err != nil {
-		return fmt.Errorf("pdf-nav: create %s: %w", outPath, err)
-	}
-	defer out.Close()
-
+	// Buffer the result and write it atomically: pdf:all builds the same
+	// book/language for both products, so two processes can target this path
+	// at once.
+	var out bytes.Buffer
 	scanner := bufio.NewScanner(in)
 	for scanner.Scan() {
 		line := scanner.Text()
 		transformed := transformNavLine(line, book)
-		fmt.Fprintln(out, transformed)
+		fmt.Fprintln(&out, transformed)
 	}
 	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("pdf-nav: read %s: %w", inPath, err)
+	}
+	if err := atomicWriteFile(outPath, out.Bytes(), 0o644); err != nil {
+		return fmt.Errorf("pdf-nav: write %s: %w", outPath, err)
 	}
 	return nil
 }
