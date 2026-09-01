@@ -36,6 +36,7 @@
 #    task container:draft:uyuni-webui               Uyuni HTML — product WebUI (all languages)
 #    task container:draft:all                       All four HTML output targets
 #    (All draft/publish/pdf/validate container tasks accept LANGUAGES=en or LANGUAGES="en ja" to limit languages)
+#    (It is LANGUAGES, not LANG. LANG is the POSIX locale and selects no documentation language.)
 #    task container:pdf:mlm             All MLM PDFs
 #    task container:pdf:uyuni           All Uyuni PDFs
 #    task container:pdf:all             All PDFs
@@ -59,7 +60,11 @@ vars:
   PDF_THEMES_DIR: "{{.ROOT_DIR}}/branding/pdf/themes"
   PDF_FONTS_DIR: "{{.ROOT_DIR}}/branding/pdf/fonts"
   XREF_EXT: "{{.ROOT_DIR}}/.bin/xref-converter.rb"
-  LANGUAGES: "en ja zh_CN ko"
+  # DOC_LANGUAGES is the canonical set and stays fixed; LANGUAGES is what every
+  # task iterates and is what you override on the command line. The _guard-lang
+  # check needs the full set even when LANGUAGES is narrowed.
+  DOC_LANGUAGES: "en ja zh_CN ko"
+  LANGUAGES: "{{.DOC_LANGUAGES}}"
   BOOKS: "installation-and-upgrade client-configuration administration reference retail common-workflows specialized-guides legal"
   CONTAINER_CMD:
     sh: which podman 2>/dev/null || which docker 2>/dev/null || echo "podman"
@@ -103,10 +108,12 @@ tasks:
         echo "    draft:uyuni-website            (local) Uyuni HTML — website branding"
         echo "    draft:uyuni-webui              (local) Uyuni HTML — WebUI branding with language selector"
         echo ""
-        echo "  Tip: append LANGUAGES=en (or \"en ja\") to any draft/publish/pdf task to limit languages."
+        echo "  Tip: append LANGUAGES=en (or \"en ja\") to any task to limit languages."
         echo "    Example:  task container:draft:mlm-dsc LANGUAGES=en"
         echo "    Example:  task draft:uyuni-website LANGUAGES=\"en ja\""
         echo "    Example:  task publish:dsc LANGUAGES=en"
+        echo "    Note:     it is LANGUAGES, not LANG — LANG is the POSIX locale and selects"
+        echo "              nothing here. Every task, including 'task pdf', takes LANGUAGES."
         echo ""
         echo "  ── LOCAL  (Go + Task + Antora + asciidoctor-pdf installed locally) ──────────"
         echo "    publish:dsc              Full MLM publish — HTML (d.s.c branding) + PDFs + zips"
@@ -120,16 +127,16 @@ tasks:
         echo "    obs:uyuni                OBS source packages for Uyuni"
         echo "    (All local tasks accept LANGUAGES=en or LANGUAGES=\"en ja\" to limit languages)"
         echo ""
-        echo "  ── SINGLE BOOK PDF ──────────────────────────────────────────────────────────"
-        echo "    task pdf BOOK=<book> PRODUCT=<product> LANG=<lang>"
+        echo "  ── ONE BOOK PDF ─────────────────────────────────────────────────────────────"
+        echo "    task pdf BOOK=<book> PRODUCT=<product> LANGUAGES=<langs>"
         echo ""
         echo "    Books:    installation-and-upgrade  client-configuration  administration"
         echo "              reference  retail  common-workflows  specialized-guides  legal"
         echo "    Products: mlm  uyuni"
-        echo "    Languages: en  ja  zh_CN  ko"
+        echo "    Languages: en  ja  zh_CN  ko  (all of them unless you narrow it)"
         echo ""
-        echo "    Example:  task pdf BOOK=administration PRODUCT=mlm LANG=en"
-        echo "    Example:  task pdf BOOK=installation-and-upgrade PRODUCT=uyuni LANG=ja"
+        echo "    Example:  task pdf BOOK=administration PRODUCT=mlm LANGUAGES=en"
+        echo "    Example:  task pdf BOOK=installation-and-upgrade PRODUCT=uyuni LANGUAGES=\"en ja\""
         echo ""
         echo "  ── DEV / TOOLING ────────────────────────────────────────────────────────────"
         echo "    setup              Build the Go toolchain binary (.bin/docbuild)"
@@ -142,6 +149,34 @@ tasks:
         echo ""
         echo "  Run 'task --summary <task>' for details  |  'task --list' for the full index"
         echo ""
+
+  # --------------------------------------------------------------------------
+  # Guard — LANGUAGES selects the documentation languages. LANG does not, and
+  # never did: it is the POSIX locale variable, every shell sets it, and Task
+  # exposes the environment as template variables. Nothing here reads LANG as a
+  # documentation code, so a stray LANG= is silently ignored and the build
+  # quietly does every language.
+  #
+  # Only bare documentation codes trip this. An inherited locale is
+  # 'en_US.UTF-8' or 'C', never a bare 'en', so a normal shell never trips it.
+  # --------------------------------------------------------------------------
+  _guard-lang:
+    internal: true
+    silent: true
+    cmds:
+      - |
+        for L in {{.DOC_LANGUAGES}}; do
+          [ "$L" = "{{.LANG}}" ] || continue
+          echo ""                                                       >&2
+          echo "  ERROR: LANG={{.LANG}} does not select a documentation language." >&2
+          echo "         This build would have run every language:"     >&2
+          echo "           {{.LANGUAGES}}"                              >&2
+          echo ""                                                       >&2
+          echo "         Use LANGUAGES instead:"                        >&2
+          echo "           task <target> LANGUAGES={{.LANG}}"           >&2
+          echo ""                                                       >&2
+          exit 1
+        done
 
   # --------------------------------------------------------------------------
   # Setup — build the Go binary
@@ -178,7 +213,7 @@ tasks:
   # --------------------------------------------------------------------------
   draft:mlm-dsc:
     desc: "[Draft] MLM HTML — documentation.suse.com branding (all languages)"
-    deps: [setup]
+    deps: [setup, _guard-lang]
     cmds:
       - task: translations
       - for: {var: LANGUAGES}
@@ -193,7 +228,7 @@ tasks:
 
   draft:mlm-webui:
     desc: "[Draft] MLM HTML — WebUI branding with language selector (all languages)"
-    deps: [setup]
+    deps: [setup, _guard-lang]
     cmds:
       - task: translations
       - for: {var: LANGUAGES}
@@ -210,7 +245,7 @@ tasks:
 
   draft:uyuni-website:
     desc: "[Draft] Uyuni HTML — website branding (all languages)"
-    deps: [setup]
+    deps: [setup, _guard-lang]
     cmds:
       - task: translations
       - for: {var: LANGUAGES}
@@ -225,7 +260,7 @@ tasks:
 
   draft:uyuni-webui:
     desc: "[Draft] Uyuni HTML — WebUI branding with language selector (all languages)"
-    deps: [setup]
+    deps: [setup, _guard-lang]
     cmds:
       - task: translations
       - for: {var: LANGUAGES}
@@ -242,6 +277,7 @@ tasks:
 
   draft:all:
     desc: "[Draft] All four HTML output targets (sequential)"
+    deps: [_guard-lang]
     cmds:
       - task: draft:mlm-dsc
       - task: draft:mlm-webui
@@ -249,117 +285,116 @@ tasks:
       - task: draft:uyuni-webui
 
   # --------------------------------------------------------------------------
-  # PDF builds — single book
-  # Usage: task pdf BOOK=administration PRODUCT=mlm LANG=en
+  # PDF builds — one book
+  # Usage: task pdf BOOK=administration PRODUCT=mlm LANGUAGES=en
+  #
+  # Like every other task, this iterates LANGUAGES and defaults to all of them.
+  # LANG_CODE below is the documentation code; LANG is left alone so it keeps
+  # meaning what it means everywhere else — the POSIX locale, which this task
+  # does set, to the value in LOCALE, for date formatting and asciidoctor-pdf.
   # --------------------------------------------------------------------------
   pdf:
-    desc: "[Local] Build a single PDF book — usage: task pdf BOOK=<book> PRODUCT=<product> LANG=<lang>"
-    deps: [gen]
+    desc: "[Local] Build one PDF book — usage: task pdf BOOK=<book> PRODUCT=<product> LANGUAGES=<langs>"
+    deps: [gen, _guard-lang]
     vars:
       BOOK: '{{default "administration" .BOOK}}'
       PRODUCT: '{{default "mlm" .PRODUCT}}'
-      LANG: '{{default "en" .LANG}}'
     cmds:
-      - |
-        BOOK="{{.BOOK}}"
-        PRODUCT="{{.PRODUCT}}"
-        LANG="{{.LANG}}"
+      - for: {var: LANGUAGES}
+        cmd: |
+          BOOK="{{.BOOK}}"
+          PRODUCT="{{.PRODUCT}}"
+          LANG_CODE="{{.ITEM}}"
 
-        # Resolve PDF theme from config.yml via docbuild (printed to stdout)
-        case "${PRODUCT}:${LANG}" in
-          mlm:ja)    THEME=suse-jp ;;
-          mlm:zh_CN) THEME=suse-sc ;;
-          mlm:ko)    THEME=suse-ko ;;
-          mlm:*)     THEME=suse ;;
-          uyuni:ja)    THEME=uyuni-jp ;;
-          uyuni:zh_CN) THEME=uyuni-sc ;;
-          uyuni:ko)    THEME=uyuni-ko ;;
-          uyuni:*)     THEME=uyuni ;;
-        esac
+          # Resolve PDF theme from config.yml via docbuild (printed to stdout)
+          case "${PRODUCT}:${LANG_CODE}" in
+            mlm:ja)    THEME=suse-jp ;;
+            mlm:zh_CN) THEME=suse-sc ;;
+            mlm:ko)    THEME=suse-ko ;;
+            mlm:*)     THEME=suse ;;
+            uyuni:ja)    THEME=uyuni-jp ;;
+            uyuni:zh_CN) THEME=uyuni-sc ;;
+            uyuni:ko)    THEME=uyuni-ko ;;
+            uyuni:*)     THEME=uyuni ;;
+          esac
 
-        # CJK attributes
-        case "${LANG}" in
-          ja|zh_CN|ko) CJK_ATTR="-a scripts=cjk" ;;
-          *)            CJK_ATTR="" ;;
-        esac
+          # CJK attributes
+          case "${LANG_CODE}" in
+            ja|zh_CN|ko) CJK_ATTR="-a scripts=cjk" ;;
+            *)            CJK_ATTR="" ;;
+          esac
 
-        # Locale for date formatting
-        case "${LANG}" in
-          ja)    LOCALE="ja_JP.UTF-8" ;;
-          zh_CN) LOCALE="zh_CN.UTF-8" ;;
-          ko)    LOCALE="ko_KR.UTF-8" ;;
-          *)     LOCALE="en_US.utf8" ;;
-        esac
+          # Locale for date formatting
+          case "${LANG_CODE}" in
+            ja)    LOCALE="ja_JP.UTF-8" ;;
+            zh_CN) LOCALE="zh_CN.UTF-8" ;;
+            ko)    LOCALE="ko_KR.UTF-8" ;;
+            *)     LOCALE="en_US.utf8" ;;
+          esac
 
-        # Date format
-        case "${LANG}" in
-          ja|zh_CN) DATE_FMT="%Y年%m月%e日" ;;
-          ko)       DATE_FMT="%Y년%m월%e일" ;;
-          *)        DATE_FMT="%B %d %Y" ;;
-        esac
+          # Date format
+          case "${LANG_CODE}" in
+            ja|zh_CN) DATE_FMT="%Y年%m月%e日" ;;
+            ko)       DATE_FMT="%Y년%m월%e일" ;;
+            *)        DATE_FMT="%B %d %Y" ;;
+          esac
 
-        REVDATE=$(LANG=${LOCALE} LC_ALL=${LOCALE} date +"${DATE_FMT}")
-        SRCDIR="translations/${LANG}"
-        OUTDIR="build/${LANG}/pdf"
-        mkdir -p "${OUTDIR}"
+          REVDATE=$(LANG=${LOCALE} LC_ALL=${LOCALE} date +"${DATE_FMT}")
+          SRCDIR="translations/${LANG_CODE}"
+          OUTDIR="build/${LANG_CODE}/pdf"
+          mkdir -p "${OUTDIR}"
 
-        # Resolve PDF filename prefix from config.yml (e.g. suse_multi_linux_manager or uyuni)
-        PDF_PREFIX=$({{.DOCBUILD}} get-pdf-prefix -product ${PRODUCT})
+          # Resolve PDF filename prefix from config.yml (e.g. suse_multi_linux_manager or uyuni)
+          PDF_PREFIX=$({{.DOCBUILD}} get-pdf-prefix -product ${PRODUCT})
 
-        # Ensure English source modules are staged as fallback without overwriting translated files
-        mkdir -p "${SRCDIR}/modules"
-        cp -an en/modules/. "${SRCDIR}/modules/" || true
+          # Ensure English source modules are staged as fallback without overwriting translated files
+          mkdir -p "${SRCDIR}/modules"
+          cp -an en/modules/. "${SRCDIR}/modules/" || true
 
-        # Generate PDF nav file from Antora nav
-        {{.DOCBUILD}} gen-pdf-nav -book ${BOOK} -lang ${LANG} -dir ${SRCDIR}/modules/${BOOK}
+          # Generate PDF nav file from Antora nav
+          {{.DOCBUILD}} gen-pdf-nav -book ${BOOK} -lang ${LANG_CODE} -dir ${SRCDIR}/modules/${BOOK}
 
-        # Generate self-contained entities.adoc for this product/lang
-        # (written to translations/${LANG}/branding/pdf/entities.adoc)
-        {{.DOCBUILD}} gen-entities -product ${PRODUCT} -lang ${LANG}
+          # Generate self-contained entities.adoc for this product/lang
+          # (written to translations/${LANG_CODE}/branding/pdf/entities.adoc)
+          {{.DOCBUILD}} gen-entities -product ${PRODUCT} -lang ${LANG_CODE}
 
-        cd "${SRCDIR}"
-        LANG=${LOCALE} LC_ALL=${LOCALE} asciidoctor-pdf \
-          -r {{.XREF_EXT}} \
-          -a lang=${LANG} \
-          -a pdf-themesdir={{.PDF_THEMES_DIR}}/ \
-          -a pdf-theme=${THEME} \
-          -a pdf-fontsdir={{.PDF_FONTS_DIR}} \
-          -a revdate="${REVDATE}" \
-          -a examplesdir=modules/${BOOK}/examples \
-          -a imagesdir=modules/${BOOK}/assets/images \
-          ${CJK_ATTR} \
-          --base-dir . \
-          --out-file {{.ROOT_DIR}}/${OUTDIR}/${PDF_PREFIX}_${BOOK}_guide.pdf \
-          modules/${BOOK}/nav-${BOOK}-guide.pdf.${LANG}.adoc \
-          --failure-level FATAL \
-          --trace
+          cd "${SRCDIR}"
+          LANG=${LOCALE} LC_ALL=${LOCALE} asciidoctor-pdf \
+            -r {{.XREF_EXT}} \
+            -a lang=${LANG_CODE} \
+            -a pdf-themesdir={{.PDF_THEMES_DIR}}/ \
+            -a pdf-theme=${THEME} \
+            -a pdf-fontsdir={{.PDF_FONTS_DIR}} \
+            -a revdate="${REVDATE}" \
+            -a examplesdir=modules/${BOOK}/examples \
+            -a imagesdir=modules/${BOOK}/assets/images \
+            ${CJK_ATTR} \
+            --base-dir . \
+            --out-file {{.ROOT_DIR}}/${OUTDIR}/${PDF_PREFIX}_${BOOK}_guide.pdf \
+            modules/${BOOK}/nav-${BOOK}-guide.pdf.${LANG_CODE}.adoc \
+            --failure-level FATAL \
+            --trace
 
   # --------------------------------------------------------------------------
   # PDF builds — all books for a product
   # --------------------------------------------------------------------------
+  # Only the book loop lives here — 'pdf' iterates LANGUAGES itself, so the
+  # language loop exists in exactly one place.
   pdf:mlm:
     desc: "[Local] Build all MLM PDFs — all books, all languages"
-    deps: [gen]
+    deps: [gen, _guard-lang]
     cmds:
       - task: translations
-      - for: {var: LANGUAGES}
-        cmd: |
-          LANG_CODE="{{.ITEM}}"
-          for BOOK in {{.BOOKS}}; do
-            task pdf BOOK=${BOOK} PRODUCT=mlm LANG=${LANG_CODE}
-          done
+      - for: {var: BOOKS}
+        cmd: task pdf BOOK={{.ITEM}} PRODUCT=mlm LANGUAGES="{{.LANGUAGES}}"
 
   pdf:uyuni:
     desc: "[Local] Build all Uyuni PDFs — all books, all languages"
-    deps: [gen]
+    deps: [gen, _guard-lang]
     cmds:
       - task: translations
-      - for: {var: LANGUAGES}
-        cmd: |
-          LANG_CODE="{{.ITEM}}"
-          for BOOK in {{.BOOKS}}; do
-            task pdf BOOK=${BOOK} PRODUCT=uyuni LANG=${LANG_CODE}
-          done
+      - for: {var: BOOKS}
+        cmd: task pdf BOOK={{.ITEM}} PRODUCT=uyuni LANGUAGES="{{.LANGUAGES}}"
 
   pdf:all:
     desc: "[Local] Build all PDFs — both products, all languages"
@@ -372,7 +407,7 @@ tasks:
   # --------------------------------------------------------------------------
   pdf-collect:mlm:
     desc: "[Dev] Collect MLM PDFs from build/{lang}/pdf/ into build/pdf/{lang}/"
-    deps: [setup]
+    deps: [setup, _guard-lang]
     cmds:
       - |
         PREFIX=$({{.DOCBUILD}} get-pdf-prefix -product mlm)
@@ -380,7 +415,7 @@ tasks:
 
   pdf-collect:uyuni:
     desc: "[Dev] Collect Uyuni PDFs from build/{lang}/pdf/ into build/pdf/{lang}/"
-    deps: [setup]
+    deps: [setup, _guard-lang]
     cmds:
       - |
         PREFIX=$({{.DOCBUILD}} get-pdf-prefix -product uyuni)
@@ -391,7 +426,7 @@ tasks:
   # --------------------------------------------------------------------------
   publish:dsc:
     desc: "[Local] Full MLM publish — HTML (d.s.c branding) + PDFs + zip archives"
-    deps: [setup]
+    deps: [setup, _guard-lang]
     cmds:
       - task: draft:mlm-dsc
       - task: pdf:mlm
@@ -400,7 +435,7 @@ tasks:
 
   publish:uyuni:
     desc: "[Local] Full Uyuni publish — HTML (website branding) + PDFs + zip archives"
-    deps: [setup]
+    deps: [setup, _guard-lang]
     cmds:
       - task: draft:uyuni-website
       - task: pdf:uyuni
@@ -409,7 +444,7 @@ tasks:
 
   publish:webui-mlm:
     desc: "[Local] MLM WebUI publish — HTML (with language selector) + PDFs + zip archives"
-    deps: [setup]
+    deps: [setup, _guard-lang]
     cmds:
       - task: draft:mlm-webui
       - task: pdf:mlm
@@ -418,7 +453,7 @@ tasks:
 
   publish:webui-uyuni:
     desc: "[Local] Uyuni WebUI publish — HTML (with language selector) + PDFs + zip archives"
-    deps: [setup]
+    deps: [setup, _guard-lang]
     cmds:
       - task: draft:uyuni-webui
       - task: pdf:uyuni
@@ -432,91 +467,93 @@ tasks:
   # --------------------------------------------------------------------------
   pdf-zip:mlm:
     desc: "[Dev] Zip collected MLM PDFs into per-language archives"
-    deps: [setup]
+    deps: [setup, _guard-lang]
     cmds:
       - for: {var: LANGUAGES}
         cmd: |
-          LANG="{{.ITEM}}"
-          mkdir -p build/${LANG}
-          cd build/pdf && zip -r9 {{.ROOT_DIR}}/build/${LANG}/suse-multi-linux-manager-docs_${LANG}-pdf.zip ${LANG}/
+          LANG_CODE="{{.ITEM}}"
+          mkdir -p build/${LANG_CODE}
+          cd build/pdf && zip -r9 {{.ROOT_DIR}}/build/${LANG_CODE}/suse-multi-linux-manager-docs_${LANG_CODE}-pdf.zip ${LANG_CODE}/
 
   pdf-zip:uyuni:
     desc: "[Dev] Zip collected Uyuni PDFs into per-language archives"
-    deps: [setup]
+    deps: [setup, _guard-lang]
     cmds:
       - for: {var: LANGUAGES}
         cmd: |
-          LANG="{{.ITEM}}"
-          mkdir -p build/${LANG}
-          cd build/pdf && zip -r9 {{.ROOT_DIR}}/build/${LANG}/uyuni-docs_${LANG}-pdf.zip ${LANG}/
+          LANG_CODE="{{.ITEM}}"
+          mkdir -p build/${LANG_CODE}
+          cd build/pdf && zip -r9 {{.ROOT_DIR}}/build/${LANG_CODE}/uyuni-docs_${LANG_CODE}-pdf.zip ${LANG_CODE}/
 
   # --------------------------------------------------------------------------
   # PDF tarballs — zip of all PDFs per product/language
   # --------------------------------------------------------------------------
   pdf-tar:mlm:
     desc: "[Dev] Create OBS-style PDF tarballs for MLM"
+    deps: [_guard-lang]
     cmds:
       - for: {var: LANGUAGES}
         cmd: |
-          LANG="{{.ITEM}}"
-          mkdir -p build/${LANG}
-          cd build && zip -r9 suse-multi-linux-manager-docs_${LANG}-pdf.zip ${LANG}/pdf/
-          mv build/suse-multi-linux-manager-docs_${LANG}-pdf.zip build/${LANG}/
+          LANG_CODE="{{.ITEM}}"
+          mkdir -p build/${LANG_CODE}
+          cd build && zip -r9 suse-multi-linux-manager-docs_${LANG_CODE}-pdf.zip ${LANG_CODE}/pdf/
+          mv build/suse-multi-linux-manager-docs_${LANG_CODE}-pdf.zip build/${LANG_CODE}/
           mkdir -p build/packages
-          mv build/${LANG}/suse-multi-linux-manager-docs_${LANG}-pdf.zip build/packages/
+          mv build/${LANG_CODE}/suse-multi-linux-manager-docs_${LANG_CODE}-pdf.zip build/packages/
 
   pdf-tar:uyuni:
     desc: "[Dev] Create OBS-style PDF tarballs for Uyuni"
+    deps: [_guard-lang]
     cmds:
       - for: {var: LANGUAGES}
         cmd: |
-          LANG="{{.ITEM}}"
-          mkdir -p build/${LANG}
-          cd build && zip -r9 uyuni-docs_${LANG}-pdf.zip ${LANG}/pdf/
-          mv build/uyuni-docs_${LANG}-pdf.zip build/${LANG}/
+          LANG_CODE="{{.ITEM}}"
+          mkdir -p build/${LANG_CODE}
+          cd build && zip -r9 uyuni-docs_${LANG_CODE}-pdf.zip ${LANG_CODE}/pdf/
+          mv build/uyuni-docs_${LANG_CODE}-pdf.zip build/${LANG_CODE}/
           mkdir -p build/packages
-          mv build/${LANG}/uyuni-docs_${LANG}-pdf.zip build/packages/
+          mv build/${LANG_CODE}/uyuni-docs_${LANG_CODE}-pdf.zip build/packages/
 
   # --------------------------------------------------------------------------
   # OBS packages — HTML tar.gz + PDF tar.gz → build/packages/
   # --------------------------------------------------------------------------
   obs:mlm:
     desc: "[Local] Generate OBS packages for MLM (HTML + PDF tarballs)"
-    deps: [setup]
+    deps: [setup, _guard-lang]
     cmds:
       - task: draft:mlm-webui
       - task: pdf:mlm
       - for: {var: LANGUAGES}
         cmd: |
-          LANG="{{.ITEM}}"
+          LANG_CODE="{{.ITEM}}"
           # Rename PDFs to match legacy OBS filename convention:
           # mlm_{book}_guide.pdf → suse_multi_linux_manager_{book}_guide.pdf
-          for f in build/${LANG}/pdf/mlm_*.pdf; do
+          for f in build/${LANG_CODE}/pdf/mlm_*.pdf; do
             [ -f "$f" ] || continue
             mv "$f" "$(dirname "$f")/suse_multi_linux_manager_$(basename "$f" | sed 's/^mlm_//')"
           done
           mkdir -p build/packages
-          tar --exclude="build/${LANG}/pdf" \
-              -czvf build/packages/susemanager-docs_${LANG}.tar.gz \
-              -C {{.ROOT_DIR}} build/${LANG}
-          tar -czvf build/packages/susemanager-docs_${LANG}-pdf.tar.gz \
-              -C {{.ROOT_DIR}} build/${LANG}/pdf
+          tar --exclude="build/${LANG_CODE}/pdf" \
+              -czvf build/packages/susemanager-docs_${LANG_CODE}.tar.gz \
+              -C {{.ROOT_DIR}} build/${LANG_CODE}
+          tar -czvf build/packages/susemanager-docs_${LANG_CODE}-pdf.tar.gz \
+              -C {{.ROOT_DIR}} build/${LANG_CODE}/pdf
 
   obs:uyuni:
     desc: "[Local] Generate OBS packages for Uyuni (HTML + PDF tarballs)"
-    deps: [setup]
+    deps: [setup, _guard-lang]
     cmds:
       - task: draft:uyuni-website
       - task: pdf:uyuni
       - for: {var: LANGUAGES}
         cmd: |
-          LANG="{{.ITEM}}"
+          LANG_CODE="{{.ITEM}}"
           mkdir -p build/packages
-          tar --exclude="build/${LANG}/pdf" \
-              -czvf build/packages/uyuni-docs_${LANG}.tar.gz \
-              -C {{.ROOT_DIR}} build/${LANG}
-          tar -czvf build/packages/uyuni-docs_${LANG}-pdf.tar.gz \
-              -C {{.ROOT_DIR}} build/${LANG}/pdf
+          tar --exclude="build/${LANG_CODE}/pdf" \
+              -czvf build/packages/uyuni-docs_${LANG_CODE}.tar.gz \
+              -C {{.ROOT_DIR}} build/${LANG_CODE}
+          tar -czvf build/packages/uyuni-docs_${LANG_CODE}-pdf.tar.gz \
+              -C {{.ROOT_DIR}} build/${LANG_CODE}/pdf
 
   # --------------------------------------------------------------------------
   # Validation
@@ -533,7 +570,7 @@ tasks:
 
   validate:mlm:
     desc: "[Local] Antora xref validation — MLM"
-    deps: [setup]
+    deps: [setup, _guard-lang]
     cmds:
       - task: translations
       - for: {var: LANGUAGES}
@@ -548,7 +585,7 @@ tasks:
 
   validate:uyuni:
     desc: "[Local] Antora xref validation — Uyuni"
-    deps: [setup]
+    deps: [setup, _guard-lang]
     cmds:
       - task: translations
       - for: {var: LANGUAGES}
@@ -650,85 +687,101 @@ tasks:
   # HTML builds
   container:draft:mlm-dsc:
     desc: "[Draft] MLM HTML — documentation.suse.com branding, via container (all languages; override with LANGUAGES=en)"
+    deps: [_guard-lang]
     cmds:
       - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task draft:mlm-dsc LANGUAGES='{{.LANGUAGES}}'"
 
   container:draft:mlm-webui:
     desc: "[Draft] MLM HTML — WebUI branding with language selector, via container (all languages; override with LANGUAGES=en)"
+    deps: [_guard-lang]
     cmds:
       - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task draft:mlm-webui LANGUAGES='{{.LANGUAGES}}'"
 
   container:draft:uyuni-website:
     desc: "[Draft] Uyuni HTML — website branding, via container (all languages; override with LANGUAGES=en)"
+    deps: [_guard-lang]
     cmds:
       - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task draft:uyuni-website LANGUAGES='{{.LANGUAGES}}'"
 
   container:draft:uyuni-webui:
     desc: "[Draft] Uyuni HTML — WebUI branding with language selector, via container (all languages; override with LANGUAGES=en)"
+    deps: [_guard-lang]
     cmds:
       - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task draft:uyuni-webui LANGUAGES='{{.LANGUAGES}}'"
 
   container:draft:all:
     desc: "[Draft] All four HTML output targets, via container (sequential; override with LANGUAGES=en)"
+    deps: [_guard-lang]
     cmds:
       - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task draft:all LANGUAGES='{{.LANGUAGES}}'"
 
   # PDF builds
   container:pdf:mlm:
     desc: "[Container] All MLM PDFs — all books, all languages (override with LANGUAGES=en)"
+    deps: [_guard-lang]
     cmds:
       - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task pdf:mlm LANGUAGES='{{.LANGUAGES}}'"
 
   container:pdf:uyuni:
     desc: "[Container] All Uyuni PDFs — all books, all languages (override with LANGUAGES=en)"
+    deps: [_guard-lang]
     cmds:
       - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task pdf:uyuni LANGUAGES='{{.LANGUAGES}}'"
 
   container:pdf:all:
     desc: "[Container] All PDFs — both products, all languages (override with LANGUAGES=en)"
+    deps: [_guard-lang]
     cmds:
       - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task pdf:all LANGUAGES='{{.LANGUAGES}}'"
 
   # Publish targets
   container:publish:dsc:
     desc: "[Container] Full MLM publish — HTML (d.s.c branding) + PDFs + zips (override with LANGUAGES=en)"
+    deps: [_guard-lang]
     cmds:
       - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task publish:dsc LANGUAGES='{{.LANGUAGES}}'"
 
   container:publish:uyuni:
     desc: "[Container] Full Uyuni publish — HTML (website branding) + PDFs + zips (override with LANGUAGES=en)"
+    deps: [_guard-lang]
     cmds:
       - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task publish:uyuni LANGUAGES='{{.LANGUAGES}}'"
 
   container:publish:webui-mlm:
     desc: "[Container] MLM WebUI publish — HTML (with language selector) + PDFs + zips (override with LANGUAGES=en)"
+    deps: [_guard-lang]
     cmds:
       - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task publish:webui-mlm LANGUAGES='{{.LANGUAGES}}'"
 
   container:publish:webui-uyuni:
     desc: "[Container] Uyuni WebUI publish — HTML (with language selector) + PDFs + zips (override with LANGUAGES=en)"
+    deps: [_guard-lang]
     cmds:
       - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task publish:webui-uyuni LANGUAGES='{{.LANGUAGES}}'"
 
   # OBS packages
   container:obs:mlm:
     desc: "[Container] OBS source packages for MLM"
+    deps: [_guard-lang]
     cmds:
-      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task obs:mlm"
+      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task obs:mlm LANGUAGES='{{.LANGUAGES}}'"
 
   container:obs:uyuni:
     desc: "[Container] OBS source packages for Uyuni"
+    deps: [_guard-lang]
     cmds:
-      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task obs:uyuni"
+      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task obs:uyuni LANGUAGES='{{.LANGUAGES}}'"
 
   # Validation
   container:validate:mlm:
     desc: "[Container] Antora xref validation — MLM (all languages; override with LANGUAGES=en)"
+    deps: [_guard-lang]
     cmds:
       - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task validate:mlm LANGUAGES='{{.LANGUAGES}}'"
 
   container:validate:uyuni:
     desc: "[Container] Antora xref validation — Uyuni (all languages; override with LANGUAGES=en)"
+    deps: [_guard-lang]
     cmds:
       - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task validate:uyuni LANGUAGES='{{.LANGUAGES}}'"
 
