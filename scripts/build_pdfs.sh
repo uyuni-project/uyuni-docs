@@ -23,6 +23,13 @@ if [ -z "${JOBS:-}" ] ; then
     JOBS=$(nproc 2>/dev/null || echo 4)
 fi
 
+case "${JOBS}" in
+    ''|*[!0-9]*|0)
+        echo "usage: JOBS must be a positive integer, got '${JOBS}'" >&2
+        exit 2
+        ;;
+esac
+
 WORKDIR=$(mktemp -d)
 trap 'rm -rf "${WORKDIR}"' EXIT
 : > "${WORKDIR}/lock"
@@ -47,7 +54,8 @@ build_one() {
         flock 9
         cat "${log}"
         if [ ${rc} -ne 0 ] ; then
-            echo "==> FAILED: ${PRODUCT} / ${lang} / ${book} (exit ${rc})" >&2
+            # Same stream as the log above, so the two stay together.
+            echo "==> FAILED: ${PRODUCT} / ${lang} / ${book} (exit ${rc})"
         fi
     } 9< "${WORKDIR}/lock"
 

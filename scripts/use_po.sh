@@ -54,18 +54,29 @@ fi
 
 # There is one .cfg per module and each writes only into its own
 # translations/<lang>/modules/<module>/ subtree, so the configs are independent
-# and run in parallel. Set JOBS=1 to serialise.
+# and run in parallel. Concurrency is therefore bounded by the number of
+# configs, not by the core count. Set JOBS=1 to serialise.
 if [ -z "$JOBS" ] ; then
 	JOBS=$(nproc 2>/dev/null || echo 4)
 fi
 
-ls $CURRENT_DIR/$PO_DIR/*.cfg | xargs -P $JOBS -I{} \
+case "$JOBS" in
+    ''|*[!0-9]*|0)
+        echo "ERROR: JOBS must be a positive integer, got '$JOBS'." >&2
+        exit 2
+        ;;
+esac
+
+ls $CURRENT_DIR/$PO_DIR/*.cfg | xargs -P "$JOBS" -I{} \
     po4a --srcdir $CURRENT_DIR --destdir $CURRENT_DIR -k $TRANSLATION_THRESHOLD_PERCENTAGE -M UTF-8 -L UTF-8 --no-update -o nolinting {}
 
-# The loop this replaced ignored po4a exit codes, so keep the build going and
-# just make a failure visible rather than silent.
+# The loop this replaced ignored po4a exit codes. Failing here matters more now
+# that the 'translations' task is fingerprinted: a partial run that reports
+# success is recorded as up to date, and every later build reuses the
+# incomplete tree without retrying.
 if [ $? -ne 0 ] ; then
-    echo "WARNING: at least one po4a invocation failed; translations may be incomplete." >&2
+    echo "ERROR: at least one po4a invocation failed; translations are incomplete." >&2
+    exit 1
 fi
 
 
