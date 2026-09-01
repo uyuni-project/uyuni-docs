@@ -4,7 +4,7 @@
 - Made JOBS=00 an error, which xargs read as unlimited concurrency
 - Fixed the PDF archive tasks, which failed when the checkout path contains a space
 - Sped up PDF builds by building the books concurrently. JOBS=<n> caps the number of concurrent jobs
-- Fixed task pdf:all so the two products no longer overwrite each other's entities.adoc while building at the same time
+- Fixed PDF builds so the two products no longer share one entities file, which could put SUSE Multi-Linux Manager names into Uyuni PDFs and the other way round
 - Fixed the pdf-tar tasks, which produced no archive and packaged both products into each one
 - Made an empty or incorrect LANGUAGES stop the build instead of reporting success with no output
 - Made an exported LANGUAGES set the default language selection

@@ -5,7 +5,7 @@
 //	docbuild gen-all                                     Generate all configs for all languages
 //	docbuild gen-site  -product P -output O -lang L      Generate one site.yml
 //	docbuild gen-antora -product P -lang L               Generate one antora.yml
-//	docbuild gen-entities -product P -lang L             Generate one entities.adoc
+//	docbuild gen-entities -product P -lang L             Generate one entities-{product}.adoc
 //	docbuild gen-pdf-nav -book B -lang L -dir D          Generate PDF nav from Antora nav file
 //	docbuild inject-lang-selector -output O              Inject language selector into header-content.hbs
 //	docbuild collect-pdfs -product P -src S -dest D      Move PDFs into dest/{lang}/ structure
@@ -241,7 +241,7 @@ Subcommands:
   gen-all                                    Generate all configs for all languages
   gen-site  -product P -output O -lang L     Generate translations/{lang}/{output}.site.yml
   gen-antora -product P -lang L              Generate translations/{lang}/antora.yml
-  gen-entities -product P -lang L            Generate branding/pdf/entities.adoc
+  gen-entities -product P -lang L            Generate branding/pdf/entities-{product}.adoc
   gen-pdf-nav -book B -lang L -dir D         Generate nav-{book}-guide.pdf.{lang}.adoc from Antora nav
   inject-lang-selector -hbs PATH             Inject language selector into header-content.hbs
   get-pdf-prefix -product P                              Print the PDF filename prefix for a product

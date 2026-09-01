@@ -351,6 +351,11 @@ tasks:
   # them are not safe. Stage each language one time, then build its books with
   # STAGE=0.
   #
+  # The entities file carries the product in its name. The two products share
+  # the language tree, so one entities.adoc goes to the last writer, and a
+  # build then ships the names of the other product. Each nav file selects its
+  # copy with the entities-product attribute.
+  #
   # 'pdf:mlm' and 'pdf:uyuni' call this in their own process, therefore
   # stage-content can dedupe itself with 'run: once'. The single-book 'pdf'
   # task calls it as a subprocess, which is why this task is not internal. It
@@ -364,8 +369,8 @@ tasks:
     cmds:
       - task: stage-content
       - for: {var: LANGUAGES}
-        # This runs after 'stage-content', so entities.adoc is the later of the
-        # two paths. The STAGE=0 check in 'pdf' examines both.
+        # This runs after 'stage-content', so the entities file is the later of
+        # the two paths. The STAGE=0 check in 'pdf' examines both.
         cmd: "{{.DOCBUILD}} gen-entities -product {{.PRODUCT}} -lang {{.ITEM}}"
 
   # --------------------------------------------------------------------------
@@ -380,10 +385,9 @@ tasks:
     desc: "[Local] Build one PDF book — usage: task pdf BOOK=<book> PRODUCT=<product> LANGUAGES=<langs>"
     # 'setup', not 'gen'. build_pdfs.sh starts one 'task pdf' process for each
     # book, and 'run: once' applies to one process only, so each process
-    # evaluates 'gen' again. 'gen-all' writes
-    # translations/{lang}/branding/pdf/entities.adoc once for each product, to
-    # a path with no product in it, in Go map order. A 'gen' after the staging
-    # therefore replaces the staged entities with those of a different product.
+    # evaluates 'gen' again. That is one full config generation for each book
+    # of each language, and each one writes the same files. The writes are
+    # atomic, so the cost is the reason, not the correctness.
     # 'pdf-stage' keeps the 'gen' dependency for the STAGE=1 path.
     deps: [setup, _guard-lang]
     vars:
@@ -439,22 +443,23 @@ tasks:
           # Resolve PDF filename prefix from config.yml (e.g. suse_multi_linux_manager or uyuni)
           PDF_PREFIX=$({{.DOCBUILD}} get-pdf-prefix -product ${PRODUCT})
 
-          # Stage the content tree and entities.adoc, unless the caller stages
-          # the full language. Asciidoctor reports only an ERROR for a missing
-          # entities.adoc, and --failure-level FATAL ignores an ERROR. The
-          # result is a PDF with unresolved attributes.
+          # Stage the content tree and the entities file, unless the caller
+          # stages the full language. Asciidoctor reports only an ERROR for a
+          # missing entities file, and --failure-level FATAL ignores an ERROR.
+          # The result is a PDF with unresolved attributes.
           #
           # Examine both paths that pdf-stage writes, not only the later one.
-          # Also make sure that entities.adoc has content. An interrupted write
-          # leaves an empty file, and an empty file resolves no attributes.
+          # Also make sure that the entities file has content. An interrupted
+          # write leaves an empty file, which resolves no attributes.
+          ENTITIES="${SRCDIR}/branding/pdf/entities-${PRODUCT}.adoc"
           case "{{.STAGE}}" in
             1)
               task pdf-stage PRODUCT=${PRODUCT} LANGUAGES=${LANG_CODE}
               ;;
             0)
-              if [ ! -s "${SRCDIR}/branding/pdf/entities.adoc" ] || [ ! -d "${SRCDIR}/modules/${BOOK}" ]; then
+              if [ ! -s "${ENTITIES}" ] || [ ! -d "${SRCDIR}/modules/${BOOK}" ]; then
                 echo "STAGE=0 but ${LANG_CODE} is not staged:" >&2
-                echo "  ${SRCDIR}/branding/pdf/entities.adoc is missing or empty," >&2
+                echo "  ${ENTITIES} is missing or empty," >&2
                 echo "  or ${SRCDIR}/modules/${BOOK} is missing." >&2
                 echo "run: task pdf-stage PRODUCT=${PRODUCT} LANGUAGES=${LANG_CODE}" >&2
                 exit 1
@@ -476,6 +481,7 @@ tasks:
             -a lang=${LANG_CODE} \
             -a pdf-themesdir={{.PDF_THEMES_DIR}}/ \
             -a pdf-theme=${THEME} \
+            -a entities-product=${PRODUCT} \
             -a pdf-fontsdir={{.PDF_FONTS_DIR}} \
             -a revdate="${REVDATE}" \
             -a examplesdir=modules/${BOOK}/examples \
@@ -512,10 +518,10 @@ tasks:
         vars: {PRODUCT: uyuni}
       - bash scripts/build_pdfs.sh uyuni "{{.LANGUAGES}}" "{{.BOOKS}}"
 
-  # The products run in sequence, not as parallel deps. Both write
-  # translations/{lang}/branding/pdf/entities.adoc, which has no product in its
-  # path. A parallel run puts one product's entities in the other product's
-  # PDFs. One product usually uses all the cores, so the sequence costs little.
+  # The products run in sequence, not as parallel deps. One product usually
+  # uses all the cores, so the sequence costs little. The two products no
+  # longer share an entities file, therefore this order is a cost decision and
+  # not a correctness one.
   pdf:all:
     desc: "[Local] Build all PDFs — both products, all languages"
     cmds:
