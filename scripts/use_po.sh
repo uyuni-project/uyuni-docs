@@ -3,8 +3,7 @@
 # There is no need of system-wide installation of po4a
 # Usage: PERLLIB=/path/to/po4a/lib use_po.sh
 # you may set following variables
-# SRCDIR root of the documentation repository
-# PODIR place where to create the po
+# PO_DIR place where the po files are
 # PUB_DIR place where to publish localized files
 
 # USER-CONFIGURABLE VARIABLES
@@ -52,10 +51,10 @@ fi
 # GENERATE TRANSLATED ASCIIDOC FROM .PO FILES, WITHOUT UPDATING .POT/PO
 #######################################################################
 
-# There is one .cfg per module and each writes only into its own
-# translations/<lang>/modules/<module>/ subtree, so the configs are independent
-# and run in parallel. Concurrency is therefore bounded by the number of
-# configs, not by the core count. Set JOBS=1 to serialise.
+# There is one .cfg file for each module, and each one writes only to its own
+# translations/<lang>/modules/<module>/ subtree. The configs are independent
+# and run in parallel. The number of configs, not the number of cores, is
+# therefore the limit. JOBS=1 runs them in sequence.
 if [ -z "$JOBS" ] ; then
 	JOBS=$(nproc 2>/dev/null || echo 4)
 fi
@@ -70,10 +69,9 @@ esac
 ls $CURRENT_DIR/$PO_DIR/*.cfg | xargs -P "$JOBS" -I{} \
     po4a --srcdir $CURRENT_DIR --destdir $CURRENT_DIR -k $TRANSLATION_THRESHOLD_PERCENTAGE -M UTF-8 -L UTF-8 --no-update -o nolinting {}
 
-# The loop this replaced ignored po4a exit codes. Failing here matters more now
-# that the 'translations' task is fingerprinted: a partial run that reports
-# success is recorded as up to date, and every later build reuses the
-# incomplete tree without retrying.
+# Stop if po4a failed. Task fingerprints the 'translations' task: an
+# incomplete run that reports success becomes an up-to-date result, and each
+# subsequent build uses the incomplete tree.
 if [ $? -ne 0 ] ; then
     echo "ERROR: at least one po4a invocation failed; translations are incomplete." >&2
     exit 1

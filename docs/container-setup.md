@@ -110,7 +110,7 @@ task container:pdf:all                # All PDFs
 
 ### Limiting languages
 
-Every task builds all four languages by default. Narrow that with `LANGUAGES=`:
+Each task builds all four languages by default. `LANGUAGES=` selects fewer:
 
 ```bash
 task container:pdf:mlm LANGUAGES=en
@@ -119,8 +119,8 @@ task container:publish:uyuni LANGUAGES="en ja"
 
 ### Controlling concurrency
 
-PDF books run in parallel, one job per core; po4a runs one job per translation
-config, currently nine. Cap both with `JOBS=`:
+PDF books build in parallel, one job for each core. po4a runs one job for each
+translation config, and there are nine configs. `JOBS=` caps both:
 
 ```bash
 task container:pdf:mlm LANGUAGES=en JOBS=4
