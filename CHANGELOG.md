@@ -1,3 +1,5 @@
+- Sped up PDF builds by building books concurrently; cap concurrency with JOBS=<n>
+- Fixed task pdf:all so the two products no longer overwrite each other's entities.adoc while building at the same time
 - Made every build task select languages with LANGUAGES
 - Added a CI check for the revision date of changed documentation pages
 - Removed a link to the SSL CA migration guide, which does not apply to this version

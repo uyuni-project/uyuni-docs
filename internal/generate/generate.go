@@ -223,5 +223,5 @@ func renderTemplate(name, tmplText string, data any, outPath string) error {
 	if err := os.MkdirAll(filepath.Dir(outPath), 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(outPath, buf.Bytes(), 0o644)
+	return atomicWriteFile(outPath, buf.Bytes(), 0o644)
 }

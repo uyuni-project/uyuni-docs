@@ -112,6 +112,23 @@ task container:pdf:uyuni              # All Uyuni PDFs — all books, all langua
 task container:pdf:all                # All PDFs
 ```
 
+### Limiting languages
+
+Each task builds all four languages by default. `LANGUAGES=` selects fewer:
+
+```bash
+task container:pdf:mlm LANGUAGES=en
+task container:publish:uyuni LANGUAGES="en ja"
+```
+
+### Controlling concurrency
+
+PDF books build in parallel, one job for each core. `JOBS=` caps the count:
+
+```bash
+task container:pdf:mlm LANGUAGES=en JOBS=4
+```
+
 ### Build one PDF book
 
 Use the `pdf` task with `BOOK=`, `PRODUCT=`, and `LANGUAGES=` variables:

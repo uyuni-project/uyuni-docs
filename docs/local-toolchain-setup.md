@@ -175,6 +175,23 @@ task validate:uyuni         # Antora xref validation — Uyuni
 task clean                  # Remove build/, translations/, .cache/
 ```
 
+### Limiting languages
+
+Each task builds all four languages by default. `LANGUAGES=` selects fewer:
+
+```bash
+task pdf:mlm LANGUAGES=en
+task publish:uyuni LANGUAGES="en ja"
+```
+
+### Controlling concurrency
+
+PDF books build in parallel, one job for each core. `JOBS=` caps the count:
+
+```bash
+task pdf:mlm LANGUAGES=en JOBS=4
+```
+
 ### Build one PDF book
 
 Use the `pdf` task with `BOOK=`, `PRODUCT=`, and `LANGUAGES=` variables:
