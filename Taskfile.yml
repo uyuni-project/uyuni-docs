@@ -288,11 +288,13 @@ tasks:
   # them are not safe. Stage each language one time, then build its books with
   # STAGE=0.
   #
-  # This task is not internal, because build_pdfs.sh and 'pdf' call it as a
-  # subprocess. It has no 'desc', which keeps it out of 'task --list'.
+  # 'pdf:mlm' and 'pdf:uyuni' call this in their own process, therefore
+  # stage-content can dedupe itself with 'run: once'. The single-book 'pdf'
+  # task calls it as a subprocess, which is why this task is not internal. It
+  # has no 'desc', which keeps it out of 'task --list'.
   # --------------------------------------------------------------------------
   pdf-stage:
-    deps: [gen, setup, _guard-lang]
+    deps: [gen, _guard-lang]
     # PRODUCT has no default. Without this, gen-entities gets an empty product.
     requires:
       vars: [PRODUCT]
@@ -368,13 +370,18 @@ tasks:
           # Stage the content tree and entities.adoc, unless the caller stages
           # the full language. Asciidoctor reports only an ERROR for a missing
           # entities.adoc, and --failure-level FATAL ignores an ERROR. The
-          # result is a PDF with unresolved attributes. Therefore, check.
+          # result is a PDF with unresolved attributes. Therefore, check both
+          # of the trees that pdf-stage writes; they are separate.
           if [ "{{.STAGE}}" = "1" ]; then
             task pdf-stage PRODUCT=${PRODUCT} LANGUAGES=${LANG_CODE}
-          elif [ ! -f "${SRCDIR}/branding/pdf/entities.adoc" ]; then
-            echo "STAGE=0 but ${SRCDIR}/branding/pdf/entities.adoc is missing;" >&2
-            echo "run: task pdf-stage PRODUCT=${PRODUCT} LANGUAGES=${LANG_CODE}" >&2
-            exit 1
+          else
+            for staged in "${SRCDIR}/branding/pdf/entities.adoc" "${SRCDIR}/modules/${BOOK}"; do
+              if [ ! -e "${staged}" ]; then
+                echo "STAGE=0 but ${staged} is missing;" >&2
+                echo "run: task pdf-stage PRODUCT=${PRODUCT} LANGUAGES=${LANG_CODE}" >&2
+                exit 1
+              fi
+            done
           fi
 
           # Make the PDF nav file from the Antora nav. One file for each book,
@@ -408,12 +415,19 @@ tasks:
     desc: "[Local] Build all MLM PDFs — all books, all languages (JOBS=<n> caps concurrency)"
     deps: [gen, _guard-lang]
     cmds:
+      # Stage here, not in build_pdfs.sh. A task that the script starts runs in
+      # a second process, where 'run: once' knows nothing about this one and
+      # stage-content repeats its 'rm -rf'.
+      - task: pdf-stage
+        vars: {PRODUCT: mlm}
       - bash scripts/build_pdfs.sh mlm "{{.LANGUAGES}}" "{{.BOOKS}}"
 
   pdf:uyuni:
     desc: "[Local] Build all Uyuni PDFs — all books, all languages (JOBS=<n> caps concurrency)"
     deps: [gen, _guard-lang]
     cmds:
+      - task: pdf-stage
+        vars: {PRODUCT: uyuni}
       - bash scripts/build_pdfs.sh uyuni "{{.LANGUAGES}}" "{{.BOOKS}}"
 
   # The products run in sequence, not as parallel deps. Both write
@@ -624,9 +638,12 @@ tasks:
   stage-content:
     desc: "[Dev] Stage translated content for build (en base + lang overlay → translations/{lang}/modules/)"
     deps: [setup, _guard-lang]
-    # Run one time for each invocation. Several tasks reach this one through
-    # different paths, and a second run does 'rm -rf translations/{lang}/modules'
-    # and deletes the tree that the first run writes.
+    # Run one time for each invocation. 'publish:*' reaches this task through
+    # both 'draft:*' and 'pdf:*', and a second run does
+    # 'rm -rf translations/{lang}/modules' and deletes the tree that the first
+    # run writes. This holds inside one process only. A task that a script
+    # starts gets a second process with its own bookkeeping, therefore call
+    # this task, or 'pdf-stage', with 'task:' and not from a command.
     run: once
     cmds:
       - for: {var: LANGUAGES}

@@ -6,6 +6,11 @@
 #
 # Usage: build_pdfs.sh <product> "<languages>" "<books>"
 # JOBS caps the number of concurrent books. The default is nproc.
+#
+# The caller stages each language first with 'task pdf-stage'. Every book of a
+# language shares one content tree and one entities.adoc, and concurrent writes
+# to them are not safe. The 'pdf' task refuses to build if the caller did not
+# stage, therefore this script does not check.
 
 set -u
 
@@ -63,11 +68,6 @@ build_one() {
 export -f build_one
 
 echo "==> ${PRODUCT} PDFs — languages: ${LANGUAGES} — ${JOBS} at a time"
-
-# Stage each language one time, before the first book starts. Staging in each
-# book makes all the books of a language copy the same tree and write the same
-# entities.adoc at the same time.
-task pdf-stage PRODUCT="${PRODUCT}" LANGUAGES="${LANGUAGES}" || exit 1
 
 for lang in ${LANGUAGES}; do
     for book in ${BOOKS}; do
