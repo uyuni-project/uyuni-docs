@@ -36,7 +36,7 @@
 #    task container:draft:uyuni-webui               Uyuni HTML — product WebUI (all languages)
 #    task container:draft:all                       All four HTML output targets
 #    (All draft/publish/pdf/validate container tasks accept LANGUAGES=en or LANGUAGES="en ja" to limit languages)
-#    (PDF tasks build books concurrently, one per core; cap with JOBS=<n>.)
+#    (PDF tasks build books concurrently, one for each core. JOBS=<n> caps this.)
 #    task container:pdf:mlm             All MLM PDFs
 #    task container:pdf:uyuni           All Uyuni PDFs
 #    task container:pdf:all             All PDFs
@@ -75,9 +75,9 @@ vars:
   # The builder image has no Python.
   PYTHON_IMAGE: "registry.suse.com/bci/python:3.11"
 
-# 'task pdf:mlm JOBS=4' sets a Task variable, which the templates can see but
-# the commands' shell cannot. build_pdfs.sh and use_po.sh read JOBS from the
-# environment, so export it here rather than per task.
+# 'task pdf:mlm JOBS=4' sets a Task variable. Templates can read it, but the
+# command shell cannot. build_pdfs.sh and use_po.sh read JOBS from the
+# environment. This block exports it to them.
 env:
   JOBS: '{{.JOBS}}'
 
@@ -120,7 +120,7 @@ tasks:
         echo "    Example:  task publish:dsc LANGUAGES=en"
         echo "    Every task, including 'task pdf', takes LANGUAGES."
         echo ""
-        echo "  Tip: PDF builds run books concurrently, one per core. Cap that with JOBS=<n>."
+        echo "  Tip: PDF builds run books concurrently, one for each core. JOBS=<n> caps this."
         echo "    Example:  task container:pdf:mlm LANGUAGES=en JOBS=4"
         echo ""
         echo "  ── LOCAL  (Go + Task + Antora + asciidoctor-pdf installed locally) ──────────"
@@ -289,20 +289,17 @@ tasks:
       - task: draft:uyuni-webui
 
   # --------------------------------------------------------------------------
-  # Per-language PDF staging — the English fallback modules and the
-  # product/language entities file. Both are shared by every book of a
-  # language, and neither 'cp -an' nor a single shared entities.adoc is safe to
-  # run concurrently, so the parallel matrix does this once per language up
-  # front and then builds books with STAGE=0.
+  # PDF staging — the English fallback modules and the entities file for one
+  # product and language. Every book of a language shares both files, and
+  # concurrent writes to them are not safe. Stage each language one time, then
+  # build its books with STAGE=0.
   #
-  # Not marked internal: build_pdfs.sh and the 'pdf' task invoke it as a
-  # subprocess, which Task treats as a CLI call. Having no 'desc' keeps it out
-  # of 'task --list'.
+  # This task is not internal, because build_pdfs.sh and 'pdf' call it as a
+  # subprocess. It has no 'desc', which keeps it out of 'task --list'.
   # --------------------------------------------------------------------------
   pdf-stage:
     deps: [gen, _guard-lang]
-    # Callable from scripts/build_pdfs.sh, so it is not internal; without this an
-    # accidental bare invocation would run gen-entities with no product.
+    # PRODUCT has no default. Without this, gen-entities gets an empty product.
     requires:
       vars: [PRODUCT]
     cmds:
@@ -326,7 +323,7 @@ tasks:
     vars:
       BOOK: '{{default "administration" .BOOK}}'
       PRODUCT: '{{default "mlm" .PRODUCT}}'
-      # STAGE=0 means the caller has already staged this language.
+      # STAGE=0 tells this task that the caller stages the language.
       STAGE: '{{default "1" .STAGE}}'
     cmds:
       - for: {var: LANGUAGES}
@@ -335,7 +332,7 @@ tasks:
           PRODUCT="{{.PRODUCT}}"
           LANG_CODE="{{.ITEM}}"
 
-          # Resolve PDF theme from config.yml via docbuild (printed to stdout)
+          # PDF theme for the product and language
           case "${PRODUCT}:${LANG_CODE}" in
             mlm:ja)    THEME=suse-jp ;;
             mlm:zh_CN) THEME=suse-sc ;;
@@ -376,11 +373,10 @@ tasks:
           # Resolve PDF filename prefix from config.yml (e.g. suse_multi_linux_manager or uyuni)
           PDF_PREFIX=$({{.DOCBUILD}} get-pdf-prefix -product ${PRODUCT})
 
-          # Stage the English fallback modules and this product/language's
-          # entities.adoc, unless the caller already did it for the whole
-          # language. A missing entities.adoc is only an ERROR to asciidoctor,
-          # and --failure-level FATAL would let it produce a PDF full of
-          # unresolved attributes, so check rather than trust STAGE=0.
+          # Stage the fallback modules and entities.adoc, unless the caller
+          # stages the full language. Asciidoctor reports only an ERROR for a
+          # missing entities.adoc, and --failure-level FATAL ignores an ERROR.
+          # The result is a PDF with unresolved attributes. Therefore, check.
           if [ "{{.STAGE}}" = "1" ]; then
             task pdf-stage PRODUCT=${PRODUCT} LANGUAGES=${LANG_CODE}
           elif [ ! -f "${SRCDIR}/branding/pdf/entities.adoc" ]; then
@@ -389,7 +385,8 @@ tasks:
             exit 1
           fi
 
-          # Generate PDF nav file from Antora nav (per book, so safe in parallel)
+          # Make the PDF nav file from the Antora nav. One file for each book,
+          # therefore parallel builds are safe.
           {{.DOCBUILD}} gen-pdf-nav -book ${BOOK} -lang ${LANG_CODE} -dir ${SRCDIR}/modules/${BOOK}
 
           cd "${SRCDIR}"
@@ -412,9 +409,9 @@ tasks:
   # --------------------------------------------------------------------------
   # PDF builds — all books for a product
   # --------------------------------------------------------------------------
-  # The language x book matrix is built concurrently — asciidoctor-pdf is
-  # single-threaded, so this is the only thing that uses more than one core.
-  # Cap it with JOBS=<n>; it defaults to nproc.
+  # Books build concurrently. asciidoctor-pdf has one thread, therefore this
+  # is the only step that uses more than one core. JOBS=<n> caps the count.
+  # The default is nproc.
   pdf:mlm:
     desc: "[Local] Build all MLM PDFs — all books, all languages (JOBS=<n> caps concurrency)"
     deps: [gen, _guard-lang]
@@ -429,10 +426,10 @@ tasks:
       - task: translations
       - bash scripts/build_pdfs.sh uyuni "{{.LANGUAGES}}" "{{.BOOKS}}"
 
-  # Sequential, not parallel deps: both products generate
-  # translations/{lang}/branding/pdf/entities.adoc, which is not product-scoped,
-  # so running them at once lets one product's entities land in the other's
-  # PDFs. Each product now saturates the cores on its own, so nothing is lost.
+  # The products run in sequence, not as parallel deps. Both write
+  # translations/{lang}/branding/pdf/entities.adoc, which has no product in its
+  # path. A parallel run puts one product's entities in the other product's
+  # PDFs. Each product uses all cores alone, therefore the sequence is free.
   pdf:all:
     desc: "[Local] Build all PDFs — both products, all languages"
     cmds:
@@ -523,10 +520,10 @@ tasks:
           cd build/pdf && zip -r9 {{.ROOT_DIR}}/build/${LANG_CODE}/uyuni-docs_${LANG_CODE}-pdf.zip ${LANG_CODE}/
 
   # --------------------------------------------------------------------------
-  # PDF tarballs — zip of all PDFs per product/language
+  # PDF archives — one zip of all PDFs for each product and language
   # --------------------------------------------------------------------------
   pdf-tar:mlm:
-    desc: "[Dev] Create OBS-style PDF tarballs for MLM"
+    desc: "[Dev] Create OBS-style PDF zip archives for MLM"
     deps: [_guard-lang]
     cmds:
       - for: {var: LANGUAGES}
@@ -539,7 +536,7 @@ tasks:
           mv build/${LANG_CODE}/suse-multi-linux-manager-docs_${LANG_CODE}-pdf.zip build/packages/
 
   pdf-tar:uyuni:
-    desc: "[Dev] Create OBS-style PDF tarballs for Uyuni"
+    desc: "[Dev] Create OBS-style PDF zip archives for Uyuni"
     deps: [_guard-lang]
     cmds:
       - for: {var: LANGUAGES}
@@ -640,9 +637,9 @@ tasks:
   # --------------------------------------------------------------------------
   translations:
     desc: "[Dev] Apply .po translation files (generates translated AsciiDoc)"
-    # Run once per invocation: publish:* and obs:* reach this through several
-    # paths, and 'rm -rf translations' from a second invocation would delete the
-    # tree the first one is still writing.
+    # Run one time for each invocation. publish:* and obs:* reach this task
+    # through more than one path. A second run does 'rm -rf translations' and
+    # deletes the tree that the first run writes.
     run: once
     sources:
       - l10n-weblate/**/*.po

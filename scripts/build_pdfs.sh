@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
-# Build every language x book PDF for one product, several at a time.
+# Build all the language x book PDFs for one product, more than one at a time.
 #
-# asciidoctor-pdf is single-threaded, so the only thing that scales this build
-# is running books concurrently: the full 32-PDF MLM matrix takes ~5 minutes
-# one at a time and well under a minute spread across a desktop's cores.
+# asciidoctor-pdf has one thread. Concurrent books are therefore the only way
+# to make this build use more than one core.
 #
 # Usage: build_pdfs.sh <product> "<languages>" "<books>"
-# Set JOBS to cap concurrency; it defaults to nproc.
+# JOBS caps the number of concurrent books. The default is nproc.
 
 set -u
 
@@ -36,17 +35,16 @@ trap 'rm -rf "${WORKDIR}"' EXIT
 
 export WORKDIR PRODUCT
 
-# Build one book. Output goes to a per-job log that is flushed under a lock, so
-# concurrent books do not interleave their output and a failing book stays
-# identifiable in the noise.
+# Build one book. Each job writes to its own log and prints it under a lock.
+# Concurrent books therefore do not mix their output.
 build_one() {
     local book="$1"
     local lang="$2"
     local log="${WORKDIR}/${lang}-${book}.log"
     local rc
 
-    # STAGE=0: the shared per-language files are already in place (see below),
-    # and staging them again from every book would race.
+    # STAGE=0: the shared files for this language are in place (see below).
+    # A second staging operation from each book is not safe.
     task pdf BOOK="${book}" PRODUCT="${PRODUCT}" LANGUAGES="${lang}" STAGE=0 > "${log}" 2>&1
     rc=$?
 
@@ -54,7 +52,7 @@ build_one() {
         flock 9
         cat "${log}"
         if [ ${rc} -ne 0 ] ; then
-            # Same stream as the log above, so the two stay together.
+            # The same stream as the log, therefore the two stay together.
             echo "==> FAILED: ${PRODUCT} / ${lang} / ${book} (exit ${rc})"
         fi
     } 9< "${WORKDIR}/lock"
@@ -66,8 +64,8 @@ export -f build_one
 
 echo "==> ${PRODUCT} PDFs — languages: ${LANGUAGES} — ${JOBS} at a time"
 
-# Stage every language once, before any book starts. Doing this per book would
-# have every book of a language copy the same tree and rewrite the same
+# Stage each language one time, before the first book starts. Staging in each
+# book makes all the books of a language copy the same tree and write the same
 # entities.adoc at the same time.
 task pdf-stage PRODUCT="${PRODUCT}" LANGUAGES="${LANGUAGES}" || exit 1
 
@@ -78,7 +76,7 @@ for lang in ${LANGUAGES}; do
 done | xargs -r -P "${JOBS}" -L 1 bash -c 'build_one "$1" "$2"' bash
 rc=$?
 
-# xargs reports 123 when any invocation failed; normalise to a plain failure.
+# xargs returns 123 if an invocation failed. Report a plain failure.
 if [ ${rc} -ne 0 ] ; then
     echo "==> One or more ${PRODUCT} PDFs failed to build." >&2
     exit 1
