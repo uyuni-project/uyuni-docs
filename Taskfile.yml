@@ -295,6 +295,10 @@ tasks:
   # --------------------------------------------------------------------------
   pdf-stage:
     deps: [gen, _guard-lang]
+    # Callable from scripts/build_pdfs.sh, so it is not internal; without this an
+    # accidental bare invocation would run gen-entities with no product.
+    requires:
+      vars: [PRODUCT]
     cmds:
       - for: {var: LANGUAGES}
         cmd: |
@@ -702,38 +706,38 @@ tasks:
   container:run:
     desc: "[Container] Run any task inside the container (escape hatch: task container:run -- <target>)"
     cmds:
-      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task {{.CLI_ARGS}}"
+      - "{{.CONTAINER_CMD}} run --rm -e JOBS='{{.JOBS}}' -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task {{.CLI_ARGS}}"
 
   # HTML builds
   container:draft:mlm-dsc:
     desc: "[Draft] MLM HTML — documentation.suse.com branding, via container (all languages; override with LANGUAGES=en)"
     deps: [_guard-lang]
     cmds:
-      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task draft:mlm-dsc LANGUAGES='{{.LANGUAGES}}'"
+      - "{{.CONTAINER_CMD}} run --rm -e JOBS='{{.JOBS}}' -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task draft:mlm-dsc LANGUAGES='{{.LANGUAGES}}'"
 
   container:draft:mlm-webui:
     desc: "[Draft] MLM HTML — WebUI branding with language selector, via container (all languages; override with LANGUAGES=en)"
     deps: [_guard-lang]
     cmds:
-      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task draft:mlm-webui LANGUAGES='{{.LANGUAGES}}'"
+      - "{{.CONTAINER_CMD}} run --rm -e JOBS='{{.JOBS}}' -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task draft:mlm-webui LANGUAGES='{{.LANGUAGES}}'"
 
   container:draft:uyuni-website:
     desc: "[Draft] Uyuni HTML — website branding, via container (all languages; override with LANGUAGES=en)"
     deps: [_guard-lang]
     cmds:
-      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task draft:uyuni-website LANGUAGES='{{.LANGUAGES}}'"
+      - "{{.CONTAINER_CMD}} run --rm -e JOBS='{{.JOBS}}' -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task draft:uyuni-website LANGUAGES='{{.LANGUAGES}}'"
 
   container:draft:uyuni-webui:
     desc: "[Draft] Uyuni HTML — WebUI branding with language selector, via container (all languages; override with LANGUAGES=en)"
     deps: [_guard-lang]
     cmds:
-      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task draft:uyuni-webui LANGUAGES='{{.LANGUAGES}}'"
+      - "{{.CONTAINER_CMD}} run --rm -e JOBS='{{.JOBS}}' -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task draft:uyuni-webui LANGUAGES='{{.LANGUAGES}}'"
 
   container:draft:all:
     desc: "[Draft] All four HTML output targets, via container (sequential; override with LANGUAGES=en)"
     deps: [_guard-lang]
     cmds:
-      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task draft:all LANGUAGES='{{.LANGUAGES}}'"
+      - "{{.CONTAINER_CMD}} run --rm -e JOBS='{{.JOBS}}' -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task draft:all LANGUAGES='{{.LANGUAGES}}'"
 
   # PDF builds
   container:pdf:mlm:
@@ -797,13 +801,13 @@ tasks:
     desc: "[Container] Antora xref validation — MLM (all languages; override with LANGUAGES=en)"
     deps: [_guard-lang]
     cmds:
-      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task validate:mlm LANGUAGES='{{.LANGUAGES}}'"
+      - "{{.CONTAINER_CMD}} run --rm -e JOBS='{{.JOBS}}' -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task validate:mlm LANGUAGES='{{.LANGUAGES}}'"
 
   container:validate:uyuni:
     desc: "[Container] Antora xref validation — Uyuni (all languages; override with LANGUAGES=en)"
     deps: [_guard-lang]
     cmds:
-      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task validate:uyuni LANGUAGES='{{.LANGUAGES}}'"
+      - "{{.CONTAINER_CMD}} run --rm -e JOBS='{{.JOBS}}' -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task validate:uyuni LANGUAGES='{{.LANGUAGES}}'"
 
   container:validate:revdate:
     desc: "[Container] Check :revdate: on changed AsciiDoc pages"
@@ -815,7 +819,7 @@ tasks:
   container:translations:
     desc: "[Container] Apply .po translation files, via container"
     cmds:
-      - "{{.CONTAINER_CMD}} run --rm -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task translations"
+      - "{{.CONTAINER_CMD}} run --rm -e JOBS='{{.JOBS}}' -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task translations"
 
   container:pot:
     desc: "[Container] Update .pot/.po translation templates, via container"

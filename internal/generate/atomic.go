@@ -1,4 +1,6 @@
-// Package generate — atomic file writes.
+package generate
+
+// Atomic file writes.
 //
 // The PDF matrix builds books in parallel, and several books of the same
 // language regenerate identical shared files (entities.adoc in particular).
@@ -6,7 +8,6 @@
 // asciidoctor-pdf can read a half-written file. Writing to a temporary file in
 // the same directory and renaming it into place makes every write all-or-nothing:
 // a reader sees either the previous complete file or the new complete one.
-package generate
 
 import (
 	"fmt"

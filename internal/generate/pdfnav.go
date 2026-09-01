@@ -44,9 +44,9 @@ func PDFNav(srcDir, book, lang string) error {
 	}
 	defer in.Close()
 
-	// Buffer the result and write it atomically: pdf:all builds the same
-	// book/language for both products, so two processes can target this path
-	// at once.
+	// Buffer the result and write it atomically. The old os.Create truncated
+	// the file before the scan had produced anything, so an error partway
+	// through left a half-written nav behind for the next build to include.
 	var out bytes.Buffer
 	scanner := bufio.NewScanner(in)
 	for scanner.Scan() {

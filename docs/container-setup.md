@@ -108,6 +108,23 @@ task container:pdf:uyuni              # All Uyuni PDFs — all books, all langua
 task container:pdf:all                # All PDFs
 ```
 
+### Limiting languages
+
+Every task builds all four languages by default. Narrow that with `LANGUAGES=`:
+
+```bash
+task container:pdf:mlm LANGUAGES=en
+task container:publish:uyuni LANGUAGES="en ja"
+```
+
+### Controlling concurrency
+
+PDF books and po4a both run in parallel, one job per core. Cap that with `JOBS=`:
+
+```bash
+task container:pdf:mlm LANGUAGES=en JOBS=4
+```
+
 ### Build one PDF book
 
 Use the `pdf` task with `BOOK=`, `PRODUCT=`, and `LANGUAGES=` variables:
