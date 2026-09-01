@@ -171,17 +171,24 @@ task validate:uyuni         # Antora xref validation — Uyuni
 task clean                  # Remove build/, translations/, .cache/
 ```
 
-### Build a single PDF book
+### Build one PDF book
 
-Use the `pdf` task with `BOOK=`, `PRODUCT=`, and `LANG=` variables:
+Use the `pdf` task with `BOOK=`, `PRODUCT=`, and `LANGUAGES=` variables:
 
 ```bash
 # Build the Administration Guide for MLM in English
-task pdf BOOK=administration PRODUCT=mlm LANG=en
+task pdf BOOK=administration PRODUCT=mlm LANGUAGES=en
 
 # Build the Installation and Upgrade Guide for Uyuni in Japanese
-task pdf BOOK=installation-and-upgrade PRODUCT=uyuni LANG=ja
+task pdf BOOK=installation-and-upgrade PRODUCT=uyuni LANGUAGES=ja
+
+# Build one book in several languages
+task pdf BOOK=administration PRODUCT=mlm LANGUAGES="en ja"
 ```
+
+Without `LANGUAGES=` this builds the book in every language. It is `LANGUAGES`,
+not `LANG`: `LANG` is the POSIX locale variable, every shell sets it, and no
+task reads it as a documentation language.
 
 Available books: `installation-and-upgrade` `client-configuration` `administration` `reference` `retail` `common-workflows` `specialized-guides` `legal`
 
