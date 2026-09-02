@@ -138,17 +138,18 @@ follows a `--cpus` limit on the container.
 
 ### Build one PDF book
 
-Use the `pdf` task with `BOOK=`, `PRODUCT=`, and `LANGUAGES=` variables:
+There is no `container:pdf` task for one book. Use `container:run` with the
+`pdf` task and the `BOOK=`, `PRODUCT=`, and `LANGUAGES=` variables:
 
 ```bash
 # Build the Administration Guide for MLM in English
-task pdf BOOK=administration PRODUCT=mlm LANGUAGES=en
+task container:run -- pdf BOOK=administration PRODUCT=mlm LANGUAGES=en
 
 # Build the Installation and Upgrade Guide for Uyuni in Japanese
-task pdf BOOK=installation-and-upgrade PRODUCT=uyuni LANGUAGES=ja
+task container:run -- pdf BOOK=installation-and-upgrade PRODUCT=uyuni LANGUAGES=ja
 
 # Build one book in several languages
-task pdf BOOK=administration PRODUCT=mlm LANGUAGES="en ja"
+task container:run -- pdf BOOK=administration PRODUCT=mlm LANGUAGES="en ja"
 ```
 
 Without `LANGUAGES=` this builds the book in every language.
