@@ -126,7 +126,10 @@ always processes every language, because po4a reads the `.po` files directly.
 
 `LANGUAGES=` must name at least one language, and every name must be one of
 `en` `ja` `zh_CN` `ko`. An empty or misspelled value stops the build instead of
-producing nothing and reporting success.
+producing nothing and reporting success. `task --dry` makes the same check.
+
+`export LANGUAGES=en` sets the default for every later command. A `LANGUAGES=`
+on the command line still wins over it.
 
 ### Controlling concurrency
 
