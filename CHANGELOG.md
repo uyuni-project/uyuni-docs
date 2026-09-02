@@ -1,3 +1,4 @@
+- Extracted and relocated general sudo configuration guidelines to a new central page, and added unprivileged onboarding support references for SLE 16 (bsc#1275794)
 - Made JOBS=00 an error, which xargs read as unlimited concurrency
 - Fixed the PDF archive tasks, which failed when the checkout path contains a space
 - Sped up PDF builds by building the books and applying the translations concurrently. JOBS=<n> caps the number of concurrent jobs

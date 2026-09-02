@@ -1,6 +1,6 @@
 [[contact-methods-saltssh]]
 = SSH Push Contact Method
-:revdate: 2025-02-06
+:revdate: 2026-08-24
 :page-revdate: {revdate}
 
 
@@ -88,45 +88,33 @@ You can also configure persistent parameters that are used system-wide, includin
 Use `mgrctl term` before running steps inside the server container.
 ====
 
-.Procedure: Configuring Unprivileged SSH Access
+.Procedure: Configuring unprivileged SSH access
+[role="procedure"]
+_____
 . Ensure you have the latest `spacewalk-taskomatic` and `spacewalk-certs-tools` packages installed on the {productname} Server.
+
 . On each client system, create an appropriate unprivileged user.
-. On each client system, edit the `sudoers` file:
-+
-----
-sudo visudo
-----
-. Grant `sudo` access to the user by adding this line at the end of the `sudoers` file.
-  Replace `<user>` with the name of the user that is bootstrapping the client in the {webui}:
-+
-----
-<user>  ALL=NOPASSWD: /usr/bin/python3, /var/tmp/venv-salt-minion/bin/python
-----
-+
-[NOTE]
-====
-This procedure grants root access without requiring a password, which is required for registering the client.
-When the client is successfully installed it runs with root privileges, so the access is no longer required.
-We recommend that you remove the line from the `sudoers` file after the client has been successfully installed.
-====
+
+. Configure passwordless `sudo` access on the client for the unprivileged user.
+  For detailed instructions, see xref:client-configuration:registration-sudo.adoc[].
 
 . Inside the {productname} Server container, edit the `/etc/rhn/rhn.conf` configuration file, and add or amend this line to include the unprivileged username:
 +
 ----
 ssh_push_sudo_user = <user>
 ----
-+
+
 . After changing this configuration parameter you must restart services such as `salt-secrets-config.service`, `tomcat.service`, and `taskomatic.service`.
- To cover all needed services, it is the best to restart the {productname} Server as root.
- Outside of the container, from the container host, enter:
+  To cover all needed services, restart the {productname} Server.
+  Outside of the container, from the container host, run:
 +
 ----
 mgradm restart
 ----
+_____
 
 
-
-== Action Execution
+== Action execution
 
 The SSH Push feature uses taskomatic to execute scheduled actions using `salt-ssh`.
 The taskomatic job periodically checks for scheduled actions and executes them.
