@@ -1,7 +1,7 @@
 - Sped up PDF builds by building the books concurrently. JOBS=<n> caps the number of concurrent jobs
 - Fixed task pdf:all so the two products no longer overwrite each other's entities.adoc while building at the same time
-- Fixed the pdf-tar tasks, which never produced an archive and packaged both products into each one
-- Made an empty or misspelled LANGUAGES stop the build instead of producing nothing and reporting success
+- Fixed the pdf-tar tasks, which produced no archive and packaged both products into each one
+- Made an empty or incorrect LANGUAGES stop the build instead of reporting success with no output
 - Made an exported LANGUAGES set the default language selection
 - Made every build task select languages with LANGUAGES
 - Added a CI check for the revision date of changed documentation pages
