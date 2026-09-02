@@ -63,8 +63,10 @@ vars:
   PDF_FONTS_DIR: "{{.ROOT_DIR}}/branding/pdf/fonts"
   XREF_EXT: "{{.ROOT_DIR}}/.bin/xref-converter.rb"
   # DOC_LANGUAGES is the canonical set and stays fixed; LANGUAGES is what every
-  # task iterates and is what you override on the command line. The _guard-lang
-  # check needs the full set even when LANGUAGES is narrowed.
+  # build task iterates and is what you override on the command line. The
+  # 'translations' task is the exception: po4a reads the .po files directly and
+  # always processes every language. The _guard-lang check needs the full set
+  # even when LANGUAGES is narrowed.
   DOC_LANGUAGES: "en ja zh_CN ko"
   LANGUAGES: "{{.DOC_LANGUAGES}}"
   BOOKS: "installation-and-upgrade client-configuration administration reference retail common-workflows specialized-guides legal"
@@ -79,7 +81,10 @@ vars:
 
 # 'task pdf:mlm JOBS=4' sets a Task variable. Templates can read it, but the
 # command shell cannot. build_pdfs.sh reads JOBS from the environment. This
-# block exports it there.
+# block exports it to every task.
+#
+# An unset JOBS becomes an empty string here, not an absent variable. The
+# script therefore tests for an empty value and then uses the core count.
 env:
   JOBS: '{{.JOBS}}'
 
@@ -301,6 +306,8 @@ tasks:
     cmds:
       - task: stage-content
       - for: {var: LANGUAGES}
+        # This runs after 'stage-content', so entities.adoc is the later of the
+        # two paths. The STAGE=0 check in 'pdf' examines both.
         cmd: "{{.DOCBUILD}} gen-entities -product {{.PRODUCT}} -lang {{.ITEM}}"
 
   # --------------------------------------------------------------------------
@@ -313,7 +320,14 @@ tasks:
   # --------------------------------------------------------------------------
   pdf:
     desc: "[Local] Build one PDF book — usage: task pdf BOOK=<book> PRODUCT=<product> LANGUAGES=<langs>"
-    deps: [gen, setup, _guard-lang]
+    # 'setup', not 'gen'. build_pdfs.sh starts one 'task pdf' process for each
+    # book, and 'run: once' applies to one process only, so each process
+    # evaluates 'gen' again. 'gen-all' writes
+    # translations/{lang}/branding/pdf/entities.adoc once for each product, to
+    # a path with no product in it, in Go map order. A 'gen' after the staging
+    # therefore replaces the staged entities with those of a different product.
+    # 'pdf-stage' keeps the 'gen' dependency for the STAGE=1 path.
+    deps: [setup, _guard-lang]
     vars:
       BOOK: '{{default "administration" .BOOK}}'
       PRODUCT: '{{default "mlm" .PRODUCT}}'
@@ -370,22 +384,32 @@ tasks:
           # Stage the content tree and entities.adoc, unless the caller stages
           # the full language. Asciidoctor reports only an ERROR for a missing
           # entities.adoc, and --failure-level FATAL ignores an ERROR. The
-          # result is a PDF with unresolved attributes. Therefore, check both
-          # of the trees that pdf-stage writes; they are separate.
-          if [ "{{.STAGE}}" = "1" ]; then
-            task pdf-stage PRODUCT=${PRODUCT} LANGUAGES=${LANG_CODE}
-          else
-            for staged in "${SRCDIR}/branding/pdf/entities.adoc" "${SRCDIR}/modules/${BOOK}"; do
-              if [ ! -e "${staged}" ]; then
-                echo "STAGE=0 but ${staged} is missing;" >&2
+          # result is a PDF with unresolved attributes.
+          #
+          # Examine both paths that pdf-stage writes, not only the later one.
+          # Also make sure that entities.adoc has content. An interrupted write
+          # leaves an empty file, and an empty file resolves no attributes.
+          case "{{.STAGE}}" in
+            1)
+              task pdf-stage PRODUCT=${PRODUCT} LANGUAGES=${LANG_CODE}
+              ;;
+            0)
+              if [ ! -s "${SRCDIR}/branding/pdf/entities.adoc" ] || [ ! -d "${SRCDIR}/modules/${BOOK}" ]; then
+                echo "STAGE=0 but ${LANG_CODE} is not staged:" >&2
+                echo "  ${SRCDIR}/branding/pdf/entities.adoc is missing or empty," >&2
+                echo "  or ${SRCDIR}/modules/${BOOK} is missing." >&2
                 echo "run: task pdf-stage PRODUCT=${PRODUCT} LANGUAGES=${LANG_CODE}" >&2
                 exit 1
               fi
-            done
-          fi
+              ;;
+            *)
+              echo "STAGE must be 0 or 1, got '{{.STAGE}}'." >&2
+              exit 2
+              ;;
+          esac
 
-          # Make the PDF nav file from the Antora nav. One file for each book,
-          # therefore parallel builds are safe.
+          # Make the PDF nav file from the Antora nav. There is one file for
+          # each book and language. Concurrent builds do not share it.
           {{.DOCBUILD}} gen-pdf-nav -book ${BOOK} -lang ${LANG_CODE} -dir ${SRCDIR}/modules/${BOOK}
 
           cd "${SRCDIR}"
@@ -408,9 +432,9 @@ tasks:
   # --------------------------------------------------------------------------
   # PDF builds — all books for a product
   # --------------------------------------------------------------------------
-  # Books build concurrently. asciidoctor-pdf has one thread, therefore this
-  # is the only step that uses more than one core. JOBS=<n> caps the count.
-  # The default is nproc.
+  # Books build concurrently. asciidoctor-pdf runs on one core, so concurrent
+  # books are the only way to use more than one core in this step. JOBS=<n>
+  # caps the count. The default is the core count.
   pdf:mlm:
     desc: "[Local] Build all MLM PDFs — all books, all languages (JOBS=<n> caps concurrency)"
     deps: [gen, _guard-lang]
@@ -433,7 +457,7 @@ tasks:
   # The products run in sequence, not as parallel deps. Both write
   # translations/{lang}/branding/pdf/entities.adoc, which has no product in its
   # path. A parallel run puts one product's entities in the other product's
-  # PDFs. Each product uses all cores alone, therefore the sequence is free.
+  # PDFs. One product usually saturates the cores, so the sequence costs little.
   pdf:all:
     desc: "[Local] Build all PDFs — both products, all languages"
     cmds:

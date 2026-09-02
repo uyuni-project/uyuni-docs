@@ -184,6 +184,9 @@ task pdf:mlm LANGUAGES=en
 task publish:uyuni LANGUAGES="en ja"
 ```
 
+`LANGUAGES=` selects the languages that are built. The `translations` step
+always processes every language, because po4a reads the `.po` files directly.
+
 ### Controlling concurrency
 
 PDF books build in parallel, one job for each core. `JOBS=` caps the count:
