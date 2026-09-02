@@ -1,4 +1,12 @@
 - Extracted and relocated general sudo configuration guidelines to a new central page, and added unprivileged onboarding support references for SLE 16 (bsc#1275794)
+- Made JOBS=00 an error, which xargs read as unlimited concurrency
+- Fixed the PDF archive tasks, which failed when the checkout path contains a space
+- Sped up PDF builds by building the books and applying the translations concurrently. JOBS=<n> caps the number of concurrent jobs
+- Fixed task pdf:all so the two products no longer overwrite each other's entities.adoc while building at the same time
+- Fixed the pdf-tar tasks, which produced no archive and packaged both products into each one
+- Made an empty or incorrect LANGUAGES stop the build instead of reporting success with no output
+- Made an exported LANGUAGES set the default language selection
+- Made every build task select languages with LANGUAGES
 - Added a CI check for the revision date of changed documentation pages
 - Removed a second copy of the container image inspection section, which was published as a page with no title
 - Fixed the validate tasks to use Antora's built-in xref checking instead of the removed Antora 2 xref-validator plugin
