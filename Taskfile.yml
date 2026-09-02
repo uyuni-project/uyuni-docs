@@ -66,7 +66,13 @@ vars:
   # always processes every language. The _guard-lang check needs the full set
   # even when LANGUAGES is narrowed.
   DOC_LANGUAGES: "en ja zh_CN ko"
-  LANGUAGES: "{{.DOC_LANGUAGES}}"
+  # A Taskfile 'vars' entry beats the OS environment, so a plain
+  # 'LANGUAGES: "{{.DOC_LANGUAGES}}"' makes 'export LANGUAGES=en' do nothing at
+  # all: the caller narrows the build and gets every language, without a
+  # message. Read the environment here instead. A command-line 'LANGUAGES=' is
+  # a higher precedence than this whole entry and still wins. _guard-lang
+  # validates the result, whichever of the three it came from.
+  LANGUAGES: '{{default .DOC_LANGUAGES (env "LANGUAGES")}}'
   BOOKS: "installation-and-upgrade client-configuration administration reference retail common-workflows specialized-guides legal"
   CONTAINER_CMD:
     sh: which podman 2>/dev/null || which docker 2>/dev/null || echo "podman"
@@ -177,9 +183,18 @@ tasks:
   # with a different cause. Every task that loops over LANGUAGES depends on this
   # guard, so one check here covers all of them.
   #
-  # Both values reach the script as environment variables rather than as
+  # The checks are 'preconditions', not 'cmds'. Task skips the commands of a
+  # dependency under '--dry' but still evaluates its preconditions, so this is
+  # the only form that catches a bad selection in a dry run. It also keeps the
+  # message out of the printed command list.
+  #
+  # Both values reach the test scripts as environment variables rather than as
   # templated text, so a value holding shell metacharacters is compared, not
-  # executed.
+  # executed. A precondition inherits the task's 'env' block.
+  #
+  # 'msg' cannot name the offending code, because Task renders it from the
+  # template context and not from the script. Each message prints the whole
+  # value instead, which is as much as the reader needs.
   # --------------------------------------------------------------------------
   _guard-lang:
     internal: true
@@ -187,49 +202,51 @@ tasks:
     env:
       GUARD_LANG: '{{.LANG}}'
       GUARD_LANGUAGES: '{{.LANGUAGES}}'
-    cmds:
-      - |
-        for L in {{.DOC_LANGUAGES}}; do
-          [ "$L" = "${GUARD_LANG:-}" ] || continue
-          echo ""                                                          >&2
-          echo "  ERROR: use LANGUAGES to select documentation languages." >&2
-          echo "           task <target> LANGUAGES=${GUARD_LANG}"          >&2
-          echo ""                                                          >&2
-          exit 1
-        done
-
-        # Unquoted, so the word split drops the whitespace. An empty result
-        # means LANGUAGES held nothing but spaces, tabs or newlines.
-        set -- ${GUARD_LANGUAGES:-}
-        if [ $# -eq 0 ] ; then
-          echo ""                                                              >&2
-          echo "  ERROR: LANGUAGES is empty, so this build would produce"      >&2
-          echo "         nothing and still report success."                    >&2
-          echo "           task <target> LANGUAGES=\"{{.DOC_LANGUAGES}}\""     >&2
-          echo ""                                                              >&2
-          exit 1
-        fi
-
-        for want in "$@" ; do
-          # A flag, not 'break 2'. Under errexit a failing '[ ] &&' list at the
-          # end of a loop body ends the whole guard.
-          known=0
-          for have in {{.DOC_LANGUAGES}} ; do
-            if [ "$want" = "$have" ] ; then
-              known=1
-              break
+    preconditions:
+      - sh: |
+          for L in {{.DOC_LANGUAGES}} ; do
+            if [ "$L" = "${GUARD_LANG:-}" ] ; then
+              exit 1
             fi
           done
-          if [ "$known" -eq 1 ] ; then
-            continue
-          fi
-          echo ""                                                              >&2
-          echo "  ERROR: LANGUAGES contains '${want}', which is not a"         >&2
-          echo "         documentation language."                              >&2
-          echo "           choose from: {{.DOC_LANGUAGES}}"                    >&2
-          echo ""                                                              >&2
-          exit 1
-        done
+        msg: |2
+
+            ERROR: LANG={{.LANG}} does not select a documentation language.
+                   Use LANGUAGES instead:
+                     task <target> LANGUAGES={{.LANG}}
+
+      # Unquoted, so the word split drops the whitespace. An empty result means
+      # LANGUAGES held nothing but spaces, tabs or newlines.
+      - sh: |
+          set -- ${GUARD_LANGUAGES:-}
+          test $# -gt 0
+        msg: |2
+
+            ERROR: LANGUAGES is empty, so this build would produce nothing
+                   and still report success.
+                     task <target> LANGUAGES="{{.DOC_LANGUAGES}}"
+
+      - sh: |
+          for want in ${GUARD_LANGUAGES:-} ; do
+            # A flag, not 'break 2'. Under errexit a failing '[ ] &&' list at
+            # the end of a loop body ends the whole check.
+            known=0
+            for have in {{.DOC_LANGUAGES}} ; do
+              if [ "$want" = "$have" ] ; then
+                known=1
+                break
+              fi
+            done
+            if [ "$known" -eq 0 ] ; then
+              exit 1
+            fi
+          done
+        msg: |2
+
+            ERROR: LANGUAGES="{{.LANGUAGES}}" names something that is not a
+                   documentation language.
+                     choose from: {{.DOC_LANGUAGES}}
+
 
   # --------------------------------------------------------------------------
   # Setup — build the Go binary
@@ -602,26 +619,49 @@ tasks:
   # the rest of the block. Give zip an absolute destination, as 'pdf-zip:*'
   # does, rather than a 'build/' path that resolves one level too deep after
   # the 'cd'.
+  #
+  # build/{lang}/pdf/ holds the books of both products, so select by the
+  # product's filename prefix. Without that, both archives get the same content
+  # and differ only in name. 'pdf-zip:*' avoids this a different way: it reads
+  # build/pdf/{lang}/, which 'pdf-collect:{product}' fills one product at a
+  # time.
+  #
+  # zip adds to an archive that already exists. Remove the old one, or a book
+  # that a later run no longer builds stays in it.
   # --------------------------------------------------------------------------
   pdf-tar:mlm:
     desc: "[Dev] Create OBS-style PDF zip archives for MLM"
-    deps: [_guard-lang]
+    deps: [setup, _guard-lang]
     cmds:
       - for: {var: LANGUAGES}
         cmd: |
           LANG_CODE="{{.ITEM}}"
+          PREFIX=$({{.DOCBUILD}} get-pdf-prefix -product mlm)
+          ARCHIVE={{.ROOT_DIR}}/build/packages/suse-multi-linux-manager-docs_${LANG_CODE}-pdf.zip
+          if ! ls build/${LANG_CODE}/pdf/${PREFIX}_*.pdf >/dev/null 2>&1 ; then
+            echo "no ${PREFIX} PDFs in build/${LANG_CODE}/pdf; run 'task pdf:mlm LANGUAGES=${LANG_CODE}' first" >&2
+            exit 1
+          fi
           mkdir -p build/packages
-          cd build && zip -r9 {{.ROOT_DIR}}/build/packages/suse-multi-linux-manager-docs_${LANG_CODE}-pdf.zip ${LANG_CODE}/pdf/
+          rm -f "${ARCHIVE}"
+          cd build && zip -r9 "${ARCHIVE}" ${LANG_CODE}/pdf/${PREFIX}_*.pdf
 
   pdf-tar:uyuni:
     desc: "[Dev] Create OBS-style PDF zip archives for Uyuni"
-    deps: [_guard-lang]
+    deps: [setup, _guard-lang]
     cmds:
       - for: {var: LANGUAGES}
         cmd: |
           LANG_CODE="{{.ITEM}}"
+          PREFIX=$({{.DOCBUILD}} get-pdf-prefix -product uyuni)
+          ARCHIVE={{.ROOT_DIR}}/build/packages/uyuni-docs_${LANG_CODE}-pdf.zip
+          if ! ls build/${LANG_CODE}/pdf/${PREFIX}_*.pdf >/dev/null 2>&1 ; then
+            echo "no ${PREFIX} PDFs in build/${LANG_CODE}/pdf; run 'task pdf:uyuni LANGUAGES=${LANG_CODE}' first" >&2
+            exit 1
+          fi
           mkdir -p build/packages
-          cd build && zip -r9 {{.ROOT_DIR}}/build/packages/uyuni-docs_${LANG_CODE}-pdf.zip ${LANG_CODE}/pdf/
+          rm -f "${ARCHIVE}"
+          cd build && zip -r9 "${ARCHIVE}" ${LANG_CODE}/pdf/${PREFIX}_*.pdf
 
   # --------------------------------------------------------------------------
   # OBS packages — HTML tar.gz + PDF tar.gz → build/packages/
