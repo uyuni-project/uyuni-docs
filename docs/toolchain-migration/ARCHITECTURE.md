@@ -263,9 +263,11 @@ task draft:uyuni-webui             Uyuni HTML — WebUI branding with language s
 task draft:all                     All four HTML output targets (sequential)
 
 task pdf BOOK=<b> PRODUCT=<p> LANGUAGES=<l>  One book PDF, one or more languages
-task pdf:mlm                       All 8 books × 4 languages — MLM (runs translations first)
-task pdf:uyuni                     All 8 books × 4 languages — Uyuni (runs translations first)
-task pdf:all                       Both products
+task pdf-stage PRODUCT=<p>         Per-language shared files: English fallback modules + entities.adoc
+task pdf:mlm                       All 8 books × 4 languages — MLM (runs translations first, books concurrent)
+task pdf:uyuni                     All 8 books × 4 languages — Uyuni (runs translations first, books concurrent)
+task pdf:all                       Both products, in sequence (they share entities.adoc)
+                                   JOBS=<n> caps concurrency; the default is the core count
 
 task publish:dsc                   Full MLM publish — HTML + PDFs + zip archives
 task publish:uyuni                 Full Uyuni publish — HTML + PDFs + zip archives
