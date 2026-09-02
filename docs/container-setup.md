@@ -112,19 +112,51 @@ task container:pdf:uyuni              # All Uyuni PDFs — all books, all langua
 task container:pdf:all                # All PDFs
 ```
 
+### Limiting languages
+
+Each task builds all four languages by default. `LANGUAGES=` selects fewer:
+
+```bash
+task container:pdf:mlm LANGUAGES=en
+task container:publish:uyuni LANGUAGES="en ja"
+```
+
+`LANGUAGES=` selects the languages to build. The `stage-content` step stages
+the same set.
+
+`LANGUAGES=` must give one language or more, and each name must be `en`, `ja`,
+`zh_CN` or `ko`. An empty or incorrect value stops the build. `task --dry`
+makes the same check.
+
+`export LANGUAGES=en` sets the default for the subsequent commands. A
+`LANGUAGES=` on the command line has a higher precedence.
+
+### Controlling concurrency
+
+PDF books run concurrently, one job for each core. `JOBS=` caps the count:
+
+```bash
+task container:pdf:mlm LANGUAGES=en JOBS=4
+```
+
+Each concurrent book is a different asciidoctor-pdf process with its own fonts
+in memory. Decrease `JOBS=` if a build runs out of memory. The default obeys a
+`--cpus` limit on the container.
+
 ### Build one PDF book
 
-Use the `pdf` task with `BOOK=`, `PRODUCT=`, and `LANGUAGES=` variables:
+There is no `container:pdf` task for one book. Use `container:run` with the
+`pdf` task and the `BOOK=`, `PRODUCT=`, and `LANGUAGES=` variables:
 
 ```bash
 # Build the Administration Guide for MLM in English
-task pdf BOOK=administration PRODUCT=mlm LANGUAGES=en
+task container:run -- pdf BOOK=administration PRODUCT=mlm LANGUAGES=en
 
 # Build the Installation and Upgrade Guide for Uyuni in Japanese
-task pdf BOOK=installation-and-upgrade PRODUCT=uyuni LANGUAGES=ja
+task container:run -- pdf BOOK=installation-and-upgrade PRODUCT=uyuni LANGUAGES=ja
 
 # Build one book in several languages
-task pdf BOOK=administration PRODUCT=mlm LANGUAGES="en ja"
+task container:run -- pdf BOOK=administration PRODUCT=mlm LANGUAGES="en ja"
 ```
 
 Without `LANGUAGES=` this builds the book in every language.
