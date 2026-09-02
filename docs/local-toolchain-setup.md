@@ -180,15 +180,15 @@ task pdf:mlm LANGUAGES=en
 task publish:uyuni LANGUAGES="en ja"
 ```
 
-`LANGUAGES=` selects the languages that are built. The `translations` step
-always processes every language, because po4a reads the `.po` files directly.
+`LANGUAGES=` selects the languages to build. The `translations` step always
+processes all the languages, because po4a reads the `.po` files directly.
 
-`LANGUAGES=` must name at least one language, and every name must be one of
-`en` `ja` `zh_CN` `ko`. An empty or misspelled value stops the build instead of
-producing nothing and reporting success. `task --dry` makes the same check.
+`LANGUAGES=` must give one language or more, and each name must be `en`, `ja`,
+`zh_CN` or `ko`. An empty or incorrect value stops the build. `task --dry`
+makes the same check.
 
-`export LANGUAGES=en` sets the default for every later command. A `LANGUAGES=`
-on the command line still wins over it.
+`export LANGUAGES=en` sets the default for the subsequent commands. A
+`LANGUAGES=` on the command line has a higher precedence.
 
 ### Controlling concurrency
 
@@ -198,7 +198,7 @@ PDF books and po4a both run one job for each core. `JOBS=` caps both:
 task pdf:mlm LANGUAGES=en JOBS=4
 ```
 
-po4a gains nothing above one job for each translation config.
+More po4a jobs than translation configs gives no gain.
 
 ### Build one PDF book
 

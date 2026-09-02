@@ -2,11 +2,11 @@ package generate
 
 // Atomic file writes.
 //
-// build_pdfs.sh runs one 'task pdf' process for each book, and books of one
-// language read the same generated files. A developer can also run 'task gen'
-// in a second terminal during a build. A write to a temporary file, then a
-// rename, keeps each write atomic for other processes: a reader gets the
-// previous complete file or the new complete file, never a truncated one.
+// build_pdfs.sh starts one 'task pdf' process for each book, and the books of
+// one language read the same generated files. A developer can also run 'task
+// gen' in a second terminal during a build. A write to a temporary file, then
+// a rename, keeps each write atomic for other processes: a reader gets the
+// previous complete file or the new complete file, never a truncated file.
 //
 // This function does not fsync. Every file it writes is a build artifact that
 // the build makes again.
@@ -34,9 +34,9 @@ func atomicWriteFile(path string, data []byte, perm os.FileMode) error {
 		tmpName string
 		err     error
 	)
-	// The name holds the process ID, so two processes never pick the same one.
-	// The index handles a leftover temporary file from a process that was
-	// killed before its cleanup ran and whose process ID has been reused.
+	// The name holds the process ID, thus two processes do not select the same
+	// name. The index prevents a conflict with a leftover temporary file: the
+	// system uses a process ID again after a kill stops the cleanup.
 	const maxAttempts = 100
 	for i := 0; tmp == nil && i < maxAttempts; i++ {
 		tmpName = filepath.Join(dir, fmt.Sprintf(".%s.tmp%d-%d", base, os.Getpid(), i))
@@ -55,8 +55,8 @@ func atomicWriteFile(path string, data []byte, perm os.FileMode) error {
 	defer func() {
 		if tmpName != "" {
 			tmp.Close()
-			// Report a leftover temporary file. Enough of them make every
-			// later write to this path fail with the message above.
+			// Report a leftover temporary file. Sufficient leftover files
+			// make all later writes to this path fail with the message above.
 			if err := os.Remove(tmpName); err != nil {
 				fmt.Fprintf(os.Stderr, "warning: cannot remove temp file %s: %v\n", tmpName, err)
 			}
