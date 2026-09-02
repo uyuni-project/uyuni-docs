@@ -121,8 +121,8 @@ task container:pdf:mlm LANGUAGES=en
 task container:publish:uyuni LANGUAGES="en ja"
 ```
 
-`LANGUAGES=` selects the languages to build. The `translations` step always
-processes all the languages, because po4a reads the `.po` files directly.
+`LANGUAGES=` selects the languages to build. The `stage-content` step stages
+the same set.
 
 `LANGUAGES=` must give one language or more, and each name must be `en`, `ja`,
 `zh_CN` or `ko`. An empty or incorrect value stops the build. `task --dry`
