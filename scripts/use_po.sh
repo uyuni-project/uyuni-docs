@@ -3,8 +3,7 @@
 # There is no need of system-wide installation of po4a
 # Usage: PERLLIB=/path/to/po4a/lib use_po.sh
 # you may set following variables
-# SRCDIR root of the documentation repository
-# PODIR place where to create the po
+# PO_DIR place where the po files are
 # PUB_DIR place where to publish localized files
 
 # USER-CONFIGURABLE VARIABLES
@@ -52,9 +51,44 @@ fi
 # GENERATE TRANSLATED ASCIIDOC FROM .PO FILES, WITHOUT UPDATING .POT/PO
 #######################################################################
 
-for f in $(ls $CURRENT_DIR/$PO_DIR/*.cfg); do
-    po4a --srcdir $CURRENT_DIR --destdir $CURRENT_DIR -k $TRANSLATION_THRESHOLD_PERCENTAGE -M UTF-8 -L UTF-8 --no-update -o nolinting $f
-done
+# There is one .cfg file for each module, and each one writes only to its own
+# translations/<lang>/modules/<module>/ subtree. The configs are independent,
+# thus they run concurrently. JOBS caps the count. The default is the core
+# count. More jobs than configs gives no gain. JOBS=1 runs them in sequence.
+if [ -z "$JOBS" ] ; then
+	JOBS=$(nproc 2>/dev/null || echo 4)
+fi
+
+case "$JOBS" in
+    ''|*[!0-9]*|0)
+        echo "ERROR: JOBS must be a positive integer, got '$JOBS'." >&2
+        exit 2
+        ;;
+esac
+
+# A glob, not 'ls'. The exit status of a pipeline is the status of the last
+# command, thus a failed 'ls' stays invisible, and xargs exits 0 on empty input.
+# The script then reports success with no translations. The 'translations' task
+# deletes the old tree before it calls this script, and it fingerprints the
+# result. The empty tree becomes the up-to-date result for all later builds.
+shopt -s nullglob
+CFGS=("$CURRENT_DIR/$PO_DIR"/*.cfg)
+shopt -u nullglob
+
+if [ ${#CFGS[@]} -eq 0 ] ; then
+    echo "ERROR: no po4a configs in $CURRENT_DIR/$PO_DIR. The script cannot make translations." >&2
+    exit 1
+fi
+
+printf '%s\0' "${CFGS[@]}" | xargs -0 -r -P "$JOBS" -I{} \
+    po4a --srcdir "$CURRENT_DIR" --destdir "$CURRENT_DIR" -k $TRANSLATION_THRESHOLD_PERCENTAGE -M UTF-8 -L UTF-8 --no-update -o nolinting {}
+
+# Stop if po4a fails. Task fingerprints an incomplete run that reports success
+# as up to date, and each later build then uses the incomplete tree.
+if [ $? -ne 0 ] ; then
+    echo "ERROR: at least one po4a invocation failed; translations are incomplete." >&2
+    exit 1
+fi
 
 
 
