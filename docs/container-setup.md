@@ -117,14 +117,22 @@ task container:pdf:mlm LANGUAGES=en
 task container:publish:uyuni LANGUAGES="en ja"
 ```
 
+`LANGUAGES=` selects the languages that are built. The `translations` step
+always processes every language, because po4a reads the `.po` files directly.
+
 ### Controlling concurrency
 
-PDF books build in parallel, one job for each core. po4a runs one job for each
-translation config, and there are nine configs. `JOBS=` caps both:
+PDF books and po4a both run one job for each core. `JOBS=` caps both:
 
 ```bash
 task container:pdf:mlm LANGUAGES=en JOBS=4
 ```
+
+po4a gains nothing above one job for each translation config.
+
+Each concurrent book is a separate asciidoctor-pdf process with its own fonts
+in memory. Lower `JOBS=` if a build runs out of memory. The default already
+follows a `--cpus` limit on the container.
 
 ### Build one PDF book
 
