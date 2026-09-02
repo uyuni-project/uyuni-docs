@@ -166,16 +166,27 @@ tasks:
   # --------------------------------------------------------------------------
   # Guard — LANGUAGES selects the documentation languages.
   #
-  # Matches bare documentation codes only, so an inherited POSIX locale
-  # ('en_US.UTF-8', 'C') passes straight through. The value reaches the script
-  # as an environment variable rather than as templated text, so a LANG holding
-  # shell metacharacters is compared, not executed.
+  # The first check matches bare documentation codes only, so an inherited POSIX
+  # locale ('en_US.UTF-8', 'C') passes straight through.
+  #
+  # The second and third checks are what makes LANGUAGES safe to trust. A
+  # 'for: {var: LANGUAGES}' loop over an empty value runs zero iterations and
+  # exits 0, so 'task pdf:mlm LANGUAGES=$LANGS' with LANGS unset builds no PDFs
+  # and reports success, and the pdf-collect, pdf-zip and obs steps then package
+  # and publish an empty tree. An unknown code such as 'jp' is the same failure
+  # with a different cause. Every task that loops over LANGUAGES depends on this
+  # guard, so one check here covers all of them.
+  #
+  # Both values reach the script as environment variables rather than as
+  # templated text, so a value holding shell metacharacters is compared, not
+  # executed.
   # --------------------------------------------------------------------------
   _guard-lang:
     internal: true
     silent: true
     env:
       GUARD_LANG: '{{.LANG}}'
+      GUARD_LANGUAGES: '{{.LANGUAGES}}'
     cmds:
       - |
         for L in {{.DOC_LANGUAGES}}; do
@@ -184,6 +195,39 @@ tasks:
           echo "  ERROR: use LANGUAGES to select documentation languages." >&2
           echo "           task <target> LANGUAGES=${GUARD_LANG}"          >&2
           echo ""                                                          >&2
+          exit 1
+        done
+
+        # Unquoted, so the word split drops the whitespace. An empty result
+        # means LANGUAGES held nothing but spaces, tabs or newlines.
+        set -- ${GUARD_LANGUAGES:-}
+        if [ $# -eq 0 ] ; then
+          echo ""                                                              >&2
+          echo "  ERROR: LANGUAGES is empty, so this build would produce"      >&2
+          echo "         nothing and still report success."                    >&2
+          echo "           task <target> LANGUAGES=\"{{.DOC_LANGUAGES}}\""     >&2
+          echo ""                                                              >&2
+          exit 1
+        fi
+
+        for want in "$@" ; do
+          # A flag, not 'break 2'. Under errexit a failing '[ ] &&' list at the
+          # end of a loop body ends the whole guard.
+          known=0
+          for have in {{.DOC_LANGUAGES}} ; do
+            if [ "$want" = "$have" ] ; then
+              known=1
+              break
+            fi
+          done
+          if [ "$known" -eq 1 ] ; then
+            continue
+          fi
+          echo ""                                                              >&2
+          echo "  ERROR: LANGUAGES contains '${want}', which is not a"         >&2
+          echo "         documentation language."                              >&2
+          echo "           choose from: {{.DOC_LANGUAGES}}"                    >&2
+          echo ""                                                              >&2
           exit 1
         done
 
@@ -553,6 +597,11 @@ tasks:
 
   # --------------------------------------------------------------------------
   # PDF archives — one zip of all PDFs for each product and language
+  #
+  # Task runs one interpreter for each multi-line 'cmd', so the 'cd' holds for
+  # the rest of the block. Give zip an absolute destination, as 'pdf-zip:*'
+  # does, rather than a 'build/' path that resolves one level too deep after
+  # the 'cd'.
   # --------------------------------------------------------------------------
   pdf-tar:mlm:
     desc: "[Dev] Create OBS-style PDF zip archives for MLM"
@@ -561,11 +610,8 @@ tasks:
       - for: {var: LANGUAGES}
         cmd: |
           LANG_CODE="{{.ITEM}}"
-          mkdir -p build/${LANG_CODE}
-          cd build && zip -r9 suse-multi-linux-manager-docs_${LANG_CODE}-pdf.zip ${LANG_CODE}/pdf/
-          mv build/suse-multi-linux-manager-docs_${LANG_CODE}-pdf.zip build/${LANG_CODE}/
           mkdir -p build/packages
-          mv build/${LANG_CODE}/suse-multi-linux-manager-docs_${LANG_CODE}-pdf.zip build/packages/
+          cd build && zip -r9 {{.ROOT_DIR}}/build/packages/suse-multi-linux-manager-docs_${LANG_CODE}-pdf.zip ${LANG_CODE}/pdf/
 
   pdf-tar:uyuni:
     desc: "[Dev] Create OBS-style PDF zip archives for Uyuni"
@@ -574,11 +620,8 @@ tasks:
       - for: {var: LANGUAGES}
         cmd: |
           LANG_CODE="{{.ITEM}}"
-          mkdir -p build/${LANG_CODE}
-          cd build && zip -r9 uyuni-docs_${LANG_CODE}-pdf.zip ${LANG_CODE}/pdf/
-          mv build/uyuni-docs_${LANG_CODE}-pdf.zip build/${LANG_CODE}/
           mkdir -p build/packages
-          mv build/${LANG_CODE}/uyuni-docs_${LANG_CODE}-pdf.zip build/packages/
+          cd build && zip -r9 {{.ROOT_DIR}}/build/packages/uyuni-docs_${LANG_CODE}-pdf.zip ${LANG_CODE}/pdf/
 
   # --------------------------------------------------------------------------
   # OBS packages — HTML tar.gz + PDF tar.gz → build/packages/

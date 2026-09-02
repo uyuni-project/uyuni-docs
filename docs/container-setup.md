@@ -120,6 +120,10 @@ task container:publish:uyuni LANGUAGES="en ja"
 `LANGUAGES=` selects the languages that are built. The `translations` step
 always processes every language, because po4a reads the `.po` files directly.
 
+`LANGUAGES=` must name at least one language, and every name must be one of
+`en` `ja` `zh_CN` `ko`. An empty or misspelled value stops the build instead of
+producing nothing and reporting success.
+
 ### Controlling concurrency
 
 PDF books and po4a both run one job for each core. `JOBS=` caps both:
