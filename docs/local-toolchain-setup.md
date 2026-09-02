@@ -171,6 +171,35 @@ task validate:uyuni         # Antora xref validation — Uyuni
 task clean                  # Remove build/, translations/, .cache/
 ```
 
+### Limiting languages
+
+Each task builds all four languages by default. `LANGUAGES=` selects fewer:
+
+```bash
+task pdf:mlm LANGUAGES=en
+task publish:uyuni LANGUAGES="en ja"
+```
+
+`LANGUAGES=` selects the languages to build. The `translations` step always
+processes all the languages, because po4a reads the `.po` files directly.
+
+`LANGUAGES=` must give one language or more, and each name must be `en`, `ja`,
+`zh_CN` or `ko`. An empty or incorrect value stops the build. `task --dry`
+makes the same check.
+
+`export LANGUAGES=en` sets the default for the subsequent commands. A
+`LANGUAGES=` on the command line has a higher precedence.
+
+### Controlling concurrency
+
+PDF books and po4a both run one job for each core. `JOBS=` caps both:
+
+```bash
+task pdf:mlm LANGUAGES=en JOBS=4
+```
+
+More po4a jobs than translation configs gives no gain.
+
 ### Build one PDF book
 
 Use the `pdf` task with `BOOK=`, `PRODUCT=`, and `LANGUAGES=` variables:
