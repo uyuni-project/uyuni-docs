@@ -85,8 +85,8 @@ func WriteXrefExtension(destPath string) error {
 		return fmt.Errorf("xref-converter: mkdir: %w", err)
 	}
 	// Concurrent books load this file with the asciidoctor -r option. The
-	// write is atomic so that a 'gen' running at the same time cannot truncate
-	// the file while a book reads it.
+	// write is atomic, thus a concurrent 'gen' cannot truncate the file while
+	// a book reads it.
 	if err := atomicWriteFile(destPath, []byte(xrefConverterRuby), 0o644); err != nil {
 		return fmt.Errorf("xref-converter: write %s: %w", destPath, err)
 	}

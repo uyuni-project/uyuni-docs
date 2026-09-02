@@ -60,18 +60,17 @@ vars:
   PDF_THEMES_DIR: "{{.ROOT_DIR}}/branding/pdf/themes"
   PDF_FONTS_DIR: "{{.ROOT_DIR}}/branding/pdf/fonts"
   XREF_EXT: "{{.ROOT_DIR}}/.bin/xref-converter.rb"
-  # DOC_LANGUAGES is the canonical set and stays fixed; LANGUAGES is what every
-  # build task iterates and is what you override on the command line. The
-  # 'translations' task is the exception: po4a reads the .po files directly and
-  # always processes every language. The _guard-lang check needs the full set
-  # even when LANGUAGES is narrowed.
+  # DOC_LANGUAGES is the canonical set and stays fixed. LANGUAGES is the set
+  # that each build task iterates, and the one you override on the command
+  # line. The 'translations' task is the exception: po4a reads the .po files
+  # directly and processes every language. _guard-lang needs the full set even
+  # when LANGUAGES is narrow.
   DOC_LANGUAGES: "en ja zh_CN ko"
-  # A Taskfile 'vars' entry beats the OS environment, so a plain
-  # 'LANGUAGES: "{{.DOC_LANGUAGES}}"' makes 'export LANGUAGES=en' do nothing at
-  # all: the caller narrows the build and gets every language, without a
-  # message. Read the environment here instead. A command-line 'LANGUAGES=' is
-  # a higher precedence than this whole entry and still wins. _guard-lang
-  # validates the result, whichever of the three it came from.
+  # A Taskfile 'vars' entry has a higher precedence than the OS environment.
+  # Read the environment here, or 'export LANGUAGES=en' does nothing and the
+  # caller gets every language without a message. A command-line 'LANGUAGES='
+  # has a higher precedence than this entry and wins. _guard-lang validates the
+  # result from all three sources.
   LANGUAGES: '{{default .DOC_LANGUAGES (env "LANGUAGES")}}'
   BOOKS: "installation-and-upgrade client-configuration administration reference retail common-workflows specialized-guides legal"
   CONTAINER_CMD:
@@ -87,8 +86,8 @@ vars:
 # command shell cannot. build_pdfs.sh and use_po.sh read JOBS from the
 # environment. This block exports it to every task.
 #
-# An unset JOBS becomes an empty string here, not an absent variable. Both
-# scripts therefore test for an empty value and fall back to the core count.
+# An unset JOBS becomes an empty string here, not an absent variable. Each
+# script therefore tests for an empty value and then uses the core count.
 env:
   JOBS: '{{.JOBS}}'
 
@@ -172,29 +171,29 @@ tasks:
   # --------------------------------------------------------------------------
   # Guard — LANGUAGES selects the documentation languages.
   #
-  # The first check matches bare documentation codes only, so an inherited POSIX
-  # locale ('en_US.UTF-8', 'C') passes straight through.
+  # Check 1 matches bare documentation codes only, so an inherited POSIX locale
+  # ('en_US.UTF-8', 'C') passes.
   #
-  # The second and third checks are what makes LANGUAGES safe to trust. A
-  # 'for: {var: LANGUAGES}' loop over an empty value runs zero iterations and
-  # exits 0, so 'task pdf:mlm LANGUAGES=$LANGS' with LANGS unset builds no PDFs
-  # and reports success, and the pdf-collect, pdf-zip and obs steps then package
-  # and publish an empty tree. An unknown code such as 'jp' is the same failure
-  # with a different cause. Every task that loops over LANGUAGES depends on this
-  # guard, so one check here covers all of them.
+  # Checks 2 and 3 make LANGUAGES safe to trust. A 'for: {var: LANGUAGES}' loop
+  # over an empty value runs no iterations and exits 0: the build makes no
+  # PDFs, reports success, and the pdf-collect, pdf-zip and obs steps then
+  # publish an empty tree. An unknown code such as 'jp' has the same result.
+  # Every task that iterates LANGUAGES depends on this guard, so one check
+  # covers all of them.
   #
   # The checks are 'preconditions', not 'cmds'. Task skips the commands of a
-  # dependency under '--dry' but still evaluates its preconditions, so this is
-  # the only form that catches a bad selection in a dry run. It also keeps the
-  # message out of the printed command list.
+  # dependency under '--dry' but evaluates its preconditions, so only this form
+  # catches a bad selection in a dry run. It also keeps the message out of the
+  # printed command list.
   #
-  # Both values reach the test scripts as environment variables rather than as
-  # templated text, so a value holding shell metacharacters is compared, not
-  # executed. A precondition inherits the task's 'env' block.
+  # Both values reach the test scripts as environment variables, not as
+  # templated text. A check therefore compares a value that holds shell
+  # metacharacters and does not execute it. A precondition inherits the task's
+  # 'env' block.
   #
-  # 'msg' cannot name the offending code, because Task renders it from the
-  # template context and not from the script. Each message prints the whole
-  # value instead, which is as much as the reader needs.
+  # Task renders 'msg' from the template context and not from the script, so a
+  # message cannot name the code that failed. Each message prints the full
+  # value.
   # --------------------------------------------------------------------------
   _guard-lang:
     internal: true
@@ -215,21 +214,21 @@ tasks:
                    Use LANGUAGES instead:
                      task <target> LANGUAGES={{.LANG}}
 
-      # Unquoted, so the word split drops the whitespace. An empty result means
-      # LANGUAGES held nothing but spaces, tabs or newlines.
+      # Unquoted, so the word split removes the whitespace. An empty result
+      # means that LANGUAGES contains only spaces, tabs or newlines.
       - sh: |
           set -- ${GUARD_LANGUAGES:-}
           test $# -gt 0
         msg: |2
 
-            ERROR: LANGUAGES is empty, so this build would produce nothing
-                   and still report success.
+            ERROR: LANGUAGES is empty. This build makes no output and
+                   reports success.
                      task <target> LANGUAGES="{{.DOC_LANGUAGES}}"
 
       - sh: |
           for want in ${GUARD_LANGUAGES:-} ; do
-            # A flag, not 'break 2'. Under errexit a failing '[ ] &&' list at
-            # the end of a loop body ends the whole check.
+            # A flag, not 'break 2'. Under errexit, a failed '[ ] &&' list at
+            # the end of a loop body stops the whole check.
             known=0
             for have in {{.DOC_LANGUAGES}} ; do
               if [ "$want" = "$have" ] ; then
@@ -243,7 +242,7 @@ tasks:
           done
         msg: |2
 
-            ERROR: LANGUAGES="{{.LANGUAGES}}" names something that is not a
+            ERROR: LANGUAGES="{{.LANGUAGES}}" contains a value that is not a
                    documentation language.
                      choose from: {{.DOC_LANGUAGES}}
 
@@ -372,12 +371,12 @@ tasks:
       - for: {var: LANGUAGES}
         cmd: |
           mkdir -p "translations/{{.ITEM}}/modules"
-          # No '|| true' here. 'cp -an' returns 0 when it skips a file that
-          # exists, so a non-zero status is a real failure: no space, no
-          # permission, or a missing source tree.
+          # 'cp -an' returns 0 when it skips a file that exists. A non-zero
+          # status is therefore a real failure: no space, no permission, or no
+          # source tree.
           cp -an en/modules/. "translations/{{.ITEM}}/modules/"
           # This runs after the copy, so entities.adoc is the later of the two
-          # files. The STAGE=0 guard in 'pdf' checks both.
+          # files. The STAGE=0 check in 'pdf' examines both.
           {{.DOCBUILD}} gen-entities -product {{.PRODUCT}} -lang {{.ITEM}}
 
   # --------------------------------------------------------------------------
@@ -390,13 +389,13 @@ tasks:
   # --------------------------------------------------------------------------
   pdf:
     desc: "[Local] Build one PDF book — usage: task pdf BOOK=<book> PRODUCT=<product> LANGUAGES=<langs>"
-    # The dependency is 'setup', not 'gen'. build_pdfs.sh runs one 'task pdf'
-    # process for each book, and 'run: once' applies to one process only, so
-    # every process would evaluate 'gen' on its own. 'gen-all' writes
+    # 'setup', not 'gen'. build_pdfs.sh starts one 'task pdf' process for each
+    # book, and 'run: once' applies to one process only, so each process
+    # evaluates 'gen' again. 'gen-all' writes
     # translations/{lang}/branding/pdf/entities.adoc once for each product, to
-    # a path with no product in it, in Go map order. A 'gen' that runs after
-    # staging therefore replaces the staged entities with another product's.
-    # 'pdf-stage' still depends on 'gen', which covers the STAGE=1 path.
+    # a path with no product in it, in Go map order. A 'gen' after the staging
+    # therefore replaces the staged entities with those of a different product.
+    # 'pdf-stage' keeps the 'gen' dependency for the STAGE=1 path.
     deps: [setup, _guard-lang]
     vars:
       BOOK: '{{default "administration" .BOOK}}'
@@ -456,9 +455,9 @@ tasks:
           # missing entities.adoc, and --failure-level FATAL ignores an ERROR.
           # The result is a PDF with unresolved attributes. Therefore, check.
           #
-          # Check both files that pdf-stage writes, not only the later one, and
-          # check that entities.adoc has content: an interrupted write can
-          # leave it empty, and an empty file resolves no attributes.
+          # Examine both files that pdf-stage writes, not only the later one.
+          # Also make sure that entities.adoc has content. An interrupted write
+          # leaves an empty file, and an empty file resolves no attributes.
           case "{{.STAGE}}" in
             1)
               task pdf-stage PRODUCT=${PRODUCT} LANGUAGES=${LANG_CODE}
@@ -522,7 +521,7 @@ tasks:
   # The products run in sequence, not as parallel deps. Both write
   # translations/{lang}/branding/pdf/entities.adoc, which has no product in its
   # path. A parallel run puts one product's entities in the other product's
-  # PDFs. One product usually saturates the cores, so the sequence costs little.
+  # PDFs. One product usually uses all the cores, so the sequence costs little.
   pdf:all:
     desc: "[Local] Build all PDFs — both products, all languages"
     cmds:
@@ -592,9 +591,10 @@ tasks:
   # Zips land at build/{lang}/{product}_{lang}-pdf.zip so the index page link
   # "../{product}_{lang}-pdf.zip" resolves correctly from the HTML output dir.
   #
-  # zip adds to an archive that already exists. Remove the old one, or a book
-  # that a later run no longer builds stays in it, and a renamed book ships
-  # twice. 'task clean' hides this; a repeat build in place does not.
+  # zip adds files to an archive that exists. Remove the old archive first, or
+  # a book that a later run does not build stays in it, and a renamed book is
+  # present with the old name and the new name. 'task clean' hides this. A
+  # repeat build in place does not.
   # --------------------------------------------------------------------------
   pdf-zip:mlm:
     desc: "[Dev] Zip collected MLM PDFs into per-language archives"
@@ -623,19 +623,18 @@ tasks:
   # --------------------------------------------------------------------------
   # PDF archives — one zip of all PDFs for each product and language
   #
-  # Task runs one interpreter for each multi-line 'cmd', so the 'cd' holds for
+  # Task runs one interpreter for each multi-line 'cmd', so the 'cd' applies to
   # the rest of the block. Give zip an absolute destination, as 'pdf-zip:*'
-  # does, rather than a 'build/' path that resolves one level too deep after
-  # the 'cd'.
+  # does. A 'build/' path resolves one level too deep after the 'cd'.
   #
-  # build/{lang}/pdf/ holds the books of both products, so select by the
-  # product's filename prefix. Without that, both archives get the same content
-  # and differ only in name. 'pdf-zip:*' avoids this a different way: it reads
-  # build/pdf/{lang}/, which 'pdf-collect:{product}' fills one product at a
-  # time.
+  # build/{lang}/pdf/ holds the books of the two products. Select the books
+  # with the filename prefix of the product. Without the prefix, the two
+  # archives get the same content and are different only in the name.
+  # 'pdf-zip:*' prevents this in a different way: it reads build/pdf/{lang}/,
+  # which 'pdf-collect:{product}' fills for one product at a time.
   #
-  # zip adds to an archive that already exists. Remove the old one, or a book
-  # that a later run no longer builds stays in it.
+  # zip adds files to an archive that exists. Remove the old archive first, or
+  # a book that a later run does not build stays in it.
   # --------------------------------------------------------------------------
   pdf-tar:mlm:
     desc: "[Dev] Create OBS-style PDF zip archives for MLM"
@@ -647,7 +646,7 @@ tasks:
           PREFIX=$({{.DOCBUILD}} get-pdf-prefix -product mlm)
           ARCHIVE={{.ROOT_DIR}}/build/packages/suse-multi-linux-manager-docs_${LANG_CODE}-pdf.zip
           if ! ls build/${LANG_CODE}/pdf/${PREFIX}_*.pdf >/dev/null 2>&1 ; then
-            echo "no ${PREFIX} PDFs in build/${LANG_CODE}/pdf; run 'task pdf:mlm LANGUAGES=${LANG_CODE}' first" >&2
+            echo "No ${PREFIX} PDFs in build/${LANG_CODE}/pdf. Run 'task pdf:mlm LANGUAGES=${LANG_CODE}' first." >&2
             exit 1
           fi
           mkdir -p build/packages
@@ -664,7 +663,7 @@ tasks:
           PREFIX=$({{.DOCBUILD}} get-pdf-prefix -product uyuni)
           ARCHIVE={{.ROOT_DIR}}/build/packages/uyuni-docs_${LANG_CODE}-pdf.zip
           if ! ls build/${LANG_CODE}/pdf/${PREFIX}_*.pdf >/dev/null 2>&1 ; then
-            echo "no ${PREFIX} PDFs in build/${LANG_CODE}/pdf; run 'task pdf:uyuni LANGUAGES=${LANG_CODE}' first" >&2
+            echo "No ${PREFIX} PDFs in build/${LANG_CODE}/pdf. Run 'task pdf:uyuni LANGUAGES=${LANG_CODE}' first." >&2
             exit 1
           fi
           mkdir -p build/packages
@@ -839,10 +838,10 @@ tasks:
 
   container:run:
     desc: "[Container] Run any task inside the container (escape hatch: task container:run -- <target>)"
-    # Carries the same two variables as every other container task. The named
-    # tasks put LANGUAGES on the inner command line; this one cannot, because
-    # the caller owns that line, so it goes through the environment. A
-    # 'LANGUAGES=' inside CLI_ARGS is a higher precedence and still wins.
+    # This task carries the same two variables as the other container tasks.
+    # The named tasks put LANGUAGES on the inner command line. This task cannot,
+    # because the caller owns that line, thus LANGUAGES goes through the
+    # environment. A 'LANGUAGES=' in CLI_ARGS has a higher precedence and wins.
     cmds:
       - "{{.CONTAINER_CMD}} run --rm -e JOBS='{{.JOBS}}' -e LANGUAGES='{{.LANGUAGES}}' -v {{.ROOT_DIR}}:/docs:Z -w /docs {{.BUILDER_IMAGE}} task {{.CLI_ARGS}}"
 
