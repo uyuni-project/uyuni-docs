@@ -52,9 +52,9 @@ fi
 #######################################################################
 
 # There is one .cfg file for each module, and each one writes only to its own
-# translations/<lang>/modules/<module>/ subtree. The configs are independent
-# and run in parallel. The number of configs, not the number of cores, is
-# therefore the limit. JOBS=1 runs them in sequence.
+# translations/<lang>/modules/<module>/ subtree. The configs are independent,
+# so they run concurrently. JOBS caps the count and defaults to the core count.
+# More jobs than configs gives nothing. JOBS=1 runs them in sequence.
 if [ -z "$JOBS" ] ; then
 	JOBS=$(nproc 2>/dev/null || echo 4)
 fi
@@ -66,12 +66,26 @@ case "$JOBS" in
         ;;
 esac
 
-ls $CURRENT_DIR/$PO_DIR/*.cfg | xargs -P "$JOBS" -I{} \
-    po4a --srcdir $CURRENT_DIR --destdir $CURRENT_DIR -k $TRANSLATION_THRESHOLD_PERCENTAGE -M UTF-8 -L UTF-8 --no-update -o nolinting {}
+# A glob, not 'ls'. The exit status of a pipeline is the status of its last
+# command, so a failing 'ls' is invisible here, and xargs exits 0 on empty
+# input. The script would then report success after generating no translations.
+# The 'translations' task deletes the old tree before it calls this script and
+# fingerprints the result, so that empty tree becomes the up-to-date answer for
+# every later build.
+shopt -s nullglob
+CFGS=("$CURRENT_DIR/$PO_DIR"/*.cfg)
+shopt -u nullglob
 
-# Stop if po4a failed. Task fingerprints the 'translations' task: an
-# incomplete run that reports success becomes an up-to-date result, and each
-# subsequent build uses the incomplete tree.
+if [ ${#CFGS[@]} -eq 0 ] ; then
+    echo "ERROR: no po4a configs in $CURRENT_DIR/$PO_DIR; cannot generate translations." >&2
+    exit 1
+fi
+
+printf '%s\0' "${CFGS[@]}" | xargs -0 -r -P "$JOBS" -I{} \
+    po4a --srcdir "$CURRENT_DIR" --destdir "$CURRENT_DIR" -k $TRANSLATION_THRESHOLD_PERCENTAGE -M UTF-8 -L UTF-8 --no-update -o nolinting {}
+
+# Stop if po4a failed. An incomplete run that reports success is fingerprinted
+# as up to date, and each subsequent build uses the incomplete tree.
 if [ $? -ne 0 ] ; then
     echo "ERROR: at least one po4a invocation failed; translations are incomplete." >&2
     exit 1
