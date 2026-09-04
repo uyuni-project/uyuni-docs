@@ -1,3 +1,5 @@
+- Fixed `l10n-weblate/update-cfg-files` failing when invoked from anywhere other than
+  the `l10n-weblate/` directory
 - Sped up CI by building only English, which is all the CI artifacts have ever contained
 - Clarified relationship between custom RBAC and Salt-API access
 - Extracted and relocated general sudo configuration guidelines to a new central page, and added unprivileged onboarding support references for SLE 16 (bsc#1275794)
