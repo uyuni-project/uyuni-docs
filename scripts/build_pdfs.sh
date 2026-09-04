@@ -8,9 +8,9 @@
 # JOBS caps the number of concurrent books. The default is the core count.
 #
 # The caller stages each language first with 'task pdf-stage'. Every book of a
-# language shares one content tree and one entities.adoc, and concurrent writes
-# to them are not safe. The 'pdf' task refuses to build if the caller did not
-# stage, therefore this script does not check.
+# language shares one content tree and one entities-{product}.adoc, and
+# concurrent writes to them are not safe. The 'pdf' task refuses to build if the
+# caller did not stage, therefore this script does not check.
 
 set -u
 
