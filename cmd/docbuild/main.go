@@ -2,9 +2,10 @@
 //
 // Usage:
 //
-//	docbuild gen-all                                     Generate every config except antora.yml
+//	docbuild gen-all                                     Generate every config for all languages, except antora.yml
 //	docbuild gen-site  -product P -output O -lang L      Generate one site.yml
-//	docbuild gen-antora -product P -lang L               Generate one antora.yml
+//	docbuild gen-antora -product P -lang L               Generate one antora.yml. One path for the two
+//	                                                     products, so run it for your product before Antora
 //	docbuild gen-entities -product P -lang L             Generate one entities-{product}.adoc
 //	docbuild gen-pdf-nav -book B -lang L -dir D          Generate PDF nav from Antora nav file
 //	docbuild inject-lang-selector -output O              Inject language selector into header-content.hbs

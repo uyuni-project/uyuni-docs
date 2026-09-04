@@ -25,7 +25,7 @@ cmd/docbuild/main.go  (Go binary)
     │  renders Go text/templates
     │
     ├──► translations/{lang}/{output}.site.yml   (per output-target, per language)
-    ├──► translations/{lang}/antora.yml          (per language; the product of the last writer)
+    ├──► translations/{lang}/antora.yml          (gen-antora only, for the product being built)
     ├──► translations/{lang}/branding/pdf/entities-{product}.adoc  (per product, per language)
     ├──► translations/{lang}/modules/{book}/nav-{book}-guide.pdf.{lang}.adoc
     └──► .bin/xref-converter.rb                 (embedded Ruby extension)

@@ -95,12 +95,14 @@ func SiteYML(cfg *config.Config, productName, outputName, langCode, repoRoot str
 // AntoraYML generates translations/{lang}/antora.yml.
 //
 // Antora requires the component descriptor to carry the name antora.yml at the
-// root of the content start path, so the path holds no product and the two
-// products overwrite each other. Every caller must therefore run this
-// generator for its own product immediately before it starts Antora. The
-// draft:* and validate:* tasks in Taskfile.yml do this. For the same reason,
-// All does not call this generator: a run for each product leaves one file
-// with the names of whichever product ran last.
+// root of the content start path. SiteYML sets that path to translations/{lang},
+// which holds no product, so the two products overwrite each other. Every caller
+// must therefore run this generator for its own product immediately before it
+// starts Antora. The draft:* and validate:* tasks in Taskfile.yml do this. For
+// the same reason, All does not call this generator: a run for each product
+// leaves one file with the names of whichever product ran last. A per-product
+// start path would end the collision, at the cost of a content tree for each
+// product.
 func AntoraYML(cfg *config.Config, productName, langCode, repoRoot, contentDir string) error {
 	lang, err := cfg.LanguageByCode(langCode)
 	if err != nil {
