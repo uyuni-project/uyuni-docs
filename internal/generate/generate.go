@@ -93,6 +93,14 @@ func SiteYML(cfg *config.Config, productName, outputName, langCode, repoRoot str
 }
 
 // AntoraYML generates translations/{lang}/antora.yml.
+//
+// Antora requires the component descriptor to carry the name antora.yml at the
+// root of the content start path, so the path holds no product and the two
+// products overwrite each other. Every caller must therefore run this
+// generator for its own product immediately before it starts Antora. The
+// draft:* and validate:* tasks in Taskfile.yml do this. For the same reason,
+// All does not call this generator: a run for each product leaves one file
+// with the names of whichever product ran last.
 func AntoraYML(cfg *config.Config, productName, langCode, repoRoot, contentDir string) error {
 	lang, err := cfg.LanguageByCode(langCode)
 	if err != nil {
@@ -182,8 +190,10 @@ func readLocaleAttributes(repoRoot, langCode string) (string, error) {
 	return strings.TrimRight(content, "\n"), nil
 }
 
-// All runs all generators for every language in cfg.
-func All(cfg *config.Config, repoRoot, contentDir string) error {
+// All runs the generators that write to a path of their own, for every
+// language and product in cfg. It does not write antora.yml, which has one
+// path for the two products. See AntoraYML.
+func All(cfg *config.Config, repoRoot string) error {
 	// Write the embedded xref-converter Ruby extension alongside the binary.
 	xrefDest := filepath.Join(repoRoot, ".bin", "xref-converter.rb")
 	if err := WriteXrefExtension(xrefDest); err != nil {
@@ -196,11 +206,6 @@ func All(cfg *config.Config, repoRoot, contentDir string) error {
 			dir := filepath.Join(repoRoot, "translations", lang.Code)
 			if err := os.MkdirAll(dir, 0o755); err != nil {
 				return fmt.Errorf("mkdir %s: %w", dir, err)
-			}
-
-			// antora.yml
-			if err := AntoraYML(cfg, productName, lang.Code, repoRoot, contentDir); err != nil {
-				return fmt.Errorf("gen antora.yml [%s/%s]: %w", productName, lang.Code, err)
 			}
 
 			// entities-{product}.adoc

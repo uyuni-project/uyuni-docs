@@ -2,7 +2,7 @@
 //
 // Usage:
 //
-//	docbuild gen-all                                     Generate all configs for all languages
+//	docbuild gen-all                                     Generate every config except antora.yml
 //	docbuild gen-site  -product P -output O -lang L      Generate one site.yml
 //	docbuild gen-antora -product P -lang L               Generate one antora.yml
 //	docbuild gen-entities -product P -lang L             Generate one entities-{product}.adoc
@@ -68,11 +68,10 @@ func main() {
 func runGenAll(repoRoot string, args []string) {
 	fs := flag.NewFlagSet("gen-all", flag.ExitOnError)
 	cfgPath := fs.String("config", defaultConfig, "path to config.yml")
-	contentDir := fs.String("content-dir", defaultContentDir, "relative path to English modules directory")
 	_ = fs.Parse(args)
 
 	cfg := mustLoad(filepath.Join(repoRoot, *cfgPath))
-	if err := generate.All(cfg, repoRoot, *contentDir); err != nil {
+	if err := generate.All(cfg, repoRoot); err != nil {
 		fatalf("gen-all: %v", err)
 	}
 	fmt.Println("docbuild: generated all configs")
@@ -221,9 +220,10 @@ func usage() {
 	fmt.Print(`docbuild — uyuni-docs build config generator
 
 Subcommands:
-  gen-all                                    Generate all configs for all languages
+  gen-all                                    Generate every config for all languages, except antora.yml
   gen-site  -product P -output O -lang L     Generate translations/{lang}/{output}.site.yml
-  gen-antora -product P -lang L              Generate translations/{lang}/antora.yml
+  gen-antora -product P -lang L              Generate translations/{lang}/antora.yml. One path for the
+                                             two products, so run it for your product before Antora
   gen-entities -product P -lang L            Generate branding/pdf/entities-{product}.adoc
   gen-pdf-nav -book B -lang L -dir D         Generate nav-{book}-guide.pdf.{lang}.adoc from Antora nav
   inject-lang-selector -hbs PATH             Inject language selector into header-content.hbs
