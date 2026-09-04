@@ -142,7 +142,7 @@ After cloning the repository, run these once:
 
 ```bash
 task setup    # Compiles cmd/docbuild → .bin/docbuild
-task gen      # Generates all Antora/site configs from config.yml
+task gen      # Generates the site configs and xref-converter extension from config.yml
 ```
 
 ---
