@@ -48,8 +48,11 @@ if [ -z "${JOBS:-}" ] ; then
     fi
 fi
 
+# 'xargs -P 0' is unlimited concurrency, thus reject every spelling of zero and
+# not only the one digit. '00' passes a '0' test and gives one asciidoctor-pdf
+# for each book of each language at the same time.
 case "${JOBS}" in
-    ''|*[!0-9]*|0)
+    ''|*[!0-9]*|0|0[0-9]*)
         echo "$0: JOBS must be a positive integer, got '${JOBS}'" >&2
         exit 2
         ;;
@@ -106,10 +109,10 @@ export -f build_one
 echo "==> ${PRODUCT} PDFs — languages: ${LANGUAGES} — ${JOBS} at a time"
 
 # Stage each language one time, and wait for the result. The books below run
-# with STAGE=0 and need this step. It writes entities.adoc, which 'task
-# translations' removes with the rest of the translations tree, and it copies
-# the English fallback modules. Staging in each book makes all the books of a
-# language write these shared files at the same time.
+# with STAGE=0 and need this step. It writes entities-{product}.adoc, which
+# 'task translations' removes with the rest of the translations tree, and it
+# copies the English fallback modules. Staging in each book makes all the books
+# of a language write these shared files at the same time.
 task pdf-stage PRODUCT="${PRODUCT}" LANGUAGES="${LANGUAGES}" || exit 1
 
 for lang in ${LANGUAGES}; do

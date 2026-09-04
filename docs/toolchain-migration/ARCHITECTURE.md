@@ -26,7 +26,7 @@ cmd/docbuild/main.go  (Go binary)
     │
     ├──► translations/{lang}/{output}.site.yml   (per output-target, per language)
     ├──► translations/{lang}/antora.yml          (per product, per language)
-    ├──► translations/{lang}/branding/pdf/entities.adoc  (per product, per language)
+    ├──► translations/{lang}/branding/pdf/entities-{product}.adoc  (per product, per language)
     ├──► translations/{lang}/modules/{book}/nav-{book}-guide.pdf.{lang}.adoc
     └──► .bin/xref-converter.rb                 (embedded Ruby extension)
                                   │
@@ -63,7 +63,7 @@ task pdf:mlm
   3. for each LANG × BOOK:
        cp -an en/modules/.            → translations/{lang}/modules/ (fallback)
        docbuild gen-pdf-nav           → nav-{book}-guide.pdf.{lang}.adoc
-       docbuild gen-entities          → translations/{lang}/branding/pdf/entities.adoc
+       docbuild gen-entities          → translations/{lang}/branding/pdf/entities-{product}.adoc
        asciidoctor-pdf (theme={lang}) → build/{lang}/pdf/{product}_{book}_guide.pdf
 ```
 
@@ -238,7 +238,7 @@ asciidoc_extensions:
 | `docbuild gen-all [-content-dir <dir>]` | All configs for all languages | `configure` Python script |
 | `docbuild gen-site -product <p> -output <o> -lang <code>` | `translations/{lang}/{output}.site.yml` | `site.yml.j2` + sed block in `Makefile.j2` |
 | `docbuild gen-antora -product <p> -lang <code> [-content-dir <dir>]` | `translations/{lang}/antora.yml` | `antora.yml.j2` |
-| `docbuild gen-entities -product <p> -lang <code>` | `translations/{lang}/branding/pdf/entities.adoc` | `entities.adoc.j2` + `entities.specific.adoc.j2` |
+| `docbuild gen-entities -product <p> -lang <code>` | `translations/{lang}/branding/pdf/entities-{product}.adoc` | `entities.adoc.j2` + `entities.specific.adoc.j2` |
 | `docbuild gen-pdf-nav -book <b> -lang <code> -dir <path>` | `{path}/nav-{book}-guide.pdf.{lang}.adoc` | PDF nav generation in `Makefile.section.functions` |
 | `docbuild inject-lang-selector -hbs <path>` | Modifies `header-content.hbs` in-place with language selector | Language selector inject in `Makefile.j2` |
 | `docbuild collect-pdfs -product <p> [-src <path>] [-dest <path>] [-langs "<list>"]` | Moves `build/{lang}/pdf/` → `build/pdf/{lang}/` | `cleanup_pdfs.sh` |
@@ -263,10 +263,10 @@ task draft:uyuni-webui             Uyuni HTML — WebUI branding with language s
 task draft:all                     All four HTML output targets (sequential)
 
 task pdf BOOK=<b> PRODUCT=<p> LANGUAGES=<l>  One book PDF, one or more languages
-task pdf-stage PRODUCT=<p>         Per-language shared files: English fallback modules + entities.adoc
+task pdf-stage PRODUCT=<p>         Per-language shared files: English fallback modules + entities-{product}.adoc
 task pdf:mlm                       All 8 books × 4 languages — MLM (runs translations first, books concurrent)
 task pdf:uyuni                     All 8 books × 4 languages — Uyuni (runs translations first, books concurrent)
-task pdf:all                       Both products, in sequence (they share entities.adoc)
+task pdf:all                       Both products, in sequence (they share the staged modules tree)
                                    JOBS=<n> caps concurrency; the default is the core count
 
 task publish:dsc                   Full MLM publish — HTML + PDFs + zip archives
