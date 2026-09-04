@@ -161,7 +161,7 @@ Also diff the shared `asciidoc:` attributes block against `manager-5.1` `paramet
 ```bash
 task setup && task gen
 task draft:mlm-dsc
-task pdf BOOK=administration PRODUCT=mlm LANG=en
+task pdf BOOK=administration PRODUCT=mlm LANGUAGES=en
 ```
 
 ---
@@ -252,7 +252,7 @@ Replace with the correct SUSE Manager / `suma` URL patterns for this branch.
 ```bash
 task setup && task gen
 task draft:suma-dsc
-task pdf BOOK=administration PRODUCT=suma LANG=en
+task pdf BOOK=administration PRODUCT=suma LANGUAGES=en
 ```
 
 ---
@@ -286,7 +286,7 @@ Check the `[po4a_langs]` header in any `l10n-weblate/*.cfg` file. If manager-4.3
 ```bash
 task setup && task gen
 task draft:suma-dsc
-task pdf BOOK=administration PRODUCT=suma LANG=en
+task pdf BOOK=administration PRODUCT=suma LANGUAGES=en
 ```
 
 ---
@@ -316,6 +316,6 @@ Do not push to any branch until the local smoke test passes.
 [ ] GHA build/test workflows updated: uyuni-docs-helper removed, podman + task added
 [ ] task setup && task gen runs without error
 [ ] task draft:<product>-dsc produces valid HTML output
-[ ] task pdf BOOK=administration PRODUCT=<product> LANG=en produces a PDF
+[ ] task pdf BOOK=administration PRODUCT=<product> LANGUAGES=en produces a PDF
 [ ] cd l10n-weblate && bash update-cfg-files → no unexpected diff
 ```
