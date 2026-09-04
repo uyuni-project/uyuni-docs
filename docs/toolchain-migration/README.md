@@ -65,7 +65,7 @@ task container:shell
 ```bash
 # First-time setup
 task setup    # Build the Go docbuild binary
-task gen      # Regenerate Antora/site configs from config.yml
+task gen      # Regenerate site configs and xref-converter extension from config.yml
 
 # Publish builds
 task publish:dsc          # Full MLM publish — HTML + PDFs + zips
