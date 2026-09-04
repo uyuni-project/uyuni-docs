@@ -268,6 +268,53 @@ include::../../../../../partials/snippet-database-backup-volume.adoc[leveloffset
 endif::[]
 
 
+
+=== Recover from a failed upgrade
+
+If the database upgrade fails during mgradm upgrade (for example, due to `No space left on device`, or an unexpected container exit), the original {postgresql} database should remain untouched and safe. 
+Use the following procedure to clean up the environment and retry the upgrade:
+
+.Procedure: Recovering from a failed upgrade
+[role=procedure]
+____
+. Stop and remove any residual containers (e.g., `uyuni-upgrade-pgsql`):
+
++
+
+[source,bash]
+---- 
+podman stop uyuni−upgrade−pgsql
+podman rm uyuni-upgrade-pgsql 
+----
+
++
+
+. Remove the partial, incomplete target volume created during the failed attempt (e.g., `var-pgsql-migration-target`): 
+
++
+
+[source,bash]
+---- 
+podman volume rm var-pgsql-migration-target 
+----
+
++
+
+. Ensure the underlying host filesystem has sufficient capacity.
+  Ideally at least double the capacity of the current database volume plus a safety buffer should be available to accommodate the copy-based upgrade.
+
+. Once storage space is resolved, re-initiate the upgrade: 
+
++
+
+[source,bash]
+----
+mgradm upgrade 
+----
+
+____
+
+
 == {sles} 15 SP7
 
 This document provides the procedure to upgrade a {sles} 15 SP7 host deployed with {productname} 5.1 Server to {productname} {productnumber}.
