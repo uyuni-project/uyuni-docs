@@ -25,7 +25,7 @@ cmd/docbuild/main.go  (Go binary)
     │  renders Go text/templates
     │
     ├──► translations/{lang}/{output}.site.yml   (per output-target, per language)
-    ├──► translations/{lang}/antora.yml          (per product, per language)
+    ├──► translations/{lang}/antora.yml          (gen-antora only, for the product being built)
     ├──► translations/{lang}/branding/pdf/entities-{product}.adoc  (per product, per language)
     ├──► translations/{lang}/modules/{book}/nav-{book}-guide.pdf.{lang}.adoc
     └──► .bin/xref-converter.rb                 (embedded Ruby extension)
@@ -235,9 +235,9 @@ asciidoc_extensions:
 
 | Command | Output | Replaces |
 |---|---|---|
-| `docbuild gen-all [-content-dir <dir>]` | All configs for all languages | `configure` Python script |
+| `docbuild gen-all` | Every config for all languages, except `antora.yml` | `configure` Python script |
 | `docbuild gen-site -product <p> -output <o> -lang <code>` | `translations/{lang}/{output}.site.yml` | `site.yml.j2` + sed block in `Makefile.j2` |
-| `docbuild gen-antora -product <p> -lang <code> [-content-dir <dir>]` | `translations/{lang}/antora.yml` | `antora.yml.j2` |
+| `docbuild gen-antora -product <p> -lang <code> [-content-dir <dir>]` | `translations/{lang}/antora.yml`. Antora requires this name, so the two products share one path. Run it for your product immediately before Antora. | `antora.yml.j2` |
 | `docbuild gen-entities -product <p> -lang <code>` | `translations/{lang}/branding/pdf/entities-{product}.adoc` | `entities.adoc.j2` + `entities.specific.adoc.j2` |
 | `docbuild gen-pdf-nav -book <b> -lang <code> -dir <path>` | `{path}/nav-{book}-guide.pdf.{lang}.adoc` | PDF nav generation in `Makefile.section.functions` |
 | `docbuild inject-lang-selector -hbs <path>` | Modifies `header-content.hbs` in-place with language selector | Language selector inject in `Makefile.j2` |
