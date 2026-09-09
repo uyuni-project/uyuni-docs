@@ -58,7 +58,8 @@ nav:
 {{- end}}
 `
 
-// entitiesTemplate is the Go text/template for translations/{lang}/branding/pdf/entities.adoc.
+// entitiesTemplate is the Go text/template for
+// translations/{lang}/branding/pdf/entities-{product}.adoc.
 // It replaces entities.adoc.j2 + entities.specific.adoc.j2.
 // The file is self-contained: product attributes and locale attributes are inlined,
 // so asciidoctor-pdf does not need to resolve any external includes.
