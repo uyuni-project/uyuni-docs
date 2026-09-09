@@ -1,3 +1,4 @@
+- Added Multi-Linux Manager MCP Server book
 - Stopped generating antora.yml in gen-all, where the two products wrote one file in a random order.
   The `-content-dir` flag of gen-all went to that file alone and is gone as well; gen-antora keeps its own
 - Added a manual trigger to the translation file workflow, which ran only on a push
