@@ -1,3 +1,4 @@
+- Restored the server and proxy maintenance update procedures and defined maintenance update, upgrade and migration terminology
 - Stopped generating antora.yml in gen-all, where the two products wrote one file in a random order.
   The `-content-dir` flag of gen-all went to that file alone and is gone as well; gen-antora keeps its own
 - Sped up CI by building only English, which is all the CI artifacts have ever contained
