@@ -1,3 +1,4 @@
+- Documented Salt RBAC namespaces and native Salt access controls
 - Restored the server and proxy maintenance update procedures and defined maintenance update, upgrade and migration terminology
 - Added Multi-Linux Manager MCP Server book
 - Stopped generating antora.yml in gen-all, where the two products wrote one file in a random order.
