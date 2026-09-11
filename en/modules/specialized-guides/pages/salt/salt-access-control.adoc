@@ -1,0 +1,73 @@
+[[salt-access-control]]
+= Salt Access Control
+:revdate: 2026-09-11
+:page-revdate: {revdate}
+
+This section describes access control mechanisms for Salt in {productname}.
+It covers the distinction between {productname} Role-Based Access Control (RBAC) and native Salt access controls.
+
+
+[[salt-access-control-boundaries]]
+== Architectural Boundaries
+
+{productname} separates access control into two distinct layers:
+
+{productname} RBAC (gateway layer)::
+Users interact with Salt features through the {productname} {webui} or API.
+{productname} verifies user identity and evaluates RBAC permissions before performing any Salt action.
+For example, running a command through menu:Salt[Remote Commands] requires the `salt.remote_commands` namespace permission.
+For more information, see xref:administration:role-based-access-control.adoc[].
+
+Native Salt access control (engine layer)::
+Salt provides built-in access control mechanisms, including external authentication (`external_auth` or `eauth`) and Publisher ACLs (`publisher_acl`).
+These mechanisms govern direct interactions with the Salt master daemon or the Salt API service.
+
+
+[[salt-native-eauth]]
+== External Authentication (eauth)
+
+The Salt API service (`salt-api`) runs on the {productname} Server.
+By default, the service listens for HTTPS connections on port `9080`, bound strictly to the local loopback interface (`127.0.0.1`).
+Direct network access from external clients is blocked.
+
+The Salt API uses the `external_auth` file authentication module:
+
+* Authentication credentials are stored in `/etc/salt/master.d/susemanager-users.txt`.
+* A dedicated internal administrative account is generated during server setup.
+* Only local system services (Tomcat and Taskomatic) use these credentials to communicate with the Salt API.
+
+Individual {productname} users do not possess personal credentials for `salt-api`.
+When a user initiates an action in the {webui} or API, {productname} authenticates the user, enforces RBAC checks, and executes the necessary Salt commands through the internal loopback connection.
+
+
+[[salt-publisher-acl]]
+== Publisher ACLs
+
+Upstream Salt provides Publisher ACLs (`publisher_acl`) to permit non-root system users to execute Salt commands from the {productname} Server command line.
+
+`publisher_acl` maps individual system user names to the Salt execution modules they are permitted to run.
+Users listed in `publisher_acl` can then publish those commands to Salt clients without root privileges.
+
+// bsc#1150154
+As a filesystem prerequisite for this configuration, {productname} maintains group-read permissions (`0640`, group `salt`) on master configuration files such as `/etc/salt/master.d/susemanager_engine.conf`.
+This configuration prevents permission denied errors when users in the `salt` group execute the `salt` command.
+
+[WARNING]
+====
+Salt commands run directly on the command line bypass {productname} RBAC checks.
+They are not tracked as {productname} actions and do not appear in the action history or the RBAC audit trail.
+Resulting changes on the client may not be reflected in the {productname} database until the next system refresh.
+For standard operations, execute Salt tasks through the {webui} or the {productname} API.
+====
+
+
+[[salt-recommended-access]]
+== Recommended Access Model
+
+For all multi-user management and delegation, use {productname} RBAC instead of native Salt ACLs:
+
+* Create custom roles (access groups) in menu:Admin[Access Control].
+* Grant granular permissions such as `salt.remote_commands` or `salt.keys`.
+* Assign users to access groups to enforce least privilege and preserve complete auditability.
+
+For detailed instructions on configuring custom roles, see xref:administration:role-based-access-control.adoc[].
