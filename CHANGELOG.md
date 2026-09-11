@@ -1,3 +1,4 @@
+- Added CI action and script to comment on pull requests with latest HTML and PDF artifact links
 - Restored the server and proxy maintenance update procedures and defined maintenance update, upgrade and migration terminology
 - Added Multi-Linux Manager MCP Server book
 - Stopped generating antora.yml in gen-all, where the two products wrote one file in a random order.
