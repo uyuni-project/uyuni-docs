@@ -1,0 +1,284 @@
+[[admin-audit-logging]]
+= Administrative Audit Logging
+:revdate: 2026-09-09
+:page-revdate: {revdate}
+
+{productname} records administrative and user actions performed on the Server, such as {webui} logins, API calls, and remote commands.
+This section describes what is recorded, where it is stored, and what to be aware of when you collect it with a central log server or a Security Information and Event Management (SIEM) system.
+
+[IMPORTANT]
+====
+{productname} does not provide a single consolidated audit log, and it does not write administrative events to `auditd` or to the system journal.
+The information described in this section is spread across several log files and database tables, and each source covers a different set of actions.
+For the actions that are not covered at all, see <<admin-audit-logging-limitations>>.
+====
+
+This section is about actions performed on the {productname} Server itself.
+It is not about the `Audit` section of the {webui}, which covers auditing of your clients.
+For client auditing, see xref:administration:auditing.adoc[] and xref:administration:openscap.adoc[].
+
+
+
+[[admin-audit-logging-sources]]
+== Sources of audit information
+
+[cols="1,1,2", options="header"]
+|===
+
+| Action
+| Source
+| Contains
+
+| {webui} logins and logouts, except single sign-on
+| `/var/log/rhn/rhn_web_ui.log`
+| User name, result, timestamp
+
+| API calls, both XML-RPC and HTTP, including the {webui} pages that use the HTTP API
+| `/var/log/rhn/rhn_web_api.log`
+| User name, source IP address, method, parameters, duration
+
+| Remote commands run from the {webui}
+| `/var/log/rhn/rhn_salt_remote_commands.log`
+| User name, target clients, timestamp
+
+| Remote commands run from the {webui}
+| System event history
+| User name, command, truncated output
+
+| Actions scheduled by users
+| Database, `Schedule` in the {webui}
+| User who scheduled the action, target client, status
+
+| User accounts, roles, and logins
+| Reporting database
+| Account details, role assignments, last login time
+
+|===
+
+All log files are located inside the Server container.
+For how to reach them, see <<admin-audit-logging-access>>.
+
+
+
+[[admin-audit-logging-logins]]
+== Logins and logouts
+
+Authentication through the login form is written to `/var/log/rhn/rhn_web_ui.log`.
+The entries take this form, where the fields are the timestamp, the thread, the log level, the logger, and the message:
+
+----
+2026-09-09 10:15:42,317 [<thread>] INFO  com.suse.manager.webui.controllers.login.LoginController - LOCAL AUTH SUCCESS: [admin]
+----
+
+These messages are used:
+
+`LOCAL AUTH SUCCESS: [<user>]`::
+The user authenticated successfully with a user name and a password.
+This covers both accounts managed by {productname} and accounts authenticated through PAM, because PAM is consulted as part of this authentication path.
+
+`LOCAL AUTH FAILURE: [<user>]`::
+The authentication attempt failed.
+The message is logged at the `ERROR` level, and each failed attempt produces two identical lines.
+Take this into account when you configure alerting on repeated failures.
+
+`EXTERNAL AUTH SUCCESS: [<user>]`::
+The user was authenticated by the web server before the request reached {productname}, as is the case with Kerberos.
+For more information, see xref:administration:auth-methods.adoc[].
+
+`OIDC AUTH SUCCESS: [<user>]` and `OIDC AUTH FAILURE: <reason>`::
+The result of an OpenID Connect authentication.
+
+`WEB LOGOUT: [<user>]`::
+The user logged out explicitly.
+Sessions that expire without an explicit logout are not logged.
+
+[NOTE]
+====
+These messages contain the user name but not the IP address the request came from.
+
+Logins through SAML single sign-on are not covered by any of these messages.
+Successful single sign-on logins and logouts produce no log entry at all.
+====
+
+
+
+[[admin-audit-logging-api]]
+== API calls
+
+Every API call is written to `/var/log/rhn/rhn_web_api.log`, regardless of whether it was made through XML-RPC or through the HTTP API.
+This is the most complete record of administrative activity, because it names the user, the source of the request, the method called, and the arguments passed to it:
+
+----
+[2026-09-09 10:17:03,880] INFO  - REQUESTED FROM: 192.168.1.50 CALL: user.create(loggedInUser=admin, login=bob, password=******, firstName=Bob, lastName=Smith, email=bob@example.com) CALLER: (admin) TIME: 0.042 seconds
+----
+
+The arguments are not written in a fixed order.
+
+The fields are:
+
+`REQUESTED FROM`::
+The IP address the call was made from.
+
+`CALL`::
+The API method and its arguments.
+
+`CALLER`::
+The login of the authenticated user.
+Calls made without a valid session are logged as `CALLER: (none)`.
+This includes calls that log a user in, whether they succeed or fail, because the caller is determined before the call is executed.
+Use the `LOCAL AUTH` messages in the {webui} log to tell successful logins from failed ones.
+
+`TIME`::
+How long the call took, in seconds.
+
+Argument values are redacted and replaced with `+******+` when the argument name or the value itself contains `pass`, `key`, `certificate`, `token`, or `secret`.
+This hides passwords and session keys, but it also redacts unrelated arguments that happen to match, such as a channel label containing the word `key`.
+
+When an API call raises an exception, the same line is written, followed by the stack trace on the subsequent lines.
+
+This log is not limited to calls that you make yourself.
+Several pages of the {webui} carry out their work by calling the same HTTP API in the background, and those calls are logged in the same way, with the user who is logged in as the caller.
+Access control changes made in menu:Admin[Access Control], password policy and monitoring changes made in menu:Admin[], and Salt key acceptance and rejection are all recorded this way.
+
+Older pages of the {webui} do not use the HTTP API and are not recorded.
+Organization configuration and user account pages are among them.
+Because there is no way to tell the two kinds of page apart in the {webui}, do not rely on this log alone to prove that a {webui} change was made.
+
+
+
+[[admin-audit-logging-remote-commands]]
+== Remote commands
+
+Remote commands executed from menu:Salt[Remote Commands] in the {webui} are recorded in two places.
+
+The log file `/var/log/rhn/rhn_salt_remote_commands.log` records who ran a command and which clients it targeted:
+
+----
+2026-09-09 10:20:11,455 [qtp1234-78] INFO  com.suse.manager.webui.websocket.RemoteMinionCommands - User 'admin' has sent a command to minions [client1.example.com, client2.example.com]
+----
+
+The command itself is only logged at the `DEBUG` level, so this file records that a command was run, not what it did.
+
+The command and its output are instead stored in the event history of each targeted client, as an event named `Salt Remote Command executed by <user>`.
+This record is kept in the database rather than in a log file, so it is not lost when logs rotate.
+To see it, open the details page for a client in the {webui} and navigate to menu:Events[History].
+The stored output is truncated to fit a 4000 character limit.
+
+
+
+[[admin-audit-logging-actions]]
+== Scheduled actions and system history
+
+Actions scheduled by a user, such as a package installation, a patch application, or a system reboot, store the user who scheduled them.
+In the {webui}, navigate to menu:Schedule[] to see pending, completed, failed, and archived actions together with the user who scheduled each one.
+The same information is available through the `schedule` API namespace.
+
+Two kinds of action carry no user: actions started by {productname} itself, and actions whose scheduling user has since been deleted.
+Deleting a user account clears the user from the actions that account scheduled, so historical attribution is lost.
+
+Client-side events, including actions applied to a client and remote commands executed on it, are recorded in the event history of that client.
+Unlike the log files, both records are stored in the database and are not affected by log rotation.
+
+
+
+[[admin-audit-logging-reportdb]]
+== Reporting database
+
+The reporting database provides the same records in a form that can be queried with SQL by an external tool.
+It is the best source for periodic compliance reporting, because it is read-optimized, accessible from outside the Server, and retains data that log rotation would remove.
+
+These tables are relevant for auditing:
+
+`Account`::
+User accounts with their organization, status, creation time, and last login time.
+
+`AccountGroup`::
+The roles assigned to each user account.
+
+`SystemAction`::
+Actions performed on clients, including `scheduler_username`, the user who scheduled the action, and its status and completion time.
+
+`SystemHistory`::
+Client event history, including the names of the remote command events described above.
+The command text and its output are not copied to the reporting database, and remain available in the {webui} only.
+
+For how to connect to the reporting database, see xref:administration:reporting-database.adoc[].
+
+
+
+[[admin-audit-logging-access]]
+== Accessing the log files
+
+On a container-based deployment, the log files are inside the Server container, in the `/var/log` volume.
+
+To read them from within the container, open a shell with `mgrctl term` on the container host, and access the files under `/var/log/rhn/`.
+
+To read them directly on the container host, without entering the container, use the volume path instead.
+With the default `podman` storage location, the files are here:
+
+----
+/var/lib/containers/storage/volumes/var-log/_data/rhn/
+----
+
+If the volumes were moved to a separate storage device during deployment, replace the base path accordingly.
+The volume is always named `var-log`.
+
+Use the volume path when you configure a log forwarder on the container host, as described in <<admin-audit-logging-forwarding>>.
+
+[NOTE]
+====
+The log files are created with read and write permissions for their owner only.
+Read them as `root`.
+====
+
+
+
+[[admin-audit-logging-rotation]]
+== Log rotation and retention
+
+All three log files rotate when they reach 10 MB.
+The {webui} log and the API log keep five rotated files, and the remote command log keeps 30.
+On a busy Server, five files can cover a short period only.
+
+These limits come from the Log4j configuration that ships inside the Server container, and are not exposed as a setting.
+The API log is additionally rotated by `/etc/logrotate.d/rhn_web_api` inside the container, which compresses the rotated files and can be edited.
+As a result, the API log has rotated files from both mechanisms, with different names.
+
+If you have to retain administrative records for a defined period, forward the logs to an external system.
+Alternatively, use the reporting database, which is not affected by log rotation.
+
+
+
+[[admin-audit-logging-forwarding]]
+== Forwarding logs to a syslog server or SIEM
+
+{productname} does not send log records to an external system by itself.
+To forward them, configure a log forwarder on the container host to read the files from the `/var/log` volume.
+
+The files are plain text and readable on the container host, so any log shipper that reads files can collect them.
+The paths to use are listed in <<admin-audit-logging-access>>.
+
+Two properties of the files matter when you configure a shipper:
+
+* API log entries for failed calls span several lines, because the stack trace follows the entry.
+Configure your shipper to join those lines into a single event, otherwise each line of a stack trace arrives as a separate record.
+* The files rotate, as described in <<admin-audit-logging-rotation>>.
+Use a shipper that follows rotated files, and make sure it keeps up with the rotation rate on your Server.
+
+
+
+[[admin-audit-logging-limitations]]
+== Limitations
+
+Be aware of these limitations when you plan for compliance requirements:
+
+* There is no consolidated audit log and no audit log format.
+The records are spread across the sources listed in this section, and their formats differ.
+* Coverage of the {webui} is uneven.
+Pages that use the HTTP API are recorded in the API log, and older pages, such as organization configuration and user account pages, are not recorded anywhere.
+* Logins through SAML single sign-on are not recorded.
+* There is no integration with `auditd`, and no option to write administrative events to the system journal or to a remote syslog server directly.
+* Login records do not include the IP address of the client.
+* Log files rotate by size, which makes the retention period dependent on how busy the Server is.
+* Log files are not signed or otherwise protected against tampering.
+Forward them to a dedicated log server if your compliance requirements include tamper evidence.
