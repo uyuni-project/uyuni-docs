@@ -1,3 +1,4 @@
+- Clarified requirement to update to the latest maintenance update before upgrading or migrating between versions (bsc#1270262)
 - Documented PAYG connection deletion and synchronization behavior, and fixed a broken cross-reference (github#31801)
 - Restored the server and proxy maintenance update procedures and defined maintenance update, upgrade and migration terminology
 - Stopped generating antora.yml in gen-all, where the two products wrote one file in a random order.
