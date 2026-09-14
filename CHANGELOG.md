@@ -1,3 +1,4 @@
+- Documented PAYG connection deletion and synchronization behavior, and fixed a broken cross-reference (github#31801)
 - Added CI action and script to comment on pull requests with latest HTML and PDF artifact links
 - Restored the server and proxy maintenance update procedures and defined maintenance update, upgrade and migration terminology
 - Added Multi-Linux Manager MCP Server book
