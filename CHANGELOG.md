@@ -1,3 +1,4 @@
+- Clarified TFTP autoinstallation proxy routing and server tftpd option (bsc#1276787)
 - Clarified requirement to update to the latest maintenance update before upgrading or migrating between versions (bsc#1270262)
 - Documented PAYG connection deletion and synchronization behavior, and fixed a broken cross-reference (github#31801)
 - Added CI action and script to comment on pull requests with latest HTML and PDF artifact links
