@@ -1,3 +1,4 @@
+- Documented new Taskomatic schedules (bsc#1273021)
 - Clarified requirement to update to the latest maintenance update before upgrading or migrating between versions (bsc#1270262)
 - Documented PAYG connection deletion and synchronization behavior, and fixed a broken cross-reference (github#31801)
 - Renamed the server and proxy upgrade pages to maintenance update and defined maintenance update, upgrade and migration terminology
