@@ -1,3 +1,4 @@
+- Updated the documentation.suse.com shared header to version 1.16 and marked it as the documentation portal
 - Added an English-only edit link on the documentation.suse.com and Uyuni sites so readers can propose a change to the English source
 - Documented new Taskomatic schedules (bsc#1273021)
 - Clarified requirement to update to the latest maintenance update before upgrading or migrating between versions (bsc#1270262)
