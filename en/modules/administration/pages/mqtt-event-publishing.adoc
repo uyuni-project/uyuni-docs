@@ -1,9 +1,9 @@
 [[mqtt-event-publishing]]
 = MQTT Event Publishing
-:revdate: 2026-08-29
+:revdate: 2026-09-23
 :page-revdate: {revdate}
 
-{productname} can publish lifecycle events to an MQTT broker as they happen.
+{productname} can publish lifecycle events to an MQTT (Message Queuing Telemetry Transport) broker as they happen.
 External tools can then subscribe to those events instead of polling the XML-RPC API on a timer.
 
 Publishing is disabled by default.
@@ -23,7 +23,7 @@ Five events originate from the Salt reactor, and are only produced when a regist
 * `images/deployed`
 * `batches/started`
 
-Four events are published directly by {productname} when the corresponding action occurs in the Web UI or through the API:
+Four events are published directly by {productname} when the corresponding action occurs in the {webui} or through the API:
 
 * `users/created`
 * `orgs/created`
@@ -34,7 +34,7 @@ Four events are published directly by {productname} when the corresponding actio
 [[mqtt.topics]]
 == Topic Structure
 
-Events are published to topics of this form:
+Events are published to topics of the following format:
 
 ----
 uyuni/<server-fqdn>/<category>/<event>
@@ -47,7 +47,7 @@ uyuni/server.example.com/systems/registered
 uyuni/server.example.com/jobs/returned
 ----
 
-The fully qualified domain name is taken from the `java.hostname` setting in `rhn.conf`.
+The FQDN (Fully Qualified Domain Name) is taken from the `java.hostname` setting in `rhn.conf`.
 Including it in the topic allows several {productname} Servers to publish to a single broker while subscribers can still tell them apart.
 
 To subscribe to one event type across every server, use a single-level wildcard:
@@ -56,7 +56,7 @@ To subscribe to one event type across every server, use a single-level wildcard:
 uyuni/+/jobs/returned
 ----
 
-To subscribe to everything from one server, name it:
+To subscribe to everything from one server use:
 
 ----
 uyuni/server.example.com/#
@@ -147,8 +147,8 @@ Use the `UYUNI_MQTT_BROKER_PASSWORD` environment variable instead on any system 
 ====
 
 
-[[mqtt.procedure]]
-== Enabling Event Publishing
+[[enable.event.publishing]]
+== Enable Event Publishing
 
 .Procedure: Enabling MQTT event publishing
 . Make an MQTT broker reachable from the {productname} Server.
@@ -183,14 +183,14 @@ The default root logger is `warn`, so you may need to raise the level for `com.s
 For a containerized deployment, place the configuration file in the `etc-tomcat` volume so that it survives container recreation.
 
 
-[[mqtt.delivery]]
-== Delivery Behavior
+[[mqtt.delivery.behavior]]
+== MQTT Delivery Behavior
 
-Understand these characteristics before relying on the event stream.
+These characteristics describe the event stream.
 
 Asynchronous::
 Publishing runs on a dedicated executor.
-A slow or unreachable broker does not block the reactor or any Web UI request.
+A slow or unreachable broker does not block the reactor or any {webui} request.
 
 Published after commit::
 An event is only published once the database transaction that produced it has committed.
@@ -209,20 +209,24 @@ Automatic reconnection::
 The client reconnects on its own after a broker outage.
 
 
-[[mqtt.verify]]
-== Verifying the Configuration
+[[verify.mqtt.configuration]]
+== Verify the MQTT Configuration
 
-Subscribe with any MQTT client and trigger an event.
+To subscribe with any MQTT client and trigger an event, use:
 
 ----
 mosquitto_sub -h broker.example.com -t 'uyuni/#' -v \
   -u uyuni-subscriber -P <password>
 ----
 
-Creating a user in the Web UI produces:
+Creating a user in the {webui} produces:
 
 ----
 uyuni/server.example.com/users/created {"eventId":"...","timestamp":"...", ...}
 ----
 
-If nothing arrives, check that `uyuni.mqtt.enabled` is `true`, that the broker is reachable from the {productname} Server, and that the broker's access control list permits the publishing account to write to `uyuni/#`.
+If there is no response, check that:
+
+* `uyuni.mqtt.enabled` is `true`.
+* The broker is reachable from the {productname} Server.
+* The broker's access control list permits the publishing account to write to `uyuni/#`.
