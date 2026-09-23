@@ -10,6 +10,9 @@ content:
     start_path: {{.StartPath}}
     branches:
     - HEAD
+{{ if .EditURL }}
+    edit_url: '{{.EditURL}}'
+{{ end }}
 output:
   dir: {{.OutputDir}}
 runtime:
