@@ -1,4 +1,7 @@
 - Documented new Taskomatic schedules (bsc#1273021)
+- Removed the sitemaps Antora generates from the documentation.suse.com HTML build
+- Updated the documentation.suse.com shared header to version 1.16 and marked it as the documentation portal
+- Added an English-only edit link on the documentation.suse.com and Uyuni sites so readers can propose a change to the English source
 - Clarified requirement to update to the latest maintenance update before upgrading or migrating between versions (bsc#1270262)
 - Documented PAYG connection deletion and synchronization behavior, and fixed a broken cross-reference (github#31801)
 - Restored the server and proxy maintenance update procedures and defined maintenance update, upgrade and migration terminology
