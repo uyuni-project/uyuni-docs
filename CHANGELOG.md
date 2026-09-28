@@ -1,4 +1,4 @@
-- Add a note to the liberate formula page for special handling of kernel during reinstall (bsc#1269223)
+- Added a note to the liberate formula page for special handling of kernel during reinstall (bsc#1269223)
 - Updated pages related to GPG upload from mgradm to mgrctl
 - Removed the sitemaps Antora generates from the documentation.suse.com HTML build
 - Updated the documentation.suse.com shared header to version 1.16 and marked it as the documentation portal
