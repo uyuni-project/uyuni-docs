@@ -1,4 +1,33 @@
 - Updated pages related to GPG upload from mgradm to mgrctl
+- Removed the sitemaps Antora generates from the documentation.suse.com HTML build
+- Updated the documentation.suse.com shared header to version 1.16 and marked it as the documentation portal
+- Added an English-only edit link on the documentation.suse.com and Uyuni sites so readers can propose a change to the English source
+- Documented new Taskomatic schedules (bsc#1273021)
+- Clarified requirement to update to the latest maintenance update before upgrading or migrating between versions (bsc#1270262)
+- Documented PAYG connection deletion and synchronization behavior, and fixed a broken cross-reference (github#31801)
+- Added CI action and script to comment on pull requests with latest HTML and PDF artifact links
+- Restored the server and proxy maintenance update procedures and defined maintenance update, upgrade and migration terminology
+- Added Multi-Linux Manager MCP Server book
+- Stopped generating antora.yml in gen-all, where the two products wrote one file in a random order.
+  The `-content-dir` flag of gen-all went to that file alone and is gone as well; gen-antora keeps its own
+- Added a manual trigger to the translation file workflow, which ran only on a push
+- Fixed `l10n-weblate/update-cfg-files` failing when invoked from anywhere other than
+  the `l10n-weblate/` directory
+- Sped up CI by building only English, which is all the CI artifacts have ever contained
+- Clarified relationship between custom RBAC and Salt-API access
+- Extracted and relocated general sudo configuration guidelines to a new central page, and added unprivileged onboarding support references for SLE 16 (bsc#1275794)
+- Made JOBS=00 an error, which xargs read as unlimited concurrency
+- Fixed the PDF archive tasks, which failed when the checkout path contains a space
+- Sped up PDF builds by building the books and applying the translations concurrently. JOBS=<n> caps the number of concurrent jobs
+- Fixed PDF builds so the two products no longer share one entities file, which could put SUSE Multi-Linux Manager names into Uyuni PDFs and the other way round
+- Fixed the pdf-tar tasks, which produced no archive and packaged both products into each one
+- Made an empty or incorrect LANGUAGES stop the build instead of reporting success with no output
+- Made an exported LANGUAGES set the default language selection
+- Made every build task select languages with LANGUAGES
+- Added a CI check for the revision date of changed documentation pages
+- Removed a second copy of the container image inspection section, which was published as a page with no title
+- Fixed the validate tasks to use Antora's built-in xref checking instead of the removed Antora 2 xref-validator plugin
+- Fixed noindex guards so product-specific pages no longer appear in the other product's documentation search
 - Added ppc64le support for AlmaLinux 8 in Uyuni
 - Corrected the architectures of Rocky Linux 8 in Uyuni, which has no ppc64le build upstream
 - Corrected the s390x information for AlmaLinux and Rocky Linux 9 and 10 in Uyuni
