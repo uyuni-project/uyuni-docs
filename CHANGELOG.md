@@ -1,4 +1,13 @@
 - Removed SLE12 as valid buildhost, and added the rest of SUSE family, Debian 13, RedHat 9 and 10 and Ubuntu 24.06 and 26.06
+- Added a note to the liberate formula page for special handling of kernel during reinstall (bsc#1269223)
+- Updated pages related to GPG upload from mgradm to mgrctl
+- Removed the sitemaps Antora generates from the documentation.suse.com HTML build
+- Updated the documentation.suse.com shared header to version 1.16 and marked it as the documentation portal
+- Added an English-only edit link on the documentation.suse.com and Uyuni sites so readers can propose a change to the English source
+- Documented new Taskomatic schedules (bsc#1273021)
+- Clarified requirement to update to the latest maintenance update before upgrading or migrating between versions (bsc#1270262)
+- Documented PAYG connection deletion and synchronization behavior, and fixed a broken cross-reference (github#31801)
+- Added CI action and script to comment on pull requests with latest HTML and PDF artifact links
 - Restored the server and proxy maintenance update procedures and defined maintenance update, upgrade and migration terminology
 - Added Multi-Linux Manager MCP Server book
 - Stopped generating antora.yml in gen-all, where the two products wrote one file in a random order.
