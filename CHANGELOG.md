@@ -1,4 +1,4 @@
-- Remove SLE12 as valid buildhost, add the rest of SUSE family, Debian 13, RedHat 9 and 10 and Ubuntu 2406 and 2606
+- Removed SLE12 as valid buildhost, and added the rest of SUSE family, Debian 13, RedHat 9 and 10 and Ubuntu 24.06 and 26.06
 - Restored the server and proxy maintenance update procedures and defined maintenance update, upgrade and migration terminology
 - Added Multi-Linux Manager MCP Server book
 - Stopped generating antora.yml in gen-all, where the two products wrote one file in a random order.
