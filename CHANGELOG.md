@@ -1,3 +1,4 @@
+- Documented MQTT event publishing in Administration Guide
 - Added a note to the liberate formula page for special handling of kernel during reinstall (bsc#1269223)
 - Updated pages related to GPG upload from mgradm to mgrctl
 - Removed the sitemaps Antora generates from the documentation.suse.com HTML build
