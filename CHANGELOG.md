@@ -1,3 +1,4 @@
+- Removed SLE12 as valid buildhost, and added the rest of SUSE family, Debian 13, RedHat 9 and 10 and Ubuntu 24.06 and 26.06
 - Added a note to the liberate formula page for special handling of kernel during reinstall (bsc#1269223)
 - Updated pages related to GPG upload from mgradm to mgrctl
 - Removed the sitemaps Antora generates from the documentation.suse.com HTML build
