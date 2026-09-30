@@ -23,6 +23,26 @@ type templateData struct {
 	ContentDir string // e.g. en/modules (for antora.yml nav paths)
 }
 
+// englishEditURLPattern is the GitHub page a reader opens to propose a
+// change. Antora fills {refname} and {path}. {path} is the generated
+// translations/en copy; the UI rewrites that to the English source under en/.
+const englishEditURLPattern = "https://github.com/uyuni-project/uyuni-docs/edit/{refname}/{path}"
+
+// englishEditURL returns an edit link for the public English sites only.
+// Translated builds and the embedded Web UI do not get one, so those pages
+// cannot offer a link into ja, ko, or zh_CN.
+func englishEditURL(outputName, langCode string) string {
+	if langCode != "en" {
+		return ""
+	}
+	switch outputName {
+	case "mlm-dsc", "uyuni-website":
+		return englishEditURLPattern
+	default:
+		return ""
+	}
+}
+
 // SiteYML generates translations/{lang}/{output}.site.yml.
 func SiteYML(cfg *config.Config, productName, outputName, langCode, repoRoot string) error {
 	lang, err := cfg.LanguageByCode(langCode)
@@ -71,6 +91,7 @@ func SiteYML(cfg *config.Config, productName, outputName, langCode, repoRoot str
 		BundleURL         string
 		SupplementalFiles string
 		RepoRoot          string
+		EditURL           string
 	}{
 		templateData: templateData{
 			Product: productName,
@@ -86,6 +107,7 @@ func SiteYML(cfg *config.Config, productName, outputName, langCode, repoRoot str
 		BundleURL:         bundleURL,
 		SupplementalFiles: supp,
 		RepoRoot:          repoRoot,
+		EditURL:           englishEditURL(outputName, langCode),
 	}
 
 	outPath := filepath.Join(repoRoot, "translations", langCode, outputName+".site.yml")
