@@ -1,3 +1,4 @@
+- Documented Salt RBAC namespaces and native Salt access controls
 - Documented new Taskomatic schedules (bsc#1273021)
 - Removed the sitemaps Antora generates from the documentation.suse.com HTML build
 - Updated the documentation.suse.com shared header to version 1.16 and marked it as the documentation portal
