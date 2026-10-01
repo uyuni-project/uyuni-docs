@@ -1,3 +1,4 @@
+- Documented Salt RBAC namespaces and native Salt access controls
 - Clarified TFTP autoinstallation proxy routing and server tftpd option (bsc#1276787)
 - Added a note to the liberate formula page for special handling of kernel during reinstall (bsc#1269223)
 - Updated pages related to GPG upload from mgradm to mgrctl
