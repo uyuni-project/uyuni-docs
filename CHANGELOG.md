@@ -1,3 +1,4 @@
+- Documented Salt RBAC namespaces and native Salt access controls
 - Added a note to the liberate formula page for special handling of kernel during reinstall (bsc#1269223)
 - Documented new Taskomatic schedules (bsc#1273021)
 - Removed the sitemaps Antora generates from the documentation.suse.com HTML build
