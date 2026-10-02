@@ -1,0 +1,491 @@
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+= 服务器从 5.0 升级到 5.2
+:description: 按照包含验证当前系统状态、更新主机和复制的迁移过程，将服务器从5.0版本升级到5.2版本。
+:revdate: 2026-09-15
+:page-revdate: {revdate}
+
+
+[IMPORTANT]
+====
+升级前必须停止 {productname} 5.0。
+====
+
+[IMPORTANT]
+====
+在升级到 {productname} {productnumber} 之前，您必须将 {productname} 5.0 服务器更新到最新的可用维护更新，并确保其正在运行（请参阅 xref:installation-and-upgrade:container-management/updating-server-containers.adoc[Server Maintenance Update]）。
+数据库架构迁移需要来自先前维护更新的中间更改。
+直接从较旧的维护更新进行升级可能会导致数据库迁移错误和服务器启动故障。
+====
+
+[IMPORTANT]
+====
+有关已知问题的列表，请参见 link:https://documentation.suse.com/releasenotes/multi-linux-manager/5.2/#known_issues[{productname} Release Notes]。
+====
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-hardened-tmpdir.adoc[leveloffset=+2]
+include::installation-and-upgrade:partial$snippet-certificate-validators.adoc[leveloffset=+1]
+include::installation-and-upgrade:partial$snippet-ssl-requirements.adoc[leveloffset=+1]
+include::installation-and-upgrade:partial$snippet-version-number.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-hardened-tmpdir.adoc[leveloffset=+2]
+include::../../../../../partials/snippet-certificate-validators.adoc[leveloffset=+1]
+include::../../../../../partials/snippet-ssl-requirements.adoc[leveloffset=+1]
+include::../../../../../partials/snippet-version-number.adoc[leveloffset=+1]
+endif::[]
+
+在迁移过程中，服务器 SSL 证书和 CA 链从源服务器复制。
+
+
+== {sle-micro} 5.5 到 {sl-micro} 6.2
+
+
+
+本文件提供了经过测试的流程，用于将部署了 {sle-micro} 5.0 服务器的 {productname} 5.5 主机升级到 {sl-micro} 6.2 并迁移到 {productname} {productnumber}。
+
+
+=== 先决条件
+
+* {productname} 5.0 已安装并在 {sle-micro} 5.5 上运行。
+* {productname} 5.0 已更新到最新的可用维护更新，并且正在运行（请参阅 xref:installation-and-upgrade:container-management/updating-server-containers.adoc[Server Maintenance Update]）。
+* 系统已注册到 {scc} 且拥有有效的订阅。
+
+
+=== 发行套件升级和服务器迁移
+
+.过程：升级从 {productname} 5.0 迁移到 {productname} {productnumber}
+[role=procedure]
+_____
+
+. 校验当前产品状态
+
++
+
+[source,console]
+----
+SUSEConnect --status-text
+----
+
++
+
+确认以下信息：
+
+* 基础操作系统：`SUSE Linux Enterprise Micro 5.5`
+* 扩展：`SUSE Manager Server 5.0 Extension`
+
++
+
+. 确保主机系统已更新。
+
++
+
+[NOTE]
+====
+此步骤将更新主机操作系统软件包和工具（例如 `mgradm`）。
+在执行此过程之前，请确保 {productname} 服务器容器已更新到最新的维护更新并正在运行。
+====
+
++
+
+[source,console]
+----
+transactional-update patch
+----
+
++
+
+--
+
+* 如果已应用补丁，请在继续迁移前\\**重引导系统**：
+
++
+
+[source,console]
+----
+mgradm stop
+reboot
+----
+
+* 如果未发现更新，可直接进入迁移步骤。
+
+--
+
++
+
+. 启动迁移流程：
+
++
+
+[source,console]
+----
+transactional-update migration --auto-agree-with-licenses --gpg-auto-import-keys
+----
+
++
+
+按照提示操作，选择可用的迁移目标：**SUSE Linux Micro 6.2** 和 **{productname} 服务器扩展 {productnumber}**。
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
++
+
+. 停止服务器后重引导，使更改生效。
+
++
+
+[source,console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. 重引导后的检查：
+
++
+
+验证 {productname} 扩展和 {productname} 版本：
+
++
+
+[source,console]
+----
+SUSEConnect --status-text
+mgradm --version
+----
+
++
+
+预期输出：
+
+* 扩展：`SUSE Multi-Linux Manager Server {productnumber} Extension`
+* 版本：参考 `5.2.0` 或更高版本
+
++
+
+. 升级服务器容器
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
++
+
+[WARNING]
+====
+在运行 `mgradm upgrade` 之前，请检查 `/etc/systemd/system/uyuni-server.service` 是否包含格式为 `-p [::]:PORT:PORT` 的显式 IPv6 端口绑定。
+这些绑定与 {sl-micro} 6.2 上的 netavark 不兼容，并会导致格式错误的 nftables 规则，从而使 Web UI 在升级后无法访问。
+
+如果存在此类行，请在继续之前将其删除：
+
+[source,diff]
+----
+  -p 80:80 \
+- -p [::]:80:80 \
+  -p 443:443 \
+- -p [::]:443:443 \
+----
+
+然后重启主机再继续：
+
+[source,bash]
+----
+systemctl reboot
+----
+====
+
++
+
+[source,console]
+----
+mgradm start
+mgradm upgrade
+----
+
++
+
+按照提示操作，拉取并配置新的 5.2.x 容器。
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-note-tftp-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-note-tftp-upgrade.adoc[]
+endif::[]
+
++
+
+. 检查正在运行的容器。
+
++
+
+[source,console]
+----
+podman ps
+----
+
++
+
+预期输出：
+
+* `server:5.2.0` 或更高版本
+* `server-postgresql:5.2.0` 或更高版本
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
+_____
+
+
+=== 迁移完成
+
+服务器主机系统现在运行的是 {sl-micro} 6.2，并带有更新的 {productname} {productnumber} 服务器软件包。
+
+如果您有一个连接到此服务器的 {productname} 5.0 代理，请参阅 xref:installation-and-upgrade:container-deployment/mlm/migrations/proxy/proxy-mlm-50-52.adoc[Proxy Upgrade 5.0 > 5.2] 指南以升级代理主机。
+
+在恢复生产操作之前，请验证您的设置。
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+
+== {sles} 15 SP6 升级到 15 SP7
+
+本文件提供了将部署了 {sles} 5.0 服务器的 {productname} 15 SP6 主机升级到 {sles} 15 SP7 并迁移到 {productname} {productnumber} 的程序。
+
+
+=== 先决条件
+
+* {productname} 5.0 已安装并在 {sles} 15 SP6 上运行。
+* {productname} 5.0 已更新到最新的可用维护更新，并且正在运行（请参阅 xref:installation-and-upgrade:container-management/updating-server-containers.adoc[Server Maintenance Update]）。
+* 系统已注册到 {scc} 且拥有有效的订阅。
+
+
+=== 发行套件升级和服务器迁移
+
+.过程：升级在 {productname} 15 SP6 上升级并迁移 {sles}
+[role=procedure]
+_____
+
+. 校验当前产品状态
+
++
+
+[source,console]
+----
+SUSEConnect --status-text
+----
+
++
+
+确认以下信息：
+
+* 基础操作系统：`SUSE Linux Enterprise Server 15 SP6`
+* 扩展：`SUSE Manager Server 5.0 Extension`
+
++
+
+. 确保主机系统已更新。
+
++
+
+[NOTE]
+====
+此步骤将更新主机操作系统软件包和工具（例如 `mgradm`）。
+在执行此过程之前，请确保 {productname} 服务器容器已更新到最新的维护更新并正在运行。
+====
+
++
+
+[source,console]
+----
+zypper patch
+----
+
++
+
+如果已应用补丁，请在继续迁移前停止服务器，然后重引导系统：
+
++
+
+[source,console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. 执行迁移到 SP7 和 {productname} {productnumber}。
+
++
+
+[source,console]
+----
+zypper migration
+----
+
++
+
+选择您的时区。
+
+* `{sles} 15 SP7`
+* `{productname} Server Extension {productnumber}`
+
++
+
+. 停止服务器后重引导，使更改生效。
+
++
+
+[source,console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. 重引导后的检查：
+
++
+
+验证 {productname} 扩展：
+
++
+
+[source,console]
+----
+SUSEConnect --status-text
+----
+
++
+
+预期输出：
+
+* 扩展：`SUSE Multi-Linux Manager Server {productnumber} Extension`
+
++
+
+. 验证 {productname} 版本。
+
++
+
+[source,console]
+----
+mgradm --version
+----
+
++
+
+预期输出：
+
+* 版本：参考 `5.2.0` 或更高版本
+
++
+
+. 升级服务器容器
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
++
+
+[source,console]
+----
+mgradm start
+mgradm upgrade
+----
+
++
+
+按照提示操作，拉取并配置新的 5.2.x 容器。
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-note-tftp-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-note-tftp-upgrade.adoc[]
+endif::[]
+
+
+. 更新容器
+
++
+
+[source,console]
+----
+podman ps
+----
+
++
+
+预期输出：
+
+* `server:5.2.0` 或更高版本
+* `server-postgresql:5.2.0` 或更高版本
+
+_____
+
+
+=== 迁移完成
+
+服务器主机系统现在运行 {sles} 15 SP7，并带有更新的 {productname} {productnumber} 服务器软件包。
+
+如果您有一个连接到此服务器的 {productname} 5.0 代理，请参阅 xref:installation-and-upgrade:container-deployment/mlm/migrations/proxy/proxy-mlm-50-52.adoc[Proxy Upgrade 5.0 > 5.2] 指南以升级代理主机。
+
+在恢复生产操作之前，请验证您的设置。
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]

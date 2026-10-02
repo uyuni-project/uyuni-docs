@@ -1,0 +1,205 @@
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+= {productname} 프록시를 {opensuse} Tumbleweed로 마이그레이션
+:revdate: 2025-10-27
+:page-revdate: {revdate}
+:description: 이 페이지에서는 프록시 관리 도구 `mgrpxy`를 사용하여 {productname} 프록시 호스트를 openSUSE Leap Micro 5.5에서 새로 설치된 openSUSE Tumbleweed로 마이그레이션하는 방법을 설명합니다.
+
+이 페이지에서는 프록시 관리 도구 `mgrpxy`를 사용하여 {productname} 프록시 호스트를 openSUSE Leap Micro 5.5에서 새로 설치된 openSUSE Tumbleweed로 마이그레이션하는 방법을 설명합니다.
+
+[IMPORTANT]
+====
+이 가이드는 Tumbleweed에서만 테스트되었습니다. 다른 지원되는 기반에서 작동하지 않을 이유는 없지만, 운영 환경에 적용하기 전에 항상 테스트 환경에서 검증하십시오.
+====
+
+
+
+== 프록시 구성 생성
+
+다음 작업을 수행합니다:
+
+* 이전 시스템에서 프록시 구성(Apache/Squid 튜닝 포함)을 저장합니다.
+* openSUSE Tumbleweed로 호스트를 재설치합니다.
+* 시스템 재활성화 키를 사용하여 호스트를 다시 등록합니다.
+* `mgrpxy`을(를) 설치합니다(필요한 경우 Podman도 설치합니다).
+* 구성을 복원한 후, 옵션 튜닝 파일과 함께 `mgrpxy install`을 실행하세요.
+
+
+== 요구 사항 및 고려 사항
+
+* 서버와 클라이언트가 이전과 동일하게 프록시와 상호 작용할 수 있도록 가능한 경우 동일한 호스트 이름/FQDN 및 IP를 유지하십시오.
+* 기존 프록시 시스템에 대한 "시스템 재활성화 키"가 있는지 확인하십시오(UI: 시스템 > 프록시 선택 > 세부 정보 > 재활성화).
+* 구성 아카이브를 시스템에서 이동하거나 시스템으로 가져올 수 있도록 SSH/scp 액세스 권한을 확인하십시오.
+
+== 마이그레이션
+
+=== 1단계: 프록시 구성 및 튜닝 파일 저장
+
+.절차 프록시 구성 및 튜닝 파일 저장
+[role="procedure"]
+____
+
+. 서버 컨테이너에서 생성된 구성을 복사합니다.
+
++
+
+[source,shell]
+----
+scp -r /etc/uyuni <USER>@<HOST>:/some/where/safe/
+----
+. 레거시 프록시 서비스에서 현재 사용 중인 Apache 및 Squid 튜닝 파일을 식별합니다:
+
++
+
+[source,shell]
+----
+systemctl cat uyuni-proxy-httpd.service | grep EXTRA_CONF= | sed 's/.*=-v\([^:]\+\):.*/\1/'
+systemctl cat uyuni-proxy-squid.service | grep EXTRA_CONF= | sed 's/.*=-v\([^:]\+\):.*/\1/'
+----
+. 해당 튜닝 파일도 동일한 안전한 위치에 복사합니다.
+
+[TIP]
+====
+다시 복사한 후의 일반적인 기본 경로는 다음과 같습니다:
+
+* Apache 튜닝: `/etc/uyuni/proxy/apache.conf`
+* Squid 튜닝: `/etc/uyuni/proxy/squid.conf`
+====
+
+____
+
+=== 2단계: openSUSE Tumbleweed로 호스트 재설치
+.절차 openSUSE Tumbleweed로 호스트 재설치
+[role="procedure"]
+____
+
+. openSUSE Tumbleweed로 시스템을 재설치합니다(서버 프로필 권장).
+. 가능한 경우 이전과 동일한 호스트 이름/FQDN 및 IP를 설정합니다.
+
+____
+
+
+
+=== 3단계: 재활성화 키를 사용하여 호스트 재등록
+
+.절차 재활성화 키를 사용하여 호스트 재등록
+[role="procedure"]
+____
+
+. {productname} 웹 UI에서 기존 프록시 시스템 레코드에 대한 시스템 재활성화 키를 가져옵니다(시스템 > 세부 정보 > 재활성화).
+. 해당 재활성화 키를 사용하여 Tumbleweed 호스트를 부팅/재등록하여 기존 시스템 항목을 요청하도록 합니다.
+
+[NOTE]
+====
+환경 내 Tumbleweed 호스트에 대한 표준 부팅 프로세스(예: 부팅 스크립트 또는 구성 관리)를 사용하고 재활성화 키가 적용되었는지 확인합니다.
+====
+
+____
+
+
+
+=== 단계 4: {productname} 프록시 도구 및 Podman 설치
+
+.절차 프록시 도구 및 Podman 설치
+[role="procedure"]
+____
+
+. Uyuni Stable 리포지토리를 추가하고 도구를 설치합니다:
+
++
+
+[source,shell]
+----
+zypper ar https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable/images/repo/Uyuni-Proxy-POOL-x86_64-Media1 uyuni-proxy-stable
+zypper ref
+zypper in mgrpxy mgrctl mgrpxy-bash-completion mgrctl-bash-completion
+----
+. Podman이 설치되어 있는지 확인합니다(컨테이너 실행에 필요):
+
++
+
+[source,shell]
+----
+zypper in podman
+----
+
+____
+
+
+
+=== 단계 5: 구성 복원 및 프록시 설치
+
+.절차 구성 복원 및 프록시 설치
+[role="procedure"]
+____
+
+. 서버 컨테이너에서 생성된 구성을 복사합니다.
+
++
+
+[source,shell]
+----
+scp -r <USER>@<HOST>:/some/where/safe/uyuni /etc/
+----
+. Apache/Squid 튜닝 파일을 저장한 경우 예상되는 기본 경로에 배치하거나 다음 명령의 매개변수에 대한 위치를 기록해 두십시오.
+
++
+
+[source,shell]
+----
+# Default paths expected by mgrpxy parameters (adjust/move your files accordingly)
+# Apache tuning: /etc/uyuni/proxy/apache.conf
+# Squid tuning:  /etc/uyuni/proxy/squid.conf
+----
+. Podman으로 프록시 설치를 실행하십시오. 튜닝 파일을 사용하지 않는 경우 해당 매개변수를 생략하십시오.
+
++
+
+[source,shell]
+----
+# With tuning files
+mgrpxy install \
+    --tuning-httpd /etc/uyuni/proxy/apache.conf \
+    --tuning-squid /etc/uyuni/proxy/squid.conf
+
+# If you have no tuning files, remove the tuning parameters:
+# mgrpxy install
+----
+
+[NOTE]
+====
+향후 릴리스에서는 위에 언급된 기본 경로에 튜닝 파일이 배치된 경우 명시적 매개변수가 필요하지 않습니다.
+====
+
+____
+
+
+=== 6단계: 프록시 확인
+
+.절차 프록시 확인 중
+[role="procedure"]
+____
+
+. Spacewalk 서비스가 실행 중인지 확인합니다.
+
++
+
+[source,shell]
+----
+mgrctl ps
+# or
+podman ps
+----
+. {productname} 웹 UI에서 프록시가 정상으로 표시되는지, 이 프록시를 사용하는 클라이언트가 정상적으로 작동하는지 확인하십시오.
+
+____
+
+== 문제 해결
+
+* Podman이 없는 경우 설치하고 `mgrpxy install` 단계를 다시 실행하십시오.
+* 호스트의 시간, 호스트 이름 및 IP가 예상과 일치하는지 확인하십시오.
+* 호스트가 기존 시스템 레코드에 다시 연결되지 않은 경우 올바른 재활성화 키를 사용했는지 확인하고 부팅을 반복하십시오.
+

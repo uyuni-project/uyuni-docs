@@ -1,0 +1,136 @@
+:description: 호스트를 업데이트한 다음, {productname} 프록시 컨테이너를 업그레이드하십시오.
+:revdate: 2026-09-08
+:page-revdate: {revdate}
+
+ifeval::[{mlm-content} == true]
+= 프록시 유지보수 업데이트
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+= 프록시 업그레이드
+endif::[]
+
+ifeval::[{mlm-content} == true]
+업그레이드 명령을 실행하기 전에 호스트 운영 체제를 업데이트해야 합니다.
+호스트 운영 체제를 업데이트하면 {productname} 도구와 같은 `mgrpxy` 도구도 업데이트됩니다.
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+업그레이드 명령을 실행하기 전에 호스트에서 {productname} 컨테이너 도구(예: `mgrpxy` 도구)를 업데이트해야 합니다.
+endif::[]
+
+.절차 프록시 업그레이드
+[role=procedure]
+____
+. `zypper`을(를) 사용하여 소프트웨어 리포지토리를 새로 고치세요: 
+
++
+
+[source,shell]
+----
+zypper ref
+----
+
+ifeval::[{mlm-content} == true]
+
+. 호스트 운영 체제에 따라 다음 단계를 진행합니다.
+
++
+
+{sl-micro}와 같은 트랜잭션 시스템의 경우: ::
+
++
+
+--
+
+. `transactional-update`로 사용할 수 있는 업데이트를 적용하십시오:
+
++
+
+[source,shell]
+----
+transactional-update
+----
+
+. 업데이트가 적용된 경우 `reboot`.
+
+--
+
++
+
+{sles}의 경우: ::
+
++
+
+--
+
+`zypper`로 설치된 소프트웨어를 업데이트하십시오:
+
+[source,shell]
+----
+zypper up
+----
+
+--
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+. {productname} 컨테이너 도구를 업데이트하십시오:
+
++
+
+[source,shell]
+----
+zypper up mgrpxy mgrctl mgrpxy-bash-completion mgrctl-bash-completion
+----
+
+endif::[]
+
++
+
+. {productname} 프록시 컨테이너가 `podman`에서 실행 중인 경우, 다음 명령을 사용하여 업데이트할 수 있습니다:
+
++
+
+[source,shell]
+----
+mgrpxy upgrade
+----
+
++
+
+{kube} 클러스터에서 실행 중인 프록시의 경우, xref:specialized-guides:kubernetes-guide/proxy-kubernetes-upgrade.adoc[]을(를) 참조하세요.
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../partials/snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
+____
+
+
+[NOTE]
+====
+특정 버전으로 업그레이드할 때 태그 매개변수를 지정하지 않으면 가장 최근 버전으로 업그레이드됩니다.
+특정 버전으로 업그레이드하려면 원하는 이미지 태그와 함께 태그 매개변수를 제공하십시오.
+====
+
+[IMPORTANT]
+====
+
+ifeval::[{mlm-content} == true]
+
+특정 태그를 사용하여 특정 컨테이너를 업그레이드하는 옵션이 있지만, 이 기능은 PTF를 적용하는 경우에만 사용할 수 있습니다.  일반적인 상황에서는 일관성을 유지하기 위해 모든 프록시 컨테이너에 동일한 태그를 사용하는 것이 좋습니다.
+endif::[]
+
+특정 태그를 사용하여 특정 컨테이너를 업그레이드하는 옵션이 있지만, 이 기능은 PTF를 적용하는 경우에만 사용할 수 있습니다.  일반적인 상황에서는 일관성을 유지하기 위해 모든 프록시 컨테이너에 동일한 태그를 사용하는 것이 좋습니다.
+====
+
+air-gapped 설치의 경우, 먼저 컨테이너 RPM 패키지를 업그레이드한 후 `mgrpxy upgrade` 명령을 실행합니다.

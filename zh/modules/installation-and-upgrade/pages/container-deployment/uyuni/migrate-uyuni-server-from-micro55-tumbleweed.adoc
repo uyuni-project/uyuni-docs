@@ -1,0 +1,196 @@
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+= 将 {productname} 服务器迁移至 {opensuse} Tumbleweed
+:revdate: 2025-10-27
+:page-revdate: {revdate}
+:description: 本页面介绍了如何将运行在 openSUSE Leap Micro 5.5 上的 {productname} 服务器迁移到以 openSUSE Tumbleweed 为基础操作系统的新主机上。
+
+本页面介绍了将运行在 openSUSE Leap Micro 5.5 上的 {productname} 服务器通过简单的备份和恢复方式迁移到以 openSUSE Tumbleweed 为基础操作系统的新主机上。
+
+
+== 校验过程
+
+您将：
+
+* 在 openSUSE Leap Micro 5.5 主机上使用 `mgradm backup` 创建完整的服务器备份。
+* 使用 openSUSE Tumbleweed（服务器配置文件）重新安装主机。
+* 在 Tumbleweed 上安装 {productname} 工具和先决条件。
+* 使用 `mgradm backup restore` 恢复备份。
+* 启动服务并验证服务器。
+
+
+== 要求和注意事项
+
+* 源服务器：运行 {productname} 的 openSUSE Leap Micro 5.5（例如：{productnumber}）。
+* 目标服务器：具有相同主机名/FQDN 和 IP 的 openSUSE Tumbleweed（推荐），以避免客户端更改。
+* 机器之间用于传输备份 tarball 的 SSH/scp 访问权限。
+* 源服务器和目标服务器上都有足够的可用磁盘空间用于备份和恢复。
+
+[IMPORTANT]
+====
+恢复到您备份时所用的相同 {productname} 版本，或明确记录为可用于恢复的版本。如果您使用开发或预览储存库（例如 Uyuni Master），请预料到会有更改并重新验证。
+====
+
+== 迁移
+
+=== 第 1 步：在 openSUSE Leap Micro 5.5 服务器上创建备份
+.过程：升级 创建备份
+[role="procedure"]
+____
+. 以 root 用户身份在旧服务器上，创建一个备份目录并运行备份：
+
++
+
+[source,shell]
+----
+mgradm backup /tmp/uyuni-backup
+----
+. 打包备份以进行传输：
+
++
+
+[source,shell]
+----
+tar -C /tmp -cvf /tmp/uyuni-backup.tar uyuni-backup
+----
+. 将备份复制到您可以从新主机访问的安全位置：
+
++
+
+[source,shell]
+----
+scp /tmp/uyuni-backup.tar <USER>@<HOST>:/path/to/store/
+----
+
+[TIP]
+====
+只要您能在新主机上获取备份，就可以将其存储到外部存储或对象存储中。
+====
+
+____
+
+=== 第 2 步：使用 openSUSE Tumbleweed 重新安装主机
+.过程：升级重新安装主机
+[role="procedure"]
+____
+
+. 使用 openSUSE Tumbleweed 重新配置虚拟机或裸机主机。
+. 选择基本的“服务器配置文件”安装。
+. 如果您希望客户端无缝重新连接，请设置与原始服务器相同的主机名/FQDN 和 IP 地址。
+
+____
+
+=== 第三步：在 Tumbleweed 上安装 {productname} 工具和先决条件
+
+.过程：升级安装工具和先决条件
+[role="procedure"]
+____
+
+. 添加 Uyuni Stable 储存库并安装工具：
++
+[source,shell]
+----
+zypper ar https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable/images/repo/Uyuni-Server-POOL-x86_64-Media1 uyuni-server-stable
+zypper ref
+zypper in mgradm mgrctl mgradm-bash-completion mgrctl-bash-completion uyuni-storage-setup-server
+----
+. 如果未自动拉取 Podman，请安装它：
+
++
+
+[source,shell]
+----
+zypper in podman
+----
+
+[NOTE]
+====
+软件包 `uyuni-storage-setup-server` 提供了用于准备持久化卷的 `mgr-storage-server` 工具。在某些安装中，可能需要显式安装 `podman`。
+====
+
+____
+
+=== 第四步：可选 - 准备持久化存储
+
+.过程：升级准备持久化存储
+[role="procedure"]
+____
+
+建议使用 `mgr-storage-server` 配置持久化存储，以避免容器磁盘已满的问题。
+
+[source,shell]
+----
+mgr-storage-server <storage-disk-device> [<database-disk-device>]
+----
+
+[NOTE]
+====
+设备必须是原始设备（没有现有文件系统）。该工具会在 `/var/lib/containers/storage/volumes` 处创建卷。
+
+例如：
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+====
+
+____
+
+=== 第 5 步 在 Tumbleweed 上获取并恢复备份
+
+.过程：升级获取并恢复备份
+[role="procedure"]
+____
+
+. 将备份复制到新服务器并解压：
+
++
+
+[source,shell]
+----
+scp <USER>@<HOST>:/path/to/store/uyuni-backup.tar /tmp/
+tar -C /tmp -xvf /tmp/uyuni-backup.tar
+----
+. 使用 `mgradm` 进行恢复（指向解压后的备份目录）：
+
++
+
+[source,shell]
+----
+mgradm backup restore /tmp/uyuni-backup
+----
+
+____
+
+=== 第六步：启动服务并验证
+
+.过程：升级启动服务并验证
+
+. 停止源服务：
+
++
+
+[source,shell]
+----
+mgradm start
+----
+. 验证：
+** 检查所有容器是否已启动：`mgrctl ps` 或 `podman ps`。
+** 访问 Web UI (HTTPS) 并登录。
+** 检查日志以查找错误：`mgrctl logs server` 以及根据需要检查其他组件。
+
+___
+
+== 查错
+
+* 如果 Podman 未自动安装，请使用 `zypper in podman` 安装它，然后重新运行恢复/启动步骤。
+* 确保目标主机具有您的设置所预期的相同时间、主机名和 IP 配置（特别是如果存在客户端时）。
+* 对于大型环境，请确保有足够的磁盘吞吐量和空间。备份和恢复可能需要很长时间。
+
+[IMPORTANT]
+====
+如果恢复失败或新系统无法启动，您仍然可以引导原始的 openSUSE Leap Micro 5.5 系统并继续服务。在完全验证基于 Tumbleweed 的新服务器之前，请保留原始虚拟机/快照。
+====
+

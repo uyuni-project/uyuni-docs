@@ -1,0 +1,205 @@
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+= 将 {productname} 代理迁移至 {opensuse} Tumbleweed
+:revdate: 2025-10-27
+:page-revdate: {revdate}
+:description: 本页面介绍了如何使用代理管理工具 \`mgrpxy` 将 {productname} 代理主机从 openSUSE Leap Micro 5.5 迁移到全新的 openSUSE Tumbleweed 安装。
+
+本页面介绍了如何使用代理管理工具 {productname} 将 `mgrpxy` 代理主机从 openSUSE Leap Micro 5.5 迁移到全新的 openSUSE Tumbleweed 安装。
+
+[IMPORTANT]
+====
+本指南仅在 Tumbleweed 上进行了测试。目前没有理由说明它在其他受支持的基础系统上无法工作，但在投入生产环境之前，请务必在测试环境中进行验证。
+====
+
+
+
+== 生成代理配置
+
+您将执行以下操作：
+
+* 保存旧系统中的代理配置（包括 Apache/Squid 调优）。
+* 使用 openSUSE Tumbleweed 重新安装主机。
+* 使用系统重新激活密钥重新注册主机。
+* 安装 `mgrpxy`（如果需要，还需安装 Podman）。
+* 恢复配置并运行带有可选调优文件的`mgrpxy install`。
+
+
+== 要求和注意事项
+
+* 尽可能保持相同的主机名/FQDN 和 IP，以便服务器和客户端能像以前一样与代理交互。
+* 确保您拥有现有代理系统的“系统重新激活密钥”（UI：系统 > 选择代理 > 详细信息 > 重新激活）。
+* 确保拥有 SSH/scp 访问权限，以便将配置文件归档移出和移入机器。
+
+== 迁移
+
+=== 第 1 步：保存代理配置和调优文件
+
+.过程：升级保存代理配置和调优文件
+[role="procedure"]
+____
+
+. 从服务器容器复制生成的配置：
+
++
+
+[source,shell]
+----
+scp -r /etc/uyuni <USER>@<HOST>:/some/where/safe/
+----
+. 确定旧版代理服务当前使用的 Apache 和 Squid 调优文件：
+
++
+
+[source,shell]
+----
+systemctl cat uyuni-proxy-httpd.service | grep EXTRA_CONF= | sed 's/.*=-v\([^:]\+\):.*/\1/'
+systemctl cat uyuni-proxy-squid.service | grep EXTRA_CONF= | sed 's/.*=-v\([^:]\+\):.*/\1/'
+----
+. 同时将这些调优文件复制到相同的安全位置。
+
+[TIP]
+====
+复制回这些文件后的典型默认路径为：
+
+* Apache 调优：`/etc/uyuni/proxy/apache.conf`
+* Squid 调优：`/etc/uyuni/proxy/squid.conf`
+====
+
+____
+
+=== 第 2 步：使用 openSUSE Tumbleweed 重新安装主机
+.过程：升级使用 openSUSE Tumbleweed 重新安装主机
+[role="procedure"]
+____
+
+. 使用 openSUSE Tumbleweed 重新安装机器（建议使用服务器配置文件）。
+. 尽可能设置与之前相同的主机名/FQDN 和 IP。
+
+____
+
+
+
+=== 第三步：使用重新激活密钥重新注册主机
+
+.过程：升级使用重新激活密钥重新注册主机
+[role="procedure"]
+____
+
+. 在 {productname} Web UI 中，获取现有代理系统记录的系统重新激活密钥（系统 > 详细信息 > 重新激活）。
+. 使用该重新激活密钥启动/重新注册 Tumbleweed 主机，以便其认领现有的系统条目。
+
+[NOTE]
+====
+在您的环境中使用标准的 Tumbleweed 主机启动流程（例如，启动脚本或配置管理），并确保应用了重新激活密钥。
+====
+
+____
+
+
+
+=== 第四步：安装 {productname} 代理工具和 Podman
+
+.过程：升级安装代理工具和 Podman
+[role="procedure"]
+____
+
+. 添加 Uyuni Stable 储存库并安装工具：
+
++
+
+[source,shell]
+----
+zypper ar https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable/images/repo/Uyuni-Proxy-POOL-x86_64-Media1 uyuni-proxy-stable
+zypper ref
+zypper in mgrpxy mgrctl mgrpxy-bash-completion mgrctl-bash-completion
+----
+. 确保已安装 Podman（运行容器所必需）：
+
++
+
+[source,shell]
+----
+zypper in podman
+----
+
+____
+
+
+
+=== 第五步：恢复配置并安装代理
+
+.过程：升级恢复配置并安装代理
+[role="procedure"]
+____
+
+. 从服务器容器复制生成的配置：
+
++
+
+[source,shell]
+----
+scp -r <USER>@<HOST>:/some/where/safe/uyuni /etc/
+----
+. 如果您保存了 Apache/Squid 调优文件，请将其放置在预期的默认路径中，或在下一条命令中记录其参数位置：
+
++
+
+[source,shell]
+----
+# Default paths expected by mgrpxy parameters (adjust/move your files accordingly)
+# Apache tuning: /etc/uyuni/proxy/apache.conf
+# Squid tuning:  /etc/uyuni/proxy/squid.conf
+----
+. 使用 Podman 运行代理安装。如果您不使用调优文件，请省略相应的参数：
+
++
+
+[source,shell]
+----
+# With tuning files
+mgrpxy install \
+    --tuning-httpd /etc/uyuni/proxy/apache.conf \
+    --tuning-squid /etc/uyuni/proxy/squid.conf
+
+# If you have no tuning files, remove the tuning parameters:
+# mgrpxy install
+----
+
+[NOTE]
+====
+在即将发布的版本中，如果将调优文件放置在上述默认路径，则无需显式参数。
+====
+
+____
+
+
+=== 第六步：验证代理
+
+.过程：升级正在验证代理
+[role="procedure"]
+____
+
+. 确保 spacewalk 服务正在运行：
+
++
+
+[source,shell]
+----
+mgrctl ps
+# or
+podman ps
+----
+. 确认代理在 {productname} Web UI 中显示正常，并且使用此代理的客户端运行正常。
+
+____
+
+== 查错
+
+* 如果缺少 Podman，请安装它并重新运行 `mgrpxy install` 步骤。
+* 验证主机的系统时间、主机名和 IP 地址是否符合预期。
+* 如果主机未重新连接到现有系统记录，请确认您使用了正确的重新激活密钥并重复启动过程。
+

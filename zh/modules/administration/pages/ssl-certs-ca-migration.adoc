@@ -1,0 +1,200 @@
+[[ssl-certs-ca-migration]]
+= 迁移 SSL 证书颁发机构
+:description: 使用 mgradm SSL 命令在服务器上替换 root 证书颁发机构，以添加并轮换新的 CA。
+:revdate: 2026-06-24
+:page-revdate: {revdate}
+
+使用此过程替换 {productname} 服务器的根证书颁发机构 (CA)，例如替换未将 `X509v3 Basic Constraints` 扩展标记为 `critical` 的旧版自签名 CA。
+有关详细信息，请参见 xref:administration:ssl-certs-imported.adoc#ssl-certs-verify-ca-basic-constraints[]。
+
+ifeval::[{uyuni-content} == true]
+[NOTE]
+====
+Python 3.13 及更高版本（以及可能的其他 SSL 客户端）会严格验证证书，并拒绝任何未将 `X509v3 Basic Constraints` 扩展标记为 `critical` 的 CA 证书。
+====
+endif::[]
+
+在 Podman 安装中，`mgradm ssl` 命令有助于执行轮换。
+它们会生成或导入新 CA，更新服务器和数据库机密，并重启服务。
+
+.迁移分两个阶段完成：
+. 使用 `mgradm ssl addca`，将新 CA 添加到信任捆绑包中，以便同时信任旧 CA 和新 CA，并将其分发给所有客户端和代理。
+. 在所有客户端和代理都信任新 CA 后，`mgradm ssl rotate` 会将服务器切换为由新 CA 签名的证书，并弃用旧证书。
+
+同时还要考虑任何不由服务器管理但仍通过 API 或浏览器访问服务器的计算机，因为它们也需要新的 CA。
+xref:ssl-certs-ca-migration.adoc#ssl-certs-ca-migration-verify-trust[] 中的信任检查无法检测到这些计算机，因此请自行跟踪并验证它们。
+
+[IMPORTANT]
+====
+在所有客户端和代理信任新 CA 之前，请勿切换服务器证书。
+不信任新 CA 的客户端将无法再连接，您必须手动将 CA 部署到该客户端。
+====
+
+证书存储在 Podman 机密中，容器在启动时会读取这些机密。
+服务器 CA 捆绑包、证书和密钥位于 `uyuni-ca`、`uyuni-cert` 和 `uyuni-key` 中；数据库对应的项为 `uyuni-db-ca`、`uyuni-db-cert` 和 `uyuni-db-key`。
+在 {kube} 上，根 CA 从 `uyuni-ca` 和 `db-ca` 配置映射中读取，而证书则从 `uyuni-cert` 和 `db-cert` 机密中读取。
+`mgradm ssl` 命令用于管理 Podman 上的这些机密；在 {kube} 上，您需要按照下文所述手动更新配置映射和机密。
+
+[[ssl-certs-ca-migration-add]]
+== 将新 CA 添加到信任捆绑包
+
+在 Podman 上，使用 `mgradm ssl addca` 添加新 CA。
+该命令会生成一个新的自签名根 CA，或导入第三方 CA，将其附加到 `uyuni-ca` 和 `uyuni-db-ca` 机密中而不更改所提供的证书，重启服务，并打印新 CA 的 SHA-256 指纹。
+
+要生成新的自签名 CA，请在容器主机上运行以下命令。
+将主题值替换为您组织的值。
+服务器的完全限定域名会自动检测，或者您可以将其作为参数传递：
+
+[source,shell]
+----
+mgradm ssl addca --ssl-password CA_PASSWORD \
+  --ssl-country COUNTRY --ssl-state STATE --ssl-city CITY \
+  --ssl-org ORGANIZATION --ssl-ou "ORGANIZATION UNIT"
+----
+
+如果省略 `--ssl-password`，命令会提示输入它。
+要改用第三方根 CA，请传递其证书以及任何中间证书，以代替生成选项。
+对每个中间 CA 重复 `--ssl-ca-intermediate`：
+
+[source,shell]
+----
+mgradm ssl addca --ssl-ca-root /root/new-ca.pem \
+  --ssl-ca-intermediate /root/intermediate-ca.pem
+----
+
+在 {kube} 上，手动将新的 root CA 证书附加到 `uyuni-ca` 和 `db-ca` 配置映射中：
+
+[source,shell]
+----
+kubectl get configmap -n uyuni-server uyuni-ca -o jsonpath='{.data.ca\.crt}' > combined.crt && \
+echo "" >> combined.crt && \
+cat ca.crt >> combined.crt && \
+kubectl create configmap uyuni-ca --from-file=ca.crt=combined.crt --dry-run=client -o json | \
+kubectl patch -n uyuni-server configmap uyuni-ca --patch-file /dev/stdin  -o yaml && \
+rm combined.crt
+----
+
+您还需要为 `db-ca` 运行类似的命令。
+
+一旦服务器信任新的 CA，请将其分发给每个客户端和代理。
+按照 xref:administration:ssl-certs-imported.adoc#ssl-certs-import-deploy-root-ca[] 中的说明，通过应用 highstate 将新的 CA 部署到所有 Salt 客户端。
+
+在每个 {productname} 代理上，使其在无需完全重新部署的情况下信任新的 CA。
+代理从 `uyuni-ca` Podman 机密中读取其受信任的 CA，因此请直接更新该机密。
+在 `mgradm ssl addca` 之后，服务器会在 `http://SERVER_FQDN/pub/RHN-ORG-TRUSTED-SSL-CERT` 发布包含旧根 CA 和新根 CA 的组合 CA 捆绑包。
+在代理主机上下载它，替换机密，然后重启代理：
+
+[source,shell]
+----
+curl -o /tmp/proxy-ca.pem http://SERVER_FQDN/pub/RHN-ORG-TRUSTED-SSL-CERT
+podman secret create --replace uyuni-ca /tmp/proxy-ca.pem
+systemctl restart uyuni-proxy-pod
+----
+
+同时确保新的 CA 已部署到所有其他未受 Salt 管理但仍通过 API 或浏览器访问服务器的机器上，例如在 {kube} 上运行的代理或非托管系统。
+
+[[ssl-certs-ca-migration-verify-trust]]
+== 确认客户端信任新的 CA
+
+在切换之前，请确认客户端信任新的 CA。
+在 Podman 上，运行 `mgradm ssl rotate --check-only` 来查询 Salt minion 并报告哪些已经信任新的 CA，哪些不信任，且不执行轮换：
+
+[source,shell]
+----
+mgradm ssl rotate --check-only
+----
+
+此检查为尽力而为：它仅涵盖在检查时响应的 Salt minion。
+离线 minion 和非 minion 系统（例如在 {kube} 上运行的代理或非托管机器）不在涵盖范围内，必须手动验证。
+
+若要手动验证其中一个，请比较指纹。
+`mgradm ssl addca` 命令已报告新 CA 的 SHA-256 指纹。
+您也可以根据新的 CA 证书重新计算它。
+对于自签名 CA，请从服务器读取暂存的证书：
+
+[source,shell]
+----
+mgrctl exec -- openssl x509 -in /root/ssl-build-rotation/RHN-ORG-TRUSTED-SSL-CERT \
+  -noout -fingerprint -sha256
+----
+
+对于第三方 CA，请针对您传递给 `mgradm ssl addca` 的根 CA 文件运行相同的命令。
+
+客户端信任文件 `/etc/pki/trust/anchors/RHN-ORG-TRUSTED-SSL-CERT` 包含多个证书。
+在客户端上列出所有这些证书的指纹，并确认新的 CA 指纹是否存在：
+
+[source,shell]
+----
+while openssl x509 -noout -fingerprint -sha256; do :; done < /etc/pki/trust/anchors/RHN-ORG-TRUSTED-SSL-CERT
+----
+
+
+
+[[ssl-certs-ca-migration-switch]]
+== 切换到新的 CA
+
+[IMPORTANT]
+====
+仅在所有客户端和代理都信任新的 CA 后才继续。
+====
+
+在 Podman 上，使用 `mgradm ssl rotate` 切换到新的 CA。
+该命令会提升由 `mgradm ssl addca` 暂存的 CA，签发由其签署的新服务器证书，替换服务器和数据库证书、密钥以及 CA 机密，并重启服务。
+在切换之前，它会通过 Salt 检查客户端是否信任新的 CA；如果某些客户端不信任，除非您传递 `--force`，否则它将拒绝继续。
+与 `mgradm ssl rotate --check-only` 一样，此检查仅涵盖有响应的 Salt minion，因此未报告的离线 minion 不会阻止轮换；请提前手动验证此类 minion。
+
+对于自签名 CA，请运行以下命令。
+使用您的 {productname} 服务器的完全限定域名，或允许其自动检测，并为其他别名重复 `--ssl-cname`：
+
+[source,shell]
+----
+mgradm ssl rotate --ssl-password CA_PASSWORD
+----
+
+若要安装由新 CA 签署的第三方服务器证书，请改为提供证书、密钥和 root CA。
+除非您传递匹配的 `--ssl-db-*` 选项，否则数据库将重用服务器值：
+
+[source,shell]
+----
+mgradm ssl rotate --ssl-ca-root /root/new-ca.pem \
+  --ssl-ca-intermediate /root/intermediate-ca.pem \
+  --ssl-server-cert /root/server.crt \
+  --ssl-server-key /root/server.key
+----
+
+[NOTE]
+====
+`mgradm ssl addca` 和 `mgradm ssl rotate` 命令仅在 Podman 上可用。
+在 {kube} 上，用新的服务器证书和密钥替换 `uyuni-cert` 和 `db-cert` 机密，更新 `uyuni-ca` 和 `db-ca` 配置映射以仅包含新的 CA，然后重启服务器。
+====
+
+[[ssl-certs-ca-migration-emergency]]
+=== 立即轮换受损的 CA
+
+如果当前 CA 受损，您就无法等待旧 CA 和新 CA 同时受信任的重叠期。
+将 `--emergency` 传递给 `mgradm ssl rotate` 以生成新的 CA 以及匹配的服务器证书，并一步丢弃旧 CA，无需两阶段重叠：
+
+[source,shell]
+----
+mgradm ssl rotate --emergency --ssl-password CA_PASSWORD
+----
+
+[WARNING]
+====
+紧急轮换会立即丢弃旧 CA，因此任何尚未信任新 CA 的客户端或代理都无法再连接，直到您手动将新 CA 部署到其中。
+紧急轮换后，请按照 xref:ssl-certs-ca-migration.adoc#ssl-certs-ca-migration-add[] 中的说明将新 CA 分发给所有客户端和代理，并按照下文所述更新代理。
+====
+
+[[ssl-certs-ca-migration-update-proxies]]
+== 更新代理
+
+在 xref:ssl-certs-ca-migration.adoc#ssl-certs-ca-migration-add[] 中，您已经通过更新其 `uyuni-ca` Podman 机密使每个代理信任新 CA。
+既然服务器现在使用由新 CA 签名的证书，每个代理也需要其由该 CA 签名的证书。
+对于每个代理，重新生成代理配置并重新部署代理：
+
+ifeval::[{mlm-content} == true]
+xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc[代理部署]。
+endif::[]
+ifeval::[{uyuni-content} == true]
+xref:installation-and-upgrade:container-deployment/uyuni/proxy-deployment-uyuni.adoc#proxy-setup-containers-generate-config[代理部署]。
+endif::[]

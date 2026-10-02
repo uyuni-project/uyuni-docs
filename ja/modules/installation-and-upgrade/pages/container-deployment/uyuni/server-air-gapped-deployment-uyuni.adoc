@@ -1,0 +1,102 @@
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+= {productname} サーバー エアギャップ(された)デプロイメント
+:description: 接続されたシステムからコンテナイメージをプルし、それらをサーバーホストに転送することで、エアギャップされた環境にサーバーをデプロイします。
+:revdate: 2025-07-25
+:page-revdate: {revdate}
+
+== Air-gapped配備とは
+
+
+エアギャップ(された)デプロイメントとは、特にインターネットなどの不安全なネットワークから物理的に隔離されたネットワークシステムのセットアップと運用を指します。
+このタイプのデプロイメントは、軍事施設、金融システム、重要なインフラストラクチャ、および機密データが取り扱われ、外部の脅威から保護されなければならない場所など、高セキュリティ環境で一般的に使用されます。
+
+インターネットにアクセスできるマシンで、`Podman`または`Docker`を使用して、コンテナイメージを簡単にプルできます。
+
+.プロシージャ:イメージのプル
+. 目的のイメージをプルしてから、イメージを`tar`アーカイブとして保存します。
+  例:
+
++
+.Podman
+----
+podman pull registry.opensuse.org/uyuni/server:latest registry.opensuse.org/uyuni/server-postgresql:latest
+podman save -m --output images.tar registry.opensuse.org/uyuni/server:latest registry.opensuse.org/uyuni/server-postgresql:latest
+----
++
+.Docker
+----
+docker pull registry.opensuse.org/uyuni/server:latest registry.opensuse.org/uyuni/server-postgresql:latest
+docker save --output images.tar registry.opensuse.org/uyuni/server:latest registry.opensuse.org/uyuni/server-postgresql:latest
+----
++
+. 生成された`images.tar`をサーバーコンテナホストに転送し、次のコマンドを使用してロードします:
++
+.サーバイメージをロードする
+----
+podman load -i images.tar
+----
+
+== エアギャップ(された)環境における{salt}フォーミュラのコンテナイメージの取得
+
+BindやDHCP（Kea）などの一部のフォーミュラもコンテナを使用します。
+エアギャップ(された)環境でそれらを使用する予定がある場合は、イメージをプルし、アーカイブに保存し、{productname}プロキシまたは他の管理されたシステムにロードする必要があります。
+
+イメージは`registry.opensuse.org`から入手できます。
+
+.プロシージャ:エアギャップ(された)環境におけるフォーミュライメージの取得
+. インターネットにアクセスできるシステムで、必要なイメージをプルします。例:
++
+[source,shell]
+----
+podman pull registry.opensuse.org/opensuse/bind:latest
+podman pull registry.opensuse.org/opensuse/kea:latest
+----
+. アーカイブからイメージをロードします。
++
+[source,shell]
+----
+podman save -o formula-images.tar registry.opensuse.org/opensuse/bind:latest registry.opensuse.org/opensuse/kea:latest
+----
+. `formula-images.tar`ファイルをエアギャップ(された)システムに転送してください。
+. アーカイブからイメージをロードします。
++
+[source,shell]
+----
+podman load -i formula-images.tar
+----
+
+=== {productname}を{opensuse} {tumbleweed}にデプロイします。
+
+{productname}では、システムにインストール可能なRPMパッケージで必要なコンテナイメージをすべて提供しています。
+
+[NOTE]
+====
+ユーザーは、必要なRPMを内部ネットワークで利用できるようにする必要があります。これは、2台目の{productname}サーバーまたは任意のミラーを使用することで実現できます。
+====
+
+.プロシージャ:エアギャップ(された)環境で{opensuse} {tumbleweed}に{productname}をインストールします。
+. {opensuse} {tumbleweed}をインストールします。
+. システムを更新します。
+. ツールのパッケージとイメージパッケージをインストールします($ARCH$は適切なアーキテクチャに置き換えます)。
+
++
+
+[source,shell]
+----
+zypper install mgradm* mgrctl* uyuni-server*-image*
+----
+
++
+
+. {productname}を使用して`mgradm`をデプロイします。エアギャップ(された)環境では、オプション`--pullPolicy Never`を使用することをお勧めします。
+
+
+{opensuse} {tumbleweed}に{productname}サーバーをインストールする際の詳細情報については、xref:container-deployment/uyuni/server-deployment-uyuni.adoc[サーバーデプロイメント]を参照してください。
+
+{productname}サーバーをアップグレードするには、`transactional-update`を使用して利用可能なホストの更新を適用し、更新が適用された場合は再起動してから、`mgradm upgrade`を実行します。
+エアギャップされたインストールの場合は、`mgradm upgrade`を実行する前に、コンテナのRPMパッケージをアップグレードしてください。
+

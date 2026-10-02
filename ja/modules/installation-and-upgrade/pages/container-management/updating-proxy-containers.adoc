@@ -1,0 +1,136 @@
+:description: ホストを更新してから、{productname} プロキシコンテナをアップグレードします
+:revdate: 2026-09-08
+:page-revdate: {revdate}
+
+ifeval::[{mlm-content} == true]
+= プロキシのメンテナンス更新
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+= プロキシのアップグレード
+endif::[]
+
+ifeval::[{mlm-content} == true]
+アップグレードコマンドを実行する前に、ホストオペレーティングシステムを更新する必要があります。
+ホストオペレーティングシステムを更新すると、{productname}ツールや`mgrpxy`ツールなどのツール類も更新されます。
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+アップグレードコマンドを実行する前に、ホスト上の {productname} コンテナツール（`mgrpxy` ツールなど）を更新する必要があります。
+endif::[]
+
+.プロシージャ:プロキシのアップグレード
+[role=procedure]
+____
+. `zypper`を使用してソフトウェアリポジトリを更新します:
+
++
+
+[source,shell]
+----
+zypper ref
+----
+
+ifeval::[{mlm-content} == true]
+
+. ホストオペレーティングシステムに応じて、以下のステップに進みます。
+
++
+
+{sl-micro}などのトランザクションシステムの場合:::
+
++
+
+--
+
+. `transactional-update`を使用して利用可能な更新を適用します:
+
++
+
+[source,shell]
+----
+transactional-update
+----
+
+. 更新が適用された場合、`reboot`します。
+
+--
+
++
+
+について:{sles}::
+
++
+
+--
+
+`zypper`を使用してインストールされたソフトウェアを更新します:
+
+[source,shell]
+----
+zypper up
+----
+
+--
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+. {productname} コンテナツールを更新します:
+
++
+
+[source,shell]
+----
+zypper up mgrpxy mgrctl mgrpxy-bash-completion mgrctl-bash-completion
+----
+
+endif::[]
+
++
+
+. {productname}のプロキシコンテナ（`podman`上で実行中）は、次のコマンドで更新できます:
+
++
+
+[source,shell]
+----
+mgrpxy upgrade
+----
+
++
+
+{kube} クラスター上で実行されているプロキシについては、xref:specialized-guides:kubernetes-guide/proxy-kubernetes-upgrade.adoc[] を参照してください。
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../partials/snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
+____
+
+
+[NOTE]
+====
+特定のバージョンにアップグレードする際にタグパラメータを指定しない場合、最新バージョンへのアップグレードがデフォルトとなります。
+特定のバージョンにアップグレードするには、希望するイメージタグを持つタグパラメータを指定してください。
+====
+
+[IMPORTANT]
+====
+
+ifeval::[{mlm-content} == true]
+
+特定のタグを使用して特定のコンテナをアップグレードするオプションはありますが、この機能はPTFの適用のみを意図しています。
+endif::[]
+
+通常の状況下では、すべてのプロキシコンテナに同じタグを使用して一貫性を確保することを強くお勧めします。
+====
+
+エアギャップ(された) インストールでは、まずコンテナのRPMパッケージをアップグレードし、その後 `mgrpxy upgrade` コマンドを実行します。

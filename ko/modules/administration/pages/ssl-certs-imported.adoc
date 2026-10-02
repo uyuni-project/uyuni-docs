@@ -1,0 +1,271 @@
+[[ssl-certs-import]]
+= SSL 인증서 임포트
+:description: 새 설치를 구성하거나 기존 인증서를 적절한 개인 키, 인증서 및 PEM 형식의 CA 체인 파일로 교체하려면 SSL 인증서를 가져오십시오.
+:revdate: 2026-08-12
+:page-revdate: {revdate}
+
+//By default, {productname} uses a self-signed certificate.
+//For additional security, you can import a custom certificate, signed by a third party certificate authority (CA).
+
+이 섹션에서는 새 {productname} 설치를 위해 SSL 인증서를 구성하는 방법과 기존 인증서를 교체하는 방법을 설명합니다.
+
+시작하기 전, 다음을 확인해야 합니다.
+
+* 인증 기관(CA) SSL 공개 인증서입니다.
+  CA 체인을 사용하는 경우 모든 중간 CA도 사용 가능해야 합니다.
+* SSL 서버 개인 키
+* SSL 서버 인증서
+* SSL 데이터베이스 개인 키
+* SSL 데이터베이스 인증서
+
+모든 파일은 PEM 형식이어야 합니다.
+체인의 모든 CA 인증서는 `X509v3 Basic Constraints`을(를) `critical`(으)로 표시하고 `CA:TRUE`을(를) 포함해야 합니다.
+자세한 내용은 xref:administration:ssl-certs-imported.adoc#ssl-certs-verify-ca-basic-constraints[]을(를) 참조하십시오.
+
+SSL 서버 인증서의 호스트 이름은 이를 배포하는 시스템의 정규화된 호스트 이름과 일치해야 합니다.
+인증서의 `X509v3 Subject Alternative Name` 섹션에서 호스트 이름을 설정할 수 있습니다.
+환경에 따라 여러 호스트 이름을 나열할 수도 있습니다.
+지원되는 키 유형은 `RSA` 및 `EC` (타원 곡선)입니다.
+
+[IMPORTANT]
+====
+이전 버전에서는 데이터베이스 SSL 인증서의 경우, `reportdb`와 `db`가 `Subject Alternative Name`로 필요했습니다.
+이제 더 이상 필요하지 않습니다.
+====
+
+타사 기관은 요청된 서버 인증서에 서명하기 위해 일반적으로 중간 CA를 사용합니다.
+이 경우 체인의 모든 CA가 사용 가능해야 합니다.
+`mgradm` 명령은 인증서의 순서를 관리합니다.
+이상적으로는 루트 CA가 별도의 파일에 있어야 합니다.
+서버 인증서 파일에는 서버 인증서가 먼저 포함되어야 하며, 그 뒤에 모든 중간 CA 인증서가 순서대로 포함되어야 합니다.
+
+
+
+[[ssl-certs-verify-ca-basic-constraints]]
+== CA 기본 제약 조건 확인
+
+엄격한 인증서 유효성 검사기는 `X509v3 Basic Constraints` 확장이 `critical`(으)로 표시되지 않은 경우 CA 인증서를 거부합니다.
+여기에는 {sles} 16 및 openSUSE Leap 16에서 사용하는 Python 3.13 이상이 포함됩니다.
+
+인증서를 가져오거나 기존 설치를 업그레이드하기 전에 {productname}에서 사용하는 모든 루트 및 중간 CA 인증서를 확인하십시오.
+각 CA 인증서에 대해 다음을 실행하십시오:
+
+[source,shell]
+----
+openssl x509 -in root-ca.pem -noout -text | grep -A1 "Basic Constraints"
+----
+
+출력에는 `critical` 및 `CA:TRUE`이(가) 포함되어야 합니다:
+
+[source]
+----
+X509v3 Basic Constraints: critical
+  CA:TRUE
+----
+
+CA 인증서에 두 값이 모두 포함되어 있지 않으면 {productname}에서 사용하기 전에 해당 CA 인증서를 교체하거나 다시 생성하십시오.
+서버 인증서만 교체한다고 해서 `critical` 플래그가 누락된 CA 인증서가 수정되지는 않습니다.
+{productname}에서 생성한 자체 서명 인증서에 대한 자세한 내용은 xref:administration:ssl-certs-selfsigned.adoc#ssl-certs-selfsigned-create-replace[]을(를) 참조하십시오.
+클라이언트가 여전히 신뢰하는 CA를 연결 중단 없이 교체하려면 xref:administration:ssl-certs-ca-migration.adoc[]을(를) 참조하십시오.
+
+
+
+== 새 설치를 위해 인증서 임포트
+
+
+기본적으로 {productname}는 자체 서명된 인증서를 사용합니다.
+인증서는 설치 시 타사 인증서와 함께 가져올 수 있습니다.
+
+.절차 새 {productname} 서버에 인증서를 가져오기
+[role=procedure]
+_____
+. xref:installation-and-upgrade:install-server.adoc[]의 지침에 따라 {productname} 서버를 배포하십시오.
+  올바른 파일을 `mgradm install`에 매개변수로 전달하십시오.
+  매개변수는 다음과 같습니다:
+
++
+
+----
+3rd Party SSL Certificate Flags:
+      --ssl-ca-intermediate strings    Intermediate CA certificate path
+      --ssl-ca-root string             Root CA certificate path
+      --ssl-server-cert string         Server certificate path
+      --ssl-server-key string          Server key path
+      --ssl-db-ca-intermediate strings Intermediate CA certificate path for the database if different from the server one
+      --ssl-db-ca-root string          Root CA certificate path for the database if different from the server one
+      --ssl-db-cert string             Database certificate path
+      --ssl-db-key string              Database key path
+----
+_____
+
+중간 CA는 `--ssl-ca-root`로 지정된 파일에 있을 수 있거나, `--ssl-ca-intermediate`로 추가 옵션으로 지정될 수 있습니다.
+`--ssl-ca-intermediate` 옵션은 여러 번 지정할 수 있습니다.
+
+
+
+== 새 프록시 설치를 위한 인증서 임포트
+
+프록시 인증서는 생성된 구성에 포함되어 있습니다.
+타사 인증서를 사용하려면 구성 시 제공해야 합니다.
+
+.절차 새 {productname} 프록시에 인증서 가져오기
+[role=procedure]
+_____
+. xref:installation-and-upgrade:install-proxy.adoc[]의 지침에 따라 {productname} 프록시를 설치하십시오.
+
+. 프롬프트를 따라 설정을 완료합니다.
+
++
+
+[NOTE]
+====
+모든 서버 및 프록시 인증서에 대해 동일한 인증 기관(CA)을 사용하여 서명하십시오.
+서로 다른 CA로 서명된 인증서는 일치하지 않습니다.
+====
+
+_____
+
+
+[[ssl-certs-import-replace]]
+== 인증서 바꾸기
+
+
+활성 인증서를 {productname} 설치에서 새 인증서로 교체할 수 있습니다.
+서버 또는 데이터베이스 인증서만 교체하는 경우와 루트 CA를 교체하는 경우 두 가지를 고려해야 합니다.
+
+
+루트 인증서를 교체하려면 등록된 모든 프록시와 시스템이 서버 수준에서 새 CA로 전환하기 전에 데이터베이스에 새 CA를 적용해야 하므로 중단을 방지하기 위해 더 많은 시간과 계획이 필요합니다.
+
+중간 CA가 서명한 타사 인증서를 사용할 경우, 중간 CA 인증서를 서버 또는 데이터베이스 인증서 파일에 추가해야 합니다.
+
+순서가 중요합니다: 먼저 서버 인증서가 오고, 그 다음 인증서를 서명한 CA에서 루트 CA에 의해 서명된 CA까지 이어집니다.
+루트 CA 인증서는 서버 인증서 파일에 추가하지 않아야 합니다.
+
+
+.절차 모든 기존 인증서 교체
+[role=procedure]
+_____
+. 다음은 `root-ca.pem`, `intermediate-ca1.pem`, `intermediate-ca2.pem`, `server.pem` 및 `server.key` 파일이 있다고 가정합니다.
+  서버 인증서 서명 체인의 중간 CA 수에 따라 다를 수 있습니다.
+
+. 중간 CA와 서버 인증서를 결합하십시오.
+  순서가 중요하며, 서버가 먼저 오고 중간 CA가 순서대로 이어져야 합니다.
+  루트 CA를 체인의 마지막에 추가하지 마십시오. `uyuni-ca` 및 `uyuni-db-ca` 시크릿에 별도로 전달됩니다.
+  중간 CA가 없으면 다음 단계에서 결합된 파일 대신 `server.pem`을 사용할 수 있습니다.
+
++
+[source,shell]
+----
+cat server.pem intermediate-ca1.pem intermediate-ca2.pem >combined-server.pem
+----
+
+. {productname} 컨테이너 호스트의 명령줄에서 `mgradm ssl rotate`을(를) 사용하여 인증서를 교체하십시오：
+
++
+[source,shell]
+----
+mgradm ssl rotate \
+   --ssl-ca-root $path_to_ca_certificate \
+   --ssl-server-cert $path_to_combined_server_certificate \
+   --ssl-server-key $path_to_server_key
+----
+_____
+
+
+// bsc#1271329
+[[ssl-certs-import-replace-proxy]]
+== 프록시의 인증서 교체
+
+{productname} 프록시를 사용하는 경우 {productname} 서버에서 인증서를 교체한 후 프록시 구성을 다시 생성하고 재배포해야 합니다.
+이렇게 하면 프록시가 서버의 새 CA를 신뢰하고 자체 업데이트된 서버 인증서를 사용하게 됩니다.
+
+웹 UI를 사용하여 프록시 구성을 생성하는 것은 인증서 교체 시 지원되지 않습니다. 명령줄에서 `spacecmd`을(를) 사용해야 합니다.
+
+.절차 {productname} 프록시의 인증서 교체
+[role=procedure]
+_____
+. {productname} 서버 컨테이너 호스트에서 루트 CA 인증서(`ca.crt`), 프록시 인증서(`proxy.crt`) 및 프록시 개인 키(`proxy.key`)를 서버 컨테이너로 복사하십시오:
++
+[source,shell]
+----
+for f in ca.crt proxy.crt proxy.key; do
+  mgrctl cp $f server:/tmp/$f
+done
+----
+
+. 환경에서 하나 이상의 중간 CA를 사용하는 경우 해당 CA도 컨테이너로 복사하십시오:
++
+[source,shell]
+----
+mgrctl cp intermediateCA.pem server:/tmp/intermediateCA.pem
+----
+
+. 서버 컨테이너 내부에서 `spacecmd proxy_container_config`을(를) 실행하여 FQDN 및 관리자 이메일을 교체하고 새 구성 아카이브를 생성하십시오:
++
+[source,shell]
+----
+mgrctl exec -ti 'spacecmd proxy_container_config -- -p 8022 pxy.example.com srv.example.com 2048 email@example.com /tmp/ca.crt /tmp/proxy.crt /tmp/proxy.key -o /tmp/config.tar.gz'
+----
++
+이전 단계에서 중간 CA를 복사한 경우 `-i` 매개변수를 추가하십시오:
++
+[source,shell]
+----
+mgrctl exec -ti 'spacecmd proxy_container_config -- -p 8022 -i /tmp/intermediateCA.pem pxy.example.com srv.example.com 2048 email@example.com /tmp/ca.crt /tmp/proxy.crt /tmp/proxy.key -o /tmp/config.tar.gz'
+----
+
+. 생성된 구성 아카이브를 서버 컨테이너에서 서버 호스트로 복사하십시오:
++
+[source,shell]
+----
+mgrctl cp server:/tmp/config.tar.gz .
+----
+
+. `config.tar.gz` 아카이브를 프록시 호스트로 전송하십시오:
++
+[source,shell]
+----
+scp config.tar.gz root@pxy.example.com:/root/
+----
+
+. 프록시 호스트에서 프록시를 취소하십시오:
++
+[source,shell]
+----
+mgrpxy stop
+----
+
+. 프록시 호스트에 새 구성을 설치하십시오:
++
+[source,shell]
+----
+mgrpxy install config.tar.gz
+----
+
+. 프록시를 시작하십시오:
++
+[source,shell]
+----
+mgrpxy start
+----
+_____
+
+
+
+루트 CA가 변경된 경우, {productname}에 연결된 모든 클라이언트에 배포해야 합니다.
+이 작업은 중단을 최소화하기 위해 사전에 수행하는 것이 이상적입니다.
+
+[[ssl-certs-import-deploy-root-ca]]
+.절차 클라이언트에 루트 CA 배포
+[role=procedure]
+_____
+. {productname} {webui}에서 menu:시스템[개요]로 이동합니다.
+
+. 시스템 설정 관리자에 추가하려면 모든 클라이언트를 선택합니다.
+
+. menu:시스템[시스템 설정 관리자> 개요]로 이동합니다.
+
+. `States` 필드에서 btn:[적용]을 클릭하여 시스템 상태를 적용합니다.
+
+. `Highstate` 페이지에서 btn:[Highstate 적용]을 클릭하여 변경 사항을 클라이언트에 전파합니다.
+_____
