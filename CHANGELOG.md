@@ -1,3 +1,4 @@
+- Updated information for hardware requirements and a reference to large deployments requirements (bsc#1268473)
 - Added documentation support for Ubuntu 26.04 client systems
 - Fixed procedure block formatting and normalized section headings to sentence case
 - Documented Salt RBAC namespaces and native Salt access controls
