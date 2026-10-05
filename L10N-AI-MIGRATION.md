@@ -88,7 +88,7 @@ Missing (filled from English at build time):
 task setup && task gen
 task stage-content
 task draft:mlm-dsc LANGUAGES="en ja ko zh_CN"
-task pdf BOOK=administration PRODUCT=mlm LANG=ja
+task pdf BOOK=administration PRODUCT=mlm LANGUAGES=ja
 task pdf:mlm LANGUAGES="ja ko zh_CN"
 task publish:dsc LANGUAGES=en
 task validate:mlm LANGUAGES=en

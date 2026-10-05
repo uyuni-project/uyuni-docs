@@ -152,11 +152,11 @@ but the PDF backport is incomplete without them already present on the target br
 
 ```bash
 # English smoke test
-task pdf BOOK=client-configuration PRODUCT=mlm LANG=en
+task pdf BOOK=client-configuration PRODUCT=mlm LANGUAGES=en
 
 # CJK — requires translation trees on the branch (or English fallback where missing)
 task stage-content LANGUAGES="ja ko zh_CN"
-task pdf BOOK=client-configuration PRODUCT=mlm LANG=zh_CN
+task pdf BOOK=client-configuration PRODUCT=mlm LANGUAGES=zh_CN
 task pdf:mlm LANGUAGES="ja ko zh_CN"
 task pdf-collect:mlm LANGUAGES="ja ko zh_CN"
 ```
@@ -430,7 +430,7 @@ Repeat for suspect files under `{ja,ko,zh}/modules/` if present.
 ```bash
 task setup && task gen
 task stage-content LANGUAGES=zh_CN
-task pdf BOOK=client-configuration PRODUCT=mlm LANG=zh_CN
+task pdf BOOK=client-configuration PRODUCT=mlm LANGUAGES=zh_CN
 ```
 
 **3. Compare structure to English** when a localized page exists for the same path:
@@ -511,7 +511,7 @@ Run on the target branch after applying toolchain changes (English-only smoke te
 task setup && task gen
 task stage-content LANGUAGES=en
 task draft:mlm-dsc LANGUAGES=en
-task pdf BOOK=administration PRODUCT=mlm LANG=en
+task pdf BOOK=administration PRODUCT=mlm LANGUAGES=en
 task validate:mlm LANGUAGES=en
 ```
 
@@ -520,7 +520,7 @@ When translation directories are present on the branch:
 ```bash
 task stage-content
 task draft:mlm-dsc LANGUAGES="ja ko zh_CN"
-task pdf BOOK=administration PRODUCT=mlm LANG=ja
+task pdf BOOK=administration PRODUCT=mlm LANGUAGES=ja
 task container:publish:dsc    # full container smoke test
 task obs:mlm LANGUAGES="ja ko zh_CN"
 task obs:uyuni LANGUAGES="ja ko zh_CN"
@@ -549,7 +549,7 @@ Use when opening backport PRs to `master` or `manager-5.2`:
 - [ ] `docbuild get-content-dir -lang zh_CN` prints `zh`
 - [ ] `task stage-content LANGUAGES=en` succeeds
 - [ ] English HTML + PDF build succeeds
-- [ ] CJK PDF smoke test: `task pdf BOOK=administration PRODUCT=mlm LANG=zh_CN`
+- [ ] CJK PDF smoke test: `task pdf BOOK=administration PRODUCT=mlm LANGUAGES=zh_CN`
 - [ ] OBS smoke test: `task obs:mlm LANGUAGES=en` and `task obs:uyuni LANGUAGES=en` (CJK when translation trees present)
 - [ ] `test_pdf_translations.yml` passes (Uyuni theme consolidation: delete `uyuni-{jp,ko,sc}-theme.yml` if present)
 - [ ] CI workflows updated for correct branch names

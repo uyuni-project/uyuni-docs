@@ -23,6 +23,26 @@ type templateData struct {
 	ContentDir string // e.g. en/modules (for antora.yml nav paths)
 }
 
+// englishEditURLPattern is the GitHub page a reader opens to propose a
+// change. Antora fills {refname} and {path}. {path} is the generated
+// translations/en copy; the UI rewrites that to the English source under en/.
+const englishEditURLPattern = "https://github.com/uyuni-project/uyuni-docs/edit/{refname}/{path}"
+
+// englishEditURL returns an edit link for the public English sites only.
+// Translated builds and the embedded Web UI do not get one, so those pages
+// cannot offer a link into ja, ko, or zh_CN.
+func englishEditURL(outputName, langCode string) string {
+	if langCode != "en" {
+		return ""
+	}
+	switch outputName {
+	case "mlm-dsc", "uyuni-website":
+		return englishEditURLPattern
+	default:
+		return ""
+	}
+}
+
 // SiteYML generates translations/{lang}/{output}.site.yml.
 func SiteYML(cfg *config.Config, productName, outputName, langCode, repoRoot string) error {
 	lang, err := cfg.LanguageByCode(langCode)
@@ -71,6 +91,7 @@ func SiteYML(cfg *config.Config, productName, outputName, langCode, repoRoot str
 		BundleURL         string
 		SupplementalFiles string
 		RepoRoot          string
+		EditURL           string
 	}{
 		templateData: templateData{
 			Product: productName,
@@ -86,6 +107,7 @@ func SiteYML(cfg *config.Config, productName, outputName, langCode, repoRoot str
 		BundleURL:         bundleURL,
 		SupplementalFiles: supp,
 		RepoRoot:          repoRoot,
+		EditURL:           englishEditURL(outputName, langCode),
 	}
 
 	outPath := filepath.Join(repoRoot, "translations", langCode, outputName+".site.yml")
@@ -93,6 +115,16 @@ func SiteYML(cfg *config.Config, productName, outputName, langCode, repoRoot str
 }
 
 // AntoraYML generates translations/{lang}/antora.yml.
+//
+// Antora requires the component descriptor to carry the name antora.yml at the
+// root of the content start path. SiteYML sets that path to translations/{lang},
+// which holds no product, so the two products overwrite each other. Every caller
+// must therefore run this generator for its own product immediately before it
+// starts Antora. The draft:* and validate:* tasks in Taskfile.yml do this. For
+// the same reason, All does not call this generator: a run for each product
+// leaves one file with the names of whichever product ran last. A per-product
+// start path would end the collision, at the cost of a content tree for each
+// product.
 func AntoraYML(cfg *config.Config, productName, langCode, repoRoot, contentDir string) error {
 	lang, err := cfg.LanguageByCode(langCode)
 	if err != nil {
@@ -115,9 +147,16 @@ func AntoraYML(cfg *config.Config, productName, langCode, repoRoot, contentDir s
 	return renderTemplate("antora.yml.tmpl", antoraYMLTemplate, data, outPath)
 }
 
-// EntitiesAdoc generates a self-contained translations/{lang}/branding/pdf/entities.adoc
-// for a product/language pair. Locale attributes from branding/locale/attributes-{lang}.adoc
+// EntitiesAdoc generates a self-contained
+// translations/{lang}/branding/pdf/entities-{product}.adoc for a
+// product/language pair. Locale attributes from branding/locale/attributes-{lang}.adoc
 // are inlined so the file has no external dependencies.
+//
+// The filename carries the product because both products share the language
+// tree: a single entities.adoc meant whichever product generated last won, so
+// a build could silently ship the other product's names. The nav files select
+// the right one through the entities-product attribute, which the pdf task
+// passes to asciidoctor-pdf.
 func EntitiesAdoc(cfg *config.Config, productName, langCode, repoRoot string) error {
 	lang, err := cfg.LanguageByCode(langCode)
 	if err != nil {
@@ -148,7 +187,8 @@ func EntitiesAdoc(cfg *config.Config, productName, langCode, repoRoot string) er
 		LocaleAttrs: localeAttrs,
 	}
 
-	outPath := filepath.Join(repoRoot, "translations", langCode, "branding", "pdf", "entities.adoc")
+	outPath := filepath.Join(repoRoot, "translations", langCode, "branding", "pdf",
+		fmt.Sprintf("entities-%s.adoc", productName))
 	if err := os.MkdirAll(filepath.Dir(outPath), 0o755); err != nil {
 		return fmt.Errorf("mkdir %s: %w", filepath.Dir(outPath), err)
 	}
@@ -174,8 +214,10 @@ func readLocaleAttributes(repoRoot, langCode string) (string, error) {
 	return strings.TrimRight(content, "\n"), nil
 }
 
-// All runs all generators for every language in cfg.
-func All(cfg *config.Config, repoRoot, contentDir string) error {
+// All runs the generators that write to a path of their own, for every
+// language and product in cfg. It does not write antora.yml, which has one
+// path for the two products. See AntoraYML.
+func All(cfg *config.Config, repoRoot string) error {
 	// Write the embedded xref-converter Ruby extension alongside the binary.
 	xrefDest := filepath.Join(repoRoot, ".bin", "xref-converter.rb")
 	if err := WriteXrefExtension(xrefDest); err != nil {
@@ -190,14 +232,9 @@ func All(cfg *config.Config, repoRoot, contentDir string) error {
 				return fmt.Errorf("mkdir %s: %w", dir, err)
 			}
 
-			// antora.yml
-			if err := AntoraYML(cfg, productName, lang.Code, repoRoot, contentDir); err != nil {
-				return fmt.Errorf("gen antora.yml [%s/%s]: %w", productName, lang.Code, err)
-			}
-
-			// entities.adoc
+			// entities-{product}.adoc
 			if err := EntitiesAdoc(cfg, productName, lang.Code, repoRoot); err != nil {
-				return fmt.Errorf("gen entities.adoc [%s/%s]: %w", productName, lang.Code, err)
+				return fmt.Errorf("gen entities-%s.adoc [%s]: %w", productName, lang.Code, err)
 			}
 
 			// site.yml per output
@@ -223,5 +260,5 @@ func renderTemplate(name, tmplText string, data any, outPath string) error {
 	if err := os.MkdirAll(filepath.Dir(outPath), 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(outPath, buf.Bytes(), 0o644)
+	return atomicWriteFile(outPath, buf.Bytes(), 0o644)
 }

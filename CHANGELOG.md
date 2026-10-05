@@ -1,4 +1,40 @@
 - Added documentation support for Ubuntu 26.04 client systems
+- Documented Salt RBAC namespaces and native Salt access controls
+- Added a note to the liberate formula page for special handling of kernel during reinstall (bsc#1269223)
+- Documented new Taskomatic schedules (bsc#1273021)
+- Removed the sitemaps Antora generates from the documentation.suse.com HTML build
+- Updated the documentation.suse.com shared header to version 1.16 and marked it as the documentation portal
+- Added an English-only edit link on the documentation.suse.com and Uyuni sites so readers can propose a change to the English source
+- Clarified requirement to update to the latest maintenance update before upgrading or migrating between versions (bsc#1270262)
+- Documented PAYG connection deletion and synchronization behavior, and fixed a broken cross-reference (github#31801)
+- Renamed the server and proxy upgrade pages to maintenance update and defined maintenance update, upgrade and migration terminology
+- Stopped generating antora.yml in gen-all, where the two products wrote one file in a random order.
+  The `-content-dir` flag of gen-all went to that file alone and is gone as well; gen-antora keeps its own
+- Sped up CI by building only English, which is all the CI artifacts have ever contained
+- Clarified relationship between custom RBAC and Salt-API access
+- Extracted and relocated general sudo configuration guidelines to a new central page, and added unprivileged onboarding support references for SLE 16 (bsc#1275794)
+- Made JOBS=00 an error, which xargs read as unlimited concurrency
+- Fixed the PDF archive tasks, which failed when the checkout path contains a space
+- Sped up PDF builds by building the books concurrently. JOBS=<n> caps the number of concurrent jobs
+- Fixed PDF builds so the two products no longer share one entities file, which could put SUSE Multi-Linux Manager names into Uyuni PDFs and the other way round
+- Fixed the pdf-tar tasks, which produced no archive and packaged both products into each one
+- Made an empty or incorrect LANGUAGES stop the build instead of reporting success with no output
+- Made an exported LANGUAGES set the default language selection
+- Made every build task select languages with LANGUAGES
+- Added a CI check for the revision date of changed documentation pages
+- Removed a link to the SSL CA migration guide, which does not apply to this version
+- Fixed noindex guards so product-specific pages no longer appear in the other product's documentation search
+- Documented deprecation and support limitations of plain salt-minion manual registration (bsc#1275658)
+- Added warning about known issues in Multi-Linux Manager 5.0 and 5.1 server upgrade guides (bsc#1274875)
+- Corrected and restored Debian 12 packages in the OpenSCAP packages table (bsc#1269316)
+- Documented Web UI Reactivation Key field, Salt Bundle configuration paths, and detailed warnings/behaviors for Reactivation Keys (bsc#1211440)
+- Documented requirements and limitations for container image inspection on SLES 15 and SLES 16 (bsc#1274720)
+- Documented proxy certificate replacement using spacecmd (bsc#1271329)
+- Documented allowing diskcheck environment variables into containers (bsc#1270033)
+- Added instruction for obtaining the certificate when renaming the server (bsc#1273853)
+- Clarified availability of Salt's "virt" module in the Salt Bundle (bsc#1270694)
+- Documented how VMs are listed and referenced by virtual hosts (bsc#1273073)
+- Added a common workflow for certificate setup and rotation with ACME
 - Extended configuration instructions for Saline formula in Specialized Guides
   (bsc#1268587)
 - Enhanced instructions for Liberate formula and reactivation key in Specialized

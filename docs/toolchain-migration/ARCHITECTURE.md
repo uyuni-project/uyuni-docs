@@ -18,8 +18,8 @@ cmd/docbuild/main.go  (Go binary)
     │  renders Go text/templates
     │
     ├──► translations/{lang}/{output}.site.yml   (per output-target, per language)
-    ├──► translations/{lang}/antora.yml          (per product, per language)
-    ├──► translations/{lang}/branding/pdf/entities.adoc  (per product, per language)
+    ├──► translations/{lang}/antora.yml          (gen-antora only, for the product being built)
+    ├──► translations/{lang}/branding/pdf/entities-{product}.adoc  (per product, per language)
     ├──► translations/{lang}/modules/{book}/nav-{book}-guide.pdf.{lang}.adoc
     └──► .bin/xref-converter.rb                 (embedded Ruby extension)
                                   │
@@ -58,7 +58,7 @@ task pdf:mlm
   3. for each LANG × BOOK:
        (per-book staging in task pdf for single-lang calls)
        docbuild gen-pdf-nav           → nav-{book}-guide.pdf.{lang}.adoc
-       docbuild gen-entities          → translations/{lang}/branding/pdf/entities.adoc
+       docbuild gen-entities          → translations/{lang}/branding/pdf/entities-{product}.adoc
        asciidoctor-pdf (theme={lang}) → build/{lang}/pdf/{product}_{book}_guide.pdf
 ```
 
@@ -230,11 +230,11 @@ asciidoc_extensions:
 
 | Command | Output | Replaces |
 |---|---|---|
-| `docbuild gen-all [-content-dir <dir>]` | All configs for all languages | `configure` Python script |
+| `docbuild gen-all` | Every config for all languages, except `antora.yml` | `configure` Python script |
 | `docbuild gen-site -product <p> -output <o> -lang <code>` | `translations/{lang}/{output}.site.yml` | `site.yml.j2` + sed block in `Makefile.j2` |
 | `docbuild get-content-dir -lang <code>` | stdout: content source dir (e.g. `zh` for `zh_CN`) | — |
-| `docbuild gen-antora -product <p> -lang <code> [-content-dir <dir>]` | `translations/{lang}/antora.yml` | `antora.yml.j2` |
-| `docbuild gen-entities -product <p> -lang <code>` | `translations/{lang}/branding/pdf/entities.adoc` | `entities.adoc.j2` + `entities.specific.adoc.j2` |
+| `docbuild gen-antora -product <p> -lang <code> [-content-dir <dir>]` | `translations/{lang}/antora.yml`. Antora requires this name, so the two products share one path. Run it for your product immediately before Antora. | `antora.yml.j2` |
+| `docbuild gen-entities -product <p> -lang <code>` | `translations/{lang}/branding/pdf/entities-{product}.adoc` | `entities.adoc.j2` + `entities.specific.adoc.j2` |
 | `docbuild gen-pdf-nav -book <b> -lang <code> -dir <path>` | `{path}/nav-{book}-guide.pdf.{lang}.adoc` | PDF nav generation in `Makefile.section.functions` |
 | `docbuild inject-lang-selector -hbs <path>` | Modifies `header-content.hbs` in-place with language selector | Language selector inject in `Makefile.j2` |
 | `docbuild collect-pdfs -product <p> [-src <path>] [-dest <path>] [-langs "<list>"]` | Moves `build/{lang}/pdf/` → `build/pdf/{lang}/` | `cleanup_pdfs.sh` |
@@ -260,10 +260,12 @@ task draft:uyuni-website           Uyuni HTML — website branding (all language
 task draft:uyuni-webui             Uyuni HTML — WebUI branding with language selector (all languages)
 task draft:all                     All four HTML output targets (sequential)
 
-task pdf BOOK=<b> PRODUCT=<p> LANG=<l>   Single book PDF
-task pdf:mlm                       All 8 books × 4 languages — MLM (runs stage-content first)
-task pdf:uyuni                     All 8 books × 4 languages — Uyuni (runs stage-content first)
-task pdf:all                       Both products
+task pdf BOOK=<b> PRODUCT=<p> LANGUAGES=<l>  One book PDF, one or more languages
+task pdf-stage PRODUCT=<p>         Per-language shared files: the content tree + entities-{product}.adoc
+task pdf:mlm                       All 8 books × 4 languages — MLM (runs stage-content first, books concurrent)
+task pdf:uyuni                     All 8 books × 4 languages — Uyuni (runs stage-content first, books concurrent)
+task pdf:all                       Both products, in sequence (one product uses all the cores)
+                                   JOBS=<n> caps concurrency; the default is the core count
 
 task publish:dsc                   Full MLM publish — HTML + PDFs + zip archives
 task publish:uyuni                 Full Uyuni publish — HTML + PDFs + zip archives

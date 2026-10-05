@@ -1,7 +1,7 @@
 [[contact-methods-saltbundle]]
 = Salt Bundle
 :description: Learn how to deploy and configure the Salt Bundle, a single binary package that simplifies Salt Minion installation by including Python 3, its required modules
-:revdate: 2025-07-14
+:revdate: 2026-08-10
 :page-revdate: {revdate}
 :page-author: SUSE Product & Solution Documentation Team
 :page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
@@ -57,7 +57,8 @@ The {salt} state `util.mgr_switch_to_venv_minion` is available to switch from `s
 It is recommended to switch to `venv-salt-minion` in two steps to avoid trouble with shifting processes:
 
 .Procedure: Switching with `util.mgr_switch_to_venv_minion` state to `venv-salt-minion`
-
+[role=procedure]
+_____
 . Apply `util.mgr_switch_to_venv_minion` with no pillar specified first.
   This will result in the switch to `venv-salt-minion` with copying configuration files etc.
   It will not clean up the original `salt-minion` configurations and its packages.
@@ -65,12 +66,14 @@ It is recommended to switch to `venv-salt-minion` in two steps to avoid trouble 
 ----
 salt <minion_id> state.apply util.mgr_switch_to_venv_minion
 ----
+
 . Apply `util.mgr_switch_to_venv_minion` with `mgr_purge_non_venv_salt` set to `True` to remove `salt-minion` and with `mgr_purge_non_venv_salt_files` set to `True` to remove all the files related to `salt-minion`.
 This second step ensures the first step was processed, and then removes the old configuration files and the now obsolete `salt-minion` package.
 +
 ----
 salt <minion_id> state.apply util.mgr_switch_to_venv_minion pillar='{"mgr_purge_non_venv_salt_files": True, "mgr_purge_non_venv_salt": True}'
 ----
+_____
 
 
 === Additional Concerns
@@ -137,3 +140,18 @@ Environment=VENV_PIP_TARGET=/new/path/local/venv-salt-minion/pip
 The Python packages installed through `pip` are not changing on updating the Salt Bundle.
 To ensure that such packages are available and functional after an update, it is recommended to install them with a {salt} state that is applied after Salt Bundle updates.
 ====
+
+
+[[contact-methods-saltbundle-virt]]
+== Availability of Salt's "virt" module inside the Salt Bundle
+
+The Salt `virt` module is available within the Salt Bundle (`venv-salt-minion`) on SUSE-based operating systems ({sles}, {slemicro}, {opensuse} Leap, and {opensuse} Tumbleweed). The module requires system `libvirt` library dependencies, which are not included in the bundle.
+
+On other operating systems (such as {rhel} or {debian}-based systems), the Salt `virt` module is not available or supported inside the Salt Bundle.
+
+To use the Salt `virt` module (for example, to inventory virtual machines on physical KVM hosts), the system `libvirt` libraries must be installed on the managed host:
+
+[role=procedure]
+_____
+. Install the `libvirt-libs` package on the managed host system using the system's package manager.
+_____

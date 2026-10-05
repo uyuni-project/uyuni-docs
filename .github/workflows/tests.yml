@@ -22,10 +22,16 @@ jobs:
     - name: Build toolchain binary and generate configs
       run: task setup && task gen
 
-    # ── Uyuni HTML ────────────────────────────────────────────────────────────
+    # Only English is built here. Every artifact below is English, and
+    # test_pdf_translations.yml covers the translated builds on master.
+    #
+    # publish:* already runs the PDF build, collection and zipping, so there are
+    # no separate PDF steps.
 
-    - name: Build Uyuni HTML documentation
-      run: task publish:uyuni
+    # ── Uyuni ─────────────────────────────────────────────────────────────────
+
+    - name: Build Uyuni documentation (English)
+      run: task publish:uyuni LANGUAGES=en
 
     - name: Upload Uyuni HTML documentation
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
@@ -34,10 +40,22 @@ jobs:
         path: build/en/
         retention-days: 1
 
-    # ── MLM HTML ──────────────────────────────────────────────────────────────
+    - name: Upload Uyuni PDFs (English)
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
+      with:
+        name: uyuni-docs-pdf-en
+        path: build/pdf/en/
+        retention-days: 1
 
-    - name: Build SUSE Multi-Linux Manager HTML documentation
-      run: task publish:dsc
+    # Both products write into build/en/ and build/pdf/en/, so the MLM build
+    # starts from a clean tree; otherwise its artifacts carry the Uyuni output.
+    - name: Clear build output before the MLM build
+      run: rm -rf build/
+
+    # ── SUSE Multi-Linux Manager ──────────────────────────────────────────────
+
+    - name: Build SUSE Multi-Linux Manager documentation (English)
+      run: task publish:dsc LANGUAGES=en
 
     - name: Upload SUSE Multi-Linux Manager HTML documentation
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
@@ -46,30 +64,9 @@ jobs:
         path: build/en/
         retention-days: 1
 
-    # ── PDFs — English only (for translator review) ───────────────────────────
-
-    - name: Build MLM PDFs (English)
-      run: task pdf:mlm LANGUAGES=en
-
-    - name: Collect MLM PDFs
-      run: task pdf-collect:mlm LANGUAGES=en
-
-    - name: Upload MLM PDFs (English)
+    - name: Upload SUSE Multi-Linux Manager PDFs (English)
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
       with:
         name: mlm-docs-pdf-en
-        path: build/pdf/en/
-        retention-days: 1
-
-    - name: Build Uyuni PDFs (English)
-      run: task pdf:uyuni LANGUAGES=en
-
-    - name: Collect Uyuni PDFs
-      run: task pdf-collect:uyuni LANGUAGES=en
-
-    - name: Upload Uyuni PDFs (English)
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
-      with:
-        name: uyuni-docs-pdf-en
         path: build/pdf/en/
         retention-days: 1
