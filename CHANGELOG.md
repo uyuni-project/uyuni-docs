@@ -1,3 +1,4 @@
+- Added documentation support for Ubuntu 26.04 client systems
 - Fixed procedure block formatting and normalized section headings to sentence case
 - Documented Salt RBAC namespaces and native Salt access controls
 - Added a note to the liberate formula page for special handling of kernel during reinstall (bsc#1269223)
