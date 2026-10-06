@@ -1,3 +1,4 @@
+- Updated information for hardware requirements and a reference to large deployments requirements (bsc#1268473)
 - Documented resolving obsolete libvirt-events errors in minion logs (bsc#1272813)
 - Added documentation support for Ubuntu 26.04 client systems
 - Fixed procedure block formatting and normalized section headings to sentence case
