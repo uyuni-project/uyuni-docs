@@ -1,3 +1,4 @@
+- Documented resolving obsolete libvirt-events errors in minion logs (bsc#1272813)
 - Documented Salt RBAC namespaces and native Salt access controls
 - Added a note to the liberate formula page for special handling of kernel during reinstall (bsc#1269223)
 - Clarified TFTP autoinstallation proxy routing and server tftpd option (bsc#1276787)
