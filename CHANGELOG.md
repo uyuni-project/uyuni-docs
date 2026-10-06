@@ -1,3 +1,4 @@
+- Added information about associated activation keys being deleted when channels are deleted in Administration Guide
 - Added documentation support for Ubuntu 26.04 client systems
 - Fixed procedure block formatting and normalized section headings to sentence case
 - Documented Salt RBAC namespaces and native Salt access controls
