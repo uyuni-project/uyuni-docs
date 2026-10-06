@@ -1,3 +1,4 @@
+- Documented resolving obsolete libvirt-events errors in minion logs (bsc#1272813)
 - Fixed procedure block formatting and normalized section headings to sentence case
 - Documented Salt RBAC namespaces and native Salt access controls
 - Clarified TFTP autoinstallation proxy routing and server tftpd option (bsc#1276787)
