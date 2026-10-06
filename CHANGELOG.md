@@ -1,3 +1,4 @@
+- Extended proxy troubleshooting section for setting the grains (bsc#1281041)
 - Updated information for hardware requirements and a reference to large deployments requirements (bsc#1268473)
 - Documented resolving obsolete libvirt-events errors in minion logs (bsc#1272813)
 - Added documentation support for Ubuntu 26.04 client systems
