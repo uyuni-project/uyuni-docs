@@ -1,3 +1,4 @@
+- Extended proxy troubleshooting section for setting the grains (bsc#1281041)
 - Added documentation support for Ubuntu 26.04 client systems
 - Fixed procedure block formatting and normalized section headings to sentence case
 - Documented Salt RBAC namespaces and native Salt access controls
