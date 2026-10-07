@@ -1,0 +1,126 @@
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+[[uyuni-install-requirements]]
+= 一般的な要件
+:description: x86-64アーキテクチャの最小サーバーおよびプロキシ要件を確認し、プロキシのトラフィックを削減するためのプロキシキャッシュディレクトリのサイズ設定方法を学びます。
+:revdate: 2025-10-08
+:page-revdate: {revdate}
+
+次の表では、サーバとプロキシの最低要件を指定しています。
+
+[IMPORTANT]
+====
+NFSはSELinuxのファイルラベル付けをサポートしていないため、NFSをストレージに使用しないでください。
+====
+
+// In this table, replace `version` with the version of the product you are using.
+[[server-hardware-requirements]]
+== サーバ要件
+
+
+[cols="1,1,1", options="header"]
+.アーキテクチャ{x86_64}のサーバー要件
+|===
+
+| ソフトウェアとハードウェア
+| 詳細
+| 推奨
+
+| {tumbleweed}
+| クリーンインストール、最新の状態
+| {tumbleweed}
+
+| CPU
+| -
+| 最小4つの専用64ビットCPUコア（{x86_64}）
+
+| RAM
+| テストまたはベースインストール
+| 最小16{nbsp}GB
+
+|
+| 運用サーバー
+| 最小32{nbsp}GB
+
+| ディスク領域
+| `/`（ルートディレクトリ）
+| 最小40{nbsp}GB
+
+|
+| `/var/lib/containers/storage/volumes`
+| 最小150{nbsp}GB（製品の数に応じて）
+
+|
+| `/var/lib/containers/storage/volumes/var-pgsql`
+| 最小50{nbsp}GB
+
+|
+| `/var/lib/containers/storage/volumes/var-spacewalk`
+| 必要な最小ストレージ：100{nbsp}GB（これは実装されたチェックによって確認されます）
+ +
+* 各{nbsp}製品およびPackage Hubには50{suse}GB
+ +
+* 各{nbsp}製品には360{redhat}GB
+
+|
+| `/var/lib/containers/storage/volumes/var-cache`
+| 最小10{nbsp}GB。
+{suse}製品ごとに100{nbsp}MB、{redhat}他の製品ごとに1{nbsp}GBを追加してください。
+サーバがISSマスターの場合、スペースを倍増させてください。
+
+|
+| スワップ容量
+| 3{nbsp}GB
+|===
+
+
+
+== プロキシ要件
+
+[cols="3*", options="header"]
+.プロキシ要件
+|===
+| ソフトウェアとハードウェア
+| 詳細
+| 推奨
+
+| {tumbleweed}
+| クリーンインストール、最新の状態
+| {tumbleweed}
+
+| CPU
+|
+| 最小2つの専用64ビットCPUコア
+
+| RAM
+| Test Server
+| 最小2{nbsp}GB
+
+|
+| 運用サーバー
+| 最小8{nbsp}GB
+
+| ディスク領域
+| `/`（ルートディレクトリ）
+| 最小40{nbsp}GB
+
+|
+| `/var/lib/containers/storage/volumes`
+| 最小100{nbsp}GB
+|===
+
+
+{productname}プロキシは`/var/lib/containers/storage/volumes/uyuni-proxy-squid-cache/`ディレクトリにパッケージをキャッシュします。
+`/var/lib/containers/storage/volumes/uyuni-proxy-squid-cache/`に十分な空き容量がない場合、プロキシは古い未使用のパッケージを削除して、新しいパッケージと入れ替えます。
+
+この動作の結果は以下のとおりです。
+
+* プロキシ上の`/var/lib/containers/storage/volumes/uyuni-proxy-squid-cache/`ディレクトリが大きいほど、プロキシと{productname}サーバ間のトラフィックは少なくなります。
+
+* プロキシ上の `/var/lib/containers/storage/volumes/uyuni-proxy-squid-cache/` ディレクトリを `/var/lib/containers/storage/volumes/var-spacewalk/` サーバー上の {productname} と同じサイズにすることで、最初の同期後に大量のトラフィックが発生するのを防ぐことができます。
+
+* {productname} サーバー上の `/var/lib/containers/storage/volumes/uyuni-proxy-squid-cache/` ディレクトリは、プロキシ上のものと比べて小さくても問題ありません。
+    サイズ推定のガイドについては、<<server-hardware-requirements>>セクションを参照してください。

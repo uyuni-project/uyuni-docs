@@ -1,0 +1,171 @@
+[[confidential_computing]]
+= コンフィデンシャルコンピューティング
+:description: ハードウェアベースの信頼実行環境（TEE）を使用して使用中のデータを保護する方法と、サポートされているプラットフォームで実行されているシステムの構成証明プロセスを管理する方法を学びます。
+:revdate: 2025-07-17
+:page-revdate: {revdate}
+
+{CoCo}は、ハードウェアベースの高信頼実行環境(TEE)を利用して、使用中のデータを保護できる技術です。TEEとは、データの整合性、データの機密性、およびコードの整合性に対して強化されたレベルのセキュリティを提供する環境のタイプです。
+
+
+== {CoCo}と{productname}
+
+
+TEEの信頼性は、認証プロセスによって確認されます。{productname}は、登録されたシステムのための認証サーバーとして使用できます。
+このモードで実行されるシステムのためのレポートページを生成します。
+これらのシステムは、定期的に検証され、チェックされる必要があります。
+過去のチェックの履歴も保存され、リクエストに応じて利用可能です。
+
+{CoCo}の検証は、認証されるシステムが実行されている使用ハードウェアと環境によって異なります。
+
+[IMPORTANT]
+====
+{CoCo}構成証明は、{productname}が{x86_64}アーキテクチャ上で実行されている場合にのみ利用可能です。
+====
+
+
+
+== 要件
+
+{CoCo}は、次の特性を持つ環境にセットアップできます：
+
+* 構成証明されたシステム（仮想マシン）は{productname}に起動し、以下のいずれかのシステム上で実行されます。
+** {sle} 15 SP6
+** {sle} 15 SP7
+** {sle} 16
+** {leap} 15 SP6
+** {leap} 15 SP7
+** {leap} 16
+
+* ハードウェアには、以下のいずれかのCPUが必要です。
+** `AMD EPYC Milan`
+** `AMD EPYC Genoa`
+** `AMD EPYC Bergamo`
+** `AMD EPYC Siena`
+** `AMD EPYC Turin`
+** `IBM z16`
+** `IBM z17`
+* BIOSが{CoCo}の認証を許可するように設定されている必要があります。
+* ホストOSと仮想化ソフトウェア(KVMおよびlibvirt)で{CoCo}がサポートされている必要があります。
+
+* IBMの機密コンピューティング構成証明を実行する際に必要なURLの詳細については、xref:installation-and-upgrade:network-requirements.adoc#required-urls[Required URLs]を参照してください。
+
+== 制限事項
+
+セキュアブートは認証されます。
+ただし、現在KVMセキュアブートとAMD構成証明ツール`snpguest`は連携して動作しません。
+
+
+== {CoCo}を{productname}で使用します
+
+[IMPORTANT]
+====
+{CoCo}をホストにセットアップして設定する正確な手順については、OSベンダのマニュアルを参照してください。
+====
+
+.プロシージャ:{productname}のインストール中に認証コンテナを有効にする
+[role=procedure]
+. 認証コンテナは、{productname}を使用して`mgradm install podman`をインストールする際に有効になります。
+. ファイル`mgradm.yaml`に以下の内容を追加してください。
+//I need full path to this file.
++
+----
+coco:
+    replicas: 1
+----
+
+
+.プロシージャ:{productname}のインストール後に認証コンテナを有効にする
+[role=procedure]
+. インストール後に認証コンテナを有効にするには、コマンドラインパラメータ`mgradm`を使用します。
+. 次のコマンドを実行します。
++
+----
+mgradm scale uyuni-server-attestation --replicas 1
+----
+// (PLACEHOLDER): In the future instead of number 1, it should be possible to allow more then one container replica.
+
+
+.プロシージャ:{productname}のインストール後に認証コンテナを無効にする
+[role=procedure]
+. すでに有効な認証コンテナを無効にするには、次のコマンドを実行します。
++
+----
+mgradm scale uyuni-server-attestation --replicas 0
+----
+
+
+.プロシージャ:認証を有効にする
+[role=procedure]
+. 選択したシステムで、タブmenu:監査[コンフィデンシャルコンピューティング> 設定]に移動します。
+. トグルボタンを選択して認証を有効にします。
+. フィールド`Environment Type`で、ドロップダウンリストから正しいオプションを選択します。
+. フィールド`Environment Type`が`IBM z-series` CPU値のいずれかに設定されている場合、`Host Key Document`と`Secure Execution Header`という2つの追加設定が必要です。
+
++
+
+[NOTE]
+====
+`Host Key Document`は、構成証明されたシステムが実行されるIBMハイパーバイザーサーバーインスタンスの公開鍵証明書です。
+
+`Secure Execution Header`は、構成証明されたシステムのIBMセキュアVMイメージを構築するために必要なバイナリファイルです。
+
+両方のファイルは、IBMハイパーバイザー上で実行される構成証明されたシステムVMを作成する管理者が要求する必要があります。
+====
+
++
+
+[IMPORTANT]
+====
+`Host Key Document`と`Secure Execution Header`はセキュリティ上の機密情報ではないため、{productname}サーバーに保存しても安全です。
+====
+
++
+
+. ボタンbtn:[保存]をクリックして、変更を保存します。
+
+.プロシージャ:新しい認証をスケジュールする
+[role=procedure]
+. 選択したシステムで、タブmenu:監査[コンフィデンシャルコンピューティング> 認証の一覧]に移動します。
+. btn:[認証のスケジュールを設定する]をクリックします。
+  新しいフォームが開きます。
+. フィールド`Earliest`で、認証の実行時刻を選択します。
+. 必要に応じて、`Add to`オプションを選択して、新しく作成した認証コンテナをアクションチェーンに追加します。
+. ボタンbtn:[スケジュール]をクリックして、新しい認証の実行を保存してスケジュールします。
+
+.プロシージャ:システム詳細から認証レポートを表示する
+[role=procedure]
+. 選択したシステムで、タブmenu:監査[コンフィデンシャルコンピューティング> 認証の一覧]に移動します。
+. 表示するレポートを見つけて選択します。
+. 選択した認証レポートタブ`Overview`をクリックすると、レポートが開きます。
+.. 選択したCPUが`AMD`の場合、追加のタブ`SEV-SNP`と`Secure boot`が表示されます。
+.. 選択したCPUが`IBM`の場合、追加のタブ`IBM SELPVATTEST`が表示されます。
+
+
+.プロシージャ:監査からの認証レポートの表示
+[role=procedure]
+. ナビゲーションバーから、menu:監査[コンフィデンシャルコンピューティング]を選択します。
+. メインパネルにすべての認証のリストが表示されます。
++
+. 表示するレポートを見つけて選択します。
+
+
+
+=== レポートのステータス
+
+認証レポートは次のいずれかのステータスになります。
+
+待機中::
+これは、スケジュールされた認証のデフォルトのステータスです。
+レポートはまだ利用できません。プロセスがまだ開始されていないか、完了していないためです。
+
+成功::
+スケジュールされた認証コンテナによって表示可能なレポートが作成されると、プロセスのステータスは`Successful`になります。
+
+失敗::
+スケジュールされた認証コンテナが失敗し、その結果レポートが作成されない場合、プロセスのステータスは`Failed`になります。
+
+
+
+== 関連トピック
+
+{CoCo}の詳細については、 https://www.fortanix.com/platform/confidential-computing-manager/what-is-confidential-computing[こちら]を参照してください。

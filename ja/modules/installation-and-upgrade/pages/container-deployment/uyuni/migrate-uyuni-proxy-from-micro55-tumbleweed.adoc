@@ -1,0 +1,205 @@
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+= {productname} プロキシを {opensuse} Tumbleweed に移行する
+:revdate: 2025-10-27
+:page-revdate: {revdate}
+:description: このページでは、プロキシ管理ツール \`mgrpxy` を使用して、{productname} プロキシホストを openSUSE Leap Micro 5.5 から新規の openSUSE Tumbleweed インストールに移行する方法について説明します。
+
+このページでは、プロキシ管理ツール {productname} を使用して、`mgrpxy` プロキシホストを openSUSE Leap Micro 5.5 から新規の openSUSE Tumbleweed インストールに移行する方法について説明します。
+
+[IMPORTANT]
+====
+このガイドは Tumbleweed でのみテストされています。他のサポートされているベースで動作しない既知の理由はありませんが、本番環境に適用する前に必ずテスト環境で検証してください。
+====
+
+
+
+== プロキシ設定の生成
+
+以下の手順に従います。
+
+* 古いシステムからプロキシ設定（Apache/Squid のチューニングを含む）を保存します。
+* ホストを openSUSE Tumbleweed で再インストールします。
+* システム再アクティベーションキーを使用してホストを再登録します。
+* `mgrpxy` をインストールします（必要に応じて Podman もインストールします）。
+* 設定を復元し、オプションのチューニングファイル付きで `mgrpxy install` を実行します。
+
+
+== 要件と考慮事項
+
+* サーバーとクライアントが以前と同様にプロキシと通信できるように、可能な限り同じホスト名/FQDN および IP を維持してください。
+* 既存のプロキシシステムの「システム再アクティベーションキー」があることを確認してください（UI:「システム」 > プロキシを選択 > 「詳細」 > 「再アクティベーション」）。
+* 設定アーカイブをマシンから移動したり、マシンに移動したりするために、SSH/scp アクセスができることを確認してください。
+
+== 移行
+
+=== 手順1:プロキシ設定およびチューニングファイルの保存
+
+.プロシージャ:プロキシ設定およびチューニングファイルの保存
+[role="procedure"]
+____
+
+. 生成された設定をサーバコンテナからコピーします。
+
++
+
+[source,shell]
+----
+scp -r /etc/uyuni <USER>@<HOST>:/some/where/safe/
+----
+. レガシープロキシサービスで現在使用されている Apache および Squid のチューニングファイルを特定します。
+
++
+
+[source,shell]
+----
+systemctl cat uyuni-proxy-httpd.service | grep EXTRA_CONF= | sed 's/.*=-v\([^:]\+\):.*/\1/'
+systemctl cat uyuni-proxy-squid.service | grep EXTRA_CONF= | sed 's/.*=-v\([^:]\+\):.*/\1/'
+----
+. それらのチューニングファイルも同じ安全な場所にコピーします。
+
+[TIP]
+====
+コピーを戻した後の一般的なデフォルトパスは次のとおりです。
+
+* Apache チューニング: `/etc/uyuni/proxy/apache.conf`
+* Squid のチューニング: `/etc/uyuni/proxy/squid.conf`
+====
+
+____
+
+=== ステップ2:ホストを openSUSE Tumbleweed で再インストールする
+.プロシージャ:ホストを openSUSE Tumbleweed で再インストールする
+[role="procedure"]
+____
+
+. マシンを openSUSE Tumbleweed で再インストールする（サーバープロファイル推奨）
+. 可能な限り、以前と同じホスト名/FQDN および IP を設定してください。
+
+____
+
+
+
+=== ステップ3:再アクティベーションキーを使用してホストを再登録する
+
+.プロシージャ:再アクティベーションキーを使用してホストを再登録する
+[role="procedure"]
+____
+
+. {productname} Web UIで、既存のプロキシシステムレコードのシステム再アクティベーションキーを取得します（［システム］ > ［詳細］ > ［再アクティベーション］）。
+. その再アクティベーションキーを使用して Tumbleweed ホストを起動/再登録し、既存のシステムエントリを引き継ぎます。
+
+[NOTE]
+====
+環境内の Tumbleweed ホストに対する標準的な起動プロセス（起動スクリプトや設定管理など）を使用し、再アクティベーションキーが適用されていることを確認してください。
+====
+
+____
+
+
+
+=== ステップ4:{productname} プロキシツールと Podman のインストール
+
+.プロシージャ:プロキシツールと Podman のインストール
+[role="procedure"]
+____
+
+. Uyuni Stable リポジトリを追加し、ツールをインストールします:
+
++
+
+[source,shell]
+----
+zypper ar https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable/images/repo/Uyuni-Proxy-POOL-x86_64-Media1 uyuni-proxy-stable
+zypper ref
+zypper in mgrpxy mgrctl mgrpxy-bash-completion mgrctl-bash-completion
+----
+. Podmanがインストールされていることを確認します（コンテナの実行に必要です）:
+
++
+
+[source,shell]
+----
+zypper in podman
+----
+
+____
+
+
+
+=== 手順 5:設定の復元とプロキシのインストール
+
+.プロシージャ:設定の復元とプロキシのインストール
+[role="procedure"]
+____
+
+. 生成された設定をサーバコンテナからコピーします。
+
++
+
+[source,shell]
+----
+scp -r <USER>@<HOST>:/some/where/safe/uyuni /etc/
+----
+. Apache/Squidのチューニングファイルを保存している場合は、それらを想定されるデフォルトのパスに配置するか、次のコマンドのパラメータ用にその場所を控えておいてください:
+
++
+
+[source,shell]
+----
+# Default paths expected by mgrpxy parameters (adjust/move your files accordingly)
+# Apache tuning: /etc/uyuni/proxy/apache.conf
+# Squid tuning:  /etc/uyuni/proxy/squid.conf
+----
+. Podman を使用してプロキシのインストールを実行します。チューニングファイルを使用しない場合は、対応するパラメータを省略してください:
+
++
+
+[source,shell]
+----
+# With tuning files
+mgrpxy install \
+    --tuning-httpd /etc/uyuni/proxy/apache.conf \
+    --tuning-squid /etc/uyuni/proxy/squid.conf
+
+# If you have no tuning files, remove the tuning parameters:
+# mgrpxy install
+----
+
+[NOTE]
+====
+今後のリリースでは、前述のデフォルトパスにチューニングファイルが配置されていれば、明示的なパラメータは不要になります。
+====
+
+____
+
+
+=== ステップ6:プロキシの確認
+
+.プロシージャ:プロキシの確認中
+[role="procedure"]
+____
+
+. spacewalkサービスが実行されていることを確認します。
+
++
+
+[source,shell]
+----
+mgrctl ps
+# or
+podman ps
+----
+. {productname} Web UIでプロキシが正常であることを確認し、このプロキシを使用しているクライアントが正常に動作していることを確認します。
+
+____
+
+== トラブルシューティング
+
+* Podmanがない場合は、インストールしてから `mgrpxy install` の手順を再実行してください。
+* ホストの時刻、ホスト名、および IP が期待どおりであることを確認します。
+* ホストが既存のシステムレコードに再接続されなかった場合は、正しいリアクティベーションキーを使用したことを確認し、ブートストラップを再試行してください。
+

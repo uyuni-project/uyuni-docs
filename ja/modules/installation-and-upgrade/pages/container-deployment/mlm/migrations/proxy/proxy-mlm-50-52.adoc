@@ -1,0 +1,544 @@
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+= 5.0から5.2へのプロキシをアップグレードする
+:description: SUSE Linux Enterprise Micro 5.5 または SUSE Linux Enterprise Server 15 SP6 を実行しているシステム上で、プロキシ拡張機能をバージョン 5.0 からバージョン 5.2 にアップグレードします。
+:revdate: 2026-09-14
+:page-revdate: {revdate}
+
+== 概要
+
+
+このドキュメントは、**ホストオペレーティングシステム**と**プロキシ拡張機能**の両方を、**{productname}**で管理される環境において移行するためのテスト済みかつ検証済みの手順を提供します。特に、**{productname} Proxy 5.0**を配備したシステムを対象としています。
+
+対象となるアップグレードシナリオは次のとおりです。
+
+* **SUSE Linux Enterprise Micro (SLE Micro) 5.5**から**SL Micro 6.2**への移行
+* **SUSE Linux Enterprise Server (SLES) 15 SP6**から**SLES 15 SP7**への移行
+* **{productname}プロキシ拡張機能**を**バージョン 5.0**から**バージョン {productnumber}**にアップグレードします。
+
+[IMPORTANT]
+====
+プロキシを移行する前に、まずSUSE Manager 5.0サーバを{productname} {productnumber}に移行する必要があります。
+====
+
+[IMPORTANT]
+====
+プロキシを {productname} {productnumber} にアップグレードする前に、{productname} 5.0 プロキシを利用可能な最新のメンテナンスアップデートに更新し、それが実行されていることを確認する必要があります（xref:installation-and-upgrade:container-management/updating-proxy-containers.adoc[Proxy Maintenance Update] を参照）。
+====
+
+
+== {sle-micro} 5.5から{sl-micro} 6.2
+
+このセクションでは、{sle-micro} 5.5ホストを、{productname} 5.0プロキシでデプロイされた状態から、{productname}{productnumber}プロキシを用いて{sl-micro} 6.2にアップグレードするためのテスト済み手順を提供します。
+
+
+=== 前提条件
+
+* {productname} 5.0プロキシが{sle-micro} 5.5でインストールされ、実行中です。
+* {productname} 5.0 プロキシは利用可能な最新のメンテナンスアップデートに更新され、実行中です（xref:installation-and-upgrade:container-management/updating-proxy-containers.adoc[Proxy Maintenance Update] を参照）。
+* プロキシシステムが{productname}サーバに登録されています。
+
+
+=== ディストリビューションのアップグレードとプロキシの移行
+
+.プロシージャ:{productname} 5.0プロキシを{productname} {productnumber}プロキシに移行します。
+[role=procedure]
+_____
+
+. システムと{productname}ツールのバージョンを確認します。
+
++
+
+[source,console]
+----
+cat /etc/os-release
+mgrpxy --version
+----
+
++
+
+確認:
+
+* オペレーティングシステム: `SLE Micro 5.5`
+* ツールバージョン: `mgrpxy version 0.1.29`以上
+
++
+
+. 実行中のコンテナを確認する:
+
++
+
+[source,console]
+----
+podman ps
+----
+
++
+
+以下のコンテナが実行されていることを確認します。
+
+- `proxy-squid`
+- `proxy-ssh`
+- `proxy-httpd`
+- `proxy-tftpd`
+- `proxy-salt-broker`
+
++
+
+. {productname}サーバに新しいプロキシ製品を同期します。
+  詳細については、xref:client-configuration:products.adoc[]を参照してください。
+
++
+
+Web UIを使用して同期します。
+
+* `SL Micro 6.2`
+* `{productname} Proxy Extension {productnumber}`
+
++
+
+. 移行の実行
+  詳細については、xref:client-configuration:client-upgrades-product-migration.adoc[]を参照してください。
+
++
+
+プロキシシステムに移動し、menu:システム[概要] > menu:ソフトウェア[製品移行]を選択します。
+
++
+
+移行元
+
+* `SLE Micro 5.5` + `SUSE Manager Proxy 5.0 Extension`
+
++
+
+移行先
+
+* `SL Micro 6.2` + `{productname} Proxy Extension {productnumber}`
+
++
+
+[IMPORTANT]
+====
+プロンプトが表示されたときに、必要であることが確認されていない限り、オプションのチャンネルを**選択しないでください**。
+====
+
++
+
+[NOTE]
+====
+アップグレードする前に、サーバのバックアップを作成することをお勧めします。
+====
+
++
+
+. 移行アクションを監視する
+
++
+
+menu:システム[詳細> イベント]タブのでプロセスを追跡できます{webui}。
+
++
+
+. アップグレードが完了したら、システムを再起動する:
+
++
+
+[source,console]
+----
+reboot
+mgrpxy stop
+----
+
++
+
+. 再起動後のチェック:
+
++
+
+アップグレードされたOSと{productname}拡張機能を確認してください。
+
++
+
+[source,console]
+----
+cat /etc/os-release
+SUSEConnect --status-text
+----
+
++
+
+. {productname}ツールのバージョンを確認してください。
+
++
+
+[source,console]
+----
+mgrpxy --version
+----
+
++
+
+予想される出力:
+
+- `mgrpxy version 5.2`以上
+
++
+
+. ルートSSHアクセスを有効にします（_必要な場合_）。
+  SL Micro 6.2は、デフォルトでSSH経由のルートログインを無効にします。
+  `/etc/ssh/sshd_config.d/sshd.conf`を編集します。
+
++
+
+[source,console]
+----
+PermitRootLogin yes
+----
+
++
+
+サービスを再起動します。
+
++
+
+[source,shell]
+----
+systemctl restart sshd
+----
+
++
+
+詳細については、xref:administration:troubleshooting/tshoot-remote-root-on-micro.adoc[]を参照してください。
+
+
+. RPMパッケージとして新しいプロキシコンテナイメージをインストールします。
+
++
+
+[source,shell]
+----
+transactional-update pkg install suse-multi-linux-manager-5.2-<arch>-proxy*
+----
+
+. プロキシを再起動します。
+
+. プロキシコンテナをアップグレードします。
+
++
+
+[source,console]
+----
+mgrpxy upgrade
+mgrpxy stop
+mgrpxy start
+----
+
++
+
+エアギャップ(された)インストールでは、まずコンテナの RPM パッケージをアップグレードし、その後 `mgrpxy upgrade` コマンドを実行します。
+
++
+
+{kube} クラスター上で実行されているプロキシについては、xref:specialized-guides:kubernetes-guide/proxy-kubernetes-upgrade.adoc[] を参照してください。
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
++
+
+. プロキシコンテナが動作していることを確認する
+
++
+
+[source,console]
+----
+podman ps
+----
+
++
+
+すべての予期されるプロキシコンテナが稼働中である必要があります。
+
+- `proxy-salt-broker`
+- `proxy-httpd`
+- `proxy-squid`
+- `proxy-tftpd`
+- `proxy-ssh`
+
+_____
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-version-number.adoc[leveloffset=+1]
+include::installation-and-upgrade:partial$snippet-tag-containers.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-version-number.adoc[leveloffset=+1]
+include::../../../../../partials/snippet-tag-containers.adoc[leveloffset=+1]
+endif::[]
+
+
+
+=== 移行の完了
+
+プロキシホストシステムは、{sl-micro} 6.2を実行しており、更新された{productname}{productnumber}プロキシパッケージと同期された製品チャンネルを備えています。
+
+
+== {sles} 15 SP6から15 SP7へ。
+
+このセクションでは、{sles} SP6ホストを{productname} 5.0プロキシから、{productname}{productnumber}プロキシを備えた{sles}{sp-version}にアップグレードする手順を提供します。
+
+
+=== 前提条件
+
+* {productname}プロキシ5.0は、{sles} 15 SP6にインストールされ、実行されています。
+* {productname} 5.0 プロキシは利用可能な最新のメンテナンスアップデートに更新され、実行中です（xref:installation-and-upgrade:container-management/updating-proxy-containers.adoc[Proxy Maintenance Update] を参照）。
+* プロキシシステムが{productname}サーバに登録されています。
+
+
+=== ディストリビューションのアップグレードとプロキシの移行
+
+.プロシージャ:{sles} 15 SP6で{productname}プロキシコンポーネントを更新します。
+[role=procedure]
+_____
+
+. オペレーティングシステムと{productname}ツールのバージョンを確認してください。
+
++
+
+[source,console]
+----
+cat /etc/os-release
+mgrpxy --version
+----
+
++
+
+確認:
+
+* オペレーティングシステム: `SUSE Linux Enterprise Server 15 SP6`
+* ツールバージョン: `mgrpxy version 0.1.29`以上
+
+
++
+
+. 実行中のプロキシコンテナを一覧表示する
+
++
+
+[source,console]
+----
+podman ps
+----
+
++
+
+以下のコンテナが実行されていることを確認します。
+
+- `proxy-salt-broker`
+- `proxy-httpd`
+- `proxy-squid`
+- `proxy-tftpd`
+- `proxy-ssh`
+
++
+
+. Web UIを使用して、{productname}サーバ内の新しい製品を同期します。
+
++
+
+詳細については、xref:client-configuration:products.adoc[]を参照してください。
+
++
+
+同期するディレクトリ:
+
+* `{sles} {sp-version}`
+* `{productname} Proxy Extension {productnumber}`
+
++
+
+. 移行の実行
+
++
+
+詳細については、xref:client-configuration:client-upgrades-product-migration.adoc[]を参照してください。
+
++
+
+プロキシシステムに移動し、menu:システム[概要] > menu:ソフトウェア[製品移行]を選択します。
+
++
+
+移行元
+
+* `{sles} 15 SP6` + `SUSE Manager Proxy 5.0 Extension`
+
++
+
+移行先
+
+* `{sles} {sp-version}` + `{productname} Proxy Extension {productnumber}`
+
++
+
+[IMPORTANT]
+====
+プロンプトが表示されたときに、必要であることが確認されていない限り、オプションのチャンネルを**選択しないでください**。
+====
+
++
+
+[NOTE]
+====
+アップグレードする前に、サーバのバックアップを作成することをお勧めします。
+====
+
++
+
+. 移行アクションを監視する
+
++
+
+{webui}のmenu:システム[詳細> イベント]で処理を追跡できます。
+
++
+
+. アップグレードが完了したら、システムを再起動する:
+
++
+
+[source,console]
+----
+mgrpxy stop
+reboot
+----
+
++
+
+. 再起動後のチェック:
+
++
+
+OSおよび{productname}拡張機能のバージョンを確認します：
+
++
+
+[source,console]
+----
+cat /etc/os-release
+SUSEConnect --status-text
+----
+
++
+
+. {productname}ツールのバージョンを確認してください。
+
++
+
+[source,console]
+----
+mgrpxy --version
+----
+
++
+
+予想される出力:
+
+- `mgrpxy version 5.2`以上
+
++
+
+. RPMパッケージとして新しいプロキシコンテナイメージをインストールします。
+
++
+
+[source,shell]
+----
+zypper install suse-multi-linux-manager-5.2-<arch>-proxy*
+----
+
++
+
+. プロキシを再起動します。
+
+. プロキシコンテナをアップグレードします。
+
++
+
+[source,console]
+----
+mgrpxy upgrade
+mgrpxy stop
+mgrpxy start
+----
+
++
+
+エアギャップ(された)インストールでは、まずコンテナの RPM パッケージをアップグレードし、その後 `mgrpxy upgrade` コマンドを実行します。
+
++
+
+{kube} クラスター上で実行されているプロキシについては、xref:specialized-guides:kubernetes-guide/proxy-kubernetes-upgrade.adoc[] を参照してください。
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
++
+
+. プロキシコンテナが動作していることを確認する
+
++
+
+[source,console]
+----
+podman ps
+----
+
++
+
+すべての予期されるプロキシコンテナが稼働中である必要があります。
+
+- `proxy-salt-broker`
+- `proxy-httpd`
+- `proxy-squid`
+- `proxy-tftpd`
+- `proxy-ssh`
+
+_____
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-version-number.adoc[leveloffset=+1]
+include::installation-and-upgrade:partial$snippet-tag-containers.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-version-number.adoc[leveloffset=+1]
+include::../../../../../partials/snippet-tag-containers.adoc[leveloffset=+1]
+endif::[]
+
+
+
+=== 移行の完了
+
+プロキシホストシステムは、{sles}{sp-version}を実行しており、更新された{productname}{productnumber}プロキシパッケージと同期された製品チャンネルを備えています。

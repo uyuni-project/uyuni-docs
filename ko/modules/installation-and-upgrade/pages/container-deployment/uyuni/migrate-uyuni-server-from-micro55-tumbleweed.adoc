@@ -1,0 +1,196 @@
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+= {productname} 서버를 {opensuse} Tumbleweed로 마이그레이션하기
+:revdate: 2025-10-27
+:page-revdate: {revdate}
+:description: 이 페이지에서는 openSUSE Leap Micro 5.5에서 실행 중인 {productname} 서버를 기본 OS로 openSUSE Tumbleweed를 실행하는 새 호스트로 마이그레이션하는 방법을 설명합니다.
+
+이 페이지에서는 openSUSE Leap Micro 5.5에서 실행 중인 {productname} 서버를 기본 OS로 openSUSE Tumbleweed를 실행하는 새 호스트로 마이그레이션하는 간단한 백업 및 복원 방법을 설명합니다.
+
+
+== 확인 프로세스
+
+수행할 작업:
+
+* openSUSE Leap Micro 5.5 호스트에서 `mgradm backup`을(를) 사용하여 전체 서버 백업을 생성하십시오.
+* openSUSE Tumbleweed(서버 프로필)로 호스트를 재설치하십시오.
+* Tumbleweed에 {productname} 도구 및 필수 구성 요소를 설치하십시오.
+* `mgradm backup restore`을(를) 사용하여 백업을 복원하십시오.
+* 서비스를 시작하고 서버를 검증하십시오.
+
+
+== 요구 사항 및 고려 사항
+
+* 소스 서버: openSUSE Leap Micro 5.5에서 {productname}을 실행 중인 서버(예: {productnumber}).
+* 대상 서버: 클라이언트 측 변경을 방지하기 위해 동일한 호스트 이름/FQDN 및 IP를 사용하는 openSUSE Tumbleweed(권장).
+* 백업 tarball 전송을 위한 머신 간 SSH/scp 액세스.
+* 백업 및 복원을 위해 소스 및 대상 모두에 충분한 여유 디스크 공간.
+
+[IMPORTANT]
+====
+백업한 것과 동일한 {productname} 버전 또는 복원 호환성이 명시적으로 문서화된 버전으로 복원하십시오. 개발 또는 미리 보기 저장소(예: Uyuni Master)를 사용하는 경우 변경 사항이 발생할 수 있으므로 재검증하십시오.
+====
+
+== 마이그레이션
+
+=== 1단계: openSUSE Leap Micro 5.5 서버에서 백업 생성
+.절차  백업 생성
+[role="procedure"]
+____
+. 이전 서버에서 root 사용자로 백업 디렉터리를 생성하고 백업을 실행하십시오:
+
++
+
+[source,shell]
+----
+mgradm backup /tmp/uyuni-backup
+----
+. 전송을 위해 백업을 패키징하십시오:
+
++
+
+[source,shell]
+----
+tar -C /tmp -cvf /tmp/uyuni-backup.tar uyuni-backup
+----
+. 백업을 새 호스트에서 액세스할 수 있는 안전한 위치로 복사하십시오.
+
++
+
+[source,shell]
+----
+scp /tmp/uyuni-backup.tar <USER>@<HOST>:/path/to/store/
+----
+
+[TIP]
+====
+새 호스트에서 가져올 수만 있다면 백업을 외부 스토리지나 객체 저장소에 저장할 수 있습니다.
+====
+
+____
+
+=== 2단계: openSUSE Tumbleweed로 호스트 재설치
+.절차 호스트 재설치
+[role="procedure"]
+____
+
+. openSUSE Tumbleweed로 VM 또는 운영 체제 미설치 컴퓨터 호스트를 다시 프로비저닝하십시오.
+. 기본 "서버 프로필" 설치를 선택하십시오.
+. 클라이언트가 원활하게 다시 연결되도록 하려면 원래 서버와 동일한 호스트 이름/FQDN 및 IP 주소를 설정하십시오.
+
+____
+
+=== 3단계: Tumbleweed에 {productname} 도구 및 필수 구성 요소 설치
+
+.절차 도구 및 필수 구성 요소 설치
+[role="procedure"]
+____
+
+. Uyuni Stable 저장소를 추가하고 도구를 설치하십시오:
++
+[source,shell]
+----
+zypper ar https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable/images/repo/Uyuni-Server-POOL-x86_64-Media1 uyuni-server-stable
+zypper ref
+zypper in mgradm mgrctl mgradm-bash-completion mgrctl-bash-completion uyuni-storage-setup-server
+----
+. 자동으로 가져오지 않은 경우 Podman을 설치하십시오:
+
++
+
+[source,shell]
+----
+zypper in podman
+----
+
+[NOTE]
+====
+`uyuni-storage-setup-server` 패키지는 영구 볼륨 준비를 위한 `mgr-storage-server` 도구를 제공합니다. 일부 설치에서는 `podman`을(를) 명시적으로 설치해야 할 수도 있습니다.
+====
+
+____
+
+=== 4단계: 선택 사항 - 영구 스토리지 준비
+
+.절차 영구 스토리지 준비
+[role="procedure"]
+____
+
+컨테이너의 디스크가 가득 차는 문제를 방지하려면 `mgr-storage-server`로 영구 스토리지를 구성하는 것이 좋습니다.
+
+[source,shell]
+----
+mgr-storage-server <storage-disk-device> [<database-disk-device>]
+----
+
+[NOTE]
+====
+장치는 원시 상태(기존 파일 시스템 없음)여야 합니다. 이 도구는 `/var/lib/containers/storage/volumes`에 볼륨을 생성합니다.
+
+예:
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+====
+
+____
+
+=== 5단계: Tumbleweed에서 백업 가져오기 및 복원
+
+.절차 백업 가져오기 및 복원
+[role="procedure"]
+____
+
+. 백업을 새 서버에 복사하고 압축을 풉니다:
+
++
+
+[source,shell]
+----
+scp <USER>@<HOST>:/path/to/store/uyuni-backup.tar /tmp/
+tar -C /tmp -xvf /tmp/uyuni-backup.tar
+----
+. `mgradm`을(를) 사용하여 복원합니다(추출한 백업 디렉터리를 지정).
+
++
+
+[source,shell]
+----
+mgradm backup restore /tmp/uyuni-backup
+----
+
+____
+
+=== 6단계: 서비스 시작 및 검증
+
+.절차 서비스 시작 및 검증
+
+. 소스 서비스를 중지합니다.
+
++
+
+[source,shell]
+----
+mgradm start
+----
+. 검증:
+** 모든 컨테이너가 실행 중인지 확인합니다: `mgrctl ps` 또는 `podman ps`.
+** 웹 UI(HTTPS)에 액세스하여 로그인합니다.
+** 오류에 대한 로그를 검토합니다: `mgrctl logs server` 및 필요에 따라 다른 구성 요소.
+
+___
+
+== 문제 해결
+
+* Podman이 자동으로 설치되지 않은 경우 `zypper in podman`(으)로 설치하고 복원/시작 단계를 다시 실행하십시오.
+* 대상 호스트의 시간, 호스트 이름 및 IP 구성이 구성에서 예상하는 것과 동일한지 확인하십시오(특히 클라이언트가 있는 경우).
+* 대규모 환경의 경우 충분한 디스크 처리량과 공간을 확보하십시오. 백업 및 복원에는 오랜 시간이 걸릴 수 있습니다.
+
+[IMPORTANT]
+====
+복원이 실패하거나 새 시스템을 시작할 수 없는 경우, 원래 openSUSE Leap Micro 5.5 시스템으로 부팅하여 서비스를 계속할 수 있습니다. 새 Tumbleweed 기반 서버를 완전히 검증할 때까지 원래 VM/스냅샷을 유지하십시오.
+====
+

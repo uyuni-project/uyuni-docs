@@ -1,0 +1,171 @@
+[[confidential_computing]]
+= 기밀 컴퓨팅
+:description: 하드웨어 기반 TEE(Trusted Execution Environment)를 사용하여 사용 중인 데이터를 보호하고 지원되는 플랫폼에서 실행되는 시스템에 대한 증명 프로세스를 관리하는 방법을 알아보십시오.
+:revdate: 2025-07-17
+:page-revdate: {revdate}
+
+{CoCo}은 하드웨어 기반 신뢰 실행 환경(TEE)을 사용하여 사용 중인 데이터를 보호하는 기술로, 데이터 무결성, 데이터 기밀성 및 코드 무결성을 위한 보안 수준을 높여주는 환경을 제공합니다.
+
+
+== {CoCo}과 {productname}
+
+
+TEE의 신뢰성은 증명 프로세스를 통해 확인됩니다. {productname}은 등록된 시스템의 증명 서버로 사용될 수 있습니다.
+이 모드에서 실행되는 시스템에 대한 보고서 페이지를 생성합니다.
+이러한 시스템은 정기적으로 증명 및 점검되어야 합니다.
+이전 점검 내역도 저장되며, 요청 시 확인할 수 있습니다.
+
+{CoCo} 증명은 사용되는 하드웨어와 증명 대상 시스템이 실행되는 환경에 따라 달라집니다.
+
+[IMPORTANT]
+====
+{CoCo} 증명은 {productname}이(가) {x86_64} 아키텍처에서 실행 중인 경우에만 사용할 수 있습니다.
+====
+
+
+
+== 요구사항
+
+{CoCo}은 다음과 같은 특성을 가진 환경에서 설정할 수 있습니다:
+
+* 증명된 시스템(가상 머신)은 {productname}로 부팅되며 다음 시스템 중 하나에서 실행됩니다.
+** {sle} 15 SP6
+** {sle} 15 SP7
+** {sle} 16
+** {leap} 15 SP6
+** {leap} 15 SP7
+** {leap} 16
+
+* 하드웨어에는 다음 CPU 중 하나가 있어야 합니다.
+** `AMD EPYC Milan`
+** `AMD EPYC Genoa`
+** `AMD EPYC Bergamo`
+** `AMD EPYC Siena`
+** `AMD EPYC Turin`
+** `IBM z16`
+** `IBM z17`
+* BIOS는 {CoCo} 증명을 허용하도록 구성해야 합니다.
+* 호스트 OS 및 가상화 소프트웨어(KVM 및 libvirt)는 {CoCo}를 지원해야 합니다.
+
+* IBM에 대한 기밀 컴퓨팅 증명을 수행할 때 필요한 URL에 대한 정보는 xref:installation-and-upgrade:network-requirements.adoc#required-urls[Required URLs]를 참조하십시오.
+
+== 제한 사항
+
+보안 부트가 증명되었습니다. 
+그러나 현재 KVM 보안 부팅과 AMD 증명 도구 `snpguest`은(는) 함께 작동하지 않습니다. 
+
+
+== {CoCo}을(를) {productname}에서 사용하십시오.
+
+[IMPORTANT]
+====
+호스트에서 {CoCo}을(를) 설정 및 구성하는 정확한 단계는 OS 제조업체 설명서를 참조하십시오.
+====
+
+.절차 {productname} 설치 중 증명 컨테이너 활성화
+[role=procedure]
+. {productname} 설치 시 `mgradm install podman`을(를) 사용하여 증명 컨테이너가 활성화됩니다.
+. 파일`mgradm.yaml`에 다음을 추가하십시오.
+//I need full path to this file.
++
+----
+coco:
+    replicas: 1
+----
+
+
+.절차 {productname} 설치 후 증명 컨테이너 활성화
+[role=procedure]
+. 설치 후 증명 컨테이너를 활성화하려면 명령줄 파라미터 `mgradm`을(를) 사용하십시오.
+. 명령 실행
++
+----
+mgradm scale uyuni-server-attestation --replicas 1
+----
+// (PLACEHOLDER): In the future instead of number 1, it should be possible to allow more then one container replica.
+
+
+.절차 {productname} 설치 후 증명 컨테이너 비활성화
+[role=procedure]
+. 이미 활성화된 증명 컨테이너를 비활성화하려면 다음 명령을 실행합니다.
++
+----
+mgradm scale uyuni-server-attestation --replicas 0
+----
+
+
+.절차 증명 활성화
+[role=procedure]
+. 선택한 시스템의 경우 탭 menu:감사[기밀 컴퓨팅 > 설정]으로 이동하십시오.
+. 토글 버튼을 선택하여 증명을 활성화합니다.
+. 필드 `Environment Type`에서 드롭다운 목록의 올바른 옵션을 선택하십시오.
+. `Environment Type` 필드가 `IBM z-series` CPU 값 중 하나로 설정된 경우 `Host Key Document` 및 `Secure Execution Header`라는 두 가지 설정이 추가로 필요합니다.
+
++
+
+[NOTE]
+====
+`Host Key Document`은(는) 증명된 시스템이 실행될 IBM 하이퍼바이저 서버 인스턴스의 공개 키 인증서입니다.
+
+`Secure Execution Header`은(는) 증명된 시스템의 IBM 보안 VM 이미지를 빌드하는 데 필요한 바이너리 파일입니다.
+
+두 파일 모두 IBM 하이퍼바이저에서 실행되는 증명된 시스템 VM을 생성하는 관리자가 요청해야 합니다.
+====
+
++
+
+[IMPORTANT]
+====
+`Host Key Document` 및 `Secure Execution Header`은(는) 보안에 민감하지 않으므로 {productname} 서버에 저장해도 안전합니다.
+====
+
++
+
+. 버튼 btn:[저장]을 클릭하여 변경 내용을 저장하십시오.
+
+.절차 새 증명 예약
+[role=procedure]
+. 선택한 시스템의 경우 탭 menu:감사[기밀 컴퓨팅 > 증명 목록]으로 이동하십시오.
+. btn:[증명 예약]을(를) 클릭하십시오.
+  새 양식이 열립니다.
+. 필드 `Earliest`에서 증명이 실행될 시간을 선택하십시오.
+. 필요한 경우 `Add to` 옵션을 선택하여 새로 생성한 증명을 작업 체인에 추가하십시오.
+. 버튼 btn:[일정]을(를) 클릭하여 새 증명 실행을 저장하고 예약하십시오.
+
+.절차 시스템 세부 정보에서 증명 보고서 보기
+[role=procedure]
+. 선택한 시스템의 경우 탭 menu:감사[기밀 컴퓨팅 > 증명 목록]으로 이동하십시오.
+. 확인할 보고서를 찾아 선택합니다.
+. 선택한 증명 보고서 탭을 클릭하면 `Overview`가 열립니다.
+.. 선택한 CPU가 `AMD`인 경우 `SEV-SNP` 및 `Secure boot` 추가 탭이 표시됩니다.
+.. 선택한 CPU가 `IBM`인 경우 `IBM SELPVATTEST` 추가 탭이 표시됩니다.
+
+
+.절차 감사에서 증명 보고서 보기
+[role=procedure]
+. 탐색 모음에서 menu:감사[기밀 컴퓨팅]을 선택합니다.
+. 모든 증명의 목록이 기본 패널에 표시됩니다.
++
+. 확인할 보고서를 찾아 선택합니다.
+
+
+
+=== 보고서 상태
+
+증명 보고서의 상태는 다음 중 하나일 수 있습니다.
+
+보류 중::
+이것은 예약된 증명의 기본 상태입니다.
+보고서는 아직 사용할 수 없으며, 이는 프로세스가 아직 시작되지 않았거나 완료되지 않았기 때문입니다.
+
+성공::
+예약된 증명이 볼 수 있는 보고서를 생성하면 프로세스 상태는 `Successful`입니다.
+
+작업 실패::
+예약된 증명이 실패하여 결과적으로 보고서가 생성되지 않으면 프로세스 상태는 `Failed`입니다.
+
+
+
+== 관련 주제
+
+{CoCo}에 대한 자세한 내용은 https://www.fortanix.com/platform/confidential-computing-manager/what-is-confidential-computing[여기]를 참조하십시오.

@@ -1,0 +1,196 @@
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+= {productname} Server を {opensuse} Tumbleweed に移行する
+:revdate: 2025-10-27
+:page-revdate: {revdate}
+:description: このページでは、openSUSE Leap Micro 5.5で実行されている{productname} Serverを、ベースOSとしてopenSUSE Tumbleweedを実行する新しいホストに移行する方法について説明します。
+
+このページでは、openSUSE Leap Micro 5.5で実行されている{productname} Serverを、ベースOSとしてopenSUSE Tumbleweedを実行する新しいホストへ、単純なバックアップとリストアによる移行を行う方法について説明します。
+
+
+== 検証プロセス
+
+以下の手順に従います。
+
+* openSUSE Leap Micro 5.5ホスト上で、`mgradm backup`を使用してサーバーのフルバックアップを作成します。
+* openSUSE Tumbleweed (サーバープロファイル) でホストを再インストールします。
+* Tumbleweed に {productname} ツールと前提条件をインストールします。
+* `mgradm backup restore`を使用してバックアップをリストアします。
+* サービスを開始し、サーバーを確認します。
+
+
+== 要件と考慮事項
+
+* ソースサーバー: {productname} (例: {productnumber}) が実行されているopenSUSE Leap Micro 5.5。
+* ターゲットサーバー: クライアント側の変更を避けるため、同じホスト名/FQDNおよびIPを持つopenSUSE Tumbleweed (推奨)。
+* バックアップの tarball を転送するための、マシン間の SSH/scp アクセス。
+* バックアップとリストアのために、ソースとターゲットの両方に十分な空きディスク容量があること。
+
+[IMPORTANT]
+====
+バックアップしたのと同じ{productname}バージョン、またはリストアに互換性があると明示的に文書化されているバージョンにリストアしてください。開発用またはプレビュー用のリポジトリ (例: Uyuni Master) を使用している場合は、変更が発生する可能性があるため、再検証を行ってください。
+====
+
+== 移行
+
+=== 手順1:openSUSE Leap Micro 5.5サーバーでのバックアップの作成
+.プロシージャ: バックアップの作成
+[role="procedure"]
+____
+. 古いサーバーでルートとして、バックアップディレクトリを作成し、バックアップを実行します:
+
++
+
+[source,shell]
+----
+mgradm backup /tmp/uyuni-backup
+----
+. 転送用にバックアップをパッケージ化します:
+
++
+
+[source,shell]
+----
+tar -C /tmp -cvf /tmp/uyuni-backup.tar uyuni-backup
+----
+. 新しいホストからアクセスできる安全な場所にバックアップをコピーします:
+
++
+
+[source,shell]
+----
+scp /tmp/uyuni-backup.tar <USER>@<HOST>:/path/to/store/
+----
+
+[TIP]
+====
+バックアップは、新しいホストで取得できる限り、外部ストレージまたはオブジェクトストアに保存できます。
+====
+
+____
+
+=== ステップ2:ホストを openSUSE Tumbleweed で再インストールする
+.プロシージャ:ホストの再インストール
+[role="procedure"]
+____
+
+. openSUSE Tumbleweedを使用してVMまたはベアメタルホストを再プロビジョニングします。
+. 基本的な「サーバープロファイル」インストールを選択します。
+. クライアントをシームレスに再接続させる場合は、元のサーバーと同じホスト名/FQDNおよびIPアドレスを設定します。
+
+____
+
+=== ステップ3:Tumbleweed に {productname} ツールおよび前提条件をインストールします。
+
+.プロシージャ:ツールと前提条件のインストール
+[role="procedure"]
+____
+
+. Uyuni Stableリポジトリを追加し、ツールをインストールします。
++
+[source,shell]
+----
+zypper ar https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable/images/repo/Uyuni-Server-POOL-x86_64-Media1 uyuni-server-stable
+zypper ref
+zypper in mgradm mgrctl mgradm-bash-completion mgrctl-bash-completion uyuni-storage-setup-server
+----
+. 自動的にインストールされなかった場合は、Podmanをインストールします。
+
++
+
+[source,shell]
+----
+zypper in podman
+----
+
+[NOTE]
+====
+パッケージ`uyuni-storage-setup-server`は、永続ボリュームを準備するための`mgr-storage-server`ツールを提供します。一部のインストールでは、`podman`を明示的にインストールする必要がある場合があります。
+====
+
+____
+
+=== ステップ4:オプション - 永続ストレージの準備
+
+.プロシージャ:永続ストレージの準備
+[role="procedure"]
+____
+
+コンテナのディスクフル問題を回避するため、`mgr-storage-server`を使用して永続ストレージを構成することを推奨します。
+
+[source,shell]
+----
+mgr-storage-server <storage-disk-device> [<database-disk-device>]
+----
+
+[NOTE]
+====
+デバイスはRAWである必要があります（既存のファイルシステムがないこと）。このツールは、`/var/lib/containers/storage/volumes`にボリュームを作成します。
+
+例:
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+====
+
+____
+
+=== ステップ 5 Tumbleweedでのバックアップの取得と復元
+
+.プロシージャ:バックアップの取得と復元
+[role="procedure"]
+____
+
+. バックアップを新しいサーバーにコピーして展開します。
+
++
+
+[source,shell]
+----
+scp <USER>@<HOST>:/path/to/store/uyuni-backup.tar /tmp/
+tar -C /tmp -xvf /tmp/uyuni-backup.tar
+----
+. `mgradm` を使用して復元します（抽出したバックアップディレクトリを指定してください）。
+
++
+
+[source,shell]
+----
+mgradm backup restore /tmp/uyuni-backup
+----
+
+____
+
+=== ステップ6:サービスを起動して確認する
+
+.プロシージャ:サービスの起動と確認
+
+. 移行元のサービスを停止します。
+
++
+
+[source,shell]
+----
+mgradm start
+----
+. 確認:
+** すべてのコンテナが起動していることを確認します: `mgrctl ps` または `podman ps`。
+** Web UI (HTTPS) にアクセスしてログインします。
+** エラーがないかログを確認します: `mgrctl logs server` および必要に応じて他のコンポーネント。
+
+___
+
+== トラブルシューティング
+
+* Podman が自動的にインストールされなかった場合は、`zypper in podman` でインストールし、復元/起動手順を再実行してください。
+* ターゲットホストが、セットアップで想定されている時刻、ホスト名、IP構成になっていることを確認してください（特にクライアントが存在する場合）。
+* 大規模な環境の場合は、十分なディスクスループットと容量を確保してください。バックアップと復元には時間がかかる場合があります。
+
+[IMPORTANT]
+====
+復元に失敗した場合や新しいシステムを起動できない場合は、元の openSUSE Leap Micro 5.5 システムを起動してサービスを継続できます。新しい Tumbleweed ベースのサーバーを完全に検証するまで、元の VM/スナップショットを保持してください。
+====
+

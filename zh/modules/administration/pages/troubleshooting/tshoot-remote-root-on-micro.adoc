@@ -1,0 +1,51 @@
+[[troubleshooting-remote-root-on-micro]]
+= 在 {sl-micro} 上远程登录为 root
+:description: 在 SL Micro 上，通过编辑 SSH 配置文件、将 PermitRootLogin 设置为 yes 并重新加载 SSH 服务，即可启用基于密码的远程 root 登录。
+:revdate: 2026-04-29
+:page-revdate: {revdate}
+
+为了增强安全性，{sl-micro} 6.2 及更高版本的新安装不再允许基于密码的远程 root 登录，这会影响在 {sl-micro} 上运行的服务器和代理容器主机，以及受管的 {sl-micro} 客户端。
+此外，具有基于密码的远程 root 登录的 {sle-micro} 5.5 客户端在迁移到 6.1/6.2 时将突然失去此访问权限，必须重新配置。
+有关详细信息，请参见 SL Micro Release Notes 6.2 (https://documentation.suse.com/releasenotes/sle-micro/html/releasenotes_sle-micro_6.2/)。
+
+在部署 {productname} 的组件（如 {productname} 代理）时，默认情况下需要基于密码的远程 root 登录。
+您可以通过以下步骤启用基于密码的远程 root 登录。
+
+
+.过程：升级在 {sl-micro} 上启用带密码的 SSH root 登录
+[role=procedure]
+____
+
+您可以通过两种不同的方式启用 SSH root 登录。
+这两种方法都可以；选择最适合您设置的一种。
+
+.方案一：使用预配置的软件包
+
+. 从客户端的 UI/API 安装软件包 `openssh-server-config-rootlogin`。
+
+. 在 UI 或终端中重引导容器主机以激活新配置
+
+.方案二：手动编辑 SSH 配置
+
+. 添加一个补充配置 `/etc/ssh/sshd_config.d/permit_root.conf` 文件，内容如下：
+
++
+
+----
+PermitRootLogin yes
+----
+
+. 重新加载 SSH 服务器配置
+
++
+
+[source,shell]
+----
+systemctl reload sshd
+----
+
+. 如果目前通过 SSH 连接服务器，请在断开连接前，新建一个 SSH 连接以验证服务器运行是否正常。
+
+____
+
+有关 `transactional-update` 的详细信息，请参见 https://documentation.suse.com/sle-micro/6.2/html/Micro-transactional-updates/index.html.

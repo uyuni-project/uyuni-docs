@@ -1,0 +1,200 @@
+[[ssl-certs-ca-migration]]
+= SSL 인증 기관 이전
+:description: mgradm ssl 명령을 사용하여 서버에 새 CA를 추가한 후, 이를 통해 루트 인증 기관을 교체하십시오.
+:revdate: 2026-06-24
+:page-revdate: {revdate}
+
+이 절차를 사용하여 {productname} 서버의 루트 인증 기관(CA)을 교체하십시오. 예를 들어 `X509v3 Basic Constraints` 확장을 `critical`(으)로 표시하지 않는 이전 자체 서명 CA를 교체할 때 사용합니다.
+자세한 내용은 xref:administration:ssl-certs-imported.adoc#ssl-certs-verify-ca-basic-constraints[]을(를) 참조하십시오.
+
+ifeval::[{uyuni-content} == true]
+[NOTE]
+====
+Python 3.13 이상(및 기타 SSL 클라이언트)은 인증서를 엄격하게 검증하며 `X509v3 Basic Constraints` 확장을 `critical`(으)로 표시하지 않는 모든 CA 인증서를 거부합니다.
+====
+endif::[]
+
+Podman 설치 시 `mgradm ssl` 명령이 교체를 수행하는 데 도움이 됩니다.
+이 명령은 새 CA를 생성하거나 가져오고, 서버 및 데이터베이스 보안 비밀을 업데이트하며, 서비스를 다시 시작합니다.
+
+.마이그레이션은 두 단계로 수행됩니다.
+. `mgradm ssl addca`을(를) 사용하면 새 CA를 신뢰 번들에 추가하여 이전 CA와 새 CA를 모두 신뢰하게 만들고, 이를 모든 클라이언트와 프록시에 배포합니다.
+. 모든 클라이언트와 프록시가 새 CA를 신뢰하게 되면 `mgradm ssl rotate`은(는) 서버를 새 CA로 서명된 인증서로 전환하고 이전 인증서를 삭제합니다.
+
+서버에서 관리하지 않지만 API나 브라우저를 통해 서버에 액세스하는 모든 컴퓨터도 새 CA가 필요하므로 고려하십시오.
+이러한 컴퓨터는 xref:ssl-certs-ca-migration.adoc#ssl-certs-ca-migration-verify-trust[]의 신뢰성 검사에서 감지되지 않으므로 직접 추적하고 확인하십시오.
+
+[IMPORTANT]
+====
+모든 클라이언트와 프록시가 새 CA를 신뢰하기 전에는 서버 인증서를 전환하지 마십시오.
+새 CA를 신뢰하지 않는 클라이언트는 더 이상 연결할 수 없으며, 해당 클라이언트에 CA를 수동으로 배포해야 합니다.
+====
+
+인증서는 컨테이너가 시작될 때 읽는 Podman 보안 비밀에 저장됩니다.
+서버 CA 번들, 인증서 및 키는 `uyuni-ca`, `uyuni-cert`, `uyuni-key`에 있고, 데이터베이스 대응 항목은 `uyuni-db-ca`, `uyuni-db-cert`, `uyuni-db-key`에 있습니다.
+{kube}에서 루트 CA는 `uyuni-ca` 및 `db-ca` 구성 맵에서 읽고, 인증서는 `uyuni-cert` 및 `db-cert` 보안 비밀에서 읽습니다.
+`mgradm ssl` 명령은 Podman에서 이러한 보안 비밀을 관리하며, {kube}에서는 아래 설명된 대로 구성 맵과 보안 비밀을 수동으로 업데이트합니다.
+
+[[ssl-certs-ca-migration-add]]
+== 신뢰 번들에 새 CA 추가
+
+Podman에서 `mgradm ssl addca`을(를) 사용하여 새 CA를 추가하십시오.
+이 명령은 새 자체 서명 루트 CA를 생성하거나 타사 CA를 가져오고, 제공되는 인증서를 변경하지 않고 `uyuni-ca` 및 `uyuni-db-ca` 보안 비밀에 추가하며, 서비스를 다시 시작하고 새 CA의 SHA-256 지문을 출력합니다.
+
+새 자체 서명 CA를 생성하려면 컨테이너 호스트에서 다음 명령을 실행하십시오.
+주체 값을 귀하의 조직에 맞는 값으로 바꾸십시오.
+서버의 정규화된 도메인 이름은 자동으로 감지되거나 인수로 전달할 수 있습니다:
+
+[source,shell]
+----
+mgradm ssl addca --ssl-password CA_PASSWORD \
+  --ssl-country COUNTRY --ssl-state STATE --ssl-city CITY \
+  --ssl-org ORGANIZATION --ssl-ou "ORGANIZATION UNIT"
+----
+
+`--ssl-password`이(가) 생략되면 명령이 해당 값을 입력하라고 요청합니다.
+대신 타사 루트 CA를 사용하려면 생성 옵션 대신 해당 인증서와 중간 인증서를 전달하십시오.
+각 중간 CA에 대해 `--ssl-ca-intermediate`을(를) 반복하십시오:
+
+[source,shell]
+----
+mgradm ssl addca --ssl-ca-root /root/new-ca.pem \
+  --ssl-ca-intermediate /root/intermediate-ca.pem
+----
+
+{kube}에서 새 루트 CA 인증서를 `uyuni-ca` 및 `db-ca` 구성 맵에 수동으로 추가하십시오:
+
+[source,shell]
+----
+kubectl get configmap -n uyuni-server uyuni-ca -o jsonpath='{.data.ca\.crt}' > combined.crt && \
+echo "" >> combined.crt && \
+cat ca.crt >> combined.crt && \
+kubectl create configmap uyuni-ca --from-file=ca.crt=combined.crt --dry-run=client -o json | \
+kubectl patch -n uyuni-server configmap uyuni-ca --patch-file /dev/stdin  -o yaml && \
+rm combined.crt
+----
+
+`db-ca`에 대해서도 유사한 명령을 실행해야 합니다.
+
+서버가 새 CA를 신뢰하게 되면 모든 클라이언트와 프록시에 배포하십시오.
+xref:administration:ssl-certs-imported.adoc#ssl-certs-import-deploy-root-ca[]에 설명된 대로 highstate를 적용하여 모든 Salt 클라이언트에 새 CA를 배포하십시오.
+
+각 {productname} 프록시에서 전체 재배포 없이 새 CA를 신뢰하도록 설정하십시오.
+프록시는 `uyuni-ca` Podman 시크릿에서 신뢰할 수 있는 CA를 읽으므로 해당 시크릿을 직접 업데이트하십시오.
+`mgradm ssl addca` 후, 서버는 이전 루트 CA와 새 루트 CA가 모두 포함된 결합된 CA 번들을 `http://SERVER_FQDN/pub/RHN-ORG-TRUSTED-SSL-CERT`에 게시합니다.
+프록시 호스트에서 이를 다운로드하고 시크릿을 교체한 다음 프록시를 다시 시작하십시오:
+
+[source,shell]
+----
+curl -o /tmp/proxy-ca.pem http://SERVER_FQDN/pub/RHN-ORG-TRUSTED-SSL-CERT
+podman secret create --replace uyuni-ca /tmp/proxy-ca.pem
+systemctl restart uyuni-proxy-pod
+----
+
+또한 새 CA가 도달 가능한 Salt 미니언은 아니지만 서버에 액세스하는 다른 모든 시스템(예: {kube}에서 실행 중인 프록시 또는 관리되지 않는 시스템)에도 배포되었는지 확인하십시오.
+
+[[ssl-certs-ca-migration-verify-trust]]
+== 클라이언트가 새 CA를 신뢰하는지 확인
+
+전환하기 전에 클라이언트가 새 CA를 신뢰하는지 확인하십시오.
+Podman에서 `mgradm ssl rotate --check-only`을(를) 실행하여 Salt 미니언을 쿼리하고 교체를 수행하지 않고 새 CA를 이미 신뢰하는 미니언과 그렇지 않은 미니언을 보고하십시오:
+
+[source,shell]
+----
+mgradm ssl rotate --check-only
+----
+
+이 확인은 최선형 방식(best-effort)으로, 확인 시점에 응답하는 Salt 미니언만 포함합니다.
+오프라인 미니언 및 {kube}에서 실행 중인 프록시나 관리되지 않는 시스템과 같은 비미니언 시스템은 포함되지 않으므로 수동으로 확인해야 합니다.
+
+그중 하나를 수동으로 확인하려면 지문을 비교하십시오.
+`mgradm ssl addca` 명령은 이미 새 CA의 SHA-256 지문을 보고했습니다.
+새 CA 인증서에서 다시 계산할 수도 있습니다.
+자체 서명된 CA의 경우 서버에서 준비된 인증서를 읽으십시오:
+
+[source,shell]
+----
+mgrctl exec -- openssl x509 -in /root/ssl-build-rotation/RHN-ORG-TRUSTED-SSL-CERT \
+  -noout -fingerprint -sha256
+----
+
+타사 CA의 경우 `mgradm ssl addca`에 전달한 루트 CA 파일에 대해 동일한 명령을 실행하십시오.
+
+클라이언트 신뢰 파일 `/etc/pki/trust/anchors/RHN-ORG-TRUSTED-SSL-CERT`에는 여러 인증서가 포함되어 있습니다.
+클라이언트에서 이들 모두의 지문을 나열하고 새 CA 지문이 있는지 확인하십시오:
+
+[source,shell]
+----
+while openssl x509 -noout -fingerprint -sha256; do :; done < /etc/pki/trust/anchors/RHN-ORG-TRUSTED-SSL-CERT
+----
+
+
+
+[[ssl-certs-ca-migration-switch]]
+== 새 CA로 전환
+
+[IMPORTANT]
+====
+모든 클라이언트와 프록시가 새 CA를 신뢰한 후에만 계속하십시오.
+====
+
+Podman에서는 `mgradm ssl rotate`을(를) 사용하여 새 CA로 전환하십시오.
+이 명령은 `mgradm ssl addca`에 의해 준비된 CA를 승격하고, 해당 CA로 서명된 새 서버 인증서를 발급하며, 서버 및 데이터베이스 인증서, 키, CA 비밀을 교체하고 서비스를 다시 시작합니다.
+전환하기 전에 Salt를 통해 클라이언트가 새 CA를 신뢰하는지 확인하며, `--force`을(를) 전달하지 않는 한 일부 클라이언트가 신뢰하지 않으면 계속 진행을 거부합니다.
+`mgradm ssl rotate --check-only`이 확인은 최선의 노력 방식으로, 확인 시점에 응답하는 Salt 미니언만 포함합니다.
+
+자체 서명된 CA의 경우 다음 명령을 실행하십시오.
+{productname} 서버의 정규화된 도메인 이름을 사용하거나 자동으로 감지되도록 두고, 추가 별칭에 대해 `--ssl-cname`을(를) 반복하십시오:
+
+[source,shell]
+----
+mgradm ssl rotate --ssl-password CA_PASSWORD
+----
+
+새 CA로 서명된 타사 서버 인증서를 설치하려면 대신 인증서, 키 및 루트 CA를 제공하십시오.
+일치하는 `--ssl-db-*` 옵션을 전달하지 않으면 데이터베이스는 서버 값을 재사용합니다:
+
+[source,shell]
+----
+mgradm ssl rotate --ssl-ca-root /root/new-ca.pem \
+  --ssl-ca-intermediate /root/intermediate-ca.pem \
+  --ssl-server-cert /root/server.crt \
+  --ssl-server-key /root/server.key
+----
+
+[NOTE]
+====
+`mgradm ssl addca` 및 `mgradm ssl rotate` 명령은 Podman에서만 사용할 수 있습니다.
+{kube}에서 `uyuni-cert` 및 `db-cert` 시크릿을 새 서버 인증서 및 키로 교체하고, `uyuni-ca` 및 `db-ca` 구성 맵을 업데이트하여 새 CA만 포함하도록 한 다음, 서버를 다시 시작하십시오.
+====
+
+[[ssl-certs-ca-migration-emergency]]
+=== 손상된 CA 즉시 교체
+
+현재 CA가 손상된 경우, 이전 CA와 새 CA가 모두 신뢰되는 중첩 기간을 기다릴 수 없습니다.
+`--emergency`을(를) `mgradm ssl rotate`(으)로 전달하여 일치하는 서버 인증서와 함께 새 CA를 생성하고 이전 CA를 단일 단계로 삭제하십시오(2단계 중첩 없음).
+
+[source,shell]
+----
+mgradm ssl rotate --emergency --ssl-password CA_PASSWORD
+----
+
+[WARNING]
+====
+긴급 교체는 이전 CA를 즉시 삭제하므로, 새 CA를 아직 신뢰하지 않는 클라이언트나 프록시는 새 CA를 수동으로 배포할 때까지 연결할 수 없습니다.
+긴급 교체 후 xref:ssl-certs-ca-migration.adoc#ssl-certs-ca-migration-add[]에 설명된 대로 모든 클라이언트와 프록시에 새 CA를 배포하고 아래 설명에 따라 프록시를 업데이트하십시오.
+====
+
+[[ssl-certs-ca-migration-update-proxies]]
+== 프록시 업데이트
+
+xref:ssl-certs-ca-migration.adoc#ssl-certs-ca-migration-add[]에서 이미 `uyuni-ca` Podman 시크릿을 업데이트하여 각 프록시가 새 CA를 신뢰하도록 했습니다.
+이제 서버가 새 CA로 서명된 인증서를 사용하므로, 모든 프록시도 새 CA로 서명된 자체 인증서가 필요합니다.
+각 프록시에 대해 프록시 구성을 다시 생성하고 프록시를 다시 배포하십시오:
+
+ifeval::[{mlm-content} == true]
+xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc[프록시 배포].
+endif::[]
+ifeval::[{uyuni-content} == true]
+xref:installation-and-upgrade:container-deployment/uyuni/proxy-deployment-uyuni.adoc#proxy-setup-containers-generate-config[프록시 배포].
+endif::[]
