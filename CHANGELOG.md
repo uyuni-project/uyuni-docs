@@ -1,3 +1,4 @@
+- Documented SLES 16.1 and openSUSE Leap 16.1 support and migration paths
 - Added information about associated activation keys being deleted when channels are deleted in Administration Guide
 - Extended proxy troubleshooting section for setting the grains (bsc#1281041)
 - Updated information for hardware requirements and a reference to large deployments requirements (bsc#1268473)
