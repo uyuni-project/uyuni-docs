@@ -1,7 +1,7 @@
 [[lsd-tuning]]
 = Tuning Large Scale Deployments
 :description: Tune your deployment by estimating environmental variables and adjusting configuration parameters using the dependency graph
-:revdate: 2026-07-01
+:revdate: 2026-10-06
 :page-revdate: {revdate}
 
 {productname} is designed by default to work on small and medium scale installations.
@@ -131,6 +131,9 @@ This section contains information about the available parameters.
                          Proxies, {webui}, and XMLRPC API clients each consume one.
                          Requests exceeding the parameter will be queued and might result in timeouts.
 | Tune when            | xref:user-count[User count] and proxy count increase significantly and this line appears in `/var/log/apache2/error_log`: `[...] [mpm_prefork:error] [pid ...] AH00161: server reached MaxRequestWorkers setting, consider raising the MaxRequestWorkers setting`.
+
+`MaxRequestWorkers` should not exceed `maxThreads` + `acceptCount` (default acceptCount=100). Beyond that, Tomcat refuses new connections instead of queuing them.
+
 | Value default        | 150
 | Value recommendation | 150-500
 | Location             | `/etc/apache2/server-tuning.conf`, in the `prefork.c` section
@@ -166,7 +169,8 @@ This section contains information about the available parameters.
 |===
 | Description          | The number of Tomcat threads dedicated to serving HTTP requests
 | Tune when            | xref:max-request-workers[`MaxRequestWorkers`] changes.
-                         `maxThreads` must always be equal or greater than xref:max-request-workers[`MaxRequestWorkers`]
+                         `maxThreads` should be less or equal to  xref:max-request-workers[`MaxRequestWorkers`] to fully utilize the tomcat.
+
 | Value default        | 150
 | Value recommendation | The same value as xref:max-request-workers[`MaxRequestWorkers`]
 | Location             | `/etc/tomcat/server.xml`
