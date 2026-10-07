@@ -1,4 +1,8 @@
 - Documented SLES 16.1 and openSUSE Leap 16.1 support and migration paths
+- Added information about associated activation keys being deleted when channels are deleted in Administration Guide
+- Extended proxy troubleshooting section for setting the grains (bsc#1281041)
+- Updated information for hardware requirements and a reference to large deployments requirements (bsc#1268473)
+- Documented resolving obsolete libvirt-events errors in minion logs (bsc#1272813)
 - Fixed procedure block formatting and normalized section headings to sentence case
 - Documented Salt RBAC namespaces and native Salt access controls
 - Clarified TFTP autoinstallation proxy routing and server tftpd option (bsc#1276787)
