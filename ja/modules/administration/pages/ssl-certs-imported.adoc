@@ -1,0 +1,271 @@
+[[ssl-certs-import]]
+= SSL証明書のインポート
+:description: PEM形式の適切な秘密鍵、証明書、およびCAチェーンファイルを使用して、新規インストールを設定するか、既存の証明書を置き換えるためにSSL証明書をインポートします。
+:revdate: 2026-08-12
+:page-revdate: {revdate}
+
+//By default, {productname} uses a self-signed certificate.
+//For additional security, you can import a custom certificate, signed by a third party certificate authority (CA).
+
+このセクションでは、新しい{productname}のインストールにSSL証明書を設定する方法、および既存の証明書を置き換える方法について説明します。
+
+開始する前に、以下があることを確認します。
+
+* 証明書機関（CA）のSSL公開証明書。
+  CAチェーンを使用している場合は、すべての中間CAも利用可能でなければなりません。
+* SSLサーバ秘密鍵
+* SSLサーバ証明書
+* SSLデータベース機密鍵
+* SSLデータベース証明書
+
+認証キーは常にPEM形式である必要があります。
+チェーン内のすべてのCA証明書は、`X509v3 Basic Constraints`を`critical`としてマークし、`CA:TRUE`を含める必要があります。
+詳細については、xref:administration:ssl-certs-imported.adoc#ssl-certs-verify-ca-basic-constraints[]を参照してください。
+
+SSLサーバー証明書のホスト名は、それをデプロイするマシンの完全修飾ホスト名に一致する必要があります。
+証明書の`X509v3 Subject Alternative Name`セクションでホスト名を設定できます。
+環境が必要とする場合は、複数のホスト名をリストすることもできます。
+サポートされているキータイプは`RSA`および`EC`（楕円曲線）です。
+
+[IMPORTANT]
+====
+以前のバージョンでは、データベースSSL証明書には`Subject Alternative Name`として`reportdb`および`db`が必要でした。
+これはもはや必要ありません。
+====
+
+サードパーティの機関は、要求されたサーバー証明書に署名するために中間CAを一般的に使用します。
+この場合、チェーン内のすべてのCAが利用可能である必要があります。
+`mgradm`コマンドが証明書の順序を管理します。
+理想的には、ルートCAは独自のファイルに保存されるべきです。
+サーバー証明書ファイルには、最初にサーバー証明書が含まれ、その後にすべての中間CA証明書が順番に続くべきです。
+
+
+
+[[ssl-certs-verify-ca-basic-constraints]]
+== CAの基本制約を確認する
+
+厳格な証明書バリデーターは、`X509v3 Basic Constraints`拡張機能が`critical`としてマークされていない場合、CA証明書を拒否します。
+これには、{sles} 16およびopenSUSE Leap 16で使用されるPython 3.13以降が含まれます。
+
+証明書をインポートまたは既存のインストールをアップグレードする前に、{productname}で使用されるすべてのルートCA証明書および中間CA証明書を確認してください。
+各CA証明書に対して、以下を実行します：
+
+[source,shell]
+----
+openssl x509 -in root-ca.pem -noout -text | grep -A1 "Basic Constraints"
+----
+
+出力には`critical`と`CA:TRUE`が含まれている必要があります：
+
+[source]
+----
+X509v3 Basic Constraints: critical
+  CA:TRUE
+----
+
+CA証明書に両方の値が含まれていない場合は、{productname}で使用する前に、影響を受けるCA証明書を置き換えるか再生成してください。
+サーバー証明書のみを置き換えても、`critical`フラグが欠落しているCA証明書は修正されません。
+{productname}によって生成された自己署名証明書については、xref:administration:ssl-certs-selfsigned.adoc#ssl-certs-selfsigned-create-replace[]を参照してください。
+クライアントから信頼されているCAを、接続を中断せずに置き換える方法については、xref:administration:ssl-certs-ca-migration.adoc[]を参照してください。
+
+
+
+== 新しいインストール用証明書のインポート
+
+
+デフォルトでは、{productname}は自己署名証明書を使用します。
+証明書は、インストール時にサードパーティの証明書と共にインポートできます。
+
+.プロシージャ:新しい{productname}サーバーへの証明書のインポート
+[role=procedure]
+_____
+. xref:installation-and-upgrade:install-server.adoc[]の指示に従って{productname}サーバーをデプロイしてください。
+  正しいファイルをパラメータとして`mgradm install`に渡すことを確認してください。
+  次のパラメータを使用できます。
+
++
+
+----
+3rd Party SSL Certificate Flags:
+      --ssl-ca-intermediate strings    Intermediate CA certificate path
+      --ssl-ca-root string             Root CA certificate path
+      --ssl-server-cert string         Server certificate path
+      --ssl-server-key string          Server key path
+      --ssl-db-ca-intermediate strings Intermediate CA certificate path for the database if different from the server one
+      --ssl-db-ca-root string          Root CA certificate path for the database if different from the server one
+      --ssl-db-cert string             Database certificate path
+      --ssl-db-key string              Database key path
+----
+_____
+
+中間CAは`--ssl-ca-root`で指定されたファイルに含まれているか、`--ssl-ca-intermediate`で追加オプションとして指定されることができます。
+`--ssl-ca-intermediate`オプションは複数回指定することができます。
+
+
+
+== 新しいプロキシインストール用の証明書のインポート
+
+プロキシ証明書は生成された設定に埋め込まれています。
+サードパーティの証明書を使用するには、設定中に提供する必要があります。
+
+.プロシージャ:新しい{productname}プロキシへの証明書のインポート
+[role=procedure]
+_____
+. xref:installation-and-upgrade:install-proxy.adoc[]の指示に従って{productname}プロキシをインストールしてください。
+
+. プロンプトに従ってセットアップを完了します。
+
++
+
+[NOTE]
+====
+すべてのサーバーとプロキシの証明書に同じCAを使用して署名してください。
+異なるCAで署名された証明書は一致しません。
+====
+
+_____
+
+
+[[ssl-certs-import-replace]]
+== 証明書を置き換える
+
+
+新しい証明書で{productname}インストールのアクティブな証明書を置き換えることができます。
+考慮すべきケースは二つあります：サーバーまたはデータベース証明書のみを置き換える場合と、ルートCAを置き換える場合です。
+
+
+ルート証明書を置き換えるには、すべての登録済みプロキシとシステムで、サーバレベルで切り替える前にデータベースに新しいCAを登録しておく必要があるため、中断を回避するためのより多くの時間と計画が必要となります。
+
+中間CAで署名されたサードパーティ証明書を使用する場合は、中間CA証明書をサーバまたはデータベースの証明書ファイルに追加する必要があります。
+
+順序が重要です。まずサーバー証明書が先頭に配置され、その後、証明書に署名したCAからルートCAによって署名されたCAまで順に並びます。
+ルートCA証明書はサーバー証明書ファイルに追加しないでください。
+
+
+.プロシージャ:すべての既存の証明書を置き換える
+[role=procedure]
+_____
+. 以下では、`root-ca.pem`、`intermediate-ca1.pem`、`intermediate-ca2.pem`、`server.pem`、および`server.key`ファイルがあることを前提としています。
+  サーバー証明書の署名チェーンにおける中間CAの数によって異なる場合があります。
+
+. 中間CAとサーバー証明書を組み合わせてください。
+  順序が重要です。サーバーが最初で、中間CAは順番に配置する必要があります。
+  ルートCAをチェーンの最後に追加しないでください。`uyuni-ca`および`uyuni-db-ca`シークレットに個別に渡されるためです。
+  中間CAがない場合は、次のステップで結合ファイルの代わりに`server.pem`を使用できます。
+
++
+[source,shell]
+----
+cat server.pem intermediate-ca1.pem intermediate-ca2.pem >combined-server.pem
+----
+
+. {productname}コンテナホストのコマンドプロンプトで、`mgradm ssl rotate`を使用して証明書をローテーションします：
+
++
+[source,shell]
+----
+mgradm ssl rotate \
+   --ssl-ca-root $path_to_ca_certificate \
+   --ssl-server-cert $path_to_combined_server_certificate \
+   --ssl-server-key $path_to_server_key
+----
+_____
+
+
+// bsc#1271329
+[[ssl-certs-import-replace-proxy]]
+== プロキシ上の証明書を置き換える
+
+{productname}プロキシを使用している場合は、{productname}サーバー上の証明書を置き換えた後、プロキシの設定を再生成および再デプロイする必要があります。
+これにより、プロキシがサーバーの新しいCAを信頼し、独自の更新されたサーバー証明書を使用することが保証されます。
+
+Web UIを使用したプロキシ設定の生成は、証明書の置き換えにはサポートされていません。コマンドラインから`spacecmd`を使用する必要があります。
+
+.プロシージャ:{productname}プロキシ上の証明書を置き換える
+[role=procedure]
+_____
+. {productname}サーバーコンテナホスト上で、ルートCA証明書（`ca.crt`）、プロキシ証明書（`proxy.crt`）、およびプロキシ秘密鍵（`proxy.key`）をサーバーコンテナにコピーします：
++
+[source,shell]
+----
+for f in ca.crt proxy.crt proxy.key; do
+  mgrctl cp $f server:/tmp/$f
+done
+----
+
+. 環境で1つ以上の中間CAを使用している場合は、それらもコンテナにコピーします：
++
+[source,shell]
+----
+mgrctl cp intermediateCA.pem server:/tmp/intermediateCA.pem
+----
+
+. サーバーコンテナ内で`spacecmd proxy_container_config`を実行して、FQDNと管理者メールアドレスを置き換え、新しい設定アーカイブを生成します：
++
+[source,shell]
+----
+mgrctl exec -ti 'spacecmd proxy_container_config -- -p 8022 pxy.example.com srv.example.com 2048 email@example.com /tmp/ca.crt /tmp/proxy.crt /tmp/proxy.key -o /tmp/config.tar.gz'
+----
++
+前のステップで中間CAをコピーした場合は、`-i`パラメータを追加します：
++
+[source,shell]
+----
+mgrctl exec -ti 'spacecmd proxy_container_config -- -p 8022 -i /tmp/intermediateCA.pem pxy.example.com srv.example.com 2048 email@example.com /tmp/ca.crt /tmp/proxy.crt /tmp/proxy.key -o /tmp/config.tar.gz'
+----
+
+. 生成された設定アーカイブをサーバーコンテナからサーバーホストにコピーします：
++
+[source,shell]
+----
+mgrctl cp server:/tmp/config.tar.gz .
+----
+
+. `config.tar.gz`アーカイブをプロキシホストに転送します：
++
+[source,shell]
+----
+scp config.tar.gz root@pxy.example.com:/root/
+----
+
+. プロキシホスト上で、プロキシを停止します：
++
+[source,shell]
+----
+mgrpxy stop
+----
+
+. プロキシホストに新しい設定をインストールします：
++
+[source,shell]
+----
+mgrpxy install config.tar.gz
+----
+
+. プロキシを起動します：
++
+[source,shell]
+----
+mgrpxy start
+----
+_____
+
+
+
+ルートCAが変更された場合は、{productname}に接続されているすべてのクライアントにデプロイする必要があります。
+これは、混乱を最小限に抑えるために事前に行うのが理想的です。
+
+[[ssl-certs-import-deploy-root-ca]]
+.プロシージャ:クライアント上のルートCAをデプロイする
+[role=procedure]
+_____
+. {productname} {webui}で、menu:システム[概要]に移動します。
+
+. すべてのクライアントをチェックして、システムセットマネージャに追加します。
+
+. menu:システム[システムセットマネージャ> 概要]に移動します。
+
+. `States`フィールドで、btn:[適用]をクリックして、システムの状態を適用します。
+
+. `Highstate`ページで、btn:[ハイステートの適用]をクリックして、クライアントに変更を伝播します。
+_____

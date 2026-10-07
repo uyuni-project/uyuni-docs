@@ -1,0 +1,480 @@
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+= 5.1에서 5.2로 서버 업그레이드
+:description: 서버를 버전 5.1에서 5.2로 업그레이드하려면 마이그레이션 단계를 따르고 새 버전 및 구성 요소를 확인하십시오.
+:revdate: 2026-09-15
+:page-revdate: {revdate}
+
+
+[IMPORTANT]
+====
+{productname} 5.1은 업그레이드 전에 중지해야 합니다.
+====
+
+[IMPORTANT]
+====
+{productname} {productnumber}로 업그레이드하기 전에 {productname} 5.1 서버를 사용 가능한 최신 유지 관리 업데이트로 업데이트하고 실행 중인지 확인해야 합니다(xref:installation-and-upgrade:container-management/updating-server-containers.adoc[Server Maintenance Update] 참조).
+데이터베이스 스키마 마이그레이션에는 이전 유지 관리 업데이트의 중간 변경 사항이 필요합니다.
+이전 유지 관리 업데이트에서 직접 업그레이드하면 데이터베이스 마이그레이션 오류 및 서버 시작 오류가 발생할 수 있습니다.
+====
+
+[IMPORTANT]
+====
+알려진 문제 목록은 link:https://documentation.suse.com/releasenotes/multi-linux-manager/5.2/#known_issues[{productname} Release Notes]를 참조하십시오.
+====
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-hardened-tmpdir.adoc[leveloffset=+2]
+include::installation-and-upgrade:partial$snippet-certificate-validators.adoc[leveloffset=+1]
+include::installation-and-upgrade:partial$snippet-ssl-requirements.adoc[leveloffset=+1]
+include::installation-and-upgrade:partial$snippet-version-number.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-hardened-tmpdir.adoc[leveloffset=+2]
+include::../../../../../partials/snippet-certificate-validators.adoc[leveloffset=+1]
+include::../../../../../partials/snippet-ssl-requirements.adoc[leveloffset=+1]
+include::../../../../../partials/snippet-version-number.adoc[leveloffset=+1]
+endif::[]
+
+마이그레이션 과정 중에 서버 SSL 인증서와 CA 체인은 소스 서버에서 복사되므로, 데이터베이스 인증서만 필요합니다.
+
+
+
+== {sl-micro} 6.1에서 {sl-micro} 6.2로
+
+
+
+이 문서는 {sl-micro} 5.1 서버에서 배포된 {productname} 6.1 호스트를 {sl-micro} 6.2로 업그레이드하고 {productname} {productnumber}(으)로 마이그레이션하는 검증된 절차를 제공합니다.
+
+
+=== 전제 조건
+
+* {productname} 5.1이 {sl-micro} 6.1에 설치되어 실행 중입니다.
+* {productname} 5.1이 사용 가능한 최신 유지 관리 업데이트로 업데이트되고 실행 중입니다(xref:installation-and-upgrade:container-management/updating-server-containers.adoc[Server Maintenance Update] 참조).
+* 시스템은 {scc}에 등록되어 있으며 활성 구독을 보유하고 있습니다.
+
+
+=== 업그레이드 및 마이그레이션
+
+.절차 {productname} 5.1에서 {productname} {productnumber}(으)로의 마이그레이션
+[role=procedure]
+_____
+
+. 현재 제품 상태를 확인합니다.
+
++
+
+[source,console]
+----
+SUSEConnect --status-text
+----
+
++
+
+확인:
+
+* Base OS: `SL Micro 6.1`
+* 확장 프로그램: `SUSE Multi-Linux Manager Server 5.1 Extension`
+
++
+
+. 호스트 시스템이 업데이트되었는지 확인합니다.
+
++
+
+[NOTE]
+====
+이 단계는 호스트 운영 체제 패키지 및 도구(`mgradm` 등)를 업데이트합니다.
+이 절차를 수행하기 전에 {productname} 서버 컨테이너가 이미 최신 유지 관리 업데이트로 업데이트되었고 실행 중인지 확인하십시오.
+====
+
++
+
+[source,console]
+----
+transactional-update patch
+----
+
++
+
+--
+
+* 패치가 적용된 경우 마이그레이션을 진행하기 전에 서버를 중지한 다음 시스템을 재부팅합니다.
+
++
+
+[source,console]
+----
+mgradm stop
+reboot
+----
+
+* 업데이트가 없는 경우, 마이그레이션 단계로 바로 진행할 수 있습니다.
+
+--
+
++
+
+. 업그레이드를 시작합니다.
+
++
+
+[source,console]
+----
+transactional-update migration --auto-agree-with-licenses --gpg-auto-import-keys
+----
+
++
+
+안내에 따라 **SUSE Linux Micro 6.2** 및 **{productname} 서버 확장 프로그램 {productnumber}**로 가능한 마이그레이션을 선택합니다.
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
++
+
+. 서버를 중지한 다음 재부팅하여 변경 사항을 적용합니다.
+
++
+
+[source,console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. 재부팅 후 점검을 수행합니다.
+
++
+
+{productname} 확장 프로그램 및 {productname} 버전 확인:
+
++
+
+[source,console]
+----
+SUSEConnect --status-text
+mgradm --version
+----
+
++
+
+예상 출력:
+
+* 확장 프로그램: `SUSE Multi-Linux Manager Server {productnumber} Extension`
+* 버전: `mgradm version 5.2.0` 이상
+
++
+
+. 컨테이너 업데이트
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
++
+
+[source,console]
+----
+mgradm start
+mgradm upgrade
+----
+
++
+
+안내에 따라 새로운 5.2.x 컨테이너를 가져오고 구성하십시오.
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-note-tftp-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-note-tftp-upgrade.adoc[]
+endif::[]
+
+
+. PostgreSQL 버전
+
++
+
+[source,console]
+----
+podman ps
+----
+
++
+
+예상 출력:
+
+* `server:5.2.0` 이상
+* `server-postgresql:5.2.0` 이상
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
++
+
+. 실행 중인 컨테이너를 확인합니다.
+
++
+
+[source,console]
+----
+podman ps
+----
+
++
+
+예상되는 모든 프록시 컨테이너가 작동 중이어야 합니다.
+
+_____
+
+
+=== 마이그레이션
+
+서버 호스트 시스템이 이제 업데이트된 {productname} {productnumber} 서버 패키지와 함께 {sl-micro} 6.2를 실행 중입니다.
+
+이 서버에 연결된 {productname} 5.1 프록시가 있는 경우, xref:installation-and-upgrade:container-deployment/mlm/migrations/proxy/proxy-mlm-51-52.adoc[Proxy Upgrade 5.1 > 5.2] 가이드로 진행하여 프록시 호스트를 업그레이드하십시오.
+
+생산 작업을 재개하기 전에 설정을 검증하십시오.
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+
+== {sles} 15 SP7
+
+이 문서는 {sles} 5.1 서버에서 배포된 {productname} 15 SP7 호스트를 {productname} {productnumber}(으)로 업그레이드하는 절차를 제공합니다.
+
+
+=== 전제 조건
+
+* {productname} 5.1이 {sles} 15 SP7에 설치되어 실행 중입니다.
+* {productname} 5.1이 사용 가능한 최신 유지 관리 업데이트로 업데이트되고 실행 중입니다(xref:installation-and-upgrade:container-management/updating-server-containers.adoc[Server Maintenance Update] 참조).
+* 시스템은 {scc}에 등록되어 있으며 활성 구독을 보유하고 있습니다.
+
+
+=== 업그레이드 및 마이그레이션
+
+.절차 {productname} 15 SP7에서 {sles} 구성 요소를 업데이트하십시오.
+[role=procedure]
+_____
+
+. 현재 제품 상태를 확인합니다.
+
++
+
+[source,console]
+----
+SUSEConnect --status-text
+----
+
++
+
+확인:
+
+* Base OS: `SUSE Linux Enterprise Server 15 SP7`
+* 확장 프로그램: `SUSE Multi-Linux Manager Server 5.1 Extension`
+
++
+
+. 호스트 시스템이 업데이트되었는지 확인합니다.
+
++
+
+[NOTE]
+====
+이 단계는 호스트 운영 체제 패키지 및 도구(`mgradm` 등)를 업데이트합니다.
+이 절차를 수행하기 전에 {productname} 서버 컨테이너가 이미 최신 유지 관리 업데이트로 업데이트되었고 실행 중인지 확인하십시오.
+====
+
++
+
+[source,console]
+----
+zypper patch
+----
+
++
+
+패치가 적용된 경우 마이그레이션을 진행하기 전에 서버를 중지한 다음 시스템을 재부팅합니다.
+
++
+
+[source,console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. {productname} {productnumber}(으)로 마이그레이션 수행
+
++
+
+[source,console]
+----
+zypper migration
+----
+
++
+
+등록 방법을 선택합니다.
+
+* `{productname} Server Extension {productnumber}`
+
++
+
+. 서버를 중지한 다음 재부팅하여 변경 사항을 적용합니다.
+
++
+
+[source,console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. 재부팅 후 점검을 수행합니다.
+
++
+
+{productname} 확장 프로그램 확인:
+
++
+
+[source,console]
+----
+SUSEConnect --status-text
+----
+
++
+
+예상 출력:
+
+* 확장 프로그램: `SUSE Multi-Linux Manager Server {productnumber} Extension`
+
++
+
+. {productname} 버전을 확인하십시오.
+
++
+
+[source,console]
+----
+mgradm --version
+----
+
++
+
+예상 출력:
+
+* 버전: `mgradm version 5.2.0` 이상
+
++
+
+. 컨테이너 업데이트
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
++
+
+[source,console]
+----
+mgradm start
+mgradm upgrade
+----
+
++
+
+안내에 따라 새로운 5.2.x 컨테이너를 가져오고 구성하십시오.
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-note-tftp-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-note-tftp-upgrade.adoc[]
+endif::[]
+
+
+. 컨테이너 업데이트
+
++
+
+[source,console]
+----
+podman ps
+----
+
++
+
+예상 출력:
+
+* `server:5.2.0` 이상
+* `server-postgresql:5.2.0` 이상
+
+_____
+
+
+=== 마이그레이션
+
+서버 호스트 시스템이 현재 업데이트된 {productname} {productnumber} 서버 패키지가 포함된 {sles} 15 SP7을 실행 중입니다.
+
+이 서버에 연결된 {productname} 5.1 프록시가 있는 경우, xref:installation-and-upgrade:container-deployment/mlm/migrations/proxy/proxy-mlm-51-52.adoc[Proxy Upgrade 5.1 > 5.2] 가이드로 진행하여 프록시 호스트를 업그레이드하십시오.
+
+생산 작업을 재개하기 전에 설정을 검증하십시오.
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]

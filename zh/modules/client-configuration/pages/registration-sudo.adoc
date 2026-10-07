@@ -1,0 +1,50 @@
+[[registration-sudo]]
+= Root 访问权限和 sudo 配置
+:description: 配置一个具有无密码 sudo 访问权限的非 root 用户，以便在不允许 root SSH 访问的系统上安装和管理软件
+:revdate: 2026-08-31
+:page-revdate: {revdate}
+
+许多操作系统（例如 {ubuntu}、{debian}、{raspberrypios} 和 {sle} 16）默认禁用 `root` 用户的 SSH 访问，或者在安装时未配置 `root` 密码。
+要接入这些客户端，您可以使用一个普通的非特权用户，该用户已针对必要的 Python 和 Salt minion 二进制文件配置了无密码 `sudo` 权限。
+
+[IMPORTANT]
+====
+此配置仅在启动和注册客户端时需要。
+客户端成功注册后，{productname} 代理将以 `root` 权限运行，不再需要此临时无密码 `sudo` 访问权限。
+出于安全考虑，我们建议在注册完成后从 `sudoers` 文件中删除这些行。
+====
+
+
+== 授予非 root 用户 sudo 访问权限
+
+要使用非 root 用户接入客户端，您必须编辑客户端系统上的 `sudoers` 文件，以授予特定命令的无密码权限提升。
+
+.过程：升级授予无密码 sudo 访问权限
+[role="procedure"]
+_____
+. 在客户端，通过运行以下命令编辑 `sudoers` 文件：
++
+----
+sudo visudo
+----
+. 在该文件的末尾添加以下行。将 `<user>` 替换为负责启动客户端的用户名称：
++
+----
+<user>  ALL=NOPASSWD: /var/tmp/venv-salt-minion/bin/python
+----
+_____
+
+[NOTE]
+====
+对于使用旧版手动 `salt-minion` 注册设置而非默认 Salt Bundle 的较旧操作系统（例如 {sle} 15），可能仍需要 `/usr/bin/python3` 来进行权限提升：
++
+----
+<user>  ALL=NOPASSWD: /usr/bin/python3, /var/tmp/venv-salt-minion/bin/python
+----
+====
+
+[NOTE]
+====
+自行安装的操作系统版本需要无密码权限提升，因为 {webui} 和启动脚本不支持在权限提升步骤中进行交互式密码输入。
+对于云实例，这通常由 `cloud-init` 自动处理，它会为默认用户设置 sudoers 配置。
+====

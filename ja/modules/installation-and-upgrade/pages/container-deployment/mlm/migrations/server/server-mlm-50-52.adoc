@@ -1,0 +1,491 @@
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+= 5.0から5.2へのサーバーをアップグレードする
+:description: 現在のシステムステータスの確認、ホストの更新、およびコピーを含む移行手順に従って、サーバーをバージョン 5.0 から 5.2 にアップグレードします。
+:revdate: 2026-09-15
+:page-revdate: {revdate}
+
+
+[IMPORTANT]
+====
+{productname} 5.0は、アップグレードする前に停止する必要があります。
+====
+
+[IMPORTANT]
+====
+{productname} {productnumber} にアップグレードする前に、{productname} 5.0 サーバーを利用可能な最新のメンテナンスアップデートに更新し、それが実行されていることを確認する必要があります（xref:installation-and-upgrade:container-management/updating-server-containers.adoc[Server Maintenance Update] を参照）。
+データベーススキーマの移行には、以前のメンテナンスアップデートからの段階的な変更が必要です。
+古いメンテナンスアップデートから直接アップグレードすると、データベース移行エラーやサーバーの起動エラーが発生する可能性があります。
+====
+
+[IMPORTANT]
+====
+既知の問題のリストについては、link:https://documentation.suse.com/releasenotes/multi-linux-manager/5.2/#known_issues[{productname} Release Notes]を参照してください。
+====
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-hardened-tmpdir.adoc[leveloffset=+2]
+include::installation-and-upgrade:partial$snippet-certificate-validators.adoc[leveloffset=+1]
+include::installation-and-upgrade:partial$snippet-ssl-requirements.adoc[leveloffset=+1]
+include::installation-and-upgrade:partial$snippet-version-number.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-hardened-tmpdir.adoc[leveloffset=+2]
+include::../../../../../partials/snippet-certificate-validators.adoc[leveloffset=+1]
+include::../../../../../partials/snippet-ssl-requirements.adoc[leveloffset=+1]
+include::../../../../../partials/snippet-version-number.adoc[leveloffset=+1]
+endif::[]
+
+移行中に、サーバーSSL証明書とCAチェーンがソースサーバーからコピーされます。
+
+
+== {sle-micro} 5.5から{sl-micro} 6.2
+
+
+
+本書は、{sle-micro} 5.5ホスト（{productname} 5.0サーバーでデプロイされたもの）を{sl-micro} 6.2にアップグレードし、{productname} {productnumber}へ移行するためのテスト済み手順を提供します。
+
+
+=== 前提条件
+
+* {productname} 5.0は{sle-micro} 5.5にインストールされ、実行中です。
+* {productname} 5.0 は利用可能な最新のメンテナンスアップデートに更新され、実行中です（xref:installation-and-upgrade:container-management/updating-server-containers.adoc[Server Maintenance Update] を参照）。
+* システムは登録済みであり、{scc}にアクティブなサブスクリプションがあります。
+
+
+=== ディストリビューションのアップグレードとサーバ移行
+
+.プロシージャ:{productname} 5.0から{productname} {productnumber}への移行
+[role=procedure]
+_____
+
+. 現在の製品ステータスを確認する
+
++
+
+[source,console]
+----
+SUSEConnect --status-text
+----
+
++
+
+確認:
+
+* ベースOS: `SUSE Linux Enterprise Micro 5.5`
+* 拡張機能: `SUSE Manager Server 5.0 Extension`
+
++
+
+. ホストシステムが更新されていることを確認してください。
+
++
+
+[NOTE]
+====
+このステップでは、ホストのオペレーティングシステムパッケージとツール（`mgradm`など）を更新します。
+この手順の前に、{productname} サーバーコンテナがすでに最新のメンテナンスアップデートに更新され、実行されていることを確認してください。
+====
+
++
+
+[source,console]
+----
+transactional-update patch
+----
+
++
+
+--
+
+* パッチが適用された場合、移行を続行する前に\\**システムを再起動**してください。
+
++
+
+[source,console]
+----
+mgradm stop
+reboot
+----
+
+* 更新が見つからなかった場合、移行ステップに直接進むことができます。
+
+--
+
++
+
+. 移行を開始する:
+
++
+
+[source,console]
+----
+transactional-update migration --auto-agree-with-licenses --gpg-auto-import-keys
+----
+
++
+
+プロンプトに従い、**SUSE Linux Micro 6.2** および **{productname} Server Extension {productnumber}** への移行先を選択してください。
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
++
+
+. サーバを停止し、再起動して変更を適用します。
+
++
+
+[source,console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. 再起動後のチェック:
+
++
+
+{productname}拡張機能と{productname}バージョンを確認してください:
+
++
+
+[source,console]
+----
+SUSEConnect --status-text
+mgradm --version
+----
+
++
+
+予想される出力:
+
+* 拡張機能: `SUSE Multi-Linux Manager Server {productnumber} Extension`
+* バージョン: `5.2.0`以上を参照
+
++
+
+. サーバコンテナをアップグレードする
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
++
+
+[WARNING]
+====
+`mgradm upgrade`を実行する前に、`/etc/systemd/system/uyuni-server.service`に`-p [::]:PORT:PORT`の形式で明示的なIPv6ポートバインディングが含まれているかどうかを確認してください。
+これらのバインディングは{sl-micro} 6.2のnetavarkと互換性がなく、アップグレード後にWeb UIにアクセスできなくなる不正なnftablesルールを引き起こします。
+
+そのような行が存在する場合は、続行する前に削除してください。
+
+[source,diff]
+----
+  -p 80:80 \
+- -p [::]:80:80 \
+  -p 443:443 \
+- -p [::]:443:443 \
+----
+
+次に、続行する前にホストを再起動してください:
+
+[source,bash]
+----
+systemctl reboot
+----
+====
+
++
+
+[source,console]
+----
+mgradm start
+mgradm upgrade
+----
+
++
+
+プロンプトに従い、新しい5.2.xコンテナをプルして設定します。
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-note-tftp-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-note-tftp-upgrade.adoc[]
+endif::[]
+
++
+
+. 実行中のコンテナを確認します。
+
++
+
+[source,console]
+----
+podman ps
+----
+
++
+
+予想される出力:
+
+* `server:5.2.0`以上
+* `server-postgresql:5.2.0`以上
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
+_____
+
+
+=== 移行の完了
+
+サーバーホストシステムは、{sl-micro}更新された{productname} {productnumber}パッケージを使用して 6.2を実行しています。
+
+このサーバーに接続されている{productname} 5.0プロキシがある場合は、xref:installation-and-upgrade:container-deployment/mlm/migrations/proxy/proxy-mlm-50-52.adoc[Proxy Upgrade 5.0 > 5.2]ガイドに進んでプロキシホストをアップグレードしてください。
+
+生産運用を再開する前に、セットアップを確認してください。
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+
+== {sles} 15 SP6から15 SP7へ。
+
+この文書は、{sles} 15 SP6ホスト（{productname} 5.0サーバーでデプロイされたもの）を{sles} 15 SP7にアップグレードし、{productname} {productnumber}へ移行するための手順を提供します。
+
+
+=== 前提条件
+
+* {productname} 5.0は{sles} 15 SP6にインストールされ、実行中です。
+* {productname} 5.0 は利用可能な最新のメンテナンスアップデートに更新され、実行中です（xref:installation-and-upgrade:container-management/updating-server-containers.adoc[Server Maintenance Update] を参照）。
+* システムは登録済みであり、{scc}にアクティブなサブスクリプションがあります。
+
+
+=== ディストリビューションのアップグレードとサーバ移行
+
+.プロシージャ:{productname} 15 SP6上の{sles}をアップグレードし、移行する
+[role=procedure]
+_____
+
+. 現在の製品ステータスを確認する
+
++
+
+[source,console]
+----
+SUSEConnect --status-text
+----
+
++
+
+確認:
+
+* ベースOS: `SUSE Linux Enterprise Server 15 SP6`
+* 拡張機能: `SUSE Manager Server 5.0 Extension`
+
++
+
+. ホストシステムが更新されていることを確認してください。
+
++
+
+[NOTE]
+====
+このステップでは、ホストのオペレーティングシステムパッケージとツール（`mgradm`など）を更新します。
+この手順の前に、{productname} サーバーコンテナがすでに最新のメンテナンスアップデートに更新され、実行されていることを確認してください。
+====
+
++
+
+[source,console]
+----
+zypper patch
+----
+
++
+
+パッチが適用された場合、移行を続行する前に、サーバを停止し、システムを再起動してください。
+
++
+
+[source,console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. SP7への移行と{productname} {productnumber}を実行します。
+
++
+
+[source,console]
+----
+zypper migration
+----
+
++
+
+タイムゾーンを選択します。
+
+* `{sles} 15 SP7`
+* `{productname} Server Extension {productnumber}`
+
++
+
+. サーバを停止し、再起動して変更を適用します。
+
++
+
+[source,console]
+----
+mgradm stop
+reboot
+----
+
++
+
+. 再起動後のチェック:
+
++
+
+{productname} 拡張機能を確認してください：
+
++
+
+[source,console]
+----
+SUSEConnect --status-text
+----
+
++
+
+予想される出力:
+
+* 拡張機能: `SUSE Multi-Linux Manager Server {productnumber} Extension`
+
++
+
+. {productname} バージョンを確認してください。
+
++
+
+[source,console]
+----
+mgradm --version
+----
+
++
+
+予想される出力:
+
+* バージョン: `5.2.0`以上を参照
+
++
+
+. サーバコンテナをアップグレードする
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-ptf-loss-during-upgrade.adoc[]
+endif::[]
+
++
+
+[source,console]
+----
+mgradm start
+mgradm upgrade
+----
+
++
+
+プロンプトに従い、新しい5.2.xコンテナをプルして設定します。
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-note-tftp-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-note-tftp-upgrade.adoc[]
+endif::[]
+
+
+. コンテナの更新
+
++
+
+[source,console]
+----
+podman ps
+----
+
++
+
+予想される出力:
+
+* `server:5.2.0`以上
+* `server-postgresql:5.2.0`以上
+
+_____
+
+
+=== 移行の完了
+
+サーバーホストシステムは現在、{sles} 15 SP7 で動作しており、更新された{productname} {productnumber}パッケージが適用されています。
+
+このサーバーに接続されている{productname} 5.0プロキシがある場合は、xref:installation-and-upgrade:container-deployment/mlm/migrations/proxy/proxy-mlm-50-52.adoc[Proxy Upgrade 5.0 > 5.2]ガイドに進んでプロキシホストをアップグレードしてください。
+
+生産運用を再開する前に、セットアップを確認してください。
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-database-backup-volume.adoc[leveloffset=+2]
+endif::[]
