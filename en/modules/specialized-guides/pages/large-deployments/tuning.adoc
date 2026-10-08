@@ -1,7 +1,7 @@
 [[lsd-tuning]]
 = Tuning Large Scale Deployments
 :description: Tune your deployment by estimating environmental variables and adjusting configuration parameters using the dependency graph
-:revdate: 2026-10-06
+:revdate: 2026-10-08
 :page-revdate: {revdate}
 
 {productname} is designed by default to work on small and medium scale installations.
@@ -755,12 +755,17 @@ If you see lines containing `LOG:  temporary file:` try raising this parameter's
 | Description          | Environment variables that control disk usage monitoring thresholds for containerized deployments.
                          `DISKCHECKALERT` triggers a warning notification when disk usage exceeds the specified percentage.
                          `DISKTHRESHOLD` triggers a critical notification and causes the container health check to fail, which will automatically stop the container.
+                         `DISKCHECKALERT_FREE_MB` and `DISKTHRESHOLD_FREE_MB` define the same thresholds as available space in MB instead.
+                         When set, each of them replaces the percentage threshold of the same level.
                          In large deployments with multi-terabyte storage volumes, the default thresholds (90% and 95%) can leave excessive amounts of disk space unused.
                          For example, on a 10{nbsp}TB volume, 5% free space equals 500{nbsp}GB, which is wasteful.
-                         Increasing these thresholds allows more efficient use of available storage capacity while maintaining adequate headroom for operations.
+                         Using free space thresholds, or increasing the percentage thresholds, allows more efficient use of available storage capacity while maintaining adequate headroom for operations.
 | Tune when            | Large storage volumes are deployed (multiple terabytes) and you want to use disk space more efficiently while maintaining adequate headroom for database growth and repository synchronization.
-| Value default        | `DISKCHECKALERT=90`, `DISKTHRESHOLD=95`
-| Value recommendation | For deployments with 5{nbsp}TB+ storage: `DISKCHECKALERT=95`, `DISKTHRESHOLD=98`.
+| Value default        | `DISKCHECKALERT=90`, `DISKTHRESHOLD=95`.
+                         `DISKCHECKALERT_FREE_MB` and `DISKTHRESHOLD_FREE_MB` are not set.
+| Value recommendation | For deployments with multi-terabyte storage, prefer free space thresholds, for example `DISKCHECKALERT_FREE_MB=204800` (200{nbsp}GB) and `DISKTHRESHOLD_FREE_MB=51200` (50{nbsp}GB).
+                         Alternatively, raise the percentages.
+                         For deployments with 5{nbsp}TB+ storage: `DISKCHECKALERT=95`, `DISKTHRESHOLD=98`.
                          For deployments with 10{nbsp}TB+ storage: `DISKCHECKALERT=96`, `DISKTHRESHOLD=99`.
 | Location             | Systemd service override files: `/etc/systemd/system/uyuni-server.service.d/diskcheck.conf` and `/etc/systemd/system/uyuni-db.service.d/diskcheck.conf`
 | Example              | See the procedure below
@@ -770,7 +775,8 @@ If you see lines containing `LOG:  temporary file:` try raising this parameter's
                          Both the server and database containers should use the same threshold values.
                          When `DISKTHRESHOLD` is exceeded, container health checks will fail and the container will be automatically stopped.
                          The database container only monitors `/var/lib/pgsql/data` and this cannot be overridden with `DISKCHECKDIRS`.
-| More information     | xref:administration:space-management.adoc[]
+                         The free space thresholds can only be set as environment variables, not in [path]``/etc/rhn/rhn.conf``.
+| More information     | xref:administration:space-management.adoc[], xref:administration:space-management.adoc#space-management-free-space-thresholds[]
 |===
 
 
@@ -783,21 +789,23 @@ mkdir -p /etc/systemd/system/uyuni-server.service.d/
 mkdir -p /etc/systemd/system/uyuni-db.service.d/
 ----
 
-. Create configuration files with higher thresholds for the server service:
+. Create configuration files with free space thresholds for the server service:
 +
 ----
 cat > /etc/systemd/system/uyuni-server.service.d/diskcheck.conf << 'EOF'
 [Service]
-Environment="PODMAN_EXTRA_ARGS=--env DISKCHECKALERT=95 --env DISKTHRESHOLD=98"
+Environment="PODMAN_EXTRA_ARGS=--env DISKCHECKALERT_FREE_MB=204800 --env DISKTHRESHOLD_FREE_MB=51200"
 EOF
 ----
++
+To use percentage thresholds instead, replace the `--env` options with, for example, `--env DISKCHECKALERT=95 --env DISKTHRESHOLD=98`.
 
-. Create configuration files with higher thresholds for the database service:
+. Create configuration files with the same thresholds for the database service:
 +
 ----
 cat > /etc/systemd/system/uyuni-db.service.d/diskcheck.conf << 'EOF'
 [Service]
-Environment="PODMAN_EXTRA_ARGS=--env DISKCHECKALERT=95 --env DISKTHRESHOLD=98"
+Environment="PODMAN_EXTRA_ARGS=--env DISKCHECKALERT_FREE_MB=204800 --env DISKTHRESHOLD_FREE_MB=51200"
 EOF
 ----
 
