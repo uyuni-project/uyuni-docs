@@ -1,3 +1,4 @@
+- Documented free space disk check thresholds DISKCHECKALERT_FREE_MB and DISKTHRESHOLD_FREE_MB and the diskcheck Helm chart values
 - Documented how to upgrade the server on Kubernetes
 - Documented ppc64le support for Red Hat Enterprise Linux 7, 8, 9, and 10 in Uyuni
 - Simplified PR comment wording and removed artifact icons in CI comment script
