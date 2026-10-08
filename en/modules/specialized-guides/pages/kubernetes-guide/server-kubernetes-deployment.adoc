@@ -451,12 +451,23 @@ kubectl create configmap trust-anchors -n $NAMESPACE \
     --dry-run=client -o yaml | kubectl apply -f -
 ----
 
-. Remove the old PVC to unblock the upgrade:
+. Stop the server and remove the old PVC to unblock the upgrade:
 +
 [source,shell]
 ----
+kubectl scale deploy/uyuni -n $NAMESPACE --replicas=0
 kubectl delete pvc ca-certs -n $NAMESPACE
 ----
++
+[NOTE]
+====
+The PVC cannot be deleted while the server pod still mounts it.
+Without scaling the deployment down first, the PVC stays in the [literal]``Terminating`` state and the upgrade keeps failing.
+Do this only after the certificates have been recovered, because the data is lost afterwards.
+====
+
+. Run the [literal]``helm upgrade`` command again.
+The server pod is recreated.
 
 The chart will refuse to upgrade if the [literal]``ca-certs`` PVC is still present — this is a safety measure to prevent data loss.
 
