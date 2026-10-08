@@ -1,3 +1,4 @@
+- Documented ppc64le support for Red Hat Enterprise Linux 8 in Uyuni
 - Updated images in documentation with teh correct product name (bsc#1257074)
 - Documented SLES 16.1 and openSUSE Leap 16.1 support and migration paths
 - Added information about associated activation keys being deleted when channels are deleted in Administration Guide
