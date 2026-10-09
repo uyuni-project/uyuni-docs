@@ -1,4 +1,4 @@
-- Documented ppc64le support for Red Hat Enterprise Linux 8, 9, and 10 in Uyuni
+- Documented ppc64le support for Red Hat Enterprise Linux 7, 8, 9, and 10 in Uyuni
 - Simplified PR comment wording and removed artifact icons in CI comment script
 - Fixed published version numbers that dropped a trailing zero, such as 2026.10 appearing as 2026.1
 - Updated images in documentation with teh correct product name (bsc#1257074)
