@@ -1,3 +1,4 @@
+- Documented SLES 16.1 and openSUSE Leap 16.1 support and migration paths
 - Added Multi-Linux Manager MCP Server book
 - Documented how to upgrade the server on Kubernetes
 - Fixed published version numbers that dropped a trailing zero, such as 2026.10 appearing as 2026.1
