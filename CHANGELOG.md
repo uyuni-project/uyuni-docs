@@ -1,3 +1,4 @@
+- Documented how to upgrade the server on Kubernetes
 - Fixed published version numbers that dropped a trailing zero, such as 2026.10 appearing as 2026.1
 - Updated images in documentation with teh correct product name (bsc#1257074)
 - Added information about associated activation keys being deleted when channels are deleted in Administration Guide
