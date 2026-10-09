@@ -1,7 +1,7 @@
 [[deploy-server-on-kubernetes]]
 = Server Deployment on {kube}
 :description: Deploy the server on Kubernetes using a Helm chart and follow the checklist to prepare your environment
-:revdate: 2026-02-24
+:revdate: 2026-10-09
 :page-revdate: {revdate}
 
 
@@ -680,10 +680,83 @@ When setting multiple values, using a YAML values file is recommended instead of
 Refer to the `helm` command help for more details.
 
 
+[[upgrading-server-on-kubernetes]]
+== Upgrade
 
-== Verifying the installation
+The server is upgraded by running `helm upgrade` against a newer chart version.
+The values and the persistent volume claims of the existing release are kept.
 
-After running `helm install`, the server pod starts `systemd` and multiple services inside it.
+[WARNING]
+====
+The server deployment uses the `Recreate` strategy: the running server pod is stopped before the new one starts.
+The server is unavailable during the upgrade.
+The database schema is upgraded automatically when the new server pod starts.
+Back up the server and its database before upgrading.
+====
+
+.Procedure: Upgrading the server on {kube}
+. Check the values of the current release:
+ifeval::[{mlm-content} == true]
++
+[source,shell]
+----
+helm get values smlm-server -n $NAMESPACE
+----
+endif::[]
+ifeval::[{uyuni-content} == true]
++
+[source,shell]
+----
+helm get values uyuni-server -n $NAMESPACE
+----
+endif::[]
+
+. Run `helm upgrade` against the new chart version:
+ifeval::[{mlm-content} == true]
++
+[source, Shell, subs="attributes"]
+----
+helm upgrade smlm-server \
+     oci://registry.suse.com/suse/multi-linux-manager/5.2/server-helm \
+     -n $NAMESPACE \
+     --reset-then-reuse-values \
+     --set tag={productchartversion} \
+     --version {productchartversion}
+----
+endif::[]
+ifeval::[{uyuni-content} == true]
++
+[source, Shell, subs="attributes"]
+----
+helm upgrade uyuni-server \
+     oci://registry.opensuse.org/uyuni/server-helm \
+     -n $NAMESPACE \
+     --reset-then-reuse-values \
+     --set tag={productnumber} \
+     --version {productchartversion}
+----
+endif::[]
++
+[NOTE]
+====
+The [literal]``--reset-then-reuse-values`` option requires Helm 3.14 or later.
+With an older Helm version, check [literal]``helm upgrade --help`` for alternatives.
+====
+
+. Watch the rollout:
++
+[source,shell]
+----
+kubectl rollout status deploy/uyuni -n $NAMESPACE
+----
+
+. Verify that the server is working, as described in <<verifying-installation>>.
+
+
+[[verifying-installation]]
+== Verifying the installation or upgrade
+
+After running `helm install` or `helm upgrade`, the server pod starts `systemd` and multiple services inside it.
 This takes longer than a typical container startup — allow a few minutes before expecting the pod to be fully ready.
 
 Watch the pods come up:
@@ -703,7 +776,8 @@ kubectl logs -n uyuni-server <POD_NAME>
 ----
 
 Once all pods are ready, open a browser and navigate to https://`<your-fqdn>`.
-The {productname} setup wizard should appear.
+After an installation, the {productname} setup wizard should appear.
+After an upgrade, the login page of the existing server should appear.
 
 To get a terminal inside the server container (equivalent to `mgrctl term` used elsewhere in the documentation):
 
