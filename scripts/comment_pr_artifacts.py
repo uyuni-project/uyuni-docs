@@ -23,13 +23,11 @@ ARTIFACT_GROUPS = [
         "artifacts": [
             {
                 "name": "uyuni-docs-html",
-                "label": "HTML Documentation (ZIP)",
-                "icon": "🌐",
+                "label": "HTML (ZIP)",
             },
             {
                 "name": "uyuni-docs-pdf-en",
-                "label": "PDF Documentation (English, ZIP)",
-                "icon": "📄",
+                "label": "PDF (English, ZIP)",
             },
         ],
     },
@@ -38,13 +36,11 @@ ARTIFACT_GROUPS = [
         "artifacts": [
             {
                 "name": "mlm-docs-html",
-                "label": "HTML Documentation (ZIP)",
-                "icon": "🌐",
+                "label": "HTML (ZIP)",
             },
             {
                 "name": "mlm-docs-pdf-en",
-                "label": "PDF Documentation (English, ZIP)",
-                "icon": "📄",
+                "label": "PDF (English, ZIP)",
             },
         ],
     },
@@ -146,7 +142,7 @@ def generate_comment_body(
         COMMENT_MARKER,
         "## 📚 Documentation build artifacts",
         "",
-        f"Documentation build artifacts for {commit_link} in CI workflow run [#{run_id}]({run_url}):",
+        f"Commit: {commit_link} · Run: [#{run_id}]({run_url})",
         "",
     ]
 
@@ -162,9 +158,8 @@ def generate_comment_body(
                 art_id = art.get("id")
                 size = format_size(art.get("size_in_bytes", 0))
                 download_url = f"https://github.com/{repo}/actions/runs/{run_id}/artifacts/{art_id}"
-                icon = item.get("icon", "📦")
                 label = item.get("label", name)
-                group_lines.append(f"- {icon} [{label}]({download_url}) ({size})")
+                group_lines.append(f"- [{label}]({download_url}) ({size})")
 
         if group_lines:
             lines.append(f"### {group['title']}")
@@ -185,12 +180,6 @@ def generate_comment_body(
         lines.append("### Additional Artifacts")
         lines.extend(extra_lines)
         lines.append("")
-
-    lines.extend([
-        "---",
-        "> ℹ️ **Download note:** GitHub requires you to be logged in to download CI artifacts.",
-        "> Extract the HTML archive to view documentation in your browser. Artifacts are automatically expired by GitHub after 1 day.",
-    ])
 
     return "\n".join(lines)
 
