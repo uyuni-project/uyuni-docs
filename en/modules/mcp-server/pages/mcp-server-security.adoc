@@ -1,0 +1,120 @@
+[[mcp-server-security]]
+= Security
+:revdate: 2026-07-29
+:page-revdate: {revdate}
+
+This chapter describes authentication, write-tool controls, deployment hardening, and security considerations for AI-assisted operations.
+
+The MCP Server can query and modify managed infrastructure.
+Treat it as a privileged administrative interface.
+
+== Security model
+
+The server supports two authentication paths:
+
+Basic {productname} authentication::
+In a stdio or trusted deployment, the server logs in with `UYUNI_USER` and `UYUNI_PASS`.
+All MCP clients that use that process receive the permissions of this account.
+
+OAuth bearer token::
+In an authenticated HTTP deployment, the MCP Server validates the caller's token and forwards it to the {productname} OIDC login endpoint.
+{productname} then maps the token to an existing active user.
+
+Use a dedicated, least-privileged {productname} account for basic authentication.
+For a multi-user HTTP deployment, use OAuth so that actions retain individual user identity and permissions.
+
+[[oauth-configuration]]
+== OAuth configuration
+
+The MCP Server expects an OpenID Connect issuer.
+It retrieves signing keys from:
+
+----
+<UYUNI_AUTH_SERVER>/protocol/openid-connect/certs
+----
+
+Tokens accepted by the MCP Server must:
+
+* Have an issuer that exactly matches `UYUNI_AUTH_SERVER`.
+* Include the `mcp-server-uyuni` audience.
+* Include the `mcp:read` scope.
+* Include the `mcp:write` scope when write tools are enabled.
+
+Configure the same identity provider on the {productname} Server in `/etc/rhn/rhn.conf`:
+
+----
+web.oidc.enabled = true
+web.oidc.idp.issuer = https://idp.example.com/realms/mcp
+----
+
+You can explicitly set the JSON Web Key Set path:
+
+----
+web.oidc.idp.jwks_path = /realms/mcp/protocol/openid-connect/certs
+----
+
+If the path is not set, {productname} discovers it from the issuer's `/.well-known/openid-configuration` document.
+
+The default {productname} audience and username claim are:
+
+----
+web.oidc.jwt.audience = uyuni-server
+web.oidc.jwt.username_claim = preferred_username
+----
+
+The token forwarded to {productname} must include:
+
+* The `uyuni-server` audience, in addition to the `mcp-server-uyuni` audience.
+* A `sub` claim.
+* A configured username claim whose value matches an existing active {productname} user.
+
+Restart the relevant {productname} services after changing `rhn.conf`.
+
+[[write-tool-controls]]
+== Write tool controls
+
+State-changing tools are not registered unless `UYUNI_MCP_WRITE_TOOLS_ENABLED=true`.
+
+When write tools are enabled, the server asks for confirmation before a change if the MCP client advertises the MCP elicitation capability.
+Clients without elicitation support do not receive this server-side confirmation.
+Such clients are responsible for their own approval user experience.
+
+[WARNING]
+====
+Do not rely on elicitation as the only authorization control.
+Use {productname} role-based access control permissions, OAuth scopes, network restrictions, and client-side tool approval policies.
+====
+
+Enable write tools only for a deployment where they are required.
+For high-risk operations:
+
+* Resolve and verify the target system ID.
+* Review the generated arguments before approval.
+* Apply changes to a small scope first.
+* Verify the resulting scheduled action in the {productname} {webui}.
+
+Using the `remove_system` tool is a destructive operation.
+When `cleanup=true`, the tool requests forced deletion and cleanup of the system.
+
+== Hardening the deployment
+
+You can harden the MCP Server deployment by applying the following controls:
+
+* Provide TLS termination for HTTP deployments.
+* Never expose unauthenticated HTTP mode to an untrusted network.
+* Keep `UYUNI_MCP_SSL_VERIFY=true`.
+* Store passwords, OAuth configuration, and SSH private keys in a secrets-management system or protected environment file.
+* Pin the MCP Server container to a reviewed release.
+* Use `INFO` or `WARNING` logging in production and protect log files from unauthorized access.
+* Restrict network access from the MCP Server to the required {productname} and identity-provider endpoints.
+
+== AI and prompt security
+
+An AI assistant can use text from prompts and external content when deciding whether and how to call a tool.
+This content might contain misleading or malicious instructions.
+Treat any tool call based on untrusted content as untrusted until you review it.
+
+Configure the MCP host to require explicit approval for state-changing tools.
+Before approval, verify the tool name, target IDs, update or action IDs, and all arguments.
+Do not provide secrets in prompts.
+Do not ask the model to reproduce environment variables, access tokens, passwords, or private keys.

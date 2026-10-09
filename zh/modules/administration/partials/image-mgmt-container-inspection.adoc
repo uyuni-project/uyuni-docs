@@ -1,0 +1,32 @@
+==== 映像检查
+
+基础容器镜像 (BCI) 附带了运行它们所需的所有软件，但由于它们非常轻量，因此可能不包含检查所需的全部工具和库。
+
+执行容器镜像检查时，{productname} 会将 {salt} 捆绑包 (`venv-salt-minion`) 从构建主机（计划执行检查的位置）复制并提取到目标容器中，然后在容器内执行它。
+因此，目标容器镜像必须满足构建主机 {salt} 捆绑包的动态依赖项。
+
+如果目标容器镜像缺少所需的动态库，检查将会失败。
+例如，您可能会看到如下错误消息：
+
+----
+libssl.so.1.1: cannot open shared object file: No such file or directory
+----
+
+最常见的依赖项问题与 OpenSSL 库有关，因为 {salt} 捆绑包的 Python 模块是动态链接到构建主机的 OpenSSL 版本的。
+由于 OpenSSL 版本在不同的主要操作系统版本（例如 SLE 15 和 SLE 16）之间存在差异，因此兼容性取决于构建主机和目标镜像：
+
+* **在 SLE 15 构建主机上**：
+  {salt} 捆绑包是针对 OpenSSL 1.1 编译的（提供 `libssl.so.1.1`）。
+  因此，在 SLE 15 构建主机上检查的任何容器镜像必须安装 OpenSSL 1.1（通常通过 `libopenssl1_1` 软件包安装）。
+  由于 SLE 16 和 openSUSE Leap 16 上不提供 OpenSSL 1.1，因此 SLE 16 / Leap 16 容器镜像 *无法* 在 SLE 15 构建主机上进行检查。
+
+* **在 SLE 16 构建主机上**：
+  {salt} 捆绑包是针对 OpenSSL 3 编译的（提供 `libssl.so.3`）。
+  因此，在 SLE 16 构建主机上检查的任何容器镜像必须安装 OpenSSL 3（通常通过 `libopenssl3` 软件包安装）。
+
+为确保成功进行容器镜像检查，请遵循以下最佳实践：
+
+* 匹配构建主机和目标容器镜像的主要操作系统版本。例如，使用 SLE 16 / Leap 16 构建主机来检查 SLE 16 / Leap 16 容器镜像，并使用 SLE 15 构建主机来检查 SLE 15 容器镜像。
+* 在容器镜像内安装正确版本的 OpenSSL（例如，通过将 `libopenssl3`（针对 SLE 16）或 `libopenssl1_1`（针对 SLE 15）添加到 `Dockerfile` 中）并重新构建容器镜像。
+
+相同的依赖项要求也适用于其他动态库，例如 `libexpat`。

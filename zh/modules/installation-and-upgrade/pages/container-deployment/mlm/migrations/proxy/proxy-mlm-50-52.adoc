@@ -1,0 +1,544 @@
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+= 代理从 5.0 升级到 5.2
+:description: 在运行 SUSE Linux Enterprise Micro 5.5 或 SUSE Linux Enterprise Server 15 SP6 的系统上，将代理扩展从版本 5.0 升级到版本 5.2。
+:revdate: 2026-09-14
+:page-revdate: {revdate}
+
+== 简介
+
+
+本文提供了经过测试和验证的步骤，用于在 **{productname}** 管理的环境中迁移 **主机操作系统** 和 **代理扩展**，特别是针对部署了 **{productname} 代理 5.0** 的系统。
+
+涵盖的升级场景包括：
+
+* 从 **SUSE Linux Enterprise Micro (SLE Micro) 5.5** 迁移到 **SL Micro 6.2**
+* 从 **SUSE Linux Enterprise Server (SLES) 15 SP6** 迁移到 **SLES 15 SP7**
+* 将 **{productname} 代理扩展** 从 **版本 5.0** 升级到 **版本 {productnumber}**
+
+[IMPORTANT]
+====
+在迁移代理之前，需要先将 SUSE Manager 5.0 服务器迁移至 {productname} {productnumber}。
+====
+
+[IMPORTANT]
+====
+在将代理升级到 {productname} {productnumber} 之前，您必须将 {productname} 5.0 代理更新到最新的可用维护更新，并确保其正在运行（请参阅 xref:installation-and-upgrade:container-management/updating-proxy-containers.adoc[Proxy Maintenance Update]）。
+====
+
+
+== {sle-micro} 5.5 到 {sl-micro} 6.2
+
+本节提供经过测试的方案，用于将部署了 {productname} 5.0 代理的 {sle-micro} 5.5 主机升级至 {sl-micro} 6.2，并搭配 {productname} {productnumber} 代理。
+
+
+=== 先决条件
+
+* {productname} 5.0 代理已安装并在 {sle-micro} 5.5 上运行。
+* {productname} 5.0 代理已更新到最新的可用维护更新，并且正在运行（请参阅 xref:installation-and-upgrade:container-management/updating-proxy-containers.adoc[Proxy Maintenance Update]）。
+* 代理系统已在 {productname} 服务器上注册。
+
+
+=== 发行套件升级和代理迁移
+
+.过程：升级将 {productname} 5.0 代理迁移到 {productname} {productnumber} 代理
+[role=procedure]
+_____
+
+. 验证系统和 {productname} 工具版本。
+
++
+
+[source,console]
+----
+cat /etc/os-release
+mgrpxy --version
+----
+
++
+
+确认以下信息：
+
+* 操作系统：`SLE Micro 5.5`
+* 工具版本：`mgrpxy version 0.1.29` 或更高版本
+
++
+
+. 检查正在运行的容器：
+
++
+
+[source,console]
+----
+podman ps
+----
+
++
+
+确保 spacewalk 服务正在运行：
+
+- `proxy-squid`
+- `proxy-ssh`
+- `proxy-httpd`
+- `proxy-tftpd`
+- `proxy-salt-broker`
+
++
+
+. 在 {productname} 服务器中同步新的代理产品。
+  有关更多信息，请参见 xref:client-configuration:products.adoc[]。
+
++
+
+使用 Web UI 进行同步：
+
+* `SL Micro 6.2`
+* `{productname} Proxy Extension {productnumber}`
+
++
+
+. 执行迁移
+  有关更多信息，请参见 xref:client-configuration:client-upgrades-product-migration.adoc[]。
+
++
+
+导航至代理系统并选择 menu:系统[概览] > menu:软件[产品迁移]。
+
++
+
+将
+
+* `SLE Micro 5.5` + `SUSE Manager Proxy 5.0 Extension`
+
++
+
+迁移到
+
+* `SL Micro 6.2` + `{productname} Proxy Extension {productnumber}`
+
++
+
+[IMPORTANT]
+====
+出现提示时，除非您已确认可选通道是必需的，否则**请勿选择**可选通道。
+====
+
++
+
+[NOTE]
+====
+建议您在升级前备份该服务器。
+====
+
++
+
+. 监控迁移操作
+
++
+
+您可以在 menu:系统[详细信息> 事件] 选项卡中查看处理过程，位于 {webui}。
+
++
+
+. 完成迁移后，重引导系统：
+
++
+
+[source,console]
+----
+reboot
+mgrpxy stop
+----
+
++
+
+. 重引导后的检查：
+
++
+
+验证升级后的操作系统和 {productname} 扩展：
+
++
+
+[source,console]
+----
+cat /etc/os-release
+SUSEConnect --status-text
+----
+
++
+
+. 验证 {productname} 工具版本。
+
++
+
+[source,console]
+----
+mgrpxy --version
+----
+
++
+
+预期输出：
+
+- `mgrpxy version 5.2` 或更高版本
+
++
+
+. 启用根 SSH 访问（_如有需要_）。
+  SL Micro 6.2 默认禁用通过 SSH 的 root 登录。
+  编辑 `/etc/ssh/sshd_config.d/sshd.conf`：
+
++
+
+[source,console]
+----
+PermitRootLogin yes
+----
+
++
+
+重启该服务：
+
++
+
+[source,shell]
+----
+systemctl restart sshd
+----
+
++
+
+有关更多信息，请参见 xref:administration:troubleshooting/tshoot-remote-root-on-micro.adoc[]。
+
+
+. 以 RPM 软件包形式安装新的代理容器映像。
+
++
+
+[source,shell]
+----
+transactional-update pkg install suse-multi-linux-manager-5.2-<arch>-proxy*
+----
+
+. 重引导代理。
+
+. 升级代理容器：
+
++
+
+[source,console]
+----
+mgrpxy upgrade
+mgrpxy stop
+mgrpxy start
+----
+
++
+
+对于隔离的安装，请先升级容器 RPM 软件包，然后运行 `mgrpxy upgrade` 命令。
+
++
+
+对于在 {kube} 集群上运行的代理，请参阅 xref:specialized-guides:kubernetes-guide/proxy-kubernetes-upgrade.adoc[]。
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
++
+
+. 确认代理容器可正常运行
+
++
+
+[source,console]
+----
+podman ps
+----
+
++
+
+所有预期的代理容器均应正常启动并运行。
+
+- `proxy-salt-broker`
+- `proxy-httpd`
+- `proxy-squid`
+- `proxy-tftpd`
+- `proxy-ssh`
+
+_____
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-version-number.adoc[leveloffset=+1]
+include::installation-and-upgrade:partial$snippet-tag-containers.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-version-number.adoc[leveloffset=+1]
+include::../../../../../partials/snippet-tag-containers.adoc[leveloffset=+1]
+endif::[]
+
+
+
+=== 迁移完成
+
+代理主机系统现已运行 {sl-micro} 6.2，并搭载更新的 {productname} {productnumber} 代理软件包及同步的产品通道。
+
+
+== {sles} 15 SP6 升级到 15 SP7
+
+本节提供将部署了 {productname} 5.0 代理的 {sles} SP6 主机升级到 {sles} {sp-version} 的过程，使用 {productname} {productnumber} 代理。
+
+
+=== 先决条件
+
+* {productname} 代理 5.0 已安装并在 {sles} 15 SP6 上运行。
+* {productname} 5.0 代理已更新到最新的可用维护更新，并且正在运行（请参阅 xref:installation-and-upgrade:container-management/updating-proxy-containers.adoc[Proxy Maintenance Update]）。
+* 代理系统已在 {productname} 服务器上注册。
+
+
+=== 发行套件升级和代理迁移
+
+.过程：升级在 {sles} 15 SP6 上更新 {productname} 代理组件
+[role=procedure]
+_____
+
+. 验证操作系统和 {productname} 工具版本。
+
++
+
+[source,console]
+----
+cat /etc/os-release
+mgrpxy --version
+----
+
++
+
+确认以下信息：
+
+* 操作系统：`SUSE Linux Enterprise Server 15 SP6`
+* 工具版本：`mgrpxy version 0.1.29` 或更高版本
+
+
++
+
+. 列出正在运行的代理容器
+
++
+
+[source,console]
+----
+podman ps
+----
+
++
+
+确保 spacewalk 服务正在运行：
+
+- `proxy-salt-broker`
+- `proxy-httpd`
+- `proxy-squid`
+- `proxy-tftpd`
+- `proxy-ssh`
+
++
+
+. 使用 Web UI 同步 {productname} 服务器中的新产品。
+
++
+
+有关更多信息，请参见 xref:client-configuration:products.adoc[]。
+
++
+
+同步:
+
+* `{sles} {sp-version}`
+* `{productname} Proxy Extension {productnumber}`
+
++
+
+. 执行迁移
+
++
+
+有关更多信息，请参见 xref:client-configuration:client-upgrades-product-migration.adoc[]。
+
++
+
+导航至代理系统并选择 menu:系统[概览] > menu:软件[产品迁移]。
+
++
+
+将
+
+* `{sles} 15 SP6` + `SUSE Manager Proxy 5.0 Extension`
+
++
+
+迁移到
+
+* `{sles} {sp-version}` + `{productname} Proxy Extension {productnumber}`
+
++
+
+[IMPORTANT]
+====
+出现提示时，除非您已确认可选通道是必需的，否则**请勿选择**可选通道。
+====
+
++
+
+[NOTE]
+====
+建议您在升级前备份该服务器。
+====
+
++
+
+. 监控迁移操作
+
++
+
+您可以在 {webui} 中的 menu:系统[详细信息> 事件]下按此过程操作。
+
++
+
+. 完成迁移后，重引导系统：
+
++
+
+[source,console]
+----
+mgrpxy stop
+reboot
+----
+
++
+
+. 重引导后的检查：
+
++
+
+验证操作系统和 {productname} 扩展版本：
+
++
+
+[source,console]
+----
+cat /etc/os-release
+SUSEConnect --status-text
+----
+
++
+
+. 验证 {productname} 工具版本。
+
++
+
+[source,console]
+----
+mgrpxy --version
+----
+
++
+
+预期输出：
+
+- `mgrpxy version 5.2` 或更高版本
+
++
+
+. 以 RPM 软件包形式安装新的代理容器映像。
+
++
+
+[source,shell]
+----
+zypper install suse-multi-linux-manager-5.2-<arch>-proxy*
+----
+
++
+
+. 重引导代理。
+
+. 升级代理容器：
+
++
+
+[source,console]
+----
+mgrpxy upgrade
+mgrpxy stop
+mgrpxy start
+----
+
++
+
+对于隔离的安装，请先升级容器 RPM 软件包，然后运行 `mgrpxy upgrade` 命令。
+
++
+
+对于在 {kube} 集群上运行的代理，请参阅 xref:specialized-guides:kubernetes-guide/proxy-kubernetes-upgrade.adoc[]。
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
++
+
+. 确认代理容器可正常运行
+
++
+
+[source,console]
+----
+podman ps
+----
+
++
+
+所有预期的代理容器均应正常启动并运行。
+
+- `proxy-salt-broker`
+- `proxy-httpd`
+- `proxy-squid`
+- `proxy-tftpd`
+- `proxy-ssh`
+
+_____
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-version-number.adoc[leveloffset=+1]
+include::installation-and-upgrade:partial$snippet-tag-containers.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-version-number.adoc[leveloffset=+1]
+include::../../../../../partials/snippet-tag-containers.adoc[leveloffset=+1]
+endif::[]
+
+
+
+=== 迁移完成
+
+代理主机系统现已运行 {sles} {sp-version}，并搭载更新的 {productname} {productnumber} 代理软件包以及同步的产品通道。

@@ -1,0 +1,305 @@
+[[clients-ubuntu]]
+= {ubuntu} 클라이언트 등록
+:description: 필수 소프트웨어 채널을 추가하고 Salt를 사용하여 부팅 및 초기 구성을 수행함으로써 Ubuntu 클라이언트를 등록합니다.
+:revdate: 2026-08-24
+:page-revdate: {revdate}
+
+이 섹션에는 {ubuntu} 운영 체제를 실행하는 클라이언트를 등록하는 방법에 대한 정보가 포함되어 있습니다.
+
+ifeval::[{mlm-content} == true]
+
+// Use list format: repository URLs / packages and metadata / version info
+[IMPORTANT]
+====
+* 패키지 및 메타데이터는 {suse}가 아닌 Ubuntu에서 제공합니다.
+* 지원되는 제품에 대해서는 xref:client-configuration:supported-features-ubuntu.adoc[]의 릴리스 노트 및 지원 테이블을 참조하십시오.
+====
+endif::[]
+
+ifeval::[{mlm-content} == true]
+
+{productname}은(는) {ubuntu}를 사용하여 {salt} 22.04 LTS, 24.04 LTS 및 26.04 LTS 클라이언트를 지원합니다.
+endif::[]
+
+부팅은 {ubuntu} 클라이언트를 시작하고 리포지토리 설정 및 프로파일 업데이트와 같은 초기 상태 실행을 지원합니다.
+그러나 {ubuntu}의 루트는 기본적으로 비활성화되어 있으므로 부팅을 사용하려면 Python에 대한 `sudo` 권한이 있는 기존 사용자가 필요합니다.
+
+[IMPORTANT]
+====
+Canonical은 {productname}를 지지하거나 지원하지 않습니다.
+====
+
+== 소프트웨어 채널 추가
+
+
+{ubuntu} 클라이언트를 {productname} 서버에 등록하기 전에 필요한 소프트웨어 채널을 추가하고 이 채널을 동기화해야 합니다.
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$arch-other-note.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/arch-other-note.adoc[]
+endif::[]
+
+ifeval::[{mlm-content} == true]
+
+이 절차에 필요한 제품은 다음과 같습니다.
+
+[[ubuntu-channels-wizard]]
+[cols="1,1", options="header"]
+.Ubuntu 제품 - WebUI
+|===
+
+| OS 버전     | 제품 이름
+| {ubuntu} 26.04 | Ubuntu 26.04
+| {ubuntu} 24.04 | Ubuntu 24.04
+| {ubuntu} 22.04 | Ubuntu 22.04
+|===
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$addchannels_vendor_webui.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/addchannels_vendor_webui.adoc[]
+endif::[]
+
+또는 명령 프롬프트에서 채널을 추가할 수 있습니다.
+이 절차에 필요한 채널은 다음과 같습니다.
+
+[[ubuntu-channels-cli]]
+[cols="1,1", options="header"]
+.Ubuntu 채널 - CLI
+|===
+
+| OS 버전     | 기본 채널
+| {ubuntu} 26.04 | ubuntu-2604-amd64-main-amd64
+| {ubuntu} 24.04 | ubuntu-2404-amd64-main-amd64
+| {ubuntu} 22.04 | ubuntu-2204-amd64-main-amd64
+|===
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$addchannels_vendor_cli.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/addchannels_vendor_cli.adoc[]
+endif::[]
+
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+이 절차에 필요한 채널은 다음과 같습니다.
+
+[[ubuntu-channels-cli-uyuni]]
+[cols="1,1,1,1,1,1", options="header"]
+.Ubuntu 채널 - CLI
+|===
+
+| OS 버전 | 기본 채널 | 주 채널 | 업데이트 채널 | 보안 채널 | 클라이언트 채널
+
+| {ubuntu} 26.04 | ubuntu-2604-pool-amd64-uyuni | ubuntu-2604-amd64-main-uyuni | ubuntu-2604-amd64-main-updates-uyuni | ubuntu-2604-amd64-main-security-uyuni | ubuntu-2604-amd64-uyuni-client
+| {ubuntu} 24.04 | ubuntu-2404-pool-amd64-uyuni | ubuntu-2404-amd64-main-uyuni | ubuntu-2404-amd64-main-updates-uyuni | ubuntu-2404-amd64-main-security-uyuni | ubuntu-2404-amd64-uyuni-client
+| {ubuntu} 22.04 | ubuntu-2204-pool-amd64-uyuni | ubuntu-2204-amd64-main-uyuni | ubuntu-2204-amd64-main-updates-uyuni | ubuntu-2204-amd64-main-security-uyuni | ubuntu-2204-amd64-uyuni-client
+|===
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$addchannels_novendor_cli.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/addchannels_novendor_cli.adoc[]
+endif::[]
+
+[IMPORTANT]
+====
+새 채널을 완전히 동기화한 후에 Ubuntu 클라이언트를 부트스트랩해야 합니다.
+====
+
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+
+== Ubuntu ESM 패키지 미러링
+
+Canonical은 https://ubuntu.com/security/esm[확장 보안 유지 관리] (**ESM**) 패키지를 https://ubuntu.com/pro[Ubuntu Pro] 사용자 및 고객에게 제공합니다.
+이 패키지는 여러 운영 체제 구성 요소 및 선택된 애플리케이션에 대해 더 긴 유지 관리 (_10년에서 12년_)을 제공합니다.
+
+이러한 리포지토리는 {productname} Ubuntu Pro에 등록된 시스템에서 필요한 **GPG 키** 및 개인 **Bearer 토큰**을 추출하면 내에서 동기화할 수도 있습니다.
+
+
+=== GPG 키 및 Bearer 토큰 추출
+
+Ubuntu Pro에 Ubuntu 호스트를 등록합니다.
+개인 등록 토큰은 https://ubuntu.com/pro/dashboard[Ubuntu Pro 대시보드]에서 찾을 수 있습니다.
+이를 위해서는 https://login.ubuntu.com/[Ubuntu One 계정]이 필요합니다.
+
+----
+sudo apt-get install ubuntu-advantage-tools
+sudo pro attach <perosnal_token>
+----
+
+등록 후, 파일 `/etc/apt/auth.conf.d/90ubuntu-advantage`에서 Bearer 토큰을 찾을 수 있습니다:
+
+----
+machine esm.ubuntu.com/apps/ubuntu/ login bearer password <token>  # ubuntu-pro-client
+machine esm.ubuntu.com/infra/ubuntu/ login bearer password <token>  # ubuntu-pro-client
+----
+
+[NOTE]
+====
+리포지토리당 1개의 전용 bearer 토큰이 사용됩니다.
+====
+
+{productname} 내에 다음 리포지토리를 구성합니다:
+
+=== Ubuntu ESM 리포지토리 구성
+
+리포지토리를 만들려면 다음 URL을 사용합니다.
+
+[[ubuntu-esm-repositories]]
+[cols="1,1", options="header"]
+.Ubuntu ESM 리포지토리
+|===
+
+| URL     | 설명
+| https://bearer:<token>@esm.ubuntu.com/infra/ubuntu/dists/<release>-infra-updates/main/binary-<arch>/ | 운영 체제 기능 업데이트
+| https://bearer:<token>@esm.ubuntu.com/infra/ubuntu/dists/<release>-infra-security/main/binary-<arch>/ | 운영 체제 보안 업데이트
+| https://bearer:<token>@esm.ubuntu.com/apps/ubuntu/dists/<release>-apps-updates/main/binary-<arch>/ | 애플리케이션 기능 업데이트
+| https://bearer:<token>@esm.ubuntu.com/apps/ubuntu/dists/<release>-apps-security/main/binary-<arch>/ | 애플리케이션 보안 업데이트
+|===
+
+`<token>`을(를) 개인 Bearer Token으로 교체하십시오. 또한, `arch`와 `release`은 다음 값 중 하나로 교체해야 합니다:
+
+[[ubuntu-esm-archs-releases]]
+[cols="1,1", options="header"]
+.Ubuntu ESM 아키텍처 및 릴리스
+|===
+
+| 아키텍처 | 릴리스
+| `amd64`, `arm64`, `armel`, `armhf`, `i386`, `powerpc`, `ppc64el`, `s390x` | `bionic`, `focal`, `jammy`, `noble`, `resolute`, `trusty`, `xenial`
+|===
+
+{productname}이(가) 리포지토리를 동기화하려면, 해당 GPG 키(`ubuntu-advantage-esm-infra-trusty.gpg`, `ubuntu-advantage-esm-apps.gpg`)를 가져와야 합니다. 이들은 `/etc/apt/trusted.gpg.d` 아래 Ubuntu Pro에 등록된 시스템에 위치해 있습니다. 이 파일들을 {productname} 시스템으로 복사하고 다음과 같이 가져옵니다:
+
+----
+mgradm gpg add /path/to/gpg.key
+----
+
+이미 동기화된 {ubuntu} 부모 채널 아래에 적절한 자식 채널을 만듭니다. 그 후, 리포지토리를 동기화할 수 있습니다.
+
+[IMPORTANT]
+====
+여기에서 보여지는 절차는 구독 제한을 우회하는 데 사용할 수 있지만, 이는 서비스 약관 위반에 해당하며 **법적 결과**를 초래할 수 있습니다. 사용되는 시스템 수에 대해 항상 충분한 구독이 있어야 합니다.
+====
+
+endif::[]
+
+== 동기화 상태 확인
+
+ifeval::[{mlm-content} == true]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_webui_mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_webui_mlm.adoc[]
+endif::[]
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_webui_uyuni.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_webui_uyuni.adoc[]
+endif::[]
+
+endif::[]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_cli.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_cli.adoc[]
+endif::[]
+
+[NOTE]
+====
+{ubuntu} 채널은 매우 클 수 있습니다.
+동기화는 때때로 몇 시간이 걸릴 수 있습니다.
+====
+
+
+
+== GPG 키 관리
+
+클라이언트는 소프트웨어 패키지가 설치되기 전에 GPG 키를 사용하여 패키지의 진위를 확인합니다.
+신뢰할 수 있는 소프트웨어만 클라이언트에 설치할 수 있습니다.
+
+[IMPORTANT]
+====
+GPG 키를 신뢰하는 것은 클라이언트의 보안을 위해 중요합니다.
+어떤 키가 필요하고 신뢰할 수 있는지를 결정하는 것은 관리자의 임무입니다.
+GPG 키가 신뢰되지 않을 때 소프트웨어 채널을 사용할 수 없기 때문에, 클라이언트에 채널을 할당하는 결정은 키를 신뢰하는 결정에 달려 있습니다.
+====
+
+GPG 키에 대한 자세한 정보는 xref:client-configuration:gpg-keys.adoc[]을(를) 참조하십시오.
+
+
+== 루트 액세스
+
+{ubuntu}의 루트 사용자는 SSH 액세스에 대해 기본적으로 비활성화되어 있습니다.
+일반 사용자 계정으로 온보딩하려면 클라이언트 시스템에서 `sudoers` 파일을 편집해야 합니다.
+
+루트 사용자가 아닌 온보딩을 위한 `sudo` 구성 방법에 대한 자세한 지침은 xref:client-configuration:registration-sudo.adoc[]을(를) 참조하십시오.
+
+
+=== SSH를 통해 설치 시 생성된 사용자로 부팅합니다.
+
+SSH를 통해 Ubuntu 클라이언트를 부팅하려면 설치 시 생성된 사용자를 sudo 그룹에 추가해야 합니다.
+그런 다음 클라이언트에서 부팅 스크립트를 실행합니다.
+
+.절차 설치 시 생성된 사용자를 sudo 그룹에 추가하고 SSH를 통해 부팅합니다.
+[role="procedure"]
+_____
+. 클라이언트에서 루트 권한으로 명령줄에서 실행합니다(`<username>`을(를) 설치 시 생성된 사용자의 이름으로 바꾸기):
++
+----
+sudo usermod -aG sudo <username>
+----
+
+. 명령줄에서 클라이언트 시스템을 부팅합니다(`<SERVER_FQDN>`을(를) {productname} 서버의 정규화된 도메인 이름으로 바꾸기):
++
+----
+sudo su -
+curl -Sks https://<SERVER_FQDN>/pub/bootstrap/bootstrap-script.sh | /bin/bash
+----
+_____
+
+[IMPORTANT]
+====
+{ubuntu}은(는) 위와 같이 `sudo su -`을(를) 실행한 후 클라이언트 시스템의 명령줄에서 해당 {ubuntu} 부팅 스크립트를 사용해야만 부팅할 수 있습니다.
+루트가 기본적으로 {productname} {webui}에서 비활성화되어 있고, {webui}이 {ubuntu} 설치 시 생성된 사용자의 권한 상승을 허용하지 않기 때문에 {ubuntu}를 통해 부팅할 수 없습니다.
+====
+
+
+
+== 클라이언트 등록
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$create_bootstrap_repo_register.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/create_bootstrap_repo_register.adoc[]
+endif::[]
+

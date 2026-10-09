@@ -1,0 +1,136 @@
+:description: 更新主机，然后升级 {productname} 代理容器。
+:revdate: 2026-09-08
+:page-revdate: {revdate}
+
+ifeval::[{mlm-content} == true]
+= 代理维护更新
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+= 代理升级
+endif::[]
+
+ifeval::[{mlm-content} == true]
+在运行升级命令之前，必须更新主机操作系统。
+更新主机操作系统还会导致 {productname} 工具的更新，例如 `mgrpxy` 工具。
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+在运行升级命令之前，需要更新主机上的 {productname} 容器工具，例如 `mgrpxy` 工具。
+endif::[]
+
+.过程：升级升级代理
+[role=procedure]
+____
+. 使用 `zypper` 刷新软件储存库：
+
++
+
+[source,shell]
+----
+zypper ref
+----
+
+ifeval::[{mlm-content} == true]
+
+. 根据主机操作系统执行以下步骤：
+
++
+
+对于 {sl-micro} 等事务型系统：::
+
++
+
+--
+
+. 使用 `transactional-update` 应用可用更新：
+
++
+
+[source,shell]
+----
+transactional-update
+----
+
+. 如果已应用更新，`reboot`。
+
+--
+
++
+
+对于{sles}：::
+
++
+
+--
+
+使用 `zypper` 更新已安装的软件：
+
+[source,shell]
+----
+zypper up
+----
+
+--
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+. 更新 {productname} 容器工具：
+
++
+
+[source,shell]
+----
+zypper up mgrpxy mgrctl mgrpxy-bash-completion mgrctl-bash-completion
+----
+
+endif::[]
+
++
+
+. 可使用以下命令来更新在 {productname} 上运行的 `podman` 代理容器：
+
++
+
+[source,shell]
+----
+mgrpxy upgrade
+----
+
++
+
+对于在 {kube} 集群上运行的代理，请参阅 xref:specialized-guides:kubernetes-guide/proxy-kubernetes-upgrade.adoc[]。
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../partials/snippet-post-upgrade-cleanup.adoc[]
+endif::[]
+
+____
+
+
+[NOTE]
+====
+如果在升级到特定版本时未指定标签参数，则默认升级到最新版本。
+要升级到特定版本，请提供带有所需映像标签的标签参数。
+====
+
+[IMPORTANT]
+====
+
+ifeval::[{mlm-content} == true]
+
+虽然可以使用特定的标记升级特定的容器，但此功能仅可用于应用 PTF。我们强烈建议对所有代理容器使用同一标记，以确保在正常情况下保持一致性。
+endif::[]
+
+虽然可以使用特定的标记升级特定的容器，但此功能仅可用于应用 PTF。我们强烈建议对所有代理容器使用同一标记，以确保在正常情况下保持一致性。
+====
+
+对于隔离的安装，请先升级容器 RPM 软件包，然后运行 `mgrpxy upgrade` 命令。

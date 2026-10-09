@@ -1,0 +1,38 @@
+SSL证书在后续阶段是必需的。
+如果不使用自签名生成的CA和证书，请确保在开始前已准备好以下内容：
+
+* 证书颁发机构 (CA) 的 SSL 公共证书。
+  如果您使用 CA 链，则所有中间 CA 也必须可用。
+* SSL 数据库私用密钥。
+* SSL 证书
+
+所有文件必须采用 PEM 格式。
+
+SSL 服务器证书的主机名必须与其部署到的计算机的完全限定主机名相匹配。
+您可以在证书的 `X509v3 Subject Alternative Name` 部分中设置主机名。
+如果您的环境需要，您还可以列出多个主机名。
+支持的密钥类型为 `RSA` 和 `EC`（椭圆曲线）。
+
+[NOTE]
+====
+过去，数据库SSL证书需要`reportdb`和`db`作为`Subject Alternative Name`。
+现在不再需要这样做，仅需将服务器FQDN（用于访问报告数据库）作为`Subject Alternative Name`即可。
+====
+
+数据库容器只需要外部完全限定的域名。
+带有 `db` 和 `reportdb` SAN 的旧证书仍然可以使用。
+
+同一证书可以用于主容器和数据库容器。
+
+为了将新证书传递给升级命令，请使用 `--ssl-db-ca-root`、`--ssl-db-cert` 和 `--ssl-db-key` 参数。
+
+
+
+ifeval::[{mlm-content} == true]
+
+在{productname} 5.2中，`uyuni-server`和`uyuni-db` Podman容器之间的内部通信已得到优化。
+由于此流量严格限于本地，因此TLS现在在`/etc/rhn/rhn.conf`中被明确禁用。
+因此，不再需要或使用在证书的主题备用名称（SAN）中定义 `db` 和 `reportdb`。
+然而，边界安全性已变得更加严格，远程连接到PostgreSQL端口（`5432`）现在被明确强制要求通过`/var/lib/pgsql/data/pg_hba.conf`进行TLS保护。
+
+endif::[]
