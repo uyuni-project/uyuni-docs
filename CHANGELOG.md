@@ -1,3 +1,4 @@
+- Simplified PR comment wording and removed artifact icons in CI comment script
 - Fixed published version numbers that dropped a trailing zero, such as 2026.10 appearing as 2026.1
 - Updated images in documentation with teh correct product name (bsc#1257074)
 - Documented SLES 16.1 and openSUSE Leap 16.1 support and migration paths
