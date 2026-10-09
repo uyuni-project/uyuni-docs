@@ -1,7 +1,7 @@
 [[space-management]]
 = Disk Space Management
 :description: Manage disk space by configuring monitored directories and alert thresholds using environment variables in systemd service override files
-:revdate: 2026-07-01
+:revdate: 2026-10-08
 :page-revdate: {revdate}
 
 Running out of disk space can have a severe impact on the {productname} database and file structure which, in some cases, is not recoverable.
@@ -10,6 +10,8 @@ Running out of disk space can have a severe impact on the {productname} database
 You can modify which directories are monitored, and the warnings that are created using environment variables in systemd service override files.
 
 When the available space in one of the monitored directories falls below a warning threshold, a message is sent to the configured email address and a notification is shown at the top of the sign-in page.
+
+Only the file systems that hold the monitored directories are checked.
 
 
 
@@ -99,15 +101,85 @@ For tuning recommendations for large deployments, see xref:specialized-guides:la
 ====
 
 
+[[space-management-free-space-thresholds]]
+=== Free Space Thresholds
+
+On large volumes, a percentage can raise alerts while plenty of space is still available.
+For example, a 6{nbsp}TB volume that is 97% used still has about 200{nbsp}GB available.
+In this case, you can define the thresholds as available space in megabytes (MB) instead of used space percentage, with these environment variables:
+
+`DISKCHECKALERT_FREE_MB`::
+A warning is created when the available space falls below this value.
+When set, it replaces the `DISKCHECKALERT` percentage threshold.
+
+`DISKTHRESHOLD_FREE_MB`::
+A critical alert is created, and the container health check fails, when the available space falls below this value.
+When set, it replaces the `DISKTHRESHOLD` percentage threshold.
+
+These variables are not set by default, so the percentage thresholds are used.
+Each variable only replaces the percentage threshold of its own level.
+For example, if you only set `DISKTHRESHOLD_FREE_MB`, warnings are still created using `DISKCHECKALERT`.
+The values must be non-negative integers.
+An invalid value is reported as a misconfiguration, and the percentage threshold is used for that level instead.
+
+These variables can only be set as environment variables.
+They have no equivalent in [path]``/etc/rhn/rhn.conf``.
+
+.Procedure: Configuring Free Space Thresholds
+. Create systemd override directories:
++
+----
+mkdir -p /etc/systemd/system/uyuni-server.service.d/
+mkdir -p /etc/systemd/system/uyuni-db.service.d/
+----
+
+. Create configuration files for both server and database services.
+This example creates a warning below 200{nbsp}GB and a critical alert below 50{nbsp}GB of available space:
++
+----
+cat > /etc/systemd/system/uyuni-server.service.d/diskcheck.conf << 'EOF'
+[Service]
+Environment="PODMAN_EXTRA_ARGS=--env DISKCHECKALERT_FREE_MB=204800 --env DISKTHRESHOLD_FREE_MB=51200"
+EOF
+
+cat > /etc/systemd/system/uyuni-db.service.d/diskcheck.conf << 'EOF'
+[Service]
+Environment="PODMAN_EXTRA_ARGS=--env DISKCHECKALERT_FREE_MB=204800 --env DISKTHRESHOLD_FREE_MB=51200"
+EOF
+----
++
+[NOTE]
+====
+Each override file can only contain one [systemitem]``PODMAN_EXTRA_ARGS`` value.
+To set several disk check variables, such as `DISKCHECKDIRS` and the thresholds, add all the `--env` options to the same line.
+====
+
+. Apply the configuration by restarting {productname}:
++
+----
+mgradm restart
+----
+
+[IMPORTANT]
+====
+The same thresholds apply to every monitored directory.
+If the monitored directories are on file systems of very different sizes, choose values that leave enough headroom on the smallest one.
+====
+
+
 == Database Disk Check
 
 The database container has its own disk check that monitors only the PostgreSQL data directory (`/var/lib/pgsql/data`).
 This directory is always monitored and cannot be changed or overridden with the `DISKCHECKDIRS` environment variable.
 
-The database disk check uses the `DISKCHECKALERT` and `DISKTHRESHOLD` environment variables configured for the `uyuni-db` service.
+The database disk check uses the `DISKCHECKALERT`, `DISKTHRESHOLD`, `DISKCHECKALERT_FREE_MB`, and `DISKTHRESHOLD_FREE_MB` environment variables configured for the `uyuni-db` service.
 
-The database disk check runs as a PostgreSQL function and is invoked during container health checks.
-When the threshold is exceeded, the health check will fail and the container will be automatically stopped to prevent data corruption.
+The database disk check runs during the container health checks and when the container starts.
+When the critical threshold is exceeded, the health check will fail and the container will be automatically stopped to prevent data corruption.
+The container does not start while the critical threshold is exceeded.
+
+The warnings and notifications for the database are created by a PostgreSQL function that reads the thresholds every time it runs.
+Changes to the thresholds take effect after you restart {productname}.
 
 [IMPORTANT]
 ====
@@ -118,11 +190,35 @@ To monitor other directories, use the server container configuration.
 
 
 
+[[space-management-kubernetes]]
+== Kubernetes Deployments
+
+When {productname} is deployed on {kube} with the `server-helm` chart, the disk check variables are set with the `diskcheck` values instead of systemd override files.
+The values apply to both the server and database containers, except `dirs`, which only applies to the server container.
+Values that are not set use the container defaults.
+
+[source,yaml]
+----
+diskcheck:
+  alert: 90               # DISKCHECKALERT
+  threshold: 95           # DISKTHRESHOLD
+  alertFreeMB: 204800     # DISKCHECKALERT_FREE_MB
+  thresholdFreeMB: 51200  # DISKTHRESHOLD_FREE_MB
+  dirs: "/var/spacewalk /var/cache /srv"  # DISKCHECKDIRS
+----
+
+Pass the file to `helm install` or `helm upgrade` with `-f values.yaml`.
+
+On {kube}, a critical disk usage on the server container makes the liveness probe fail.
+
+
+
 == Disable Space Checking
 
 The space checking tool is enabled by default and runs hourly via a Taskomatic scheduled task.
 Notification can be disabled by disabling diskcheck-task-queue-default Taskomatic job.
 To effectively disable disk space monitoring, set the threshold values to 99 (percent).
+If you use the free space thresholds, set `DISKCHECKALERT_FREE_MB` and `DISKTHRESHOLD_FREE_MB` to `0` instead, because they replace the percentage thresholds.
 
 .Procedure: Disabling Disk Space Monitoring
 . Edit the systemd override files to set very high thresholds:
