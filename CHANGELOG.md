@@ -1,3 +1,4 @@
+- Clarified requirements for Liberty client registration (bsc#1284967)
 - Documented passwordless sudo requirement for PAYG connections (bsc#1280881)
 - Documented SLES 16.1 and openSUSE Leap 16.1 support and migration paths
 - Added Multi-Linux Manager MCP Server book
