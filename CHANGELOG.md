@@ -1,3 +1,4 @@
+- Added missing repository value in server on kubernetes upgrade instructions
 - Expanded and corrected RBAC Web UI documentation (bsc#1258079)
 - Documented passwordless sudo requirement for PAYG connections (bsc#1280881)
 - Documented how to upgrade the server on Kubernetes
