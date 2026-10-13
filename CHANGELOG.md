@@ -1,3 +1,4 @@
+- Promoted Enhanced SCAP Auditing from beta to default and merged it into the OpenSCAP page in the Administration Guide
 - Published the docs builder image for amd64 and arm64 so Apple Silicon builds do not emulate the amd64 Go toolchain
 - Documented how to collect a support bundle on Kubernetes with the kubectl mlm-supportconfig plugin
 - Clarified requirements for Liberty client registration (bsc#1284967)
