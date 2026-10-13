@@ -1,3 +1,4 @@
+- Clarified the registry secret creation in the proxy on Kubernetes page (bsc#1276906)
 - Documented passwordless sudo requirement for PAYG connections (bsc#1280881)
 - Documented how to upgrade the server on Kubernetes
 - Documented ppc64le support for Red Hat Enterprise Linux 7, 8, 9, and 10 in Uyuni
