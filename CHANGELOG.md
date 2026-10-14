@@ -1,4 +1,5 @@
 - Clarified FQDN requirements for Hub online synchronization (bsc#1275191)
+- Expanded and corrected RBAC Web UI documentation (bsc#1258079)
 - Documented passwordless sudo requirement for PAYG connections (bsc#1280881)
 - Documented SLES 16.1 and openSUSE Leap 16.1 support and migration paths
 - Added Multi-Linux Manager MCP Server book
