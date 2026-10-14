@@ -7,12 +7,33 @@
 Sometimes clients connected through a proxy appear in the {webui}, but do not show that they are connected through a proxy.
 This can occur if you are not using the fully qualified domain name (FQDN) to connect, and the proxy is not known to {productname}.
 
+The way FQDNs are registered for a proxy depends on whether the proxy is managed by {salt}:
 
-To correct this behavior, specify additional FQDNs based on the configuration file location used:
+* A proxy managed by {salt} reports its FQDNs itself.
+  The list is detected automatically on the client and updated at every hardware refresh.
 
+* A foreign proxy, for example a {kube} proxy that is not registered as a {salt} client, does not report FQDNs.
+  Its list of FQDNs is managed by the {productname} Server.
+
+[NOTE]
+====
+{productname} connects to a proxy using the primary FQDN of the proxy.
+In an environment where the proxy is known under different names, make sure that the FQDN used by the server is set as the primary FQDN of the proxy.
+You can change it in menu:Systems[Details > Hardware] by selecting it in the `Primary FQDN` field.
+====
+
+== Registering additional FQDNs for a proxy managed by {salt}
+
+[IMPORTANT]
+====
+Do not use the `Additional FQDNs` field of the proxy configuration for proxies managed by {salt}.
+The FQDNs detected on the client replace the registered list at every hardware refresh, so any FQDNs registered in another way are lost.
+Use the `custom_fqdns` grain as described below instead.
+====
+
+To register additional FQDNs, place the `custom_fqdns` grain depending on the configuration file location used:
 
 * When placing a configuration file in the `/etc/venv-salt-minion/minion.d/` directory, specify the top-level `grains` block:
-
 
 ----
 grains:
@@ -21,7 +42,6 @@ grains:
       - name.one
       - name.two
 ----
-
 
 * Alternatively, when using `/etc/venv-salt-minion/grains` directly, omit the `grains:` line because the filename itself acts as the parent grain name:
 
@@ -32,3 +52,30 @@ susemanager:
     - proxy-alias.example.com
 ----
 
+[NOTE]
+====
+The FQDNs detected on the client, together with the `custom_fqdns` grain values, are stored on the {productname} Server only when a hardware refresh completes.
+After bootstrapping the proxy host, make sure that a hardware refresh has finished before continuing with the proxy configuration.
+To run it immediately, click btn:[Schedule Hardware Refresh] in menu:Systems[Details > Hardware].
+====
+
+[NOTE]
+====
+To generate the proxy container configuration for a {salt} managed client, use the btn:[Convert to Proxy] button on the client `Overview` page.
+It opens the configuration form for that client directly and is easier to use than the generic menu:Systems[Proxy Configuration] page.
+====
+
+ifeval::[{uyuni-content} == true]
+For details about the conversion, see xref:installation-and-upgrade:container-deployment/uyuni/proxy-conversion-from-client-uyuni.adoc[].
+endif::[]
+ifeval::[{mlm-content} == true]
+For details about the conversion, see xref:installation-and-upgrade:container-deployment/mlm/proxy-conversion-from-client-mlm.adoc[].
+endif::[]
+
+== Registering additional FQDNs for a foreign proxy
+
+For a foreign proxy, the list of FQDNs is managed by the {productname} Server.
+Specify the additional FQDNs when generating the proxy container configuration, either in the `Additional FQDNs` field of the {webui} or with the repeatable `--additional-fqdn` option of the `spacecmd` commands `proxy_container_config` and `proxy_container_config_nossl`.
+For details about generating the configuration and deploying a proxy on {kube}, see xref:specialized-guides:kubernetes-guide/proxy-kubernetes-deployment.adoc[].
+
+Regenerating the configuration replaces the list of FQDNs registered for the proxy.
