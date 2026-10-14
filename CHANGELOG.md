@@ -1,3 +1,4 @@
+- Published the docs builder image for amd64 and arm64 so Apple Silicon builds do not emulate the amd64 Go toolchain
 - Documented passwordless sudo requirement for PAYG connections (bsc#1280881)
 - Documented SLES 16.1 and openSUSE Leap 16.1 support and migration paths
 - Added Multi-Linux Manager MCP Server book
