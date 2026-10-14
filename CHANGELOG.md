@@ -1,3 +1,4 @@
+- Expanded and corrected RBAC Web UI documentation (bsc#1258079)
 - Documented proxy Podman SSL secrets in the SSL certificates overview
 - Added missing repository value in server on kubernetes upgrade instructions
 - Documented passwordless sudo requirement for PAYG connections (bsc#1280881)
