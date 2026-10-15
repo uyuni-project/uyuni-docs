@@ -1,3 +1,4 @@
+- Documented how to collect a support bundle on Kubernetes with the kubectl mlm-supportconfig plugin
 - Clarified requirements for Liberty client registration (bsc#1284967)
 - Documented transactional system management
 - Clarified FQDN requirements for Hub online synchronization (bsc#1275191)
