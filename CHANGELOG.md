@@ -1,3 +1,5 @@
+- Documented cloned patch reuse for softwarechannel_clone and softwarechannel_clonetree in spacecmd reference (bsc#1282231)
+- Documented transactional system management
 - Clarified FQDN requirements for Hub online synchronization (bsc#1275191)
 - Expanded and corrected RBAC Web UI documentation (bsc#1258079)
 - Documented proxy Podman SSL secrets in the SSL certificates overview
