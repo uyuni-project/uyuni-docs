@@ -1,3 +1,4 @@
+- Clarified requirements for Liberty client registration (bsc#1284967)
 - Clarified FQDN requirements for Hub online synchronization (bsc#1275191)
 - Expanded and corrected RBAC Web UI documentation (bsc#1258079)
 - Documented proxy Podman SSL secrets in the SSL certificates overview
