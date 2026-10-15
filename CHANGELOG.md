@@ -1,3 +1,5 @@
+- Added a script to verify automatic channels synchronization status (bsc#1275628)
+- Updated images in documentation with the correct product name (bsc#1257074)
 - Documented transactional system management
 - Clarified FQDN requirements for Hub online synchronization (bsc#1275191)
 - Documented proxy Podman SSL secrets in the SSL certificates overview
