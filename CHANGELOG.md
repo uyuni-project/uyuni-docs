@@ -1,3 +1,4 @@
+- Documented cloned patch reuse for softwarechannel_clone and softwarechannel_clonetree in spacecmd reference (bsc#1282231)
 - Clarified FQDN requirements for Hub online synchronization (bsc#1275191)
 - Expanded and corrected RBAC Web UI documentation (bsc#1258079)
 - Documented passwordless sudo requirement for PAYG connections (bsc#1280881)
