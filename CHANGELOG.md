@@ -1,3 +1,99 @@
+- Documented cloned patch reuse for softwarechannel_clone and softwarechannel_clonetree in spacecmd reference (bsc#1282231)
+- Clarified FQDN requirements for Hub online synchronization (bsc#1275191)
+- Documented proxy Podman SSL secrets in the SSL certificates overview
+- Added missing repository value in server on kubernetes upgrade instructions
+- Expanded and corrected RBAC Web UI documentation (bsc#1258079)
+- Documented passwordless sudo requirement for PAYG connections (bsc#1280881)
+- Documented how to upgrade the server on Kubernetes
+- Documented ppc64le support for Red Hat Enterprise Linux 7, 8, 9, and 10 in Uyuni
+- Simplified PR comment wording and removed artifact icons in CI comment script
+- Fixed published version numbers that dropped a trailing zero, such as 2026.10 appearing as 2026.1
+- Updated images in documentation with teh correct product name (bsc#1257074)
+- Documented SLES 16.1 and openSUSE Leap 16.1 support and migration paths
+- Added information about associated activation keys being deleted when channels are deleted in Administration Guide
+- Extended proxy troubleshooting section for setting the grains (bsc#1281041)
+- Updated information for hardware requirements and a reference to large deployments requirements (bsc#1268473)
+- Documented resolving obsolete libvirt-events errors in minion logs (bsc#1272813)
+- Fixed procedure block formatting and normalized section headings to sentence case
+- Documented Salt RBAC namespaces and native Salt access controls
+- Clarified TFTP autoinstallation proxy routing and server tftpd option (bsc#1276787)
+- Added a note to the liberate formula page for special handling of kernel during reinstall (bsc#1269223)
+- Updated pages related to GPG upload from mgradm to mgrctl
+- Removed the sitemaps Antora generates from the documentation.suse.com HTML build
+- Updated the documentation.suse.com shared header to version 1.16 and marked it as the documentation portal
+- Added an English-only edit link on the documentation.suse.com and Uyuni sites so readers can propose a change to the English source
+- Documented new Taskomatic schedules (bsc#1273021)
+- Clarified requirement to update to the latest maintenance update before upgrading or migrating between versions (bsc#1270262)
+- Documented PAYG connection deletion and synchronization behavior, and fixed a broken cross-reference (github#31801)
+- Added CI action and script to comment on pull requests with latest HTML and PDF artifact links
+- Restored the server and proxy maintenance update procedures and defined maintenance update, upgrade and migration terminology
+- Added Multi-Linux Manager MCP Server book
+- Stopped generating antora.yml in gen-all, where the two products wrote one file in a random order.
+  The `-content-dir` flag of gen-all went to that file alone and is gone as well; gen-antora keeps its own
+- Added a manual trigger to the translation file workflow, which ran only on a push
+- Fixed `l10n-weblate/update-cfg-files` failing when invoked from anywhere other than
+  the `l10n-weblate/` directory
+- Sped up CI by building only English, which is all the CI artifacts have ever contained
+- Clarified relationship between custom RBAC and Salt-API access
+- Extracted and relocated general sudo configuration guidelines to a new central page, and added unprivileged onboarding support references for SLE 16 (bsc#1275794)
+- Made JOBS=00 an error, which xargs read as unlimited concurrency
+- Fixed the PDF archive tasks, which failed when the checkout path contains a space
+- Sped up PDF builds by building the books and applying the translations concurrently. JOBS=<n> caps the number of concurrent jobs
+- Fixed PDF builds so the two products no longer share one entities file, which could put SUSE Multi-Linux Manager names into Uyuni PDFs and the other way round
+- Fixed the pdf-tar tasks, which produced no archive and packaged both products into each one
+- Made an empty or incorrect LANGUAGES stop the build instead of reporting success with no output
+- Made an exported LANGUAGES set the default language selection
+- Made every build task select languages with LANGUAGES
+- Added a CI check for the revision date of changed documentation pages
+- Removed a second copy of the container image inspection section, which was published as a page with no title
+- Fixed the validate tasks to use Antora's built-in xref checking instead of the removed Antora 2 xref-validator plugin
+- Fixed noindex guards so product-specific pages no longer appear in the other product's documentation search
+- Added ppc64le support for AlmaLinux 8 in Uyuni
+- Corrected the architectures of Rocky Linux 8 in Uyuni, which has no ppc64le build upstream
+- Corrected the s390x information for AlmaLinux and Rocky Linux 9 and 10 in Uyuni
+- Documented deprecation and support limitations of plain salt-minion manual registration (bsc#1275658)
+- Added warning about known issues in Multi-Linux Manager 5.0 and 5.1 server upgrade guides (bsc#1274875)
+- Corrected and restored Debian 12 packages in the OpenSCAP packages table (bsc#1269316)
+- Documented Web UI Reactivation Key field, Salt Bundle configuration paths, and detailed warnings/behaviors for Reactivation Keys (bsc#1211440)
+- Documented requirements and limitations for container image inspection on SLES 15 and SLES 16 (bsc#1274720)
+- Documented proxy certificate replacement using spacecmd (bsc#1271329)
+- Documented certificate setup and rotation with unified mgradm ssl rotate command
+- Clarified availability of Salt's "virt" module in the Salt Bundle (bsc#1270694)
+- Documented allowing diskcheck environment variables into containers (bsc#1270033)
+- Added instruction for obtaining the certificate when renaming the server (bsc#1273853)
+- Added a common workflow for certificate setup and rotation with ACME
+- Documented how VMs are listed and referenced by virtual hosts (bsc#1273073)
+- Added documentation support for Ubuntu 26.04 client systems
+- Fixed procedures for OpenSCAP in Administration Guide (bsc#1270047)
+- Fixed the snippet to reflect the correct produst version (bsc#1272538)
+- Added the missing TFTP image in airgap install command
+- Corrected verification step order in MLM 5.0 to 5.2 upgrade guide for SL-Micro (bsc#1271678)
+- Extended configuration instructions for Saline formula in Specialized Guides
+  (bsc#1268587)
+- Enhanced instructions for Liberate formula and reactivation key in Specialized
+  Guides (bsc#1268473)
+- Fixed missing line end escapes in kubernetes helm install commands
+- Consolidated multiple duplicated activation key creation procedures into a single reusable partial snippet
+- Clarified CA certificate migration requirements (bsc#1271841)
+- Fixed Traefik installation documentation in Specialized Guides
+- Added instructions for enabling reporting dashboards in Specialized Guides
+  (bsc#1268228)
+- Add the --set tag parameter to helm install/upgrade commands as a workaround (bsc#1271902)
+- Removed legacy mgradm and mgrpxy commands
+- Documented apache2 parameter used for large deployments (bsc#1268673)
+- Documented Grafana reporting database automated setup and Hub Overview in Administration and Specialized Guides
+- Update the OpenSCAP packages table in the
+  System Security with OpenSCAP article in the Administration guide (bsc#1269316)
+- Added documentation for migrating legacy ISS v1 and ISS v2 peripheral servers
+  to ISS v3 (Hub Online Synchronization) and detailed Report DB/XMLRPC API dependencies in Specialized Guides
+- Documented SLES 15 SP7 to SLES 16.0 major upgrade via product migration in Client Configuration Guide
+- Document the repository value for helm charts on MLM (bsc#1269667)
+- Removed unsupported {raspberrypios} 12 from Client Configuration Guide
+- Added a common workflow to setup crypto policies in the server container (bsc#1253505)
+- Document Ansible Playbook variable editing (bsc#1260396)
+- Convert broken `[role]``text`` double-backtick literals in `en/modules`
+  to standard single-backtick literals for Weblate AI translation
+  compatibility
 - Document use_bundle_build custom info key for KIWI builds (bsc#1243168)
 - Move Prometheus as the first section in Monitoring Formulas
 - Add information about optional TLS Grafana configuration (bsc#1268567)
