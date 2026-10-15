@@ -1,3 +1,4 @@
+- Documented how to collect a support bundle on Kubernetes with the kubectl mlm-supportconfig plugin
 - Clarified requirements for Liberty client registration (bsc#1284967)
 - Clarified FQDN requirements for Hub online synchronization (bsc#1275191)
 - Expanded and corrected RBAC Web UI documentation (bsc#1258079)
