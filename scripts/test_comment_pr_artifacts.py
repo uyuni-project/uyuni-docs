@@ -43,13 +43,16 @@ class TestCommentPrArtifacts(unittest.TestCase):
 
         self.assertIn(cpa.COMMENT_MARKER, body)
         self.assertIn("[`abcdef1`](https://github.com/uyuni-project/uyuni-docs/commit/abcdef1234567890)", body)
-        self.assertIn("[#12345](https://github.com/uyuni-project/uyuni-docs/actions/runs/12345)", body)
+        self.assertIn("Run: [#12345](https://github.com/uyuni-project/uyuni-docs/actions/runs/12345)", body)
         self.assertIn("### Uyuni Documentation", body)
         self.assertIn("https://github.com/uyuni-project/uyuni-docs/actions/runs/12345/artifacts/101", body)
         self.assertIn("https://github.com/uyuni-project/uyuni-docs/actions/runs/12345/artifacts/102", body)
         self.assertIn("### SUSE Multi-Linux Manager Documentation", body)
         self.assertIn("https://github.com/uyuni-project/uyuni-docs/actions/runs/12345/artifacts/103", body)
         self.assertIn("https://github.com/uyuni-project/uyuni-docs/actions/runs/12345/artifacts/104", body)
+        self.assertIn("- [HTML (ZIP)](https://github.com/uyuni-project/uyuni-docs/actions/runs/12345/artifacts/101)", body)
+        self.assertNotIn("🌐", body)
+        self.assertNotIn("📄", body)
 
     def test_generate_comment_body_partial_and_extra(self):
         artifacts = [
