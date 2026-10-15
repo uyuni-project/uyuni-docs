@@ -1,3 +1,4 @@
+- Documented cloned patch reuse for softwarechannel_clone and softwarechannel_clonetree in spacecmd reference (bsc#1282231)
 - Documented how to collect a support bundle on Kubernetes with the kubectl mlm-supportconfig plugin
 - Clarified requirements for Liberty client registration (bsc#1284967)
 - Documented transactional system management
