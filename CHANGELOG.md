@@ -1,3 +1,4 @@
+- Documented transactional system management
 - Clarified FQDN requirements for Hub online synchronization (bsc#1275191)
 - Documented proxy Podman SSL secrets in the SSL certificates overview
 - Added missing repository value in server on kubernetes upgrade instructions
