@@ -1,3 +1,4 @@
+- Documented custom CA certificates on Kubernetes with the trust-anchors ConfigMap and the migration from the ca-certs PVC
 - Documented how to collect a support bundle on Kubernetes with the kubectl mlm-supportconfig plugin
 - Clarified requirements for Liberty client registration (bsc#1284967)
 - Documented transactional system management
