@@ -1,3 +1,4 @@
+- Documented free space disk check thresholds DISKCHECKALERT_FREE_MB and DISKTHRESHOLD_FREE_MB
 - Documented how to collect a support bundle on Kubernetes with the kubectl mlm-supportconfig plugin
 - Clarified requirements for Liberty client registration (bsc#1284967)
 - Documented transactional system management
