@@ -1,4 +1,7 @@
 - Published the docs builder image for amd64 and arm64 so Apple Silicon builds do not emulate the amd64 Go toolchain
+- Clarified requirements for Liberty client registration (bsc#1284967)
+- Clarified FQDN requirements for Hub online synchronization (bsc#1275191)
+- Expanded and corrected RBAC Web UI documentation (bsc#1258079)
 - Documented passwordless sudo requirement for PAYG connections (bsc#1280881)
 - Documented SLES 16.1 and openSUSE Leap 16.1 support and migration paths
 - Added Multi-Linux Manager MCP Server book
