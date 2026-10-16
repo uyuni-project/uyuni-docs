@@ -1,7 +1,7 @@
 [[deploy-server-on-kubernetes]]
 = Server Deployment on {kube}
 :description: Deploy the server on Kubernetes using a Helm chart and follow the checklist to prepare your environment
-:revdate: 2026-10-09
+:revdate: 2026-10-15
 :page-revdate: {revdate}
 
 
@@ -641,8 +641,8 @@ The other values have sensible defaults, refer to the `server-helm` chart README
 endif::[]
 
 ifeval::[{uyuni-content} == true]
-The [literal]``server-helm`` chart requires one value to be set: [literal]``global.fqdn``.
-The other values have sensible defaults, refer to the [literal]``server-helm`` chart README for more details on those.
+The `server-helm` chart requires one value to be set: `global.fqdn`.
+The other values have sensible defaults, refer to the `server-helm` chart README for more details on those.
 endif::[]
 
 The server can be installed with a command like the following.
@@ -720,6 +720,7 @@ helm upgrade smlm-server \
      oci://registry.suse.com/suse/multi-linux-manager/5.2/server-helm \
      -n $NAMESPACE \
      --reset-then-reuse-values \
+     --set repository=registry.suse.com/suse/multi-linux-manager/5.2/$ARCH$ \
      --set tag={productchartversion} \
      --version {productchartversion}
 ----
@@ -732,6 +733,7 @@ helm upgrade uyuni-server \
      oci://registry.opensuse.org/uyuni/server-helm \
      -n $NAMESPACE \
      --reset-then-reuse-values \
+     --set repository=registry.opensuse.org/uyuni \
      --set tag={productnumber} \
      --version {productchartversion}
 ----
@@ -739,8 +741,8 @@ endif::[]
 +
 [NOTE]
 ====
-The [literal]``--reset-then-reuse-values`` option requires Helm 3.14 or later.
-With an older Helm version, check [literal]``helm upgrade --help`` for alternatives.
+The `--reset-then-reuse-values` option requires Helm 3.14 or later.
+With an older Helm version, check `helm upgrade --help` for alternatives.
 ====
 
 . Watch the rollout:
@@ -821,6 +823,9 @@ Start by checking the overall pod status and recent events:
 kubectl get pods -n uyuni-server
 kubectl get events -n uyuni-server --sort-by='.lastTimestamp'
 ----
+
+If you cannot resolve the problem, collect a support bundle and attach it to your support request.
+For more information, see <<collecting-support-bundle,Collecting a support bundle>>.
 
 === Pod stuck in Pending
 
@@ -930,3 +935,230 @@ endif::[]
 
 If the server is running but Salt minions cannot reach it, the TCP ports 4505 and 4506 are not exposed correctly.
 Verify the Traefik configuration was applied on the RKE2 server nodes and that no firewall is blocking those ports between the minions and the cluster.
+
+[[collecting-support-bundle]]
+=== Collecting a support bundle
+
+When the steps above do not resolve the problem, collect a support bundle and attach it to your support request.
+The `kubectl mlm-supportconfig` plugin gathers the data from all pods of a {productname} Server deployed with the `server-helm` chart in a single archive.
+
+For each selected pod, the plugin collects the following data on a best-effort basis:
+
+* The output of `supportconfig` from every container that has the binary installed.
+  Multi-container pods produce one `supportconfig-<container>/` directory per container.
+  Containers without `supportutils` are skipped.
+* The logs of all containers, with timestamps, for both the current and the previous container instances.
+* The output of `kubectl describe pod` and `kubectl get pod -o yaml`.
+
+For each node hosting a selected pod, the plugin also runs the https://github.com/rancherlabs/support-tools/blob/master/collection/rancher/v2.x/logs-collector/README.md[Rancher logs-collector] using `kubectl debug node/...`.
+This captures node-level data such as journald, container runtime logs, kernel information, and network configuration.
+This step requires privileged access to the cluster.
+If you do not have it, you can skip the node-level data, or collect it manually; see <<collecting-node-data-manually,Collecting node-level data manually>>.
+
+For the target namespace, the plugin additionally collects:
+
+* Namespace events.
+* Namespace objects other than pods: Deployments, Services, Endpoints, EndpointSlices, NetworkPolicies, ConfigMaps, Ingresses, Traefik `IngressRoute` and `IngressRouteTCP` resources, PersistentVolumeClaims, and cert-manager Certificates.
+  Custom resource definitions that are not installed in the cluster are skipped.
+* The list of secrets in the namespace and their types.
+  The secret contents are not collected.
+* A resource usage snapshot from `kubectl top pod --containers` and `kubectl top node`.
+  This is skipped if `metrics-server` is not installed.
+* The {helm} release state from `helm list`, `helm status`, `helm history`, and `helm get notes`.
+  This is skipped if `helm` is not available in the `$PATH` of the workstation.
+  The plugin intentionally does not collect `helm get values` or `helm get manifest`, because they can contain passwords and encoded secret data.
+
+Once per run, the plugin also collects the cluster baseline: `kubectl version`, the node list and specification, PersistentVolumes, and StorageClasses.
+
+The plugin never aborts when a single collection step fails.
+Missing permissions, missing binaries, timeouts, and copy failures are recorded in the `SUMMARY.txt` file inside the archive, and the next step runs.
+
+==== Prerequisites
+
+On the workstation, you need:
+
+* `kubectl` in the `$PATH`, configured for the target cluster.
+* `bash`.
+
+In the cluster, the permissions you need depend on the data you want to collect:
+
+Namespace-level data::
+The `supportconfig` output, the pod logs and descriptions, the namespace objects, the events, and the {helm} state.
+The user needs `get` and `list` on `pods`, `events`, and the other namespace objects listed earlier, `get` on `pods/log`, and `create` on `pods/exec`, all in the target namespace.
+The plugin also uses `pods/exec` to copy files with `kubectl cp`.
+
+Cluster-level data::
+The node list and specification, the PersistentVolumes, the StorageClasses, and the node resource usage.
+The user needs `get` and `list` on `nodes`, `persistentvolumes`, and `storageclasses`, and access to the metrics API to read the node resource usage.
+
+Node-level data::
+The journald and container runtime logs, the kernel information, and the network configuration of each node.
+The plugin starts a privileged debug pod on each node with `kubectl debug node/...`.
+The user needs `create` and `delete` on `pods` and `create` on `pods/exec` in the target namespace, and the cluster must allow privileged pods in that namespace.
+
+[NOTE]
+====
+Collecting node-level data usually requires a cluster administrator, because the debug pod runs in the host namespaces and mounts the host file system.
+A non-administrator account, or a namespace restricted by Pod Security Admission or a similar policy, is typically blocked.
+
+A missing permission only affects the steps that need it.
+The plugin records those steps as `SKIPPED` or `FAILED` in the summary and still produces the rest of the bundle.
+The node-level data is optional.
+You can skip it, or collect it manually as described in <<collecting-node-data-manually,Collecting node-level data manually>>.
+====
+
+==== Installing the plugin
+
+A `kubectl` plugin is an executable in the `$PATH` whose name starts with `kubectl-`.
+The underscore in the file name becomes a hyphen when invoking the plugin.
+
+.Procedure: Installing the `kubectl mlm-supportconfig` plugin
+. Download the plugin and its checksum file, and verify the checksum:
++
+[source,shell]
+----
+curl -sSLO https://raw.githubusercontent.com/uyuni-project/uyuni/refs/heads/master/containers/mlm-supportconfig/kubectl-mlm_supportconfig
+curl -sSLO https://raw.githubusercontent.com/uyuni-project/uyuni/refs/heads/master/containers/mlm-supportconfig/kubectl-mlm_supportconfig.sha512
+sha512sum -c kubectl-mlm_supportconfig.sha512
+----
+
+. Install the plugin, either system-wide or for the current user only.
+  For a system-wide installation, run:
++
+[source,shell]
+----
+sudo install -m 0755 kubectl-mlm_supportconfig /usr/local/bin/
+----
++
+For a per-user installation, run the following command.
+Make sure `~/bin` is in your `$PATH`:
++
+[source,shell]
+----
+install -m 0755 kubectl-mlm_supportconfig ~/bin/
+----
+
+. Verify that `kubectl` detects the plugin:
++
+[source,shell]
+----
+kubectl plugin list | grep mlm-supportconfig
+----
+
+==== Running the plugin
+
+To collect data from all pods in a namespace, run:
+
+[source,shell]
+----
+kubectl mlm-supportconfig <NAMESPACE>
+----
+
+To collect data from a single pod, run:
+
+[source,shell]
+----
+kubectl mlm-supportconfig <POD_NAME> <NAMESPACE>
+----
+
+To list the pods in the namespace, run:
+
+[source,shell]
+----
+kubectl get pods -n <NAMESPACE>
+----
+
+For example, to collect data from all pods of a server deployment in the `uyuni-server` namespace:
+
+[source,shell]
+----
+kubectl mlm-supportconfig uyuni-server
+----
+
+The plugin creates the archive in the current directory.
+The file name depends on the mode:
+
+* `mlm-supportconfig-<NAMESPACE>-<POD_NAME>-<TIMESTAMP>.tar.gz` when collecting from a single pod.
+* `mlm-supportconfig-<NAMESPACE>-all-<TIMESTAMP>.tar.gz` when collecting from the whole namespace.
+
+At the end of the run, the plugin prints a `Summary:` block that lists every step and its result: `OK`, `SKIPPED`, `FAILED`, `TIMEOUT`, or `PARTIAL`.
+The same content is stored as `SUMMARY.txt` at the top level of the archive.
+The exit code is `0` whenever an archive was produced.
+
+[[air-gapped-clusters]]
+==== Air-gapped clusters
+
+The node-level collection uses the `rancherlabs/swiss-army-knife` image from Docker Hub.
+On a cluster without internet access, mirror this image to your internal registry once, and set the `RANCHER_SUPPORT_IMAGE` environment variable to the mirrored image.
+
+.Procedure: Using a mirrored image
+. From a machine that can reach Docker Hub, copy the image to your internal registry:
++
+[source,shell]
+----
+skopeo copy --all \
+    docker://rancherlabs/swiss-army-knife:latest \
+    docker://registry.internal.example.com/rancherlabs/swiss-army-knife:latest
+----
+
+. Run the plugin with the mirrored image:
++
+[source,shell]
+----
+export RANCHER_SUPPORT_IMAGE=registry.internal.example.com/rancherlabs/swiss-army-knife:latest
+kubectl mlm-supportconfig <NAMESPACE>
+----
+
+When `RANCHER_SUPPORT_IMAGE` is not set, the plugin pulls `rancherlabs/swiss-army-knife` from Docker Hub.
+The mirrored image does not change when the upstream image is updated.
+To update it, run the `skopeo copy` command again.
+
+If the image cannot be pulled, the node-level step is recorded as `FAILED (ImagePullBackOff)`.
+The rest of the bundle is still produced, because the `supportconfig` output, the pod logs, the namespace objects, and the {helm} state do not need an additional image.
+
+[[collecting-node-data-manually]]
+==== Collecting node-level data manually
+
+If the plugin cannot collect the node-level data because it requires privileged access to the cluster, you can run the same Rancher logs-collector script directly on each node.
+
+This procedure is optional.
+If you cannot or prefer not to log in to the nodes, skip it.
+The bundle created by the plugin still contains all the other data, and support can ask for the node-level data later if it is needed.
+
+[NOTE]
+====
+The script must run as `root` on each node.
+It reads data that regular users cannot access, such as the firewall rules, the container runtime state, the system and journal logs, and the Kubernetes configuration of the node.
+
+If it does not run as `root`, the script stops with an error and collects nothing.
+In that case the node-level data is missing from your support request, but the archive created by the plugin is not affected and still contains all the other data.
+====
+
+.Procedure: Collecting node-level data over SSH
+. List the nodes that host the pods of the deployment:
++
+[source,shell]
+----
+kubectl get pods -n <NAMESPACE> -o jsonpath='{.items[*].spec.nodeName}' | tr ' ' '\n' | sort | uniq
+----
+
+. On each node, as `root`, download the collector script and run it:
++
+[source,shell]
+----
+curl -sSLO https://raw.githubusercontent.com/rancherlabs/support-tools/master/collection/rancher/v2.x/logs-collector/rancher2_logs_collector.sh
+bash rancher2_logs_collector.sh
+----
++
+The script writes the archive to `/tmp` as `<HOSTNAME>-<DATE>.tar.gz`.
+Use the `-d` option to write it to another directory.
++
+On nodes without internet access, download the script on another machine and copy it to the node.
+The script is also included in the `rancherlabs/swiss-army-knife` image.
+To make this image available in your environment, see <<air-gapped-clusters,Air-gapped clusters>>.
+
+. Copy the archive from each node to your workstation, for example with `scp`.
+
+. Attach the node archives to your support request together with the archive created by the plugin.
+
+For more information about the script and its options, see the https://github.com/rancherlabs/support-tools/blob/master/collection/rancher/v2.x/logs-collector/README.md[Rancher logs-collector documentation].
