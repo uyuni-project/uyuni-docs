@@ -1,3 +1,4 @@
+- Added a script to verify automatic channels synchronization status (bsc#1275628)
 - Documented cloned patch reuse for softwarechannel_clone and softwarechannel_clonetree in spacecmd reference (bsc#1282231)
 - Documented transactional system management
 - Promoted Enhanced SCAP Auditing from beta to default and merged it into the OpenSCAP page in the Administration Guide
