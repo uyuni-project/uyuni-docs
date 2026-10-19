@@ -1,5 +1,9 @@
 - Added a script to verify automatic channels synchronization status (bsc#1275628)
 - Updated images in documentation with the correct product name (bsc#1257074)
+- Documented cloned patch reuse for softwarechannel_clone and softwarechannel_clonetree in spacecmd reference (bsc#1282231)
+- Published the docs builder image for amd64 and arm64 so Apple Silicon builds do not emulate the amd64 Go toolchain
+- Documented how to collect a support bundle on Kubernetes with the kubectl mlm-supportconfig plugin
+- Clarified requirements for Liberty client registration (bsc#1284967)
 - Documented transactional system management
 - Clarified FQDN requirements for Hub online synchronization (bsc#1275191)
 - Documented proxy Podman SSL secrets in the SSL certificates overview
