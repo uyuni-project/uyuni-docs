@@ -1,3 +1,4 @@
+- Fixed the SL Micro client tools channel labels for Uyuni
 - Added a script to verify automatic channels synchronization status (bsc#1275628)
 - Updated images in documentation with the correct product name (bsc#1257074)
 - Documented cloned patch reuse for softwarechannel_clone and softwarechannel_clonetree in spacecmd reference (bsc#1282231)
