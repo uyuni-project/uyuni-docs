@@ -41,13 +41,19 @@ RUN zypper install -y --no-recommends \
 ENV GEM_HOME=/usr/local/lib/gems
 ENV PATH="/usr/local/lib/gems/bin:${PATH}"
 
-# ── Go ────────────────────────────────────────────────────────────────────────
-RUN curl -fsSL https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz \
+# ── Go and Task ───────────────────────────────────────────────────────────────
+# BuildKit sets TARGETARCH from the target platform (amd64 or arm64).
+# The amd64 binaries crash under QEMU user emulation on Apple Silicon
+# (fatal error: lfstack.push) before the docs build starts.
+ARG TARGETARCH
+RUN case "${TARGETARCH}" in \
+      amd64|arm64) ;; \
+      *) echo "unsupported TARGETARCH '${TARGETARCH}'" >&2; exit 1 ;; \
+    esac
+RUN curl -fsSL https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz \
     | tar -C /usr/local -xz
 ENV PATH="/usr/local/go/bin:${PATH}"
-
-# ── Task (taskfile.dev) ───────────────────────────────────────────────────────
-RUN curl -fsSL https://github.com/go-task/task/releases/download/v${TASK_VERSION}/task_linux_amd64.tar.gz \
+RUN curl -fsSL https://github.com/go-task/task/releases/download/v${TASK_VERSION}/task_linux_${TARGETARCH}.tar.gz \
     | tar -C /usr/local/bin -xz task
 
 # ── Antora ────────────────────────────────────────────────────────────────────
