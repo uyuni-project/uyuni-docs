@@ -1,3 +1,4 @@
+- Added a script to verify automatic channels synchronization status (bsc#1275628)
 - Removed statement about unsupported product migration for SSH minions
 - Documented cloned patch reuse for softwarechannel_clone and softwarechannel_clonetree in spacecmd reference (bsc#1282231)
 - Documented transactional system management
