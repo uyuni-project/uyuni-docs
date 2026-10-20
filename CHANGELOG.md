@@ -1,4 +1,5 @@
-- Updated images in documentation with teh correct product name (bsc#1257074)
+- Enhanced upgrade instructions in Installation and Upgrade Guide (bsc#1280586)
+- Updated images in documentation with the correct product name (bsc#1257074)
 - Documented SLES 16.1 and openSUSE Leap 16.1 support and migration paths
 - Added information about associated activation keys being deleted when channels are deleted in Administration Guide
 - Extended proxy troubleshooting section for setting the grains (bsc#1281041)
