@@ -1,0 +1,99 @@
+[[ldap-group-requirements]]
+= LDAP Group Requirements
+:revdate: 2026-08-31
+:page-revdate: {revdate}
+
+When configuring LDAP authentication in {productname}, the directory server must use specific group object classes and attributes depending on your server type.
+Without matching this structure, group resolution returns no results even when authentication succeeds.
+
+== Required Group Structure
+
+.OpenLDAP and FreeIPA
+For *OpenLDAP* and *FreeIPA* server types, groups must use:
+
+* Object class: `groupOfNames`
+* Member attribute: `member` with **full user DN values**
+
+.Example OpenLDAP Group Entry
+[source,ldif]
+----
+dn: cn=uyuni-admins,ou=Groups,dc=example,dc=com
+objectClass: groupOfNames
+cn: uyuni-admins
+member: uid=alice,ou=People,dc=example,dc=com
+member: uid=bob,ou=People,dc=example,dc=com
+----
+
+[IMPORTANT]
+====
+The `member` attribute must contain the **complete Distinguished Name (DN)** of each user, not just the username.
+
+For example: `uid=alice,ou=People,dc=example,dc=com`, not `alice`.
+
+Groups that use `posixGroup` with `memberUid` (username only) are **not** matched by the default filters.
+====
+
+.Active Directory
+For *Active Directory* server types, groups use:
+
+* Object class: `group`
+* Member attribute: `member` with full user DN values
+
+== Default Group Filters
+
+Each server type has a default group filter that {productname} uses to find a user's groups:
+
+[cols="1,2",options="header"]
+|===
+| Server Type | Default Group Filter
+
+| OpenLDAP
+| `(&(objectClass=groupOfNames)(member={userDn}))`
+
+| FreeIPA
+| `(&(objectClass=groupOfNames)(member={userDn}))`
+
+| Active Directory
+| `(&(objectClass=group)(member={userDn}))`
+|===
+
+The `{userDn}` placeholder is replaced with the user's full DN at search time.
+
+== Custom Group Filters
+
+You can override the default group filter if your directory uses a compatible DN-based membership model.
+The custom filter **must** contain the `{userDn}` placeholder.
+
+.Example Custom Filter for groupOfUniqueNames
+[source]
+----
+(&(objectClass=groupOfUniqueNames)(uniqueMember={userDn}))
+----
+
+[NOTE]
+====
+A filter such as `(&(objectClass=posixGroup)(memberUid={login}))` is **not** supported for group resolution.
+Group filters require `{userDn}`; they do not substitute `{login}`.
+
+If your directory only has `posixGroup`/`memberUid` entries, convert those groups to `groupOfNames` with full DN `member` values, or add equivalent `groupOfNames` groups for {productname}.
+====
+
+.Example posixGroup Entry That Will Not Match by Default
+[source,ldif]
+----
+dn: cn=uyuni-admins,ou=Groups,dc=example,dc=com
+objectClass: posixGroup
+cn: uyuni-admins
+gidNumber: 10000
+memberUid: alice
+memberUid: bob
+----
+
+== Troubleshooting Group Resolution
+
+If authentication works but group resolution returns no groups:
+
+. Confirm the group uses `groupOfNames` (or Active Directory `group`) and `member` values are full user DNs.
+. Confirm the group base DN covers the organizational unit that contains those groups.
+. If you configured a custom group filter, confirm it includes `{userDn}` and matches your object class and membership attribute.
+. Use the *Test Group Resolution* action in menu:Admin[Setup Wizard > LDAP] once LDAP servers are configured in the Web UI.
