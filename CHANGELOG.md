@@ -1,5 +1,23 @@
 - Enhanced upgrade instructions in Installation and Upgrade Guide (bsc#1280586)
 - Updated images in documentation with the correct product name (bsc#1257074)
+- Fixed the SL Micro client tools channel labels for Uyuni
+- Added a script to verify automatic channels synchronization status (bsc#1275628)
+- Updated images in documentation with the correct product name (bsc#1257074)
+- Documented cloned patch reuse for softwarechannel_clone and softwarechannel_clonetree in spacecmd reference (bsc#1282231)
+- Published the docs builder image for amd64 and arm64 so Apple Silicon builds do not emulate the amd64 Go toolchain
+- Documented how to collect a support bundle on Kubernetes with the kubectl mlm-supportconfig plugin
+- Clarified requirements for Liberty client registration (bsc#1284967)
+- Documented transactional system management
+- Clarified FQDN requirements for Hub online synchronization (bsc#1275191)
+- Documented proxy Podman SSL secrets in the SSL certificates overview
+- Added missing repository value in server on kubernetes upgrade instructions
+- Expanded and corrected RBAC Web UI documentation (bsc#1258079)
+- Documented passwordless sudo requirement for PAYG connections (bsc#1280881)
+- Documented how to upgrade the server on Kubernetes
+- Documented ppc64le support for Red Hat Enterprise Linux 7, 8, 9, and 10 in Uyuni
+- Simplified PR comment wording and removed artifact icons in CI comment script
+- Fixed published version numbers that dropped a trailing zero, such as 2026.10 appearing as 2026.1
+- Updated images in documentation with teh correct product name (bsc#1257074)
 - Documented SLES 16.1 and openSUSE Leap 16.1 support and migration paths
 - Added information about associated activation keys being deleted when channels are deleted in Administration Guide
 - Extended proxy troubleshooting section for setting the grains (bsc#1281041)
