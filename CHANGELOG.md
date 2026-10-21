@@ -1,3 +1,4 @@
+- Added an Initial Setup After Installation chapter to the Installation and Upgrade Guide
 - Enhanced upgrade instructions in Installation and Upgrade Guide (bsc#1280586)
 - Added a script to verify automatic channels synchronization status (bsc#1275628)
 - Removed statement about unsupported product migration for SSH minions
