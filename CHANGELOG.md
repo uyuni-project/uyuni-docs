@@ -1,3 +1,4 @@
+- Added pre-migration information for proxy migration scenarios to Installation and Upgrade Guide (bsc#1272984)
 - Enhanced upgrade instructions in Installation and Upgrade Guide (bsc#1280586)
 - Updated images in documentation with the correct product name (bsc#1257074)
 - Fixed the SL Micro client tools channel labels for Uyuni
