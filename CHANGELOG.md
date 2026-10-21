@@ -1,3 +1,4 @@
+- Documented Agama-based system deployment and redeployment support for SLE 16 and openSUSE Leap 16
 - Enhanced upgrade instructions in Installation and Upgrade Guide (bsc#1280586)
 - Added a script to verify automatic channels synchronization status (bsc#1275628)
 - Removed statement about unsupported product migration for SSH minions
