@@ -1,4 +1,3 @@
-- Documented Agama-based system deployment and redeployment support for SLE 16 and openSUSE Leap 16
 - Documented cloned patch reuse for softwarechannel_clone and softwarechannel_clonetree in spacecmd reference (bsc#1282231)
 - Published the docs builder image for amd64 and arm64 so Apple Silicon builds do not emulate the amd64 Go toolchain
 - Clarified requirements for Liberty client registration (bsc#1284967)
