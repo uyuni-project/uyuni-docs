@@ -1,3 +1,4 @@
+- Documented custom CA certificates on Kubernetes with the trust-anchors ConfigMap and the migration from the ca-certs PVC
 - Enhanced upgrade instructions in Installation and Upgrade Guide (bsc#1280586)
 - Updated images in documentation with the correct product name (bsc#1257074)
 - Fixed the SL Micro client tools channel labels for Uyuni
