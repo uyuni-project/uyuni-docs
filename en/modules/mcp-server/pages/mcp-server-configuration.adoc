@@ -1,0 +1,153 @@
+[[mcp-server-configuration]]
+= Server Configuration
+:revdate: 2026-07-29
+:page-revdate: {revdate}
+
+This chapter describes the environment variables for configuring the {productname} connection, transport, tools, logging, and system bootstrap.
+
+== {productname} connection
+
+[cols="2,1,1,4", options="header"]
+|===
+|Variable
+|Required
+|Default
+|Description
+
+|`UYUNI_SERVER`
+|Yes
+|-
+|Base URL of the {productname} Server. If the scheme is omitted, `https` is used. A path, query, or fragment is not allowed.
+
+|`UYUNI_USER`
+|For basic auth
+|-
+|{productname} user name. Use with `UYUNI_PASS` when `UYUNI_AUTH_SERVER` is not set.
+
+|`UYUNI_PASS`
+|For basic auth
+|-
+|Password for `UYUNI_USER`.
+
+|`UYUNI_MCP_SSL_VERIFY`
+|No
+|`true`
+|Verifies the TLS certificate presented by the {productname} Server. Values `false`, `0`, and `no` disable verification.
+
+|`UYUNI_MCP_TIMEOUT`
+|No
+|`30`
+|HTTP request timeout in seconds. The connection timeout remains 10 seconds.
+|===
+
+[WARNING]
+====
+Do not disable certificate verification in production.
+Install the issuing CA certificate in the container or host trust store instead.
+====
+
+== Transport and service
+
+[cols="2,1,1,4", options="header"]
+|===
+|Variable
+|Required
+|Default
+|Description
+
+|`UYUNI_MCP_TRANSPORT`
+|No
+|`stdio`
+|Transport mode. Valid values are `stdio` and `http`.
+
+|`UYUNI_MCP_HOST`
+|HTTP only
+|`127.0.0.1`
+|Address on which the HTTP server listens.
+
+|`UYUNI_MCP_PORT`
+|HTTP only
+|`8000`
+|Port on which the HTTP server listens.
+
+|`UYUNI_MCP_PUBLIC_URL`
+|OAuth HTTP deployment
+|Derived from host and port
+|External base URL advertised to OAuth-capable clients. Set the client-facing URL, without `/mcp`.
+
+|`UYUNI_AUTH_SERVER`
+|Recommended for HTTP
+|-
+|OpenID Connect issuer URL. A path is allowed. When omitted, the MCP HTTP endpoint does not authenticate clients.
+|===
+
+== Tools and logging
+
+[cols="2,1,1,4", options="header"]
+|===
+|Variable
+|Required
+|Default
+|Description
+
+|`UYUNI_MCP_WRITE_TOOLS_ENABLED`
+|No
+|`false`
+|Registers tools that modify {productname}. Values `true`, `1`, and `yes` enable them.
+
+|`UYUNI_MCP_LOG_FILE_PATH`
+|No
+|Console
+|Path to the server log file.
+
+|`UYUNI_MCP_LOG_LEVEL`
+|No
+|`INFO`
+|Logging level, for example `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL`.
+|===
+
+[NOTE]
+====
+Changing `UYUNI_MCP_WRITE_TOOLS_ENABLED` requires a process restart because the server registers tools during startup.
+====
+
+== System bootstrap
+
+The `add_system` tool requires these additional variables:
+
+[cols="2,1,4", options="header"]
+|===
+|Variable
+|Required
+|Description
+
+|`UYUNI_SSH_PRIV_KEY`
+|For `add_system`
+|Private SSH key used to bootstrap the target. Store the key as one line with each newline represented by the literal `\n` sequence.
+
+|`UYUNI_SSH_PRIV_KEY_PASS`
+|No
+|Passphrase for the private SSH key.
+|===
+
+[WARNING]
+====
+Do not place the key directly in an MCP client configuration that is synchronized or shared.
+Prefer a protected environment file or a secrets-management system.
+====
+
+== Example read-only configuration
+
+The following example uses basic authentication with `UYUNI_USER` and `UYUNI_PASS`.
+
+[source,ini,subs="attributes"]
+----
+UYUNI_SERVER=https://server.example.com
+UYUNI_USER=mcp-reader
+UYUNI_PASS=replace-me
+UYUNI_MCP_SSL_VERIFY=true
+UYUNI_MCP_TIMEOUT=30
+UYUNI_MCP_TRANSPORT=stdio
+UYUNI_MCP_WRITE_TOOLS_ENABLED=false
+UYUNI_MCP_LOG_LEVEL=INFO
+----
