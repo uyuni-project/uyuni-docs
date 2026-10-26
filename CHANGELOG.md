@@ -1,3 +1,4 @@
+- Added an Initial Setup After Installation chapter to the Installation and Upgrade Guide
 - Documented transactional system management
 - Documented Agama-based system deployment and redeployment support for SLE 16 and openSUSE Leap 16
 - Enhanced upgrade instructions in Installation and Upgrade Guide (bsc#1280586)
