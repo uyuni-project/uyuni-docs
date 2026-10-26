@@ -1,4 +1,6 @@
 - Updated Azure timer service name for on-demand image preparation in client configuration
+- Used {azure} attribute across public cloud and VHM documentation
+- Documented free space disk check thresholds DISKCHECKALERT_FREE_MB and DISKTHRESHOLD_FREE_MB
 - Enhanced upgrade instructions in Installation and Upgrade Guide (bsc#1280586)
 - Updated images in documentation with the correct product name (bsc#1257074)
 - Fixed the SL Micro client tools channel labels for Uyuni
