@@ -1,4 +1,4 @@
-- Documented how to resolve outdated channel tokens on clients that were offline during a token refresh
+- Documented how to resolve outdated channel tokens on clients that were offline during a token refresh (bsc#1254483)
 - Added an Initial Setup After Installation chapter to the Installation and Upgrade Guide
 - Documented free space disk check thresholds DISKCHECKALERT_FREE_MB and DISKTHRESHOLD_FREE_MB
 - Documented cloned patch reuse for softwarechannel_clone and softwarechannel_clonetree in spacecmd reference (bsc#1282231)
