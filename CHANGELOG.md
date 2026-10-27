@@ -1,3 +1,4 @@
+- Documented custom Salt ports with node ports for the server and proxy on Kubernetes
 - Added an Initial Setup After Installation chapter to the Installation and Upgrade Guide
 - Updated volumes related infomation for migration and upgrade procedures in Installation and Upgrade Guide (bsc#1273072)
 - Promoted Enhanced SCAP Auditing from beta to default and merged it into the OpenSCAP page in the Administration Guide

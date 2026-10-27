@@ -1,7 +1,7 @@
 [[installation-proxy-containers-kube]]
 = {productname} Proxy Deployment on Kubernetes
 :description: Deploy proxy on Kubernetes using Helm, configure TLS certificates, persistent volumes, and expose required ports
-:revdate: 2026-06-24
+:revdate: 2026-10-27
 :page-revdate: {revdate}
 
 == Proxy on {kube} changes
@@ -370,6 +370,41 @@ This means that there are only two possible ways to use the TFTP server:
 * using a load balancer compatible with TFTP,
 
 * using the host network for the TFTP pod. This can be achieved by setting the `tftp.hostNetwork` helm chart value to `true`.
+
+[[proxy-custom-salt-ports]]
+==== Using custom Salt ports
+
+Instead of routing the Salt ports 4505 and 4506 with Traefik, the `salt` service can be exposed with {kube} node ports.
+Set the type of the service and the ports in the chart values:
+
+[source,yaml]
+----
+services:
+  salt:
+    type: NodePort
+    ports:
+      publish: 30015
+      request: 30016
+----
+
+The node ports have to be in the range allowed by the cluster, 30000 to 32767 by default.
+Once started, the proxy reports its Salt ports to the {productname} Server, which gives them to the clients registered through the proxy.
+The clients then connect to the cluster nodes on the node ports instead of 4505 and 4506: make sure the nodes accept connections on those ports.
+
+[WARNING]
+====
+Set the Salt ports before registering any client on the proxy.
+Changing them on an existing installation disconnects the registered clients: they cannot reach the proxy on the new ports, and the server cannot tell them about the change.
+The `proxy-helm` chart refuses to upgrade a release in a way that changes the Salt ports.
+To force the change, set `services.salt.allowPortsChange` to `true`, and then bootstrap the clients again.
+====
+
+[NOTE]
+====
+This only changes the ports the clients use to reach the proxy.
+The ports the proxy uses to reach its parent are provided by the generated configuration.
+When the parent, the server or another proxy, uses custom Salt ports, the configuration carries them.
+====
 
 
 
