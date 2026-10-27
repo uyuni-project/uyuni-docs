@@ -1,4 +1,20 @@
 - Promoted Enhanced SCAP Auditing from beta to default and merged it into the OpenSCAP page in the Administration Guide
+- Updated Azure timer service name for on-demand image preparation in client configuration
+- Used {azure} attribute across public cloud and VHM documentation
+- Documented free space disk check thresholds DISKCHECKALERT_FREE_MB and DISKTHRESHOLD_FREE_MB
+- Enhanced upgrade instructions in Installation and Upgrade Guide (bsc#1280586)
+- Updated images in documentation with the correct product name (bsc#1257074)
+- Fixed the SL Micro client tools channel labels for Uyuni
+- Added a script to verify automatic channels synchronization status (bsc#1275628)
+- Updated images in documentation with the correct product name (bsc#1257074)
+- Documented cloned patch reuse for softwarechannel_clone and softwarechannel_clonetree in spacecmd reference (bsc#1282231)
+- Published the docs builder image for amd64 and arm64 so Apple Silicon builds do not emulate the amd64 Go toolchain
+- Documented how to collect a support bundle on Kubernetes with the kubectl mlm-supportconfig plugin
+- Clarified requirements for Liberty client registration (bsc#1284967)
+- Documented transactional system management
+- Clarified FQDN requirements for Hub online synchronization (bsc#1275191)
+- Documented proxy Podman SSL secrets in the SSL certificates overview
+- Added missing repository value in server on kubernetes upgrade instructions
 - Expanded and corrected RBAC Web UI documentation (bsc#1258079)
 - Documented passwordless sudo requirement for PAYG connections (bsc#1280881)
 - Documented how to upgrade the server on Kubernetes
