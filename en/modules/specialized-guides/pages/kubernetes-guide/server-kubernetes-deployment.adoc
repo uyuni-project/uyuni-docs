@@ -1,7 +1,7 @@
 [[deploy-server-on-kubernetes]]
 = Server Deployment on {kube}
 :description: Deploy the server on Kubernetes using a Helm chart and follow the checklist to prepare your environment
-:revdate: 2026-10-15
+:revdate: 2026-10-27
 :page-revdate: {revdate}
 
 
@@ -572,6 +572,37 @@ This means that there are only two possible ways to use the TFTP server:
 
 * using the host network for the TFTP pod. This can be achieved by setting the `tftp.hostNetwork` helm chart value to `true`.
 
+[[server-custom-salt-ports]]
+==== Using custom Salt ports
+
+Instead of routing the Salt ports 4505 and 4506 with Traefik, the `salt` service can be exposed with {kube} node ports.
+Set the type of the service and the ports in the helm values:
+
+[source,yaml]
+----
+server-helm:
+  services:
+    salt:
+      type: NodePort
+      ports:
+        publish: 30005
+        request: 30006
+----
+
+Remove the `server-helm:` line if the values are passed directly to the `server-helm` chart rather than to a chart wrapping it.
+The node ports have to be in the range allowed by the cluster, 30000 to 32767 by default.
+
+The server uses these ports to configure itself and its clients: the minions connect to the cluster nodes on the node ports instead of 4505 and 4506.
+Make sure the nodes accept connections on those ports.
+
+[WARNING]
+====
+Set the Salt ports before registering any client.
+Changing them on an existing installation disconnects the registered clients: they cannot reach the server on the new ports, and the server cannot tell them about the change.
+The `server-helm` chart refuses to upgrade a release in a way that changes the Salt ports.
+To force the change, set `services.salt.allowPortsChange` to `true`, and then bootstrap the clients again.
+====
+
 [[security-framework-setup]]
 === Security framework setup
 
@@ -935,6 +966,8 @@ endif::[]
 
 If the server is running but Salt minions cannot reach it, the TCP ports 4505 and 4506 are not exposed correctly.
 Verify the Traefik configuration was applied on the RKE2 server nodes and that no firewall is blocking those ports between the minions and the cluster.
+
+If the `salt` service is exposed with node ports (see <<server-custom-salt-ports>>), check that the minions use those ports and that the nodes are reachable on them.
 
 [[collecting-support-bundle]]
 === Collecting a support bundle
