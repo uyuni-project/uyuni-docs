@@ -30,7 +30,17 @@ If a client is offline or unreachable when the job runs, the server database hol
 The job does not retry on later runs, because it finds the tokens in the database valid.
 
 When this happens, the client keeps outdated tokens in [path]``/etc/zypp/repos.d/susemanager:channels.repo``.
-Running [command]``zypper ref`` or [command]``zypper up`` directly on the client, or using an external tool that does so, fails.
+Running [command]``zypper ref`` or [command]``zypper up`` directly on the client, or using an external tool that does so, does not refresh the tokens and fails with an error like this:
+
+----
+Retrieving repository '<repository name>' metadata ....[error]
+Repository '<repository name>' is invalid.
+[susemanager:<channel label>|https://<server>:443/rhn/manager/download/<channel label>?<token>] Valid metadata not found at specified URL
+----
+
+On the server, [path]``/var/log/rhn/rhn_web_ui.log`` records the rejected requests as [literal]``INFO`` messages like [literal]``Forbidden: Token ... is not valid to access repomd.xml``.
+The same [literal]``Valid metadata not found`` message can also be caused by incomplete repository metadata regeneration.
+For more information, see xref:administration:troubleshooting/tshoot-taskomatic.adoc[].
 
 To fix this, schedule a recurring action for the organization that redeploys the certificates and channel configuration.
 Clients that were unavailable during a token refresh then receive the current tokens the next time the action runs.
