@@ -1,3 +1,4 @@
+- Documented how to resolve outdated channel tokens on clients that were offline during a token refresh
 - Added an Initial Setup After Installation chapter to the Installation and Upgrade Guide
 - Documented transactional system management
 - Documented Agama-based system deployment and redeployment support for SLE 16 and openSUSE Leap 16
