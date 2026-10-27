@@ -1,0 +1,65 @@
+[[troubleshooting-failed-migration]]
+= Troubleshooting Failed Migration
+:description: Troubleshoot Taskomatic problems by checking log files and restarting the service if metadata regeneration is incomplete or crashed
+:revdate: 2026-10-27
+:page-revdate: {revdate}
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+
+During an the containerized database migration, an error such as `No space left on device` can interrupt the upgrade process and leave the database in an unmigrated state. 
+Attempting to rerun the command `mgradm upgrade` without remediation will often fail due to uncleared storage volumes.
+
+The following procedure describes how to clean up the environment and retry the migration:
+
+.Procedure: Recovering after the failed migration 
+
+[role=procedure]
+____
+. Stop and remove any residual migration containers (e.g., `uyuni-upgrade-pgsql`).
+
++ 
+
+----
+podman stop uyuni-upgrade-pgsql
+podman rm uyuni-upgrade-pgsql
+----
+
++
+
+. Remove the partial, incomplete target volume created during the failed attempt (e.g., `var-pgsql-migration-target`):
+
++
+
+----
+podman volume rm var-pgsql-migration-target
+----
+
++
+
+. Ensure the underlying host filesystem has sufficient capacity (ideally at least double the capacity of the current database volume plus a safety buffer) to accommodate the copy-based upgrade.
+
+. Once storage space is resolved, re-initiate the migration:
+
++
+
+----
+mgradm upgrade
+----
+____
