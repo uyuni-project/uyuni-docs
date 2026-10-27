@@ -1,4 +1,5 @@
 - Updated volumes related infomation for migration and upgrade procedures in Installation and Upgrade Guide (bsc#1273072)
+- Promoted Enhanced SCAP Auditing from beta to default and merged it into the OpenSCAP page in the Administration Guide
 - Updated Azure timer service name for on-demand image preparation in client configuration
 - Used {azure} attribute across public cloud and VHM documentation
 - Documented free space disk check thresholds DISKCHECKALERT_FREE_MB and DISKTHRESHOLD_FREE_MB
