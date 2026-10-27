@@ -1,3 +1,4 @@
+- Updated volumes related infomation for migration and upgrade procedures in Installation and Upgrade Guide (bsc#1273072)
 - Added an Initial Setup After Installation chapter to the Installation and Upgrade Guide
 - Documented transactional system management
 - Documented Agama-based system deployment and redeployment support for SLE 16 and openSUSE Leap 16
