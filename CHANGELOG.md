@@ -1,3 +1,4 @@
+- Updated Azure timer service name for on-demand image preparation in client configuration
 - Added an Initial Setup After Installation chapter to the Installation and Upgrade Guide
 - Documented free space disk check thresholds DISKCHECKALERT_FREE_MB and DISKTHRESHOLD_FREE_MB
 - Documented cloned patch reuse for softwarechannel_clone and softwarechannel_clonetree in spacecmd reference (bsc#1282231)
