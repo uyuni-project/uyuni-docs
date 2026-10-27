@@ -1,19 +1,14 @@
 [[ch-openscap]]
 = System Security with OpenSCAP
-:description: Audit clients with OpenSCAP to check system security configuration and verify patches using SCAP content files
-:revdate: 2026-08-18
+:description: Audit clients with OpenSCAP to check system security configuration, manage SCAP content and policies, and remediate compliance issues
+:revdate: 2026-10-13
 :page-revdate: {revdate}
 
 
 {productname} uses OpenSCAP to audit clients.
-It allows you to schedule and view compliance scans for any client.
+SCAP content, tailoring files, and scan policies are managed centrally on the {productname} server, and the server automatically deploys the required files to managed systems at scan time.
+This allows you to schedule and view compliance scans for any client, apply built-in or custom remediation, and set up recurring compliance monitoring.
 
-[NOTE]
-====
-An enhanced SCAP auditing experience is available as a beta feature.
-It provides centralized content management, reusable scan policies, recurring scans, and built-in remediation from the {webui}.
-To get started, see xref:administration:openscap-enhanced-beta.adoc[Enhanced SCAP Auditing (Beta)].
-====
 
 == About SCAP
 
@@ -25,7 +20,7 @@ SCAP was created to provide a standardized approach to maintaining system securi
 New specifications are governed by NIST's SCAP Release cycle to provide a consistent and repeatable revision work flow.
 For more information, see:
 
-* https://csrc.nist.gov/projects/security-content-automation-protocol 
+* https://csrc.nist.gov/projects/security-content-automation-protocol
 * https://www.open-scap.org/features/standards/
 * https://ncp.nist.gov/repository?scap
 
@@ -34,9 +29,9 @@ OpenSCAP is an auditing tool that utilizes the Extensible Configuration Checklis
 XCCDF is a standard way of expressing checklist content and defines security checklists.
 It also combines with other specifications such as Common Platform Enumeration (CPE), Common Configuration Enumeration (CCE), and Open Vulnerability and Assessment Language (OVAL), to create a SCAP-expressed checklist that can be processed by SCAP-validated products.
 
-OpenSCAP verifies the presence of patches by using content produced by the {suse} Security Team.
-OpenSCAP  checks system security configuration settings and examines systems for signs of compromise by using rules based on standards and specifications.
-For more information about the {suse} Security Team, see  https://www.suse.com/support/security.
+OpenSCAP checks system security configuration settings and examines systems for signs of compromise, using rules based on standards and specifications.
+{suse} provides the SCAP Security Guide packages as a source of this content for {suse} systems; other operating system vendors provide equivalent content for their own distributions.
+For more information about the {suse} Security Team, see https://www.suse.com/support/security.
 
 
 [[prepare-clients-for-scap]]
@@ -55,15 +50,23 @@ Scanning clients can consume a lot of memory and compute power on the client bei
 Ensure you have at least 2{nbsp}GB of RAM available on each client to be scanned (especially for {redhat}-based and other modern clients).
 ====
 
-Install the OpenSCAP scanner and the SCAP Security Guide (content) packages on the client before you begin.
-Depending on the operating system, these packages are included either on the base operating system, or in the {productname} Client Tools.
+Install the OpenSCAP scanner package on the client before you begin.
+Depending on the operating system, this package is included either on the base operating system, or in the {productname} Client Tools.
 
-The table below lists the packages you need:
+[NOTE]
+====
+You do not need to install the SCAP Security Guide (content) package on the client itself.
+Content files are uploaded to the {productname} server and deployed automatically at scan time.
+Install the content package on any system (for example, your workstation, or temporarily on a client) to obtain the content files for upload, or obtain them directly from your operating system vendor.
+See xref:administration:openscap.adoc#scap-content-management[SCAP content management].
+====
+
+The table below lists the scanner package you need, and the content package that provides default content files for that operating system:
 
 .OpenSCAP packages
 [%header,cols=4]
 |===
-| Operating system | Version | Scanner | Content
+| Operating system | Version | Scanner (install on client) | Content (source of content files)
 | SLES | 12, 15 | `openscap-utils` | `scap-security-guide`
 | openSUSE | Leap 15, Tumbleweed | `openscap-utils` | `scap-security-guide`
 | RHEL / CentOS / Oracle Linux / Rocky Linux / AlmaLinux | 7, 8, 9, 10 | `openscap-utils` | `scap-security-guide-redhat`
@@ -82,8 +85,9 @@ To perform scans on these clients, you must install the upstream packages (`ssg-
 Please note that these upstream guides are not officially supported by {suse}.
 ====
 
-RHEL 7 and compatible systems provide a `scap-security-guide` package, which contains outdated contents.
-You are advised to use the `scap-security-guide-redhat` package you will find in the {productname} Client Tools.
+Check that the content package provided by your operating system vendor is up to date.
+For example, the `scap-security-guide` package provided by RHEL 7 and compatible systems has previously been found to contain outdated content.
+In that case, use the `scap-security-guide-*` package from the {productname} Client Tools if it is provided for your operating system, or obtain content from another reliable source, unless your vendor advises otherwise.
 
 
 [IMPORTANT]
@@ -103,41 +107,92 @@ For Non-{suse} operating systems the included profiles are community supplied.
 They are not officially supported by {suse}.
 ====
 
-== OpenSCAP content files
+
+[[scap-content-management]]
+== SCAP content management
 
 OpenSCAP uses SCAP content files to define test rules.
 These content files are created based on the XCCDF or OVAL standards.
-In addition to the SCAP Security Guide, you can download publicly available content files and customize it to your requirements.
-You can install the SCAP Security Guide package for default content file templates.
-Alternatively, if you are familiar with XCCDF or OVAL, you can create your own content files.
-
+To get content files for upload to the {productname} server, you can install the SCAP Security Guide package for your operating system (see <<prepare-clients-for-scap>>) on any system to extract its default content files, obtain content files directly from your operating system vendor, download content from a reputable public source (such as the link:https://ncp.nist.gov/repository?scap[NIST National Checklist Program]), or create your own custom content files if you are familiar with XCCDF or OVAL.
 
 [WARNING]
 ====
-We recommend you use templates to create your SCAP content files.
-If you create and use your own custom content files, you do so at your own risk.
-If your system becomes damaged through the use of custom content files, you might not be supported by {suse}.
+Custom or third-party SCAP content, including content downloaded from public repositories or created in-house, is not verified by {suse} and may fall outside your support agreement.
+
+While running compliance scans with this content is read-only and safe for target systems, applying remediation derived from unverified sources can make unexpected system changes.
+Always test custom remediation in a non-production environment before applying it in production.
 ====
 
-When you have created your content files, you need to transfer the file to the client.
-You can do this in the same way as you move any other file, using physical storage media, or across a network with Salt (for example, https://docs.saltproject.io/en/latest/ref/cli/salt-cp.html[salt-cp] or the https://docs.saltproject.io/en/latest/ref/file_server/index.html[Salt File Server]), `ftp` or `scp`.
+SCAP content files (DataStream and XCCDF) are uploaded and managed centrally on the {productname} server.
+The server automatically deploys the required files to the managed system at scan time, so you do not need to manually transfer content files to clients.
 
-[NOTE]
+
+=== Upload SCAP content
+
+.Procedure: Uploading SCAP content
+[role=procedure]
+____
+. Navigate to menu:Audit[OpenSCAP > SCAP Content].
+
+. Click btn:[Upload].
+
+. Provide a **Name** and optional **Description**.
+
+. Upload the files:
+
++
+
+--
+* **DataStream file**: The filename must end with `-ds.xml`.
+
+* **XCCDF file**: The filename must end with `-xccdf.xml`.
+
+* Both files must share the same base name (for example, `ssg-sle15-ds.xml` and `ssg-sle15-xccdf.xml`).
+
+--
+
+. Click btn:[Upload].
+____
+
+Uploaded files are stored on the server at `/srv/susemanager/scap/ssg/content/`.
+
+
+=== Edit and delete SCAP content
+
+.Procedure: Editing and deleting SCAP content
+[role=procedure]
+____
+. Go to menu:Audit[OpenSCAP > SCAP Content].
+
+. Click a content entry to edit its name, description, or replace the uploaded files.
+
+. Click btn:[Delete] to remove SCAP content.
+
+____
+
+[WARNING]
 ====
-If you use the xref:administration:openscap-enhanced-beta.adoc[Enhanced SCAP Auditing (Beta)] features, you do not need to manually transfer content files. The server automatically deploys the required DataStreams and tailoring files to the client at runtime.
+Deleting SCAP content that is referenced by a policy will break that policy.
+Ensure no active policies depend on the content before deleting it.
 ====
 
-We recommend that you create a package to distribute content files to clients that you are managing with {productname}.
-Packages can be signed and verified to ensure their integrity.
-For more information, see xref:administration:custom-channels.adoc[].
 
+=== OVAL files
+
+Due to the large size of OVAL (Open Vulnerability and Assessment Language) files, they are not transferred automatically from the server to the managed system.
+If your SCAP evaluation requires OVAL files, you must ensure they are already present on the managed system before scheduling the scan.
+
+You can specify OVAL file paths when creating a SCAP policy.
 
 
 == Find OpenSCAP profiles
 
+When you create a SCAP policy, or schedule a one-off scan by selecting SCAP content directly, in the {webui}, the list of available profiles is loaded automatically from the selected content file, so you do not usually need to look them up manually.
+Use the method in this section if you need to decide which content file to upload when a package provides several, or if you need the exact profile ID to pass to the `system.scap.scheduleXccdfScanCustom` API method, for example.
+
 Different operating systems make available different OpenSCAP content files and profiles. One content file may contain more than one profile.
 
-On RPM-based operating systems, use this command to determine the location of the available SCAP files:
+On the system where you installed the content package, use this command on RPM-based operating systems to determine the location of the available SCAP files:
 
 ----
 rpm -ql <scap-security-guide-package-name-from-table>
@@ -149,7 +204,7 @@ On DEB-based operating systems, use this command to determine the location of th
 dpkg -L <scap-security-guide-package-name-from-table>
 ----
 
-When you have identified one SCAP content file that suits your needs, list profiles available on the client:
+When you have identified one SCAP content file that suits your needs, list the profiles it contains:
 
 ----
 oscap info /usr/share/xml/scap/ssg/content/ssg-sle15-ds.xml
@@ -188,90 +243,275 @@ Dictionaries:
 
 
 Take a note of the file paths and profiles for performing the scan.
+You use this information when uploading SCAP content and when selecting a profile for a SCAP policy.
 
 
+== Tailoring file management
 
-== Perform an audit scan
+SCAP tailoring files allow you to customize the behavior of an SCAP profile without modifying the original content.
+{productname} provides a dedicated interface for managing tailoring files.
 
-When you have installed or transferred your content files, you can perform audit scans.
-Audit scans can be triggered using the {productname} {webui}.
-You can also use the {productname} API to schedule regular scans.
+Tailoring files are scoped per organization.
+Each organization manages its own set of tailoring files independently.
 
-.Procedure: Running an audit scan from the {webui}
+
+=== Upload a tailoring file
+
+.Procedure: Uploading a tailoring file
 [role=procedure]
-_____
+____
+. Navigate to menu:Audit[OpenSCAP > Tailoring Files].
 
-. In the {productname} {webui}, navigate to menu:Systems[Systems List] and select the client you want to scan.
+. Click btn:[Create].
 
-. Navigate to the `Audit` tab, and the `Schedule` subtab.
+. Provide a **Name** and optional **Description**.
 
-. In the `Path to XCCDF Document` field, enter the parameters for the SCAP template and profile you want to use on the client.
-  For example:
+. Upload the tailoring file (XML format).
+
+. Click btn:[Upload].
+
+____
+
+Tailoring files are stored on the server at `/srv/susemanager/scap/tailoring-files/`.
+
+
+=== Editing and deleting tailoring files
+
+.Procedure: Edit and delete tailoring files
+[role=procedure]
+____
+. Navigate to menu:Audit[OpenSCAP > Tailoring Files] list.
+
+. Click a tailoring file entry to edit its name, description, or replace the file.
+
+. Select and click btn:[Delete] to remove them.
+
+____
+
+
+== SCAP policies
+
+SCAP policies define a reusable combination of SCAP content, a specific profile, and an optional tailoring file.
+Policies simplify the process of scheduling consistent compliance scans across your infrastructure, and are required for recurring scans.
+
+Creating a policy is optional for a single, one-off scan.
+In that case you can select the SCAP content and profile directly when scheduling the scan, instead of creating a policy first.
+See <<Schedule SCAP scans>>.
+
+
+=== Creating a policy
+
+.Procedure: Creating a policy
+[role=procedure]
+____
+. Navigate to menu:Audit[OpenSCAP > SCAP Policies].
+
+. Click btn:[Create].
+
+. Fill in the policy details:
 
 +
 
-  * `Command`: /usr/bin/oscap xccdf eval
-  
-  * `Command-line arguments`: --profile xccdf_org.ssgproject.content_profile_stig
-  
-  * `Path to XCCDF document`: /usr/share/xml/scap/ssg/content/ssg-sle15-ds.xml
+--
+Policy Name:: A unique name for the policy within your organization.
+Description:: An optional description of the policy's purpose.
+SCAP Content:: Select from the uploaded SCAP content.
+XCCDF Profile:: Select a profile from the chosen SCAP content. The list of available profiles is loaded dynamically from the content file.
+Tailoring File:: (Optional) Select a tailoring file to customize the selected profile.
+Tailoring Profile:: (Optional) If a tailoring file is selected, choose a profile from the tailoring file.
+OVAL Files:: (Optional) Comma-separated list of OVAL file paths that must exist on the managed system.
+Advanced Arguments:: (Optional) Additional `oscap` command-line arguments (for example, `--fetch-remote-resources`).
+Fetch Remote Resources:: (Optional) Enable to allow `oscap` to download remote XCCDF resources during evaluation.
+--
+
+. Click btn:[Create].
+
+____
+
+
+=== Policy details and scan history
+
+Click on a policy name in the list to view its details, including:
+
+* The associated SCAP content, profile, and tailoring file.
+* A scan history showing all scans that were executed using this policy, with compliance results.
+
+
+=== Edit and delete policies
+
+.Procedure: Editing and deleting policies
+[role=procedure]
+____
+
+. Navigate to menu:Audit[OpenSCAP > SCAP Policies] list.
+
+. Click the edit icon to modify a policy.
+
+. Click btn:[Delete] to remove a policy.
+
+____
+
+
+== Schedule SCAP scans
+
+
+=== Scheduling a scan for a single system
+
+.Procedure: Scheduling a scan for a single system
+[role=procedure]
+____
+. Navigate to menu:Systems[System List > All].
+
+. Select a system then go to menu:Audit[OpenSCAP > Schedule].
+
+. Choose how to configure the scan:
 
 +
+
+--
+* **Use a SCAP Policy**: Select an existing SCAP policy.
+
+* **One-off scan**: Select a SCAP Content entry directly, then choose a profile from the list loaded automatically from that content (and optionally a tailoring file and profile). Use this when you do not need to reuse the configuration later.
+--
+
+. Choose the scan schedule:
+
++
+
+--
+* **Run now**: Execute the scan immediately.
+
+* **Schedule for later**: Pick a specific date and time.
+--
+
+. Click btn:[Schedule].
+
+____
 
 [NOTE]
 ====
-If you use `--fetch-remote-resources` parameter a lot of RAM is required.
-In addition, you may need to increase the value of `file_recv_max_size`.
-====
-
-. The scan runs at the client's next scheduled synchronization.
-
-_____
-
-[IMPORTANT]
-====
-The XCCDF content file is validated before it is run on the remote system.
-If the content file includes invalid arguments, the test fails.
+Package `openscap-utils` needs to be installed on the targeted minion.
+For more information see <<prepare-clients-for-scap>>.
 ====
 
 
-.Procedure: Running an audit scan from the API
+=== Schedule scans for multiple systems (SSM)
+
+.Procedure: Scheduling scans for multiple systems (SSM)
+[role=procedure]
+____
+. Add the target systems to the System Set Manager (SSM).
+
+. Navigate to menu:Systems[System Set Manager > Audit > Schedule].
+
+. Choose how to configure the scan: select an existing **SCAP Policy**, or select a **SCAP Content** entry and profile directly for a one-off scan.
+
+. Choose the scan schedule.
+
+. Click btn:[Schedule].
+
+____
+
+
+=== Recurring scans
+
+SCAP policies can be scheduled as recurring actions, enabling automated compliance monitoring.
+
+To set up a recurring scan, run the procedure:
+
+.Procedure: Setting up a recurring scan
+[role=procedure]
+____
+. Navigate to the recurring actions configuration for a system or system group.
+
+. Select **SCAP Policy Scan** as the action type.
+
+. Choose the SCAP policy to apply.
+
+. Configure the recurrence schedule (for example, daily, weekly).
+
+____
+
+[NOTE]
+====
+Recurring scans are linked to the selected SCAP policy.
+If you update the policy (for example, change the profile), future recurring scans will use the updated configuration.
+====
+
+
+=== Scheduling a scan from the API
+
+You can also use the {productname} API to schedule SCAP scans, with the `system.scap` handler.
+
+.Procedure: Scheduling a scan from the API
 [role=procedure]
 _____
 
 . Before you begin, ensure that the client to be scanned has Python and XML-RPC libraries installed.
 
-. Choose an existing script or create a script for scheduling a system scan through `system.scap.scheduleXccdfScan`.
-  For example:
-
+. To schedule a scan using an existing SCAP policy, use `system.scap.scheduleXccdfScanWithPolicy`:
 +
-
 ----
 #!/usr/bin/python3
 import xmlrpc.client
 client = xmlrpc.client.ServerProxy('https://server.example.com/rpc/api')
 key = client.auth.login('username', 'password')
-client.system.scap.scheduleXccdfScan(key, <1000010001>,
-    '<path_to_xccdf_file.xml>',
-    '--profile <profile_name>')
-client.auth.logout(session_key)
+client.system.scap.scheduleXccdfScanWithPolicy(key, [<1000010001>], <policy_id>, xmlrpc.client.DateTime())
+client.auth.logout(key)
 ----
-
 +
-
 In this example:
++
+--
+* `[<1000010001>]` is the list of system IDs (sids) to scan.
+* `<policy_id>` is the ID of an existing SCAP policy.
+--
 
-* `<1000010001>` is the system ID (sid).
-
-* `<path_to_xccdf_file.xml>` is the path to the content file location on the client.
-  For example, `/usr/share/xml/scap/ssg/content/ssg-sle15-ds.xml`.
-
-* `<profile_name>` is an additional argument for the `oscap` command.
-  For example, use `united_states_government_configuration_baseline` (USGCB).
+. To schedule a scan without a saved policy, use `system.scap.scheduleXccdfScanCustom` and pass the SCAP content and profile directly:
++
+----
+#!/usr/bin/python3
+import xmlrpc.client
+client = xmlrpc.client.ServerProxy('https://server.example.com/rpc/api')
+key = client.auth.login('username', 'password')
+params = {
+    'scapContentId': <scap_content_id>,
+    'xccdfProfileId': '<profile_name>',
+}
+client.system.scap.scheduleXccdfScanCustom(key, [<1000010001>], params, xmlrpc.client.DateTime())
+client.auth.logout(key)
+----
++
+In this example:
++
+--
+* `<scap_content_id>` is the ID of previously uploaded SCAP content.
+* `<profile_name>` is the XCCDF profile ID to use (for example, `xccdf_org.ssgproject.content_profile_stig`).
+* `params` can also include the optional keys `tailoringFileId`, `tailoringProfileId`, `ovalFiles`, `advancedArgs`, and `fetchRemoteResources`.
+--
 
 . Run the script on the client you want to scan, from the command prompt.
 
 _____
+
+
+== How scans work
+
+When a scan is scheduled:
+
+. The {productname} server transfers the required SCAP content files (DataStream and XCCDF) from the server to the managed system using Salt's file management.
+. If a tailoring file is associated with the policy, it is also transferred.
+. The `oscap` tool is executed on the managed system with the appropriate parameters (profile, rules, tailoring, etc.).
+. Scan results (`results.xml` and `report.html`) are collected from the managed system and stored on the server.
+. Results are available for review in the WebUI under the system's audit section.
+
+Files are transferred to `/var/cache/salt/minion/scap/` on the managed system.
+
+[IMPORTANT]
+====
+OVAL files are **not** transferred automatically due to their large size.
+If your scan requires OVAL files, they must be present on the managed system before the scan runs.
+====
 
 
 == Scan results
@@ -283,7 +523,7 @@ For more information about the data in this table, see xref:reference:audit/open
 
 To ensure that detailed information about scans is available, you need to enable it on the client.
 In the {productname} {webui}, navigate to menu:Admin[Organizations] and click on the organization the client is a part of.
-Navigate to the `Configuration` tab, and check the `Enable Upload of Detailed SCAP Files` option.
+Navigate to the `Configuration` tab, and check the `Enable Upload of Detailed SCAP Files` option.
 When enabled, this generates an additional HTML file on every scan, which contains extra information.
 The results show an extra line similar to this:
 
@@ -301,7 +541,7 @@ spacewalk-report scap-scan-results
 ----
 
 
-You can also use the {productname} API to view results, with the `system.scap` handler.
+You can also use the {productname} API to view results, with the `system.scap` handler.
 
 
 [[removing-scap-scan-results]]
@@ -337,13 +577,96 @@ _____
 [[remediation]]
 == Remediation
 
-Remediation Bash scripts and Ansible playbooks are provided in the same SCAP Security Guide packages to harden the client systems.
+You can remediate non-compliant systems either directly from SCAP scan results in the {webui}, or by running the Bash scripts and Ansible playbooks provided in the SCAP Security Guide packages.
 
-[TIP]
+[WARNING]
 ====
-If you have the beta SCAP features enabled, you can apply remediation directly from scan results in the {webui}, including custom per-rule remediation scripts.
-See xref:administration:openscap-enhanced-beta.adoc#remediation-enhanced[Enhanced SCAP Auditing - Remediation].
+Remediation actions change system configuration to enforce compliance, and can disable services, change permissions, or otherwise affect how a system behaves.
+This applies to built-in remediation, custom remediation scripts, and the Bash scripts and Ansible playbooks described below.
+Test remediation on non-production systems before applying it to production systems.
 ====
+
+
+=== Remediation from scan results
+
+After reviewing scan results, you can apply remediation for individual rules that have failed.
+
+.Procedure: Applying remediation from scan results
+[role=procedure]
+____
+. Navigate to a completed scan's results.
+
+. Identify the non-compliant rule.
+
+. Click the remediation action to apply the fix.
+
+____
+
+
+Built-in remediation derived from SCAP content is always a Bash script, pre-populated from the SCAP content's built-in fix elements.
+When you apply it, {productname} runs it on the managed system as a remote command, as root.
+
+SCAP content does not provide Salt-based remediation.
+If you prefer to remediate with a Salt state instead, define a <<Custom remediation>> for the rule and write your own Salt state in the empty text area; unlike Bash, there is no built-in content to pre-populate it.
+
+[NOTE]
+====
+SCAP Security Guide packages also provide standalone Ansible playbooks for full-profile hardening.
+{productname} only reads Bash-type fix elements for the per-rule remediation described here; Ansible playbooks are not applied from the {webui} and must be run manually.
+See <<Run remediation using a Bash script or Ansible playbook>>.
+====
+
+
+=== Custom remediation
+
+If the built-in remediation from the SCAP content is insufficient or you need to tailor the fix for your environment, you can define custom remediation scripts.
+
+Custom remediation is scoped per organization and per rule.
+
+To save a custom remediation, follow these steps:
+
+.Procedure: Saving a custom remediation
+[role=procedure]
+____
+. Navigate to the rule's remediation view.
+
+. Choose the script type:
+
++
+
+--
+* **Bash**: A custom shell script.
+
+* **Salt**: A custom Salt state definition.
+--
+
+. Enter or modify the remediation script.
+
+. Click btn:[Save].
+
+____
+
+
+Custom remediation overrides the default remediation from the SCAP content for the specific rule within your organization.
+
+[NOTE]
+====
+Custom remediation includes an audit trail.
+The system tracks which user created and last modified each custom remediation script.
+====
+
+
+=== Deleting custom remediation
+
+You can delete a custom remediation to revert to the default remediation provided by the SCAP content.
+
+Navigate to the custom remediation view and click btn:[Delete] for the specific script type.
+
+
+=== Run remediation using a Bash script or Ansible playbook
+
+Remediation Bash scripts and Ansible playbooks are provided in the same SCAP Security Guide packages to harden the client systems, independently of the {webui} remediation workflow described above.
+Use this method if you want to apply a full hardening profile proactively, without first running a scan, or if you prefer not to apply remediation from the {webui} for some reason.
 
 For example:
 
@@ -364,15 +687,6 @@ For example:
 You can run them using remote commands or with Ansible, after enabling Ansible in the client system.
 
 
-=== Run remediation using a Bash script
-
-Install the `scap-security-guide` package on all your target systems.
-For more information, see xref:administration:ansible-setup-control-node.adoc[].
-
-Packages, channels and scripts are different for each operating system and distribution.
-Examples are listed in the <<scripts-for-os-types>> section.
-
-
 ==== Run the Bash script on single systems as a remote command
 
 Run the Bash script as a remote command on single systems.
@@ -391,7 +705,7 @@ chmod +x -R /usr/share/scap-security-guide/bash
 [NOTE]
 ====
 Folder and script names change between distribution and version.
-Examples are listed in the <<scripts-for-os-types>> section.
+Install the content package for your operating system (see <<prepare-clients-for-scap>>), then use `rpm -ql <package>` or `dpkg -L <package>` to list the exact script and playbook paths available.
 ====
 
 
@@ -413,184 +727,69 @@ chmod +x -R /usr/share/scap-security-guide/bash
 . Click btn:[Schedule].
 
 
+== Navigation reference
 
-[[scripts-for-os-types]]
-=== Example remediation Bash scripts
+The following menu entries are available under menu:Audit[OpenSCAP]:
 
-==== {sle} {opensuse} and variants
+[cols="1,2", options="header"]
+|===
+| Menu path
+| Description
 
-Example {sle} and {opensuse} script data.
+| menu:Audit[OpenSCAP > All Scans]
+| View all SCAP scan results.
 
-Package::
-scap-security-guide
+| menu:Audit[OpenSCAP > SCAP Policies]
+| Create and manage reusable SCAP policies.
 
-Channels::
-* SLE12: SLES12 Updates
-* SLE15: SLES15 Module Basesystem Updates
+| menu:Audit[OpenSCAP > SCAP Content]
+| Upload and manage SCAP DataStream and XCCDF files.
 
-Bash script directory::
-`/usr/share/scap-security-guide/bash/`
+| menu:Audit[OpenSCAP > Tailoring Files]
+| Upload and manage SCAP tailoring files.
 
-Bash scripts::
+| menu:Audit[OpenSCAP > XCCDF Diff]
+| Compare two SCAP scan results.
+
+| menu:Audit[OpenSCAP > Advanced Search]
+| Search across all SCAP scan results.
+
+| menu:Systems[System Details > Audit > OpenSCAP > Schedule]
+| Schedule a SCAP scan for a single system using the policy-based UI.
+
+| menu:Systems[SSM > Audit > Schedule]
+| Schedule SCAP scans for multiple systems using the policy-based UI.
+|===
+
+
+== Workflow example
+
+The following example demonstrates a typical end-to-end workflow:
+
+. **Upload SCAP content**:
 +
-----
-opensuse-script-standard.sh
-sle12-script-standard.sh
-sle12-script-stig.sh
-sle15-script-cis.sh
-sle15-script-standard.sh
-sle15-script-stig.sh
-----
+Navigate to menu:Audit[OpenSCAP > SCAP Content] and upload a SCAP Security Guide DataStream file (for example, `ssg-sle15-ds.xml` and `ssg-sle15-xccdf.xml`).
 
-
-
-==== {rhel} and {centos} Bash script data
-
-Example {rhel} and {centos} script data.
-
-[NOTE]
-====
-`scap-security-guide` in centos7-updates only contains the {rhel} script.
-====
-
-Package::
-scap-security-guide-redhat
-
-Channels::
-* SUSE Manager Tools
-
-Bash script directory::
-`/usr/share/scap-security-guide/bash/`
-
-Bash scripts::
+. **Upload a tailoring file** (optional):
 +
-----
-centos7-script-pci-dss.sh
-centos7-script-standard.sh
-centos8-script-pci-dss.sh
-centos8-script-standard.sh
-fedora-script-ospp.sh
-fedora-script-pci-dss.sh
-fedora-script-standard.sh
-ol7-script-anssi_nt28_enhanced.sh
-ol7-script-anssi_nt28_high.sh
-ol7-script-anssi_nt28_intermediary.sh
-ol7-script-anssi_nt28_minimal.sh
-ol7-script-cjis.sh
-ol7-script-cui.sh
-ol7-script-e8.sh
-ol7-script-hipaa.sh
-ol7-script-ospp.sh
-ol7-script-pci-dss.sh
-ol7-script-sap.sh
-ol7-script-standard.sh
-ol7-script-stig.sh
-ol8-script-anssi_bp28_enhanced.sh
-ol8-script-anssi_bp28_high.sh
-ol8-script-anssi_bp28_intermediary.sh
-ol8-script-anssi_bp28_minimal.sh
-ol8-script-cjis.sh
-ol8-script-cui.sh
-ol8-script-e8.sh
-ol8-script-hipaa.sh
-ol8-script-ospp.sh
-ol8-script-pci-dss.sh
-ol8-script-standard.sh
-rhel7-script-anssi_nt28_enhanced.sh
-rhel7-script-anssi_nt28_high.sh
-rhel7-script-anssi_nt28_intermediary.sh
-rhel7-script-anssi_nt28_minimal.sh
-rhel7-script-C2S.sh
-rhel7-script-cis.sh
-rhel7-script-cjis.sh
-rhel7-script-cui.sh
-rhel7-script-e8.sh
-rhel7-script-hipaa.sh
-rhel7-script-ncp.sh
-rhel7-script-ospp.sh
-rhel7-script-pci-dss.sh
-rhel7-script-rhelh-stig.sh
-rhel7-script-rhelh-vpp.sh
-rhel7-script-rht-ccp.sh
-rhel7-script-standard.sh
-rhel7-script-stig_gui.sh
-rhel7-script-stig.sh
-rhel8-script-anssi_bp28_enhanced.sh
-rhel8-script-anssi_bp28_high.sh
-rhel8-script-anssi_bp28_intermediary.sh
-rhel8-script-anssi_bp28_minimal.sh
-rhel8-script-cis.sh
-rhel8-script-cjis.sh
-rhel8-script-cui.sh
-rhel8-script-e8.sh
-rhel8-script-hipaa.sh
-rhel8-script-ism_o.sh
-rhel8-script-ospp.sh
-rhel8-script-pci-dss.sh
-rhel8-script-rhelh-stig.sh
-rhel8-script-rhelh-vpp.sh
-rhel8-script-rht-ccp.sh
-rhel8-script-standard.sh
-rhel8-script-stig_gui.sh
-rhel8-script-stig.sh
-rhel9-script-pci-dss.sh
-rhosp10-script-cui.sh
-rhosp10-script-stig.sh
-rhosp13-script-stig.sh
-rhv4-script-pci-dss.sh
-rhv4-script-rhvh-stig.sh
-rhv4-script-rhvh-vpp.sh
-sl7-script-pci-dss.sh
-sl7-script-standard.sh
-----
+Navigate to menu:Audit[OpenSCAP > Tailoring Files] and upload a tailoring file if you need to customize a profile.
 
-
-==== {ubuntu} Bash script data
-
-Example {ubuntu} script data.
-
-Package::
-scap-security-guide-ubuntu
-
-Channels::
-* SUSE Manager Tools
-
-Bash script directory::
-`/usr/share/scap-security-guide/`
-
-Bash scripts::
+. **Create a SCAP policy**:
 +
-----
-ubuntu1804-script-anssi_np_nt28_average.sh
-ubuntu1804-script-anssi_np_nt28_high.sh
-ubuntu1804-script-anssi_np_nt28_minimal.sh
-ubuntu1804-script-anssi_np_nt28_restrictive.sh
-ubuntu1804-script-cis.sh
-ubuntu1804-script-standard.sh
-ubuntu2004-script-standard.sh
-----
+Navigate to menu:Audit[OpenSCAP > SCAP Policies] and create a policy that references the uploaded content, selects a profile (for example, `CIS Benchmark Level 1`), and optionally includes the tailoring file.
 
-
-==== {debian} Bash script data
-
-Example {debian} script data.
-
-Package::
-scap-security-guide-debian
-
-Channels::
-* SUSE Manager Tools
-
-Bash script directory::
-`/usr/share/scap-security-guide/bash/`
-
-Bash scripts::
+. **Schedule a scan**:
 +
-----
-# Debian 12
-debian12-script-anssi_np_nt28_average.sh
-debian12-script-anssi_np_nt28_high.sh
-debian12-script-anssi_np_nt28_minimal.sh
-debian12-script-anssi_np_nt28_restrictive.sh
-debian12-script-standard.sh
-----
+Navigate to a system's menu:Audit[OpenSCAP > Schedule] tab, select the policy, and schedule the scan.
+
+. **Review results**:
++
+After the scan completes, review the results under the system's menu:Audit[OpenSCAP > List Scans] tab.
+
+. **Apply remediation**:
++
+For any non-compliant rules, apply the built-in remediation or define custom remediation scripts tailored to your environment.
+
+. **Set up recurring scans**:
++
+Configure recurring scans using the SCAP policy to maintain ongoing compliance monitoring.
