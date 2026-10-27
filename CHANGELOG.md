@@ -1,3 +1,4 @@
+- Updated Azure timer service name for on-demand image preparation in client configuration
 - Added an Initial Setup After Installation chapter to the Installation and Upgrade Guide
 - Documented transactional system management
 - Documented Agama-based system deployment and redeployment support for SLE 16 and openSUSE Leap 16
