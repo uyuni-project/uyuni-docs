@@ -1,4 +1,9 @@
 - Removed obsolete admonition from the Installation and Upgrade Guide (bsc#1287084)
+- Removed old proxy SSH setup documentation
+- Clarified the registry secret creation in the proxy on Kubernetes page (bsc#1276906)
+- Added pre-migration information for proxy migration scenarios to Installation and Upgrade Guide (bsc#1272984)
+- Documented Agama-based system deployment and redeployment support for SLE 16 and openSUSE Leap 16
+- Documented custom CA certificates on Kubernetes with the trust-anchors ConfigMap and the migration from the ca-certs PVC
 - Added an Initial Setup After Installation chapter to the Installation and Upgrade Guide
 - Updated volumes related infomation for migration and upgrade procedures in Installation and Upgrade Guide (bsc#1273072)
 - Promoted Enhanced SCAP Auditing from beta to default and merged it into the OpenSCAP page in the Administration Guide
