@@ -1,4 +1,5 @@
 - Clarified the registry secret creation in the proxy on Kubernetes page (bsc#1276906)
+- Removed obsolete admonition in the Installation and Upgrade Guide (bsc#1287084)
 - Added pre-migration information for proxy migration scenarios to Installation and Upgrade Guide (bsc#1272984)
 - Updated volumes related infomation for migration and upgrade procedures in Installation and Upgrade Guide (bsc#1273072)
 - Updated Azure timer service name for on-demand image preparation in client configuration
