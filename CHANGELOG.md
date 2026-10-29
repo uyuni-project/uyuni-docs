@@ -1,3 +1,4 @@
+- Removed old proxy SSH setup documentation
 - Clarified the registry secret creation in the proxy on Kubernetes page (bsc#1276906)
 - Removed obsolete admonition in the Installation and Upgrade Guide (bsc#1287084)
 - Added pre-migration information for proxy migration scenarios to Installation and Upgrade Guide (bsc#1272984)
