@@ -1,3 +1,4 @@
+- Clarified the registry secret creation in the proxy on Kubernetes page (bsc#1276906)
 - Added pre-migration information for proxy migration scenarios to Installation and Upgrade Guide (bsc#1272984)
 - Documented Agama-based system deployment and redeployment support for SLE 16 and openSUSE Leap 16
 - Documented custom CA certificates on Kubernetes with the trust-anchors ConfigMap and the migration from the ca-certs PVC
