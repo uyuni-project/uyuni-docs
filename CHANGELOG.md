@@ -1,4 +1,5 @@
 - Removed old proxy SSH setup documentation
+- Removed obsolete admonition in the Installation and Upgrade Guide (bsc#1287084)
 - Added pre-migration information for proxy migration scenarios to Installation and Upgrade Guide (bsc#1272984)
 - Updated Azure timer service name for on-demand image preparation in client configuration
 - Added an Initial Setup After Installation chapter to the Installation and Upgrade Guide
