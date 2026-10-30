@@ -1,3 +1,4 @@
+- Documented how to resolve outdated channel tokens on clients that were offline during a token refresh (bsc#1254483)
 - Removed obsolete admonition from the Installation and Upgrade Guide (bsc#1287084)
 - Removed old proxy SSH setup documentation
 - Clarified the registry secret creation in the proxy on Kubernetes page (bsc#1276906)
