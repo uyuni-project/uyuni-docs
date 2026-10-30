@@ -1,0 +1,91 @@
+[[troubleshooting-token-refresh]]
+= Troubleshooting Failed Token Refresh
+:description: Fix outdated repository access tokens on clients that were offline during a token refresh by scheduling a recurring action that redeploys channel credentials
+:revdate: 2026-10-27
+:page-revdate: {revdate}
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+The channel access tokens that Salt clients use to download packages from {productname} expire and are replaced regularly.
+A Taskomatic job named `TokenCleanup` refreshes the tokens in the server database.
+By default, it then deploys the new credentials to the affected clients.
+This is controlled by the `server.susemanager.token_refresh_auto_deploy` setting.
+When the setting is disabled, the job only writes a warning to the log that lists the affected clients, and no client receives the new tokens.
+
+If a client is offline or unreachable when the job runs, the server database holds the new token but the client does not.
+The job does not retry on later runs, because it finds the tokens in the database valid.
+
+When this happens, the client keeps outdated tokens in `/etc/zypp/repos.d/susemanager:channels.repo`.
+Running `zypper ref` or `zypper up` directly on the client, or using an external tool that does so, does not refresh the tokens and fails with an error like this:
+
+----
+Retrieving repository '<repository name>' metadata ....[error]
+Repository '<repository name>' is invalid.
+[susemanager:<channel label>|https://<server>:443/rhn/manager/download/<channel label>?<token>] Valid metadata not found at specified URL
+----
+
+On the server, `/var/log/rhn/rhn_web_ui.log` records the rejected requests as `INFO` messages like `Forbidden: Token ... is not valid to access repomd.xml`.
+These messages are only written while `INFO` logging is enabled for the `com.suse.manager.webui.controllers.DownloadController` logger, which is the default.
+The same `Valid metadata not found` message can also be caused by incomplete repository metadata regeneration.
+For more information, see xref:administration:troubleshooting/tshoot-taskomatic.adoc[].
+
+To fix an affected client immediately, apply the `channels` state or a highstate to it.
+Any other channel-related action in {productname}, such as changing the channel assignment or installing a package, also redeploys the current tokens.
+
+To prevent the problem, schedule a recurring action for the organization that redeploys the certificates and channel configuration.
+Clients that were unavailable during a token refresh then receive the current tokens the next time the action runs.
+
+
+
+.Procedure: Keeping channel tokens synchronized
+[role=procedure]
+____
+. In the {productname} {webui}, navigate to menu:Admin[Organizations].
+
+. Click the name of the organization to configure.
+
+. Navigate to the `Recurring Actions` tab and click btn:[Create].
+
+. Select an action type from the `Action Type` dropdown:
+* `Highstate` applies the complete configuration of each client.
+* `Custom state` applies only the states you select.
+
+. Type a name for the schedule.
+
+. Choose a frequency, for example `Weekly` or `Daily`.
+
+. For actions of type `Custom state`, search for and select `Sync All`, `Certificates`, and `Channels`, which are the `util.syncall`, `certs`, and `channels` states, and click btn:[Save Changes].
+
+. In the next pane, drag and drop the states into that order and click btn:[Confirm].
+
+. Click btn:[Create Schedule].
+____
+
+For more information about recurring actions, see xref:administration:actions.adoc#recurring_actions[Recurring Actions].
+
+[NOTE]
+====
+Repeat this procedure for every organization that contains clients that are not always online.
+====
+
+[NOTE]
+====
+Only the {productname} Administrator can open the organization from menu:Admin[Organizations].
+Organization Administrators can create the same recurring action in menu:Home[My Organization > Recurring Actions].
+====
