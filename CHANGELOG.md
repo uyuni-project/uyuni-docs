@@ -1,3 +1,4 @@
+- Documented how to resolve outdated channel tokens on clients that were offline during a token refresh (bsc#1254483)
 - Removed old proxy SSH setup documentation
 - Removed obsolete admonition in the Installation and Upgrade Guide (bsc#1287084)
 - Added pre-migration information for proxy migration scenarios to Installation and Upgrade Guide (bsc#1272984)
