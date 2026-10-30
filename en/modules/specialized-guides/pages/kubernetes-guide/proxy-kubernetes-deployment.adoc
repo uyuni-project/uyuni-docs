@@ -1,7 +1,7 @@
 [[installation-proxy-containers-kube]]
 = {productname} Proxy Deployment on Kubernetes
 :description: Deploy proxies on Kubernetes using the proxy-helm chart with TLS secrets and persistent volume claims
-:revdate: 2026-06-24
+:revdate: 2026-10-29
 :page-revdate: {revdate}
 
 == Proxy on {kube} changes
@@ -119,9 +119,29 @@ endif::[]
 
 ifeval::[{mlm-content} == true]
 === Credentials
+{productname} proxy images are hosted on `registry.suse.com` and require authentication.
+Create an image pull secret using your SUSE Customer Center (SCC) mirroring credentials.
+Mirroring credentials can be found at https://scc.suse.com under menu:My Organization[Mirroring Credentials].
 
 A secret with the SCC credentials needs to be defined in order to pull the images from `registry.suse.com`.
-Refer to https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ for the instructions to prepare the secret.
+The secret needs to be of `kubernetes.io/dockerconfigjson` type and in the same namespace than the {productname} proxy.
+The credentials used for the secret need to have access to a {productname} Proxy product.
+
+[source,shell]
+----
+kubectl create secret docker-registry the-scc-secret \
+    -n uyuni-proxy \
+    --docker-server=registry.suse.com \
+    --docker-username=YOUR_SCC_MIRRORING_USERNAME \
+    --docker-password=YOUR_SCC_MIRRORING_PASSWORD
+----
+
+[NOTE]
+====
+SCC mirroring credentials are different from your regular SCC login.
+Use the dedicated mirroring username and password shown on the Mirroring Credentials page, not your SCC account email and password.
+====
+
 Set the `registrySecret` `proxy-helm` chart value to the name of the secret containing those credentials to use it.
 endif::[]
 
