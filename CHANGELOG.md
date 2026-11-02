@@ -1,3 +1,4 @@
+- Extended volume related information for migration and upgrade procedures in Installation and Upgrade Guide (bsc#1287084)
 - Documented the Comment / Reason field for scheduled actions
 - Removed obsolete server.maximum_config_file_size configuration variable
 - Documented how to resolve outdated channel tokens on clients that were offline during a token refresh (bsc#1254483)
