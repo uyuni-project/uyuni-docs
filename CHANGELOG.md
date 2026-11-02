@@ -1,3 +1,4 @@
+- Extended description of package_listorphans in Reference Guide
 - Removed obsolete server.maximum_config_file_size configuration variable
 - Documented how to resolve outdated channel tokens on clients that were offline during a token refresh (bsc#1254483)
 - Removed old proxy SSH setup documentation
