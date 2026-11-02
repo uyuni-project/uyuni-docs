@@ -1,4 +1,5 @@
 - Removed obsolete admonition from the Administration Guide (bsc#1276909)
+- Documented the Comment / Reason field for scheduled actions
 - Removed obsolete server.maximum_config_file_size configuration variable
 - Documented how to resolve outdated channel tokens on clients that were offline during a token refresh (bsc#1254483)
 - Removed obsolete admonition from the Installation and Upgrade Guide (bsc#1287084)
