@@ -1,3 +1,4 @@
+- Updated documentation for removed, renamed, and database-moved configuration variables
 - Removed obsolete admonition from the Administration Guide (bsc#1276909)
 - Extended volume related information for migration and upgrade procedures in Installation and Upgrade Guide (bsc#1287084)
 - Documented the Comment / Reason field for scheduled actions
