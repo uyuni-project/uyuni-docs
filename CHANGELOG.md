@@ -1,3 +1,4 @@
+- Removed obsolete admonition from the Administration Guide (bsc#1276909)
 - Extended volume related information for migration and upgrade procedures in Installation and Upgrade Guide (bsc#1287084)
 - Documented the Comment / Reason field for scheduled actions
 - Removed obsolete server.maximum_config_file_size configuration variable
