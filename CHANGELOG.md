@@ -1,4 +1,4 @@
-- Extended description of package_listorphans in Reference Guide
+- Extended descriptions of package_listorphans and package_removeorphans in Reference Guide
 - Removed obsolete admonition from the Administration Guide (bsc#1276909)
 - Extended volume related information for migration and upgrade procedures in Installation and Upgrade Guide (bsc#1287084)
 - Documented the Comment / Reason field for scheduled actions
