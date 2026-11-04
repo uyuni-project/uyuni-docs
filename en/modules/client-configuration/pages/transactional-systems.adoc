@@ -1,0 +1,35 @@
+[[transactional-systems]]
+= Managing Transactional Systems
+:description: Understand how {productname} identifies and manages transactional systems, including live operations, snapshots, reboots, and action progress
+:revdate: 2026-10-07
+:page-revdate: {revdate}
+
+{productname} identifies transactional systems using the `transactional` grain reported by the Salt minion.
+For existing clients, {productname} requests updated system information when the Salt minion starts.
+Restart the minion service to trigger this update, and allow time for the server to process the response.
+
+== Live and transactional operations
+
+Package changes and other operations that run transactionally are staged in a snapshot.
+The changes become active only after the operating system boots into a snapshot that contains them.
+A live operation acts on the running system.
+Live execution does not make a read-only file system writable.
+
+For explicit states and remote commands, select `Use transactional update` where the option is available to stage the operation transactionally.
+Leave it unselected to run the operation live.
+Highstate and formulas use their own transactional handling.
+For details, see xref:reference:systems/system-details/sd-states.adoc[], xref:reference:systems/system-details/sd-remote-command.adoc[], and xref:reference:systems/system-details/sd-formulas.adoc[].
+
+== Reboot and action progress
+
+Some transactional actions require a reboot to activate changes staged in a snapshot. The action's progress indicates when a reboot is pending.
+
+* If the action only performs transactional operations, it can show as `Completed` while waiting for the reboot.
+* If the action includes subsequent live operations (such as highstate):
+** If a reboot is required, the action remains in progress until you reboot the system. After the system boots into the updated snapshot, {productname} automatically resumes the live phase.
+** If no changes were made and no reboot is required, {productname} runs the live phase immediately.
+
+Reboot the operating system when the action indicates that a reboot is pending.
+
+For snapshot information, see xref:reference:systems/system-details/sd-snapshots.adoc[].
+For action progress, see xref:reference:systems/system-details/sd-events.adoc[].

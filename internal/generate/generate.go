@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -248,8 +249,29 @@ func All(cfg *config.Config, repoRoot string) error {
 	return nil
 }
 
+// yamlValue formats an AsciiDoc attribute for the Antora playbook.
+//
+// Antora parses that playbook as YAML 1.1, then turns numbers into strings.
+// An unquoted 2026.10 is the number 2026.1, so the published site drops the
+// trailing zero. Quote only strings whose default numeric form would not
+// round-trip. Other strings, including "true" and "false", stay bare so
+// ifeval::[{mlm-content} == true] keeps its current meaning.
+func yamlValue(v any) string {
+	s, ok := v.(string)
+	if !ok {
+		return fmt.Sprint(v)
+	}
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil || strconv.FormatFloat(f, 'f', -1, 64) == s {
+		return s
+	}
+	return strconv.Quote(s)
+}
+
 func renderTemplate(name, tmplText string, data any, outPath string) error {
-	tmpl, err := template.New(name).Parse(tmplText)
+	tmpl, err := template.New(name).Funcs(template.FuncMap{
+		"yamlValue": yamlValue,
+	}).Parse(tmplText)
 	if err != nil {
 		return fmt.Errorf("parsing template %s: %w", name, err)
 	}
