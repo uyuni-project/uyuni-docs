@@ -1,3 +1,4 @@
+- Marked server deployment on RKE2 as a technology preview and documented the supported host operating systems
 - Documented custom CA certificates on Kubernetes with the trust-anchors ConfigMap and the migration from the ca-certs PVC
 - Added an Initial Setup After Installation chapter to the Installation and Upgrade Guide
 - Updated volumes related infomation for migration and upgrade procedures in Installation and Upgrade Guide (bsc#1273072)
