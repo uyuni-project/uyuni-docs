@@ -1,7 +1,7 @@
 [[ch-openscap]]
 = System Security with OpenSCAP
 :description: Audit clients with OpenSCAP to check system security configuration, manage SCAP content and policies, and remediate compliance issues
-:revdate: 2026-10-13
+:revdate: 2026-11-09
 :page-revdate: {revdate}
 
 
@@ -320,13 +320,85 @@ XCCDF Profile:: Select a profile from the chosen SCAP content. The list of avail
 Tailoring File:: (Optional) Select a tailoring file to customize the selected profile.
 Tailoring Profile:: (Optional) If a tailoring file is selected, choose a profile from the tailoring file.
 OVAL Files:: (Optional) Comma-separated list of OVAL file paths that must exist on the managed system.
-Advanced Arguments:: (Optional) Additional `oscap` command-line arguments (for example, `--fetch-remote-resources`).
+Advanced Arguments:: (Optional) Additional `oscap` command-line arguments (for example, `--skip-rule <rule_id>`).
+For the options that are passed on, see <<scap-advanced-arguments>>.
 Fetch Remote Resources:: (Optional) Enable to allow `oscap` to download remote XCCDF resources during evaluation.
 --
 
 . Click btn:[Create].
 
 ____
+
+
+[[scap-advanced-arguments]]
+=== Advanced arguments
+
+{productname} does not pass the **Advanced Arguments** field to `oscap` as it is.
+It reads the options it supports from the field, and builds the `oscap` command line on the managed system from them.
+This applies to policies, to one-off scans, and to the `advancedArgs` key of the API.
+
+These options are passed on:
+
+[cols="1,2", options="header"]
+|===
+| Option | Effect
+
+| `--rule <rule_id>`
+| Evaluate only the given rule.
+Can be given more than once.
+
+| `--skip-rule <rule_id>`
+| Do not evaluate the given rule.
+Can be given more than once.
+
+| `--reference <name>:<id>`
+| Evaluate only the rules that carry the given reference, for example `stigid:RHEL-09-211010`.
+
+| `--cpe <file>`
+| Use the given CPE dictionary or language for the applicability checks.
+
+| `--local-files <directory>`
+| Use the local copies of remote resources from the given directory instead of downloading them.
+
+| `--datastream-id <id>`
+| Use the given data stream of the collection.
+
+| `--xccdf-id <id>`
+| Use the given XCCDF component of the data stream.
+
+| `--benchmark-id <id>`
+| Evaluate the given benchmark, when the data stream holds more than one.
+
+| `--tailoring-id <id>`
+| Use the given tailoring component of the data stream.
+
+| `--fetch-remote-resources`
+| Download the remote content that the SCAP content refers to.
+
+| `--remediate`
+| Run the fixes of the failed rules after the evaluation.
+|===
+
+The profile, the tailoring file, and the tailoring profile are selected with their own fields.
+Other options are ignored, and the scan sets the result and report options itself.
+
+For example, to skip two rules of the selected profile:
+
+----
+--skip-rule xccdf_org.ssgproject.content_rule_package_telnet-server_removed --skip-rule xccdf_org.ssgproject.content_rule_package_tftp-server_removed
+----
+
+[NOTE]
+====
+The paths given to `--cpe` and `--local-files` are read on the managed system.
+Only the SCAP content and the tailoring file are transferred from the server.
+====
+
+[IMPORTANT]
+====
+`--skip-rule`, `--reference`, `--cpe`, `--local-files`, `--datastream-id`, `--xccdf-id`, `--benchmark-id`, and a repeated `--rule` need an updated Salt bundle (`venv-salt-minion`) on the managed system.
+With an older Salt bundle, these options are ignored, and a repeated `--rule` makes the scan fail.
+====
 
 
 === Policy details and scan history
@@ -488,6 +560,7 @@ In this example:
 * `<scap_content_id>` is the ID of previously uploaded SCAP content.
 * `<profile_name>` is the XCCDF profile ID to use (for example, `xccdf_org.ssgproject.content_profile_stig`).
 * `params` can also include the optional keys `tailoringFileId`, `tailoringProfileId`, `ovalFiles`, `advancedArgs`, and `fetchRemoteResources`.
+For the options that `advancedArgs` passes on, see <<scap-advanced-arguments>>.
 --
 
 . Run the script on the client you want to scan, from the command prompt.
