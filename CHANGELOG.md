@@ -1,3 +1,48 @@
+- Marked server deployment on RKE2 as a technology preview and documented the supported host operating systems
+- Removed obsolete admonition from the Administration Guide (bsc#1276909)
+- Extended volume related information for migration and upgrade procedures in Installation and Upgrade Guide (bsc#1287084)
+- Documented the Comment / Reason field for scheduled actions
+- Removed obsolete server.maximum_config_file_size configuration variable
+- Documented how to resolve outdated channel tokens on clients that were offline during a token refresh (bsc#1254483)
+- Removed obsolete admonition from the Installation and Upgrade Guide (bsc#1287084)
+- Removed old proxy SSH setup documentation
+- Clarified the registry secret creation in the proxy on Kubernetes page (bsc#1276906)
+- Added pre-migration information for proxy migration scenarios to Installation and Upgrade Guide (bsc#1272984)
+- Documented Agama-based system deployment and redeployment support for SLE 16 and openSUSE Leap 16
+- Documented custom CA certificates on Kubernetes with the trust-anchors ConfigMap and the migration from the ca-certs PVC
+- Added an Initial Setup After Installation chapter to the Installation and Upgrade Guide
+- Updated volumes related infomation for migration and upgrade procedures in Installation and Upgrade Guide (bsc#1273072)
+- Promoted Enhanced SCAP Auditing from beta to default and merged it into the OpenSCAP page in the Administration Guide
+- Updated Azure timer service name for on-demand image preparation in client configuration
+- Used {azure} attribute across public cloud and VHM documentation
+- Documented free space disk check thresholds DISKCHECKALERT_FREE_MB and DISKTHRESHOLD_FREE_MB
+- Enhanced upgrade instructions in Installation and Upgrade Guide (bsc#1280586)
+- Updated images in documentation with the correct product name (bsc#1257074)
+- Fixed the SL Micro client tools channel labels for Uyuni
+- Added a script to verify automatic channels synchronization status (bsc#1275628)
+- Updated images in documentation with the correct product name (bsc#1257074)
+- Documented cloned patch reuse for softwarechannel_clone and softwarechannel_clonetree in spacecmd reference (bsc#1282231)
+- Published the docs builder image for amd64 and arm64 so Apple Silicon builds do not emulate the amd64 Go toolchain
+- Documented how to collect a support bundle on Kubernetes with the kubectl mlm-supportconfig plugin
+- Clarified requirements for Liberty client registration (bsc#1284967)
+- Documented transactional system management
+- Clarified FQDN requirements for Hub online synchronization (bsc#1275191)
+- Documented proxy Podman SSL secrets in the SSL certificates overview
+- Added missing repository value in server on kubernetes upgrade instructions
+- Expanded and corrected RBAC Web UI documentation (bsc#1258079)
+- Documented passwordless sudo requirement for PAYG connections (bsc#1280881)
+- Documented how to upgrade the server on Kubernetes
+- Documented ppc64le support for Red Hat Enterprise Linux 7, 8, 9, and 10 in Uyuni
+- Simplified PR comment wording and removed artifact icons in CI comment script
+- Fixed published version numbers that dropped a trailing zero, such as 2026.10 appearing as 2026.1
+- Updated images in documentation with teh correct product name (bsc#1257074)
+- Documented SLES 16.1 and openSUSE Leap 16.1 support and migration paths
+- Added information about associated activation keys being deleted when channels are deleted in Administration Guide
+- Extended proxy troubleshooting section for setting the grains (bsc#1281041)
+- Updated information for hardware requirements and a reference to large deployments requirements (bsc#1268473)
+- Documented resolving obsolete libvirt-events errors in minion logs (bsc#1272813)
+- Fixed procedure block formatting and normalized section headings to sentence case
+- Documented Salt RBAC namespaces and native Salt access controls
 - Clarified TFTP autoinstallation proxy routing and server tftpd option (bsc#1276787)
 - Added a note to the liberate formula page for special handling of kernel during reinstall (bsc#1269223)
 - Updated pages related to GPG upload from mgradm to mgrctl

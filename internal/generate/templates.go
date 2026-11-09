@@ -34,10 +34,10 @@ asciidoc:
   attributes:
     page-lang: {{.Lang.Code}}
 {{- range $k, $v := .Cfg.Asciidoc}}
-    {{$k}}: {{$v}}
+    {{$k}}: {{yamlValue $v}}
 {{- end}}
 {{- range $k, $v := .P.Asciidoc.Attributes}}
-    {{$k}}: {{$v}}
+    {{$k}}: {{yamlValue $v}}
 {{- end}}
 ui:
   bundle:
