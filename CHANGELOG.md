@@ -1,3 +1,4 @@
+- Documented how to disable remote commands with java.disable_remote_commands_from_ui
 - Marked server deployment on RKE2 as a technology preview and documented the supported host operating systems
 - Removed obsolete admonition from the Administration Guide (bsc#1276909)
 - Extended volume related information for migration and upgrade procedures in Installation and Upgrade Guide (bsc#1287084)
