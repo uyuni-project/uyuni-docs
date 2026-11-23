@@ -1,4 +1,5 @@
 - Documented custom CA certificates on Kubernetes with the trust-anchors ConfigMap and the migration from the ca-certs PVC
+- Documented free space disk check thresholds DISKCHECKALERT_FREE_MB and DISKTHRESHOLD_FREE_MB
 - Marked server deployment on RKE2 as a technology preview and documented the supported host operating systems
 - Removed obsolete admonition from the Administration Guide (bsc#1276909)
 - Extended volume related information for migration and upgrade procedures in Installation and Upgrade Guide (bsc#1287084)
