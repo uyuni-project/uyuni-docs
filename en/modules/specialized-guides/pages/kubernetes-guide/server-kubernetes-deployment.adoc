@@ -1,12 +1,19 @@
 [[deploy-server-on-kubernetes]]
 = Server Deployment on {kube}
 :description: Deploy a server on Kubernetes using a Helm chart and follow the pre-deployment checklist to prepare your environment
-:revdate: 2026-10-28
+:revdate: 2026-11-23
+
 :page-revdate: {revdate}
 
 
 {productname} can be deployed on {kube} using a {helm} chart.
-This guide covers deploying {productname} {productnumber} on RKE2.
+This guide covers deploying {productname} {productnumber} on RKE2, which is, for now, the only supported {kube} distribution.
+
+[NOTE]
+====
+Server deployment on RKE2 is currently a technology preview.
+We plan to move it to full support in a future release, and welcome any feedback in the meantime.
+====
 
 == Pre-Deployment Checklist
 
@@ -53,6 +60,10 @@ Other distributions are not tested and not supported.
 
 | RKE2 version
 | Refer to the {productname} release notes for the minimum supported RKE2 version.
+
+| Host operating system
+| {sles} {sles-version} {sp-version} or newer, or {sl-micro} 6.1 or newer.
+Other operating systems running RKE2 are not tested and not supported.
 
 | Ingress controller
 | Traefik.
@@ -639,14 +650,6 @@ metadata:
 spec:
   valuesContent: |-
     ports:
-      reportdb-pgsql:
-        port: 5432
-        expose:
-          default: true
-        exposedPort: 5432
-        protocol: TCP
-        hostPort: 5432
-        containerPort: 5432
       salt-publish:
         port: 4505
         expose:
@@ -673,6 +676,16 @@ This means that there are only two possible ways to use the TFTP server:
 * using a load balancer compatible with TFTP,
 
 * using the host network for the TFTP pod. This can be achieved by setting the `tftp.hostNetwork` helm chart value to `true`.
+
+[IMPORTANT]
+====
+Exposing the report database externally requires configuring the [literal]``reportdb`` service as a [literal]``NodePort`` or [literal]``LoadBalancer`` (via the [literal]``services.reportdb`` value).
+
+Be aware of a critical security behavior: external database connections require SSL, whereas internal cluster connections do not.
+However, Traefik ingress TCP routes mask client IPs, causing PostgreSQL to view external traffic as internal.
+
+If you expose the database using a Traefik ingress TCP route and endpoint, you risk allowing clients to establish unencrypted, insecure connections.
+====
 
 [[security-framework-setup]]
 === Security framework setup

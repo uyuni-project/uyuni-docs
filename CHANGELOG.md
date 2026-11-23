@@ -1,4 +1,14 @@
 - Documented custom CA certificates on Kubernetes with the trust-anchors ConfigMap and the migration from the ca-certs PVC
+- Marked server deployment on RKE2 as a technology preview and documented the supported host operating systems
+- Removed obsolete admonition from the Administration Guide (bsc#1276909)
+- Extended volume related information for migration and upgrade procedures in Installation and Upgrade Guide (bsc#1287084)
+- Documented the Comment / Reason field for scheduled actions
+- Removed obsolete server.maximum_config_file_size configuration variable
+- Documented how to resolve outdated channel tokens on clients that were offline during a token refresh (bsc#1254483)
+- Removed old proxy SSH setup documentation
+- Clarified the registry secret creation in the proxy on Kubernetes page (bsc#1276906)
+- Removed obsolete admonition in the Installation and Upgrade Guide (bsc#1287084)
+- Added pre-migration information for proxy migration scenarios to Installation and Upgrade Guide (bsc#1272984)
 - Updated volumes related infomation for migration and upgrade procedures in Installation and Upgrade Guide (bsc#1273072)
 - Updated Azure timer service name for on-demand image preparation in client configuration
 - Added an Initial Setup After Installation chapter to the Installation and Upgrade Guide
@@ -96,6 +106,7 @@
 - Removed unsupported {raspberrypios} 12 from Client Configuration Guide
 - Added a common workflow to setup crypto policies in the server container (bsc#1253505)
 - Document Ansible Playbook variable editing (bsc#1260396)
+- Adjust to the new way to expose the report database (bsc#1270038)
 - Convert broken `[role]``text`` double-backtick literals in `en/modules`
   to standard single-backtick literals for Weblate AI translation
   compatibility
