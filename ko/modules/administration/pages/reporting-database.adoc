@@ -1,0 +1,115 @@
+[[reporting-database]]
+= 보고 데이터베이스
+:revdate: 2026-06-24
+:page-revdate: {revdate}
+
+{productname}은(는) 모든 서버에 보고 데이터베이스를 포함합니다.
+보고 데이터베이스는 기본 {productname} 데이터베이스에서 가장 관련성이 높은 데이터의 비정규화되고 읽기에 최적화된 스냅샷을 저장하는 별도의 PostgreSQL 데이터베이스입니다.
+외부 보고 도구는 이 데이터베이스에 직접 연결하여 데이터를 쿼리하고 시각화할 수 있습니다.
+
+허브 배포에서 허브는 연결된 모든 주변 서버의 보고 데이터베이스를 단일 중앙 보고 데이터베이스로 집계합니다.
+허브별 설정 및 집계에 대한 자세한 내용은 xref:specialized-guides:large-deployments/hub-reporting.adoc[]을(를) 참조하십시오.
+
+== 설정
+
+보고 데이터베이스와 스키마는 로컬 PostgreSQL 서버를 사용하여 기본적으로 설정됩니다.
+보고 데이터베이스는 네트워크를 통해 액세스할 수 있는 별도의 데이터베이스입니다.
+
+[IMPORTANT]
+====
+허브 배포에서 허브와 주변 서버 간의 연결은 허브 온라인 동기화를 통해 설정됩니다.
+자세한 내용은 xref:specialized-guides:large-deployments/hub-online-sync.adoc[]을(를) 참조하십시오.
+====
+
+
+
+=== 보고 데이터베이스를 위한 DB 사용자 생성
+
+외부 보고 도구를 데이터베이스에 연결하기 전에 읽기 전용 권한을 가진 사용자를 생성하십시오.
+이를 위해 `uyuni-setup-reportdb-user` 명령을 사용하십시오:
+
+----
+usage: uyuni-setup-reportdb-user [options]
+
+options:
+  --help
+            show this help message and exit
+  --non-interactive
+            Switches to non-interactive mode
+  --dbuser=DBUSER
+            Report DB User
+  --dbpassword=DBPASSWORD
+            Report DB Password
+  --add
+            Add the new user
+  --delete
+            Delete the user
+  --modify
+            Set a new password
+----
+
+== 데이터베이스 스키마
+
+스키마는 기본 {productname} 데이터베이스에서 가장 중요한 테이블을 보고와 관련된 데이터만 포함하는 비정규화된 변형으로 내보냅니다.
+
+사용 준비가 완료된 보고서는 여러 테이블의 데이터를 집계하는 뷰로 제공됩니다.
+
+모든 테이블에는 데이터를 제공한 `mgm_id` 서버를 지정하는 추가 열({productname})이 있습니다.
+단일 {productname} 서버에서 이 열은 `1`을(를) 나타내는 표준 값 `localhost`을(를) 가집니다.
+{productname} 허브에서는 이 열이 관리되는 서버가 허브 데이터베이스에서 가지는 실제 서버 ID로 대체됩니다.
+
+또 다른 일반적인 추가 필드는 `synced_date`이며, 이는 기본 {productname} 서버 데이터베이스에서 데이터가 내보내진 시간을 나타냅니다.
+
+menu:도움말[보고 데이터베이스 스키마]로 이동하여 스키마 문서를 찾으십시오.
+
+== 데이터 생성 및 업데이트
+
+{productname}은(는) 두 개의 taskomatic 작업을 사용하여 보고 데이터를 관리합니다.
+
+`update-reporting-default`::
+기본 {productname} 데이터베이스에서 로컬 보고 데이터베이스를 생성하고 업데이트합니다.
+기본적으로 모든 서버에서 매일 자정에 실행됩니다.
+
+`update-reporting-hub-default`::
+모든 등록된 주변 서버에서 보고 데이터를 가져와 허브 보고 데이터베이스로 집계합니다.
+이 일정은 모든 서버에서 볼 수 있지만 {productname} 허브에서만 의미 있는 작업을 수행합니다.
+기본적으로 매일 오전 1시 30분에 실행됩니다.
+
+모든 시간은 서버의 현지 시간대 기준입니다.
+
+허브 집계 및 시간대 간 일정 조정에 대한 자세한 내용은 xref:specialized-guides:large-deployments/hub-reporting.adoc[]을(를) 참조하십시오.
+
+== 조정
+
+[[reportdb-batch-size]]
+=== `report_db_batch_size`
+
+[cols="1,1"]
+|===
+| 설명          | 한 번에 한 데이터베이스에서 다른 데이터베이스로 가져오고 기록하는 최대 행 수입니다.
+| 조정 시기            | 메모리 부족 오류 또는 처리 속도 문제 발생 시.
+| 기본값        | 2000
+| 권장 값 | 500 - 5000
+| 위치             | `/etc/rhn/rhn.conf`
+| 예              | `report_db_batch_size = 4000`
+| 변경 후       | 변경 전후에 메모리 사용량을 면밀히 모니터링하십시오.
+|===
+
+== Grafana를 사용한 보고 데이터 시각화
+
+{productname} Grafana Formula는 보고 데이터베이스에 직접 연결하여 플릿 관리 및 규정 준수 보고를 위한 사전 구축된 대시보드를 배포할 수 있습니다.
+
+전제 조건:
+
+* Monitoring Formula를 사용하여 구성된 Grafana 인스턴스.
+  xref:specialized-guides:salt/salt-formula-monitoring.adoc[]를 참조하십시오.
+* `uyuni-setup-reportdb-user`를 사용하여 생성된 보고 데이터베이스 사용자.
+  <<Create a DB User for the Reporting Database>>를 참조하십시오.
+
+제공되는 세 가지 보고 대시보드는 다음과 같습니다:
+
+* **Fleet Overview & Security** — 플릿 구성, 보안 상태, CVE 분석, 패치 규정 준수, 프록시 인프라 및 가상화 개요.
+* **Reports & History** — 채널, 패키지, 에라타, 작업, 시스템 인벤토리, 사용자 관리, 시스템 기록 및 SCAP 규정 준수.
+* **Executive Overview** — 시스템 수 및 패키지 쿼리를 포함한 동적 통계.
+
+구성 단계는 xref:specialized-guides:salt/salt-formula-monitoring.adoc[Monitoring Formulas]를 참조하십시오.

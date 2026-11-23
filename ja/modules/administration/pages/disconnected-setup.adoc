@@ -1,0 +1,224 @@
+[[disconnected-setup]]
+= 切断されたセットアップ
+:description: 切断された環境で、RMTまたはSMTを使用してSUSE Multi-Linux Managerを設定および管理します。
+:revdate: 2025-05-27
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションのドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+{productname}をインターネットに接続できない場合は、切断された環境で使用できます。
+
+Repository Mirroring Tool（RMT）は、{sle}{nbsp}15以降で利用可能です。
+RMTは、古い{sle}インストールで使用できるSubscription Management Tool（SMT）に代わります。
+
+切断された{productname}セットアップでは、RMTまたはSMTが外部ネットワークを使用して{scclongform}に接続します。
+すべてのソフトウェアチャンネルとリポジトリは、リムーバブルストレージデバイスに同期されます。
+そのストレージデバイスは、切断された{productname}インストールを更新するために使用できます。
+
+このセットアップにより、{productname}のインストールをオフラインで、切断された環境のままにできます。
+
+[NOTE]
+====
+RMTまたはSMTインスタンスは、{productname}サーバーを直接管理するために使用する必要があります。
+それは、カスケードで第二のRMTまたはSMTインスタンスを管理するためには使用できません。
+====
+
+RMTに関する詳細は、{sles-base-os-documentation}/book-rmt.htmlを参照してください。
+
+
+
+[[disconnected-setup-sync-scc]]
+== {scc}からチャンネルとリポジトリを同期する
+
+
+=== RMTの同期
+
+{sle} 15インストールでRMTを使用して、{sle} 12以降を実行しているクライアントを管理できます。
+
+{productname}のインストールごとに専用RMTインスタンスを設定することをお勧めします。
+
+
+
+.プロシージャ:RMTの設定
+. RMTインスタンスで、RMTパッケージをインストールします。
++
+----
+zypper in rmt-server
+----
+. {yast}を使用してRMTを設定します：
++
+----
+yast2 rmt
+----
+. プロンプトに従ってインストールを完了します。
+
+RMTの設定に関する詳細は、{sles-base-os-documentation}/book-rmt.htmlを参照してください。
+
+
+
+.プロシージャ:{scc}とRMTを同期しています。
+. RMTインスタンスで、組織で使用可能なすべての製品とリポジトリを一覧にします。
++
+----
+rmt-cli products list --all
+rmt-cli repos list --all
+----
+. 組織で使用可能なすべての更新を同期します。
++
+----
+rmt-cli sync
+----
+systemdを使用して定期的に同期するようにRMTを設定することもできます。
+. 必要な製品を有効にします。
+    たとえば、SLES 15を有効にするには、次のようにします。
++
+----
+rmt-cli product enable sles/15/x86_64
+----
+. リムーバブルストレージに同期されたデータをエクスポートします。
+    この例では、ストレージメディアは`/mnt/usb`にマウントされています:
++
+----
+rmt-cli export data /mnt/usb
+----
+. リムーバブルストレージに有効なリポジトリをエクスポートします。
++
+----
+rmt-cli export settings /mnt/usb
+rmt-cli export repos /mnt/usb
+----
+
+
+[IMPORTANT]
+====
+外部ストレージがRMTユーザーによって書き込み可能なディレクトリにマウントされていることを確認してください。
+RMTユーザー設定は`cli`の`/etc/rmt.conf`セクションで変更できます。
+====
+
+
+
+=== SMTの同期
+
+
+SMTは{sle} 12に含まれ、{sle} 10以降を実行しているクライアントを管理するために使用できます。
+
+SMTでは、リポジトリとパッケージを同期するために、SMTインスタンス上にローカルミラーディレクトリを作成する必要があります。
+
+SMTのインストールと設定に関する詳細は https://documentation.suse.com/sles/12-SP5/html/SLES-all/book-smt.html.を参照してください。
+
+
+
+.プロシージャ:{scc}とのSMTの同期
+. SMTインスタンスで、データベース置換ファイルを作成します。
++
+----
+smt-sync --createdbreplacementfile /tmp/dbrepl.xml
+----
+. リムーバブルストレージに同期されたデータをエクスポートします。
+  この例では、ストレージメディアは`/mnt/usb`にマウントされています:
++
+----
+smt-sync --todir /mnt/usb
+smt-mirror --dbreplfile /tmp/dbrepl.xml --directory /mnt/usb \
+           --fromlocalsmt -L /var/log/smt/smt-mirror-export.log
+curl https://scc.suse.com/multi-linux-manager/product_tree.json -o /mnt/usb/product_tree.json
+----
+
+
+[IMPORTANT]
+====
+外部ストレージがRMTユーザーによって書き込み可能なディレクトリにマウントされていることを確認してください。
+SMTユーザー設定は`/etc/smt.conf`で変更できます。
+====
+
+
+
+== 必須チャンネル
+
+対応する{productname}クライアントツールチャンネルが必要であり、{productname}が特定のチャンネルを同期できるようにします。
+これらのチャンネルが有効でない場合、{productname}はその製品を検出できない可能性があります。
+
+次のコマンドを実行して、これらの必須チャンネルを有効にします。
+
+SLES 12およびSLES for SAPやSLE HPCなどのSLES 12に基づく製品::
+RMT: `rmt-cli products enable sle-manager-tools/12/x86_64`
++
+SMT: `smt repos -p sle-manager-tools,12,x86_64`
+
+SLES 15およびSLES for SAPやSLE HPCなどのSLES 15に基づく製品::
+RMT: `rmt-cli products enable sle-manager-tools/15/x86_64`
++
+SMT: `smt repos -p sle-manager-tools,15,x86_64`
+
+次に、チャンネルをミラーリングしてエクスポートします。
+
+他のディストリビューションやアーキテクチャも有効にできます。
+製品チャンネルやリポジトリをミラーリングするために有効にする方法についての詳細は、ドキュメントを参照してください。
+
+RMT:: {sles-base-os-documentation}/cha-rmt-mirroring.html#sec-rmt-mirroring-enable-disable
+
+SMT:: https://documentation.suse.com/sles/12-SP5/single-html/SLES-smt/index.html#smt-mirroring-manage-domirror
+
+
+
+
+[[disconnected-setup-server]]
+== 切断されたサーバ
+
+{productname}を切断されたサーバーとして設定するには、エアギャップ(された)デプロイメントの手順に従ってください。
+
+
+=== 配備
+
+提供されたイメージを使用して、切断されたサーバーを仮想マシン（VM）としてデプロイすることをお勧めします。
+{productname}サーバーのエアギャップ(された)デプロイメントについては、xref:installation-and-upgrade:container-deployment/mlm/server-air-gapped-deployment-mlm.adoc[]を参照してください。
+
+最後のコマンドは`--mirror`オプションを付けて実行し、`</media/disk>`をマウントポイントに置き換えることを忘れないでください。
+
+----
+mgradm install podman --mirror </media/disk>
+----
+
+
+
+=== 同期
+
+{scclongform}データでロードされたリムーバブルメディアがある場合は、それを使用して切断されたサーバーを同期できます。
+
+[WARNING]
+====
+同期に使用するリムーバブルメディアは、常に同じマウントポイントで利用可能でなければなりません。
+ストレージメディアがマウントされていない場合は、同期をトリガーしないでください。
+これによりデータが破損します。
+====
+
+
+.プロシージャ:切断されたサーバーの同期
+
+. Tomcatサービスを再起動します。
++
+----
+mgrctl exec -ti -- systemctl restart tomcat
+----
+. ローカルデータを更新します。
++
+----
+mgrctl exec -ti -- mgr-sync refresh
+----
+. 同期を実行します。
++
+----
+mgrctl exec -ti -- mgr-sync list channels
+mgrctl exec -ti -- mgr-sync add channel channel-label
+----
+
+[NOTE]
+====
+`server.susemanager.fromdir`が設定されている場合、{productname}は{scclongform}の資格情報が有効かどうかを確認できませんのでご注意ください。
+その代わりに、警告サインが表示され、{scc} のオンラインチェックは実行されません。
+====
+
+切断されたセットアップの代替手段として、インターサーバー同期（ISS）を使用してサーバー間でコンテンツをコピーすることが考えられます。
+詳細については、xref:specialized-guides:large-deployments/iss_v2.adoc[インターサーバー同期 - バージョン 2] を参照してください。

@@ -1,0 +1,75 @@
+[[registering.clients.webui]]
+= 使用 注册客户端 {webui}
+:description: 在 Web UI 中导航到系统启动，您可以通过注册指定详细信息和选择的身份验证方法来配置客户端。
+:revdate: 2025-07-09
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+== 简介
+
+
+使用 {webui} 启动客户端是通过 xref:specialized-guides:salt/salt-ssh.adoc[Salt SSH] 在客户端上执行启动处理。
+Salt SSH 使用包含 Python 解释器的 Salt Bundle。
+因此，客户端上不需要安装其他 Python 解释器。
+
+Salt Bundle 与启动储存库一起提供。因此，必须在开始客户端的启动处理之前创建启动储存库。
+一个外壳脚本检测客户端的操作系统，并从适当的启动储存库中部署 Salt Bundle，使用与启动脚本相同的逻辑。
+
+有关更多信息，请参见 xref:client-configuration:bootstrap-repository.adoc#_prepare_to_create_a_bootstrap_repository[准备创建启动储存库]。
+
+[IMPORTANT]
+====
+请勿将 {productname} 服务器注册到自身。
+{productname} 服务器必须单独管理，或使用另一个单独的 {productname} 服务器进行管理。
+有关使用多个服务器的更多信息，请参见 xref:specialized-guides:large-deployments/hub-multi-server.adoc[]。
+====
+
+== 使用 注册客户端 {webui}
+
+.过程：升级使用 注册客户端 {webui}
+
+. 在 {productname} {webui} 中，导航到 menu:系统[引导]。
+. 在 `Host` 字段中，键入要启动的客户端的完全限定的域名 (FQDN)。
+. 在 `SSH Port` 字段中，键入用于连接和启动客户端的 SSH 端口号。
+    SSH 端口默认为 `22`。
+. 在 `User` 字段中，键入用于登录客户端的用户名。
+    默认情况下，用户名为 `root`。
+. 选择 `Authentication` 方法：
+.. 要使用 SSH 私钥启动客户端，请在 `Authentication` 字段中选中 `SSH Private Key`，并上传用于登录客户端的 SSH 私钥。
+    如果您的 SSH 私钥需要密码短语，请在 `SSH Private Key Passphrase` 字段中输入密码短语，或者留空表示不使用密码短语。
+.. 要使用密码启动客户端，请在 `Authentication` 字段中选中 `Password`，并输入用于登录客户端的密码。
+. 在 `Activation Key` 字段中，选择与您要用于启动客户端的软件通道关联的激活密钥。
+    有关详细信息，请参见 xref:client-configuration:activation-keys.adoc[]。
+. 可选：在 `Proxy` 字段中，选择要将客户端注册到的代理。
+. 默认情况下，选中 `Disable SSH Strict Key Host Checking` 复选框。
+    如此可让引导过程自动接受 SSH 主机密钥，而无需您手动进行身份验证。
+. 可选：选中 `Manage System Completely via SSH` 复选框。
+    如果您选中此选项，客户端将会配置为使用 SSH 来连接服务器，且不再配置其他联系方法。
++
+有关联系方法的更多信息，请参见 xref:client-configuration:contact-methods-intro.adoc[]。
+. 单击 btn:[启动] 开始注册。
+. 启动过程完成时，您的客户端会列在menu:系统[系统列表]中。
+
+
+[IMPORTANT]
+====
+* SSH 私钥仅在引导过程中存储。
+  引导完成后，它们会从 {productname} 服务器中删除。
+* 当使用 {productname} 在客户端上安装新软件包或更新时，任何最终用户许可协议 (EULA) 都会自动接受。
+  要查看软件包 EULA，请在 {webui} 中打开软件包详细信息页面。
+====
+
+
+== 处理本地指派的储存库
+
+将直接分配给未由{productname}服务的客户端的储存库并不是一种常见的用例。
+这可能会导致问题。
+因此，通过 Salt 启动会在启动处理开始时禁用所有本地储存库。
+
+以后在每次使用通道状态时（例如执行 Highstate 或软件包安装时），所有本地指派的储存库会再次禁用。
+
+所有在客户端上使用的软件包应来自由{productname}服务的频道。
+有关创建自定义通道的更多信息，请参见 `Custom Channels`，网址为 xref:administration:custom-channels.adoc[]。

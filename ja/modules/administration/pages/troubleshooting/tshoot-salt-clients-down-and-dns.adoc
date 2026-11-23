@@ -1,0 +1,52 @@
+[[troubleshooting-salt-clients-down-and-dns]]
+= ダウンと表示されるSaltクライアントとDNS設定のトラブルシューティング
+:description: Saltクライアントの問題をトラブルシューティングし、DNS設定や設定調整に関するガイダンスを通じて解決する方法を学びます。
+:revdate: 2024-05-15
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+Saltクライアントが実行されている場合でも、パッケージの更新や状態の適用などのアクションは、次のメッセージで失敗としてマークされる可能性があります。
+
+----
+Minion is down or could not be contacted.
+----
+
+この場合、アクションの再スケジュールを試みてください。
+再スケジュールが成功した場合、問題の原因は誤ったDNS設定である可能性があります。
+
+[IMPORTANT]
+====
+サーバコンテナ内のシェルにアクセスするには、コンテナホストで`mgrctl term`を実行します。
+====
+
+Saltクライアントが再起動されるか、グレインが更新されると、クライアントはFQDNグレインを計算し、グレインが処理されるまで応答しません。
+{productname}サーバでスケジュールされたアクションが実行される際、{productname}サーバは実際のアクションの前にクライアントに対して`test.ping`を実行し、クライアントが実際に稼働していることを確認し、アクションをトリガーできるようにします。
+
+デフォルトでは、{productname}サーバは`test.ping`コマンドからの応答を得るために5秒間待機します。
+5秒以内に応答が受信されない場合、アクションはクライアントがダウンしているか、連絡できないというメッセージとともに失敗するように設定されます。
+
+これを修正するには、クライアントのDNS解決を修正して、クライアントがFQDNの解決中に5秒間スタックしないようにします。
+
+これが不可能な場合は、`java.salt_presence_ping_timeout`サーバ上の`/etc/rhn/rhn.conf`ファイルにある{productname}の値を4より大きい値に増やしてみてください。
+
+例:
+
+----
+mgrctl term
+vim /etc/rhn/rhn.conf
+java.salt_presence_ping_timeout = 6
+----
+
+その後、次のコマンドを実行します。
+
+----
+mgradm restart
+----
+
+[NOTE]
+====
+この値を大きくすると、{productname}サーバがminionに到達できないのかminionが応答しないのかを確認するのに時間がかかり、{productname}サーバの全体的な速度が低下したり応答しなくなったりします。
+====

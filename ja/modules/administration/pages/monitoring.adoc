@@ -1,0 +1,790 @@
+[[monitoring]]
+= PrometheusとGrafanaを使用したモニタリング
+:description: PrometheusとGrafanaを使用して、SUSE Multi-Linux Manager環境の監視を設定し、リアルタイムのメトリックを時系列データベースに記録します。
+:revdate: 2026-05-19
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメントチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+PrometheusとGrafanaを使用して、{productname}環境を監視できます。
+{productname}サーバーとプロキシは自己健康メトリックを提供できます。
+SaltクライアントにPrometheusエクスポータをインストールして管理することもできます。
+
+
+
+[[monitoring-requirements]]
+== 要件
+
+
+PrometheusとGrafanaのパッケージは、以下の{productname} Client Toolsに含まれています。
+
+ifeval::[{mlm-content} == true]
+
+* {sle}{nbsp}15
+* {sle}{nbsp}16
+* openSUSE Leap 15.x
+* openSUSE Leap 16.x
+
+endif::[]
+
+[NOTE]
+====
+上記のクライアントのみがモニタリングサーバとしてサポートされます。
+====
+
+{productname}サーバーとは別のマシンにPrometheusとGrafanaをインストールする必要があります。
+監視サーバーとして管理されたSalt {suse}クライアントを使用することをお勧めします。
+
+Prometheusはプルメカニズムを使用してメトリックをフェッチするため、サーバーは監視対象クライアントとのTCP接続を確立できる必要があります。
+クライアントは対応するオープンポートを持ち、ネットワーク越しに到達可能でなければなりません。
+代わりに、リバースプロキシを使用して接続を確立することもできます。
+
+
+ifeval::[{mlm-content} == true]
+[NOTE]
+====
+監視したい各クライアントに対して、監視アドオンのサブスクリプションを持っている必要があります。
+{scclongform}を訪れて、{productname}のサブスクリプションを管理してください。
+====
+endif::[]
+
+
+
+== PrometheusとGrafana
+
+
+=== Prometheus
+
+Prometheusは、リアルタイムメトリックを時系列データベースに記録するために使用されるオープンソースの監視ツールです。
+メトリックはHTTPを介してプルされ、高いパフォーマンスとスケーラビリティを実現します。
+
+Prometheusメトリックは時系列データであり、同じグループまたは次元に属するタイムスタンプ付きの値です。
+メトリックは、その名前とラベルのセットによって一意に識別されます。
+
+// TODO:: This should be an actual image.
+
+----
+   metric name               labels                 timestamp     value
+┌────────┴───────┐  ┌───────────┴───────────┐    ┌──────┴──────┐  ┌─┴─┐
+http_requests_total{status="200", method="GET"}  @1557331801.111  42236
+----
+
+監視対象の各アプリケーションまたはシステムは、コードインストルメンテーションまたはPrometheus exportersを使用して、上記の形式でメトリックを公開する必要があります。
+
+
+=== Prometheus Exporters
+
+エクスポータは、サードパーティシステムからPrometheusメトリックとしてメトリックをエクスポートするのに役立つライブラリです。
+エクスポータは、特定のアプリケーションやシステムにPrometheusメトリックを直接組み込むことが実現不可能な場合に便利です。
+複数のエクスポータが監視対象ホスト上で実行され、ローカルメトリックをエクスポートできます。
+
+Prometheusコミュニティは公式のエクスポータのリストを提供しており、コミュニティの貢献としてさらに多くのものが見つかります。
+詳細情報およびエクスポータの広範なリストについては、 https://prometheus.io/docs/instrumenting/exporters/.を参照してください。
+
+
+=== Grafana
+
+Grafanaはデータの視覚化、監視、分析のためのツールです。
+特定のメトリックを一定期間にわたって表すパネルを持つダッシュボードを作成するために使用されます。
+Grafanaは一般的にPrometheusと一緒に使用されますが、ElasticSearch、MySQL、PostgreSQL、Influx DBなどの他のデータソースもサポートしています。
+Grafanaに関する詳細については、 https://grafana.com/docs/.を参照してください。
+
+
+
+== モニタリングサーバの設定
+
+モニタリングサーバを設定するには、PrometheusとGrafanaをインストールして設定する必要があります。
+
+[NOTE]
+====
+監視サーバーとしてサポートされているのは{suse}クライアントのみです。
+完全なリストについては、xref:administration:monitoring.adoc#monitoring-requirements[]を参照してください。
+====
+
+
+=== Prometheusのインストール
+
+監視サーバーがSaltクライアントの場合、{productname} {webui}を使用してPrometheusパッケージをインストールできます。
+そうでない場合は、監視サーバーにパッケージを手動でダウンロードしてインストールできます。
+Prometheusソフトウェアは、{productname}プロキシおよび{productname} {smr} Branch Serverでも利用可能です。
+
+[IMPORTANT]
+====
+* {productname}サーバーコンテナ内でシェルにアクセスするには、コンテナホストで`mgrctl term`を実行します。また、1つのコマンドだけを実行する場合は`mgrctl exec <options> -- <command>`を実行します。
+
+* コンテナ内からファイルをコンテナホストにコピーするには、`mgrctl cp`を使用します。
+====
+
+[NOTE]
+====
+Prometheusはデータを保存するためにPOSIXファイルシステムを期待しています。
+非POSIX準拠のファイルシステムはサポートされていません。
+NFSファイルシステムはサポートされていません。
+====
+
+.プロシージャ:{webui}を使用してPrometheusをインストールします。
+[role=procedure]
+____
+. {productname} {webui}で、Prometheusをインストールするシステムの詳細ページを開き、`Formulas`タブに移動します。
+
+. `Prometheus`チェックボックスをオンにしてモニタリング式を有効にし、btn:[保存]をクリックします。
+
+. 上部メニューの`Prometheus`タブに移動します。
+
+. `{productname} Server`セクションに、有効な{productname}API資格情報を入力します。
+    入力した資格情報でモニタリングするシステムセットにアクセスできることを確認してください。
+
+. 必要に応じて、他の設定オプションをカスタマイズします。
+
+. btn:[保存する]をクリックします。
+
+. highstateを適用し、正常に完了したことを確認します。
+
+. Prometheusインタフェース が正しくロードされていることを確認します。ブラウザで、ポート9090でPrometheusがインストールされているサーバのURLに移動します(たとえば、`http://example.com:9090`)。
+
+____
+
+モニタリング式に関する詳細情報は、xref:specialized-guides:salt/salt-formula-monitoring.adoc[]を参照してください。
+
+
+
+.プロシージャ:Prometheusを手動でインストールおよび設定する
+[role=procedure]
+____
+
+. モニタリングサーバーに、`golang-github-prometheus-prometheus`パッケージをインストールします。
+
++
+
+[source,shell]
+----
+zypper in golang-github-prometheus-prometheus
+----
+
+. Prometheusサービスを有効にします。
+
++
+
+[source,shell]
+----
+systemctl enable --now prometheus
+----
+
+. Prometheusインタフェース が正しくロードされていることを確認します。
+  ブラウザで、ポート9090でPrometheusがインストールされているサーバのURLに移動します(たとえば、`http://example.com:9090`)。
+
+. `/etc/prometheus/prometheus.yml`にある設定ファイルを開き、この設定情報を追加します。
+  `server.url`をあなたの{productname}サーバーのURLに置き換え、`username`および`password`フィールドをあなたの{productname}資格情報に合わせて調整します。
+
++
+
+----
+# {productname} self-health metrics
+scrape_configs:
+- job_name: 'mgr-server'
+  static_configs:
+    - targets:
+      - 'server.url:9100'  # Node exporter
+      - 'server.url:9187'  # PostgreSQL exporter
+      - 'server.url:5556'  # JMX exporter (Tomcat)
+      - 'server.url:5557'  # JMX exporter (Taskomatic)
+      - 'server.url:9800'  # Taskomatic
+    - targets:
+      - 'server.url:80'    # Message queue
+      labels:
+        __metrics_path__: /rhn/metrics
+
+# Managed systems metrics:
+- job_name: 'mgr-clients'
+  uyuni_sd_configs:
+   - server: "http://server.url"
+     username: "admin"
+     password: "admin"
+  relabel_configs:
+   - source_labels: [__meta_uyuni_exporter]
+     target_label: exporter
+   - source_labels: [__address__]
+     replacement: "No group"
+     target_label: groups
+   - source_labels: [__meta_uyuni_groups]
+     regex: (.+)
+     target_label: groups
+   - source_labels: [__meta_uyuni_minion_hostname]
+     target_label: hostname
+   - source_labels: [__meta_uyuni_primary_fqdn]
+     regex: (.+)
+     target_label: hostname
+   - source_labels: [hostname, __address__]
+     regex: (.*);.*:(.*)
+     replacement: ${1}:${2}
+     target_label: __address__
+   - source_labels: [__meta_uyuni_metrics_path]
+     regex: (.+)
+     target_label: __metrics_path__
+   - source_labels: [__meta_uyuni_proxy_module]
+     target_label: __param_module
+   - source_labels: [__meta_uyuni_scheme]
+     target_label: __scheme__
+----
+
+. 設定ファイルを保存します。
+
+. Prometheusサービスを再起動します。
+
++
+
+[source,shell]
+----
+systemctl restart prometheus
+----
+
+____
+
+Prometheusの設定オプションに関する詳細情報は、公式のPrometheusドキュメントを https://prometheus.io/docs/prometheus/latest/configuration/configuration/.で参照してください。
+
+
+
+=== Grafanaのインストール
+
+あなたのモニタリングサーバが{productname}によって管理されているクライアントである場合、{productname} {webui}を使用してGrafanaパッケージをインストールできます。
+そうでない場合は、監視サーバーにパッケージを手動でダウンロードしてインストールできます。
+
+[NOTE]
+====
+Grafanaは{productname}プロキシでは使用できません。
+====
+
+.プロシージャ:{webui}を使用してGrafanaをインストールする
+[role=procedure]
+____
+
+. {productname} {webui}で、Grafanaがインストールされるシステムの詳細ページを開き、`Formulas`タブに移動します。
+
+. `Grafana`チェックボックスをオンにしてモニタリング式を有効にし、btn:[保存]をクリックします。
+
+. 上部メニューの`Grafana`タブに移動します。
+
+. `Enable and configure Grafana`セクションに、Grafanaへのログインに使用する管理者資格情報を入力します。
+
+. `Datasources`セクションで、Prometheus URLフィールドがPrometheusが実行されているシステムを指していることを確認します。
+
+. 必要に応じて、他の設定オプションをカスタマイズします。
+
+. btn:[保存する]をクリックします。
+
+. highstateを適用し、正常に完了したことを確認します。
+
+. Grafanaインタフェースが正しくロードされていることを確認します。ブラウザで、ポート3000でGrafanaがインストールされているサーバーのURLに移動します(たとえば、`http://example.com:3000`)。
+
+* Grafanaに正常にアクセスするには、ファイアウォールでポート3000が開いていることを確認します
+
+____
+
+
+[NOTE]
+====
+{productname}は、サーバーの自己健康、基本的なクライアントモニタリングなどのための事前構築されたダッシュボードを提供します。
+モニタリング式の構成ページで、どのダッシュボードをプロビジョニングするかを選択できます。
+====
+
+
+.プロシージャ:Grafanaの手動インストール
+[role=procedure]
+____
+
+. `grafana`パッケージをインストールします。
+
++
+
+[source,shell]
+----
+zypper in grafana
+----
+
+. Grafanaサービスを有効にします。
+
++
+
+[source,shell]
+----
+systemctl enable --now grafana-server
+----
+
+. ブラウザで、ポート3000でGrafanaがインストールされているサーバーのURLに移動します(たとえば、`http://example.com:3000`)。
+
+* Grafanaに正常にアクセスするには、ファイアウォールでポート3000が開いていることを確認します。
+
+. ログインページで、ユーザ名とパスワードに`admin`と入力します。
+
+. btn:[ログイン]をクリックします。
+  ログインに成功すると、パスワードを変更するプロンプトが表示されます。
+
+. プロンプトでbtn:[OK]をクリックし、その後パスワードを変更します。
+
+. サイドメニューの歯車アイコンにカーソルを移動すると、設定オプションが表示されます。
+
+. btn:[データソース]をクリックします。
+
+. btn:[データソースの追加]をクリックすると、サポートされているすべてのデータソースのリストが表示されます。
+
+. Prometheusデータソースを選択します。
+
+. Prometheusサーバの正しいURLを指定してください。
+
+. btn:[保存とテスト]をクリックします。
+
+. ダッシュボードをインポートするには、サイドメニューのbtn:[+]アイコンをクリックし、その後btn:[インポート]をクリックします。
+
+. {productname}サーバーの概要については、ダッシュボードID: `17569`をロードします。
+
+. {productname}クライアントの概要については、ダッシュボードID: `17570`をロードします。
+
++
+
+image::monitoring_grafana_example.png[scaledwidth=80%]
+
+____
+
+[NOTE]
+====
+* モニタリング式に関する詳細情報は、xref:specialized-guides:salt/salt-formula-monitoring.adoc[]を参照してください。
+* Grafanaを手動でインストールおよび設定する方法の詳細については、 https://grafana.com/docs.を参照してください。
+====
+
+== {productname}の監視を設定します。
+
+{productname}{nbsp}4以降では、サーバがPrometheus self-health metricsを公開できるようにして、クライアントシステムにexportersをインストールして設定することもできます。
+
+
+
+=== サーバ自己監視
+
+サーバのself-health metricsは、ハードウェア、オペレーティングシステム、および{productname}の内部をカバーします。
+これらのメトリクスは、Javaアプリケーションの計測とPrometheus exportersの組み合わせによって提供されます。
+
+これらのexportersは、{productname}サーバに同梱されています:
+
+* Node exporter: `golang-github-prometheus-node_exporter`。
+** https://github.com/prometheus/node_exporter.を参照してください。
+* PostgreSQL exporter: `prometheus-postgres_exporter`。
+** https://github.com/wrouesnel/postgres_exporter.を参照してください。
+* JMX exporter: `prometheus-jmx_exporter`。
+** https://github.com/prometheus/jmx_exporter.を参照してください。
+
+以下のexporterパッケージは{productname}プロキシに同梱されています。
+
+* Node exporter: `golang-github-prometheus-node_exporter`。
+** https://github.com/prometheus/node_exporter.を参照してください。
+* Squid exporter: `golang-github-boynux-squid_exporter`。
+** https://github.com/boynux/squid-exporter.を参照してください。
+
+exporterパッケージは{productname}サーバおよびプロキシに事前インストールされていますが、各systemdデーモンはデフォルトで無効になっています。
+
+
+
+.プロシージャ:自己監視の有効化
+[role=procedure]
+____
+
+. {productname} {webui}で、menu:管理[マネージャ設定> モニタリング]に移動します。
+
+. btn:[サービスの有効化]をクリックします。
+
+. TomcatとTaskomaticを再起動します。
+
+. ポート9090で、PrometheusサーバのURLに移動します(たとえば、`http://example.com:9090`)。
+
+. Prometheus UIで、menu:ステータス[ターゲット]に移動して、`mgr-server`グループのすべてのエンドポイントが起動していることを確認します。
+
+. {webui}を使用してGrafanaもインストールしている場合、サーバインサイトが{productname}サーバダッシュボードのmenu:管理[マネージャ設定> モニタリング]に表示されます。
+
+____
+
+[IMPORTANT]
+====
+{webui}を使用して、サーバの自己監視のみを有効にできます。
+プロキシのメトリックはPrometheusによって自動的に収集されません。
+プロキシで自己監視を有効にするには、exportersを手動でインストールし、有効にする必要があります。
+====
+
+以下の関連メトリックが{productname}サーバに収集されます。
+
+.サーバ統計(ポート80)
+[cols="40,15,45"]
+|===
+|測定基準 |タイプ | 説明
+
+|uyuni_all_systems
+|ゲージ
+|すべてのシステムの数
+
+|uyuni_virtual_systems
+|ゲージ
+|仮想システムの数
+
+|uyuni_inactive_systems
+|ゲージ
+|非アクティブシステムの数
+
+|uyuni_outdated_systems
+|ゲージ
+|パッケージが古くなっているシステムの数
+|===
+
+.PostgreSQL exporter (ポート9187)
+[cols="45,15,40"]
+|===
+|測定基準 |タイプ | 説明
+
+|pg_stat_database_tup_fetched
+|counter
+|クエリによって取得された行の数
+
+|pg_stat_database_tup_inserted
+|counter
+|クエリによって挿入された行の数
+
+|pg_stat_database_tup_updated
+|counter
+|クエリによって更新された行の数
+
+|pg_stat_database_tup_deleted
+|counter
+|クエリによって削除された行の数
+
+|mgr_serveractions_completed
+|ゲージ
+|完了したアクションの数
+
+|mgr_serveractions_failed
+|ゲージ
+|失敗したアクションの数
+
+|mgr_serveractions_picked_up
+|ゲージ
+|ピックアップされたアクションの数
+
+|mgr_serveractions_queued
+|ゲージ
+|キューに入れられたアクションの数
+|===
+
+.JMX exporter (Tomcatポート5556、Taskomaticポート5557)
+[cols="45,15,40"]
+|===
+|測定基準 |タイプ | 説明
+
+|java_lang_Threading_ThreadCount
+|ゲージ
+|アクティブなスレッドの数
+
+|java_lang_Memory_HeapMemoryUsage_used
+|ゲージ
+|現在のヒープメモリ使用量
+|===
+
+.サーバメッセージキュー(ポート80)
+[cols="40,15,45"]
+|===
+|測定基準 |タイプ | 説明
+
+|message_queue_thread_pool_threads
+|counter
+|これまでに作成されたメッセージキュースレッドの数
+
+|message_queue_thread_pool_threads_active
+|ゲージ
+|現在アクティブなメッセージキュースレッドの数
+
+|message_queue_thread_pool_task_count
+|counter
+|これまでに提出されたタスクの数
+
+|message_queue_thread_pool_completed_task_count
+|counter
+|これまでに完了したタスクの数
+|===
+
+.Salt Queue (ポート80)
+[cols="40,15,45"]
+|===
+|測定基準 |タイプ | 説明
+
+|salt_queue_thread_pool_size
+|ゲージ
+|{salt}キューごとに作成されたスレッドの数
+
+|salt_queue_thread_pool_active_threads
+|ゲージ
+|キューごとに現在アクティブな{salt}スレッドの数
+
+|salt_queue_thread_pool_task_total
+|counter
+|キューごとにこれまでに提出されたタスクの数
+
+|salt_queue_thread_pool_completed_task_total
+|counter
+|キューごとにこれまでに完了したタスクの数
+
+|===
+
+すべてのsalt_queue値には、キュー番号を値として持つ`queue`という名前のラベルがあります。
+
+
+.Taskomaticスケジューラ(ポート9800)
+[cols="40,15,45"]
+|===
+|測定基準 |タイプ | 説明
+
+|taskomatic_scheduler_threads
+|counter
+|これまでに作成されたスケジューラスレッドの数
+
+|taskomatic_scheduler_threads_active
+|ゲージ
+|現在アクティブなスケジューラスレッドの数
+
+|taskomatic_scheduler_completed_task_count
+|counter
+|これまでに完了したタスクの数
+|===
+
+
+=== 管理対象システムの監視
+
+Prometheusメトリクスエクスポーターは、{salt}クライアントに対して数式を使用してインストールおよび構成できます。
+パッケージは{productname}クライアントツールチャンネルから入手可能で、{productname} {webui}で直接有効化および設定できます。
+
+これらのexportersは管理対象システムにインストールできます。
+
+* Node exporter: `golang-github-prometheus-node_exporter`。
+** https://github.com/prometheus/node_exporter.を参照してください。
+* PostgreSQL exporter: `prometheus-postgres_exporter`。
+** https://github.com/wrouesnel/postgres_exporter.を参照してください。
+* Apache exporter: `golang-github-lusitaniae-apache_exporter`。
+** https://github.com/Lusitaniae/apache_exporter.を参照してください。
+
+[NOTE]
+====
+{sl-micro}では、Node exporterとBlackbox exporterのみが利用できます。
+====
+
+エクスポーターがインストールされ、設定されると、Prometheusを使用して監視対象のシステムからメトリクスを収集できます。
+{webui}で監視サーバーを設定している場合、メトリクスの収集は自動的に行われます。
+
+
+
+.プロシージャ:クライアントでのPrometheusエクスポーターの設定
+[role=procedure]
+____
+
+. {productname} {webui}で、監視対象のクライアントの詳細ページを開き、menu:Formulas[]タブに移動します。
+
+. `Enabled`フォーミュラの`Prometheus Exporters`チェックボックスをオンにしてください。
+
+. btn:[保存]をクリックします。
+
+. menu:Formulas[Prometheus Exporters]タブに移動します。
+
+. 有効にするexportersを選択し、必要に応じて引数をカスタマイズします。
+    `Address`フィールドには、コロン（`:9100`）付きのポート番号、または解決可能なアドレス（`example:9100`）のいずれかを入力できます。
+
+. btn:[式を保存]をクリックします。
+
+. highstateを適用します。
+
+____
+
+[IMPORTANT] 
+====
+以下のポートが有効になっており、ファイアウォールでブロックされないようにする必要があります。
+
+* モニター上:9090/tcp
+
+* 監視対象システムで:9100/tcp、9117/tcp、9187/tcp
+====
+
+[NOTE]
+====
+モニタリング式は、対応するグループ内の個々のシステムに使用されているのと同じ設定を適用することによって、システムグループにも設定できます。
+====
+
+監視式に関する詳細情報は、xref:specialized-guides:salt/salt-formula-monitoring.adoc[]を参照してください。
+
+
+=== Grafanaパスワードの変更
+
+Grafanaパスワードを変更するには、Grafanaのドキュメントに記載されているステップに従います。
+
+* https://grafana.com/docs/grafana/latest/administration/user-management/user-preferences/#change-your-grafana-password
+
+Grafana管理者パスワードを紛失した場合は、次のコマンドで`root`としてリセットできます。
+----
+grafana-cli --configOverrides cfg:default.paths.data=/var/lib/grafana --homepath /usr/share/grafana admin reset-admin-password <new_password>
+----
+
+
+== ネットワーク境界
+
+Prometheusはプルメカニズムを使用してメトリックをフェッチするため、サーバは監視対象クライアントとのTCP接続を確立できる必要があります。
+デフォルトでは、Prometheusはこれらのポートを使用します:
+
+* Node exporter:9100
+* PostgreSQL exporter:9187
+* Apache exporter:9117
+
+また、Prometheusを実行するホストとは異なるホストでアラートマネージャを実行している場合は、ポート9093も開く必要があります。
+アラートマネージャーはPrometheusソリューションの一部です。
+クライアントアプリケーションから送信されたアラートを処理します。例えば、Prometheusサーバーインスタンスなどです。
+アラートマネージャーの詳細については、 https://prometheus.io/docs/alerting/latest/alertmanager/.を参照してください.
+
+クラウドインスタンスにインストールされているクライアントの場合、モニタリングサーバにアクセスできるセキュリティグループに必要なポートを追加できます。
+
+代わりに、エクスポーターのローカルネットワークにPrometheusインスタンスをデプロイし、フェデレーションを構成することもできます。
+これにより、メインの監視サーバーがローカルのPrometheusインスタンスから時系列データをスクレイプできるようになります。
+この方法を使用する場合、Prometheus APIポート（9090）を開くだけで済みます。
+
+Prometheusフェデレーションに関する詳細は、 https://prometheus.io/docs/prometheus/latest/federation/.を参照してください。
+
+ネットワーク境界を通じてリクエストをプロキシすることもできます。
+PushProxのようなツールは、ネットワークバリアの両側にプロキシとクライアントをデプロイし、PrometheusがNATなどのネットワークトポロジ全体で動作できるようにします。
+
+PushProxに関する詳細は、 https://github.com/RobustPerception/PushProx.を参照してください。
+
+
+
+=== リバースプロキシのセットアップ
+
+Prometheusはプルメカニズムを使用してメトリックをフェッチするため、サーバーは監視対象の各エクスポーターとのTCP接続を確立できる必要があります.
+ファイアウォールの設定を簡素化するために、エクスポーターのためにリバースプロキシを使用して、すべてのメトリックを1つのポートで公開できます。
+
+// Probably a diagram here. --LKB 2020-08-11
+
+
+
+.プロシージャ:リバースプロキシを使用したPrometheusエクスポーターのインストール
+[role=procedure]
+____
+
+. {productname} {webui}で、監視対象システムの詳細ページを開き、`Formulas`タブに移動します。
+
+. `Prometheus Exporters`チェックボックスをオンにしてエクスポーターのフォーミュラを有効にし、btn:[保存]をクリックします。
+
+. 上部メニューの`Prometheus Exporters`タブに移動してください。
+
+. `Enable reverse proxy`オプションをオンにして、有効なリバースプロキシポート番号を入力します。
+  たとえば、`9999`と指定します。
+
+* ファイアウォールでポート9999/tcpが開いていることを確認します。
+
+. 必要に応じて他のexportersをカスタマイズします。
+
+. btn:[式を保存]をクリックします。
+
+. highstateを適用し、正常に完了したことを確認します。
+
+____
+
+モニタリング式に関する詳細情報は、xref:specialized-guides:salt/salt-formula-monitoring.adoc[]を参照してください。
+
+
+
+== セキュリティ
+
+PrometheusサーバーとPrometheusノードエクスポーターは、TLS暗号化と認証を使用してエンドポイントを保護するためのビルトインメカニズムを提供します。{productname} {webui}は、関与するすべてのコンポーネントの設定を簡素化します。TLS証明書はユーザーにより提供され、デプロイされる必要があります。{productname}は、次のセキュリティモデルを有効にします：
+
+* Node exporter:TLS暗号化とクライアント証明書ベースの認証
+* Prometheus:TLS暗号化と基本認証
+
+利用可能なすべてのオプションの設定に関する詳細については、xref:specialized-guides:salt/salt-formula-monitoring.adoc[]を参照してください。
+
+
+=== TLS証明書の生成
+
+デフォルトでは、{productname}は監視設定を保護するための証明書を提供しません。
+セキュリティを提供するために、カスタム証明書を生成またはインポートすることができます。自己署名または第三者のCAによって署名されたものです。
+
+このセクションでは、{productname} CAで自己署名されたPrometheusおよびNode exporterミニオン用のクライアント/サーバ証明書を生成する方法について説明します。
+
+.プロシージャ:サーバ/クライアントTLS証明書の作成
+[role=procedure]
+____
+
+. {productname}コンテナホストのコマンドプロンプトで、ルートとして次のコマンドを実行します:
+
++
+
+.. 証明書ファイルを生成するには、次のコマンドを実行します。
+
++
+
+`set-cname`パラメータが、お使いの{salt}クライアントの完全修飾ドメイン名（FQDN）であることを確認してください。
+複数のエイリアスが必要な場合は、`set-cname`パラメータを複数回使用できます。
+
++
+
+[source, shell]
+----
+mgrctl exec -ti -- mgr-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
+  --set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
+  --set-org-unit="ORGANIZATION UNIT" --set-email="name@example.com" \
+  --set-hostname="minion.example.com" --set-cname="minion.example.com" --no-rpm
+----
+
++
+
+定期的なアクション
+
++
+
+----
+Generating the web server's SSL private key: /root/ssl-build/minion/server.key
+Generating web server's SSL certificate request: /root/ssl-build/minion/server.csr
+Generating/signing web server's SSL certificate: server.crt
+----
+
++
+
+.. `server.crt`ファイルと`server.key`ファイルをサーバーコンテナからホストにコピーします。
+
++
+
+----
+mgrctl cp server:/root/ssl-build/minion/server.key server.key
+mgrctl cp server:/root/ssl-build/minion/server.crt server.crt
+----
+
++
+
+.. `server.crt`ファイルと`server.key`ファイルをホストから監視クライアントにコピーします。
+
++
+
+----
+ssh minion.example.com 'mkdir /etc/ssl/mlm-server-certs'
+scp /root/server.* minion.example.com:/etc/ssl/mlm-server-certs
+ssh minion.example.com 'chmod go+r /etc/ssl/mlm-server-certs/server.*; ls -la /etc/ssl/mlm-server-certs'
+----
+
++
+
+. {salt}のフォームを設定するには、前のステップで指定されたディレクトリ名を入力してください。
+
++
+
+.. フォーミュラminion
+
++
+
+----
+Server Certificate /etc/ssl/mlm-server-certs/server.crt
+Server Key /etc/ssl/mlm-server-certs/server.key
+----
+
++
+
+.. フォーミュラminion
+
+____

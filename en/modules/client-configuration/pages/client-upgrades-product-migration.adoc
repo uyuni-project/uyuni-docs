@@ -1,7 +1,7 @@
 [[client-upgrades-spmigration]]
 = Product Migration
 :description: Upgrading an SLE-based client system involves migrating from one Service Pack level to a later one using product migration
-:revdate: 2025-03-10
+:revdate: 2026-10-09
 :page-revdate: {revdate}
 :page-author: SUSE Product & Solution Documentation Team
 :page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
@@ -11,38 +11,82 @@
 == Introduction
 
 
-Product migration allows you to upgrade SLE-based client systems from an Service Pack (SP) level to a later one.
-For example, you can migrate {sles}{nbsp}15{nbsp}SP5 to {sles}{nbsp}15{nbsp}SP6.
-You can also upgrade clients such as {rhel} or {centos} to {sll}.
+Product migration lets you upgrade SLE-based client systems to a newer supported product version directly from the {webui}.
+This includes upgrading to a later Service Pack (SP) or minor version within the same major version, for example {sles}{nbsp}15{nbsp}SP5 to {sles}{nbsp}15{nbsp}SP6 or {sles}{nbsp}16.0 to {sles}{nbsp}16.1, as well as the major version upgrade from {sles}{nbsp}15 to {sles}{nbsp}16.
+
+You can also use it to upgrade clients such as {rhel} or {centos} to {sll}.
 
 [IMPORTANT]
 ====
 Product migration requires that all repositories which are enabled on the client and which should be migrated must be valid, otherwise the migration will abort.
 ====
 
-{productname} supports the following migration paths:
+{productname} supports the following migration paths using the product migration feature:
 
-=== Migration within the same major version
+[cols="1,1", options="header"]
+|===
+| Migration path | Example
 
-Product migration is for upgrading within the same major version.
+| Service Pack (SP) or minor version upgrade within the same major version
+| {sles}{nbsp}15{nbsp}SP5 to {sles}{nbsp}15{nbsp}SP6, or {sles}{nbsp}16.0 to {sles}{nbsp}16.1
+
+| {leap} to a later minor version
+| {leap}{nbsp}16.0 to {leap}{nbsp}16.1
+
+| {leap} to the corresponding {sles} version
+| {leap}{nbsp}16.1 to {sles}{nbsp}16.1
+
+| {sles} to the corresponding {slesforsap} version
+| {sles}{nbsp}15{nbsp}SP5 to {slesforsap}{nbsp}15{nbsp}SP5
+
+| Major version upgrade to {sles}{nbsp}16
+| {sles}{nbsp}15{nbsp}SP7 to {sles}{nbsp}16.0, or {sles}{nbsp}15{nbsp}SP5+ to {sles}{nbsp}16.1
+
+| Major version upgrade to {slesforsap}{nbsp}16
+| {slesforsap}{nbsp}15{nbsp}SP5+ to {slesforsap}{nbsp}16.1
+
+| {sle} Real Time to {sles}
+| {sle}{nbsp}Real Time 15{nbsp}SP7 to {sles}{nbsp}16.1
+
+| {slmicro} to {sles}
+| {slmicro}{nbsp}6.2 to {sles}{nbsp}16.1
+
+| {rhel} or {centos} to {sll}
+| {rhel} to {sll}
+|===
+
+[NOTE]
+====
 You cannot use product migration to migrate from {sles}{nbsp}12 to {sles}{nbsp}15.
-For more information about major upgrades, see xref:client-configuration:client-upgrades-major.adoc[].
+To upgrade from {sles}{nbsp}12 to {sles}{nbsp}15, see xref:client-configuration:client-upgrades-major.adoc[].
+====
 
 
-=== Migration of {leap} to a later minor version or to the corresponding {sles} SP
+=== Major version upgrade to {sles}{nbsp}16
 
-You can also migrate {leap} to a later minor version or to the corresponding {sles} SP level, for example:
+The following applies specifically to the major version upgrade from {sles}{nbsp}15 to {sles}{nbsp}16.
 
-* {leap} 15.5 to 15.6
-* {leap} 15.6 to {sles} 15 SP6
+[IMPORTANT]
+====
+* The upgrade to {sles}{nbsp}16.0 is supported from {sles}{nbsp}15{nbsp}SP7 only.
+* The upgrade to {sles}{nbsp}16.1 is supported from {sles}{nbsp}15{nbsp}SP5, {sles}{nbsp}15{nbsp}SP6, and {sles}{nbsp}15{nbsp}SP7, as well as from {sles}{nbsp}16.0.
+* The upgrade to {slesforsap}{nbsp}16.1 is supported from {slesforsap}{nbsp}15{nbsp}SP5, {slesforsap}{nbsp}15{nbsp}SP6, and {slesforsap}{nbsp}15{nbsp}SP7.
+* The upgrade from {sle}{nbsp}Real Time 15{nbsp}SP7 to {sles}{nbsp}16.1 is also supported.
+  Bring the client up to the latest updates before you migrate.
 
+* The migration from {sles}{nbsp}15 to {sles}{nbsp}16 is currently supported for regular (Salt) minions only.
+  Clients managed with Salt SSH cannot yet be migrated.
 
-=== Migration of {sles} to the corresponding {slesforsap} SP
+* The dry run option is not available when migrating from {sles}{nbsp}15 to {sles}{nbsp}16.
+====
 
-You can also migrate {sles} to the corresponding {slesforsap} SP level, for example:
+The migration from {sles}{nbsp}15 to {sles}{nbsp}16 happens in two steps:
 
-* {sles} 15 SP5 to {slesforsap} 15 SP5
+. The migration action performs the actual product migration on the client using the Distribution Migration System (DMS).
+. Once the migration action has finished, whether it passed or failed, the system is rebooted automatically.
+  After the reboot, when the Salt minion connects to the {productname} Server again, the verification step starts automatically.
 
+To perform this upgrade, use the standard product migration procedures described in this page: the <<single-system-migration>> procedure for a single client, or the <<product-mass-migration>> procedure for many clients at once.
 
 In {sles}{nbsp}12 and later, {suse} supports service pack skipping if {scclongform} provides it.
 For example, you can upgrade from {sles}{nbsp}15 to SP2, without installing SP1.
@@ -74,6 +118,8 @@ Before starting the product migration:
 
 
 .Procedure: Performing a Single System Migration
+[role=procedure]
+____
 . From the menu:Systems[Overview] page, select a client.
 . From the system details page of the client, navigate to the menu:Software[Product Migration] tab.
 . Select the target migration path and click btn:[Select Channels].
@@ -86,18 +132,32 @@ Before starting the product migration:
 To migrate openSUSE Leap to {sles}, you must check the `Allow Vendor Change` option.
 ====
 . Click btn:[Schedule Migration] when your channels have been configured properly.
+____
 
 
 
 == Product Mass Migration
 
-If you want to migrate a large number of clients to the next SP version, you can use {productname} API calls.
+If you want to migrate a large number of clients to the next SP version, you can use {productname} API calls or System Set Manager (SSM).
 
 The `spacecmd` commandline tool provides a `system_scheduleproductmigration` sub command, which can be used to schedule a migration for a large number of clients to the next minor version.
 
 
+=== Perform a Product Mass Migration using System Set Manager (SSM)
 
-=== Perform a Product Mass Migration
+.Procedure: Performing a Product Mass Migration using System Set Manager (SSM)
+[role=procedure]
+____
+. Add the systems you want to migrate to the System Set Manager (SSM) as described in xref:client-configuration:system-groups.adoc[].
+. In the {productname} {webui}, navigate to menu:Systems[System Set Manager].
+. Navigate to the [guimenu]``Product Migration`` tab. 
+. Choose a target product and then click btn:[Select Channels].
+. On the next page, click btn:[Schedule Migration].
+. If you want, click btn:[Dry Run] to do a dry run first, and if everything is correct, click btn:[Migrate] to start the migration.
+____
+
+
+=== Perform a Product Mass Migration using API calls
 
 [WARNING]
 ====
@@ -107,7 +167,9 @@ At least, do a dry-run first.
 Be careful not to upgrade systems unintentionally.
 ====
 
-.Procedure: Performing a Product Mass Migration
+.Procedure: Performing a Product Mass Migration using API calls
+[role=procedure]
+____
 . List available migration targets, and take note of the system IDs you want to migrate:
 +
 ----
@@ -134,6 +196,7 @@ for system in system_ids
   endif
 endfor
 ----
+____
 
 
 === Example: SLES 15 SP2 to SLES 15 SP3
@@ -141,12 +204,15 @@ endfor
 For this example, a group will be created temporarily to facilitate the mass migration.
 
 .Procedure: Creating a Mass Product Migration Group
+[role=procedure]
+____
 . In the {productname} {webui}, navigate to menu:Systems[System Groups], and click btn:[Create Group].
 . Name the group `mpm-target-sles15sp3`.
 +
 * Only systems subscribed to the same base channel should be added to the created group.
   In the example, only systems subscribed to `SLE-Product-SLES15-SP2-Pool for x86_64` should be added to the group.
 +
+____
 For more information about adding clients to groups, see xref:client-configuration:system-groups.adoc[].
 
 ////
@@ -154,6 +220,8 @@ Note or warning about taking normal precautions (backups, make sure fully patche
 ////
 
 .Procedure: Adding Systems to the Group
+[role=procedure]
+____
 . Get the targets for all the systems in the group by running:
 +
 ----
@@ -172,11 +240,13 @@ If there are 100 systems in the group, you will see 100 actions scheduled.
 
 All systems in the group must support the same migration target.
 ====
+____
 
 
 
 .Procedure: Running the Mass Migration Command
-
+[role=procedure]
+____
 . The syntax for the `system_scheduleproductmigration` command is as follows:
 +
 ----
@@ -189,6 +259,7 @@ spacecmd -- system_scheduleproductmigration <SYSTEM> <BASE_CHANNEL_LABEL> \
 spacecmd -- system_scheduleproductmigration group:mpm-target-sles15sp3 \
     sle-product-sles15-sp3-pool-x86_64 "[190,203,195,1242]" -d
 ----
+____
 
 
 ==== Mandatory Syntax Explained
@@ -251,4 +322,3 @@ If there are any failures during the dry run, the system should be investigated.
 
 If all is well, the `-d` option can be removed from the command to run the real migration.
 After the migration is complete, you can reboot the system from the {productname} {webui}.
-

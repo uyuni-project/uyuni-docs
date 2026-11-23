@@ -1,0 +1,418 @@
+[[clients-rh-rhui]]
+= {rhel}クライアントをRHUIに登録する
+:description: Red Hat Enterprise LinuxクライアントをRHUIに構成・接続する方法を、段階的なガイドで学びます。
+:revdate: 2026-03-17
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメントチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+// SUSE Liberty Linux not available at Uyuni for now
+
+// 2024-04-04 OM: It had been decided in the conversation with the mlm PO 
+// that this Public Cloud related file can stay in the Uyuni books
+
+
+このセクションでは、{redhat}更新インフラストラクチャ(RHUI)を使用して、{rhel}オペレーティングシステムを実行しているクライアントを登録する方法について説明します。
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$rhel10_cpu_architecture_warning.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/rhel10_cpu_architecture_warning.adoc[]
+endif::[]
+
+ifeval::[{mlm-content} == true]
+
+{sleses}を使用するのではなく、{rhel}クライアントを直接実行している場合、Red Hatソースを使用してパッケージを取得および更新する必要があります。
+endif::[]
+
+Amazon EC2などのパブリッククラウドでクライアントを実行している場合は、この方法を使用します。
+
+RHUIを{redhat}コンテンツ配信ネットワーク(CDN)と併用して、{rhel}サブスクリプションを管理できます。
+{redhat} CDNの使用については、xref:client-configuration:clients-rh-cdn.adoc[]を参照してください。
+
+[IMPORTANT]
+====
+
+// SUSE Liberty Linux not available at Uyuni for now
+
+ifeval::[{mlm-content} == true]
+
+{rhel}クライアントは{redhat}に基づいており、{sleses}、RES、または{sles}とは無関係です。
+endif::[]
+
+{productname}サーバーを{redhat}更新インフラストラクチャに接続する責任があります。
+このRHUI証明書を使用して更新を受けるすべてのクライアントは、正しくライセンスされている必要があります。詳細については、クラウドプロバイダーおよび{redhat}のサービス利用規約を確認してください。
+====
+
+[NOTE]
+====
+RHUIに登録された{rhel}クライアントがオフになると、{redhat}が証明書を無効と宣言する可能性があります。
+この場合、クライアントを再度オンにするか、新しいRHUI証明書を取得する必要があります。
+====
+
+
+
+== エンタイトルメントと証明書のインポート
+
+
+過去には、証明書と権利データを手動で{productname}サーバーにインポートする必要がありました。
+この作業は、SUSE {payg}インスタンスと同じメカニズムを使用して自動化されました。
+詳細については、xref:specialized-guides:public-cloud-guide/payg/payg-overview.adoc[]を参照してください。
+
+このガイドは、{redhat}更新インフラストラクチャ(RHUI)に登録されたクライアントを対象としています。
+RHUIに登録されたシステムが少なくとも1台必要であり、リポジトリコンテンツ用の認可されたサブスクリプションも必要です。
+
+代わりに{redhat}コンテンツ配信ネットワーク(CDN)を使用する方法については、xref:client-configuration:clients-rh-cdn.adoc[]を参照してください。
+
+
+[IMPORTANT]
+====
+クライアントシステムのためのSatellite証明書には、Satelliteサーバーとサブスクリプションが必要です。
+Satellite証明書を使用しているクライアントは、{productname}サーバーではサポートされていません。
+====
+
+
+[IMPORTANT]
+====
+{payg}接続は、クライアントと定期的に通信して最新の認証データを取得します。
+クライアントが実行され続け、定期的に更新されることが重要です。
+これが発生しない場合、リポジトリの同期は、ある時点で認証エラーで失敗します。
+====
+
+
+[NOTE]
+====
+接続する前に、{redhat} 7インスタンスを更新してください。
+====
+
+
+// mc: this depends on the version of Jsch we use. The current version 0.1.55 only support rsa-ssh auth
+//     which is forbidden with the DEFAULT policy. If we decide to switch to a different implementation
+//     of Jsch (0.2.9 or higher) this limitation is gone and the note can be removed
+[NOTE]
+====
+{redhat} 9インスタンスは、接続できるようにするために暗号ポリシー`LEGACY`で構成する必要があります。
+それに応じて構成するには、`sudo update-crypto-policies --set LEGACY`を実行します。
+====
+
+
+== {redhat}更新インフラストラクチャへの接続
+
+[[proc-connecting-new-rhui]]
+.プロシージャ:新しい{redhat}インスタンスへの接続
+[role=procedure]
+. {productname} {webui}で、menu:Admin[セットアップウィザード> {payg}]に移動し、btn:[追加{payg}]をクリックします。
+. `{payg} connection Description`ページセクションから開始します。
+. `Description`フィールドに、説明を追加します。
+. `Instance SSH connection data`ページセクションに移動します。
+. `Host`フィールドに、から接続するインスタンスのDNSまたはIPアドレスを入力します。{productname}
+. `SSH Port`フィールドに、ポート番号を入力するか、デフォルト値22を使用します。
+. `User`フィールドに、クラウドで指定されているユーザー名を入力します。
+. `Password`フィールドに、パスワードを入力します。
+. `SSH Private Key`フィールドに、インスタンスキーを入力します。
+. `SSH Private Key Passphrase`フィールドに、キーのパスフレーズを入力します。
+
+
+[IMPORTANT]
+====
+認証キーは常にPEM形式である必要があります。
+====
+
+
+インスタンスに直接接続していない場合、SSHバスティオン経由で接続する場合は、<<proc-adding-ssh-bastion-connection-data>>を進めてください。
+
+問題がなければ、<<proc-finishing-rhui-connecting>>に進みます。
+
+
+[[proc-adding-ssh-bastion-connection-data]]
+.プロシージャ:SSHバスティオン接続データの追加
+[role=procedure]
+. `Bastion SSH connection data`ページセクションに移動します。
+. `Host`フィールドに、バスティオンのホスト名を入力します。
+. `SSH Port`フィールドに、バスティオンのポート番号を入力します。
+. `User`フィールドに、バスティオンのユーザー名を入力します。
+. `Password`フィールドに、バスティオンのパスワードを入力します。
+. `SSH Private Key`フィールドに、バスティオンのキーを入力します。
+. `SSH Private Key Passphrase`フィールドに、バスティオンのキーのパスフレーズを入力します。
+
+<<proc-finishing-rhui-connecting>>の設定を完了します。
+
+
+[[proc-finishing-rhui-connecting]]
+.プロシージャ:{redhat}接続の完了
+[role=procedure]
+. 新しい{redhat}接続データの追加を完了するには、btn:[]作成1をクリックします。
+. {payg}接続データ`Details`ページに戻ります。
+    更新された接続ステータスは、`Information`という名前の上部セクションに表示されます。
+. 接続ステータスは`Admin > Setup Wizard > Pay-as-you-go`画面にも表示されます。
+. インスタンスの認証データが正しい場合、`Status`列に`Credentials successfully updated.`が表示されます。
+
+
+[IMPORTANT]
+====
+いずれかの時点で無効なデータが入力された場合、新しく作成されたインスタンスは`Admin > Setup Wizard > {payg}`に表示され、`Status`列にエラーメッセージが表示されます。
+====
+
+
+認証データがサーバーで利用可能になると、接続されたインスタンスのすべての利用可能なリポジトリにリポジトリが追加されます。
+リポジトリは`Software > Manage > Repositories`で確認できます。
+
+
+[IMPORTANT]
+====
+{redhat}接続は、デフォルトで組織1が所有するカスタムリポジトリを作成します。
+自動生成されたリポジトリを別の組織が所有する必要がある場合は、`/etc/rhn/rhn.conf`で`java.rhui_default_org_id`を設定してください。
+====
+
+これはリポジトリを定義して更新するだけです。
+管理対象クライアントにリポジトリを使用する場合は、ソフトウェアチャンネルを指定して、リポジトリを接続する必要があります。
+
+
+== ソフトウェアチャンネルの追加
+
+// 2022-04-21, ke:
+// Section sequence according to https://github.com/uyuni-project/uyuni-docs/pull/1535
+
+{redhat}クライアントを{productname}サーバに登録する前に、必要なソフトウェアチャンネルを追加して同期する必要があります。
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$arch-other-note.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/arch-other-note.adoc[]
+endif::[]
+
+
+ifeval::[{mlm-content} == true]
+
+あなたの{susemgr}サブスクリプションは、{sleses}のツールチャンネル（{redhat}拡張サポートまたはRESとしても知られています）を利用する権利を与えます。
+ブートストラップリポジトリを作成するには、クライアントツールチャンネルを使用する必要があります。
+この手順はSaltクライアントに適用されます。
+endif::[]
+
+
+ifeval::[{mlm-content} == true]
+
+このプロシージャで必要な製品は次のとおりです。
+
+[[redhat-rhui-channels-wizard]]
+[cols="1,1", options="header"]
+.Red Hat製品 - WebUI
+|===
+
+// SUSE Liberty Linux not available at Uyuni for now
+| [OSのバージョン]  | 製品名
+| {redhat} 10 | RHELおよびLiberty 10 Base
+| {redhat} 9  | RHELおよびLiberty 9 Base
+| {redhat} 8  | RHELまたはSLES ESまたはCentOS 8 Base
+| {redhat} 7  | RHEL7 Base x86_64
+
+|===
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$addchannels_vendor_webui.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/addchannels_vendor_webui.adoc[]
+endif::[]
+
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+
+このプロシージャで必要なチャンネルは次のとおりです。
+
+[[redhat-rhui-channels-cli]]
+[cols="1,1,1,1", options="header"]
+.Red Hatチャンネル - CLI
+|===
+
+| [OSのバージョン]
+| ベースチャンネル
+| クライアントチャンネル
+| ツールチャンネル
+
+| {redhat} 7
+| rhel7-pool-uyuni
+| -
+| rhel7-uyuni-client
+
+| {redhat} 8
+| rhel8-pool-uyuni
+| -
+| rhel8-uyuni-client
+
+| {redhat} 9
+| rhel9-pool-uyuni
+| -
+| rhel9-uyuni-client
+
+| {redhat} 10
+| rhel10-pool-uyuni
+| -
+| rhel10-uyuni-client
+
+|===
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$addchannels_novendor_cli_multiarch.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/addchannels_novendor_cli_multiarch.adoc[]
+endif::[]
+
+
+[NOTE]
+====
+`spacewalk-common-channels`が提供するクライアントツールチャネルは、{uyuni}から提供されており、{suse}からではありません。
+====
+
+endif::[]
+
+
+== カスタムチャンネルの準備
+
+RHUIからソフトウェアをミラーリングするには、自動生成リポジトリにリンクされたカスタムチャンネルを{productname}に作成する必要があります。
+
+このプロシージャで必要なチャンネルは次のとおりです。
+
+[[redhat-rhui-channels-custom]]
+
+ifeval::[{mlm-content} == true]
+[cols="1,1,1", options="header"]
+.Red Hatカスタムチャンネル
+|===
+
+// SUSE Liberty Linux not available at Uyuni for now
+| [OSのバージョン]  | ベース製品          | ベースチャンネル
+| {redhat} 10 | RHELおよびLiberty 10 Base | el10-pool-x86_64
+| {redhat} 9  | RHELおよびLiberty 9 Base | el9-pool-x86_64
+| {redhat} 8  | RHELまたはSLES ESまたはCentOS 8 Base | rhel8-pool-x86_64
+| {redhat} 7  | RHEL7 Base x86_64 | rhel7-pool-x86_64
+
+|===
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+// SUSE Liberty Linux not available at Uyuni for now
+[cols="1,1", options="header"]
+.Red Hatカスタムチャンネル
+|===
+
+| [OSのバージョン]  | ベースチャンネル
+| {redhat} 7  | rhel7-pool-uyuni
+| {redhat} 8  | rhel8-pool-uyuni
+| {redhat} 9  | rhel9-pool-uyuni
+| {redhat} 10 | rhel10-pool-uyuni
+
+|===
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$manual_channels.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/manual_channels.adoc[]
+endif::[]
+
+
+[IMPORTANT]
+====
+{redhat} 10、{redhat} 9および{redhat} 8クライアントの場合、BaseおよびAppStreamチャンネルの両方を追加してください。
+両方のチャンネルからパッケージが必要です。
+両方のチャンネルを追加しないと、パッケージが不足しているため、起動するリポジトリを作成できません。
+====
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$manual_associate.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/manual_associate.adoc[]
+endif::[]
+
+
+
+== 同期ステータスの確認
+
+ifeval::[{mlm-content} == true]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_webui_mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_webui_mlm.adoc[]
+endif::[]
+
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_webui_uyuni.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_webui_uyuni.adoc[]
+endif::[]
+
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_cli.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_cli.adoc[]
+endif::[]
+
+
+[NOTE]
+====
+{rhel}チャンネルは非常に大きくなる可能性があります。
+同期には時々数時間かかることがあります。
+====
+
+
+== GPGキーの管理
+
+クライアントは、ソフトウェアパッケージがインストールされる前に、その真正性を確認するためにGPGキーを使用します。
+信頼できるソフトウェアのみがクライアントにインストールできます。
+
+[IMPORTANT]
+====
+クライアントのセキュリティのために、GPGキーを信頼することは重要です。
+どのキーが必要で信頼できるかを決定するのは管理者の仕事です。
+GPG キーが信頼されていない場合、ソフトウェア チャンネルは使用できないため、クライアントにチャンネルを割り当てる決定はキーを信頼する決定に依存します。
+====
+
+GPGキーに関する詳細情報は、xref:client-configuration:gpg-keys.adoc[]を参照してください。
+
+
+== クライアントの登録
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$create_bootstrap_repo_register.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/create_bootstrap_repo_register.adoc[]
+endif::[]
+

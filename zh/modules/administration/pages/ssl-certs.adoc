@@ -1,0 +1,88 @@
+[[ssl-certs]]
+= SSL 证书
+:description: 在 SUSE Multi-Linux Manager 中配置和部署 SSL 证书以确保客户端与服务器之间的安全连接
+:revdate: 2025-05-08
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+{productname} 使用 SSL 证书来确保客户端注册到正确的服务器。
+
+每个使用 SSL 注册到 {productname} 服务器 的客户端会通过验证服务器证书来确认是否连接到正确的服务器。
+此过程称为 SSL 握手。
+
+在 SSL 握手期间，客户端检查服务器证书中的主机名是否与其预期的匹配。
+客户端还需要检查服务器证书是否受信任。
+
+//Every {productname} Server that uses SSL requires an SSL server certificate.
+//Provide the path to the server certificate using the `SERVER_CERT` environment variable during setup, or with the `--from-server-cert` option of the `rhn-ssl-tool` command.
+
+证书颁发机构 (CA) 是用于签署其他证书的证书。
+所有证书必须由证书颁发机构 (CA) 签署，才能被视为有效，并且客户端才能成功与之匹配。
+
+//When an organization signs its own certificate, the certificate is considered self-signed.
+//A self-signed certificate is straight-forward to set up, and does not cost any money, but they are considered less secure.
+//If you are using a self-signed certificate, you have a root CA that is signed with itself.
+//When you look at the details of a root CA, you can see that the subject has the same value as the issuer.
+//Provide the path to your root CA certificate using the `CA_CERT` environment variable during setup, or with the `--ca-cert` option of the `rhn-ssl-tool` command.
+
+为了使 SSL 认证正常工作，客户端必须信任根 CA。
+这意味着根 CA 必须安装在每个客户端上。
+
+SSL 认证的默认方法是 {productname} 使用自签名证书。
+在这种情况下，{productname} 生成了所有证书，根 CA 直接签署了服务器证书。
+
+另一种方法是使用中间 CA。
+在这种情况下，根 CA 签署中间 CA。
+中间 CA 然后可以签署任意数量的其他中间 CA，最后一个签署服务器证书。
+这被称为链式证书。
+
+如果您在链式证书中使用中间 CA，根 CA 将安装在客户端上，服务器证书将安装在服务器上。
+在 SSL 握手期间，客户端必须能够验证根 CA 和服务器证书之间的整个中间证书链，因此它们必须能够访问所有中间证书。
+
+实现这一点主要有两种方法。
+在旧版本的 {productname} 中，默认情况下，所有中间 CA 都安装在客户端上。
+但是，您也可以在服务器上配置您的服务，以便将其提供给客户端。
+在这种情况下，在 SSL 握手期间，服务器会呈现服务器证书以及所有中间 CA。
+该机制现在作为默认配置使用。
+
+//Whichever method you choose, you must ensure that the `CA_CERT` environment variable points to the root CA, and all intermediate CAs.
+//It should not contain the server certificate.
+//The server certificate must be defined at the `SERVER_CERT` environment variable.
+
+默认情况下，{productname} 使用自签名证书而不使用中间 CA。
+为了额外的安全性，您可以安排第三方 CA 来签署您的证书。
+第三方 CA 会进行检查，以确保证书中包含的信息是正确的。
+他们通常会对这项服务收取年度费用。
+使用第三方 CA 使证书更难伪造，并为您的安装提供额外保护。
+如果您有第三方 CA 签署的证书，您可以将其导入到您的 {productname} 安装中。
+
+本手册分 2 步介绍 SSL 证书的用法：
+
+1. 如何使用 {productname} 工具创建自签名证书
+2. 如何在 {productname} 服务器或代理上部署证书
+
+如果证书由第三方实例（例如自有或外部PKI）提供，则可以跳过步骤1。
+
+* 有关创建自签名证书的详细信息，请参见xref:administration:ssl-certs-selfsigned.adoc[]。
+* 有关导入证书的详细信息，请参见xref:administration:ssl-certs-imported.adoc[]。
+
+== 为 {productname} 容器提供 SSL 证书
+
+
+=== Podman
+
+SSL 证书以 Podman 密钥的形式存储，并分配给相应的容器。
+Podman SSL 密钥包括：
+
+* CA 证书
+  - uyuni-ca
+  - uyuni-db-ca
+* 服务器证书和密钥
+  - uyuni-cert
+  - uyuni-key
+* 数据库证书和密钥
+  - uyuni-db-cert
+  - uyuni-db-key

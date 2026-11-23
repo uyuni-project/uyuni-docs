@@ -1,0 +1,45 @@
+[[troubleshooting-rh-cdn-channel-and-multiple-certs]]
+= Red Hat CDNチャンネルと複数の証明書のトラブルシューティング
+:description: Red Hat CDN チャンネルを構成し、有効な証明書を単一の PEM ファイルにマージして SUSE Multi-Linux Manager で使用します。
+:revdate: 2022-10-18
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+{redhat} コンテンツ配信ネットワーク (CDN) チャンネルは、時々複数の証明書を提供しますが、{productname} {webui} は単一の証明書しかインポートできません。
+CDN が {productname} {webui} が知っているものとは異なる証明書を提示した場合、検証に失敗し、リポジトリへのアクセス権が拒否されます。たとえ証明書が正確であってもです。
+受信したエラーメッセージは次のとおりです：
+
+----
+[error]
+Repository '<repo_name>' is invalid.
+<repo.pem> Valid metadata not found at specified URL
+History:
+ - [|] Error trying to read from '<repo.pem>'
+ - Permission to access '<repo.pem>' denied.
+Please check if the URIs defined for this repository are pointing to a valid repository.
+Skipping repository '<repo_nam' because of the above error.
+Could not refresh the repositories because of errors.
+HH:MM:SS RepoMDError: Cannot access repository. Maybe repository GPG keys are not imported
+----
+
+この問題を解決するには、すべての有効な証明書を1つの`.pem`ファイルにマージし、{productname}で使用する証明書を再作成します。
+
+
+
+.プロシージャ:複数の {redhat} CDN 証明書の解決
+. {redhat}クライアントのコマンドプロンプトで、ルートとして、`/etc/pki/entitlement/`からすべての現在の証明書を1つの`rh-cert.pem`ファイルに収集します。
++
+----
+cat 866705146090697087.pem 3539668047766796506.pem redhat-entitlement-authority.pem > rh-cert.pem
+----
+. `/etc/pki/entitlement/`からすべての現在のキーを1つの`rh-key.pem`ファイルに収集します。
++
+----
+cat 866705146090697087-key.pem 3539668047766796506-key.pem > rh-key.pem
+----
+
+新しい証明書を {productname} サーバーにインポートできます。xref:client-configuration:clients-rh-cdn.adoc[] に記載の手順に従ってください。
+

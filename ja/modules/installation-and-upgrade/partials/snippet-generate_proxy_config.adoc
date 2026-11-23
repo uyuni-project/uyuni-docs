@@ -1,0 +1,164 @@
+== プロキシ設定の生成
+
+
+{productname}プロキシの設定アーカイブは、{productname}サーバによって生成されます。
+追加のプロキシごとに、それぞれ独自の設定アーカイブが必要です。
+
+コンテナ化された{productname}プロキシの場合、新しいプロキシ設定ファイルを作成し、変更を反映させるためにコンテナを再デプロイする必要があります。
+これは、SSL証明書を含む設定を更新するプロセスです。
+
+//[NOTE]
+//====
+//2 GB represents the default proxy squid cache size.
+//This will need to be adjusted for your environment.
+//====
+
+[IMPORTANT]
+====
+Podmanのデプロイメントでは、{productname}プロキシのコンテナホストを{productname}サーバにクライアントとして登録してから、このプロキシ設定を生成する必要があります。
+====
+
+プロキシFQDNが登録されたクライアントではないプロキシコンテナ設定を生成するために使用される場合（Kubernetesの使用例のように）、新しいシステムエントリがシステムリストに表示されます。
+この新しいエントリは、以前に入力されたプロキシFQDN値の下に表示され、`Foreign`システムタイプになります。
+
+[NOTE]
+====
+周辺サーバは常にサードパーティのSSL証明書を使用しています。
+ハブサーバが周辺サーバのために証明書を生成した場合、各プロキシの証明書も生成する必要があります。
+そのためには、次のコマンドを実行します。
+[source,shell]
+----
+mgrctl exec -ti -- rhn-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
+  --set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
+  --set-org-unit="ORGANIZATION UNIT" --set-email="name@example.com" \
+  --set-hostname=PROXY --set-cname="proxy.example.com"
+----
+使用するファイルは以下の通りです。 +
+* `/root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT`をルートCAとして +
+* `/root/ssl-build/<hostname>/server.crt`をプロキシ証明書として +
+* `/root/ssl-build/<hostname>/server.key`をプロキシ証明書のキーとして
+====
+
+// tag::generate-proxy-config-section[]
+=== {webui}を使用してプロキシ設定を生成します。
+
+.プロシージャ:{webui}を使用してプロキシコンテナ設定を生成しています。
+[role=procedure]
+_____
+
+. {webui}で、menu:システム[プロキシ設定]に移動し、必要なデータを入力します。
+
+. `Proxy FQDN`フィールドに、プロキシの完全修飾ドメイン名を入力します。
+
+. `Parent FQDN`フィールドに、{productname}サーバまたは別の{productname}プロキシの完全修飾ドメイン名を入力します。
+
+. `Proxy SSH port`フィールドに、{productname}プロキシでSSHサービスがリスンしているSSHポートを入力します。推奨されるのは、デフォルトの8022を維持することです。
+
+. `Max Squid cache size [MB]`フィールドに、Squidキャッシュの最大許容サイズを入力します。
+  コンテナのために利用可能なストレージの80%までの使用を推奨します。
+
++
+
+[NOTE]
+====
+2 GBはデフォルトのプロキシキャッシュサイズ（Squid）を表します。
+この値は、ご利用の環境に合わせて調整する必要があります。
+====
+
+. `SSL certificate`の選択リストで、{productname}プロキシ用に新しいサーバ証明書を生成するか、既存のものを使用するかを選択します。
+生成された証明書は、{productname}組み込み（自己署名）証明書と見なすことができます。
+
++
+
+選択に応じて、新しい証明書を生成するための署名CA証明書へのパス、またはプロキシ証明書として使用される既存の証明書とそのキーへのパスのいずれかを指定します。
+
++
+
+サーバによって生成されたCA証明書は、`/var/lib/containers/storage/volumes/root/_data/ssl-build`ディレクトリに格納されます。
+
++
+
+既存の証明書またはカスタム証明書、および企業証明書と中間証明書の概念の詳細については、xref:administration:ssl-certs-imported.adoc[]を参照してください。
+
+. btn:[生成]をクリックして、{productname}サーバに新しいプロキシFQDNを登録し、コンテナホストの詳細情報を含む設定アーカイブ（`config.tar.gz`）を生成します。
+. しばらくすると、ダウンロードするファイルが表示されます。
+  このファイルをローカルに保存します。
+_____
+
+
+
+=== `spacecmd`と自己署名証明書を使用したプロキシ設定の生成
+
+`spacecmd`を使用してプロキシ設定を生成できます。
+
+.プロシージャ:spacecmdと自己署名証明書を使用してプロキシ設定を生成する
+[role=procedure]
+_____
+
+. SSHでコンテナホストに接続します。
+
+. 次のコマンドを実行してサーバとプロキシFQDNを置き換えます。
+
++
+
+----
+mgrctl exec -ti 'spacecmd proxy_container_config_generate_cert -- dev-pxy.example.com dev-srv.example.com 2048 email@example.com -o /tmp/config.tar.gz'
+----
+
+. 生成された設定をサーバコンテナからコピーします。
+
++
+
+----
+mgrctl cp server:/tmp/config.tar.gz .
+----
+
+_____
+
+
+
+=== `spacecmd`とカスタム証明書を使用したプロキシ設定の生成
+
+デフォルトの自己署名証明書ではなくカスタム証明書に対して`spacecmd`を使用して、プロキシ設定を生成できます。
+
+.プロシージャ:spacecmdとカスタム証明書を使用してプロキシ設定を生成する
+[role=procedure]
+_____
+
+. サーバコンテナホストにSSHで接続します。
+
+. 次のコマンドを実行してサーバとプロキシFQDNを置き換えます。
+
++
+
+----
+for f in ca.crt proxy.crt proxy.key; do
+  mgrctl cp $f server:/tmp/$f
+done
+mgrctl exec -ti 'spacecmd proxy_container_config -- -p 8022 pxy.example.com srv.example.com 2048 email@example.com /tmp/ca.crt /tmp/proxy.crt /tmp/proxy.key -o /tmp/config.tar.gz'
+----
+
++
+
+. セットアップで中間CAを使用している場合は、それもコピーし、`-i`オプション付きでコマンドに追加します（必要に応じて複数回指定できます）：
+
++
+
+----
+mgrctl cp intermediateCA.pem server:/tmp/intermediateCA.pem
+mgrctl exec -ti 'spacecmd proxy_container_config -- -p 8022 -i /tmp/intermediateCA.pem pxy.example.com srv.example.com 2048 email@example.com /tmp/ca.crt /tmp/proxy.crt /tmp/proxy.key -o /tmp/config.tar.gz'
+----
+
++
+
+. 生成された設定をサーバコンテナからコピーします。
+
++
+
+----
+mgrctl cp server:/tmp/config.tar.gz .
+----
+
+_____
+
+// end::generate-proxy-config-section[]

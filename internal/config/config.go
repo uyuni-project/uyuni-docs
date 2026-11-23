@@ -68,6 +68,7 @@ type OutputSite struct {
 // Language describes one supported build language.
 type Language struct {
 	Code       string     `yaml:"code"`
+	ContentDir string     `yaml:"content_dir"` // optional; defaults to Code
 	Locale     string     `yaml:"locale"`
 	DateFormat string     `yaml:"date_format"`
 	PDFTheme   PDFTheme   `yaml:"pdf_theme"`
@@ -75,6 +76,15 @@ type Language struct {
 	FlagSVG    string     `yaml:"flag_svg"`
 	Nation     string     `yaml:"nation"`
 	Label      string     `yaml:"label"`
+}
+
+// ContentPath returns the repo-root directory name for this language's AsciiDoc
+// source (e.g. "zh" for code "zh_CN"). Defaults to Code when content_dir is unset.
+func (l Language) ContentPath() string {
+	if l.ContentDir != "" {
+		return l.ContentDir
+	}
+	return l.Code
 }
 
 // PDFTheme maps product names to PDF theme names for a language.

@@ -1,0 +1,167 @@
+= {productname}サーバーのエアギャップ(された)デプロイメント
+:description: 安全なエアギャップ(された)環境でサポートされているインストールおよびアップグレード手順を使用してSUSE Multi-Linux Managerをデプロイする
+:revdate: 2025-05-14
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+== Air-gapped配備とは
+
+
+エアギャップ(された)デプロイメントとは、特にインターネットなどの不安全なネットワークから物理的に隔離されたネットワークシステムのセットアップと運用を指します。
+この種のデプロイメントは、軍事施設、金融システム、重要なインフラストラクチャなどの高セキュリティ環境や、機密データが取り扱われ、外部の脅威から保護されなければならない場所で一般的に使用されます。
+
+
+
+== 配備
+
+{productname}は2つのデプロイメントバリアントをサポートしています。
+
+
+=== 仮想マシンでの配備
+
+推奨されるインストール方法は、提供されている{productname}の仮想マシンイメージオプションを使用することです。必要なツールとコンテナイメージがすべてプリロードされており、すぐに動作するためです。
+
+{productname}サーバーの仮想マシンをインストールする方法についての詳細は、xref:container-deployment/mlm/server-deployment-vm-mlm.adoc[サーバーを仮想マシンとしてデプロイする]を参照してください。
+
+{productname}サーバーをアップグレードするには、ユーザーはシステム内のすべてのパッケージをアップグレードし、xref:container-management/updating-server-containers.adoc[サーバーのアップグレード]で定義された手順に従う必要があります。
+
+
+=== {productname}を{sl-micro}にデプロイする
+
+{productname}では、システムにインストール可能なRPMで必要なコンテナイメージをすべて提供しています。
+
+[NOTE]
+====
+ユーザーは、必要なRPMを内部ネットワークで利用可能にする必要があります。
+これは、2台目の{productname}サーバーまたはRMTサーバーを使用することで実現できます。
+====
+
+.プロシージャ:エアギャップ(された)デプロイメントで{productname}を{sl-micro}にインストールする
+[role=procedure]
+____
+. {sl-micro}をインストールする。
+
+. システムを更新します。
+
+. ツールのパッケージとイメージパッケージをインストールします($ARCH$は適切なアーキテクチャと置き換えます)。
+
++
+
+[source,shell]
+----
+transactional-update pkg install mgradm* mgrctl* suse-multi-linux-manager-5.1-$ARCH$-server-*
+----
+
++
+
+. 再起動します。
+
+. {productname}を`mgradm`でデプロイします。
+
+____
+
+{sl-micro}に{productname}サーバーをインストールする方法についての詳細は、xref:container-deployment/mlm/server-deployment-mlm.adoc[サーバーを仮想マシンとしてデプロイする]を参照してください。
+
+{productname}サーバーをアップグレードするには、ユーザーはシステム内のすべてのパッケージをアップグレードし、xref:container-management/updating-server-containers.adoc[サーバーのアップグレード]で定義された手順に従う必要があります。
+
+
+== PTFs
+
+PTFイメージはパッケージとして利用できません。
+これは、インターネットアクセスが可能なマシンで`podman`を使用してプルし、アーカイブに保存し、エアギャップ(された)マシンに転送してそこでロードする必要があることを意味します。
+
+.プロシージャ:インターネットアクセスが可能なマシンでイメージをプルする
+[role=procedure]
+____
+. `podman`をインストールします。
+
+. SCC資格情報を使用して、{suse}レジストリに対して認証します。
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-login-into-suse-registry.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-login-into-suse-registry.adoc[]
+endif::[]
+
++
+
+. コンソールで次のコマンドを実行します。
+
++
+
+[NOTE]
+====
+この例は、PTFが`server`イメージ用であることを前提としています。PTFが別のイメージに関するものである場合は、例を調整してください。
+====
+
++
+
+[source,shell]
+----
+SCC_USERID=aXXXX
+PTFID=12345
+echo "registry.suse.com/a/$SCC_USERID/$PTFID/suse/multi-linux-manager/5.1/x86_64/server:latest-ptf-$PTFID" >>/tmp/ptf-images
+----
+
++
+
+
+. ファイルにPTFイメージのフルパスが含まれていることを確認してください。
+  必要に応じて、他のイメージのフルパスをファイルに追加できます。1行につき1つです。
+
+. PTFの各コンテナイメージをプルしてから、tarアーカイブに保存します。
+
+
++
+
+[source,shell]
+----
+for image in `cat /tmp/ptf-images`; do
+    podman pull $image
+done
+podman save -o /tmp/ptf-images.tar $(cat /tmp/ptf-images)
+----
+. サーバー上の`/tmp/ptf-images.tar`イメージアーカイブをパッチするために転送します。
+
+____
+
+.プロシージャ:パッチを適用するサーバでのイメージのロード
+[role=procedure]
+____
+. `ptf-images.tar`ファイルがサーバー上で利用可能であることを確認します。
+
+. アーカイブからイメージをロードします。
+
++
+
+[source,shell]
+----
+podman load -i ptf-images.tar
+----
+
++
+
+. 接続されたマシンで実行する場合と同様に、次のコマンドを使用してPTFをインストールします。
+
++
+
+[shell, source]
+----
+mgradm support ptf podman [--test|--ptf] NUMBER --user SCC_ACCOUNT
+----
+
++
+
+イメージはすでにロードされているため、プルされません。
+____

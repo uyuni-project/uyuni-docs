@@ -1,0 +1,189 @@
+[[install-vm-vmware]]
+= {productname} {productnumber} サーバーのデプロイメントを仮想マシンとして - VMware
+:description: SUSE® Multi-Linux Manager 5.1 サーバーのデプロイメントを仮想マシンとして構成し、詳細な設定や登録も含みます。
+:revdate: 2025-07-09
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+この章では、{productname} {productnumber} をイメージとしてデプロイするために必要な仮想マシンの設定を提供します。
+このインストールには、VMwareがサンドボックスとして使用されます。
+
+
+// FIXME: make this and later sections a snippet or move it to a general
+//        intro for both, KVM and VMware
+== 利用可能なイメージ
+
+
+[IMPORTANT]
+====
+{productname} {productnumber} サーバーをデプロイするための推奨される方法は、以下の利用可能なイメージのいずれかを使用することです。
+すべてのツールはこれらのイメージに含まれており、デプロイメントを大幅に簡素化します。
+====
+
+{productname} {productnumber} のイメージは link:https://www.suse.com/download/suse-manager/[{productname} {productnumber} VMイメージ] で入手可能です。
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-warn-images-sl-micro.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-warn-images-sl-micro.adoc[]
+endif::[]
+
+[NOTE]
+====
+生イメージの準備に関する詳細については、 https://documentation.suse.com/sle-micro/6.1/html/Micro-deployment-raw-images-virtual-machines/index.html#deployment-preparing-configuration-device[] を参照してください。
+// For the 5.0 backport:
+// For more information on preparing raw images, see link:https://documentation.suse.com/en-us/sle-micro/5.5/single-html/SLE-Micro-deployment/#sec-raw-preparation[].
+
+セルフインストールイメージに関する追加情報については、 https://documentation.suse.com/sle-micro/6.1/html/Micro-deployment-selfinstall-images/index.html を参照してください。
+====
+
+.利用可能なサーバイメージ
+[cols="3, 3", options="header"]
+|===
+| アーキテクチャ | イメージフォーマット
+
+| aarch64| qcow2、vmdk
+
+| x86_64  | qcow2、vmdk、raw、セルフインストーラー
+
+| ppc64le | raw、セルフインストーラー
+
+| s390x * | qcow2、raw
+|===
+
+__* s390xには2つのストレージオプションが利用可能です：CDL DASD と FBA。__
+
+
+
+
+
+[[quickstart.sect.vmware.settings]]
+== {productname} 仮想マシン設定 - VMware
+
+このセクションでは、VMware環境内の {productname} ストレージパーティションに不可欠な追加の仮想ディスクの作成に重点を置いて、VMware設定について説明します。
+
+.プロシージャ:VMware仮想マシンの作成
+
+. {productname}サーバー`.vmdk`ファイルをダウンロードし、VMwareストレージにコピーを転送します。
+
+. VMwareウェブインターフェースを使用して、アップロードされた`.vmdk`ファイルのコピーを作成します。
+  この操作により、提供された`.vmdk`ファイルがvSphereハイパーバイザーに適した形式に変換されます。
+
+. ゲストOSファミリ`Linux`およびゲストOSバージョン{sle} 15 (64ビット)に基づいて、新しい仮想マシンを作成し、名前を付けます。
+
+// FIXME: do we want to keep this size here? \/
+
++
+
+. 500GB（以上）の`Hard Disk 2`を追加します。
+
+. RAMおよびCPU数を最小値で設定します。*)
+
+. 必要に応じてネットワークアダプタを設定します。
+
+. VMの電源を入れ、firstbootダイアログ(キーボードレイアウト、ライセンス契約、タイムゾーン、rootのパスワード)に従います。
+
+. インストールが完了したら、rootとしてログインします。
+
+. 次のセクションに進みます。
+
+*) 最小値については、xref:installation-and-upgrade:hardware-requirements.adoc#proxy-hardware-requirements[]を参照してください。
+
+
+[[minimal.susemgr.prep]]
+== {sl-micro}および{productname} {productnumber}サーバーを登録します。
+
+開始する前に、{scclongform} - https://scc.suse.com.から{productname} 登録コードを取得してください。
+
+[NOTE]
+====
+{sl-micro} {microversion}エンタイトルメントは、{productname}エンタイトルメント内に含まれているため、別途登録コードは必要ありません。
+====
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+.プロシージャ:{sl-micro} と {productname} {productnumber} を登録しています
+. 仮想マシンをブートします。
+. `root`としてログインします。
+. {sl-micro}を{scc}に登録します。
++
+
+----
+transactional-update register -r <REGCODE> -e <your_email>
+----
+
+. 再起動します。
+
+. {productname} {productnumber}を{scclongform}に登録します。
++
+
+----
+transactional-update register -p Multi-Linux-Manager-Server/5.1/x86_64 -r <REGCODE>
+----
+
+. 再起動
+. システムを更新します。
++
+
+----
+transactional-update
+----
+
+. 更新が適用されていた場合は再起動します。
+
+. このステップはオプションです。
+  ただし、ご使用のインフラストラクチャにカスタム永続ストレージが必要な場合は、`mgr-storage-server`ツールを使用します。
+
++
+
+詳細については、`mgr-storage-server --help`を参照してください。
+詳細については、[command]\``mgr-storage-server \--help``を参照してください。このツールを使用すると、コンテナストレージとデータベースボリュームの作成が容易になります。
+このコマンドは次のように使用します。
+
++
+
+----
+mgr-storage-server <storage-disk-device> [<database-disk-device>]
+----
+
++
+例:
++
+
+----
+mgr-storage-server /dev/nvme1n1 /dev/nvme2n1
+----
+
++
+[NOTE]
+====
+このコマンドにより、`/var/lib/containers/storage/volumes`に永続ストレージボリュームが作成されます。
+
+詳細については、以下を参照してください。
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+====
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-step-deploy-podman-certs.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-step-deploy-podman-certs.adoc[]
+endif::[]

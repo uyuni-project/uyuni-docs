@@ -1,0 +1,173 @@
+[[activation-keys]]
+= 激活密钥
+:description: 通过在SUSE Multi-Linux Manager中创建和应用激活密钥来配置和管理客户端软件授权
+:revdate: 2025-02-11
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+激活密钥用于确保您的客户端具有正确的软件授权，连接到适当的通道，并订阅相关的组。
+每个激活密钥都绑定到一个组织，您可以在创建密钥时设置该组织。
+
+在{productname}中，激活密钥是一组带标签的配置设置。
+您可以通过将激活密钥的标签作为参数添加到启动脚本中，应用与激活密钥相关的所有配置设置。
+我们建议您将激活密钥标签与启动脚本结合使用。
+当启动脚本执行时，与标签相关的所有配置设置将应用于运行脚本的系统。
+
+激活密钥可以指定以下各项：
+
+* 通道指派
+* 系统类型或附加权利
+* 联系方法
+* 配置文件
+* 要安装的软件包
+* 要启用的 AppStream
+* 系统组指派
+
+激活密钥在客户端注册时使用，之后不再使用。
+客户端注册后，可以以任何方式更改客户端，而不管激活密钥的规定。
+激活密钥与客户端之间的关联仅为历史记录而记录。
+
+image::provision-config-keys.png[scaledwidth=80%]
+
+
+
+.过程：升级创建激活密钥
+. 在{productname} {webui}中，作为管理员，导航到menu:系统[激活密钥]。
+. 单击btn:[创建密钥]按钮。
+. 在 `Activation Key Details` 页面上，在 `Description` 字段中，输入激活密钥的描述。
+. 在 `Key` 字段中，输入激活密钥的名称。
+  例如，`SLES15-{sp-version}` 用于 {sles}{nbsp}15{nbsp}{sp-version}。
++
+[IMPORTANT]
+====
+* 在 `Key` 字段中，不要对任何 {suse} 产品使用逗号或双引号。
+但是，您*必须*对红帽产品使用逗号。
+
+* 所有其他字符均可使用，不过系统会自动去除`<> (){}`（包括空格）。
+
+* 如果将字段留空，系统会生成一个随机字符串。
+====
++
+. 在 `Usage` 中，输入密钥可使用的次数，或者留空表示不限使用次数。
+. 在 `Base Channels` 下拉框中，选择适当的基础软件通道，并允许相关子通道自动加载。
+  有关更多信息，请参见xref:reference:admin/setup-wizard.adoc[]和xref:administration:custom-channels.adoc[]。
+. 选择所需的 `Child Channels`（例如，必需的 {susemgr} 工具和更新通道）。
+. 如果您需要启用任何选项，请勾选 `Add-On System Types` 复选框。
+  有关系统类型的更多信息，请参见xref:client-configuration:system-types.adoc[]。
+. 我们建议您将 `Contact Method` 设置为 `Default`。
+  有关联系方法的更多信息，请参见xref:client-configuration:contact-methods-intro.adoc[]。
+. 我们建议您将 `Universal Default` 设置为未选中状态。
+. 单击btn:[创建激活密钥]以创建激活密钥。
+. 创建激活密钥后，页面会在 `Configuration File Deployment` 列表下方显示额外的复选框 `Add-On System Types`。
+  要启用在注册时将配置文件部署到系统，请选中此复选框。
+. 单击btn:[更新激活密钥]以保存更改。
+
+当激活密钥创建完成后，页面顶部会出现额外的选项卡。
+使用它们查看和设置其他功能。
+这些选项卡为：
+
+* `Packages`
+* `Configuration`
+* `Groups`
+* `Activated Systems`
+* `AppStreams`（只要有模块化通道与该激活密钥关联，此选项卡即会显示）
+
+
+[[activation-keys-reactivation]]
+== 重新激活密钥
+
+
+重新激活密钥只能使用一次，以重新注册客户端并恢复所有 {productname} 设置。
+重新激活密钥是特定于客户端的，包括系统 ID、历史记录、组和通道。
+
+要创建重新激活密钥，请导航到 `Systems`，点击要为其创建重新激活密钥的客户端，然后导航到 menu:详细信息[重新激活] 选项卡。
+点击 btn:[生成新密钥] 来创建重新激活密钥。
+记录密钥的详细信息以备后用。
+与典型的激活密钥不同，后者不与特定的系统 ID 关联，此处创建的密钥不会出现在 menu:系统[激活密钥] 页面上。
+
+创建重新激活密钥后，您可以将其作为 `management_key` 的粒度在 `/etc/salt/minion.d/susemanager.conf` 中使用。
+例如：
+
+----
+grains:
+    susemanager:
+        management_key: "re-1-daf44db90c0853edbb5db03f2b37986e"
+----
+
+重启 `venv-salt-minion` 或 `salt-minion` 处理以应用重新激活密钥。
+
+您可以将重新激活密钥与启动脚本一起使用。
+有关启动脚本的更多信息，请参见 xref:client-configuration:registration-bootstrap.adoc[]。
+
+[WARNING]
+====
+如果您使用现有的 {productname} 控制文件自动安装客户端，则该控制文件会使用重新激活密钥重新注册系统并恢复其设置。
+在基于控制文件的自动安装进行时，请勿重新生成、删除或使用此密钥。
+这样会导致自动安装失败。
+====
+
+
+
+== 激活密钥最佳实践
+
+默认父通道::
+
+避免使用 `{productname} Default` 父通道。
+此设置强制 {productname} 选择与已安装操作系统最相符的父通道，这有时会导致意外行为。
+相反，我们建议您为每个发行版和架构创建特定的激活密钥。
+
+使用激活密钥引导::
+
+如果您使用启动脚本，请考虑为每个脚本创建一个激活密钥。
+这有助于您对齐通道分配、软件包安装、系统组成员资格和配置通道分配。
+注册后，您还需要与系统进行更少的手动交互。
+
+引导 LTSS 客户端::
+
+如果您要引导订阅了 LTSS 的客户端，请在创建激活密钥期间包含 LTSS 通道。
+
+带宽要求::
+
+使用激活密钥可能导致在注册时自动下载软件，这对于存在带宽限制的环境来说可能并不适宜。
++
+下列选择会产生带宽用量：
+
+* 指派 SUSE Product Pool 通道会导致自动安装相应的产品描述符软件包。
+* 安装 `Packages` 部分中的任何软件包。
+* `Configuration` 部分中的任何 Salt 状态都可能会触发下载，具体视其内容而定。
+
+密钥标签命名::
+
+如果您没有为激活密钥输入直观易懂的名称，系统会自动生成一串数字字符串，这会使得您的密钥难以管理。
++
+考虑为您的激活密钥制定一个命名方案，以帮助您跟踪它们。
+创建与您组织的基础设施相关联的名称，使您在执行更复杂的操作时更容易。
++
+在创建密钥标签时，请考虑以下提示：
+
+* 操作系统命名（必需）：密钥应始终指向它们提供设置的操作系统。
+* 体系结构命名（建议）：除非您的公司仅在一个体系结构上运行，例如x86_64，否则最好提供带有体系结构类型的标签。
+* 服务器类型命名：这个服务器是用来做什么的？
+* 位置命名：服务器位于哪里？房间、建筑物或部门？
+* 日期命名：维护时段、季度等。
+* 自定义命名：哪种命名方案符合您组织的需求？
++
+激活密钥标签名称示例：
++
+----
+sles15-sp4-web_server-room_129-x86_64
+----
++
+----
+sles15-sp4-test_packages-blg_502-room_21-ppc64le
+----
+
+包含的通道::
+
+在创建激活密钥时，您还需要考虑与其关联的软件通道。
+密钥应分配一个特定的基础通道。
+不建议使用默认基础通道。
+有关更多信息，请参见您在xref:client-configuration:registration-overview.adoc[]上安装的客户端操作系统。

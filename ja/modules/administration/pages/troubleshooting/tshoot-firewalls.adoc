@@ -1,0 +1,54 @@
+[[troubleshooting-firewalls]]
+= ファイアウォールのトラブルシューティング
+:description: ファイアウォールを設定して、SUSE® Multi-Linux Managerサーバーからのリクエストを許可または拒否し、サードパーティ製品に関連する問題をトラブルシューティングしてください。
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+
+
+Cause: User firewall is set to block outgoing traffic by dropping the packet request. During sync with {scc}, mlm waits for an answer on each URL until it times out, eventually causing the entire refresh of the product list to timeout. Applies only to third party (non-SUSE) products, as sync with {scc} needs to access locations other than {scc} to verify if the if the download location is valid.
+
+Consequence: The sync to {scc} fails, and the third party products are not shown in the product list.
+
+Fix: Configure the firewall to reject requests from mlm instead of drop (preferred), or configure a firewall on the server (if no ability to change firewall settings)
+
+Result: Sync to {scc} is either able to reach the URLs required, or rejects the request so that the request fails rather than times out.
+////
+
+外向きのトラフィックをブロックするファイアウォールを使用している場合、それは`REJECT`または`DROP`ネットワークリクエストを行うことができます。
+それが`DROP`に設定されている場合、{scclongform}との同期がタイムアウトすることがあります。
+
+これは、同期処理が非{suse}クライアント向けのパッケージを提供するサードパーティのリポジトリにアクセスする必要があるために発生し、単に{scclongform}だけではなくなります。
+{productname}サーバーがこれらのリポジトリにアクセスして有効であることを確認しようとすると、ファイアウォールがリクエストをドロップし、同期はタイムアウトするまで応答を待ち続けます。
+
+これが発生する場合、同期が失敗するまで長時間かかり、あなたの非{suse}製品は製品リストに表示されません。
+
+この問題はさまざまな方法で修正できます。
+
+最も簡単な方法は、ファイアウォールを設定して非{suse}リポジトリに必要なURLへのアクセスを許可することです。
+これにより、同期処理がURLに到達し、正常に完了します。
+
+外部トラフィックを許可できない場合は、ファイアウォールを、`REJECT`の代わりに{productname}で`DROP`からのリクエストを処理するように設定してください。
+これにより、サードパーティのURLへのリクエストが拒否され、同期がタイムアウトするのではなく早期に失敗し、製品がリストに表示されなくなります。
+
+ファイアウォールへの設定アクセス権がない場合は、代わりに{productname}サーバーに別のファイアウォールを設定することを検討してください。

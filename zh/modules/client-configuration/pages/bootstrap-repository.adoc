@@ -1,0 +1,202 @@
+[[client-cfg-tools-repository]]
+= 引导储存库
+:description: 学习如何配置和管理引导储存库，以便在引导过程中进行客户端注册，包括自动创建的设置。
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+引导储存库包含在引导过程中注册客户端所需的软件包。
+当产品被同步时，引导储存库会在 {productname} 服务器上自动创建和重新生成。
+
+
+== 准备创建引导储存库
+
+
+如果您选择某个产品以进行同步，当所有必需的通道都完全镜像后，会立即自动创建引导储存库。
+
+ifeval::[{mlm-content} == true]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_webui_mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_webui_mlm.adoc[]
+endif::[]
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_webui_uyuni.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_webui_uyuni.adoc[]
+endif::[]
+
+endif::[]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_cli.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_cli.adoc[]
+endif::[]
+
+
+
+== 自动模式的选项
+
+您可以更改自动引导储存库创建的工作方式。
+本节详细介绍各种设置。
+
+刷新模式::
+默认情况下，现有储存库仅更新最新的软件包。
+您可以将其配置为始终从空储存库开始。
+要启用此行为，请在 `/etc/rhn/rhn.conf` 中添加或编辑此值：
++
+----
+server.susemanager.bootstrap_repo_flush = 1
+----
+
+自动模式::
+
+默认情况下，自动重新生成引导储存库是启用的。
+要禁用它，请在 `/etc/rhn/rhn.conf` 中添加或编辑此值：
++
+----
+server.susemanager.auto_generate_bootstrap_repo = 0
+----
+
+
+
+=== 配置引导数据文件
+
+该工具使用一个数据文件，其中包含每个发行版所需的软件包的信息。
+数据文件存储在 `/usr/share/susemanager/mgr_bootstrap_data.py` 中。{suse} 会定期更新此文件。
+如果您想对该文件进行更改，请不要直接编辑它。
+相反，请在持久目录中创建一个副本并编辑您的副本：
+
+----
+cp /usr/share/susemanager/mgr_bootstrap_data.py /srv/susemanager/my_data.py
+----
+
+在您进行更改后，请配置 {productname} 使用新文件。
+在 `/etc/rhn/rhn.conf` 中添加或编辑此值：
+
+----
+server.susemanager.bootstrap_repo_datamodule = my_data
+----
+
+[IMPORTANT]
+====
+在下次更新时，来自 {suse} 的新数据将覆盖原始数据文件，而不是新文件。
+您需要保持新文件与 {suse} 提供的更改同步。
+====
+
+
+
+== 手动生成引导储存库
+
+默认情况下，引导储存库每天重新生成。
+您可以从命令提示符手动创建引导储存库。
+
+
+
+.过程：升级为 {sle} 生成引导储存库
+[role=procedure]
+_____
+
+. 在 {productname} 服务器上的命令提示符处，以 root 身份列出要为其创建引导储存库的可用发行版：
+
++
+
+----
+mgr-create-bootstrap-repo -l
+----
+
+. 创建引导储存库，并使用适当的储存库名称作为产品标签：
+
++
+
+----
+mgr-create-bootstrap-repo -c SLE-version-x86_64
+----
+
++
+
+. 或者，使用可用发行套件列表中发行套件名称旁边显示的编号。
+
+_____
+
+客户端储存库位于 `/srv/www/htdocs/pub/repositories/` 中。
+
+
+
+如果您镜像了多个产品（例如，SLES 和 SLES for SAP），或者如果您使用自定义通道，则可能需要在创建引导储存库时指定要使用的父通道。
+这在每种情况下并不是必需的。
+例如，一些 SLES{nbsp}15 版本具有通用代码库，因此无需指定父通道。
+仅在您的环境需要时使用此过程。
+
+
+
+.可选过程：指定引导储存库的父通道
+[role=procedure]
+_____
+
+. 检查您有哪些父通道可用：
+
++
+
+----
+mgr-create-bootstrap-repo -c SLE-15-x86_64
+Multiple options for parent channel found. Please use option
+--with-parent-channel <label> and choose one of:
+- sle-product-sles15-pool-x86_64
+- sle-product-sles_sap15-pool-x86_64
+- sle-product-sled15-pool-x86_64
+----
+
+. 指定适当的父通道：
+
++
+
+----
+mgr-create-bootstrap-repo -c SLE-15-x86_64 --with-parent-channel sle-product-sled15-pool-x86_64
+----
+
+_____
+
+
+=== 支持多个体系结构的储存库
+
+
+如果您正在创建包含多个不同架构的引导储存库，则需要小心确保所有架构都正确更新。
+例如，{slea} 的 {x86_64} 和 {ibmz} 架构使用位于 `/srv/www/htdocs/pub/repositories/sle/15/2/bootstrap/` 的相同启动储存库 URL。
+
+当启用 `flush` 选项时，如果您尝试为多个架构生成启动储存库，则只会生成一个架构。
+为避免这种情况，在创建其他架构时，请在命令提示符下使用 `--no-flush` 选项。
+例如：
+
+----
+mgr-create-bootstrap-repo -c SLE-15-SP2-x86_64
+mgr-create-bootstrap-repo --no-flush -c SLE-15-SP2-s390x
+----
+
+
+
+== 引导和自定义通道
+
+如果您正在使用自定义频道，则可以将 `--with-custom-channels` 选项与 `mgr-create-bootstrap-repo` 命令一起使用。
+在这种情况下，您还需要指定要使用的父通道。
+
+如果您使用自定义通道，自动创建引导储存库可能会失败。
+在这种情况下，您需要手动创建储存库。
+
+有关自定义通道的更多信息，请参见 xref:administration:custom-channels.adoc[]。

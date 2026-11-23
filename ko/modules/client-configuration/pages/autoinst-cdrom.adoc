@@ -1,0 +1,188 @@
+[[autoinst-cdrom]]
+= CD-ROM 또는 USB 키를 통한 설치
+:description: Cobbler 또는 KIWI 도구를 사용하여 SUSE 시스템을 배포하기 위한 부팅 가능한 CD-ROM 또는 USB 키를 구성하여 사용자가 특정 ISO 이미지를 생성할 수 있도록 합니다.
+:revdate: 2024-11-27
+:page-revdate: {revdate}
+:page-author: SUSE 제품 및 솔루션 문서 팀
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+{productname}에 아직 등록되지 않은 클라이언트의 경우 PXE 부팅이 불가능할 경우 부팅 가능한 CD-ROM 또는 USB 키를 사용하여 시스템을 설치할 수 있습니다.
+
+이러한 이동식 매체를 준비하는 한 가지 방법은 {cobbler}을 사용하는 것입니다.
+ISO 이미지를 준비하기 위해 {cobbler}를 사용하는 방법에 대한 정보는 xref:client-configuration:autoinst-cdrom.adoc#build-iso-with-cobbler[Build an ISO Image With {cobbler}]를 참조하십시오.
+
+{suse} 시스템의 경우 KIWI를 사용하여 ISO 이미지를 준비하는 것이 종종 권장됩니다.
+자세한 내용은 xref:client-configuration:autoinst-cdrom.adoc#build-iso-with-kiwi[Build a SUSE ISO Image With KIWI]를 참조하십시오.
+
+모든 경우에 결과 이미지를 CD-ROM으로 굽거나 USB 키를 준비해야 합니다.
+
+
+[[build-iso-with-cobbler]]
+== {cobbler}를 사용한 ISO 이미지 빌드
+
+
+{cobbler}은 배포 세트, 커널 및 PXE 부팅과 유사한 방식으로 작동하는 메뉴가 포함된 ISO 부팅 이미지를 생성할 수 있습니다.
+
+[NOTE]
+====
+{cobbler}을 사용한 ISO 빌드는 {ibmz}에서 지원되지 않습니다.
+====
+
+{cobbler}으로 ISO 이미지를 준비하려면 PXE 부팅을 사용하는 것과 유사하게 배포 및 프로파일을 준비해야 합니다.
+배포를 생성하는 방법에 대한 정보는 xref:client-configuration:autoinst-distributions.adoc[Autoinstallable Distributions]를 참조하십시오.
+프로파일을 생성하는 방법에 대한 정보는 xref:client-configuration:autoinst-profiles.adoc[Autoinstallation Profiles]를 참조하십시오.
+
+{cobbler} `buildiso` 명령은 부팅 ISO의 이름과 출력 위치를 정의하는 매개변수를 받습니다.
+`--distro` 명령을 실행할 때 `buildiso`(으)로 배포판을 지정하는 것은 필수입니다. `--iso`는 출력 위치입니다:
+
+----
+mgrctl exec -- cobbler buildiso --iso=/path/to/boot.iso --distro=<your-distro-label>
+----
+
+단순히 {cobbler}에 표시된 대로가 아니라 {webui}에서 나열한 배포 및 프로파일 레이블을 사용해야 합니다.
+{cobbler}에 저장된 배포 및 프로파일의 이름을 나열하려면 다음 명령을 실행하십시오:
+
+----
+mgrctl exec -- cobbler distro list
+mgrctl exec -- cobbler profile list
+----
+
+부팅 ISO에는 기본적으로 모든 프로파일과 시스템이 포함됩니다.
+`--profiles` 및 `--systems` 옵션을 사용하여 사용되는 프로파일과 시스템을 제한할 수 있습니다: 
+
+----
+mgrctl exec -- cobbler buildiso --systems="system1 system2 system3" \
+  --profiles="<your-profile1-label> <your-profile2-label> <your-profile3-label>" \
+  --distro=<your-distro-label>
+----
+
+
+`--esp`를 사용하면 Secure Boot가 활성화된 부팅 ISO를 사용할 수 있습니다.
+EFI 시스템 파티션(ESP)을 명시적으로 지정합니다.
+기본적으로 {cobbler}는 ESP 파티션을 생성하여 보안 부팅을 비활성화합니다.
+
+----
+mgrctl exec -- cobbler buildiso \
+  --esp="/usr/share/tftpboot-installation/SLE-15-SP6-x86_64/boot/x86_64/efi" \
+  --iso=/path/to/boot.iso --distro=<your-distro-label>
+----
+
+
+
+.절차 찾기 `efi`
+
+. 컨테이너 호스트에서 다음 명령을 실행하여 `distro` 이름을 가져옵니다:
++
+----
+mgrctl exec -- cobbler distro list
+----
++
+이 명령은 `sles15-sp6:1:SUSE`과(와) 같은 문자열을 출력합니다.
+
+. 컨테이너 호스트에서 다음 명령을 실행하여 `distro` 파일의 위치에 대한 정보를 가져옵니다:
++
+----
+mgrctl exec -- cobbler distro report --name sles15-sp6:1:SUSE
+----
++
+이 명령은 다음과 같은 보고서를 출력합니다.
++
+----
+Name                  : sles15-sp6:1:SUSE
+Architecture          : x86_64
+...output omitted...
+Initrd                : /usr/share/tftpboot-installation/SLE-15-SP6-x86_64/boot/x86_64/loader/initrd
+Kernel                : /usr/share/tftpboot-installation/SLE-15-SP6-x86_64/boot/x86_64/loader/linux
+...output omitted...
+----
+
+. 부팅 디렉토리의 내용을 확인하십시오.
+  위 예제에서 부팅 파티션은 `/usr/share/tftpboot-installation/SLE-15-SP6-x86_64/boot/x86_64/efi` 파일이지만, 이는 ISO 배포자에 따라 다를 수 있습니다.
+
+
+
+[NOTE]
+====
+ISO 이미지를 공용 `tmp` 디렉토리에 쓸 수 없는 경우 `/usr/lib/systemd/system/cobblerd.service`에서 systemd 설정을 확인하십시오.
+====
+
+
+
+[[build-iso-with-kiwi]]
+== KIWI를 사용한 SUSE ISO 이미지 빌드
+
+KIWI는 이미지 생성 시스템입니다.
+KIWI를 사용하여 대상 시스템에서 {suse} 시스템 설치에 사용할 부팅 가능한 ISO 이미지를 생성할 수 있습니다.
+시스템이 재부팅되거나 전원이 켜지면 이미지를 부팅하고, {ay}에서 {productname} 구성을 로드하며, {ay} 프로필에 따라 {sles}를 설치합니다.
+
+ISO 이미지를 사용하려면 시스템을 부팅한 후 프롬프트에서 `autoyast`을 입력하십시오(단, {ay} 부트의 레이블을 `autoyast`로 남겨두었다고 가정합니다).
+kbd:[Enter] 설치를 시작하려면 {ay}를 누르십시오.
+
+////
+we would love a bit more details - ebischoff
+////
+
+KIWI에 대한 자세한 내용은 http://doc.opensuse.org/projects/kiwi/doc/.을 참조하십시오.
+
+
+
+[[build-iso-with-cobbler-rh]]
+== {cobbler}을 사용하여 Red Hat ISO 이미지를 빌드합니다.
+
+자세한 내용은 xref:client-configuration:autoinst-cdrom.adoc#build-iso-with-cobbler[]을 참조하십시오.
+
+
+
+////
+[[build-iso-with-mkisofs]]
+== Build a RedHat ISO Image With mkisofs
+
+You can use `mkisofs` to create a bootable ISO image to be used by the target system for installation of a {redhat} system.
+When the system is rebooted or switched on, it boots from the image, loads the {kickstart} configuration from your {productname}, and installs {rhel} according to the {kickstart} profile.
+
+
+
+.Procedure: Building a Bootable ISO With mkisofs
+. Copy the contents of `/isolinux` from the first CD-ROM of the target distribution.
+. Edit the `isolinux.cfg` file to default to 'ks'.
+  Change the 'ks' section to read:
++
+----
+label ks
+kernel vmlinuz
+  append text ks=`url` initrd=initrd.img lang= devfs=nomount \
+    ramdisk_size=16438 `ksdevice`
+----
++
+IP address-based {kickstart} URLs look like this:
++
+----
+http://`my.manager.server`/kickstart/ks/mode/ip_range
+----
++
+The {kickstart} distribution defined via the IP range should match the distribution from which you are building, to prevent errors occurring.
+. OPTIONAL: If you want to use the `ksdevice`, it looks like this:
++
+----
+ksdevice=eth0
+----
++
+It is possible to change the distribution for a Kickstart profile within a family, such as {rhel} AS 4 to {rhel} ES 4, by specifying the new distribution label.
+Note that you cannot move between versions (4 to 5) or between updates (U1 to U2).
+. Customize `isolinux.cfg` further as required.
+  For example, you can add multiple options, different boot messages, or shorter timeout periods.
+. Create the ISO with this command:
++
+----
+mkisofs -o file.iso -b isolinux.bin -c boot.cat -no-emul-boot \
+  -boot-load-size 4 -boot-info-table -R -J -v -T isolinux/
+----
++
+Note that `isolinux/` is the relative path to the directory containing the modified isolinux files copied from the distribution CD, while `file.iso` is the output ISO file, which is placed into the current directory.
+. Burn the ISO to CD-ROM and insert the disk.
+  Alternatively prepare an USB key and insert it.
+. Boot the system and type `ks` at the prompt (if you left the label for the Kickstart boot as 'ks').
+. Press kbd:[Enter] to start {kickstart}.
+////

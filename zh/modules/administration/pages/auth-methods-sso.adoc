@@ -1,0 +1,118 @@
+[[auth-methods-sso]]
+= 使用单点登录 (SSO) 进行身份验证
+:description: 为多个应用程序配置单点登录 (SSO)，以使用一组凭据进行安全访问
+:revdate: 2024-05-06
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+{productname} 通过实现安全声明标记语言 (SAML){nbsp}2 协议来支持单点登录 (SSO)。
+
+单点登录是一种身份验证过程，允许用户使用一组凭据访问多个应用程序。
+SAML 是一种基于 XML 的标准，用于交换身份验证和授权数据。
+SAML 身份服务提供商 (IdP) 向服务提供商 (SP) 提供身份验证和授权服务，例如 {productname}。{productname} 暴露了三个必须启用以实现单点登录的端点。
+
+{productname} 中的 SSO 支持：
+
+* 使用 SSO 登录。
+* 使用服务提供者发起的单点注销 (SLO) 和身份服务提供者单点注销服务 (SLS) 注销。
+* 声明和 nameId 加密。
+* 声明签名。
+* 使用 AuthNRequest、LogoutRequest 和 LogoutResponses 进行消息签名。
+* 启用声明使用者服务端点。
+* 启用单点注销服务端点。
+* 发布 SP 元数据（可签名）。
+
+{productname} 中的 SSO 不支持：
+
+* 身份服务提供者 (IdP) 的产品选择和实现。
+* 对其他产品的 SAML 支持（请查看相关的产品文档）。
+
+有关 SSO 的示例实现，请参见 xref:administration:auth-methods-sso-example.adoc[]。
+
+
+[IMPORTANT]
+====
+如果您从默认身份验证方法更改为单点登录，则新的 SSO 凭据仅适用于 {webui}。
+客户端工具如 `mgr-sync` 或 `spacecmd` 仍然仅使用默认身份验证方法。
+====
+
+
+
+== 先决条件
+
+
+在开始之前，您需要配置一个具有这些参数的外部身份服务提供商。
+请查看您的 IdP 文档以获取说明。
+
+
+[IMPORTANT]
+====
+IdP 用户与 {productname} 用户之间的映射在 SAML:Attribute 中指定。
+SAML:Attribute 必须在 IdP 中配置，并且必须在 SAML 身份验证中传递给 {productname}。
+该属性必须命名为 `uid`，并且在登录后必须包含映射到它的 {productname} 用户。
+在激活单点登录之前，必须创建 {productname} 用户。
+====
+
+
+需要以下端点：
+
+* 声明使用者服务 (ACS)：接受 SAML 消息以建立与服务提供者的会话的端点。
+    {productname} 中的 ACS 端点为： https://server.example.com/rhn/manager/sso/acs
+* 单点注销服务 (SLS)：从 IdP 发起注销请求的端点。
+    {productname} 中的 SLS 端点为： https://server.example.com/rhn/manager/sso/sls
+* 元数据：用于检索 SAML 的 {productname} 元数据的端点。
+    {productname} 中的元数据端点为： https://server.example.com/rhn/manager/sso/metadata
+
+使用用户 `orgadmin` 成功通过 IdP 完成身份验证后，您将以 {productname} 的 `orgadmin` 用户身份登录，前提是 `orgadmin` 用户在 {productname} 中存在。
+
+
+
+== 启用 SSO
+
+[NOTE]
+====
+使用 SSO 与其他类型的身份验证是互斥的：它要么被启用，要么被禁用。
+SSO 默认情况下处于禁用状态。
+====
+
+[IMPORTANT]
+====
+在服务器容器内运行步骤之前，请使用 `mgrctl term`。
+====
+
+.过程：升级启用 SSO
+
+. 如果您的用户在 {productname} 中尚不存在，请先创建他们。
+. 编辑 `/etc/rhn/rhn.conf` 并在文件末尾添加此行：
++
+----
+java.sso = true
+----
+. 在 `/usr/share/rhn/config-defaults/rhn_java_sso.conf` 中查找您想要自定义的参数。
+    将您想要自定义的参数插入到 `/etc/rhn/rhn.conf` 中，并在其名称前加上 `java.sso`。
+    例如，在 `/usr/share/rhn/config-defaults/rhn_java_sso.conf` 中查找：
++
+----
+onelogin.saml2.sp.assertion_consumer_service.url = https://YOUR-PRODUCT-HOSTNAME-OR-IP/rhn/manager/sso/acs
+----
++
+要自定义此参数，请在 `/etc/rhn/rhn.conf` 中创建相应的选项，并在选项名称前加上 `java.sso.`：
++
+----
+java.sso.onelogin.saml2.sp.assertion_consumer_service.url = https://YOUR-PRODUCT-HOSTNAME-OR-IP/rhn/manager/sso/acs
+----
++
+要查找所有需要更改的实例，请在文件中搜索占位符 `YOUR-PRODUCT` 和 `YOUR-IDP-ENTITY`。
+每个参数都有简要说明其用途。
+. 重启 spacewalk 服务以应用更改：
++
+----
+mgradm restart
+----
+
+当您访问 {productname} URL 时，您将被重定向到 IdP 进行 SSO，并要求您进行身份验证。
+在成功身份验证后，您将被重定向到 {productname} {webui}，以经过身份验证的用户身份登录。
+如果您在使用 SSO 登录时遇到问题，请检查 {productname} 日志以获取更多信息。

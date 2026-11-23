@@ -1,0 +1,68 @@
+[[virt-nutanix]]
+= Nutanixによる仮想化
+:description: SUSE Multi-Linux ManagerのVHMセットアップおよびデータ収集ツールを使用して、Nutanixで仮想化を構成・管理し、その機能を活用して効率的に行います。
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+ifeval::[{mlm-content} == true]
+
+
+{suse}はNutanixエコシステムパートナーで、{productname}は"Nutanix AHV integrated"カテゴリでNutanix対応の認証を取得しています。
+
+Nutanix統合に関する詳細は、 https://www.nutanix.com/partners/technology-alliances/suseを参照してください。
+
+endif::[]
+
+仮想ホストマネージャ(VHM)を設定することで、{productname}とともにNutanix AHV仮想マシンを使用できます。
+まず、{productname}サーバにVHMを設定し、利用可能なVMホストのインベントリを作成する必要があります。
+
+
+
+== VHMの設定
+
+
+
+Virtual Host Manager (VHM)は{productname}サーバ上で動作します。
+
+`virtual-host-gatherer-Nutanix`パッケージが{productname}サーバーにインストールされていることを確認してください。
+
+VHMを実行するには、{productname}サーバでポート9440がオープンになっていて、Nutanix Prism Element APIにアクセスする必要があります。
+
+
+.プロシージャ:Nutanix VHMの作成
+
+. {productname} {webui}で、menu:Systems[Virtual Host Managers]に移動します。
+. btn:[Create]をクリックし、`Nutanix AHV`を選択します。
+. `Add a Nutanix AHV Virtual Host Manager`セクションで、以下のパラメータを使用します。
+* `Label`フィールドにVHMのカスタム名を入力します。
+* `Hostname`フィールドに、完全修飾ドメイン名(FQDN)またはホストIPアドレスを入力します。
+* `Port`フィールドに、使用するPrism Element APIポートを入力します（例：`9440`）。
+* `Username`フィールドに、VMホストに関連付けられているユーザー名を入力します。
+* `Password`フィールドに、VMホストユーザーに関連付けられているパスワードを入力します。
+. btn:[Create]をクリックして変更を保存し、VHMを作成します。
+. `Virtual Host Managers`ページで、新しいVHMを選択します。
+. `Properties`ページで、btn:[Refresh Data]をクリックして、新しいVHMをインベントリに追加します。
+
+インベントリされたオブジェクトおよびリソースを表示するには、menu:Systems[System List> Virtual Systems]に移動します。
+
+
+[NOTE]
+====
+ブラウザからHTTPSを使用してNutanix Prism APIサーバーに接続すると、時々`invalid certificate`エラーが記録されることがあります。
+この場合、仮想ホストマネージャからのデータ更新が失敗します。
+有効なSSL証明書（自己署名ではない）がNutanix APIサーバーに必要です。
+Nutanix SSL証明書にカスタムCAを使用している場合は、カスタムCA証明書を`/etc/pki/trust/anchors`サーバーの{productname}にコピーしてください。
+
+コマンドラインで`update-ca-certificates`コマンドを実行して証明書を再度信頼し、spacewalkサービスを再起動します。
+====
+
+VHMが作成され、設定された後、Taskomaticはデータ収集を自動的に実行します。
+手動でデータ収集を行いたい場合は、menu:Systems[Virtual Host Managers]に移動し、適切なVHMを選択して、btn:[Refresh Data]をクリックします。
+
+{productname}には、APIを使用してVHMに接続し、仮想ホストに関する情報を要求できる`virtual-host-gatherer`というツールが付属しています。`virtual-host-gatherer`は、各モジュールが特定のVHMを有効にするオプションモジュールの概念を維持しています。
+このツールは、Taskomaticによって毎晩自動的に呼び出されます。
+`virtual-host-gatherer`ツールのログファイルは`/var/log/rhn/gatherer.log`にあります。

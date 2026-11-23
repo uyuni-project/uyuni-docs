@@ -1,0 +1,141 @@
+[[confidential_computing]]
+= 机密计算
+:description: 学习如何使用 SUSE® Multi-Linux Manager 设置和配置机密计算环境，以增强安全性和数据保护
+:revdate: 2025-07-17
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+{CoCo} 是一种通过使用基于硬件的可信执行环境 (TEE) 来保护使用中数据的技术，这种环境提供更高的安全级别以确保数据完整性、数据机密性和代码完整性。
+
+
+== 通过 {CoCo} 和 {productname}
+
+
+TEE 的可信性通过认证过程进行检查。{productname} 可以作为注册到它的系统的认证服务器。
+它为以此模式运行的系统生成报告页面。
+这些系统需要定期进行认证和检查。
+过去检查的历史记录也会存储并根据请求提供。
+
+{CoCo} 认证取决于所用的硬件以及要认证的系统运行所在的环境。
+
+[IMPORTANT]
+====
+{CoCo} 认证仅适用于 x86_64 体系结构。
+====
+
+
+
+== 要求
+
+可以在具有以下特征的环境中设置 {CoCo}：
+
+* 要认证的系统（虚拟机）为 SLES15 SP6 并且已启动至 {productname}
+* 硬件必须具备 `AMD EPYC Milan CPU` 或 `AMD EPYC Genoa CPU`。
+* 必须将 BIOS 配置为允许 {CoCo} 认证
+* 主机操作系统和虚拟化软件（KVM 和 libvirt）必须支持 {CoCo}。
+
+
+== 限制
+
+* SLES15 SP6 以技术预览的形式提供 {CoCo} 认证。
+* {productname} 以技术预览的形式提供 {CoCo} 认证。
+* 安全引导已经认证。
+  但是，KVM 安全引导和 SNP Guest 目前无法一起运行。
+
+
+== 在 {CoCo} 中使用 {productname}
+
+[IMPORTANT]
+====
+有关在主机上设置和配置 {CoCo} 的具体步骤，请参见操作系统供应商文档。
+====
+
+.过程：升级在 {productname} 安装期间启用认证容器
+[role=procedure]
+. 在安装 {productname} 时，使用 `mgradm install podman` 启用认证容器。
+. 将以下内容添加到文件 `mgradm.yaml` 中。
+//I need full path to this file.
++
+----
+coco:
+    replicas: 1
+----
+
+
+.过程：升级在 {productname} 安装后启用认证容器
+[role=procedure]
+. 要在安装后启用认证容器，请使用命令行参数 `mgradm`。
+. 运行命令
++
+----
+mgradm scale uyuni-server-attestation --replicas 1
+----
+// (PLACEHOLDER): In the future instead of number 1, it should be possible to allow more then one container replica.
+
+
+.过程：升级在 {productname} 安装后禁用认证容器
+[role=procedure]
+. 要禁用已启用的认证容器，请运行以下命令：
++
+----
+mgradm scale uyuni-server-attestation --replicas 0
+----
+
+
+.过程：升级启用认证
+[role=procedure]
+. 对于选定的系统，转到选项卡 menu:审计[机密计算 > 设置]。
+. 通过选择切换按钮来启用认证。
+. 在字段 `Environment Type` 中，从下拉列表中选择正确的选项。
+//. (PLACEHOLDER) Enable the automatic attestaion at reboot by selecting the toggle button `Execution`.
+. 单击按钮 btn:[保存] 以保存更改。
+
+.过程：升级安排新认证
+[role=procedure]
+. 对于选定的系统，转到选项卡 menu:审计[机密计算 > 列出认证]。
+. 单击 btn:[安排认证]。
+  新表单已打开。
+. 在字段 `Earliest` 中，选择运行认证的时间。
+. 如果需要，可以通过选择 `Add to` 选项将新创建的认证添加到操作链中。
+. 单击按钮 btn:[安排] 以保存并安排新的认证执行。
+
+.过程：升级从系统详细信息查看认证报告
+[role=procedure]
+. 对于选定的系统，转到选项卡 menu:审计[机密计算 > 列出认证]。
+. 查找并选择要查看的报告。
+. 单击所选的认证报告后，`Overview` 选项卡即会打开。
+. 转到下一个选项卡 `SEV-SNP`。
+. 最后，转到下一个选项卡 `Secure Boot`。
+
+
+.过程：升级从“审计”界面查看认证报告
+[role=procedure]
+. 从导航栏中选择 menu:审计[机密计算]。
+. 所有认证的列表将显示在主面板中。
++
+. 查找并选择要查看的报告。
+
+
+
+=== 报告状态
+
+认证报告处于下列状态之一：
+
+待处理::
+这是安排的认证的默认状态。
+报告仍然不可用，可能是因为处理尚未开始或完成。
+
+成功::
+当安排的认证创建可查看的报告时，处理状态将变为 `Successful`。
+
+失败::
+当安排的认证失败并且因此未创建报告时，处理状态将变为 `Failed`。
+
+
+
+== 相关主题
+
+有关 {CoCo} 的详细信息，请参见 https://www.fortanix.com/platform/confidential-computing-manager/what-is-confidential-computing[这里]。

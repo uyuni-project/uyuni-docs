@@ -1,0 +1,141 @@
+[[confidential_computing]]
+= コンフィデンシャルコンピューティング
+:description: SUSE Multi-Linux Managerを使って、機密コンピューティング環境のセットアップと構成方法を学び、セキュリティとデータ保護を強化しましょう。
+:revdate: 2025-07-17
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+{CoCo}は、ハードウェアベースの高信頼実行環境(TEE)を利用して、使用中のデータを保護できる技術です。TEEとは、データの整合性、データの機密性、およびコードの整合性に対して強化されたレベルのセキュリティを提供する環境のタイプです。
+
+
+== {CoCo}と{productname}
+
+
+TEEの信頼性は、認証プロセスによって確認されます。{productname}は、登録されたシステムのための認証サーバーとして使用できます。
+このモードで実行されるシステムのためのレポートページを生成します。
+これらのシステムは、定期的に検証され、チェックされる必要があります。
+過去のチェックの履歴も保存され、リクエストに応じて利用可能です。
+
+{CoCo}の検証は、認証されるシステムが実行されている使用ハードウェアと環境によって異なります。
+
+[IMPORTANT]
+====
+{CoCo}の認証はx86_64アーキテクチャでのみ利用できます。
+====
+
+
+
+== 要件
+
+{CoCo}は、次の特性を持つ環境にセットアップできます：
+
+* 認証されるシステム（仮想マシン）はSLES15 SP6であり、{productname}に起動されます。
+* ハードウェアには`AMD EPYC Milan CPU`または`AMD EPYC Genoa CPU`が必要です。
+* BIOSが{CoCo}の認証を許可するように設定されている必要があります。
+* ホストOSと仮想化ソフトウェア(KVMおよびlibvirt)で{CoCo}がサポートされている必要があります。
+
+
+== 制限事項
+
+* SLES15 SP6の{CoCo}の認証はテクノロジプレビューとして提供されています。
+* {productname}は{CoCo}の認証をテクノロジプレビューとして提供しています。
+* セキュアブートは認証されます。
+  ただし、現在のところKVMセキュアブートとSNPゲストは同時に使用できません。
+
+
+== {CoCo}を{productname}で使用します
+
+[IMPORTANT]
+====
+{CoCo}をホストにセットアップして設定する正確な手順については、OSベンダのマニュアルを参照してください。
+====
+
+.プロシージャ:{productname}のインストール中に認証コンテナを有効にする
+[role=procedure]
+. 認証コンテナは、{productname}を使用して`mgradm install podman`をインストールする際に有効になります。
+. ファイル`mgradm.yaml`に以下の内容を追加してください。
+//I need full path to this file.
++
+----
+coco:
+    replicas: 1
+----
+
+
+.プロシージャ:{productname}のインストール後に認証コンテナを有効にする
+[role=procedure]
+. インストール後に認証コンテナを有効にするには、コマンドラインパラメータ`mgradm`を使用します。
+. 次のコマンドを実行します。
++
+----
+mgradm scale uyuni-server-attestation --replicas 1
+----
+// (PLACEHOLDER): In the future instead of number 1, it should be possible to allow more then one container replica.
+
+
+.プロシージャ:{productname}のインストール後に認証コンテナを無効にする
+[role=procedure]
+. すでに有効な認証コンテナを無効にするには、次のコマンドを実行します。
++
+----
+mgradm scale uyuni-server-attestation --replicas 0
+----
+
+
+.プロシージャ:認証を有効にする
+[role=procedure]
+. 選択したシステムで、タブmenu:監査[コンフィデンシャルコンピューティング> 設定]に移動します。
+. トグルボタンを選択して認証を有効にします。
+. フィールド`Environment Type`で、ドロップダウンリストから正しいオプションを選択します。
+//. (PLACEHOLDER) Enable the automatic attestaion at reboot by selecting the toggle button `Execution`.
+. ボタンbtn:[保存]をクリックして、変更を保存します。
+
+.プロシージャ:新しい認証をスケジュールする
+[role=procedure]
+. 選択したシステムで、タブmenu:監査[コンフィデンシャルコンピューティング> 認証の一覧]に移動します。
+. btn:[認証のスケジュールを設定する]をクリックします。
+  新しいフォームが開きます。
+. フィールド`Earliest`で、認証の実行時刻を選択します。
+. 必要に応じて、`Add to`オプションを選択して、新しく作成した認証コンテナをアクションチェーンに追加します。
+. ボタンbtn:[スケジュール]をクリックして、新しい認証の実行を保存してスケジュールします。
+
+.プロシージャ:システム詳細から認証レポートを表示する
+[role=procedure]
+. 選択したシステムで、タブmenu:監査[コンフィデンシャルコンピューティング> 認証の一覧]に移動します。
+. 表示するレポートを見つけて選択します。
+. 選択した認証レポートタブ`Overview`をクリックすると、レポートが開きます。
+. 次のタブ`SEV-SNP`に移動します。
+. 最後に、次のタブ`Secure Boot`に移動します。
+
+
+.プロシージャ:監査からの認証レポートの表示
+[role=procedure]
+. ナビゲーションバーから、menu:監査[コンフィデンシャルコンピューティング]を選択します。
+. メインパネルにすべての認証のリストが表示されます。
++
+. 表示するレポートを見つけて選択します。
+
+
+
+=== レポートのステータス
+
+認証レポートは次のいずれかのステータスになります。
+
+待機中::
+これは、スケジュールされた認証のデフォルトのステータスです。
+レポートはまだ利用できません。プロセスがまだ開始されていないか、完了していないためです。
+
+成功::
+スケジュールされた認証コンテナによって表示可能なレポートが作成されると、プロセスのステータスは`Successful`になります。
+
+失敗::
+スケジュールされた認証コンテナが失敗し、その結果レポートが作成されない場合、プロセスのステータスは`Failed`になります。
+
+
+
+== 関連トピック
+
+{CoCo}の詳細については、 https://www.fortanix.com/platform/confidential-computing-manager/what-is-confidential-computing[こちら]を参照してください。

@@ -1,0 +1,146 @@
+[[setup-ansible-control-node]]
+= Ansible制御ノードのセットアップ
+:description: SUSE Multi-Linux Managerを使用してAnsible制御ノードをデプロイし、タスクを自動化し、複数のLinuxシステムを効率的に管理します。
+:revdate: 2025-06-11
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+Ansible制御ノードをセットアップするには、{productname} {webui}から次のステップを実行します。
+
+[NOTE]
+====
+
+クライアントをAnsible制御ノードとして構成するには、そのシステムにAnsibleパッケージをインストールする必要があります。
+通常、Ansibleパッケージはオペレーティングシステムベンダーの公式リポジトリから取得する必要があります。
+例えば、{sle} 15 SP6 および SP7 では、Ansible は `Systems Management Module.` を通じて利用可能です。
+====
+
+
+
+.プロシージャ:{sle} 15 SP6またはSP7システムでのAnsible制御ノードのセットアップ
+[role=procedure]
+____
+. {productname} {webui}で、menu:Admin[Setup Wizard > Products]に移動し、`SUSE Linux Enterprise Server 15 SP6 x86_64`（またはそれ以降）が`Systems Management Module`および必要な`Python 3 Module`とともに選択され、同期されていることを確認します。
+
+. {sle} 15 SP6（またはそれ以降）のクライアントをデプロイします。
+
+. {productname} {webui}で、クライアントのmenu:システム[概要]ページに移動します。
+  menu:Software[Software Channels]を選択し、クライアントを`SUSE Linux Enterprise Server 15 SP6 x86_64`（またはそれ以降のSP）、`Systems Management Module`、および`Python 3 Module`チャネルにサブスクライブします。
+
+. クライアントのmenu:詳細[プロパティ]を選択します。
+  `Add-On System Types`リストから`Ansible Control Node`を有効にし、btn:[プロパティの更新]をクリックします。
+
+. クライアントの概要ページに移動し、menu:状態[Highstate]を選択して、btn:[Highstateの適用]をクリックします。
+
+. menu:イベント[]タブを選択し、Highstateの状態を確認します。
+____
+====
+{sle} 15 SP4 または SP5 クライアントに新しい Ansible をインストールする場合は、`Python 3 Module` を有効にする必要があります。
+====
+
+[NOTE]
+====
+新しいバージョンのAnsibleは、古いPythonバージョンを使用しているノードの管理をサポートしなくなりました。
+管理対象ノードが古いPythonバージョンをデフォルトで使用している場合、接続エラーやプレイブックの実行中にエラーが発生する可能性があります。
+これに対処するために、ユーザーは可能であれば管理対象ノードのPythonをアップグレードし、Ansibleインベントリまたは設定で正しいPythonインタープリターを設定する必要があります。
+====
+
+
+
+
+[[configure-ansible-inventory-files]]
+== Ansibleインベントリファイルの作成
+
+
+Ansible統合ツールは、プレイブックをインベントリファイルとしてデプロイします。
+_テーブル 1_にリストされている各オペレーティングシステムのために、1つのインベントリファイルを作成します。
+
+.プロシージャ:Ansibleインベントリファイルの作成
+[role=procedure]
+____
+. インベントリファイルを作成し、そこにホストを追加してAnsibleによって管理できるようにします。
+  Ansibleインベントリのデフォルトパスは`/etc/ansible/hosts`です。
++
+
+.インベントリの例
+----
+client240.mgr.example.org
+client241.mgr.example.org
+client242.mgr.example.org
+client243.mgr.example.org ansible_ssh_private_key_file=/etc/ansible/some_ssh_key
+
+[mygroup1]
+client241.mgr.example.org
+client242.mgr.example.org
+
+[mygroup2]
+client243.mgr.example.org
+
+[all:vars]
+ansible_ssh_public_key_file=/etc/ansible/my_ansible_private_key
+----
+
+
+
+. {productname} {webui}内の`Ansible`タブからmenu:Ansible[制御ノード]に移動し、インベントリファイルを追加します。
+
+. `Playbook Directories`セクションで、`/usr/share/scap-security-guide/ansible`を`Add a Playbook Directories`フィールドに追加し、btn:[Save]をクリックします。
+
+. `Inventory Files`で、インベントリファイルの場所を`Add an Inventory file`フィールドに追加し、btn:[Save]をクリックします。
++
+.例
+----
+/etc/ansible/sles15
+/etc/ansible/sles12
+/etc/ansible/centos7
+----
++
+
+追加のプレイブックの例については、 https://github.com/ansible/ansible-examples.を参照してください。
+____
+
+.プロシージャ:Ansibleノードとの通信の確立
+. インベントリで使用しているSSHキーを作成します。
++
+
+----
+ssh-keygen -f /etc/ansible/my_ansible_private_key
+----
+
+. 生成されたSSHキーをAnsible管理対象クライアントにコピーします。
+  例:
++
+----
+ssh-copy-id -i /etc/ansible/my_ansible_public_key root@client240.mgr.example.org
+----
+
+. `/etc/ansible/ansible.cfg`で秘密鍵を次のように宣言します。
++
+
+----
+private_key_file = /etc/ansible/my_ansible_private_key
+----
++
+
+`my_ansible_private_key`を、秘密鍵を含むファイルの名前に置き換えます。
+
+. 制御ノードから次のコマンドを実行して、Ansibleが動作していることをテストします。
++
+
+----
+ansible all -m ping
+ansible mygroup1 -m ping
+ansible client240.mgr.example.org -m ping
+----
+
+これで修正を実行できます。
+詳細については、xref:administration:ansible-compliance-as-code.adoc[]を参照してください。
+
+
+// bsc#1213077 #9
+// section on how to create playbooks, and how to schedule their execution.
+// Add a description of the "Playbooks" tab, in general context.
+// There is a very summarized descriptions in next section "Compliance as code", but we // need a description of the playbooks tab that is independent of usage with openscap.

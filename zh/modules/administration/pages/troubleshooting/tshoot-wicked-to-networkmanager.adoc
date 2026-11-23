@@ -1,0 +1,393 @@
+[[tshoot-wicked-to-networkmanager]]
+= 在主机操作系统升级后用 NetworkManager 替换 wicked
+:revdate: 2026-06-08
+:page-revdate: {revdate}
+
+////
+Applies to: SUSE Multi-Linux Manager 5.0 / 5.1 on SL Micro 6.1
+Platform: Microsoft Azure (cloud image deployments)
+
+Cause: After upgrading the host OS from SLE Micro 5.5 to SL Micro 6.1, wicked remains active.
+Consequence: Wicked packages become orphaned with no repository or security updates.
+Fix: Install NetworkManager inside a transactional shell, remove wicked, enable NetworkManager, and reboot.
+Result: NetworkManager manages the network and the system is in a supported configuration.
+////
+
+
+== 问题描述
+
+在某些情况下，从 SLE Micro 5.5 升级到 SL Micro 6.1 后，{productname}系统可能会继续运行 wicked 作为活动网络管理器。
+
+这是一种不受支持的配置。
+
+从先前安装中携带的 wicked 软件包变得孤立，因为它们在任何 SL Micro 6.1 储存库中都不再可用，并且不再接收安全更新。
+ 
+[NOTE]
+====
+{productname} 作为容器在 SL Micro 主机上运行。
+网络管理完全由主机操作系统处理。
+在此过程中，{productname} 容器不需要任何更改。
+====
+ 
+以下症状确认系统受到影响：
+ 
+* `systemctl status wicked` 显示 `active (exited)`
+* `systemctl status NetworkManager` 显示 `Unit NetworkManager.service could not be found`
+* `systemctl show -p Id network.service` 返回 `Id=wicked.service`
+* `sudo zypper se -s wicked` 显示 wicked 列在 `(System Packages)` 下，且没有储存库
+ 
+[WARNING]
+====
+此过程适用于使用 DHCP 的系统，这是 {productname} 云镜像的标准配置。
+如果您的部署使用静态 IP 地址、VLAN、自定义绑定或其他非标准网络配置，请勿继续。
+请联系 SUSE 支持以获取针对您配置的指导。
+====
+ 
+ 
+== 范围和影响
+ 
+[cols="1,2", options="header"]
+|===
+| 项目 | 细节
+ 
+| 适用范围
+| 在 SL Micro 6.1 上的 {productname} 5.0 和 5.1
+ 
+| 网络中断
+| 在此过程结束时重启期间，系统会短暂无法访问
+ 
+| {productname} 容器
+| 保持持续运行。
+不需要对容器进行更改。
+ 
+| IP 地址
+| 在使用云服务提供商的DHCP时，迁移后保持不变。
+DHCP租约通常绑定到MAC地址。
+ 
+| 小助手
+| 不需要重新配置。
+小助手在迁移后连接到相同的IP地址。
+|===
+ 
+ 
+== 先决条件
+ 
+开始之前：
+ 
+* 确保您可以通过带外控制台访问系统（例如，您云平台或超级管理程序提供的串行控制台）。
+如果网络在重启后未正确恢复，这是您的恢复路径。
+* 确认 {productname} 容器正在运行且健康：
+
++
+
+----
+sudo podman ps
+----
+
+* 记录主机上的当前IP地址和路由表。
+您将验证这些在迁移后保持不变：
+
++
+
+----
+ip addr show eth0
+ip route show
+----
+ 
+ 
+== 迁移过程
+
+.过程：升级将wicked迁移到NetworkManager
+[role=procedure]
+____
+
+. 在进行任何更改之前拍摄快照。
+  如果出现问题，这是您的回滚点。
+
++
+
+----
+sudo snapper create -d "Pre-NetworkManager-Migration"
+----
+
++ 
+
+注意输出中的快照编号。
+如果需要回滚，您将需要它。
+
++ 
+----
+sudo snapper list
+----
+
+. 打开一个事务更新外壳以应用更改。
+
++
+
+[IMPORTANT]
+====
+在这里所做的所有更改都是原子性地暂存的，只有在下一步重启后才会生效。
+====
+
++
+
+----
+sudo transactional-update shell
+----
+
++
+ 
+在该外壳中，安装 NetworkManager：
+ 
++
+
+----
+zypper in NetworkManager
+----
+
++
+ 
+当提示时，请确认 `y`。
+NetworkManager 及其依赖项是从 SL Micro-6.1 储存库中安装的。
+
++
+ 
+删除孤立的 wicked 软件包：
+
++
+ 
+----
+zypper rm wicked wicked-service cockpit-wicked
+----
+
++
+ 
+当提示时，请确认 `y`。
+
++
+ 
+[NOTE]
+====
+在删除 wicked 的过程中，您将看到类似以下的警告：
+ 
+ warning: file wicked: remove failed: No such file or directory
+ 
+这些警告是预期的。
+一些 wicked 文件在操作系统升级后已经缺失。
+删除成功完成。
+查找以下行以确认关键的符号链接已被删除：
+ 
+ Removed "/etc/systemd/system/network.service".
+ Removed "/etc/systemd/system/multi-user.target.wants/wicked.service".
+====
+
++
+ 
+启用 NetworkManager，以便它在下次启动时启动：
+
++ 
+
+----
+systemctl enable NetworkManager
+----
+
++
+ 
+您应该看到以下符号链接被创建：
+ 
+ Created symlink /etc/systemd/system/network.service → /usr/lib/systemd/system/NetworkManager.service.
+ Created symlink /etc/systemd/system/multi-user.target.wants/NetworkManager.service → ...
+
++
+ 
+退出事务外壳：
+
++
+ 
+----
+exit
+----
+
+ 
+. 重引导。
+
++
+ 
+[WARNING]
+====
+系统在重启期间将失去网络连接。
+SSH 会话将被终止。
+如有需要，请使用您的带外控制台监控重启。
+====
+
++
+
+----
+sudo reboot
+----
+
+ 
+. 系统恢复后，请验证迁移。
+  在主机上运行以下检查。
+
++
+ 
+确认 `network.service` 现在指向 NetworkManager：
+
++
+ 
+----
+systemctl show -p Id network.service
+----
+
++
+ 
+预期输出：
+ 
+ Id=NetworkManager.service
+
++
+ 
+确认 wicked 软件包已完全删除：
+
++
+ 
+----
+rpm -q wicked wicked-service
+----
+
++
+ 
+预期输出：
+ 
+ package wicked is not installed
+ package wicked-service is not installed
+
++
+ 
+确认 IP 地址未更改：
+
++
+ 
+----
+ip addr show eth0
+----
+
++
+ 
+IP 地址必须与迁移前记录的地址匹配。
+如果它已更改，小助手将无法连接到 {productname}.
+// For more information, see xref:tshoot-wicked-to-networkmanager.adoc#ts-ip-changed[IP Address Changed After Reboot].
+
++
+ 
+确认路由表完好：
+
++
+ 
+----
+ip route show
+----
+
++
+ 
+将输出与迁移前记录的路由表进行比较，并验证所有路由是否存在。
+
++
+ 
+[NOTE]
+====
+如果在启动后有任何路由缺失，请等待90秒后再检查。
+`cloud-netconfig` 服务在 60 秒的计时器上运行，并自动恢复任何缺失的云提供商特定路由。
+====
+
++
+ 
+确认 {productname} 容器正在运行：
+
++
+ 
+----
+sudo podman ps
+----
+
++
+ 
+容器在启动后几分钟内应显示状态 `healthy`。
+
+____
+
+ 
+ 
+== 迁移后的更改
+ 
+[cols="1,2", options="header"]
+|===
+| 项目 | 备注
+ 
+| IP 地址
+| 使用DHCP时保持不变。
+NetworkManager通过DHCP获取相同的地址。
+ 
+| 从属或绑定接口
+| 从属接口仍然存在并附加到其主接口。
+它们不再出现在 `ip addr show` 中，因为 NetworkManager 不在此处显示从属接口。
+使用 `ip link show <interface>` 来确认它们存在。
+这是预期的行为，对网络性能没有影响。
+ 
+| 云提供商特定路由
+| 由 `cloud-netconfig` 管理，该服务独立于 NetworkManager 运行，并在切换后继续如此。
+如果在启动后缺失，路由将在60秒内恢复。
+ 
+| IPv6链路本地地址
+| 主接口上的链路本地地址发生变化，因为NetworkManager的生成方式与wicked不同。
+这对使用IPv4的标准 {productname} 部署没有影响。
+ 
+| 默认路由度量
+| NetworkManager 在默认路由中添加了一个显式的 `metric 100`。
+这是正确的行为，没有负面影响。
+ 
+| NetworkManager连接文件
+| NetworkManager 在 `/var/run/NetworkManager/system-connections/` 中自动生成连接定义，这是一个 tmpfs 位置。
+这些在每次启动时从DHCP重新生成。
+原始的 wicked 配置在 `/etc/sysconfig/network/ifcfg-*` 中保留，但 NetworkManager 不会读取。
+ 
+| {productname} 容器
+| 不受影响。
+继续运行，无需修改或重启。
+|===
+ 
+ 
+== 回滚
+ 
+如果系统在重启后未能正确恢复，请使用步骤1中拍摄的快照进行回滚。
+ 
+
+=== 通过启动菜单回滚
+
+.过程：升级通过启动菜单进行回滚
+[role=procedure]
+____
+. 使用您的带外控制台连接到系统。
+
+. 当GRUB菜单在启动时出现时，选择步骤1中拍摄的快照。
+
+. 系统以迁移前状态启动，wicked处于活动状态。
+____
+
+ 
+=== 通过命令行回滚
+ 
+如果系统启动但网络无法正常工作：
+ 
+----
+sudo transactional-update rollback <snapshot-number>
+sudo reboot
+----
+ 
+[NOTE]
+====
+回滚后，系统返回到孤立的wicked状态。
+系统将正常运行，但wicked仍然不受支持。
+如果迁移持续失败，请联系SUSE支持。
+====

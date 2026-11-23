@@ -1,0 +1,350 @@
+[[installation-proxy-containers]]
+= {productname} {leapmicro}에서 프록시 배포 {microversion}
+:description: openSUSE Leap Micro 6.1에 대한 단계별 가이드를 사용하여 SUSE Multi-Linux Manager 5.1 프록시 배포를 구성합니다.
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+:page-author: SUSE 제품 및 솔루션 문서 팀
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+
+이 가이드는 {productname} {productnumber} 프록시의 배포 프로세스를 설명합니다.
+이 가이드는 이미 {productname} {productnumber} 서버를 성공적으로 배포했다고 가정합니다.
+배포하려면 다음 작업을 수행합니다.
+
+
+.체크리스트: 프록시 배포
+. 하드웨어 요구사항을 검토합니다.
++
+// . Synchronize the {leapmicro} {microversion} parent channel and the Proxy extension child channel on the server.
+. 운영 체제 미설치 컴퓨터에 {leapmicro} {microversion}를 설치합니다.
++
+// . Create a {salt} activation key.
+. 프록시를 {salt} 미니언으로 부트스트랩합니다.
+. 프록시 구성을 생성합니다.
+. 프록시 구성을 서버에서 프록시로 전송
+. 프록시 구성을 사용하여 {salt} 미니언을 {productname}의 프록시로 등록합니다.
+
+
+.프록시 컨테이너 호스트에 지원되는 운영 체제
+[NOTE]
+====
+컨테이너 호스트에 지원되는 운영 체제는 {leapmicro} {microversion}입니다.
+
+컨테이너 호스트:: 컨테이너 호스트는 Podman과 같은 컨테이너 엔진이 장착된 서버로, 컨테이너를 관리하고 배포할 수 있게 해줍니다. 이 컨테이너는 응용 프로그램과 라이브러리와 같은 필수 구성 요소를 포함하지만 전체 운영 체제는 포함하지 않아 경량입니다. 이 설정은 응용 프로그램이 서로 다른 환경에서도 동일하게 실행되도록 보장합니다. 컨테이너 호스트는 이러한 컨테이너에 필요한 CPU, 메모리 및 저장소와 같은 자원을 제공합니다.
+====
+
+
+== 프록시의 하드웨어 요구사항
+
+
+이 테이블은 {productname} 프록시를 배포하기 위한 하드웨어 요구사항을 보여줍니다.
+
+[cols="1,3,2", options="header"]
+.프록시 하드웨어 요구사항
+|===
+
+| 하드웨어
+| 상세 정보
+| 권장 사항
+
+| CPU
+| {x86_64}, {arm}
+| 최소 2개의 전용 64비트 CPU 코어
+
+| RAM
+| 최소
+| 2 GB
+
+|
+| 권장
+| 8 GB
+
+| 디스크 공간
+| `/` (루트 디렉토리)
+| 최소 40 GB
+
+|
+| `/var/lib/containers/storage/volumes`
+| 최소 100 GB, 스토리지 요구사항은 사용할 .iso 배포 이미지, 컨테이너 및 부트스트랩 리포지토리 수에 따라 계산해야 합니다.
+
+|===
+
+
+
+== 컨테이너 호스트 일반 요구사항
+
+일반 요구사항은 xref:installation-and-upgrade:general-requirements.adoc[일반 요구사항]을 참조하십시오.
+
+{leapmicro} {microversion} 서버는 설치 미디어에서 설치해야 합니다.
+이 절차는 아래에 설명되어 있습니다.
+
+
+
+[[installation-proxy-containers-requirements]]
+== 컨테이너 호스트 요구사항
+
+CPU, RAM 및 스토리지 요구 사항은 xref:installation-and-upgrade:hardware-requirements.adoc[하드웨어 요구사항]을 참조하십시오.
+
+
+[IMPORTANT]
+====
+클라이언트가 FQDN 도메인 이름을 확인할 수 있도록 보장하려면, 컨테이너화된 서버와 호스트 머신들 모두 정상적으로 동작하는 DNS 서버에 연결되어야 합니다. 또한, 역 조회의 올바른 구성을 보장하는 것이 필수적입니다.
+====
+
+
+== 컨테이너와 함께 사용하기 위한 Uyuni 도구 설치
+
+
+.절차 {leapmicro} {microversion}에 Uyuni 도구 설치하기
+. 로컬 호스트에서 터미널 창을 열거나 {leapmicro} {microversion}을(를) 실행하는 가상 머신을 시작합니다.
+
+. 루트로 로그인합니다.
+
+. `transactional-update shell`을(를) 입력하십시오:
++
+----
+transactional-update shell
+----
+
+. 다음 리포지토리를 {leapmicro} {microversion} 서버에 추가하십시오:
++
+
+----
+zypper ar https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable/images/repo/Uyuni-Proxy-POOL-$(arch)-Media1/ uyuni-proxy-stable
+----
+
+. 리포지토리 목록을 새로 고치고 키를 수락합니다.
++
+----
+zypper ref
+----
+
+. 컨테이너 도구를 설치합니다.
++
+
+[source, shell]
+----
+zypper in mgrpxy mgrpxy-bash-completion uyuni-storage-setup-proxy
+----
++
+[NOTE]
+====
+또는 `mgrpxy-zsh-completion` 아니면 `mgrpxy-fish-completion`를 설치할 수 있습니다.
+====
+
+. 트랜잭션 셸을 종료합니다.
++
+----
+transactional update # exit
+----
+
+. 호스트를 재부팅합니다.
+
+////
+// In master, we had already this reduced variant:
+
+----
+transactional-update
+----
+
+. Reboot the system.
+. Log in as root.
+. Install the container utilities:
++
+
+[source, shell]
+----
+transactional-update pkg install mgrpxy mgrpxy-bash-completion uyuni-storage-setup-proxy
+----
++
+
+[NOTE]
+====
+Alternatively you may install `mgrpxy-zsh-completion` or `mgrpxy-fish-completion`.
+====
+
+////
+
+Uyuni 컨테이너 유틸리티에 대한 자세한 내용은 link:https://build.opensuse.org/repositories/systemsmanagement:Uyuni:Stable:ContainerUtils[Uyuni 컨테이너 유틸리티]를 참조하십시오.
+
+
+== 사용자 정의 영구 스토리지 구성
+
+이 단계는 선택 사항입니다.
+그러나 인프라에 사용자 정의 영구 스토리지가 필요한 경우 `mgr-storage-proxy` 도구를 사용하십시오.
+
+* 자세한 내용은 `mgr-storage-proxy --help`을 참조하십시오.
+이 도구는 컨테이너 스토리지 및 Squid 캐시 볼륨 생성을 간소화합니다.
+
+다음 방법으로 명령 사용:
+
+----
+mgr-storage-proxy <storage-disk-device>
+----
+
+예:
+
+----
+mgr-storage-proxy /dev/nvme1n1
+----
+
+
+[NOTE]
+====
+이 명령은 `/var/lib/containers/storage/volumes`에 영구 스토리지 볼륨을 생성합니다.
+
+자세한 내용은 다음을 참조하십시오.
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+====
+
+
+== 프록시 호스트를 미니언으로 부트스트랩
+
+.작업: 프록시 호스트 부트스트랩
+. menu:시스템[부트스트랩]을 선택합니다.
+. 프록시 호스트의 필드를 입력합니다.
+. 드롭다운에서 이전 단계에서 생성한 활성화 키를 선택합니다.
+. btn:[+ 부트스트랩]를 클릭합니다.
+. 부트스트랩 프로세스가 성공적으로 완료될 때까지 기다립니다.
+  menu:Salt[] 메뉴를 확인하고 {salt} 미니언 키가 나열되고 수락되었는지 확인합니다.
+. 프록시 호스트를 재부팅합니다.
+. menu:시스템[] 목록에서 호스트를 선택하고 모든 이벤트가 완료된 후 두 번째 재부팅을 트리거하여 온보딩을 완료합니다.
+
+
+.작업: 프록시 호스트 업데이트
+. menu:시스템[] 목록에서 호스트를 선택하고 모든 패치를 적용하여 업데이트합니다.
+. 프록시 호스트를 재부팅합니다.
+
+
+
+// FIXME 2024-12-10, ke: use the snippet also here (see MLM equiv)
+[[proxy-setup-containers-generate-config]]
+== 프록시 구성 생성
+
+{productname} 프록시의 구성 아카이브는 {productname} 서버에 의해 생성됩니다. 
+각 추가 프록시는 자체 구성 아카이브가 필요합니다.
+
+[IMPORTANT]
+====
+{productname} 프록시의 컨테이너 호스트는 이 프록시 구성을 생성하기 전에 {productname} 서버에 salt 미니언으로 등록해야 합니다.
+====
+
+
+다음 작업을 수행합니다.
+
+.절차
+. 프록시 구성 파일을 생성합니다.
+. 구성을 프록시로 전송합니다.
+. `mgrpxy` 명령으로 프록시를 시작합니다.
+
+[[proc-proxy-containers-setup-webui]]
+.작업: 웹 UI를 사용하여 프록시 컨테이너 구성 생성
+
+. {webui}에서 menu:시스템[프록시 구성]으로 이동하여 필요한 데이터를 입력합니다:
+. `Proxy FQDN` 필드에 프록시의 정규화된 도메인 이름을 입력합니다.
+. `Parent FQDN` 필드에 {productname} 서버 또는 다른 {productname} 프록시의 정규화된 도메인 이름을 입력합니다.
+. `Proxy SSH port` 필드에 {productname} 프록시에서 SSH 서비스가 수신 대기하는 SSH 포트를 입력합니다. 기본값인 8022를 유지하는 것이 좋습니다.
+. `Max Squid cache size [MB]` 필드에 Squid 캐시에 대해 허용되는 최대 크기를 입력합니다. 일반적으로 이는 컨테이너의 사용 가능한 저장소의 최대 60%여야 합니다.
+. `SSL certificate` 선택 목록에서 {productname} 프록시에 대해 새 서버 인증서를 생성할지 기존 인증서를 사용할지 선택합니다.
+생성된 인증서는 {productname} 내장(자체 서명) 인증서로 간주할 수 있습니다.
++
+선택에 따라 새 인증서를 생성하기 위해 CA 인증서에 서명할 경로 또는 프록시 인증서로 사용할 기존 인증서 및 해당 키에 대한 경로를 입력하십시오.
++
+서버에서 생성된 CA 인증서는 `/var/lib/containers/storage/volumes/root/ssl-build` 디렉토리에 저장됩니다.
++
+기존 또는 사용자 정의 인증서와 기업 및 중간 인증서의 개념에 대한 자세한 내용은 xref:administration:ssl-certs-imported.adoc[]에서 확인하십시오.
+
+. btn:[생성]을 클릭하여 {productname} 서버에 새 프록시 FQDN을 등록하고 컨테이너 호스트에 대한 세부 정보가 포함된 구성 아카이브를 생성하십시오.
+. 잠시 후 다운로드할 파일이 표시됩니다. 이 파일을 로컬에 저장하십시오.
+
+
+[[proxy-deploy-containers-transfer-config]]
+== 프록시 구성 전송
+
+{webui}은 구성 아카이브를 생성합니다.
+이 아카이브는 프록시 컨테이너 호스트에서 사용할 수 있어야 합니다.
+
+
+.작업: 프록시 구성 복사
+. 서버 컨테이너에서 서버 호스트 OS로 파일을 복사합니다.
++
+----
+mgrctl cp server:/root/config.tar.gz .
+----
+
+. 다음으로 서버 호스트 OS에서 프록시 호스트로 파일을 복사합니다. 
++
+----
+scp config.tar.gz <proxy-FQDN>:/root
+----
+
+. 다음을 사용하여 프록시 설치:
++ 
+
+----
+mgrpxy install podman config.tar.gz
+----
+
+
+
+[[proxy-deploy-containers-transfer-start]]
+== {productname} {productnumber} 프록시 시작
+
+이제 `mgrpxy` 명령으로 컨테이너를 시작할 수 있습니다:
+
+[[proc-install-containers-setup-start]]
+.작업: 프록시 상태 시작 및 확인
+
+. 다음을 호출하여 프록시 시작:
++
+
+----
+mgrpxy start
+----
+
+. 다음을 호출하여 컨테이너 상태 확인:
++
+
+----
+mgrpxy status
+----
++
+
+5개의 {productname} 프록시 컨테이너가 있어야 하며, `proxy-pod` 컨테이너 파드의 일부여야 합니다:
+
+* proxy-salt-broker
+* proxy-httpd
+* proxy-tftpd
+* proxy-squid
+* proxy-ssh
+
+
+
+=== 서비스에 사용자 정의 컨테이너 이미지 사용
+
+기본적으로 {productname} 프록시 스위트는 각 서비스에 대해 동일한 이미지 버전과 레지스트리 경로를 사용하도록 설정되어 있습니다.
+그러나 `-tag` 및 `-image`으로 끝나는 설치 매개변수를 사용하여 특정 서비스에 대한 기본값을 재정의할 수 있습니다.
+
+예를 들어, 다음과 같이 사용합니다.
+
+----
+mgrpxy install podman --httpd-tag 0.1.0 --httpd-image registry.opensuse.org/uyuni/proxy-httpd /path/to/config.tar.gz
+----
+
+httpd 서비스에 대한 구성 파일을 조정하며, 여기서 `registry.opensuse.org/uyuni/proxy-httpds`은(는) 사용할 이미지이고 `0.1.0`는 버전 태그이며, 그 후 서비스를 다시 시작합니다.
+
+값을 기본값으로 재설정하려면 해당 파라미터 없이 설치 명령을 다시 실행합니다.
+
+----
+mgrpxy install podman /path/to/config.tar.gz
+----
+
+이 명령은 먼저 모든 서비스의 구성을 전역 기본값으로 재설정한 다음 다시 로드합니다.

@@ -1,0 +1,211 @@
+[[ssl-certs-import]]
+= SSL 인증서 임포트
+:description: 이 절차를 따라 SUSE Multi-Linux Manager 설치를 위한 SSL 인증서를 구성하거나 기존 인증서를 교체하십시오.
+:revdate: 2025-06-20
+:page-revdate: {revdate}
+:page-author: SUSE 제품 및 솔루션 문서 팀
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+//By default, {productname} uses a self-signed certificate.
+//For additional security, you can import a custom certificate, signed by a third party certificate authority (CA).
+
+이 섹션에서는 새 {productname} 설치를 위해 SSL 인증서를 구성하는 방법과 기존 인증서를 교체하는 방법을 설명합니다.
+
+시작하기 전, 다음을 확인해야 합니다.
+
+* 인증 기관(CA) SSL 공개 인증서입니다.
+  CA 체인을 사용하는 경우 모든 중간 CA도 사용 가능해야 합니다.
+* SSL 서버 개인 키
+* SSL 서버 인증서
+* SSL 데이터베이스 개인 키
+* SSL 데이터베이스 인증서
+
+모든 파일은 PEM 형식이어야 합니다.
+
+SSL 서버 인증서의 호스트 이름은 이를 배포하는 시스템의 정규화된 호스트 이름과 일치해야 합니다.
+인증서의 `X509v3 Subject Alternative Name` 섹션에서 호스트 이름을 설정할 수 있습니다.
+환경에 따라 여러 호스트 이름을 나열할 수도 있습니다.
+지원되는 키 유형은 `RSA` 및 `EC` (타원 곡선)입니다.
+
+[IMPORTANT]
+====
+이전 버전에서는 데이터베이스 SSL 인증서의 경우, `reportdb`와 `db`가 `Subject Alternative Name`로 필요했습니다.
+이제 더 이상 필요하지 않습니다.
+====
+
+타사 기관은 요청된 서버 인증서에 서명하기 위해 일반적으로 중간 CA를 사용합니다.
+이 경우 체인의 모든 CA가 사용 가능해야 합니다.
+`mgrdadm` 명령이 인증서의 순서를 관리합니다.
+이상적으로는 루트 CA가 별도의 파일에 있어야 합니다. 
+서버 인증서 파일에는 서버 인증서가 먼저 포함되어야 하며, 그 뒤에 모든 중간 CA 인증서가 순서대로 포함되어야 합니다.
+
+
+
+== 새 설치를 위해 인증서 임포트
+
+
+기본적으로 {productname}는 자체 서명된 인증서를 사용합니다.
+인증서는 설치 시 타사 인증서와 함께 가져올 수 있습니다.
+
+.절차 새 {productname} 서버에 인증서를 가져오기
+[role=procedure]
+____
+. xref:installation-and-upgrade:install-server.adoc[]의 지침에 따라 {productname} 서버를 배포하십시오.
+  올바른 파일을 `mgradm install podman`에 대한 매개변수로 전달해야 합니다.
+  매개변수는 다음과 같습니다:
+
++
+
+----
+3rd Party SSL Certificate Flags:
+      --ssl-ca-intermediate strings    Intermediate CA certificate path
+      --ssl-ca-root string             Root CA certificate path
+      --ssl-server-cert string         Server certificate path
+      --ssl-server-key string          Server key path
+      --ssl-db-ca-intermediate strings Intermediate CA certificate path for the database if different from the server one
+      --ssl-db-ca-root string          Root CA certificate path for the database if different from the server one
+      --ssl-db-cert string             Database certificate path
+      --ssl-db-key string              Database key path
+----
+____
+
+중간 CA는 `--ssl-ca-root`로 지정된 파일에 있을 수 있거나, `--ssl-ca-intermediate`로 추가 옵션으로 지정될 수 있습니다.
+`--ssl-ca-intermediate` 옵션은 여러 번 지정할 수 있습니다.
+
+
+
+== 새 프록시 설치를 위한 인증서 임포트
+
+프록시 인증서는 생성된 구성에 포함되어 있습니다.
+타사 인증서를 사용하려면 구성 시 제공해야 합니다.
+
+.절차 새 {productname} 프록시에 인증서 가져오기
+[role=procedure]
+____
+. xref:installation-and-upgrade:install-proxy.adoc[]의 지침에 따라 {productname} 프록시를 설치하십시오.
+
+. 프롬프트를 따라 설정을 완료합니다.
+
++
+
+[NOTE]
+====
+모든 서버 및 프록시 인증서에 대해 동일한 인증 기관(CA)을 사용하여 서명하십시오.
+서로 다른 CA로 서명된 인증서는 일치하지 않습니다.
+====
+
+____
+
+
+[[ssl-certs-import-replace]]
+== 인증서 바꾸기
+
+
+활성 인증서를 {productname} 설치에서 새 인증서로 교체할 수 있습니다.
+서버 또는 데이터베이스 인증서만 교체하는 경우와 루트 CA를 교체하는 경우 두 가지를 고려해야 합니다.
+
+
+루트 인증서를 교체하려면 등록된 모든 프록시와 시스템이 서버 수준에서 새 CA로 전환하기 전에 데이터베이스에 새 CA를 적용해야 하므로 중단을 방지하기 위해 더 많은 시간과 계획이 필요합니다.
+
+중간 CA가 서명한 타사 인증서를 사용할 경우, 중간 CA 인증서를 서버 또는 데이터베이스 인증서 파일에 추가해야 합니다.
+
+순서가 중요합니다: 먼저 서버 인증서가 오고, 그 다음 인증서를 서명한 CA에서 루트 CA에 의해 서명된 CA까지 이어집니다.
+루트 CA 인증서는 서버 인증서 파일에 추가하지 않아야 합니다.
+
+
+.절차 모든 기존 인증서 교체
+[role=procedure]
+____
+. 다음은 `root-ca.pem`, `intermediate-ca1.pem`, `intermediate-ca2.pem`, `server.pem` 및 `server.key` 파일이 있다고 가정합니다.
+  서버 인증서 서명 체인의 중간 CA 수에 따라 다를 수 있습니다.
+
+. 중간 CA와 서버 인증서를 결합하십시오.
+  순서가 중요하며, 서버가 먼저 오고 중간 CA가 순서대로 이어져야 합니다.
+  루트 CA를 체인의 마지막에 추가하지 마십시오. `uyuni-ca` 및 `uyuni-db-ca` 시크릿에 별도로 전달됩니다.
+  중간 CA가 없으면 다음 단계에서 결합된 파일 대신 `server.pem`을 사용할 수 있습니다.
+
++
+[source,shell]
+----
+cat server.pem intermediate-ca1.pem intermediate-ca2.pem >combined-server.pem
+----
+
+. {productname} 컨테이너 호스트의 명령 프롬프트에서 파일 경로를 전달하여 podman 인증서 시크릿을 재생성합니다:
+
++
+
+[source,shell]
+----
+podman secret create --replace uyuni-ca $path_to_ca_certificate
+podman secret create --replace uyuni-cert $path_to_combined_server_certificate
+podman secret create --replace uyuni-key $path_to_server_key
+
+podman secret create --replace uyuni-db-ca $path_to_database_ca_certificate
+podman secret create --replace uyuni-db-cert $path_to_combined_database_certificate
+podman secret create --replace uyuni-db-key $path_to_database_key
+----
+____
+
+
+.절차 서버를 재시작합니다.
+[role=procedure]
+____
+. 컨테이너 호스트에서 서비스를 재시작하여 변경사항을 적용합니다.
+
++
+
+[source,shell]
+----
+mgradm restart
+----
+____
+
+
+프록시를 사용하는 경우, 각 프록시에 대해 호스트 이름 및 cname을 사용하여 서버 인증서 RPM을 생성해야 합니다.
+새 구성 tarball을 생성하고 배포합니다.
+
+ifeval::[{mlm-content} == true]
+자세한 내용은 xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc#_generate_proxy_configuration[]을 참조하십시오.
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+자세한 내용은 xref:installation-and-upgrade:container-deployment/uyuni/proxy-deployment-uyuni.adoc#proxy-setup-containers-generate-config[]을 참조하십시오.
+proxy-deployment-uyuni.adoc
+endif::[]
+
+
+
+루트 CA가 변경된 경우, {productname}에 연결된 모든 클라이언트에 배포해야 합니다.
+이 작업은 중단을 최소화하기 위해 사전에 수행하는 것이 이상적입니다.
+
+[NOTE]
+====
+CA 인증서가 업데이트된 경우, Kiwi 인증서가 포함된 RPM 파일을 다시 패키징해야 합니다.
+
+{productname} 서버 컨테이너 호스트에서 다음 명령을 실행합니다:
+
+[source,shell]
+----
+mgrctl exec mgr-package-rpm-certificate-osimage
+----
+
+그런 다음, 이미지 빌드 호스트에 highstate를 적용하여 Kiwi가 사용할 새 인증서를 배포합니다.
+====
+
+
+
+.절차 클라이언트에 루트 CA 배포
+[role=procedure]
+____
+. {productname} {webui}에서 menu:시스템[개요]로 이동합니다.
+
+. 시스템 설정 관리자에 추가하려면 모든 클라이언트를 선택합니다.
+
+. menu:시스템[시스템 설정 관리자> 개요]로 이동합니다.
+
+. `States` 필드에서 btn:[적용]을 클릭하여 시스템 상태를 적용합니다.
+
+. `Highstate` 페이지에서 btn:[Highstate 적용]을 클릭하여 변경 사항을 클라이언트에 전파합니다.
+____

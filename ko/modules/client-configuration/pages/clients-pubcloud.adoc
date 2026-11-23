@@ -1,0 +1,96 @@
+[[clients-pubcloud]]
+= 공용 클라우드에서 클라이언트 등록
+:description: 자동 등록을 비활성화하고 SUSE Multi-Linux Manager 클라이언트에 대한 SSH 액세스를 활성화하여 클라우드 게스트를 등록합니다.
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+:page-author: SUSE 제품 및 솔루션 문서 팀
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+
+// 2024-04-04 OM: It had been decided in the conversation with the MLM PO 
+// that this Public Cloud related file can stay in the Uyuni books
+
+{productname} 서버를 설정한 후에는 클라이언트 등록을 시작할 수 있습니다.
+
+
+
+== 제품 추가 및 리포지토리 동기화
+
+
+클라이언트에 대한 해당 제품을 이미 추가하고 {productname}에 리포지토리를 동기화했는지 확인하십시오.
+이는 클라이언트를 등록하는 데 사용되는 부팅 리포지토리를 생성하는 데 필요합니다.
+
+자세한 내용은 xref:specialized-guides:public-cloud-guide/overview.adoc[]을 참조하십시오.
+
+
+
+== 온디맨드 이미지 준비
+
+{suse}에서 제공하는 온디맨드 이미지에서 시작된 인스턴스는 자동으로 등록되며, 업데이트 인프라 및 {sle} 모듈이 활성화됩니다.
+온디맨드 이미지를 {productname} 클라이언트로 사용하려면 시작하기 전에 이 자동화를 비활성화해야 합니다.
+
+
+
+.절차 온디맨드 이미지 준비
+. 온디맨드 인스턴스에 로그인합니다.
+. 명령 프롬프트에서 루트 권한으로 등록 데이터 및 리포지토리를 제거합니다.
++
+----
+registercloudguest --clean
+----
+. 자동 등록을 위한 트리거 서비스 제거:
++
+----
+systemctl disable guestregister.service
+----
+. Microsoft Azure에서는 비활성화해야 하는 추가 서비스가 있습니다.
++
+----
+systemctl disable regionsrv-enabler-azure.timer
+----
+
+
+
+== 클라이언트 등록
+
+{productname} {webui}에서 menu:시스템[부팅]으로 이동한 다음 `Host`, `SSH Port`, `User` 및 `Password` 필드를 채우십시오.
+`Host` 필드에 안정적인 FQDN을 사용해야 하며, 그렇지 않으면 {productname}이 공용 클라우드에서 다른 단기 FQDN을 제공할 때 호스트를 찾을 수 없습니다.
+
+공용 클라우드 이미지는 일반적으로 사용자 이름과 비밀번호로 SSH 로그인을 허용하지 않으며, 인증서로만 SSH를 허용합니다.
+{webui}에서 부팅을 사용하려면 사용자 이름과 SSH 키로 SSH 로그인을 활성화해야 합니다.
+이를 위해 menu:시스템[부팅]으로 이동하여 인증 방법을 변경할 수 있습니다.
+
+클라우드 제공자가 Microsoft Azure인 경우 사용자 이름과 비밀번호로 로그인할 수 있습니다.
+이를 위해 AzureUser가 비밀번호 없이 루트 사용자로 명령을 실행할 수 있도록 허용해야 합니다.
+이렇게 하려면 `/etc/sudoers.d/waagent` 파일을 열고 다음 줄을 추가하거나 편집하십시오:
+
+----
+AzureUser ALL=(ALL) NOPASSWD: ALL
+----
+
+[WARNING]
+====
+AzureUser가 비밀번호 없이 루트 사용자로 명령을 실행하도록 허용하는 것은 보안 위험을 초래합니다.
+이 방법은 테스트 용도로만 사용하십시오.
+운영 시스템에서는 이 작업을 수행하지 마십시오.
+====
+
+부팅 프로세스가 성공적으로 완료되면 클라이언트가 menu:시스템[시스템 목록]에 나열됩니다.
+
+* 프로세스에 대한 더 많은 제어권을 원하시거나 많은 클라이언트를 등록해야 하는 경우 부팅 스크립트를 생성하십시오.
+  자세한 내용은 xref:client-configuration:registration-bootstrap.adoc[]을 참조하십시오.
+* Salt 클라이언트와 프로세스에 대한 더 많은 제어 권한을 위해서는 명령줄에서 단일 명령을 실행하면 도움이 될 수 있습니다.
+  자세한 내용은 xref:client-configuration:registration-cli.adoc[]을 참조하십시오.
+* 공용 클라우드 이미지(예: AWS AMI)에서 시작된 클라이언트를 등록할 때 서로 덮어쓰지 않도록 추가 구성을 해야 합니다.
+  클론 등록에 대한 자세한 내용은 xref:administration:troubleshooting/tshoot-registerclones.adoc[]을 참조하십시오.
+
+
+
+== 활성화 키
+
+활성화 키는 클라이언트가 올바른 소프트웨어 권한을 가지고 있는지, 적절한 채널에 연결되어 있고, 관련 그룹에 구독되어 있는지를 보장하는 데 사용됩니다.
+각 활성화 키는 조직에 바인딩되며, 키를 생성할 때 설정할 수 있습니다.
+
+활성화 키에 대한 자세한 내용은 xref:client-configuration:activation-keys.adoc[]을 참조하십시오.

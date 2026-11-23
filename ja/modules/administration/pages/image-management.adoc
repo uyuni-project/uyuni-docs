@@ -1,0 +1,1028 @@
+[[image-management]]
+= イメージの構築と管理
+:description: SUSE® Multi-Linux Managerの直感的なツールを使用して、システムビルドを構成し、コンテナのデプロイメントを効率的に管理します。
+:revdate: 2025-02-25
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+
+[[at.images.overview]]
+== イメージの構築の概要
+
+
+{productname}では、システム管理者がコンテナおよびOSイメージを構築し、結果をイメージストアにプッシュできます。
+
+.プロシージャ:イメージの構築とプッシュ
+[role=procedure]
+_____
+
+. イメージストアを定義します。
+
+. イメージプロファイルを定義し、それをソース(gitリポジトリまたはディレクトリのいずれか)に関連付けます。
+
+. イメージを構築します。
+
+. イメージをイメージストアにプッシュします。
+_____
+
+{productname}は、これらの2つのビルドタイプをサポートしています:DockerfileおよびKiwiビルドタイプ。
+Kiwiビルドタイプは、システム、仮想、およびその他のイメージを構築するために使用されます。
+
+// Needs checking
+// at later places to be fix accordingly
+Kiwiビルドタイプ用のイメージストアは、`srv-www`ボリューム内のファイルシステムディレクトリとして事前定義されています。
+
+ifeval::[{mlm-content} == true]
+イメージファイルは`https://MANAGER-HOST/os-images/ORGANIZATION-ID/FILE-NAME`からダウンロードできます。
+正確な場所は、イメージ詳細ページから確認できます。
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+イメージファイルは`https://UYUNI-HOST/os-images/ORGANIZATION-ID/FILE-NAME`からダウンロードできます。
+正確な場所は、イメージ詳細ページから確認できます。
+endif::[]
+
+
+[[at.images.docker]]
+== コンテナイメージ
+
+// FIXME, bsc#1245987: replace caas pattform with container host?
+// image::image-building.png[scaledwidth=80%]
+
+
+[[at.images.docker.requirements]]
+=== 要件
+
+コンテナ機能は、{salt}クライアントが{sles} 12以降を実行している場合に利用可能です。
+始める前に、環境がこれらの要件を満たしていることを確認してください:
+
+* Dockerfileおよび設定スクリプトを含む公開されたgitリポジトリ。
+  リポジトリは公開または非公開であり、GitHub、GitLab、またはBitBucketにホストされる必要があります。
+* Dockerレジストリなどの適切に設定されたイメージストア。
+
+コンテナに関する詳細については、 https://documentation.suse.com/container/all/html/Container-guide/.を参照してください。
+
+
+[[at.images.docker.buildhost]]
+=== 構築ホストの作成
+
+{productname}を使用してイメージを構築するには、ビルドホストを作成して構成する必要があります。
+コンテナビルドホストは、{salt}クライアントが{sle} 12以降を実行しているものです。
+このセクションでは、ビルドホストの初期設定について説明します。
+
+[IMPORTANT]
+====
+構築ホスト上のオペレーティングシステムは、ターゲットイメージ上のオペレーティングシステムと一致する必要があります。
+
+例えば、{sles}{nbsp}15に基づくイメージを、{sles}{nbsp}15（SP2以降）OSバージョンを実行しているビルドホスト上で構築します。
+{sles}{nbsp}12を基にしたイメージを、{sles}{nbsp}12 SP5または{sles}{nbsp}12 SP4 OSバージョンを実行しているビルドホスト上で構築します。
+
+クロスアーキテクチャビルドはサポートされていません。
+////
+2022-05-12, ke: at least for now, according to feedback, this is unsupported:
+For example, you must build Raspberry Pi {sles}{nbsp}15 SP3 images on a Raspberry Pi (aarch64 architecture) build host running {sles}{nbsp}15 SP3.
+////
+====
+
+{productname} {webui}から、次のステップを実行してビルドホストを設定します:
+
+.プロシージャ:ホストの構築
+[role=procedure]
+_____
+
+. {salt}クライアントを、menu:システム[システム]の概要ページからビルドホストとして指定するために選択します。
+
+. 選択したクライアントの`System Details`ページから、コンテナモジュールを割り当てます。
+  menu:ソフトウェア[ソフトウェアチャンネル]に移動し、コンテナモジュール（例: `SLE-Module-Containers15-Pool`および`SLE-Module-Containers15-Updates`）を有効にします。
+  btn:[次へ]で続行します。
+
+. `ソフトウェアチャンネルの変更`をスケジュールし、btn:[確認]をクリックします。
+
+. `System Details`タブからmenu:プロパティ[]ページを選択し、`Add-on System Types`リストから`Container Build Host`を有効にします。
+  btn:[プロパティの更新]をクリックして確認します。
+
+. `Highstate`を適用して、必要なすべてのパッケージをインストールします。
+  システムの詳細タブから、menu:状態[ハイステート]を選択し、btn:[ハイステートを適用]をクリックします。
+  または、{productname}サーバーのコマンドラインから`Highstate`を適用します:
+
++
+
+[source,shell]
+----
+salt '$your_client' state.highstate
+----
+
+_____
+
+
+
+[[at.images.docker.buildchannels]]
+=== コンテナ用アクティベーションキーの作成
+
+{productname}で構築されたコンテナは、イメージを構築する際にリポジトリとしてアクティベーションキーに関連付けられたチャンネルを使用します。
+このセクションでは、この目的のためのアドホックアクティベーションキーの作成方法を案内します。
+
+[NOTE]
+====
+コンテナを構築するには、`SUSE Manager Default`以外のチャンネルに関連付けられたアクティベーションキーが必要です。
+====
+
+.プロシージャ:アクティベーションキーの作成
+[role=procedure]
+_____
+
+. menu:システム[アクティベーションキー]を選択します。
+
+. btn:[キーの作成]をクリックします。
+
+. `Description`と`Key`の名前を入力します。
+  ドロップダウンメニューを使用して、このキーに関連付ける`Base Channel`を選択します。
+
+. btn:[アクティベーションキーの作成]で確定します。
+
+_____
+
+詳細については、xref:client-configuration:activation-keys.adoc[]を参照してください。
+
+
+[[at.images.docker.imagestore]]
+=== イメージストアの作成
+
+すべてのビルドされたイメージは、イメージストアにプッシュされます。
+このセクションでは、イメージストアの作成方法について説明します。
+イメージストアは一般的にレジストリとして参照されます。
+
+
+.プロシージャ:イメージストアの作成
+[role=procedure]
+_____
+
+. menu:イメージ[ストア]を選択します。
+
+. `Create`をクリックして、新しいストアを作成します。
+
+. `Store Type`から正しいタイプを選択します。
+
+. `Label`フィールドにイメージストアの名前を入力します。
+
+. `URI`フィールドに、コンテナレジストリホスト（内部または外部）の完全修飾ドメイン名（FQDN）としてイメージレジストリへのパスを入力します。
+
++
+
+----
+registry.example.com
+----
+
++
+
+レジストリURI を使用して、すでに使用されているレジストリのイメージストアを指定することもできます。
+
++
+
+----
+registry.example.com:5000/myregistry/myproject
+----
+
+. btn:[作成]をクリックして、新しいイメージストアを追加します。
+
+_____
+
+
+
+[[at.images.docker.profile]]
+=== イメージプロファイルの作成
+
+すべてのコンテナイメージは、ビルド指示を含むイメージプロファイルを使用してビルドされます。
+このセクションでは、{productname} {webui}を使用してイメージプロファイルを作成するための情報が含まれています。
+
+.プロシージャ:イメージプロファイルの作成
+[role=procedure]
+_____
+
+. イメージプロファイルを作成するには、menu:イメージ[プロファイル]を選択し、btn:[作成]をクリックします。
+
+. `Label`フィールドにイメージプロファイルの名前を入力します。
+
++
+
+[NOTE]
+====
+コンテナイメージタグが`myproject/myimage`のような形式である場合は、イメージストアのレジストリURIに`/myproject`サフィックスが含まれていることを確認します。
+====
+
+. `Dockerfile`を`Image Type`として使用します。
+
+. ドロップダウンメニューを使用して、`Target Image Store`フィールドからレジストリを選択します。
+
+. `Path`フィールドに、GitHub、GitLab、またはBitBucketのリポジトリURLを入力してください。
+  パスは、ビルドホスト上のローカルディレクトリでも構いません。
+  URLは、`http`、`https`、またはトークン認証URLである必要があります。
+  GitHubまたはGitLabの場合、次のいずれかの形式を使用してください:
+
++
+
+.GitHubパスオプション
+
+* GitHubシングルユーザプロジェクトリポジトリ
+
++
+----
+https://github.com/USER/project.git#branchname:folder
+----
+
++
+
+* GitHub組織プロジェクトリポジトリ
+
++
+----
+https://github.com/ORG/project.git#branchname:folder
+----
+
++
+
+* GitHubトークン認証
+
++
+
+gitリポジトリがプライベートの場合、プロファイルのURLを変更して認証を含める必要があります。
+GitHubトークンで認証するためのURL形式を使用してください:
+
++
+
+----
+https://USER:<AUTHENTICATION_TOKEN>@github.com/USER/project.git#master:/container/
+----
+
++
+
+.GitLabパスオプション
+
+* GitLabシングルユーザプロジェクトリポジトリ
+
++
+
+----
+https://gitlab.example.com/USER/project.git#master:/container/
+----
+
+* GitLabグループプロジェクトリポジトリ
+
++
+
+----
+https://gitlab.example.com/GROUP/project.git#master:/container/
+----
+
+* GitLabトークン認証
+
++
+
+gitリポジトリがプライベートで公開されていない場合、プロファイルのgit URLを変更して認証を含める必要があります。
+GitLabトークンで認証するためのURL形式を使用してください:
+
++
+
+----
+https://gitlab-ci-token:<AUTHENTICATION_TOKEN>@gitlab.example.com/USER/project.git#master:/container/
+----
+
++
+
+[IMPORTANT]
+====
+gitブランチを指定しない場合、デフォルトで`master`ブランチが使用されます。
+`folder`が指定されていない場合、イメージソース（Dockerfileソース）はGitHubまたはGitLabのチェックアウトのルートディレクトリにあることが期待されます。
+====
+
+. `Activation Key`を選択してください。
+  アクティベーションキーは、プロファイルを使用するイメージが正しいチャンネルとパッケージに割り当てられることを保証します。
+
++
+
+[NOTE]
+====
+アクティベーションキーをイメージプロファイルに関連付けると、プロファイルを使用するすべてのイメージで正しいソフトウェアチャンネルとチャンネル内のすべてのパッケージが確実に使用されるようになります。
+====
+
+. btn:[Create] ボタンをクリックします。
+
+_____
+
+
+[[at.images.docker.sourceexample]]
+==== Dockerfileソースの例
+
+再利用可能なイメージプロファイルは https://github.com/SUSE/manager-build-profiles.で公開されています。
+
+[NOTE]
+====
+`ARG`パラメータは、ビルドされたイメージが{productname}によって提供される目的のリポジトリに関連付けられることを保証します。
+`ARG`パラメータは、ビルドホスト自体で使用される{sles}のバージョンとは異なる{sles}のイメージバージョンをビルドすることも可能にします。
+
+例:`ARG repo`パラメータと`echo`コマンドがリポジトリファイルを指し示し、目的のチャンネルバージョンのためにリポジトリファイルに正しいパスを作成して挿入します。
+
+リポジトリは、イメージプロファイルに割り当てたアクティベーションキーによって決定されます。
+====
+
+----
+FROM registry.example.com/sles12sp2
+MAINTAINER Tux Administrator "tux@example.com"
+
+### Begin: These lines are required for use with {productname}
+
+ARG repo
+ARG cert
+
+# Add the correct certificate
+RUN echo "$cert" > /etc/pki/trust/anchors/RHN-ORG-TRUSTED-SSL-CERT.pem
+
+# Update certificate trust store
+RUN update-ca-certificates
+
+# Add the repository path to the image
+RUN echo "$repo" > /etc/zypp/repos.d/susemanager:dockerbuild.repo
+
+### End: These lines are required for use with {productname}
+
+# Add the package script
+ADD add_packages.sh /root/add_packages.sh
+
+# Run the package script
+RUN /root/add_packages.sh
+
+# After building remove the repository path from image
+RUN rm -f /etc/zypp/repos.d/susemanager:dockerbuild.repo
+----
+
+==== カスタム情報のキーと値のペアをDocker `buildargs`として使用する
+
+カスタム情報のキーと値のペアをイメージプロファイルに情報を付加するために割り当てることができます。
+さらに、これらのキーと値のペアは、Dockerビルドコマンドに`buildargs`として渡されます。
+
+利用可能なカスタム情報キーと追加の作成に関する詳細は、xref:reference:systems/custom-system-info.adoc[]を参照してください。
+
+
+[[at.images.docker.building]]
+=== イメージの構築
+
+
+イメージをビルドする方法は2つあります。
+最初の方法は、ゼロから作成することです。
+そのためには、左側のナビゲーションバーからmenu:Images[Build]を選択するか、menu:Images[Profiles]リストのビルドアイコンをクリックして手順に従ってください。
+
+.プロシージャ:イメージのビルド
+[role=procedure]
+_____
+
+. menu:イメージ[ビルド]を選択します。
+
+. デフォルトの`latest`（コンテナにのみ関連する）以外のバージョンが必要な場合は、別のタグ名を追加します。
+
+. `Build Profile`と`Build Host`を選択してください。
+
++
+
+[NOTE]
+====
+ビルドフィールドの右側にある`Profile Summary`に注目してください。
+ビルドプロファイルを選択すると、選択したプロファイルに関する詳細情報がこのエリアに表示されます。
+====
+
+. ビルドをスケジュールするには、btn:[Build]ボタンをクリックします。
+
+_____
+
+
+
+[[at.images.docker.importing]]
+=== イメージの取り込み
+
+イメージを取得する2番目の方法は、任意のイメージをインポートして検査することです。
+そのためには、左側のナビゲーションバーからmenu:Images[Image List]を選択します。
+`Import`ダイアログのテキストボックスに入力します。
+処理が完了すると、インポートされたイメージが`Image List`ページに表示されます。
+
+.プロシージャ:イメージのインポート
+[role=procedure]
+_____
+
+. menu:Images[Image list]からbtn:[Import]をクリックして、`Import Image`ダイアログを開きます。
+
+. `Import Image`ダイアログで、以下のフィールドを入力します。
+
++
+
+イメージストア:::
+検査のためにイメージがプルされるレジストリ。
+
+イメージ名:::
+レジストリのイメージの名前。
+
+イメージバージョン:::
+レジストリのイメージのバージョン。
+
+構築ホスト:::
+イメージをプルして検査する構築ホスト。
+
+アクティベーションキー:::
+イメージが検査されるソフトウェアチャンネルへのパスを提供するアクティベーションキー。
+
+. 確認のために、btn:[Import]をクリックします。
+
+_____
+
+イメージのエントリがデータベースに作成されます。また、`Inspect Image`アクションが{productname}にスケジュールされます。
+
+処理が完了すると、インポートされたイメージは`Image List`に表示されます。
+インポートされたイメージを示すために、`Build`列には異なるアイコンが表示されます。
+インポートされたイメージのステータスアイコンは、イメージの`Overview`タブでも確認できます。
+
+
+
+[[at.images.docker.troubleshooting]]
+=== トラブルシューティング
+
+
+
+ifndef::backend-pdf[]
+include::administration:partial$image-mgmt-container-inspection.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/image-mgmt-container-inspection.adoc[]
+endif::[]
+
+
+==== 一般的な問題
+
+イメージを操作する場合の既知の問題がいくつかあります。
+
+* レジストリまたはgitリポジトリにアクセスするためのHTTPS証明書はカスタム状態ファイルによってクライアントに配備する必要があります。
+* Dockerを使用したSSH gitアクセスは現在サポートされていません。
+
+
+
+[[at.images.kiwi]]
+== OSイメージ
+
+OSイメージはKiwiビルドシステムによって構築されます。
+出力イメージはカスタマイズ可能で、PXE、QCOW2、LiveCD、またはその他のタイプのイメージにすることができます。
+
+Kiwiビルドシステムに関する詳細は、 https://osinside.github.io/kiwi/[Kiwi documentation]を参照してください。
+
+
+
+[[at.images.kiwi.requirements]]
+=== 要件
+
+Kiwiイメージビルディング機能は、{salt}クライアントが{sles}{nbsp}15および{sles}{nbsp}12を実行している場合に利用可能です。
+//SLE15 images support is not yet released for MLM4, but is part of MLM4.0.4 as tech preview
+//From {sles}{nbsp}15, `kiwi-ng` is used instead of the legacy Kiwi.
+
+Kiwiイメージ設定ファイルおよび設定スクリプトは、以下の場所のいずれかからアクセスできる必要があります。
+
+* Gitリポジトリ
+* HTTPまたはHTTPSでホストされたtarアーカイブ
+* 構築ホスト上のローカルディレクトリ
+
+gitによって提供される完全なKiwiリポジトリの例については、 https://github.com/SUSE/manager-build-profiles/tree/master/OSImage.を参照してください。
+
+[NOTE]
+====
+Kiwiで構築されたOSイメージを実行するホストには、少なくとも1{nbsp}GBのRAMが必要です。
+ディスクスペースは、イメージの実際のサイズに依存します。
+詳細については、基盤となるシステムのドキュメントを参照してください。
+====
+
+
+
+=== イメージをビルドする際にHTTP/HTTPSプロキシを介してGitリポジトリにアクセスする
+
+ビルドホストがHTTP/HTTPSプロキシを介してのみアクセス可能なgitリポジトリからソースを取得する必要がある場合、{salt}状態によって呼び出されるgitクライアントは、システム全体のプロキシ設定（例えば、`/etc/sysconfig/proxy`や環境変数）を常に取得しないため、ビルド中にgitタイムアウトが発生することがあります。
+
+非対話型ビルドのためにgitがプロキシを使用するようにするには、http.proxyエントリを持つ`/etc/gitconfig`を作成します。
+
+[source,console]
+----
+# /etc/gitconfig
+[http]
+    proxy = http://proxy.example.com:3128
+# or for HTTPS
+[http]
+    proxy = https://proxy.example.com:3128
+----
+
+プロキシが認証を必要とする場合は、URLに資格情報を埋め込むのではなく、資格情報ヘルパーを使用するか、資格情報ストアを使用することをお勧めします。
+
+
+
+==== {salt}を使用して自動化する
+
+ビルドホスト上での`/etc/gitconfig`の管理は、他の管理されたシステムと同様に構成管理を通じて行うことができます。
+{salt}状態ファイルを作成し、構成チャネルを介してビルドホストに割り当てた後、{productname} UIからハイステートを適用します。
+
+システムカスタム情報フィールドからプロキシアドレスを取得したい場合は、`custom_info:`ピラープレフィックスを使用してください。
+
+[source,yaml]
+----
+/etc/gitconfig:
+  file.managed:
+    - user: root
+    - group: root
+    - mode: '0644'
+    - contents: |
+        [http]
+            proxy = {{ salt['pillar.get']('custom_info:build_server:git_proxy', 'http://proxy.example.com:3128') }}
+----
+
+
+
+[[container.based.kiwi.image.build.support]]
+=== Kiwiベースのイメージの取り込みはサポートされていません。
+
+{productname}は、既存のレガシKiwiおよびKiwiNGツールに加えて、コンテナ化されたKiwiイメージビルドシステムを導入します。
+
+
+==== 設定チャンネルの管理 
+
+管理者は以下のpillar値またはカスタム値を使用して、デフォルトの動作を上書きできます。
+これを構成するには、{webui}のメニュー:[システム>カスタムシステム情報]に移動し、必要なキーを作成します。
+
+使用されるビルドシステムは基盤となるOSまたは特定のpillar値によって異なります。
+
+* SLE 11 / SLE 12の場合: レガシKiwi v7
+* SLE 15の場合: KiwiNG (v9およびコンテナ化されたKiwi 10)
+
+
+管理者は以下のpillar値またはカスタム値を使用して、デフォルト動作を上書きできます。
+
+* `use_kiwi_ng`: Kiwi 9の使用を強制します。
+* `use_kiwi_container`: コンテナ化されたKiwi 10の使用を強制します。
+  これを有効にするには、値を`1`に設定します。
+* `use_bundle_build`: 追加のKIWIバンドルビルドアーティファクト（PXEファイルを含む`.install.tar`や`.raw.xz`など）をサーバーにアップロードします。
+  これを有効にするには、値を`true`に設定します。
+
+
+==== サーバ設定
+
+SUSE Linux Enterprise 15プロファイル用のコンテナ化されたビルドホストを使用する場合、SLES 15プロファイルはKiwi 9に依存しているのに対し、デフォルトコンテナ動作はKiwi 10を使用するため、固有の設定が必要です。
+
+SLES 15プロファイルに正しいバージョンが使用されるようにするには、`kiwi_image`カスタム情報キーを以下の値で定義する必要があります:
+
+* `Key`: kiwi_image
+* `Value`: `registry.suse.com/bci/kiwi:9`
+
+このキーが設定されていない場合、システムはデフォルトで最新バージョン(例: `registry.suse.com/bci/kiwi:10.2`)を使用します。これにより、SLES 15プロファイルのビルドで問題が発生する場合があります。
+
+
+[[at.images.kiwi.buildhost]]
+=== 構築ホストの作成
+
+// FIXME, bsc#1245987:
+// Discussing Container-Based KIWI Image Build Support here?
+// Perhaps 2.'docker' might be 2, but the container variant might be different?
+
+{productname}を使用してすべての種類のイメージをビルドするには、ビルドホストを作成して構成します。
+OSイメージビルドホストは、{salt}クライアントが{sles}{nbsp}15 (SP2以降)または{sles}{nbsp}12 (SP4以降)で実行されています。
+
+このプロシージャでは、構築ホストの初期設定について説明します。
+
+[IMPORTANT]
+====
+構築ホスト上のオペレーティングシステムは、ターゲットイメージ上のオペレーティングシステムと一致する必要があります。
+
+例えば、{sles}{nbsp}15に基づくイメージを、{sles}{nbsp}15 (SP2以降)のOSバージョンで実行されているビルドホスト上でビルドする必要があります。
+{sles}{nbsp}12を基にしたイメージを、{sles}{nbsp}12 SP5または{sles}{nbsp}12 SP4 OSバージョンを実行しているビルドホスト上で構築します。
+
+クロスアーキテクチャビルドは不可能です。
+例えば、Raspberry PI {sles}{nbsp}15 SP3イメージを、{sles}{nbsp}15 SP3を実行しているRaspberry PI (aarch64アーキテクチャ)ビルドホスト上でビルドする必要があります。
+====
+
+
+.プロシージャ:ビルドホストを{productname} {webui}で構成します。
+[role=procedure]
+_____
+
+. menu:システム[概要]ページから、ビルドホストとして指定するクライアントを選択します。
+
+. menu:システム詳細[プロパティ]タブに移動し、`Add-on System Type` > `OS Image Build Host`ボックスをオンにします。
+
+. btn:[プロパティの更新]で確定します。
+
+. menu:システムの詳細[ソフトウェア > ソフトウェアチャンネル]に移動し、ビルドホストのバージョンに応じて必要なソフトウェアチャンネルを有効にします。
+
++
+
+* {sles}{nbsp}12ビルドホストには、{productname}クライアントツール（`SLE-Manager-Tools12-Pool`および`SLE-Manager-Tools12-Updates`）が必要です。
+
+* {sles}{nbsp}15ビルドホストには、{sles}モジュール`SLE-Module-DevTools15-SP4-Pool`および`SLE-Module-DevTools15-SP4-Updates`が必要です。
+
+*  スケジュールを設定してbtn:[確認]をクリックします。
+
+. `Highstate`を適用してKiwiとすべての必須パッケージをインストールします。
+  システムの詳細ページからmenu:状態[ハイステート]を選択し、btn:[ハイステートを適用]をクリックします。
+  または、{productname}サーバーのコマンドラインからハイステートを適用します:
+
++
+
+----
+salt '$your_client' state.highstate
+----
+_____
+
+
+==== {productname}ウェブサーバのパブリック証明書RPM
+
+ビルドホストのプロビジョニングは、{productname}証明書RPMをビルドホストにコピーします。
+この証明書は、{productname}が提供するリポジトリにアクセスするために使用されます。
+
+証明書は`mgr-package-rpm-certificate-osimage`パッケージスクリプトによってRPMにパッケージ化されます。
+パッケージスクリプトは、新しい{productname}インストール中に自動的に呼び出されます。
+
+`spacewalk-certs-tools`パッケージをアップグレードすると、アップグレードシナリオはデフォルト値を使用してパッケージスクリプトを呼び出します。
+ただし、証明書のパスが変更されたり利用できない場合は、アップグレード手順が完了した後に`--ca-cert-full-path <path_to_certificate>`を使用してパッケージスクリプトを手動で呼び出します。
+
+
+==== パッケージスクリプトの呼び出し例
+
+[source,bash]
+----
+/usr/sbin/mgr-package-rpm-certificate-osimage --ca-cert-full-path /root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT
+----
+
+証明書を含むRPMパッケージは、次のようなsalt-accessibleディレクトリに保存されます。
+----
+/usr/share/susemanager/salt/images/rhn-org-trusted-ssl-cert-osimage-1.0-1.noarch.rpm
+----
+
+証明書を含むRPMパッケージは、ローカル構築ホストリポジトリで提供されます。
+----
+/var/lib/Kiwi/repo
+----
+
+[IMPORTANT]
+====
+ビルドソースに{productname} SSL証明書を含むRPMパッケージを指定し、Kiwiの設定ファイルの`rhn-org-trusted-ssl-cert-osimage`セクションに`bootstrap`が必須パッケージとして含まれていることを確認します。
+
+.config.xml
+[source,xml]
+----
+...
+  <packages type="bootstrap">
+    ...
+    <package name="rhn-org-trusted-ssl-cert-osimage" bootinclude="true"/>
+  </packages>
+...
+----
+====
+
+
+
+// FIXME 2024-04-25, ke: continue here compare with container build host
+[[at.images.kiwi.buildchannels]]
+=== OSイメージ用アクティベーションキーの作成
+
+イメージの構築時にOSイメージがリポジトリとして使用できるチャンネルに関連付けられたアクティベーションキーを作成します。
+
+アクティベーションキーはOSイメージの構築に必須です。
+
+[NOTE]
+====
+OSイメージを構築するには、`Default`アクティベーションキー以外のチャンネルに関連付けられたアクティベーションキーが必要です。
+====
+
+.プロシージャ:アクティベーションキーの作成
+[role=procedure]
+_____
+
+. {webui}で、menu:システム[アクティベーションキー]を選択します。
+
+. `Create Key`をクリックします。
+
+. `Description`と`Key`名を入力し、ドロップダウンボックスを使用してキーに関連付ける`Base Channel`を選択します。
+
+. btn:[アクティベーションキーの作成]で確定します。
+
+_____
+
+詳細については、xref:client-configuration:activation-keys.adoc[]を参照してください。
+
+
+
+[[at.images.kiwi.imagestore]]
+=== イメージストアの作成
+
+// For background info about Image Store, see the overview at the beginning of this chapter.
+
+OSイメージは、かなりのストレージスペースを必要とする場合があります。
+デフォルトでは、イメージストアは`srv-www`ボリュームを使用しています。
+
+
+[NOTE]
+====
+システム、仮想、およびその他のイメージの構築に使用されるKiwiビルドタイプのイメージストアは、まだサポートされていません。
+
+
+ifeval::[{mlm-content} == true]
+イメージファイルは`https://MANAGER-HOST/os-images/ORGANIZATION-ID/FILE-NAME`からダウンロードできます。
+正確な場所は、イメージ詳細ページから確認できます。
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+イメージファイルは`https://UYUNI-HOST/os-images/ORGANIZATION-ID/FILE-NAME`からダウンロードできます。
+正確な場所は、イメージ詳細ページから確認できます。
+endif::[]
+
+====
+
+
+
+[[at.images.kiwi.profile]]
+=== イメージプロファイルの作成
+
+{webui}を使用してイメージプロファイルを管理します。
+
+.プロシージャ:イメージプロファイルの作成
+[role=procedure]
+_____
+
+. イメージプロファイルを作成するには、menu:イメージ[プロファイル]から選択し、btn:[作成]をクリックします。
+
+. `Label`フィールドに、`Image Profile`の名前を入力します。
+
+. `Kiwi`を`Image Type`として使用します。
+
+. イメージストアは自動的に選択されます。
+
+. Kiwi設定ファイルを含むディレクトリへの`Config URL`を入力します。
+  例えば、 https://github.com/SUSE/manager-build-profiles#master:OSImage/SLE-Micro54.のようなgit URIです。他のオプションは、HTTPまたはHTTPSでホストされたtarアーカイブ、またはビルドホスト上のローカルディレクトリです。
+  詳細については、このセクションの最後にあるソースフォーマットオプションを参照してください。
+
+. 必要に応じて`Kiwi options`を入力します。
+  Kiwi設定ファイルが複数のプロファイルを指定している場合は、`--profile <name>`を使用してアクティブなものを選択します。
+  他のオプションについては、Kiwiのドキュメントを参照してください。
+
+. `Activation Key`を選択してください。
+  アクティベーションキーは、プロファイルを使用するイメージが正しいチャンネルとパッケージに割り当てられることを保証します。
+
++
+
+[NOTE]
+====
+アクティベーションキーをイメージプロファイルに関連付け、イメージプロファイルで正しいソフトウェアチャンネルとパッケージが使用されるようにします。
+====
+
++
+
+. btn:[作成]ボタンで確定します。
+
+
+.ソースフォーマットオプション
+
+* _リポジトリへのgit/HTTP(S) URL_
+
++
+
+ビルドされるイメージのソースを含む公開またはプライベートのgitリポジトリ（リポジトリ）へのURL。
+リポジトリのレイアウトに応じて、URLは次のようになります。
+
++
+
+----
+https://github.com/SUSE/manager-build-profiles
+----
+
++
+
+URLの`#`文字の後にブランチを指定できます。
+この例では、`master`ブランチを使用します。
+
++
+
+----
+https://github.com/SUSE/manager-build-profiles#master
+----
+
++
+
+`:`文字の後にイメージソースを含むディレクトリを指定できます。
+この例では、`OSImage/POS_Image-JeOS6`を使用します。
+
++
+
+----
+https://github.com/SUSE/manager-build-profiles#master:OSImage/POS_Image-JeOS6
+----
+
+* _tarアーカイブへのHTTP(S) URL_
+
++
+
+WebサーバでホストされているtarアーカイブへのURL (圧縮または非圧縮)。
+
++
+
+----
+https://myimagesourceserver.example.org/MyKiwiImage.tar.gz
+----
+
+* _構築ホスト上のディレクトリへのパス_
+
++
+
+Kiwiビルドシステムソースのあるディレクトリへのパスを入力します。
+このディレクトリは、選択したビルドホストに存在する必要があります。
+
++
+
+----
+/var/lib/Kiwi/MyKiwiImage
+----
+
+_____
+
+
+[[at.images.kiwi.sourceexample]]
+==== Kiwiソースの例
+
+
+Kiwiのソースは少なくとも`config.xml`で構成されています。
+通常、`config.sh`と`images.sh`も存在します。
+ソースには、`root`サブディレクトリの最終イメージにインストールされるファイルも含まれる場合があります。
+
+Kiwiビルドシステムに関する情報は、 https://osinside.github.io/kiwi/[Kiwiのドキュメント]を参照してください。
+
+{suse}は、 https://github.com/SUSE/manager-build-profiles[SUSE/manager-build-profiles]の公開GitHubリポジトリにおいて、完全に機能するイメージソースの例を提供します。
+
+.JeOS config.xmlの例
+// ###example-script-1###
+[source, xml]
+----
+<?xml version="1.0" encoding="utf-8"?>
+
+<image schemaversion="6.1" name="POS_Image_JeOS6">
+    <description type="system">
+        <author>Admin User</author>
+        <contact>noemail@example.com</contact>
+        <specification>SUSE Linux Enterprise 12 SP3 JeOS</specification>
+    </description>
+    <preferences>
+        <version>6.0.0</version>
+        <packagemanager>zypper</packagemanager>
+        <bootsplash-theme>SLE</bootsplash-theme>
+        <bootloader-theme>SLE</bootloader-theme>
+
+        <locale>en_US</locale>
+        <keytable>us.map.gz</keytable>
+        <timezone>Europe/Berlin</timezone>
+        <hwclock>utc</hwclock>
+
+        <rpm-excludedocs>true</rpm-excludedocs>
+        <type boot="saltboot/suse-SLES12" bootloader="grub2" checkprebuilt="true" compressed="false" filesystem="ext3" fsmountoptions="acl" fsnocheck="true" image="pxe" kernelcmdline="quiet"></type>
+    </preferences>
+    <!--    CUSTOM REPOSITORY
+    <repository type="rpm-dir">
+      <source path="this://repo"/>
+    </repository>
+    -->
+    <packages type="image">
+        <package name="patterns-sles-Minimal"/>
+        <package name="aaa_base-extras"/> <!-- wouldn't be SUSE without that ;-) -->
+        <package name="kernel-default"/>
+        <package name="venv-salt-minion"/>
+        ...
+    </packages>
+    <packages type="bootstrap">
+        ...
+        <package name="sles-release"/>
+        <!-- this certificate package is required to access {productname} repositories
+             and is provided by {productname} automatically -->
+        <package name="rhn-org-trusted-ssl-cert-osimage" bootinclude="true"/>
+
+    </packages>
+    <packages type="delete">
+        <package name="mtools"/>
+        <package name="initviocons"/>
+        ...
+    </packages>
+</image>
+----
+
+
+
+[[at.images.kiwi.building]]
+=== イメージの構築
+
+{webui}を使用してイメージをビルドまたは取得する方法は2つあります。
+menu:イメージ[ビルド]を選択するか、menu:イメージ[プロファイル]リストのビルドアイコンをクリックします。
+
+.プロシージャ:イメージのビルド
+[role=procedure]
+_____
+
+. menu:イメージ[ビルド]を選択します。
+
+. デフォルトの`latest`（コンテナのみに適用）以外のバージョンが必要な場合は、別のタグ名を追加します。
+
+. `Image Profile`と`Build Host`を選択します。
+
++
+
+[NOTE]
+====
+ビルドフィールドの右側に`Profile Summary`が表示されます。
+ビルドプロファイルを選択すると、選択したプロファイルに関する詳細情報がここに表示されます。
+====
+
++
+
+. ビルドをスケジュールするには、btn:[ビルド]ボタンをクリックします。
+
+_____
+
+
+[IMPORTANT]
+====
+ビルドサーバーは、イメージビルドプロセス中に自動マウントのいかなる形式も実行できません。
+該当する場合は、Gnomeセッションをrootとして実行していないことを確認してください。
+自動マウントが実行されている場合、イメージビルドは成功しますが、イメージのチェックサムが異なり、エラーを引き起こします。
+====
+
+
+[[at.images.kiwi.inspection]]
+
+イメージが正常にビルドされた後、検査フェーズが始まります。
+検査フェーズ中に{susemgr}はイメージに関する情報を収集します。
+
+* イメージにインストールされているパッケージのリスト
+* イメージのチェックサム
+* イメージタイプと他のイメージの詳細
+
+[NOTE]
+====
+ビルドされたイメージタイプが`PXE`の場合、{salt}ピラーも生成されます。
+イメージピラーはデータベースに保存され、{salt}サブシステムは生成されたイメージに関する詳細にアクセスできます。
+詳細には、イメージファイルの場所、提供されたイメージのチェックサム、ネットワークブートに必要な情報などが含まれます。
+
+生成されたピラーはすべての接続されているクライアントで使用できます。
+====
+
+
+
+[[at.images.kiwi.troubleshooting]]
+=== トラブルシューティング
+
+イメージを構築するには、いくつかの依存する手順が必要です。
+ビルドが失敗した場合、{salt}に示される状態情報やビルドログを調査することで、失敗の原因を特定するのに役立ちます。
+ビルドが失敗したときに、これらのチェックを実行できます：
+
+* 構築ホストがビルドソースにアクセスできる
+* ビルドホストと{productname}サーバの両方にイメージ用の十分なディスク容量があります。
+* アクティベーションキーには正しいチャンネルが関連付けられている
+* 使用されるビルドソースが有効である
+* {productname}の公開証明書を含むRPMパッケージは最新で、`/usr/share/susemanager/salt/images/rhn-org-trusted-ssl-cert-osimage-1.0-1.noarch.rpm`で入手可能です。
+  公開証明書RPMを更新する方法の詳細については、<<at.images.kiwi.buildhost>>を参照してください。
+
+
+
+[[at.images.kiwi.limitations]]
+=== 制限事項
+
+このセクションには、イメージを操作するときのいくつかの既知の問題が含まれています。
+
+* HTTPソースまたはgitリポジトリへのアクセスに使用されるHTTPS証明書は、カスタム状態ファイルによってクライアントに配備するか、手動で設定する必要があります。
+* Kiwiベースのイメージの取り込みはサポートされていません。
+
+
+
+[[at.images.listing]]
+== ビルドイメージのリスト
+
+利用可能なビルド済みイメージをリストするには、menu:イメージ[イメージリスト]を選択します。
+すべてのイメージのリストが表示されます。
+
+イメージに関する表示データには、イメージ`Name`、その`Version`、`Revision`、およびビルド`Status`が含まれます。
+イメージの更新状況を確認することもでき、イメージに利用可能なパッチやパッケージの更新のリストが表示されます。
+
+OSイメージの場合、`Name`および`Version`フィールドはKiwiソースから取得され、成功したビルドの最後に更新されます。
+ビルド中またはビルド失敗後、これらのフィールドはプロファイル名に基づく一時的な名前を表示します。
+
+`Revision`は、各成功したビルドの後に自動的に増加します。OSイメージの場合、複数のリビジョンがストアに共存できます。
+
+コンテナイメージの場合、ストアには最新のリビジョンのみが保持されます。
+以前のリビジョン（パッケージ、パッチなど）に関する情報は保持されており、`Show obsolete`チェックボックスを使用してリストすることができます。
+
+イメージのbtn:[詳細]ボタンをクリックすると、詳細ビューが提供されます。
+詳細ビューには、関連するパッチの正確なリスト、イメージ内にインストールされたすべてのパッケージのリスト、およびビルドログが含まれます。
+
+btn:[削除]ボタンをクリックすると、リストからイメージが削除されます。
+関連するピラー、OSイメージストアからのファイル、および古いリビジョンも削除されます。
+
+[NOTE]
+====
+パッチおよびパッケージリストは、ビルド後の検査状態が正常だった場合にのみ使用できます。
+====

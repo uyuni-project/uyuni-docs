@@ -1,0 +1,76 @@
+[[installation-proxy-containers-k3s-uyuni]]
+= {productname} K3s上のプロキシデプロイメント
+:description: 手順に従ってK3s上にSUSE Multi-Linux Manager Proxyを構成してデプロイする方法を学びます
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+
+[[installation-proxy-containers-k3s-k3s]]
+== K3sのインストール
+
+
+コンテナホストマシンに、`K3s`をインストールします（`<K3S_HOST_FQDN>`をK3sホストのFQDNに置き換えます）：
+
+----
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--tls-san=<K3S_HOST_FQDN>" sh -
+----
+
+
+[[installation-proxy-containers-k3s-helm]]
+== ツールのインストール
+
+インストールには、`mgrpxy`および`helm`パッケージが必要です。
+
+インストーラスクリプトを使用してHelmをインストールします。
+----
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
+----
+
+詳細については、 https://helm.sh/docs/intro/install/#from-script.を参照してください。
+
+`mgrpxy`パッケージはコンテナ-utilsリポジトリで入手可能です。
+次の中からディストリビューションに一致するものを選択してください： https://download.opensuse.org/repositories/systemsmanagement:/Uyuni:/Stable:/ContainerUtils/.
+
+.プロシージャ
+. Leap Microにパッケージをインストールするには、次のコマンドを実行します。
++
+----
+transactional-update pkg install mgrpxy
+----
+. 再起動します。
+
+
+
+[[installation-proxy-containers-k3s-deploy]]
+== {productname}プロキシHelmチャートのデプロイ
+
+{productname} プロキシポッドで使用されるボリュームのストレージを構成するには、次のクレームのために永続ボリュームを定義します。
+ストレージ構成をカスタマイズしない場合、K3sは自動的にストレージボリュームを作成します。
+
+永続ボリュームのクレームの名前は次のとおりです。
+
+* `squid-cache-pv-claim`
+* `/package-cache-pv-claim`
+* `/tftp-boot-pv-claim`
+
+xref:installation-and-upgrade:container-deployment/uyuni/proxy-container-setup-uyuni.adoc[]に記載されているように{productname}プロキシの構成を作成します。
+設定`tar.gz`ファイルをコピーしてからインストールします:
+
+----
+mgrpxy install kubernetes /path/to/config.tar.gz
+----
+
+詳細については、以下を参照してください。
+
+* link:https://kubernetes.io/docs/concepts/storage/persistent-volumes/[]（Kubernetes）
+* link:https://rancher.com/docs/k3s/latest/en/storage/[]（K3s）ドキュメンテーション

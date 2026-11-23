@@ -1,0 +1,126 @@
+[[ptfs]]
+= 在 {productname} 中使用 PTFs
+:description: 使用详细的步骤和逐步说明为 SUSE Multi-Linux Manager 配置和部署程序临时修复 (PTFs)
+:revdate: 2024-11-29
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+
+SUSE 为所有当前支持的解决方案提供临时修复，直接交付给其客户。
+这些 PTF（程序临时修复）现在作为储存库提供，可以在 {productname} 中同步。
+
+
+== 了解 PTF 软件包
+
+
+PTF 软件包通过代理软件包安装，命名为 `ptf-xxxxxx`，其中 xxxxxx 是软件包的编号和名称部分，而不是版本。
+
+它们依赖于已知包含修正内容的软件包的正确版本。
+这种软件包：
+
+* 不可能意外安装（即 zypper 更新绝不会建议安装它们），
+* 不可能意外去除（即更新的软件包版本不会替换 PTF 软件包，除非用户在 zypper 命令行上明确指示替换），
+* 仅会在已知有更新版本可解决该 PTF 之前所解决的特定问题时更新，
+* 仅会在系统上已安装软件包时更新（也就是说，如果软件拆分成多个软件包，该 PTF 仅会替换系统上目前安装的那些软件包）。
+
+软件包的正确 ID 将由 SUSE 支持团队在进行支持案例调查期间提供，同时还会提供有关如何部署/重启受影响服务的说明。
+
+
+== 安装 PTF 软件包
+
+[NOTE]
+====
+PTF 软件包目前仅支持基于 SLE 12 和 SLE 15 的系统。
+其他版本或操作系统不具备此功能，相关页面对它们不可见。
+====
+
+[IMPORTANT]
+====
+如需通过 {productname} 访问 PTF 通道，您需要向 L3 支持提交申请。
+====
+
+.过程：升级使用命令行启用和同步 PTF 储存库
+
+. 在控制台上输入 `mgr-sync refresh`。
+. 输入 `mgr-sync list channel` 并查找名称以您的 {scc} 帐户名开头且名称中包含 `ptfs` 的通道。
+  例如，`a123456-sles-15.3-ptfs-x86_64`。
+. 使用 `mgr-sync add channel <label>` 启用 PTF 通道。
+
+此通道现在便可供使用，并可添加到使用相同基础通道的每个系统。
+
+PTF 软件包需要显式安装，因为在更新系统时不会自动获取。
+SUSE 客户支持将提供修复特定问题的 PTF 编号。
+通过该编号可以在 PTF 列表中识别代理软件包。
+在 {productname} {webui} 中，所有可供安装的 PTF 的系统都有一个列出它们的页面。
+
+
+.过程：升级通过 {productname} {webui} 启用和同步 PTF 储存库
+
+. 在 {productname} {webui} 中，导航到 menu:管理[设置向导> 产品]，然后查找要为其启用 PTF 储存库的产品。
+. 单击 btn:[显示产品的通道]，位于产品同步状态旁边。
+. 您应该会看到一个弹出窗口，其中会列出该产品的必需和可选通道。
+. 在可选通道列表中，查找名称以您的 {scc} 账户名称开头并包含 `ptfs` 的通道。
+  例如 `a123456-sles-15.3-ptfs-x86_64`。
+. 使用该通道名称旁边的复选框将其选中，然后单击 btn:[确认] 安排同步。
+
+请注意，必须安装该产品才能为其添加可选通道。
+
+
+.过程：升级安装 PTF 软件包
+
+. 在 {productname} {webui} 中，导航到 menu:系统[系统列表]，选择您要安装 PTF 的客户端。
+. 导航到 menu:系统[软件 > 软件包 > 软件通道]，然后选择 `PTF channel`。
+. 单击 btn:[下一步]，并使用 `Confirm Software Channel Change` btn:[确认]。
+. 要检查通道指派是否已完成，请导航到 menu:系统[事件 > 历史记录] 查看结果。
+. 导航到 menu:系统[软件 > PTF > 安装] 子选项卡。
+. 选择要安装的 PTF 软件包。
+. 单击 btn:[安装 PTF]，并使用 `Confirm Program Temporary Fixes (PTFs) Installation` btn:[确认]。
+. 要查看 PTF 安装结果，请导航到 menu:系统[事件 > 历史记录]。
+
+
+如果应使用 API 安装 PTF，可以使用常规 `system.schedulePackageInstall` API 和代理软件包名称。
+
+
+== 安装 PTF 后
+
+一旦确认使用某个 PTF 来解决报告的问题，在将更新的软件包作为更新储存库中的常规维护更新广泛分发之前，需对其进行跟踪，以便在将来的维护更新中纳入该软件包。
+
+当此常规更新与修复发布时，更新版本的 PTF 也将发布到特定账户的 PTF 储存库中。
+更新的 PTF 将移除严格依赖关系，并允许再次安装更新。
+
+通过标准软件包更新或补丁安装可自动将 PTF 替换为包含该修复的维护更新。
+
+
+
+== 去除软件包的已修补版本
+
+在需要卸载 PTF 并在系统上安装未打补丁版本的软件包的情况下，不能仅采用简单的软件包去除方式。
+在标准软件包列表页面中，无法选择该 PTF 软件包。
+
+
+.过程：升级去除 PTF 软件包。
+
+. 在 {productname} {webui} 中，导航到 menu:系统[系统列表]，选择您要从中去除 PTF 的客户端。
+. 导航到 menu:系统[软件 > PTF > 列出/去除] 子选项卡。
+. 选择要去除的 PTF 软件包。
+. 单击 btn:[去除 PTF]，然后在 `Confirm Program Temporary Fixes (PTFs) Removal` 页面上单击 btn:[确认]。
+. 要查看结果，请导航到 menu:系统[事件 > 历史记录]。
+
+
+[NOTE]
+====
+去除 PTF 需要在客户端系统上安装特定版本的 `libzypp` 和 `zypper`。
+检查 `zypper --help` 以确认是否支持 `removeptf`。
+仅在满足此条件时，`List/Remove` 选项卡才会可见。
+====
+
+如果应使用 API 去除 PTF，可以使用常规 `system.schedulePackageRemove` API 和代理软件包名称。
+
+
+== 在客户端上去除软件包的已修补版本
+
+如果需要在客户端直接使用控制台去除 PTF，则需要使用特定命令 `zypper removeptf`。
+所有其他方式都会导致错误，或可能导致意外行为，例如从系统中去除重要软件包，使系统无法使用。

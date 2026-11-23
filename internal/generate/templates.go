@@ -10,6 +10,9 @@ content:
     start_path: {{.StartPath}}
     branches:
     - HEAD
+{{ if .EditURL }}
+    edit_url: '{{.EditURL}}'
+{{ end }}
 output:
   dir: {{.OutputDir}}
 runtime:
@@ -31,10 +34,10 @@ asciidoc:
   attributes:
     page-lang: {{.Lang.Code}}
 {{- range $k, $v := .Cfg.Asciidoc}}
-    {{$k}}: {{$v}}
+    {{$k}}: {{yamlValue $v}}
 {{- end}}
 {{- range $k, $v := .P.Asciidoc.Attributes}}
-    {{$k}}: {{$v}}
+    {{$k}}: {{yamlValue $v}}
 {{- end}}
 ui:
   bundle:
@@ -58,7 +61,8 @@ nav:
 {{- end}}
 `
 
-// entitiesTemplate is the Go text/template for translations/{lang}/branding/pdf/entities.adoc.
+// entitiesTemplate is the Go text/template for
+// translations/{lang}/branding/pdf/entities-{product}.adoc.
 // It replaces entities.adoc.j2 + entities.specific.adoc.j2.
 // The file is self-contained: product attributes and locale attributes are inlined,
 // so asciidoctor-pdf does not need to resolve any external includes.

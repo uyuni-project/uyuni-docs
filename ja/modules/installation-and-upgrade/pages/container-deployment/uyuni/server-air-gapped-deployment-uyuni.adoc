@@ -1,0 +1,103 @@
+= {productname} サーバー エアギャップ(された)デプロイメント
+:description: Podman、Docker、またはSkopeoを使用してエアギャップ(された)環境で安全なコンテナイメージをデプロイするハウツーを学びます
+:revdate: 2025-07-25
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメントチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{mlm-content} == true]
+
+:noindex:
+endif::[]
+
+== Air-gapped配備とは
+
+
+エアギャップ(された)デプロイメントとは、特にインターネットなどの不安全なネットワークから物理的に隔離されたネットワークシステムのセットアップと運用を指します。
+このタイプのデプロイメントは、軍事施設、金融システム、重要なインフラストラクチャ、および機密データが取り扱われ、外部の脅威から保護されなければならない場所など、高セキュリティ環境で一般的に使用されます。
+
+インターネットにアクセスできるマシンで、`Podman`または`Docker`を使用して、コンテナイメージを簡単にプルできます。
+
+.プロシージャ:イメージのプル
+. 目的のイメージをプルしてから、イメージを`tar`アーカイブとして保存します。
+  例:
+
++
+.Podman
+----
+podman pull registry.opensuse.org/uyuni/server:latest
+podman save --output server.tar registry.opensuse.org/uyuni/server:latest
+----
++
+.Docker
+----
+docker pull registry.opensuse.org/uyuni/server:latest
+docker save --output images.tar registry.opensuse.org/uyuni/server:latest
+----
++
+. 生成された`server-image.tar`をサーバーコンテナホストに転送し、次のコマンドを使用してロードします:
++
+.サーバイメージをロードする
+----
+podman load -i images.tar
+----
+
+== エアギャップ(された)環境における{salt}フォーミュラのコンテナイメージの取得
+
+BindやDHCP（Kea）などの一部のフォーミュラもコンテナを使用します。
+エアギャップ(された)環境でそれらを使用する予定がある場合は、イメージをプルし、アーカイブに保存し、{productname}プロキシまたは他の管理されたシステムにロードする必要があります。
+
+イメージは`registry.opensuse.org`から入手できます。
+
+.プロシージャ:エアギャップ(された)環境におけるフォーミュライメージの取得
+. インターネットにアクセスできるシステムで、必要なイメージをプルします。例:
+ +
+ [source,shell]
+ ----
+ podman pull registry.opensuse.org/opensuse/bind:latest
+ podman pull registry.opensuse.org/opensuse/kea:latest
+ ----
+ . アーカイブからイメージをロードします。
+ +
+ [source,shell]
+ ----
+ podman save -m -o formula-images.tar registry.opensuse.org/opensuse/bind:latest registry.opensuse.org/opensuse/kea:latest
+ ----
+ . `formula-images.tar`ファイルをエアギャップ(された)システムに転送してください。
+ . アーカイブからイメージをロードします。
+ +
+ [source,shell]
+ ----
+ podman load -i formula-images.tar
+ ----
+
+=== {productname}を{leapmicro}にデプロイします
+
+{productname}では、システムにインストール可能なRPMパッケージで必要なコンテナイメージをすべて提供しています。
+
+[NOTE]
+====
+ユーザーは、必要なRPMを内部ネットワークで利用できるようにする必要があります。これは、2台目の{productname}サーバーまたは任意のミラーを使用することで実現できます。
+====
+
+.プロシージャ:エアギャップ(された)環境で{leapmicro}に{productname}をインストールします
+. {leapmicro}をインストールします。
+. システムを更新します。
+. ツールのパッケージとイメージパッケージをインストールします($ARCH$は適切なアーキテクチャに置き換えます)。
+
++
+
+[source,shell]
+----
+transactional-update pkg install mgradm* mgrctl* uyuni-server*-image*
+----
++
+. 再起動します。
+. {productname}を使用して`mgradm`をデプロイします。エアギャップ(された)環境では、オプション`--pullPolicy Never`を使用することをお勧めします。
+
+
+{leapmicro}に{productname}サーバーをインストールする際の詳細情報については、xref:container-deployment/uyuni/server-deployment-uyuni.adoc[サーバーデプロイメント]を参照してください。
+
+{productname}サーバーをアップグレードするには、ユーザーはシステム内のすべてのパッケージをアップグレードし、xref:container-management/updating-server-containers.adoc[サーバーのアップグレード]に定義された手順に従う必要があります。
+

@@ -1,0 +1,342 @@
+[[backup-restore]]
+= バックアップと復元
+:description: SUSE Multi-Linux Managerのバックアップ設定方法を学び、データ整合性を確保してシステムエラー発生時に迅速に復旧できるようにします。
+:revdate: 2025-06-23
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+この章には、バックアップする必要があるファイルに関する情報が含まれています。
+ビルトインのバックアップおよび復元ソリューション（`mgradm backup`）を使用すると、{productname}のバックアップを作成できます。
+システムエラー発生時のバックアップからの復元に関する情報で、この章を締めくくります。
+
+{productname}は、データベース、インストールされたプログラム、および設定に依存しているため、インストール全体のすべてのコンポーネントのバックアップを取ることが重要です。
+{productname}のインストールを定期的にバックアップして、データ損失を防止し、迅速に回復できるようにしてください。
+
+[IMPORTANT]
+====
+使用するバックアップ方法に関係なく、現在のインストールが使用しているスペースの少なくとも3倍の空き容量が必要です。
+空き容量が不足するとバックアップが失敗する可能性があるため、これを頻繁に確認してください。
+====
+
+
+
+[[backup-restore-old]]
+== smdbaを使用した古い方法を無効にする
+
+{productname} {productnumber}をゼロからインストールした場合は、このセクションをスキップしてください。
+
+[NOTE]
+====
+ビルトインソリューションの登場により、`smdba`バックアップツールを使用した古い方法は廃止されました。
+古いシステムから`smdba`に移行した場合は、古い機能を無効にし、古いバックアップアーカイブを削除する必要があります。
+====
+
+移行前に`smdba`を無効にする（推奨）か、移行後の{productname} {productnumber}システムで無効にしてください。
+
+
+.プロシージャ:移行前にインストール済みのsmdbaを使用した古い方法を無効にする
+[role=procedure]
+____
+
+このプロシージャは、smdbaがまだインストールされている場合にのみ機能します。
+
+ifeval::[{mlm-content} == true]
+
+. SUSE Manager 4.3（非コンテナ化インストール）またはSUSE Manager 5.0（コンテナ化インストール）が存在する場合（つまり、移行前に5.0または4.3）、コマンドが異なります。
+
+SUSE Manager 4.3::
+コンテナホストで、次のコマンドを実行します。
+
+[source,shell]
+----
+smdba backup-hot --enable=off
+----
+
+SUSE Manager 5.0::
+コンテナホストのコマンドラインで、rootとして次のコマンドを実行します。
+
+[source,shell]
+----
+mgrctl exec -- smdba backup-hot --enable=off
+----
+
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+. コンテナホストのコマンドラインで、rootとして次のコマンドを実行します。
+
++
+
+[source,shell]
+----
+mgrctl exec -- smdba backup-hot --enable=off
+----
+
+endif::[]
+
+
+これにより、`/var/lib/pgsql/data/postgresql.conf`内の`archive_command`が次のように変更されます。
+
+----
+archive_command = '/bin/true'
+----
+____
+
+
+今、あなたの古いシステムは{productname} {productnumber}に移行する準備が整いました。
+
+
+.プロシージャ:移行後の{productname} {productnumber}で古い方法を無効にする
+[role=procedure]
+____
+smdbaが利用できなくなっている場合は、移行後にこのプロシージャを使用します。
+
+. コンテナホスト上でルートとして`/var/lib/containers/storage/volumes/var-pgsql/_data/postgresql.conf`を編集し、これらのオプションを設定します。
++
+----
+archive_mode = off
+archive_command = '/bin/true'
+----
+
+. データベースを再起動します。
++
+[source,shell]
+----
+mgradm restart
+----
+____
+
+
+
+[[backup-product]]
+== バックアップ {productname}
+
+{productname}インストールをバックアップするための最も包括的な方法は、`mgradm backup create`コマンドを使用することです。
+これにより、バックアップの管理にかかる時間を節約でき、エラーが発生した場合の再インストールと再同期が迅速に行えます。
+ただし、この方法はかなりのディスクスペースを必要とし、バックアップを実行するのに長時間かかる可能性があります。
+
+`mgradm backup create`コマンドは、ディレクトリへのバックアップを実行します。
+このディレクトリは、ローカルまたはマウントされたリモートストレージの両方である可能性があります。
+
+`mgradm backup create`コマンドは、バックアップの内容にさまざまなカスタマイズを許可します。
+利用可能なすべてのオプションについては、`mgradm backup create --help`を参照してください。
+
+
+=== {productname}のフルバックアップ
+
+{productname}のフルバックアップは、次のコンポーネントのバックアップで構成されます:
+
+* {productname} ボリューム
+* データベースボリューム
+* podmanネットワーク設定
+* podmanシークレット
+* {productname} systemd サービス
+* {productname} コンテナイメージ
+
+[WARNING]
+====
+フルバックアップを作成するための時間の間、{productname} サービスは自動的に停止されます。
+ダウンタイムはかなりのものになる可能性があります。
+バックアップが完了した後、サービスは自動的に再起動されます。
+====
+
+.プロシージャ:`mgradm backup create`を使用したフルバックアップの作成
+[role=procedure]
+____
+. コンテナホストで、rootとして、次のコマンドでバックアップを作成します。
+
++
+
+[source,shell]
+----
+mgradm backup create $path
+----
+
++
+
+`$path`をバックアップ場所へのパスで置き換えます。
+____
+
+
+=== {productname}の部分バックアップ
+
+`mgradm backup create`ツールを使用すると、部分的なバックアップを作成できます。
+個々のボリュームまたはすべてのボリュームをスキップし、データベースバックアップやイメージをスキップすることが可能です。
+
+特にデータベースのバックアップがスキップされた場合、{productname}サービスを停止せずにバックアップが作成され、2段階バックアップ手順の1段階として機能します。
+
+[WARNING]
+====
+部分バックアップはデータの一部のみを考慮しており、バックアップされていない可能性のある他の部分との潜在的な依存関係を考慮していません。
+したがって、バックアップ/復元の一貫性を保証できません。
+====
+
+.プロシージャ:データベースバックアップをスキップして部分バックアップを作成する
+[role=procedure]
+____
+. コンテナホストで、rootとして、次のコマンドでバックアップを作成します。
+
++
+[source,shell]
+----
+mgradm backup create --skipdatabase $path
+----
++
+`$path`をバックアップ場所へのパスで置き換えます。
+____
+
+
+.プロシージャ:ボリュームをスキップして部分バックアップを作成する
+[role=procedure]
+____
+. コンテナホストで、rootとして、次のコマンドでバックアップを作成します。
+
++
+
+[source,shell]
+
+----
+mgradm backup create --skipvolumes $volumes $path
+----
+
++
+
+`$path`をバックアップ場所へのパスで置き換えます。
+
++
+
+`$volumes`を、バックアップから除外するボリュームの名前、または除外するボリュームのカンマ区切りのリストで置き換えます。
+
++
+
+`all`を使用すると、データベースボリュームを除くすべてのボリュームをスキップします。
+____
+
+
+=== 追加ボリュームのバックアップ
+
+`mgradm backup`コマンドは、{productname}ボリュームの内部リストを使用します。
+インストール中に追加のボリュームが構成された場合、またはバックアップに追加のボリュームを追加する必要がある場合は、`--extravolumes $volumes`を使用して指定する必要があります。
+
+.プロシージャ:追加のカスタムボリュームを使用したバックアップの作成
+[role=procedure]
+____
+. コンテナホストで、rootとして、次のコマンドでバックアップを作成します。
+
++
+
+[source, shell]
+----
+mgradm backup create --extravolumes $volume $path
+----
+
++
+
+`$path`をバックアップ場所へのパスで置き換えます。
+
++
+
+`$volumes`を、バックアップに含めるボリュームの名前、または含めるボリュームのカンマ区切りのリストで置き換えます。
+
+____
+
+
+=== データベースの手動バックアップの実行
+
+.プロシージャ:データベースの手動バックアップの実行
+[role=procedure]
+____
+. バックアップ用に永続的なストレージ容量を割り当てます。
+
+. {productname}コンテナホストのコマンドプロンプトで、rootとして次のコマンドを使用します。
+
++
+
+[source,shell]
+----
+mgradm backup create --skipvolumes all --skipconfig --skipimages $path
+----
+____
+
+
+[[restore-product]]
+== 既存のバックアップから{productname}を復元する
+
+既存のバックアップから{productname}を復元すると、復元するためのボリューム、イメージ、および設定のバックアップが列挙されます。バックアップ作成シナリオとは異なり、復元操作は内部ボリュームリストを使用せず、バックアップに存在するすべてのボリュームまたはイメージを自動的に検出します。
+
+復元するアイテムのリストが収集された後、存在と整合性のチェックが行われます。存在チェックは、バックアップ復元が既存のボリューム、イメージ、または設定を誤って上書きしないことを保証します。整合性チェックは、バックアップアイテムのチェックサムを計算することによって行われます。
+
+両方のチェックが成功すると、実際のバックアップの復元が実行されます。
+
+[IMPORTANT]
+====
+{productname}サービスは、バックアップの復元が完了した後で、自動的に開始されません。
+====
+
+.プロシージャ:既存のバックアップからの復元
+[role=procedure]
+____
+. コンテナホストで、rootとして、次のコマンドを使用して{productname}サーバを再デプロイします。
+
++
+
+[source,shell]
+----
+mgradm stop
+mgradm backup restore $path
+mgradm start
+----
+
++
+
+`$path`をバックアップ場所へのパスで置き換えます。
+____
+
+
+バックアップの検証は、時間がかかる操作になる可能性があります。バックアップの整合性が他の手段によって確保されている場合、`--skipverify`オプションを使用して検証をスキップできます。
+
+何らかの理由でバックアップに存在するボリュームの復元をスキップする必要がある場合は、`--skipvolumes $volumes`オプションを使用できます。
+
+
+
+=== バックアップ復元後の推奨されるステップ
+
+.プロシージャ:{productname}の復元後の推奨手順
+[role=procedure]
+____
+. {productname} {webui}を使用するか、コンテナ内のコマンドプロンプトで`mgr-sync`ツールを使用して、{productname}リポジトリを再同期してください。
+  製品を再登録するか、登録セクションおよびSSL証明書生成セクションをスキップすることができます。
+
+. コンテナホスト上で、`/var/lib/containers/storage/volumes/var-spacewalk/_data/packages/`の復元が必要かどうか確認します。
+  `/var/lib/containers/storage/volumes/var-spacewalk/_data/packages/`がバックアップに含まれていなかった場合は、復元する必要があります。
+  ソースリポジトリが利用可能な場合は、完全なチャネル同期を使用して`/var/lib/containers/storage/volumes/var-spacewalk/_data/packages/`を復元できます。
+
++
+
+[source,shell]
+----
+mgrctl exec -ti -- mgr-sync refresh --refresh-channels
+----
+
+. 次回`rhn-search`サービスを開始するときに検索インデックスの再作成をスケジュールします。
+
++
+
+このコマンドはデバッグメッセージを生成し、次の出力で正常に終了します。
+
++
+
+コンテナホストで、次のコマンドを実行します。
+
++
+
+[source,shell]
+----
+mgrctl exec -ti -- rhn-search cleanindex
+----
+
+____

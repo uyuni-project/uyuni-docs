@@ -1,0 +1,81 @@
+[[ssl-certs-hsts]]
+= HTTP 严格传输安全性
+:description: 在 SUSE Multi-Linux Manager 服务器及其关联代理上配置 HSTS 设置，以确保安全的网络流量
+:revdate: 2024-07-31
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+HTTP 严格传输安全性 (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security[HSTS]) 是帮助防范网站遭受中间人攻击（例如协议降级攻击和 Cookie 劫持）的策略机制。
+
+在 {productname} 上，HSTS 默认情况下启用。
+如果您需要在服务器上禁用它，请按照以下过程操作：
+
+
+.过程：升级在服务器上禁用 HSTS
+[role=procedure]
+_____
+. 在服务器容器主机上，以 root 身份执行以下命令，创建包含设置 `max-age=0` 的新配置文件。
+
++
+
+[source,shell]
+----
+mgrctl exec -- \
+  echo 'Header always set Strict-Transport-Security "max-age=0; includeSubDomains"' \
+  > /etc/apache2/conf.d/zz-spacewalk-www-hsts.conf
+----
+
+. 使用以下命令重启 Apache：
+
++
+
+[source,shell]
+----
+mgrctl exec -- systemctl restart apache2
+----
+
+_____
+
+如果您需要在代理上禁用该功能，请按照以下过程操作：
+
+.过程：升级在代理上禁用 HSTS
+[role=procedure]
+_____
+. 在服务器容器主机上，以 root 身份执行以下命令，创建包含设置 `max-age=0` 的新配置文件。
+
++
+
+[source,shell]
+----
+echo 'Header always set Strict-Transport-Security "max-age=0; includeSubDomains' \
+  > /etc/uyuni/custom-httpd.conf
+----
+
+. 运行以下命令：
+
++
+
+[source,shell]
+----
+mgrpxy install podman --tuning-httpd /etc/uyuni/custom-httpd.conf config.tar.gz
+----
+
+_____
+
+
+[WARNING]
+====
+在命名新配置文件 `<filename>.conf` 时，请确保它在正确的时间加载。
+例如，要覆盖在 `spacewalk-www.conf` 中定义的内容，新文件需要在字母顺序上位于该文件之后。
+有关 Apache 如何加载文件的更多信息，请参见 https://httpd.apache.org/docs.
+====
+
+
+[IMPORTANT]
+====
+当启用 HSTS 且使用 {productname} 生成的默认 SSL 证书或自签名证书时，浏览器将拒绝通过 HTTPS 连接，除非用于签署此类证书的 CA 被浏览器信任。
+如果您使用的是 {productname} 生成的 SSL 证书，可以通过将位于 `http://<SERVER-HOSTNAME>/pub/RHN-ORG-TRUSTED-SSL-CERT` 的文件导入所有用户的浏览器来信任它。
+====

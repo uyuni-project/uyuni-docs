@@ -1,0 +1,279 @@
+[[installation-proxy-containers]]
+= {productname}プロキシデプロイメント
+:description: このデプロイメントガイドを使用して、SL MicroまたはSLES上にSUSE Multi-Linux Manager 5.1のプロキシコンテナを、完全に機能するセットアップとして構成します。
+:revdate: 2026-04-29
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+
+このガイドは、{productname} {productnumber}プロキシコンテナを{sl-micro} {microversion}または{sles} {bci-mlm}上にデプロイする手順を概説しています。
+このガイドは、すでに{productname} {productnumber}サーバを正常にデプロイしていることを前提としています。
+
+[IMPORTANT]
+====
+{sl-micro}は、現時点では通常のミニオン（`default`接続方法）としてのみサポートされています。
+私たちは、Salt SSHクライアント（`salt-ssh`接続方法）として管理することにも取り組んでいます。
+====
+
+[NOTE]
+====
+既存のクライアントをプロキシに変換することが可能です。
+詳細については、xref:installation-and-upgrade:container-deployment/mlm/proxy-conversion-from-client-mlm.adoc[]を参照してください。
+====
+
+新しいプロキシを正常にデプロイするには、手順に従ってください:
+
+
+// Add certificate tasks item
+.プロシージャ:プロキシのデプロイ
+[role=procedure]
+_____
+
+. ハードウェア要件を確認します。
+
+. サーバ上の{sl-micro} {microversion}または{sles} {bci-mlm}親チャンネルとプロキシ拡張機能の子チャンネルを同期します。
+
+. ベアメタルマシンに{sl-micro}または{sles}をインストールします。
+
+. プロキシ拡張機能を使用して{salt}のアクティベーションキーを作成します。
+
+. `default`接続方法を使用して、プロキシをクライアントとして起動します。
+
+. プロキシ設定を生成します。
+
+. サーバからプロキシにプロキシ設定を転送します。
+
+. \{webui}を使用したパッケージのインストール
+
+. プロキシ設定を使用して、クライアントを{productname}にプロキシとして登録します。
+
+_____
+
+.プロキシコンテナホストでサポートされるオペレーティングシステム
+[NOTE]
+====
+コンテナホストでサポートされるオペレーティングシステムは{sl-micro} {microversion}および{sles} {bci-mlm}です。
+
+コンテナホスト::
+コンテナホストは、Podmanのようなコンテナエンジンを備えたサーバで、コンテナを管理およびデプロイすることができます。
+これらのコンテナは、アプリケーションとその必須部分（ライブラリなど）を保持しますが、完全なオペレーティングシステムは含まれておらず、軽量です。
+このセットアップにより、アプリケーションは異なる環境で同じように実行されます。
+コンテナホストは、これらのコンテナに必要なリソース（CPU、メモリ、ストレージなど）を提供します。
+====
+
+
+== プロキシのハードウェア要件
+
+
+{productname}プロキシのデプロイに関するハードウェア要件の詳細については、xref:installation-and-upgrade:hardware-requirements.adoc#proxy-hardware-requirements[]を参照してください。
+
+
+
+== 親とプロキシ拡張機能の子チャンネルの同期
+
+このセクションでは、すでにサーバーの{webui}のmenu:Admin[セットアップウィザード> 組織の資格情報]に組織の資格情報を入力していることを前提としています。
+製品はmenu:Admin[セットアップウィザード> 製品]ページにリストされています。
+このチャンネルはサーバー上で完全に同期されている必要があり、子チャンネル`Proxy`が拡張機能として選択されている必要があります。
+
+
+.プロシージャ:親チャンネルとプロキシ拡張機能の同期
+[role=procedure]
+_____
+
+. {productname} {webui}でmenu:Admin[製品]を選択します。
+
+. 製品ページからフィルタフィールドに{sl-micro}または{sles}を入力します。
+
+. 続いて、ドロップダウンを使用して必要なアーキテクチャを選択します。
+  この例では{x86_64}です。
+
+. `Product Description`フィールドで{sl-micro} {microversion}または{sles} {bci-mlm}チェックボックスを選択し、ドロップダウンを使用して`{productname} Proxy Extension 5.1 x86_64`拡張機能を選択します。
+
+. btn:[製品の追加]ボタンをクリックします。
+
+. 同期が完了するまで待ちます。
+
+_____
+
+
+[[deploy-mlm-proxy-host]]
+==  {productname}プロキシホストを準備します。
+
+以下のサブセクションで、{sle-micro}または{sles}を使用してプロキシホストを準備します。
+
+[[deploy-mlm-proxy-micro]]
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-prepare-micro-proxy-host.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-prepare-micro-proxy-host.adoc[leveloffset=+1]
+endif::[]
+
+デプロイを続行するには、xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc#deploy-mlm-proxy-persistent-storage[]を参照してください。
+
+
+
+[[deploy-mlm-proxy-sles]]
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-prepare-sles-proxy-host.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-prepare-sles-proxy-host.adoc[leveloffset=+1]
+endif::[]
+
+デプロイを続行するには、xref:installation-and-upgrade:container-deployment/mlm/proxy-deployment-mlm.adoc#deploy-mlm-proxy-persistent-storage[]を参照してください。
+
+
+
+[[deploy-mlm-proxy-persistent-storage]]
+== カスタム永続ストレージの設定
+
+永続ストレージの設定は任意ですが、コンテナのディスクが満杯になる問題を避ける唯一の方法です。
+ご使用のインフラストラクチャにカスタム永続ストレージが必要な場合は、`mgr-storage-proxy`ツールを使用します。
+
+* 詳細については、`mgr-storage-proxy --help`を参照してください。
+このツールは、コンテナストレージとSquidキャッシュボリュームの作成を簡素化します。
+
+このコマンドは次のように使用します。
+
+[source,shell]
+----
+mgr-storage-proxy <storage-disk-device>
+----
+
+例:
+
+[source, shell]
+----
+mgr-storage-proxy /dev/nvme1n1
+----
+
+
+
+[NOTE]
+====
+このコマンドは、`/var/lib/containers/storage/volumes`に永続ストレージボリュームを作成します。
+
+詳細については、以下を参照してください。
+
+* xref:installation-and-upgrade:container-management/persistent-container-volumes.adoc[]
+* xref:administration:troubleshooting/tshoot-container-full-disk.adoc[]
+====
+
+// Snippet for creating activation key only
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-actkey-bootstrap-proxy-mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-actkey-bootstrap-proxy-mlm.adoc[]
+endif::[]
+
+// (New) Snippet for bootsrapping the proxy
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-bootstrap-proxy-client.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-bootstrap-proxy-client.adoc[]
+endif::[]
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-generate_proxy_config.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-generate_proxy_config.adoc[]
+endif::[]
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-transfer_proxy_config.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-transfer_proxy_config.adoc[]
+endif::[]
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ensure-proxy-prerequisites.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-ensure-proxy-prerequisites.adoc[]
+endif::[]
+
+
+
+[[proxy-setup-containers-transfer-start]]
+== {productname}プロキシを起動します。
+
+コンテナは、`mgrpxy`コマンドで起動できるようになりました。
+
+[[proc-setup-containers-setup-start]]
+.プロシージャ:プロキシの起動とステータスの確認
+[role=procedure]
+_____
+
+. 次のコマンドを呼び出してプロキシを起動します。
+
++
+
+----
+mgrpxy start
+----
+
+. 次のコマンドを呼び出してコンテナのステータスを確認します。
+
++
+
+----
+mgrpxy status
+----
+
++
+
+５つの{productname}プロキシコンテナが存在し、`proxy-pod`コンテナポッドの一部である必要があります。
+
+* proxy-salt-broker
+* proxy-httpd
+* proxy-tftpd
+* proxy-squid
+* proxy-ssh
+
+_____
+
+
+
+== サービスにカスタムコンテナイメージを使用する
+
+デフォルトでは、{productname}プロキシスイートは、各サービスに対して同じイメージバージョンとレジストリパスを使用するように設定されています。
+ただし、特定のサービスに対してデフォルト値を上書きすることは、`-tag`および`-image`で終わるインストールパラメータを使用することで可能です。
+
+例:
+
+[source, shell]
+----
+mgrpxy install podman --httpd-tag 0.1.0 --httpd-image registry.opensuse.org/uyuni/proxy-httpd /path/to/config.tar.gz
+----
+
+これはhttpdサービスの設定ファイルを調整します。ここで`registry.opensuse.org/uyuni/proxy-httpds`は使用するイメージ、`0.1.0`はバージョンタグであり、その後サービスを再起動します。
+
+値をデフォルトにリセットするには、これらのパラメータを指定せずにもう一度installコマンドを実行します。
+
+[source,shell]
+----
+mgrpxy install podman /path/to/config.tar.gz
+----
+
+このコマンドは、すべてのサービスの設定をグローバルデフォルトにリセットして再ロードします。

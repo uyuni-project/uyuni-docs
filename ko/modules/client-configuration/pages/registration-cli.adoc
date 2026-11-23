@@ -1,0 +1,177 @@
+[[registering-clients-cli]]
+= 명령줄에서 클라이언트 등록
+:description: Salt 도구를 사용하여 명령줄에서 클라이언트를 구성합니다. 이 도구는 Salt 미니언 파일로 클라이언트를 수동으로 등록하고 SUSE에 연결하는 과정을 포함합니다.
+:revdate: 2025-03-28
+:page-revdate: {revdate}
+:page-author: SUSE 제품 및 솔루션 문서 팀
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+
+//== Manual Client Registration
+
+== 소개
+
+
+{salt}대부분의 경우 클라이언트는 기본 부팅 방법으로 정확하게 등록됩니다.
+
+그러나 {salt}를 사용하여 클라이언트에서 {productname} 미니언 파일을 편집하고 서버의 FQDN(정규화된 도메인 이름)을 제공하여 {salt} 서버에 클라이언트를 수동으로 등록할 수 있습니다.
+
+다음 방법:
+ 
+* 서버로 인바운드되는 포트 4505 및 4506을 사용합니다.
+* 이러한 포트가 열려 있는지 확인하는 것 외에는 {productname} 서버에서 별도의 구성이 필요하지 않습니다.
+* 등록 전에 Salt 클라이언트에 `venv-salt-minion` (Salt 번들) 또는 `salt-minion` 패키지를 설치해야 합니다.
+  두 가지 모두 서로 다른 위치에 구성 파일을 사용하며 파일 이름은 동일하게 유지됩니다.
+  `systemd` 서비스 파일 이름이 다릅니다.
+
+[WARNING]
+====
+이 방식으로 부팅하면, 사용 중인 `salt-minion`가 클라이언트 도구 채널에 포함되어 있거나 공식 {suse} 배포판의 일부일 때만 작동합니다.
+====
+
+== {salt} 번들 구성
+
+{salt} 번들 (`venv-salt-minion`)::
+
++
+
+* `/etc/venv-salt-minion/`
+* `/etc/venv-salt-minion/minion`
+* `/etc/venv-salt-minion/minion.d/NAME.conf`
+* systemd 서비스 파일: `venv-salt-minion.service`
+
++
+
+Salt 번들에 대한 자세한 정보는 xref:client-configuration:contact-methods-saltbundle.adoc[Salt Bundle]을 참조하십시오.
+
+.절차 Salt 번들 구성 파일로 클라이언트 등록
+. Salt 클라이언트에서 `minion` 구성 파일을 엽니다.
+  구성 파일은 다음 위치에 있습니다:
+
++
+
+.구성 파일
+[source, Shell]
+----
+/etc/venv-salt-minion/minion
+----
+
++
+
+또는:
+
++
+
+.구성 파일
+[source, Shell]
+----
+/etc/venv-salt-minion/minion.d/NAME.conf
+----
+. 파일에 {productname} 서버 또는 프록시의 FQDN과 활성화 키(있는 경우)를 추가하거나 수정합니다. 아래에 나열된 다른 구성 매개변수도 추가합니다.
+
++
+
+.구성 파라미터
+[source, YAML]
+----
+master: SERVER.EXAMPLE.COM
+
+grains:
+  susemanager:
+    activation_key: "<Activation_Key_Name>"
+
+server_id_use_crc: adler32
+enable_legacy_startup_events: False
+enable_fqdns_grains: False
+----
+
+
+. `venv-salt-minion` 서비스를 다시 시작합니다:
+
++
+
+[source, Shell]
+----
+systemctl restart venv-salt-minion
+----
+
+. {productname} 서버에서 새로운 클라이언트 키를 수락하고, `<client>`를 클라이언트 이름으로 대체합니다:
+
++
+
+----
+salt-key -a '<client>'
+----
+
+
+== 클라이언트 구성
+
+클라이언트 (`salt-minion`)::
++
+* `/etc/salt/`
+* `/etc/salt/minion`
+* `/etc/salt/minion.d/NAME.conf`
+* systemd 서비스 파일: `salt-minion.service`
+
+.절차 Salt Minion 구성 파일로 클라이언트 등록
+. Salt 클라이언트에서 `minion` 구성 파일을 엽니다.
+  구성 파일은 다음 위치에 있습니다:
+
++
+
+[source, Shell]
+----
+/etc/salt/minion
+----
+
++
+
+또는:
+
++
+
+[source,Shell]
+----
+/etc/salt/minion.d/NAME.conf
+----
+
+. 파일에 {productname} 서버 또는 프록시의 FQDN과 활성화 키(있는 경우)를 추가하거나 수정합니다.
+  아래에 나열된 다른 구성 매개변수도 추가합니다.
+
++
+
+[source, YAML]
+----
+master: SERVER.EXAMPLE.COM
+
+grains:
+  susemanager:
+    activation_key: "<Activation_Key_Name>"
+
+server_id_use_crc: adler32
+enable_legacy_startup_events: False
+enable_fqdns_grains: False
+----
+
+. `salt-minion` 서비스를 다시 시작합니다:
+
++
+
+[source, Shell]
+----
+systemctl restart salt-minion
+----
+
+. {productname} 서버에서 새로운 클라이언트 키를 수락하고, `<client>`를 클라이언트 이름으로 대체합니다:
+
++
+
+[source,Shell]
+----
+salt-key -a '<client>'
+----
+
+{salt} 미니언 구성 파일에 대한 자세한 내용은 https://docs.saltproject.io/en/latest/ref/configuration/minion.html[Salt Minion 구성]를 참조하십시오.
+

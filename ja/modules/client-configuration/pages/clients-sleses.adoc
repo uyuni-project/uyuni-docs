@@ -1,0 +1,468 @@
+[[clients-sleses]]
+= {sll} クライアントの登録
+:description: SUSE Liberty Linuxクライアントを構成して登録する方法を学び、必要なソフトウェアチャンネルを追加し、SUSE Multi-Linux Manager Serverと同期します
+:revdate: 2026-04-20
+:page-revdate: {revdate}
+:page-author: SUSE 製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+このセクションでは、{sll}オペレーティングシステムを実行しているクライアントの登録について説明します。{sll}クライアントは{rhel}または{centos}に基づいています。
+
+
+[NOTE]
+====
+{sll}クライアントは、時々{sleses}（SLESES）、Liberty、RES、または{redhat} {es}とも呼ばれます。
+====
+
+{sll}ソフトウェアチャンネルは{suse}によって提供され、パッケージの更新のみを提供し、パッケージ自体は提供しません。
+{sll}クライアントを登録するには、必要なベースチャンネルを作成するために{sll}製品（以下に概説）を登録し、その後、必要な{redhat}または{centos}パッケージをカスタム子チャンネルとしてインポートする必要があります。
+{sll}ソフトウェアチャンネルによって提供される更新を適用する前に、初期パッケージを{redhat}または{centos}から直接取得する必要があります。
+
+// FIXME!
+
+ifeval::[{mlm-content} == true]
+
+// Use list format: repository URLs / packages and metadata / version info
+[IMPORTANT]
+====
+* {sll}リポジトリのURLは{scclongform}から入手できます
+* パッケージおよびメタデータは{suse}から提供されます
+* サポートされている製品については、サポートテーブルとリリースノートを参照してください。
+====
+endif::[]
+
+
+
+
+[IMPORTANT]
+====
+ユーザは、{redhat}または{centos}のベースメディアリポジトリおよびインストールメディアにアクセスできるようにする必要があります。
+====
+
+
+ifeval::[{mlm-content} == true]
+
+[IMPORTANT]
+====
+使用しているすべての{sll}システムに対して{suse}のサポートを取得する必要があります。
+====
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+
+[IMPORTANT]
+====
+{suse}は{uyuni}上の{sll}システムに対してサポートを提供しません。
+====
+endif::[]
+
+
+
+== ソフトウェアチャンネルの追加
+
+
+{sll}クライアントの場合、必要なパッケージの一部は{rhel}または{centos}のインストールメディアに含まれています。
+{sll}クライアントを登録する前に、これらのパッケージをインストールしておく必要があります。
+
+{sll}製品は{scclongform}によって提供されます。
+これにはクライアントツールパッケージも含まれます。
+
+{sll}クライアントを{productname}サーバに登録する前に、必要なソフトウェアチャンネルを追加して同期する必要があります。
+
+2つの異なるチャンネルセットを選択する必要があります。一方は{sll}用、他方はクライアントツール用です。
+
+正しい{sll}チャネルに関連付けられたアクティベーションキーが必要です。
+アクティベーションキーに関する詳細は、xref:client-configuration:activation-keys.adoc[]を参照してください。
+
+ifeval::[{mlm-content} == true]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$arch-other-note.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/arch-other-note.adoc[]
+endif::[]
+
+このプロシージャで必要な製品は次のとおりです。
+
+[[es-channels-wizard]]
+[cols="1,1", options="header"]
+.ES製品 - WebUI
+|===
+
+| [OSのバージョン]
+| 製品名
+
+| {sll} 10
+| RHELまたはSLES ESおよびLiberty 10 x86_64
+
+| {sll} 9.6 EMS
+| SUSE Liberty Linux 9.6 EMS x86_64
+
+| {sll} 9
+| RHELまたはSLES ESおよびLiberty 9 x86_64
+
+| {sll} 8
+| RHELまたはSLES ESまたはCentOS 8 BaseおよびSUSE Linux Enterprise Server with Expanded Support 8 x86_64
+
+| {sll} 7
+| SUSE Linux Enterprise Server with Expanded Support 7 x86_64
+
+| {sll} LTSS 7
+| SUSE Linux Enterprise Server with Expanded Support LTSS 7 x86_64
+
+| {sll} LTSS for Oracle 7
+| SUSE Linux Enterprise Server with Expanded Support LTSS for Oracle 7 x86_64
+
+|===
+
+
+{productname} は追加のソフトウェアを含むツールチャネルを必要とします。
+この手順では、これらのツールチャネルが作成されます：
+
+[[es-channels-tools]]
+[cols="1,1,1", options="header"]
+.ESツールチェンネル
+|===
+
+| [OSのバージョン] | ベースチャンネル                     | ツールチャネル
+| {sll} 10    | RHELおよびLiberty 10 Base         | ManagerTools-EL10-Pool for x86_64およびManagerTools-EL10-Updates for x86_64
+| {sll} 9.6 EMS | RHELおよびLiberty 9.6 EMS Base  | ManagerTools-EL9-Pool for x86_64およびManagerTools-EL9-Updates for x86_64
+| {sll} 9     | RHELおよびLiberty 9 Base          | ManagerTools-EL9-Pool for x86_64およびManagerTools-EL9-Updates for x86_64
+| {sll} 8     | RHELまたはSLES ESまたはCentOS 8 Base | RES8-Manager-Tools-Pool for x86_64 and RES8-Manager-Tools-Updates for x86_64
+| {sll} 7     | RHEL Expanded Support 7          | RES7-SUSE-Manager-Tools x86_64
+| {sll} LTSS 7 | RHEL拡張サポートLTSS 7 | RES-7-SUSE-Manager-Tools for x86_64 LBT7
+| {sll} LTSS for Oracle 7 | RHEL拡張サポートLTSS for Oracle 7 | RES-7-SUSE-Manager-Tools for x86_64 LBTOL7
+
+|===
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$addchannels_vendor_webui.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/addchannels_vendor_webui.adoc[]
+endif::[]
+
+
+endif::[]
+
+このプロシージャで必要なチャンネルは次のとおりです。
+
+ifeval::[{mlm-content} == true]
+
+[[es-channels-cli]]
+[cols="1,1,1,1", options="header"]
+.ESチャンネル - CLI
+|===
+
+| [OSのバージョン]
+| ベースチャンネル
+| クライアントチャンネル
+| ツールチャンネル
+
+| {sll} 10
+| el10-pool-x86_64
+| -
+| managertools-el10-pool-x86_64
+
+| {sll} 9.6 EMS
+| el9-pool-x86_64
+| -
+| managertools-el9-pool-x86_64
+
+| {sll} 9
+| el9-pool-x86_64
+| -
+| managertools-el9-pool-x86_64
+
+| {sll} 8
+| rhel8-pool-x86_64
+| -
+| managertools-el8-pool-x86_64
+
+| {sll} 7
+| rhel-x86_64-server-7
+| -
+| managertools-el7-pool-x86_64
+
+| {sll} LTSS 7
+| res-7-ltss-updates-x86_64
+| -
+| res-7-suse-manager-tools-x86_64-lbt7
+
+| {sll} LTSS for Oracle 7
+| res-7-ol-ltss-updates-x86_64
+| -
+| res-7-suse-manager-tools-x86_64-lbtol7
+
+|===
+
+ifeval::[{uyuni-content} == true]
+
+[[es-channels-cli]]
+[cols="1,1,1,1", options="header"]
+.ESチャンネル - CLI
+|===
+
+| [OSのバージョン]
+| ベースチャンネル
+| クライアントチャンネル
+| ツールチャネル
+
+| {sll} 9
+| el9-pool-x86_64
+| -
+| sll9-uyuni-client-x86_64
+
+| {sll} 8
+| rhel8-pool-x86_64
+| -
+| sll8-uyuni-client-x86_64
+
+| {sll} 7
+| rhel-x86_64-server-7
+| -
+| sll7-uyuni-client-x86_64
+
+|===
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$addchannels_novendor_cli.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/addchannels_novendor_cli.adoc[]
+endif::[]
+
+endif::[]
+
+
+
+[[add.base.media]]
+=== ベースメディアの追加
+
+{sll}ソフトウェアチャネルは、パッケージ自体ではなく、更新のみを提供します。
+{sll}クライアントを登録するには、まず{sll}製品を登録して（以下に説明）、ベースチャネルを作成し、次に必要なRed HatまたはCentOSパッケージをカスタム子チャネルとしてインポートします。
+初期パッケージは、{redhat}または{centos}から直接取得する必要があります。その後、{sll}からの更新を適用します。
+重要なことに、Red Hatのサブスクリプションを維持する必要はありませんが、移行中にRed Hatへの継続的な支払い義務があるかどうかを確認するために法務部門に相談してください。
+必要なすべてのパッケージを確保するために、最小限の{jeos}イメージではなく、完全なDVDイメージを使用してください。
+
+{productname}カスタムチャネルを使用して、{rhel}または{centos}メディアを設定できます。
+ベースメディアのすべてのパッケージは、子チャネルにミラーリングする必要があります。
+
+チャンネルの名前は自由に選択できます。
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$manual_channels.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/manual_channels.adoc[]
+endif::[]
+
+
+[IMPORTANT]
+====
+{redhat} 10、9、および8クライアントの場合、ベースチャネルとAppStreamチャネルの両方を追加してください。
+両方のチャネルからのパッケージが必要です。
+両方のチャンネルを追加しないと、パッケージが不足しているため、ブートストラップリポジトリを作成できません。
+====
+
+モジュラー チャンネルを使用している場合は、クライアントで Python 3.6 モジュール ストリームを有効にする必要があります。
+Python 3.6 を提供しない場合、`spacecmd` パッケージのインストールは失敗します。
+
+
+.プロシージャ:ベースメディアをカスタムチャネルに追加する（RHEL 7.0の例）
+[role=procedure]
+____
+[WARNING]
+====
+{redhat}からのオリジナルのインストールメディアを使用する必要があります。
+メジャーバージョンリリース（例えば`7`）を使用する必要があり、マイナーバージョンリリース（例えば`7.9`）は使用しないでください。
+====
+. ベースメディアイメージを{productname}サーバーコンテナホストの`/tmp/`ディレクトリにコピーします。
+
+. ベースメディアイメージを{productname} Serverコンテナに取得するには、次のコマンドを使用します:
+
++
+----
+mgradm distribution copy /tmp/rhel-server-7.0-x86_64-dvd.iso rhel-server-7.0
+----
+
++
+コンテナ内の宛先は`/srv/www/distributions/rhel-server-7.0`になります。
+
+. 前に作成した子チャンネルにパッケージをインポートします。
+
++
+
+[source,shell]
+----
+mgrctl exec -- spacewalk-repo-sync -c <channel-label> -u file:///srv/www/distributions/rhel-server-7.0/
+----
+
+____
+
+バージョン9および8クライアントの場合は、ラベルとディレクトリを適宜調整し、さらにベースチャンネルとAppStreamチャンネルの両方を同期します。
+
+[source,shell]
+----
+mgrctl exec -- spacewalk-repo-sync -c <channel-label> -u file:///srv/www/distributions/rhel-server-9.0/BaseOS
+mgrctl exec -- spacewalk-repo-sync -c <channel-label> -u file:///srv/www/distributions/rhel-server-9.0/AppStream
+----
+
+または
+
+[source,shell]
+----
+mgrctl exec -- spacewalk-repo-sync -c <channel-label> -u file:///srv/www/distributions/rhel-server-8.0/BaseOS
+mgrctl exec -- spacewalk-repo-sync -c <channel-label> -u file:///srv/www/distributions/rhel-server-8.0/AppStream
+----
+
+
+==== オプション:コンテンツURLからベースメディアを追加します。
+
+または、{redhat} CDNまたは{centos}が提供するコンテンツURLにアクセスできる場合、カスタムリポジトリを作成してパッケージをミラーリングできます。
+
+このプロシージャに必要な詳細は次のとおりです。
+
+[[es-repos-manual]]
+[cols="1,1", options="header"]
+.ESカスタムリポジトリ設定
+|===
+
+| オプション                 | パラメータ
+| リポジトリ URL         | {redhat} CDNまたは{centos}が提供するコンテンツURL
+| メタデータは署名されていますか？  | すべての{redhat}エンタープライズリポジトリのチェックを外してください
+| SSL CA 証明書     | `redhat-uep` ({redhat} のみ)
+| SSL クライアント証明書 | `Entitlement-Cert-date` ({redhat} のみ)
+| SSL クライアントキー         | `Entitlement-Key-date` ({redhat} のみ)
+
+|===
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$manual_repos.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/manual_repos.adoc[]
+endif::[]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$manual_associate.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/manual_associate.adoc[]
+endif::[]
+
+
+== 同期ステータスの確認
+
+ifeval::[{mlm-content} == true]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_webui_mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_webui_mlm.adoc[]
+endif::[]
+
+endif::[]
+
+
+ifeval::[{uyuni-content} == true]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_webui_uyuni.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_webui_uyuni.adoc[]
+endif::[]
+
+endif::[]
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_cli.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_cli.adoc[]
+endif::[]
+
+[NOTE]
+====
+{sll}チャンネルは非常に大きくなる可能性があります。
+初期チャンネルの同期には、時々数時間かかることがあります。
+
+初期同期が完了したら、作業を始める前にチャンネルをクローンすることをお勧めします。
+これにより、元の同期データのバックアップが得られます。
+====
+
+
+
+== {sll}クライアントを登録します。
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$create_bootstrap_repo_register.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/create_bootstrap_repo_register.adoc[]
+endif::[]
+
+
+
+[[clients-sleses-el-migration]]
+== Enterprise Linux (EL)クライアントを{sll}に移行します。
+
+{rhel}や{centos}などのEnterprise Linux (EL)クライアントがすでに{productname}のminionとして登録されており、ユーザがそれを{sll}に移行したい場合は、再アクティベーションキーを使用して、移行を推進するアクティベーションキーを適用できます。
+
+再アクティベーションキーに関する詳細は、xref:client-configuration:activation-keys.adoc#activation-keys-reactivation[]を参照してください。
+
+再アクティベーションキーはminionごとに発行され、{webui}またはAPIを使用して生成できます。
+詳細については、 https://documentation.suse.com/multi-linux-manager/5.1/api/suse-manager/api/system.html#apidoc-system-obtainReactivationKey-loggedInUser-sid.を参照してください。
+
+クライアントを再アクティベーションするには、ユーザーはクライアント上で起動するスクリプトを実行し、再アクティベーションキーを環境変数として渡します。
+例:
+
+----
+REACTIVATION_KEY=<KEY> ./bootstrap_liberate9.sh
+----
+
+別の方法として、{salt}（または`/etc/venv-salt-minon/minion.d/susemanager.conf`）にある`/etc/salt-minon/minion.d/susemanager.conf`クライアント設定ファイルに特別なフラグを追加します（この内容を既存の内容に結合してください）。
+
+----
+grains:
+    susemanager:
+        activation_key: "<KEY_ID>"
+        management_key: "MINION_REACTIVATION_KEY"
+----
+
+`susemanager.conf`ファイルを変更した後、`salt-minion`サーバー上で{salt}サービスを再起動する必要があります。 デフォルトでは:
+
+----
+systemctl restart venv-salt-minon
+----
+
+または、レガシー{salt}の場合は、
+
+----
+systemctl restart salt-minon
+----
+
+
+
+
+=== `liberate` フォーミュラ
+
+{sll} フォーミュラを使用して、エンタープライズLinux（EL）クライアントを`liberate`に移行します。
+詳細については、xref:specialized-guides:salt/salt-formula-liberate.adoc[]を参照してください。

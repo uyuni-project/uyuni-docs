@@ -1,0 +1,160 @@
+[[auth-methods-sso-example]]
+= 示例 SSO 实现
+:description: 通过公开 SUSE® Multi-Linux Manager 的端点并使用 Keycloak 作为其身份服务提供者，实现安全的单点登录
+:revdate: 2026-06-24
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+在此示例中，SSO 通过使用 {productname} 公开三个端点，并使用 Keycloak 26.5.3 或更高版本作为身份服务提供者 (IdP) 来实现。
+
+要使用 {productname} 和 Keycloak 设置单点登录 (SSO)，您首先需要配置 Keycloak 身份提供者，获取其公共 SAML 证书，并设置客户端和用户。之后，您需要配置 {productname} 服务器以信任 Keycloak。
+
+[WARNING]
+====
+此示例仅用于说明目的。{suse} 不建议也不支持第三方身份服务提供者，并且与 Keycloak 不存在从属关系。
+有关 Keycloak 支持，请参见 https://www.keycloak.org/.
+====
+
+您可以直接在您的机器上安装 Keycloak，或在容器中运行它。
+在此示例中，我们在 Podman 容器中运行 Keycloak。
+有关安装 Keycloak 的更多信息，请参见 https://www.keycloak.org/guides#getting-started. 的 Keycloak 文档。
+
+[#how-to-set-up-keycloak]
+== 设置身份服务提供者 (Keycloak)
+
+首先，运行 Keycloak，创建一个领域，获取 SAML 公共证书，并配置客户端。
+
+[#pro-setting-up-keycloak]
+.过程：升级设置 Keycloak
+[role=procedure]
+____
+. 根据 Keycloak 文档所述在 Podman 容器中安装 Keycloak。
+. 使用 `-td` 参数运行容器，以确保进程保持运行：
++
+----
+podman run -td --name keycloak -p 8080:8080 -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin quay.io/keycloak/keycloak:26.1.1 start-dev
+----
+. 以 `admin` 用户身份登录 Keycloak 管理控制台。
+. 创建一个领域:
+* 在左上角，点击领域选择器下拉菜单（显示 `master`）并选择 `Manage realms`。
+* 在 `Manage realms` 页面上，点击右上角的 btn:[创建领域] 按钮。
+* 在 `Realm name` 字段中，输入名称（例如 `MLM`）。
+* 单击 btn:[创建]。
+. 获取 SAML 公共证书：
+* 从左侧导航菜单中，点击 menu:领域设置[]。
+* 点击 `Keys` 选项卡。
+* 在活动密钥表中找到活动的 **RSA** 密钥（提供者为 `rsa-generated`）。
+* 点击该行中的 btn:[证书] 按钮。
+* 从打开的模态框中复制整个 Base64 编码的证书。请妥善保存此证书，以备服务器配置使用。
+. 将 {productname} 添加为客户端：
+* 在左侧导航菜单中，单击 menu:客户端[]。
+* 点击 btn:[创建客户端]。
+* 在 `Client type` 字段中，选择 `SAML`。
+* 在 `Client ID` 字段中，输入 {productname} 元数据端点。
+  例如：`https://<FQDN_MLM>/rhn/manager/sso/metadata`
+* 单击 btn:[下一步]。
+* 在 `Valid redirect URIs` 字段中，输入 {productname} 断言消费者服务 (ACS) 端点。
+  例如：`https://<FQDN_MLM>/rhn/manager/sso/acs`
+* 单击 btn:[保存]。
+. 微调客户端设置：
+* 在 `Settings` 选项卡下，向下滚动到 `SAML capabilities` 部分：
+** 将 `Sign assertions` 切换为 `On`。
+** 在 `Signature algorithm` 字段中，选择 `RSA_SHA1`。
+** 在 `SAML Signature Key Name` 字段中，选择 `Key ID`。
+** 单击 **保存**。
+* 在 `Keys` 选项卡下：
+** 将 `Client signature required` 切换为 `Off`。
+* 在 `Advanced` 选项卡下，向下滚动到 `Fine Grain SAML Endpoint Configuration` 部分：
+** 在 `Assertion Consumer Service POST Binding URL` 和 `Assertion Consumer Service Redirect Binding URL` 字段中，输入 {productname} ACS 端点。
+  例如：`https://<FQDN_MLM>/rhn/manager/sso/acs`
+** 在 `Logout Service POST Binding URL` 字段中，输入 {productname} SLS 端点。
+  例如：`https://<FQDN_MLM>/rhn/manager/sso/sls`
+** 在 `Logout Service Redirect Binding URL` 字段中，输入您的 {productname} 实例的根 URL。
+  例如：`https://<FQDN_MLM>/`
+** 单击 **保存**。
+. 配置客户端范围和映射程序：
+* 从左侧导航菜单，单击 menu:客户端范围[]。
+* 单击列表中的 `role_list`。
+* 单击 `Mappers` 选项卡，然后单击 `role list` 映射器。
+* 将 `Single Role Attribute` 切换为 `On`，然后单击 btn:[保存]。
+* 返回 menu:客户端[]，单击您的 {productname} 客户端 ID (`https://<FQDN_MLM>/rhn/manager/sso/metadata`)，然后单击 `Client scopes` 选项卡。
+* 单击专用范围（例如，`https://<FQDN_MLM>/rhn/manager/sso/metadata-dedicated`）。
+* 单击 btn:[配置新映射器]。
+* 从列表中选择 `User Attribute`，并使用以下详细信息配置映射器：
+** 在 `Name` 字段中，输入 `uid`。
+** 在 `Property` 字段中，选择 `username`。
+** 在 `SAML Attribute Name` 字段中，输入 `uid`。
+* 单击 btn:[保存]。
+. 创建用户：
+* 从左侧导航菜单中，单击 menu:用户[]。
+* 单击 btn:[添加用户]。
+* 在 `Username` 字段中，输入与现有 {productname} 用户匹配的用户名（例如，管理用户）。
+* 单击 btn:[创建]。
+* 单击 `Credentials` 选项卡，单击 btn:[设置密码]，为用户设置密码，将 `Temporary` 切换为 `Off`，单击 btn:[保存] 并通过单击 btn:[保存密码] 进行确认。
+____
+
+
+[#how-to-configure-{productname}-server]
+== 设置 {productname} 服务器
+
+Keycloak 就绪后，配置 {productname} 服务器以使用单点登录。
+
+[IMPORTANT]
+====
+确保您打算使用 SSO 进行身份验证的用户已存在于 {productname} 中。您可以手动在 {productname} {webui} 中创建用户，或者使用命令行界面或 API（使用启用 PAM 或无密码身份验证）。
+====
+
+[#pro-setting-up-server]
+.过程：升级设置 {productname} 服务器
+[role=procedure]
+____
+. 在 {productname} 服务器上，打开 `/etc/rhn/rhn.conf` 配置文件。
+. 添加以下参数。将 `<FQDN_MLM>` 替换为您 {productname} 安装的完全限定的域名，将 `<FQDN_IDP>` 替换为您 Keycloak 服务器的 FQDN，将 `<REALM>` 替换为您的领域名称（例如 `MLM`），并将 `<CERTIFICATE>` 替换为在先前步骤中从 Keycloak 获取的 Base64 编码的 SAML 公共证书字符串：
++
+----
+java.sso = true
+
+java.sso.onelogin.saml2.debug = true
+
+java.sso.onelogin.saml2.sp.entityid                       = https://<FQDN_MLM>/rhn/manager/sso/metadata
+java.sso.onelogin.saml2.sp.assertion_consumer_service.url = https://<FQDN_MLM>/rhn/manager/sso/acs
+java.sso.onelogin.saml2.sp.single_logout_service.url      = https://<FQDN_MLM>/rhn/manager/sso/sls
+
+java.sso.onelogin.saml2.idp.entityid                   = http://<FQDN_IDP>:8080/realms/<REALM>
+java.sso.onelogin.saml2.idp.single_sign_on_service.url = http://<FQDN_IDP>:8080/realms/<REALM>/protocol/saml
+java.sso.onelogin.saml2.idp.single_logout_service.url  = http://<FQDN_IDP>:8080/realms/<REALM>/protocol/saml
+
+java.sso.onelogin.saml2.idp.x509cert = -----BEGIN CERTIFICATE----- <CERTIFICATE> -----END CERTIFICATE-----
+
+# Organization Metadata (Optional)
+java.sso.onelogin.saml2.organization.name = SUSE Multi-Linux Manager
+java.sso.onelogin.saml2.organization.displayname = SUSE Multi-Linux Manager
+java.sso.onelogin.saml2.organization.url = https://<FQDN_MLM>
+java.sso.onelogin.saml2.organization.lang =
+
+# Contacts (Optional)
+java.sso.onelogin.saml2.contacts.technical.given_name = SUSE Multi-Linux Manager Admin
+java.sso.onelogin.saml2.contacts.technical.email_address = admin@example.com
+java.sso.onelogin.saml2.contacts.support.given_name = SUSE Multi-Linux Manager Admin
+java.sso.onelogin.saml2.contacts.support.email_address = admin@example.com
+----
+. 保存更改并重启 spacewalk 服务以应用更改：
++
+----
+mgradm restart
+----
+. 导航至 {productname} {webui}。您应该会被重定向到 Keycloak 登录屏幕，并在身份验证后成功登录回 {productname}。
+____
+
+[#how-to-troubleshoot-sso]
+== 查错
+
+如果在使用单点登录进行身份验证时遇到问题，请使用以下步骤进行诊断：
+
+* **验证日志：**在 `/var/log/rhn/rhn_web_ui.log` 中查找 SSO 错误。当 `/etc/rhn/rhn.conf` 中设置了 `java.sso.onelogin.saml2.debug = true` 时，将启用详细日志记录。
+* **未找到用户：**如果您在 Keycloak 身份验证后看到“未找到用户”或重定向失败，请确保 Keycloak 中的用户名与 {productname} 中的用户名完全匹配。用户必须预先在 {productname} 中创建。
+* **签名和证书错误：**如果您看到“签名验证失败”，请验证 `java.sso.onelogin.saml2.idp.x509cert` 中的证书是否与 Keycloak 领域设置中 `Keys` 选项卡下显示的活动 RSA 证书一致，并确保客户端设置中的 `Sign assertions` 已切换为 `On`。
+* **无效的重定向 URI：**如果 Keycloak 在重定向时显示“无效参数：redirect_uri”，请验证 Keycloak 客户端设置中的 `Valid redirect URIs` 是否设置为 `https://<FQDN_MLM>/rhn/manager/sso/acs`。

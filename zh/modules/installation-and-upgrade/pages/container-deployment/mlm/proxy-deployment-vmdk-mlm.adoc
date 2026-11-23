@@ -1,0 +1,163 @@
+[[proxy-install-vmware]]
+= 将 {productname} 代理部署为虚拟机 - VMware
+:description: 了解如何在 VMware 环境中将 SUSE Multi-Linux Manager 代理配置为虚拟机，以实现高效的存储分区管理
+:revdate: 2025-06-26
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+本章提供 {productname} {productnumber} 代理作为映像的虚拟机设置。
+将使用 VMware 作为此安装的沙箱。
+
+
+
+// FIXME: make this section a snippet or move it to a general intro for both,
+//        KVM and VMware
+== 可用映像
+
+
+[IMPORTANT]
+====
+部署 {productname} 代理的首选方法是使用以下可用映像之一。
+所有工具都包含在这些映像中，简化了部署。
+====
+
+{productname} {productnumber} 代理的映像可在 link:https://www.suse.com/download/suse-manager/[{productname} {productnumber} 虚拟机映像] 中获得。
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-warn-images-sl-micro.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-warn-images-sl-micro.adoc[]
+endif::[]
+
+[NOTE]
+====
+有关准备原始映像的详细信息，请参见 https://documentation.suse.com/sle-micro/6.1/html/Micro-deployment-raw-images-virtual-machines/index.html#deployment-preparing-configuration-device[]。
+
+有关自安装映像的详细信息，请参见 https://documentation.suse.com/sle-micro/6.1/html/Micro-deployment-selfinstall-images/index.html。
+====
+
+// FIXME more archs supported?
+
+.可用代理映像
+[cols="3, 3", options="header"]
+|===
+| 体系结构 | 映像格式
+
+| aarch64| qcow2, vmdk
+
+| x86_64  | qcow2, vmdk, raw, 自安装程序
+
+|===
+
+
+[[proxy-quickstart.sect.vmware.settings]]
+== 虚拟机设置 - VMware
+
+本节说明 VMware 配置，重点介绍如何在 VMware 环境中创建对 {productname} 代理存储分区至关重要的额外虚拟磁盘。
+
+[NOTE]
+====
+本节指定最低要求。
+这些适合快速测试安装，例如一个客户端的代理。
+
+如果您想使用生产环境并需要有关磁盘空间的背景信息，请参见 xref:installation-and-upgrade:hardware-requirements.adoc[]。
+====
+
+.过程：升级创建 VMware 虚拟机
+
+. 下载{productname}代理`.vmdk`文件，然后将副本传输到您的VMware存储。
+
+. 使用VMware Web界面复制上传的`.vmdk`文件。
+  这将把提供的`.vmdk`文件转换为适合vSphere超级管理程序的格式。
+
+. 创建并命名一个新的虚拟机，基于Guest OS Family `Linux`和Guest OS Version {sle} 15（64位）。
+
+. 添加一个100 GB（或更多）的额外`Hard Disk 2`。
+
+. 配置 RAM 和 CPU 数量（至少 16 GB RAM，4 个 CPU）。
+
+. 根据需要设置网络适配器。
+
+. 启动 VM，然后按照首次引导对话框中的提示操作（键盘布局、许可协议、时区、root 的口令）。
+
+. 安装完成后，以 root 身份登录。
+
+. 继续阅读下一节。
+
+*) 有关最小值，请参见 xref:installation-and-upgrade:hardware-requirements.adoc#proxy-hardware-requirements[]。
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-register-proxy-mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-register-proxy-mlm.adoc[]
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-actkey-bootstrap-proxy-mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-actkey-bootstrap-proxy-mlm.adoc[]
+endif::[]
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-generate_proxy_config.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-generate_proxy_config.adoc[]
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-transfer_proxy_config.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-transfer_proxy_config.adoc[]
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-start-proxy.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../partials/snippet-start-proxy.adoc[]
+endif::[]
+
+
+
+=== 为服务使用自定义容器映像
+
+默认情况下，{productname} 代理套件设置为对其每个服务使用相同的映像版本和注册表路径。
+但是，可以使用以`-tag`和`-image`结尾的安装参数覆盖特定服务的默认值。
+
+例如，可以按如下方式使用此命令：
+
+----
+mgrpxy install podman --httpd-tag 0.1.0 --httpd-image registry.opensuse.org/uyuni/proxy-httpd /path/to/config.tar.gz
+----
+
+它会在重启httpd服务之前调整其配置文件，其中`registry.opensuse.org/uyuni/proxy-httpds`是要使用的镜像，`0.1.0`是版本标签。
+
+要重置为默认值，请再次运行 install 命令但不要指定这些参数：
+
+----
+mgrpxy install podman /path/to/config.tar.gz
+----
+
+此命令首先将所有服务的配置重置为全局默认值，然后重新装载配置。

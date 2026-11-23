@@ -1,0 +1,55 @@
+[[contact-methods-salt]]
+= 默认联系方法
+:description: 了解如何使用此过程为您的 SUSE Multi-Linux Manager 服务器配置和管理 Salt 联系人
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+除非有特定需求，否则建议使用 {salt} 协议的默认联系方法。
+默认情况下，将部署 {salt} Bundle 实现（`venv-salt-minion`）。
+有关 {salt} 的一般信息，请参见 xref:specialized-guides:salt/salt-overview.adoc[]。
+
+ifeval::[{mlm-content} == true]
+
+默认联系方法 (`Default`) 是最佳的扩展方法。
+所有新的 {productname} 功能均受支持。
+
+[IMPORTANT]
+====
+所谓的传统联系协议在 {productname} 5.0 及更高版本中不再受支持。
+在从 {productname} 4 升级到 5 之前，任何现有的传统客户端，包括传统代理，必须迁移到 {salt} 或替换为 {salt} 代理。
+
+有关将传统 {productname} 4 客户端迁移到 {salt} 客户端的更多信息，请参见 https://documentation.suse.com/suma/4.3/en/suse-manager/client-configuration/contact-methods-migrate-traditional.html
+====
+
+endif::[]
+
+软件更新通常是从服务器推送到客户端的。
+连接是从客户端发起的。
+这意味着您必须在服务器上打开端口，而不是在客户端上。
+{salt} 客户端也称为 {salt} minions。
+{productname} 服务器在每个客户端上安装一个守护程序。
+
+如果您需要在断开连接设置中使用 {salt} 客户端，可以将 SSH Push 配置为联系方法。
+使用此联系方法，客户端可以位于称为 DMZ 的防火墙保护区域中。
+有关 SSH Push 的更多信息，请参见 xref:client-configuration:contact-methods-saltssh.adoc[]。
+
+
+
+[[onboarding-details]]
+== 初始配置细节
+
+
+{salt} 有自己的数据库来保存 minions 的密钥。这需要与 {productname} 数据库保持同步。
+一旦在 {salt} 中接受密钥，{productname} 中的入职流程就开始。
+
+入职流程将通过在 {productname} 数据库中搜索 `minion_id` 和 `machine-id` 来查找现有系统。
+根据结果，可能出现以下情况：
+
+* 如果未找到任何系统，则会创建新系统。
+* 如果找到包含 `minion_id` 或 `machine-id` 的项，则会迁移该系统以与新系统匹配。
+* 如果找到匹配这两项的系统，并且它们不是同一个系统，则会中止初始配置并显示错误。
+* 在这种情况下，管理员需要至少去除一个系统来解决冲突。

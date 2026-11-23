@@ -1,0 +1,142 @@
+[[autoinst-pxeboot]]
+= 네트워크를 통한 설치(PXE 부팅)
+:description: DHCP를 사용하여 클라이언트에 IP 주소, 마스크, 설치 서버 및 부트로더 파일을 자동으로 제공하고, PXE 부팅을 통한 네트워크 설치를 구성합니다.
+:revdate: 2026-03-02
+:page-revdate: {revdate}
+:page-author: SUSE 제품 및 솔루션 문서팀
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+
+네트워크 부팅 설치 중:
+
+. 클라이언트는 PXE 모드로 부팅됩니다.
+
+. DHCP 서버는 해당 서버의 IP 주소 및 마스크, 설치 서버의 주소 및 부트로더 파일의 이름을 클라이언트에 제공합니다.
+
+. 클라이언트는 설치 서버에서 TFTP 프로토콜을 통해 부트로더 파일을 다운로드한 후 실행합니다.
+
+. 클라이언트에는 메뉴에서 설치할 수 있는 프로파일을 선택하거나 프로파일 중 하나의 자동 설치를 시작할 수 있는 옵션이 제공됩니다.
+
+. 클라이언트는 해당 프로파일과 일치하는 배포판의 커널 및 초기 RAM 디스크를 TFTP 프로토콜을 통해 다운로드합니다.
+
+. 설치 커널은 {kickstart} 또는 {ay} 중 하나의 설치 프로그램을 시작합니다.
+  이제부터는 HTTP 프로토콜을 통해 서버에서 제공되는 리소스를 사용합니다.
+
+. 배포판은 {kickstart} 또는 {ay} 프로파일에 따라 자동으로 설치됩니다.
+
+. 프로파일은 클라이언트를 {productname} 서버에 등록하는 코드 조각을 호출합니다.
+
+image::cobbler_menu.png[scaledwidth=100%]
+
+설치 서버는 {productname} 서버 또는 그 프록시 중 하나일 수 있습니다.
+// To install from a proxy, you must synchronize the TFTP tree between the server and the proxy before you begin.
+
+Dhcpd 서버는 클라이언트에 호스트 이름, 라우터 주소 및 도메인 이름 서버 주소와 같은 다른 구성 정보를 제공할 수도 있습니다.
+이 정보 중 일부는 설치 서버를 도메인 이름으로 지정하는 경우와 같이 자동 설치에 필요할 수 있습니다.
+
+PXE 부팅 메뉴에서 첫 번째 선택지는 `Local boot`입니다.
+이 옵션을 선택하면 부팅 프로세스가 로컬 디스크 드라이브에서 계속됩니다.
+일정 시간이 지나도 프로파일이 선택되지 않으면 이 옵션이 자동으로 선택됩니다.
+이는 사용자가 프로파일 중 하나를 선택하지 않을 경우 자동 설치가 시작되는 것을 방지하기 위한 보안 조치입니다.
+
+또는 수동 개입 없이 프로파일 중 하나에서 설치가 자동으로 시작될 수 있습니다.
+이를 "무인 프로비저닝"이라고 합니다.
+
+
+
+.절차 PXE 부팅으로 설치
+[role=procedure]
+____
+. Kea 서버를 준비합니다. xref:client-configuration:autoinst-pxeboot.adoc#prepare-the-dhcp-server[Dhcpd 서버 준비]를 참조하십시오.
+
+. 자동 설치 가능한 배포판을 준비합니다. xref:client-configuration:autoinst-distributions.adoc[자동 설치 가능한 배포판]을 참조하십시오.
+
+. 자동 설치 프로파일을 준비합니다. xref:client-configuration:autoinst-profiles.adoc[자동 설치 프로파일]을 참조하십시오.
+
+. 클라이언트를 다시 부팅하고 설치할 프로파일을 선택합니다.
+____
+
+다른 단계는 선택 사항입니다. 
+
+프록시를 설치 서버로 사용하려면 xref:client-configuration:autoinst-pxeboot.adoc#synchronize-the-tftp-tree-with-proxies[프록시와 TFTP 트리 동기화]를 참조하십시오. 
+무인 프로비저닝에 대해서는 xref:client-configuration:autoinst-unattended.adoc[무인 프로비저닝]을 참조하십시오.
+
+
+[[prepare-the-dhcp-server]]
+== DHCP 서버 준비
+
+PXE 부팅 프로세스는 TFTP 서버를 찾기 위해 Dhcpd를 사용합니다.
+{productname} 서버 또는 그 프록시는 TFTP 서버 역할을 할 수 있습니다.
+
+네트워크의 Dhcpd 서버에 대한 관리 액세스 권한이 있어야 합니다.
+Dhcpd 구성 파일을 편집하여 설치 서버를 TFTP 부트 서버로 지정합니다.
+
+
+.예: Kea Dhcpd 서버 구성
+. DHCP 서버에서 루트 사용자로 `/etc/dhcpd.conf` 파일을 엽니다.
+. 클라이언트의 선언을 수정합니다.
++
+----
+  host myclient { (...)
+                  next-server 192.168.2.1;
+                  filename "grub/grub.0"; }
+----
+. 파일을 저장하고 `dhcpd` 서비스를 다시 시작합니다.
+
+
+이 예에서는 PXE 클라이언트 `myclient`를 `192.168.2.1`의 설치 서버로 지정하고 `grub/grub.0` 부트로더 파일을 검색하도록 지시합니다.
+
+또는 Dhcpd 서버가 {productname}에 등록된 경우 Dhcpd 수식을 대신 사용하여 구성할 수 있습니다:
+
+
+.예: Dhcpd 수식을 사용한 Kea Dhcpd 서버 구성
+. menu:시스템[시스템 목록]으로 이동하여 변경할 클라이언트를 선택한 후 `Formulas` 탭으로 이동하여 DHCP 포뮬러를 활성화합니다.
+. 포뮬러의 `Dhcpd` 탭으로 이동하여 `Next Server` 필드에 설치 서버의 호스트 이름 또는 IP 주소를 입력합니다.
+. `Filename EFI` 필드에 `grub/shim.efi`를 입력하여 EFI PXE 지원을 활성화합니다.
+. `Filename` 필드에 `grub/grub.0`를 입력하여 레거시 BIOS 지원을 활성화합니다.
+. btn:[수식 저장]을 클릭하여 구성을 저장합니다.
+. highstate를 적용합니다.
+
+
+[NOTE]
+====
+* Secure Boot를 사용하지 않는 경우, `Filename EFI` 필드에 `grub/shim.efi` 대신 `grub/grubx86.efi`을(를) 입력하십시오.
+
+* 다른 아키텍처에 대해서는 <<grub-efi-arch>> 테이블을 참조하십시오.
+
+* {productname}와 함께 {cobbler} 관리형 Dhcpd 사용은 지원되지 않습니다.
+====
+
+이 설정은 모든 호스트에 대한 글로벌 PXE 서버를 설정하며, 호스트별 설정도 가능합니다.
+Dhcpd 수식에 대한 자세한 정보는 xref:specialized-guides:salt/salt-formula-dhcpd.adoc[Dhcpd 수식]을 참조하십시오.
+
+
+
+[[synchronize-the-tftp-tree-with-proxies]]
+== TFTP 트리와 프록시 동기화
+
+{productname} 5.x 프록시와 동기화할 필요가 없습니다.
+
+{productname} Proxy 4.3와 함께 {productname} 서버에서 TFTP 트리를 동기화할 수 있습니다.
+동기화를 위해 HTTPS 포트 443이 열려 있어야 합니다.
+추가된 모든 프록시는 트리 동기화 속도를 느리게 합니다.
+
+[WARNING]
+====
+{productname} 프록시 4.3을 사용 중인 경우, 4.3 버전 `https://documentation.suse.com/suma/4.3/en/suse-manager/client-configuration/autoinst-pxeboot.html`에 대한 문서를 참조하십시오.
+====
+
+
+[[grub-efi-arch]]
+== 다른 아키텍처에 대한 GRUB EFI 바이너리 이름
+
+[cols="1,1", options="header"]
+.다른 아키텍처에 대한 GRUB EFI 바이너리 이름
+|===
+| 아키텍처 | GRUB EFI 바이너리 이름
+| aarch64      | grubaa64.efi
+| x86-64       | grubx86.efi
+| ppc64le      | grub.ppc64le
+|===

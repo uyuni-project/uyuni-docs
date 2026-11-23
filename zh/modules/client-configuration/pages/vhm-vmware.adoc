@@ -1,0 +1,87 @@
+[[virt-vmware]]
+= 使用 VMware 虚拟化
+:description: 使用虚拟主机管理器 (VHM) 在服务器上配置 VMware vSphere 虚拟机和管理主机清单，配合 SUSE Multi-Linux Manager。
+:revdate: 2024-09-03
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+您可以在 {productname} 中设置虚拟主机管理器 (VHM) 来使用 VMware vSphere 虚拟机，包括 ESXi 和 vCenter。
+
+首先，您需要在 {productname} 服务器上设置 VHM，并清点可用的 VM 主机。
+然后，Taskomatic 可以使用 VMs API 开始数据收集。
+
+
+
+== VHM 设置
+
+
+
+虚拟主机管理器 (VHM) 在 {productname} 服务器上运行。
+
+要运行 VHM，您的 {productname} 服务器必须开放端口 443，以便访问 VMware API。
+
+VMware 主机使用访问角色和权限来控制对主机和客户机的访问。
+确保您希望 VHM 清点的任何 VMware 对象或资源至少具有 `read-only` 权限。
+如果您想排除任何对象或资源，请将它们标记为 `no-access`。
+
+当您向 {productname} 添加新主机时，需考虑是否需要让 {productname} 清点已指派给用户和对象的角色和权限。
+
+有关用户、角色和权限的更多信息，请参见 VMware vSphere 文档： https://techdocs.broadcom.com/us/en/vmware-cis/vsphere.html
+
+
+.过程：升级创建 VMware VHM
+
+. 在 {productname} {webui} 中，导航到 menu:系统[虚拟主机管理器]。
+. 单击 btn:[创建] 并选择 `VMware-based`。
+. 在 `Add a VMware-based Virtual Host Manager` 部分中，使用以下参数：
+* 在 `Label` 字段中，为您的 VHM 输入自定义名称。
+* 在 `Hostname` 字段中，输入完全限定的域名 (FQDN) 或主机 IP 地址。
+* 在 `Port` 字段中，输入要使用的 ESXi API 端口（例如，`443`）。
+* 在 `Username` 字段中，输入与 VM 主机关联的用户名。
+* 在 `Password` 字段中，输入与 VM 主机用户关联的密码。
+. 单击 btn:[创建] 以保存更改并创建 VHM。
+. 在 `Virtual Host Managers` 页面中，选择新VHM。
+. 在 `Properties` 页面中，单击 btn:[刷新数据] 以清点新 VHM。
+
+要查看已清点的对象和资源，请导航到 menu:系统[系统列表> 虚拟系统]。
+
+
+[NOTE]
+====
+从浏览器使用 HTTPS 连接到 ESXi 服务器有时会记录 `invalid certificate` 错误。
+如果发生这种情况，虚拟主机服务器刷新数据将失败。
+要解决此问题，请从 ESXi 服务器提取证书，并将其复制到 `/etc/pki/trust/anchors`。
+在命令行上运行 `update-ca-certificates` 命令以重新信任证书，然后重启 spacewalk 服务。
+====
+
+在创建和配置您的 VHM 后，Taskomatic 会自动运行数据收集。
+如果您想手动执行数据收集，请导航到 menu:系统[虚拟主机管理器]，选择适当的 VHM，然后点击 btn:[刷新数据]。
+
+{productname} 附带一个名为 `virtual-host-gatherer` 的工具，可以通过其 API 连接到虚拟主机管理器，并请求有关虚拟主机的信息。`virtual-host-gatherer` 维护可选模块的概念，每个模块启用特定的虚拟主机管理器。
+该工具由 Taskomatic 每晚自动调用。
+`virtual-host-gatherer` 工具的日志文件位于 `/var/log/rhn/gatherer.log`。
+
+
+
+== 在 VMware 上排查 SSL 错误
+
+如果您在配置安装的 VMware 时遇到 SSL 错误，需要下载 VMware 提供的 CA 证书文件，并在 {productname} 上信任该证书。
+
+
+
+.过程：升级信任 VMware CA 证书
+. 从您安装的 VMware 中下载 CA 证书。
+    您可以通过登录到您的 vCenter {webui} 并单击 btn:[下载可信根 CA 证书] 来实现此目的。
+. 如果下载的 CA 证书文件为 `.zip` 格式，请解压缩该归档文件。
+    证书文件的扩展名为数字。
+    例如，`certificate.0`。
+. 将证书文件复制到您的 {productname} 服务器上，并保存到 `/etc/pki/trust/anchors/` 目录中。
+. 将复制后的证书文件名后缀改为 `.crt` 或 `.pem`。
+. 在 {productname} 服务器上的命令提示符处，更新 CA 证书记录：
++
+----
+update-ca-certificates
+----

@@ -1,0 +1,126 @@
+[[troubleshooting-libvirt-events]]
+= Troubleshooting libvirt events errors in minion log
+:description: Resolve libvirt_events error messages in minion logs after migration by removing the obsolete libvirt-events.conf configuration file
+:revdate: 2026-10-06
+:page-revdate: {revdate}
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+[role=procedure]
+_____
+. First step
+. Another step
+. Last step
+_____
+////
+
+In earlier versions of {productname} (such as {susemgr}{nbsp}4.3), onboarding a client with the `Virtualization Host` system type deployed an event listener configuration file (`/etc/venv-salt-minion/minion.d/libvirt-events.conf` or `/etc/salt/minion.d/libvirt-events.conf`).
+This configuration enabled the Salt `libvirt_events` engine to monitor virtualization events on the host.
+In later {productname} versions, this engine is no longer used or supported.
+However, when you migrate or upgrade {productname} from an earlier version, this configuration file can remain on previously onboarded minions.
+
+When the minion starts, the `libvirt_events` engine attempts to connect to local libvirt sockets.
+The minion log file (`/var/log/venv-salt-minion.log` for Salt Bundle, or `/var/log/salt/minion` for classic Salt minion) repeatedly records error messages such as:
+
+[source,log]
+----
+[salt.loaded.int.engines.libvirt_events:300 ][ERROR   ] Operation not supported: Cannot use direct socket mode if no URI is set. For more information see https://libvirt.org/kbase/failed_connection_after_install.html
+libvirt.libvirtError: Operation not supported: Cannot use direct socket mode if no URI is set.
+----
+
+or:
+
+[source,log]
+----
+[salt.loaded.int.engines.libvirt_events:300 ][ERROR   ] Failed to connect socket to '/var/run/libvirt/virtnetworkd-sock-ro': No such file or directory
+libvirt.libvirtError: Failed to connect socket to '/var/run/libvirt/virtnetworkd-sock-ro': No such file or directory
+----
+
+To resolve this issue, delete the obsolete `libvirt-events.conf` configuration file from the affected minion and restart the minion service.
+
+.Procedure: Removing obsolete libvirt-events configuration on the client
+[role=procedure]
+_____
+. On the affected client, remove the `libvirt-events.conf` file:
++
+* For Salt Bundle (`venv-salt-minion`):
++
+[source,shell]
+----
+rm /etc/venv-salt-minion/minion.d/libvirt-events.conf
+----
++
+* For classic Salt minion:
++
+[source,shell]
+----
+rm /etc/salt/minion.d/libvirt-events.conf
+----
+
+. Restart the minion service:
++
+* For Salt Bundle (`venv-salt-minion`):
++
+[source,shell]
+----
+systemctl restart venv-salt-minion
+----
++
+* For classic Salt minion:
++
+[source,shell]
+----
+systemctl restart salt-minion
+----
+_____
+
+Alternatively, you can remove the configuration file and restart the minion service across multiple clients by executing Salt commands on the {productname} Server:
+
+.Procedure: Removing obsolete libvirt-events configuration using Salt
+[role=procedure]
+_____
+. Remove the file using the `file.remove` execution module:
++
+* For Salt Bundle (`venv-salt-minion`):
++
+[source,shell]
+----
+salt '<target>' file.remove /etc/venv-salt-minion/minion.d/libvirt-events.conf
+----
++
+* For classic Salt minion:
++
+[source,shell]
+----
+salt '<target>' file.remove /etc/salt/minion.d/libvirt-events.conf
+----
+
+. Restart the minion service:
++
+* For Salt Bundle (`venv-salt-minion`):
++
+[source,shell]
+----
+salt '<target>' service.restart venv-salt-minion
+----
++
+* For classic Salt minion:
++
+[source,shell]
+----
+salt '<target>' service.restart salt-minion
+----
+_____
+
+After you remove the configuration file and restart the minion service, the minion no longer loads the `libvirt_events` engine, and the error messages no longer appear in the minion log.

@@ -1,0 +1,178 @@
+[[tshoot-hostname-rename]]
+= {productname}서버 이름 바꾸기 문제 해결
+:description: 최적의 성능을 위해 SUSE 멀티 리눅스 관리자 서버를 구성하는 단계별 절차를 따르십시오.
+:revdate: 2025-02-18
+:page-revdate: {revdate}
+:page-author: SUSE 제품 및 솔루션 문서 팀
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+////
+Showing my working. --LKB 2020-06-22
+
+Cause: Renaming the hostname
+Consequence: Changes not picked up by db, clients and proxies
+Fix: Use the `spacewalk-hostname-rename` script to update the settings in the PostgreSQL database and the internal structures of {productname}.
+Result: Renaming is successfully propagated
+////
+
+{productname} 서버의 호스트 이름을 로컬에서 변경하면 {productname} 설치가 제대로 작동하지 않습니다.
+이는 데이터베이스에 변경 사항이 반영되지 않아 클라이언트와 모든 프록시로 변경 사항이 전파되지 않기 때문입니다.
+
+
+
+== 서버 이름 변경
+
+{productname} 서버의 호스트 이름을 변경해야 하는 경우 `mgradm server rename` 명령을 사용하여 변경할 수 있습니다.
+이 명령은 {postgresql} 데이터베이스의 설정과 {productname}의 내부 구조를 업데이트합니다.
+
+
+
+=== 서버 구성
+
+이 명령에는 필수 파라미터가 없지만, 컨테이너 호스트의 호스트 이름이 아닌 경우 새 호스트 이름을 지정할 수 있습니다.
+
+새 호스트 이름에 맞는 SSL 인증서가 필요할 경우 SSL CA 비밀번호를 제공해야 합니다.
+이는 구성 파일을 사용하여 안전하게 수행됩니다.
+
+.절차 SSL CA 비밀번호의 구성 파일을 준비하십시오.
+[role=procedure]
+____
+. 다음과 같은 내용으로 `config.yaml` 파일을 작성하십시오:
+
++
+
+[source,shell]
+----
+ssl:
+  password: "<CA PASSWORD>"
+----
+____
+
+이 파일은 다음 절차에서 사용됩니다.
+
+.절차 {productname} 서버 이름 바꾸기
+[role=procedure]
+____
+
+. DNS 서버에서 로컬 및 원격으로 시스템 수준에서 서버의 네트워크 설정을 변경합니다.
+    역방향 이름 해석을 위한 구성 설정도 제공해야 합니다.
+    네트워크 설정 변경은 다른 시스템의 이름 바꾸기와 동일한 방식으로 수행됩니다.
+
+. 새 네트워크 구성을 사용하고 호스트 이름이 변경되었는지 확인하려면 {productname} 서버를 재부팅하십시오.
+
+. 컨테이너 호스트에서 명령줄을 통해 다음 명령을 실행하십시오. SSL CA 비밀번호를 저장하기 위해 파일을 생성한 경우 `-c config.yaml`를 추가하십시오:
+
++
+
+[source,shell]
+----
+mgradm server rename
+----
+
++
+
+새 호스트 이름이 확인되지 않으면 명령이 실패합니다.
+
+____
+
+서버 컨테이너를 재시작할 때 이름 바꾸기 절차도 진행됩니다.
+로그는 이 명령을 실행하여 찾을 수 있습니다:
+
+[source,shell]
+----
+mgrctl exec -ti -- journalctl -u uyuni-update-config
+----
+
+서버 컨테이너를 재시작할 때 이 명령은 모든 {salt} 클라이언트의 필러 데이터 새로 고침을 트리거합니다. 실행 시간은 등록된 클라이언트 수에 따라 달라집니다.
+
+
+=== 직접 관리 클라이언트 재구성
+
+*클라이언트가 {productname} 프록시를 통해 관리되는 경우 이 절차를 건너뜁니다.*
+
+다음 절차에 따라 직접 관리 클라이언트가 새 호스트 이름과 IP 주소를 인식하도록 재구성합니다.
+
+.절차 직접 관리되는 클라이언트 재구성
+[role=procedure]
+____
+
+. 모든 클라이언트의 {salt} 클라이언트 구성 파일에서 새로운 {salt} 마스터({productname} 서버)의 이름을 지정하십시오.
+  파일 이름은 `/etc/venv-salt-minion/minion.d/susemanager.conf`이거나, {salt} 번들을 사용하지 않는 경우 `/etc/salt-minion/minion.d/susemanager.conf`입니다:
+
++
+
+----
+master: <new_hostname>
+----
+
+. 모든 클라이언트에서 {salt} 서비스를 재시작하십시오.
+  다음 중 하나를 실행하십시오:
+
++
+
+[source,shell]
+----
+systemctl restart venv-salt-minion
+----
+
++
+
+또는 {salt} 번들을 사용하지 않는 경우에는 다음을 실행하십시오:
+
++
+
+[source,shell]
+----
+systemctl restart salt-minion
+----
+
+____
+
+
+=== High State를 적용한 클라이언트 연결
+
+마지막으로, 호스트 이름을 {salt} 클라이언트 구성에 완전히 전파하려면 하이 스테이트를 적용하십시오.
+하이 스테이트를 적용하면 리포지토리 URL의 호스트 이름이 업데이트됩니다.
+
+
+
+== 프록시 재구성
+
+모든 프록시는 재구성되어야 합니다.
+새 서버 인증서와 키는 프록시로 복사되어야 합니다.
+자세한 내용은 xref:installation-and-upgrade:install-proxy.adoc[]을 참조하십시오.
+
+
+[IMPORTANT]
+====
+프록시를 통해 PXE 부팅을 사용하는 경우, 프록시의 구성 설정을 확인해야 합니다.
+비컨테이너화된 {productname} 프록시 4.3을 통해 PXE 부팅을 사용하는 경우, `tftpsync`를 재구성해야 합니다.
+
+컨테이너 호스트에서 다음을 실행합니다.
+
+[source,shell]
+----
+mgrctl exec -ti -- configure-tftpsync.sh
+----
+
+====

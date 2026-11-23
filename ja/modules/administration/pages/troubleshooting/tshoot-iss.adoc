@@ -1,0 +1,76 @@
+[[troubleshooting-iss]]
+= サーバ間同期のトラブルシューティング
+:description: ISSマスターとスレーブシステムの両方で、古いまたは期限切れのキャッシュエントリを削除することにより、サーバー間の同期問題を構成およびトラブルシューティングします。
+:revdate: 2024-05-15
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+////
+Cause: Caches on the ISS slave and master can contain old or out-of-date entries.
+Consequence: Synchronizing fails, with `ERROR: Encountered IntegrityError`.
+Fix: Delete the cache on the slave and the master
+Result: Synchronization completes successfully.
+////
+
+
+サーバー間の同期は、ISSマスターとスレーブを管理するためにキャッシュを使用します。
+これらのキャッシュは、無効なエントリを生み出すバグの影響を受けやすいです。
+この場合、バグを解決するバージョンに更新しても、キャッシュがまだ無効なエントリを使用しているため、バグが現れることがあります。
+新しいバージョンのISSにアップグレードしても問題が続く場合は、すべてのキャッシュをクリアして、古いエントリが問題を引き起こさないようにしてください。
+
+キャッシュエラーにより、さまざまなエラーで同期が失敗する可能性がありますが、エラーメッセージは通常、次のような内容をレポートします。
+
+----
+consider removing satellite-sync cache at /var/cache/rhn/satsync/* and re-run satellite-sync with same options.
+----
+
+これを解決するには、ISSマスターとISSスレーブでキャッシュを削除して、同期が正常に完了するようにします。
+
+[IMPORTANT]
+====
+サーバコンテナ内のシェルにアクセスするには、コンテナホストで`mgrctl term`を実行します。
+====
+
+
+.プロシージャ:ISSキャッシュエラーの解決
+. ISSマスターのコマンドプロンプトで、rootとして、マスターのキャッシュファイルを削除します。
++
+----
+rm -rf /var/cache/rhn/xml-*
+----
+. サービスを再起動します。
++
+----
+rcapache2 restart
+----
+. ISSマスターのコマンドプロンプトで、rootとして、スレーブのキャッシュファイルを削除します。
++
+----
+rm -rf /var/cache/rhn/satsync/*
+----
+. サービスを再起動します。
++
+----
+rcapache2 restart
+----

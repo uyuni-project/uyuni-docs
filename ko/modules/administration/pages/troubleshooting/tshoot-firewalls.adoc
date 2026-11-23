@@ -1,0 +1,54 @@
+[[troubleshooting-firewalls]]
+= 방화벽 문제 해결
+:description: 방화벽을 구성하여 SUSE Multi-Linux Manager 서버로부터의 요청을 허용하거나 거부한 다음, 타사 제품에서 발생할 수 있는 문제를 해결하십시오.
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+:page-author: SUSE 제품 및 솔루션 문서 팀
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+
+
+Cause: User firewall is set to block outgoing traffic by dropping the packet request. During sync with {scc}, mlm waits for an answer on each URL until it times out, eventually causing the entire refresh of the product list to timeout. Applies only to third party (non-SUSE) products, as sync with {scc} needs to access locations other than {scc} to verify if the if the download location is valid.
+
+Consequence: The sync to {scc} fails, and the third party products are not shown in the product list.
+
+Fix: Configure the firewall to reject requests from mlm instead of drop (preferred), or configure a firewall on the server (if no ability to change firewall settings)
+
+Result: Sync to {scc} is either able to reach the URLs required, or rejects the request so that the request fails rather than times out.
+////
+
+아웃고잉 트래픽을 차단하는 방화벽을 사용하는 경우, 방화벽이 네트워크 요청에 대해 `REJECT` 또는 `DROP`를 수행할 수 있습니다.
+이것이 `DROP`로 설정되어 있다면, {scclongform}와의 동기화가 시간 초과에 걸릴 수 있습니다.
+
+이것은 동기화 프로세스가 비-{suse} 클라이언트를 위한 패키지를 제공하는 타사 리포지토리에 접근해야 하기 때문에 발생하며, 이는 단순히 {scclongform}만을 위한 것이 아닙니다.
+{productname} 서버가 이러한 리포지토리에 접근하여 유효성을 확인하려고 시도할 때, 방화벽이 요청을 드롭하고 동기화는 응답을 기다리다가 시간 초과됩니다.
+
+이 경우, 동기화가 실패하기까지 오랜 시간이 걸리며, 비-{suse} 제품이 제품 목록에 표시되지 않습니다.
+
+이 문제는 여러 방법으로 해결할 수 있습니다.
+
+가장 간단한 방법은 방화벽을 구성하여 비-{suse} 리포지토리에 필요한 URL에 접근할 수 있도록 허용하는 것입니다.
+이렇게 하면 동기화 프로세스가 해당 URL에 접근하여 성공적으로 완료될 수 있습니다.
+
+외부 트래픽을 허용할 수 없는 경우, 방화벽을 구성하여 `REJECT`로부터 오는 요청을 {productname}하고, `DROP` 대신 이 방법을 사용하십시오.
+이렇게 하면 타사 URL에 대한 요청이 거부되어 동기화가 시간 초과되기 전에 조기에 실패하고, 제품이 목록에 표시되지 않습니다.
+
+방화벽에 대한 구성 권한이 없는 경우, {productname} 서버에 별도의 방화벽을 설정하는 것을 고려할 수 있습니다.

@@ -1,0 +1,115 @@
+[[reporting-database]]
+= Reportingデータベース
+:revdate: 2026-06-24
+:page-revdate: {revdate}
+
+{productname}には、すべてのサーバーにレポーティングデータベースが含まれています。
+レポーティングデータベースは、メインの{productname}データベースから最も関連性の高いデータの非正規化された読み取り最適化スナップショットを格納する、個別のPostgreSQLデータベースです。
+外部のレポーティングツールは、このレポーティングデータベースに直接接続してデータをクエリおよび視覚化できます。
+
+ハブデプロイメントでは、ハブは接続されているすべての周辺サーバーのレポーティングデータベースを単一の中央レポーティングデータベースに集約します。
+ハブ固有のセットアップと集約については、xref:specialized-guides:large-deployments/hub-reporting.adoc[]を参照してください。
+
+== セットアップ
+
+レポーティングデータベースとスキーマは、ローカルのPostgreSQLサーバーを使用してデフォルトでセットアップされます。
+レポーティングデータベースは、ネットワーク経由でアクセス可能な個別のデータベースです。
+
+[IMPORTANT]
+====
+ハブデプロイメントでは、ハブと周辺サーバー間の接続は、ハブのオンライン同期を介して確立されます。
+詳細については、xref:specialized-guides:large-deployments/hub-online-sync.adoc[]を参照してください。
+====
+
+
+
+=== レポーティングデータベース用のDBユーザーを作成する
+
+外部のレポーティングツールをレポーティングデータベースに接続する前に、読み取り専用権限を持つユーザーを作成してください。
+この作業を行うには、`uyuni-setup-reportdb-user`コマンドを使用します。
+
+----
+usage: uyuni-setup-reportdb-user [options]
+
+options:
+  --help
+            show this help message and exit
+  --non-interactive
+            Switches to non-interactive mode
+  --dbuser=DBUSER
+            Report DB User
+  --dbpassword=DBPASSWORD
+            Report DB Password
+  --add
+            Add the new user
+  --delete
+            Delete the user
+  --modify
+            Set a new password
+----
+
+== データベーススキーマ
+
+スキーマにより、メインの{productname}データベースから最も重要なテーブルを、レポーティングに関連するデータのみが含まれる非正規化された形式としてエクスポートします。
+
+すぐに使用できるレポートは、複数のテーブルにわたってデータを集約するビューとして提供されます。
+
+すべてのテーブルには、データを提供した{productname}サーバーを指定する追加の列（`mgm_id`）があります。
+単一の{productname}サーバーでは、この列は標準値`1`を持ち、`localhost`を表します。
+{productname}ハブでは、これは管理対象サーバーがハブデータベース内で持つ実際のサーバーIDに置き換えられます。
+
+もう1つの共通の追加フィールドは`synced_date`です。これは、データがメインの{productname}サーバーデータベースからエクスポートされた日時を表します。
+
+menu:Help[Report Database Schema]に移動して、スキーマのドキュメントを確認してください。
+
+== データの生成と更新
+
+{productname}は、レポーティングデータを管理するために2つのTaskomaticジョブを使用します。
+
+`update-reporting-default`::
+メインの {productname} データベースからローカルのレポーティングデータベースを生成および更新します。
+既定では、すべてのサーバーで毎日深夜に実行されます。
+
+`update-reporting-hub-default`::
+登録されているすべての周辺サーバーからレポーティングデータを取得し、ハブのレポーティングデータベースに集約します。
+このスケジュールはすべてのサーバーで表示されますが、意味のある処理は {productname} ハブでのみ実行されます。
+既定では、毎日午前 1:30 に実行されます。
+
+すべての時刻は、サーバーのローカルタイムゾーンに基づいています。
+
+ハブの集約およびタイムゾーン間でのスケジュール調整の詳細については、xref:specialized-guides:large-deployments/hub-reporting.adoc[]を参照してください。
+
+== チューニング
+
+[[reportdb-batch-size]]
+=== `report_db_batch_size`
+
+[cols="1,1"]
+|===
+| 説明          | 一度の処理で、一方のデータベースからもう一方のデータベースへ取得および書き込みされる行数の最大値。
+| 調整のタイミング            | メモリ不足エラーが発生した場合や、処理速度に問題がある場合。
+| 値（既定値）        | 2000
+| 値（推奨） | 500 - 5000
+| 場所             | `/etc/rhn/rhn.conf`
+| 例              | `report_db_batch_size = 4000`
+| 変更後       | 変更前後のメモリ使用量を注意深く監視してください。
+|===
+
+== Grafana を使用したレポーティングデータの可視化
+
+{productname} Grafana フォーミュラは、レポーティングデータベースに直接接続し、フリート管理およびコンプライアンスレポート用の構築済みダッシュボードをデプロイできます。
+
+前提条件:
+
+* 監視フォーミュラを使用して構成された Grafana インスタンス。
+  xref:specialized-guides:salt/salt-formula-monitoring.adoc[]を参照してください。
+* `uyuni-setup-reportdb-user` で作成されたレポーティングデータベースユーザー。
+  <<Create a DB User for the Reporting Database>>を参照してください。
+
+提供される3つのレポーティングダッシュボードは以下の通りです。
+
+* **フリートの概要とセキュリティ** — フリート構成、セキュリティ体制、CVE分析、パッチコンプライアンス、プロキシインフラストラクチャ、および仮想化の概要。
+* **レポートと履歴** — チャネル、パッケージ、エラッタ、アクション、システムインベントリ、ユーザー管理、システム履歴、およびSCAPコンプライアンス。
+* **エグゼクティブ概要** — システム数やパッケージクエリを含む動的な統計。
+
+設定手順については、xref:specialized-guides:salt/salt-formula-monitoring.adoc[監視フォーミュラ]を参照してください。

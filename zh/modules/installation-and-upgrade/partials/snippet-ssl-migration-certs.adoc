@@ -1,0 +1,157 @@
+在迁移时，{productname} 默认使用自签名证书。
+要使用来自外部 PKI（证书颁发机构）的证书，您可以在运行 `{migration-command}` 时使用 `--ssl*` 标志提供所有证书文件。
+
+.快速参考：迁移所需的标志
+[cols="1,5"]
+|===
+|迁移情况|所需标志
+
+|自签名 CA，所有内容保持不变
+|无
+
+|新服务器证书（相同 CA）
+|`--ssl-server-cert`、`--ssl-server-key`
+
+|新数据库证书（相同 CA）
+|`--ssl-db-cert`、`--ssl-db-key`
+
+|新服务器和数据库证书（相同 CA）
+|`--ssl-server-cert`、`--ssl-server-key`、`--ssl-db-cert`、`--ssl-db-key`
+
+|新服务器证书 + 新 CA
+|`--ssl-server-cert`、`--ssl-server-key`、`--ssl-ca-root`、`--ssl-ca-intermediate`
+
+|新数据库证书 + 新 CA
+|`--ssl-db-cert`、`--ssl-db-key`、`--ssl-db-ca-root`、`--ssl-db-ca-intermediate`
+
+|仅更改 CA（相同证书文件，不同 CA 链）
+|`--ssl-ca-root`、`--ssl-ca-intermediate`、`--ssl-db-ca-root`、`--ssl-db-ca-intermediate`
+
+|完全替换 — 两个组件的新证书和 CA
+|请参见下面的 "来自外部 PKI 的所有证书"
+|===
+
+任何未指定的 `--ssl*` 标志将使用源服务器中的相应值。
+仅为与当前设置不同的文件提供标志。
+
+=== 标志参考
+
+ifeval::[{migration-source} == 4.3]
+支持以下 `--ssl*` 标志：`mgradm migrate`
+endif::[]
+
+ifeval::[{migration-source} == 5.0]
+`mgradm migrate` 和 `mgradm upgrade` 支持以下 `--ssl*` 标志：
+endif::[]
+
+[cols="1,5"]
+|===
+|标志|说明
+
+|`--ssl-ca-root`
+|签署服务器证书的根 CA 证书的路径（默认为源服务器 CA）
+
+|`--ssl-ca-intermediate`
+|链中中间 CA 证书的路径（可以多次指定；默认为源服务器）
+
+|`--ssl-server-cert`
+|服务器证书的路径（默认为源服务器证书）
+
+|`--ssl-server-key`
+|服务器私钥的路径（默认为源服务器密钥）
+
+|`--ssl-db-ca-root`
+|签署数据库证书的根 CA 证书的路径
+
+|`--ssl-db-ca-intermediate`
+|数据库证书链中中间 CA 证书的路径（可以多次指定）
+
+|`--ssl-db-cert`
+|数据库证书的路径
+
+|`--ssl-db-key`
+|数据库私钥的路径
+|===
+
+[IMPORTANT]
+====
+数据库证书链与服务器证书链完全独立。
+必须提供 `--ssl-db-*` 标志，即使使用相同的 CA，因为数据库容器需要在迁移期间生成自己的证书。
+====
+
+=== 证书要求
+
+以下要求适用于与 `mgradm migrate` 一起使用的所有证书文件：
+
+* 所有证书文件必须为 PEM 格式。
+  如果您的证书为 DER 格式，请先将其转换。
+
+* 证书 `X509v3 Subject Alternative Name` 部分中的主机名必须与证书部署的机器的完全限定主机名匹配。
+
+* 数据库证书需要 `reportdb` 和 `db` 作为 `Subject Alternative Name` (SAN)。
+
+* 支持的密钥类型为 `RSA` 和 `EC` (椭圆曲线)。
+
+* 使用 CA 链时，首先将证书与服务器或数据库证书连接，然后按顺序添加所有中间 CA 证书。
+根 CA 证书应单独存放在一个独立的文件中。
+要合并文件，可以使用以下命令：
+
++
+
+[source,shell]
+----
+cat server.pem intermediate-ca1.pem intermediate-ca2.pem > combined-server.pem
+----
+
+有关证书准备的完整详细信息，请参见 xref:administration:ssl-certs-imported.adoc[Import SSL Certificates].
+
+=== 方案：来自外部 PKI 的所有证书
+
+此场景涵盖迁移一个服务器，其中 Web 和数据库组件均使用来自第三方 CA 的证书。
+组织必须收集以下证书文件：
+
+* Web 组件的根 CA 证书
+* Web 组件的中间 CA 证书（如适用）
+* Web 组件的服务器证书
+* Web 组件的私钥
+* 数据库组件的根 CA 证书
+* 数据库组件的中间 CA 证书（如适用）
+* 数据库组件的服务器证书（包含 `reportdb` 和 `db` 作为 SAN）
+* 数据库组件的私钥
+
+在大多数部署中，单个 CA 同时服务于服务器和数据库组件。
+在这种情况下，`--ssl-*` 和 `--ssl-db-*` 标志使用相同的证书文件。
+下面的示例使用不同的文件名以便于区分。
+
+.包含所有 `--ssl*` 标志的示例迁移命令
+[source,shell,subs="attributes+"]
+----
+{migration-command} podman <oldserver.fqdn> \
+  --ssl-ca-root rootCAweb.pem \
+  --ssl-ca-intermediate intermediateCAweb.pem \
+  --ssl-server-cert webcert.pem \
+  --ssl-server-key webkey.key \
+  --ssl-db-ca-root rootCAdb.pem \
+  --ssl-db-ca-intermediate intermediateCAdb.pem \
+  --ssl-db-cert dbcert.pem \
+  --ssl-db-key dbkey.key
+----
+
+.外部 CA 证书的客户端部署
+[NOTE]
+====
+在成功迁移外部 PKI 证书后，将 CA 证书部署到所有客户端，以便它们可以验证新的服务器证书：
+
+[source,shell]
+----
+mgrctl exec -- 'salt -b 50 * state.apply certs'
+----
+====
+
+=== 方案：混合外部和自签名证书
+
+在使用混合外部和自签名证书进行迁移时，仅在服务器或数据库证书及其私钥也在同一链中被替换时，才替换证书链中的 CA。
+例如，在用外部 PKI 版本替换服务器证书和密钥时，还应提供相应的 CA 证书。
+然而，当仅替换数据库证书时，如果重新使用原始 CA，则仍然需要自签名 CA 密码。
+
+有关完整程序，请参见 https://support.scc.suse.com/s/kb/SUSE-Multi-Linux-Manager-Server-migration-fails-due-to-unknown-or-lost-CA-password?language=en_US[SCC 文章：由于未知（或丢失）CA 密码，SUSE Multi-Linux Manager Server 迁移失败]。

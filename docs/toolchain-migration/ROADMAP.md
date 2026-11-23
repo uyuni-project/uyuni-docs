@@ -139,13 +139,28 @@ diff -r --brief ../uyuni-docs-reference/build/ build/
 
 ---
 
+## Phase 8 — AI translation directories (in progress)
+
+**Goal:** Build from committed per-language source trees (`{lang}/modules/`) instead of po4a/Weblate.
+
+See **[L10N-AI-MIGRATION.md](../../L10N-AI-MIGRATION.md)** at repo root for the tracking document.
+
+- [x] Merge PR #5090 `ja/`, `ko/`, `zh/modules/` trees
+- [x] Add `content_dir` to `config.yml` and `docbuild get-content-dir`
+- [x] Implement `task stage-content` (en base + lang overlay)
+- [x] Deprecate `task translations`/`task pot` and Weblate CI workflow
+- [ ] Full build validation (all languages, CJK PDFs, publish, obs)
+- [x] Update architecture docs
+
+**Exit criteria:** All builds succeed without po4a; partial translations fall back to English.
+
+---
+
 ## Deferred (out of scope for this migration)
 
 - **`lang="en"` HTML attribute** — UI bundle hardcodes `lang="en"` in the HTML element; fixing
   requires UI bundle changes.
-- **po4a removal** — `make_pot.sh`, `use_po.sh`, and `l10n-weblate/*.cfg` are untouched until
-  the AI translation tool is fully operational and Weblate native AsciiDoc workflow is verified.
-- **Per-language source directories** (`ja/modules/`, `ko/modules/` etc.) — future state once AI
-  translation tool integration model is confirmed.
+- **po4a script removal** — `make_pot.sh`, `use_po.sh`, and `l10n-weblate/*.cfg` are retained
+  but deprecated in the build pipeline (see Phase 8).
 - **Uyuni WebUI distinct stylesheet** — currently both `uyuni-website` and `uyuni-webui` share
   `uyuni-2023`. A separate `uyuni-webui-2025` supplemental UI is a future UI task.

@@ -1,7 +1,7 @@
 [[clients-ubuntu]]
 = Registering {ubuntu} Clients
 :description: Configure Ubuntu clients with your SUSE Multi-Linux Manager Server by adding required software channels, synchronizing them, and managing supported products
-:revdate: 2025-03-13
+:revdate: 2026-10-05
 :page-revdate: {revdate}
 :page-author: SUSE Product & Solution Documentation Team
 :page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
@@ -22,7 +22,7 @@ endif::[]
 
 ifeval::[{mlm-content} == true]
 
-{productname} supports {ubuntu} 22.04 LTS and 24.04 LTS clients using {salt}.
+{productname} supports {ubuntu} 22.04 LTS, 24.04 LTS, and 26.04 LTS clients using {salt}.
 endif::[]
 
 Bootstrapping is supported for starting {ubuntu} clients and performing initial state runs such as setting repositories and performing profile updates.
@@ -33,7 +33,7 @@ However, the root user on {ubuntu} is disabled by default, so to use bootstrappi
 Canonical does not endorse or support {productname}.
 ====
 
-== Add Software Channels
+== Add software channels
 
 
 Before you register {ubuntu} clients to your {productname} Server, you need to add the required software channels, and synchronize them.
@@ -56,6 +56,7 @@ The products you need for this procedure are:
 |===
 
 | OS Version     | Product Name
+| {ubuntu} 26.04 | Ubuntu 26.04
 | {ubuntu} 24.04 | Ubuntu 24.04
 | {ubuntu} 22.04 | Ubuntu 22.04
 |===
@@ -77,6 +78,7 @@ The channels you need for this procedure are:
 |===
 
 | OS Version     | Base Channel
+| {ubuntu} 26.04 | ubuntu-2604-amd64-main-amd64
 | {ubuntu} 24.04 | ubuntu-2404-amd64-main-amd64
 | {ubuntu} 22.04 | ubuntu-2204-amd64-main-amd64
 |===
@@ -102,6 +104,7 @@ The channels you need for this procedure are:
 
 | OS Version | Base Channel | Main Channel | Updates Channel | Security Channel | Client Channel
 
+| {ubuntu} 26.04 | ubuntu-2604-pool-amd64-uyuni | ubuntu-2604-amd64-main-uyuni | ubuntu-2604-amd64-main-updates-uyuni | ubuntu-2604-amd64-main-security-uyuni | ubuntu-2604-amd64-uyuni-client
 | {ubuntu} 24.04 | ubuntu-2404-pool-amd64-uyuni | ubuntu-2404-amd64-main-uyuni | ubuntu-2404-amd64-main-updates-uyuni | ubuntu-2404-amd64-main-security-uyuni | ubuntu-2404-amd64-uyuni-client
 | {ubuntu} 22.04 | ubuntu-2204-pool-amd64-uyuni | ubuntu-2204-amd64-main-uyuni | ubuntu-2204-amd64-main-updates-uyuni | ubuntu-2204-amd64-main-security-uyuni | ubuntu-2204-amd64-uyuni-client
 | {ubuntu} 20.04 | ubuntu-2004-pool-amd64-uyuni | ubuntu-2004-amd64-main-uyuni | ubuntu-2004-amd64-main-updates-uyuni | ubuntu-2004-amd64-main-security-uyuni | ubuntu-2004-amd64-uyuni-client
@@ -146,7 +149,7 @@ These packages offer longer maintenance (_10 to 12 years_) for several operating
 These repositories can also be synchronized within {productname} if you extract the required **GPG keys** and your personal **Bearer Token** from a system registered to Ubuntu Pro.
 
 
-=== Extract GPG keys and Bearer Token
+=== Extract GPG keys and bearer token
 
 Register an Ubuntu host with Ubuntu Pro.
 You will find your personal registration token in the https://ubuntu.com/pro/dashboard[Ubuntu Pro Dashbaord].
@@ -195,7 +198,7 @@ Replace `<token>` with your personal Bearer Token. Also, `arch` and `release` mu
 |===
 
 | Architectures | Releases
-| `amd64`, `arm64`, `armel`, `armhf`, `i386`, `powerpc`, `ppc64el`, `s390x` | `bionic`, `focal`, `jammy`, `noble`, `trusty`, `xenial`
+| `amd64`, `arm64`, `armel`, `armhf`, `i386`, `powerpc`, `ppc64el`, `s390x` | `bionic`, `focal`, `jammy`, `noble`, `resolute`, `trusty`, `xenial`
 |===
 
 In order for {productname} to synchronize the repositories, the corresponding GPG keys (`ubuntu-advantage-esm-infra-trusty.gpg`, `ubuntu-advantage-esm-apps.gpg`) must be imported. These are located on a system registered with Ubuntu Pro under `/etc/apt/trusted.gpg.d`. Copy these files to the {productname} system and import them as follows:
@@ -211,7 +214,7 @@ Create the appropriate child channels below already synchronized {ubuntu} parent
 The procedure shown here can be used to circumvent the subscription limitations - however, this constitutes a breach of the Terms of Service and may have **legal consequences**. There must always be sufficient subscriptions for the number of systems used.
 ====
 
-== Check Synchronization Status
+== Check synchronization status
 
 ifeval::[{mlm-content} == true]
 
@@ -253,7 +256,7 @@ Synchronization can sometimes take several hours.
 
 
 
-== Manage GPG Keys
+== Manage GPG keys
 
 Clients use GPG keys to check the authenticity of software packages before they are installed.
 Only trusted software can be installed on clients.
@@ -268,54 +271,22 @@ Because a software channel cannot be used when the GPG key is not trusted, the d
 For more information about GPG keys, see xref:client-configuration:gpg-keys.adoc[].
 
 
-== Root Access
+== Root access
 
 The root user on {ubuntu} is disabled by default for SSH access.
+To onboard using a regular user, you must edit the `sudoers` file on the client system.
 
-To be able to onboard using a regular user, you need to edit the `sudoers` file.
-
-[NOTE]
-====
-This issue happens with self-installed versions of {ubuntu}.
-If the default user has been granted administrative privileges during installation time, a password is required to perform privilege escalation using `sudo`.
-With cloud instances this does not happen because `cloud-init` automatically creates a file under `/etc/sudoers.d` and grants privilege escalation through `sudo` without the need for a password.
-====
+For detailed instructions on configuring `sudo` for non-root onboarding, see xref:client-configuration:registration-sudo.adoc[].
 
 
-
-=== Grant Root User Access
-
-.Procedure: Granting Root User Access
-
-. On the client, edit the `sudoers` file:
-+
-----
-sudo visudo
-----
-+
-Grant `sudo` access to the user by adding this line at the end of the `sudoers` file.
-Replace `<user>` with the name of the user that is bootstrapping the client in the {webui}:
-+
-----
-<user>  ALL=NOPASSWD: /usr/bin/python, /usr/bin/python2, /usr/bin/python3, /var/tmp/venv-salt-minion/bin/python
-----
-
-[NOTE]
-====
-This procedure grants root access without requiring a password, which is required for registering the client.
-When the client is successfully installed it runs with root privileges, so the access is no longer required.
-We recommend that you remove the line from the `sudoers` file after the client has been successfully installed.
-====
-
-
-
-=== Bootstrap as Install-created User via SSH
+=== Bootstrap as install-created user via SSH
 
 To bootstrap an Ubuntu client via SSH you must add the install-created user to the sudo group.
 Then run the bootstrap script from the client.
 
-.Procedure: Adding Install-created User to sudo Group and Bootstrapping via SSH
-
+.Procedure: Adding install-created user to sudo group and bootstrapping via SSH
+[role=procedure]
+_____
 . On the client, as root, run from the command line (replace `<username>` with the name of the install-created user):
 +
 
@@ -330,6 +301,7 @@ sudo usermod -aG sudo <username>
 sudo su -
 curl -Sks https://<SERVER_FQDN>/pub/bootstrap/bootstrap-script.sh | /bin/bash
 ----
+_____
 
 [IMPORTANT]
 ====
@@ -339,7 +311,7 @@ It cannot be bootstrapped via the {productname} {webui} due to the fact that the
 
 
 
-== Register Clients
+== Register clients
 
 ifndef::backend-pdf[]
 include::client-configuration:partial$create_bootstrap_repo_register.adoc[]

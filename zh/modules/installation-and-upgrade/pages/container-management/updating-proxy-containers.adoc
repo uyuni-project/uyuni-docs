@@ -1,0 +1,156 @@
+= {productname} 代理升级
+:description: 使用我们的逐步升级程序将主机操作系统和 SUSE Multi-Linux Manager 工具更新到最新版本
+:revdate: 2026-02-16
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+在运行升级命令之前，必须更新主机操作系统。
+更新主机操作系统还会导致 {productname} 工具的更新，例如 `mgrpxy` 工具。
+
+.过程：升级升级代理
+[role=procedure]
+____
+. 使用 `zypper` 刷新软件储存库：
+
++
+
+[source,shell]
+----
+zypper ref
+----
+
+ifeval::[{mlm-content} == true]
+
+. 根据主机操作系统执行以下步骤：
+
++
+
+对于 {sl-micro} 等事务型系统：::
+
++
+
+--
+
+. 使用 `transactional-update` 应用可用更新：
+
++
+
+[source,shell]
+----
+transactional-update
+----
+
+. 如果已应用更新，`reboot`。
+
+--
+
++
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+. 使用 `transactional-update` 应用可用更新：
+
++
+
+[source,shell]
+----
+transactional-update
+----
+
+. 如果已应用更新，`reboot`。
+
+endif::[]
+
+
+ifeval::[{mlm-content} == true]
+
+对于{sles}：::
+
++
+
+--
+
+使用 `zypper` 更新已安装的软件：
+
+[source,shell]
+----
+zypper up
+----
+
+--
+
+endif::[]
+
++
+
+. 可使用以下命令来更新在 {productname} 上运行的 `podman` 代理容器：
+
++
+
+[source,shell]
+----
+mgrpxy upgrade podman
+----
+
++
+
+或者，可使用以下命令更新 Kubernetes 群集上运行的容器：
+
++
+
+[source,shell]
+----
+mgrpxy upgrade kubernetes
+----
+
++
+
+. 在 Podman 上，清理未使用的容器映像以释放磁盘空间：
+
++
+
+[source,shell]
+----
+podman image prune -a
+----
++
+
+在 {kube} 中，镜像清理工作要么自动完成，要么由 {kube} 发行版决定。
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-check-rpmnew-rpmsave.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../partials/snippet-check-rpmnew-rpmsave.adoc[]
+endif::[]
+
+____
+
+
+
+
+[NOTE]
+====
+如果在升级到特定版本时未指定标签参数，则默认升级到最新版本。
+要升级到特定版本，请提供带有所需映像标签的标签参数。
+====
+
+[IMPORTANT]
+====
+
+ifeval::[{mlm-content} == true]
+
+虽然可以使用特定的标记升级特定的容器，但此功能仅可用于应用 PTF。我们强烈建议对所有代理容器使用同一标记，以确保在正常情况下保持一致性。
+endif::[]
+
+虽然可以使用特定的标记升级特定的容器，但此功能仅可用于应用 PTF。我们强烈建议对所有代理容器使用同一标记，以确保在正常情况下保持一致性。
+====
+
+对于隔离的安装，请先升级容器 RPM 软件包，然后运行 `mgrpxy upgrade podman` 命令。

@@ -1,0 +1,107 @@
+[[auth-methods-pam]]
+= 使用 PAM 进行身份验证
+:description: 在 SUSE Multi-Linux Manager 中配置 SSSD，以使用 PAM 集成基于网络的身份验证系统，实现安全的用户管理。
+:revdate: 2025-01-08
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+{productname} 支持通过 SSSD 使用可插拔身份验证模块（PAM）的基于网络的身份验证系统。
+PAM 是一套库，允许您将 {productname} 与集中式身份验证机制集成，从而消除记住多个密码的需要。{productname} 支持 LDAP、Kerberos 和其他基于网络的身份验证协议。
+
+
+== SSSD 配置
+
+
+.过程：升级配置 SSSD
+. 在 {productname} {webui} 中，导航到 menu:用户[创建用户]，然后允许新用户或现有用户通过 PAM 进行身份验证。
++
+[NOTE]
+====
+在用户名中，除了字母和数字字符外，还允许使用 `-`, `_`, `.` 和 `@`。
+====
+. 选中 `Pluggable Authentication Modules (PAM)` 复选框。
+. 在服务器容器中配置 SSSD。
+  在 {productname} 容器主机的命令提示符处，以 root 身份进入服务器容器：
++
+
+----
+mgrctl term
+----
+
+. 在容器内部，执行以下步骤：
++
+.. 根据您的配置编辑 `/etc/sssd/sssd.conf`。
+   有关示例，请参见 xref:administration:auth-methods-pam.adoc#auth-methods-pam-ad[]。
+.. 完成后，退出容器：
++
+----
+exit
+----
+. 使用以下命令重启 {productname}：
++
+----
+mgradm restart
+----
+
+
+
+[IMPORTANT]
+====
+在 {productname} {webui} 中更改密码仅会更改 {productname} 服务器上的本地密码。
+如果该用户启用了 PAM，则可能根本不使用本地密码。
+在上述示例中，例如，Kerberos 密码不会被更改。
+使用您的网络服务的密码更改机制来更改这些用户的密码。
+====
+
+
+有关 PAM 配置的更多信息，请参见 {sles} 安全指南。安全指南包含一个通用示例，也适用于其他基于网络的身份验证方法。
+它还描述了如何配置 Active Directory (AD) 服务。
+有关更多信息，请参见 {sles-base-os-documentation}/part-auth.html。
+
+
+
+[[auth-methods-pam-ad]]
+=== LDAP 与 Active Directory 集成的示例
+
+要将 LDAP 与 Active Directory 集成，可以使用以下示例。
+
+在代码段中，根据您的环境更改以下占位符：
+
+`$domain`::
+您的域名
+`$ad_server`::
+如果无法从 `$domain` `$uyuni-hostname` 自动检测到 AD 服务器的 FQDN：
+该 AD 客户端所用的机器名称。
+如果未设置，它将为 `uyuni-server.mgr.internal`。
+
+
+`/etc/sssd/sssd.conf` 的示例代码片段：
+
+----
+[sssd]
+config_file_version = 2
+services = nss, pam
+domains = $domain
+
+[nss]
+
+[pam]
+
+[domain/$domain]
+id_provider = ad
+chpass_provider = ad
+access_provider = ad
+auth_provider = ad
+
+ad_domain = $domain
+ad_server = $ad_server
+ad_hostname = $uyuni-hostname
+
+ad_gpo_map_network = +susemanager
+
+krb5_keytab = FILE:/etc/rhn/krb5.conf.d/krb5.keytab
+krb5_ccname_template = FILE:/tmp/krb5cc_%{uid}
+----

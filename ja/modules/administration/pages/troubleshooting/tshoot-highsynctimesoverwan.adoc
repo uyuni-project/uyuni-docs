@@ -1,0 +1,140 @@
+[[troubleshooting-high-sync-times-over-wan]]
+= {productname}サーバとプロキシ間で高いsync時間のトラブルシューティング
+:description: SUSE Multi-Linux Managerサーバとプロキシ間のsync時間が長い場合のトラブルシューティングのために、ネットワークトラフィックを分析し、syncを調整します。
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure.
+
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+
+
+
+WebUIまたはAPIコールを通じて配布またはシステム設定で行われる変更に応じて、`cobbler sync` コマンドが {productname}サーバから {productname}プロキシへファイルを転送するために必要となる場合があります。
+これを達成するために、{cobbler} は`/etc/cobbler/settings`に指定されたプロキシのリストを使用します。
+
+その設計上、`cobbler sync` は変更されたファイルや最近追加されたファイルのみを同期することはできません。
+
+その代わりに、`cobbler sync` を実行すると、`/etc/cobbler/settings`で構成されたすべての指定プロキシに対して`/srv/tftpboot`ディレクトリの完全同期がトリガーされます。
+また、関与するシステム間のWAN接続のレイテンシにも影響されます。
+
+のログによると、同期のプロセスが完了するまでにかなりの時間がかかる場合があります。`/var/log/cobbler/`
+
+たとえば、次の日時に開始したとします。
+
+----
+Thu Jun  3 14:47:35 2021 - DEBUG | running python triggers from /var/lib/cobbler/triggers/task/sync/pre/*
+Thu Jun  3 14:47:35 2021 - DEBUG | running shell triggers from /var/lib/cobbler/triggers/task/sync/pre/*
+----
+
+そして、次の日時に終了したとします。
+
+----
+Thu Jun  3 15:18:49 2021 - DEBUG | running shell triggers from /var/lib/cobbler/triggers/task/sync/post/*
+Thu Jun  3 15:18:49 2021 - DEBUG | shell triggers finished successfully
+----
+
+転送量は約1.8 GBでした。
+転送にはほぼ30分かかりました。
+
+比較すると、`/srv/tftboot` と同じサイズの大きな単一ファイルのコピーは、数分以内に完了します。
+
+
+//== Resolution and analysis
+
+{productname} サーバとプロキシ間でファイルをコピーするために`rsync`ベースのアプローチに切り替えると、転送時間と待機時間を短縮できる場合があります。
+
+このタスクを達成するためのスクリプトは、 https://suse.my.salesforce.com/sfc/p/1i000000gLOd/a/1i000000ll5B/B2AmvIJN2_JsAyjTQzCVP_x5ioVgd0bYN9X9NpMugS8.からダウンロード可能です。
+
+スクリプトはコマンドラインオプションを受け付けません。
+スクリプトを実行する前に、手動で編集し、`MLMHOSTNAME`、`MLMIP`、および`MLMPROXY1`変数を正しく設定する必要があります。
+
+[WARNING]
+====
+スクリプトの個別調整に対するサポートはありません。
+スクリプトとその内部のコメントは、プロセスと考慮すべきステップの概要を提供することを目的としています。
+さらなる支援が必要な場合は、SUSEコンサルティングに連絡してください。
+====
+
+
+スクリプトを使用した提案されるアプローチは、次の環境で役立ちます。
+
+* {productname}プロキシシステムがWAN接続を介して接続されています。
+* `/srv/tftboot` には、ディストリビューション用ファイルおよびクライアントPXEブートファイルが多数含まれており、合計で数千ファイルあります。
+* `/etc/cobbler/settings` 内のプロキシはすべて無効化されており、そうでなければ {productname} は引き続きプロキシにコンテンツを同期します。
++
+----
+#proxies:
+# - "MLMproxy.MLMproxy.test"
+# - "MLMproxy2.MLMproxy.test"
+----
+
+
+.プロシージャ:新しいsync速度の分析
+
+. {productname}と関連するシステム間のTCPトラフィックのダンプを取得します。
+* {productname}サーバー上：
++
+----
+tcpdump -i ethX -s 200 host <ip-address-of-susemanagerproxy> and not ssh
+----
++
+* {productname}プロキシ上：
++
+----
+tcpdump -i ethX -s 200 host <ip-address-of-susemanager> and not ssh
+----
++
+* これにより、分析を実行するのに十分な200のパッケージサイズのみがキャプチャされます。
+* プロキシと通信するために{productname}が使用するネットワークインタフェースに対して、ethXを調整してください。
+* 最後に、さらにパッケージ数を削減するため、ssh通信はキャプチャされません。
+. `cobbler sync` を開始します。
+* 同期を強制するため、最初に{cobbler} のjsonキャッシュファイルを削除してから、`cobbler sync`を実行します。
++
+----
+rm /var/lib/cobbler/pxe_cache.json
+cobbler sync
+----
++
+. \{command}`cobbler sync` が終了したら、TCPdumpsを停止します。
+. Wiresharkを使用してTCPダンプを開き、`Statistics > Conversations` に移動して、ダンプが分析されるのを待ちます。
+. TCPタブに切り替えます。
+  このタブに表示される数値は、{productname}サーバーと{productname}プロキシ間でキャプチャされた会話の総数を示します。
+. `Duration`列を探します。
+* 昇順にソートして開始し、ファイルの転送にかかった最小時間を確認します。
+* 降順にソートして続行し、カーネルやinitrdの転送など、大きなファイルの最大値を確認します。
++
+[NOTE]
+====
+ポート4505と4506はSalt通信に使用されるため無視してください。
+====
+
+
+//=== Conclusion 
+
+TCPdumpの分析では、{productname}サーバーからプロキシへの、サイズが約1800バイトの小さなファイルの転送に約0.3秒かかったことが示されています。
+
+大きなファイルは多くありませんでしたが、小さなファイルの数が多いため、転送されるファイルごとに新しいTCP接続が作成され、確立された接続数が多くなりました。
+
+したがって、最小転送時間と必要な接続数（例として約5000）がわかれば、転送時間全体の概算推定時間が得られます。5000 * 0.3 / 60 = 25分。
+

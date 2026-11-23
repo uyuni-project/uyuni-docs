@@ -1,0 +1,523 @@
+[[clients-rh-cdn]]
+= CDNで{rhel}クライアントを登録する
+:description: redhat.comでsubscription-managerを使用してRed Hat Enterprise LinuxクライアントをRed Hatコンテンツデリバリネットワークに登録する方法を学びます。
+:revdate: 2026-03-17
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメントチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$rhel10_cpu_architecture_warning.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/rhel10_cpu_architecture_warning.adoc[]
+endif::[]
+
+ifeval::[{mlm-content} == true]
+
+// SUSE Liberty Linux not available at Uyuni for now
+{sleses}を使用するのではなく、{rhel}クライアントを直接実行している場合、{redhat}ソースを使用してパッケージを取得および更新する必要があります。
+endif::[]
+
+このセクションでは、{rhel}オペレーティングシステムを実行しているクライアントを登録するための{redhat}コンテンツデリバリネットワーク(CDN)の使用に関する情報を含んでいます。
+
+代わりに{redhat}更新インフラストラクチャ(RHUI)を使用する方法については、xref:client-configuration:clients-rh-rhui.adoc[]を参照してください。
+
+[IMPORTANT]
+====
+
+ifeval::[{mlm-content} == true]
+
+// SUSE Liberty Linux not available at Uyuni for now
+{rhel}クライアントは{redhat}に基づいており、{sleses}、RES、または{sles}とは無関係です。
+endif::[]
+
+{redhat}ベースメディアリポジトリと{rhela}インストールメディアへのアクセスを管理し、{productname}サーバを{redhat}コンテンツデリバリネットワークに接続する責任があります。
+使用しているすべての{redhat}システムに対して{rhela}のサポートを取得する必要があります。
+これを行わない場合、{redhat}との契約に違反する可能性があります。
+====
+
+== エンタイトルメントと証明書のインポート
+
+
+{redhat}クライアントには、{redhat}認証局(CA)、エンタイトルメント証明書、およびエンタイトルメントキーが必要です。
+
+エンタイトルメント証明書には有効期限が埋め込まれており、サポートサブスクリプションの期間に一致します。
+中断を避けるために、サポートサブスクリプション期間の終了時にこのプロセスを繰り返す必要があります。
+
+{redhat}はサブスクリプション割り当てを管理するためのサブスクリプションマネージャーツールを提供します。
+これはローカルで実行され、インストールされた製品とサブスクリプションを追跡します。
+クライアントは証明書を取得するためにサブスクリプションマネージャーに登録される必要があります。
+
+{redhat}クライアントはURLを使用してリポジトリを複製します。
+URLは{redhat}クライアントが登録されている場所によって変わります。
+
+{redhat}クライアントは3つの異なる方法で登録できます。
+
+* {redhat} redhat.comにあるコンテンツデリバリネットワーク(CDN)
+* {redhat} サテライトサーバ
+* {redhat} クラウドの更新インフラストラクチャ(RHUI)
+
+このガイドは、{redhat} CDNに登録されたクライアントを対象としています。
+CDNに登録されたシステムが少なくとも1台必要で、リポジトリコンテンツのための認可されたサブスクリプションが必要です。
+
+代わりに{redhat}更新インフラストラクチャ(RHUI)を使用する方法については、xref:client-configuration:clients-rh-rhui.adoc[]を参照してください。
+
+
+[IMPORTANT]
+====
+クライアントシステムのためのサテライト証明書には、サテライトサーバとサブスクリプションが必要です。
+サテライト証明書を使用しているクライアントは、{productname} サーバではサポートされていません。
+====
+
+[WARNING]
+====
+エンタイトルメント証明書には有効期限が埋め込まれており、サポートサブスクリプションの期間に一致します。
+中断を避けるために、サポートサブスクリプション期間の終了時にこのプロセスを繰り返す必要があります。
+====
+
+{redhat} は、サブスクリプションの割り当てを管理するためのsubscription-managerツールを提供します。
+これは、インストールされた製品とサブスクリプションを追跡するために、クライアントシステム上でローカルに実行されます。
+subscription-managerを使用してredhat.comに登録し、次にこの手順に従って証明書を取得します。
+
+
+.プロシージャ:クライアントをsubscription-managerに登録する
+
+. クライアントシステムのコマンドプロンプトで、サブスクリプションマネージャツールを使用して登録します。
++
+----
+subscription-manager register
+----
++
+プロンプトが表示されたら、{redhat}ポータルのユーザ名とパスワードを入力します。
+. コマンドを実行します。
++
+----
+subscription-manager activate
+----
++
+. {productname}サーバがアクセスできる場所に、クライアントシステムからエンタイトルメント証明書とキーをコピーします:
++
+----
+cp /etc/pki/entitlement/ /<example>/entitlement/
+----
++
+[NOTE]
+====
+あなたのエンタイトルメント証明書とキーは、両方ともファイル拡張子が`.pem`です。
+キーのファイル名にも`key`が含まれています。
+====
++
+. クライアントシステムから{redhat} CA証明書ファイルを、エンタイトルメント証明書とキーと同じWebの場所にコピーします:
++
+----
+cp /etc/rhsm/ca/redhat-uep.pem /<example>/entitlement
+----
+
+
+{redhat}クライアントのリポジトリを管理するには、CA証明書とエンタイトルメント証明書を{productname}サーバにインポートする必要があります。
+これには、エンタイトルメント証明書、エンタイトルメントキー、および{redhat}証明書のために、3回インポート手順を実行する必要があります。
+
+
+
+.プロシージャ:サーバへの証明書のインポート
+
+. {productname}サーバ {webui} で、menu:システム[自動インストール> GPGおよびSSLキー]に移動します。
+. btn:[格納されているキー/証明書の作成]をクリックして、エンタイトルメント証明書用に次のパラメータを設定します。
+* `Description`フィールドに`Entitlement-Cert-date`と入力します。
+* `Type`フィールドで`SSL`を選択します。
+* `Select file to upload`フィールドで、エンタイトルメント証明書を保存した場所をブラウズし、`.pem`証明書ファイルを選択します。
+. btn:[キーの作成]をクリックします。
+. btn:[格納されているキー/証明書の作成]をクリックして、エンタイトルメントキー用に次のパラメータを設定します。
+* `Description`フィールドに`Entitlement-key-date`と入力します。
+* `Type`フィールドで`SSL`を選択します。
+* `Select file to upload`フィールドで、エンタイトルメントキーを保存した場所をブラウズし、`.pem`キーファイルを選択します。
+. btn:[キーの作成]をクリックします。
+. btn:[格納されているキーまたは証明書の作成]をクリックして、{redhat}証明書用に次のパラメータを設定します。
+* `Description`フィールドに`redhat-uep`と入力します。
+* `Type`フィールドで`SSL`を選択します。
+* `Select file to upload`フィールドで、{redhat}証明書を保存した場所をブラウズし、証明書ファイルを選択します。
+. btn:[キーの作成]をクリックします。
+
+
+
+== ソフトウェアチャンネルの追加
+
+// 2022-04-21, ke:
+// Section sequence according to https://github.com/uyuni-project/uyuni-docs/pull/1535
+
+{redhat}クライアントを{productname}サーバに登録する前に、必要なソフトウェアチャンネルを追加して同期する必要があります。
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$arch-other-note.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/arch-other-note.adoc[]
+endif::[]
+
+ifeval::[{mlm-content} == true]
+
+あなたの{susemgr}サブスクリプションは、{sleses}のツールチャンネル（{redhat}拡張サポートまたはRESとしても知られています）を利用する権利を与えます。
+ブートストラップリポジトリを作成するには、クライアントツールチャンネルを使用する必要があります。
+この手順はSaltクライアントに適用されます。
+endif::[]
+
+ifeval::[{mlm-content} == true]
+
+このプロシージャで必要な製品は次のとおりです。
+
+// SUSE Liberty Linux not available at Uyuni for now
+[[redhat-channels-wizard]]
+[cols="1,1", options="header"]
+.Red Hat製品 - WebUI
+|===
+
+ifeval::[{mlm-content} == true]
+| [OSのバージョン]  | 製品名
+| {redhat} 10 | RHELおよびLiberty 10 Base
+| {redhat} 9  | RHELおよびLiberty 9 Base
+| {redhat} 8  | RHELまたはSLES ESまたはCentOS 8 Base
+| {redhat} 7  | RHEL7 Base x86_64
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+| [OSのバージョン]  | 製品名
+| {redhat} 10 | RHEL 10
+| {redhat} 9  | RHEL
+| {redhat} 8  | RHELまたはCentOS 8 Base
+| {redhat} 7  | RHEL7 Base x86_64
+endif::[]
+
+|===
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$addchannels_vendor_webui.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/addchannels_vendor_webui.adoc[]
+endif::[]
+
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+このプロシージャで必要なチャンネルは次のとおりです。
+
+[[redhat-channels-cli]]
+[cols="1,1,1,1", options="header"]
+.Red Hatチャンネル - CLI
+|===
+
+| [OSのバージョン]
+| ベースチャンネル
+| クライアントチャンネル
+| ツールチャンネル
+| {redhat} 10
+| rhel10-pool-uyuni
+| -
+| rhel10-uyuni-client
+| {redhat} 9
+| rhel9-pool-uyuni
+| -
+| rhel9-uyuni-client
+
+| {redhat} 8
+| rhel8-pool-uyuni
+| -
+| rhel8-uyuni-client
+
+| {redhat} 7
+| rhel7-pool-uyuni
+| -
+| rhel7-uyuni-client
+
+|===
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$addchannels_novendor_cli_multiarch.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/addchannels_novendor_cli_multiarch.adoc[]
+endif::[]
+
+
+[NOTE]
+====
+`spacewalk-common-channels`が提供するクライアントツールチャネルは、{uyuni}から提供されており、{suse}からではありません。
+====
+
+endif::[]
+
+
+== カスタムリポジトリおよびチャンネルの準備
+
+{redhat} CDNからソフトウェアをミラーリングするには、{productname}にカスタムチャンネルとリポジトリを作成し、それをURLでCDNにリンクさせる必要があります。
+これが正しく機能するためには、{redhat}ポータルでこれらの製品に対するエンタイトルメントを持っている必要があります。
+サブスクリプションマネージャーツールを使用して、ミラーリングしたいリポジトリのURLを取得できます：
+
+----
+subscription-manager repos
+----
+
+これらのリポジトリURLを使用して、カスタムリポジトリを作成できます。
+これにより、クライアントを管理するために必要なコンテンツのみをミラーリングできます。
+
+[IMPORTANT]
+====
+{redhat}リポジトリのカスタムバージョンは、{redhat}ポータルに正しいエンタイトルメントがある場合にのみ作成できます。
+====
+
+
+このプロシージャに必要な詳細は次のとおりです。
+
+[[redhat-repos-manual]]
+[cols="1,1", options="header"]
+.Red Hatカスタムリポジトリ設定
+|===
+
+| オプション                 | 設定
+| リポジトリ URL         | {redhat} CDNによって提供されるコンテンツURL
+| メタデータは署名されていますか？  | すべての{redhat}エンタープライズリポジトリのチェックを外してください
+| SSL CA 証明書     | `redhat-uep`
+| SSL クライアント証明書 | `Entitlement-Cert-date`
+| SSL クライアントキー         | `Entitlement-Key-date`
+|===
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$manual_repos.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/manual_repos.adoc[]
+endif::[]
+
+
+
+このプロシージャで必要なチャンネルは次のとおりです。
+
+[[redhat-channels-custom]]
+
+ifeval::[{mlm-content} == true]
+[cols="1,1,1", options="header"]
+.Red Hatカスタムチャンネル
+|===
+
+| [OSのバージョン]  | ベース製品          | ベースチャンネル
+| {redhat} 10 | RHELおよびLiberty 10 Base | el10-pool-x86_64
+| {redhat} 9  | RHELおよびLiberty 9 Base | el9-pool-x86_64
+// SUSE Liberty Linux not available at Uyuni for now
+| {redhat} 8  | RHELまたはSLES ESまたはCentOS 8 Base | rhel8-pool-x86_64
+| {redhat} 7  | RHEL7 Base x86_64 | rhel7-pool-x86_64
+
+|===
+endif::[]
+
+// SUSE Liberty Linux not available at Uyuni for now
+
+ifeval::[{uyuni-content} == true]
+[cols="1,1", options="header"]
+.Red Hatカスタムチャンネル
+|===
+
+| [OSのバージョン]  | ベースチャンネル
+| {redhat} 10 | rhel10-pool-uyuni
+| {redhat} 9  | rhel9-pool-uyuni
+| {redhat} 8  | rhel8-pool-uyuni
+| {redhat} 7  | rhel7-pool-uyuni
+
+|===
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$manual_channels.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/manual_channels.adoc[]
+endif::[]
+
+[IMPORTANT]
+====
+{redhat} 10、{redhat} 9、および{redhat} 8クライアントの場合、BaseおよびAppStreamチャンネルの両方を追加してください。
+両方のチャンネルからパッケージが必要です。
+両方のチャンネルを追加しないと、パッケージが不足しているため、ブートストラップリポジトリを作成できません。
+====
+
+モジュラー チャンネルを使用している場合は、クライアントで Python 3.6 モジュール ストリームを有効にする必要があります。
+Python 3.6 を提供しない場合、`spacecmd`パッケージのインストールに失敗します。
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$manual_associate.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/manual_associate.adoc[]
+endif::[]
+
+
+
+== 同期ステータスの確認
+
+ifeval::[{mlm-content} == true]
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_webui_mlm.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_webui_mlm.adoc[]
+endif::[]
+
+
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_webui_uyuni.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_webui_uyuni.adoc[]
+endif::[]
+
+
+endif::[]
+
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$check_sync_cli.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/check_sync_cli.adoc[]
+endif::[]
+
+
+[NOTE]
+====
+{rhel} チャンネルは非常に大きくなる可能性があります。
+同期には時々数時間かかることがあります。
+====
+
+
+.プロシージャ:オプション:設定ファイルをデプロイするためのSalt状態の作成
+
+. {productname} サーバー {webui} で、menu:設定[チャンネル] に移動します。
+. btn:[状態チャンネルの作成]をクリックします。
+* `Name`フィールドに`subscription-manager: disable yum plugins`と入力します。
+* `Label`フィールドに`subscription-manager-disable-yum-plugins`と入力します。
+* `Description`フィールドに`subscription-manager: disable yum plugins`と入力します。
+* `SLS Contents`フィールドは空のままにします。
+. btn:[設定チャンネルの作成]をクリックします。
+. btn:[設定ファイルの作成]をクリックします。
+* `Filename/Path`フィールドに`/etc/yum/pluginconf.d/subscription-manager.conf`と入力します。
+* `File Contents`フィールドに次のように入力します。
++
+----
+[main]
+enabled=0
+----
+. btn:[設定ファイルの作成]をクリックします。
+. `Salt Filesystem Path`フィールドの値に注意してください。
+. 設定チャンネルの名前をクリックします。
+. `View/Edit 'init.sls' File`をクリックします。
+* `File Contents`フィールドに次のように入力します。
++
+----
+configure_subscription-manager-disable-yum-plugins:
+  cmd.run:
+    - name: subscription-manager config --rhsm.auto_enable_yum_plugins=0
+    - watch:
+      - file: /etc/yum/pluginconf.d/subscription-manager.conf
+  file.managed:
+    - name: /etc/yum/pluginconf.d/subscription-manager.conf
+    - source: salt:///etc/yum/pluginconf.d/subscription-manager.conf
+----
+. btn:[設定ファイルの更新]をクリックします。
+
+
+[NOTE]
+====
+`Creating a Salt State to Deploy Configuration Files`の手順はオプションです。
+====
+
+
+.プロシージャ:{rhel} クライアントのためのシステムグループの作成
+
+. {productname} サーバー {webui} で、menu:システム[システムグループ] に移動します。
+. btn:[グループの作成]をクリックします。
+* `Name`フィールドに`rhel-systems`と入力します。
+* `Description`フィールドに`All RHEL systems`と入力します。
+. btn:[グループの作成]をクリックします。
+. `States`タブをクリックします。
+. `Configuration Channels`タブをクリックします。
+. 検索ボックスに`subscription-manager: disable yum plugins`と入力します。
+. btn:[検索]をクリックして状態を表示します。
+. `Assign`列の状態のチェックボックスをクリックします。
+. btn:[変更の保存]をクリックします。
+. btn:[確認]をクリックします。
+
+すでにRHELシステムが{productname}に追加されている場合は、それらを新しいシステムグループに割り当て、その後highstateを適用します。
+
+
+
+.プロシージャ:システムグループをアクティベーションキーに追加する
+
+RHELシステムで使用したアクティベーションキーを変更して、上記で作成したシステムグループに含めます。
+
+. {productname} サーバー {webui}で、menu:システム[アクティベーションキー]に移動します。
+. RHELシステムで使用されるそれぞれのアクティベーションキーをクリックします。
+. `Groups`タブに移動し、`Join`サブタブに移動します。
+. `Select rhel-systems`をチェックします。
+. btn:[選択したグループに参加]をクリックします。
+
+
+== GPGキーの管理
+
+クライアントは、ソフトウェアパッケージがインストールされる前に、その真正性を確認するためにGPGキーを使用します。
+信頼できるソフトウェアのみがクライアントにインストールできます。
+
+[IMPORTANT]
+====
+クライアントのセキュリティのために、GPGキーを信頼することは重要です。
+どのキーが必要で信頼できるかを決定するのは管理者の仕事です。
+GPG キーが信頼されていない場合、ソフトウェア チャンネルは使用できないため、クライアントにチャンネルを割り当てる決定はキーを信頼する決定に依存します。
+====
+
+GPGキーに関する詳細情報は、xref:client-configuration:gpg-keys.adoc[]を参照してください。
+
+[NOTE]
+====
+{redhat}カスタムチャネルで`Enable GPG Check`フィールドをチェックする場合は、`GPG Key URL`フィールドに入力する必要があります。
+`/etc/pki/rpm-gpg`ディレクトリに保存されているGPGキーのファイルURLを、{redhat}ミニオンで使用できます。
+
+例:
+`file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release`
+
+{redhat}製品署名キーの完全なリストについては、 https://access.redhat.com/security/team/key.をご覧ください。
+====
+
+
+== クライアントの登録
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$create_bootstrap_repo_register.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../partials/create_bootstrap_repo_register.adoc[]
+endif::[]

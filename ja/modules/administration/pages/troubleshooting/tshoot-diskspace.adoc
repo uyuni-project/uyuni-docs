@@ -1,0 +1,124 @@
+[[troubleshooting-disk-space]]
+= ディスク容量のトラブルシューティング
+:description: SUSE Multi-Linux Managerで未使用のソフトウェアチャネルを削除し、アクティベーションキーをクリーンアップし、古いデータベースを削除することで、ディスク容量を回復する方法を学びます。
+:revdate: 2024-06-19
+:page-revdate: {revdate}
+:page-author: SUSE 製品＆ソリューション ドキュメンテーション チーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+ディスク容量が不足すると、{productname} データベースおよびファイル構造に深刻な影響を及ぼし、ほとんどの場合、回復不可能です。{productname}は特定のディレクトリの空き容量を監視し、設定可能なアラートがあります。
+スペース管理の詳細については、xref:administration:space-management.adoc[]を参照してください。
+
+一般的に、コンテナボリュームはホストファイルシステムとスペースを共有します。
+`btrfs`ファイルシステムが満杯になると、ファイルを削除できなくなることがあります。
+これを解決するために、`btrfs device add`コマンドを使用して、ファイルシステムに一時的に少量のストレージを追加できます。
+これにより、さらなるファイルシステムのメンテナンスのためにスペースを確保するためにファイルを削除できるようになります。
+メンテナンスが完了したら、`btrfs device delete`を使用して一時的なストレージを削除できます。
+このトピックの詳細については、 https://www.suse.com/support/kb/doc/?id=000018779.を参照してください。
+
+使用されていないソフトウェアチャンネルを削除することにより、ディスク容量を回復できます。
+
+* ベンダーチャネルを削除する方法についての手順は、xref:administration:channel-management.adoc[]を参照してください。
+* カスタムチャネルを削除する方法についての手順は、xref:administration:custom-channels.adoc[]を参照してください。
+
+カスタムチャネルがどのくらいの頻度で同期されているかを確認することもできます。
+カスタムチャネルの同期に関する手順は、xref:administration:custom-channels.adoc#_custom_channel_synchronization[]を参照してください。
+
+未使用のアクティベーションキー、コンテンツライフサイクルプロジェクト、およびクライアント登録をクリーンアップすることで、ディスク容量を回復することもできます。
+冗長なデータベースエントリを削除することもできます:
+
+
+
+.プロシージャ:冗長なデータベースエントリの解決
+. `spacewalk-data-fsck`コマンドを使用して、冗長なデータベースエントリを一覧表示します。
+. `spacewalk-data-fsck --remove`コマンドを使用して、それらを削除します。
+
+
+
+== ディスクチェックの警告: 存在しないディレクトリ
+
+5.0からコンテナ化されたデプロイメントに移行した後、またはカスタムディスクチェック構成を使用している場合、もはや存在しないディレクトリに対する警告が表示されることがあります。
+これは通常、`DISKCHECKDIRS`環境変数が`/var/lib/pgsql`またはそのサブディレクトリを参照している場合に発生します。
+
+コンテナ化されたデプロイメントでは、PostgreSQLデータベースは独自のコンテナ内で実行され、`/var/lib/pgsql`ディレクトリはサーバーコンテナ内には存在しなくなります。
+データベースファイルは、別のデータベースコンテナボリュームに保存されます。
+
+ログや通知にこのような警告が表示された場合：
+
+----
+DISKCHECK: Directory /var/lib/pgsql does not exist
+DISKCHECK: Directory /var/lib/pgsql/data does not exist
+----
+
+これは、ディスクチェックの設定に、コンテナ化されたデプロイメントではもはや有効でないディレクトリが含まれていることを示しています。
+
+
+=== 原因
+
+コンテナ化以前は、顧客は`spacecheck_dirs`の`/etc/rhn/rhn.conf`パラメータを設定することで、監視するカスタムディレクトリを設定できました。
+一般的な構成には、データベースのディスクスペースを監視するために`/var/lib/pgsql`が含まれていました。
+
+コンテナ化されたデプロイメントでは：
+
+* `spacecheck_dirs`内の`/etc/rhn/rhn.conf`パラメータは引き続き読み取られますが、`DISKCHECKDIRS`環境変数が設定されている場合は、そちらが優先されます。
+* `DISKCHECKDIRS`が設定されていない場合、システムは設定ファイルの`spacecheck_dirs`にフォールバックします。
+* データベースは別のコンテナ内で実行され、専用のディスクチェックがあります。
+
+
+=== Fix
+
+`DISKCHECKDIRS`環境変数から古いディレクトリ参照を削除してください。
+
+.プロシージャ:古いディレクトリ参照の削除
+
+. カスタムディレクトリ設定を持つ systemd オーバーライドファイルがあるか確認してください：
++
+----
+cat /etc/systemd/system/uyuni-server.service.d/diskcheck.conf
+----
+
+. ファイルに`/var/lib/pgsql`または他の存在しないディレクトリが含まれている場合、有効なディレクトリのみを使用するように更新してください：
++
+----
+cat > /etc/systemd/system/uyuni-server.service.d/diskcheck.conf << 'EOF'
+[Service]
+Environment="DISKCHECKDIRS=/var/spacewalk /var/cache /srv"
+EOF
+----
+
+. {productname} を再起動して設定を適用します：
++
+----
+mgradm restart
+----
+
+
+=== 結果
+
+存在しないディレクトリに関するディスクチェックの警告はもはや表示されません。
+サーバーコンテナは、コンテナ内に存在するディレクトリのみを監視します。
+
+データベースコンテナには、データベースコンテナ内のPostgreSQLデータディレクトリ（`/var/lib/pgsql/data`）を監視する独自のディスクチェックがあります。
+このチェックは自動的に設定され、手動での介入は必要ありません。
+
+コンテナ化されたデプロイメントにおけるディスクスペース管理に関する詳細情報は、xref:administration:space-management.adoc[]を参照してください。

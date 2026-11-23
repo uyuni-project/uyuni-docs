@@ -1,0 +1,157 @@
+移行時、{productname}はデフォルトで自己署名証明書を使用します。
+外部PKI（認証局）から証明書を使用するには、`{migration-command}`を実行する際に`--ssl*`フラグを使用してすべての証明書ファイルを提供できます。
+
+.クイックリファレンス：移行に必要なフラグはどれですか
+[cols="1,5"]
+|===
+|移行状況|必要なフラグ
+
+|自己署名CA、すべて変更なし
+|なし
+
+|新しいサーバー証明書（同じCA）
+|`--ssl-server-cert`、`--ssl-server-key`
+
+|新しいデータベース証明書（同じCA）
+|`--ssl-db-cert`、`--ssl-db-key`
+
+|新しいサーバーおよびデータベース証明書（同じCA）
+|`--ssl-server-cert`、`--ssl-server-key`、`--ssl-db-cert`、`--ssl-db-key`
+
+|新しいサーバー証明書 + 新しいCA
+|`--ssl-server-cert`、`--ssl-server-key`、`--ssl-ca-root`、`--ssl-ca-intermediate`
+
+|新しいデータベース証明書 + 新しいCA
+|`--ssl-db-cert`、`--ssl-db-key`、`--ssl-db-ca-root`、`--ssl-db-ca-intermediate`
+
+|CAのみ変更（同じ証明書ファイル、異なるCAチェーン）
+|`--ssl-ca-root`、`--ssl-ca-intermediate`、`--ssl-db-ca-root`、`--ssl-db-ca-intermediate`
+
+|完全な置き換え — 両方のコンポーネントに新しい証明書とCA
+|以下の「外部PKIからのすべての証明書」を参照してください
+|===
+
+指定されていない`--ssl*`フラグは、ソースサーバーからの対応する値を使用します。
+現在の設定と異なるファイルのフラグのみを提供してください。
+
+=== フラグリファレンス
+
+ifeval::[{migration-source} == 4.3]
+次の`--ssl*`フラグは`mgradm migrate`でサポートされています。
+endif::[]
+
+ifeval::[{migration-source} == 5.0]
+次の`--ssl*`フラグは`mgradm migrate`および`mgradm upgrade`でサポートされています。
+endif::[]
+
+[cols="1,5"]
+|===
+|フラグ|説明
+
+|`--ssl-ca-root`
+|サーバー証明書に署名したルートCA証明書へのパス（デフォルトはソースサーバーCA）
+
+|`--ssl-ca-intermediate`
+|チェーン内の中間CA証明書へのパス（複数回指定可能；デフォルトはソースサーバー）
+
+|`--ssl-server-cert`
+|サーバー証明書へのパス（デフォルトはソースサーバー証明書）
+
+|`--ssl-server-key`
+|サーバーの秘密鍵へのパス（デフォルトはソースサーバー鍵）
+
+|`--ssl-db-ca-root`
+|データベース証明書に署名したルートCA証明書へのパス
+
+|`--ssl-db-ca-intermediate`
+|データベース証明書チェーン内の中間CA証明書へのパス（複数回指定可能）
+
+|`--ssl-db-cert`
+|データベース証明書へのパス
+
+|`--ssl-db-key`
+|データベースの秘密鍵へのパス
+|===
+
+[IMPORTANT]
+====
+データベース証明書チェーンはサーバー証明書チェーンとは完全に別です。
+`--ssl-db-*`フラグは、同じCAを使用する場合でも提供する必要があります。データベースコンテナは、移行中に生成された独自の証明書を必要とするためです。
+====
+
+=== 証明書の要件
+
+次の要件は、`mgradm migrate`で使用されるすべての証明書ファイルに適用されます。
+
+* すべての証明書ファイルはPEM形式でなければなりません。
+  証明書がDER形式の場合は、最初に変換してください。
+
+* 証明書の`X509v3 Subject Alternative Name`セクションのホスト名は、証明書がデプロイされるマシンの完全修飾ホスト名と一致する必要があります。
+
+* データベース証明書では、`Subject Alternative Name`（SAN）として、`reportdb`と`db`が必要です。
+
+* サポートされているキータイプは`RSA`および`EC`（楕円曲線）です。
+
+* CAチェーンを使用する場合は、最初にサーバーまたはデータベース証明書を連結し、その後にすべての中間CA証明書を順番に続けてください。
+ルートCA証明書は独自のファイルで提供する必要があります。
+ファイルを結合するには、次のコマンドを使用できます：
+
++
+
+[source,shell]
+----
+cat server.pem intermediate-ca1.pem intermediate-ca2.pem > combined-server.pem
+----
+
+証明書の準備に関する詳細については、xref:administration:ssl-certs-imported.adoc[Import SSL Certificates]を参照してください。
+
+=== 場面:外部PKIからのすべての証明書
+
+このシナリオでは、Webおよびデータベースコンポーネントの両方がサードパーティCAの証明書を使用するサーバーの移行をカバーします。
+組織は以下の証明書ファイルを収集する必要があります：
+
+* Webコンポーネント用のルートCA証明書
+* Webコンポーネント用の中間CA証明書（該当する場合）
+* Webコンポーネント用のサーバー証明書
+* Webコンポーネント用の秘密鍵
+* データベースコンポーネント用のルートCA証明書
+* データベースコンポーネント用の中間CA証明書（該当する場合）
+* データベースコンポーネントのサーバー証明書（SANとして`reportdb`および`db`を含む）
+* データベースコンポーネント用の秘密鍵
+
+ほとんどのデプロイメントでは、単一のCAがサーバーおよびデータベースコンポーネントの両方にサービスを提供します。
+その場合、同じ証明書ファイルが`--ssl-*`フラグと`--ssl-db-*`フラグの両方に使用されます。
+以下の例では、明確さのために別々のファイル名を使用しています。
+
+.すべての`--ssl*`フラグを使用した移行コマンドの例
+[source,shell,subs="attributes+"]
+----
+{migration-command} podman <oldserver.fqdn> \
+  --ssl-ca-root rootCAweb.pem \
+  --ssl-ca-intermediate intermediateCAweb.pem \
+  --ssl-server-cert webcert.pem \
+  --ssl-server-key webkey.key \
+  --ssl-db-ca-root rootCAdb.pem \
+  --ssl-db-ca-intermediate intermediateCAdb.pem \
+  --ssl-db-cert dbcert.pem \
+  --ssl-db-key dbkey.key
+----
+
+.外部CA証明書のクライアント展開
+[NOTE]
+====
+外部PKI証明書での成功した移行後、CA証明書をすべてのクライアントにデプロイし、新しいサーバー証明書を検証できるようにします：
+
+[source,shell]
+----
+mgrctl exec -- 'salt -b 50 * state.apply certs'
+----
+====
+
+=== 場面:外部証明書と自己署名証明書の混在
+
+外部証明書と自己署名証明書が混在する場合の移行では、サーバーまたはデータベース証明書とその秘密鍵が同じチェーンで置き換えられる場合にのみ、証明書チェーン内のCAを置き換えてください。
+例えば、サーバー証明書と鍵の両方を外部PKIバージョンに置き換える場合、対応するCA証明書も提供します。
+しかし、データベース証明書のみを置き換える場合、元のCAが再利用される場合は自己署名CAのパスワードが依然として必要です。
+
+完全な手順については、 https://support.scc.suse.com/s/kb/SUSE-Multi-Linux-Manager-Server-migration-fails-due-to-unknown-or-lost-CA-password?language=en_US[SCCの記事「SUSE Multi-Linux Manager Serverの移行が不明（または失われた）CAパスワードのために失敗します」を参照してください。]

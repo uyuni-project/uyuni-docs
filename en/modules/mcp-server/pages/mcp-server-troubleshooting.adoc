@@ -1,0 +1,97 @@
+[[mcp-server-troubleshooting]]
+= Troubleshooting
+:revdate: 2026-07-29
+:page-revdate: {revdate}
+
+This chapter describes common problems that can occur when configuring or operating the {productname} MCP Server and provides guidance for resolving them.
+
+Start troubleshooting with a read-only tool such as `list_systems`.
+Set `UYUNI_MCP_LOG_LEVEL=DEBUG` temporarily when the default log level does not provide enough information.
+Debug logs can contain sensitive operational data; protect and remove them according to your logging policy.
+
+== Startup problems
+
+[cols="2,4", options="header"]
+|===
+|Message or symptom
+|Resolution
+
+|`Missing required environment variables: UYUNI_SERVER`
+|Set `UYUNI_SERVER` in the environment visible to the MCP Server process. For a client-managed container, verify the absolute path supplied to `--env-file`.
+
+|`UYUNI_SERVER must use http or https and include a host`
+|Use a URL such as `https://server.example.com`.
+
+|`UYUNI_SERVER must not include a path`
+|Remove paths such as `/rhn` and use only the server base URL.
+
+|`UYUNI_MCP_TRANSPORT must be either 'stdio' or 'http'`
+|Set the value to exactly `stdio` or `http`.
+
+|The stdio server disconnects immediately
+|Run the configured command in a terminal and inspect stderr. Verify the image tag, environment-file path, `-i` container option, and {productname} URL.
+
+|The HTTP client receives a connection error
+|Verify the bind address, published port, external route, and that the client URL ends in `/mcp`.
+|===
+
+== Authentication and authorization
+
+[cols="2,4", options="header"]
+|===
+|Message or symptom
+|Resolution
+
+|HTTP 401 or 403 during {productname} login
+|For basic authentication, verify `UYUNI_USER`, `UYUNI_PASS`, account status, and permissions. For OAuth, verify issuer, audiences, scopes, username claim, and the matching active {productname} user.
+
+|OAuth discovery or token validation fails
+|Ensure `UYUNI_MCP_PUBLIC_URL` is the externally reachable HTTPS base URL. Confirm that `UYUNI_AUTH_SERVER` exactly matches the token `iss` claim and that its signing-key endpoint is reachable by the MCP Server.
+
+|MCP authentication succeeds but {productname} OIDC login fails
+|Ensure the token includes both `mcp-server-uyuni` and `uyuni-server` audiences, includes `sub`, and contains the configured username claim.
+
+|A read tool is available but a write tool is missing
+|Set `UYUNI_MCP_WRITE_TOOLS_ENABLED=true` and restart the MCP Server. In OAuth mode, obtain a token with both `mcp:read` and `mcp:write`.
+
+|The user can call a tool but the operation is denied
+|Grant only the required {productname} permissions to the user. MCP availability does not override {productname} authorization.
+|===
+
+== Connectivity and certificates
+
+A network error or timeout indicates that the MCP Server could not complete a request to {productname}.
+
+. Resolve `UYUNI_SERVER` from the MCP Server host or container.
+. Verify TCP and TLS connectivity to the configured port.
+. Confirm that proxies and firewalls allow the connection.
+. Verify that the server certificate is valid for the configured hostname and that its CA is trusted.
+. Increase `UYUNI_MCP_TIMEOUT` only after checking server and network health.
+
+Do not use `UYUNI_MCP_SSL_VERIFY=false` as a permanent certificate fix.
+
+== Tool-call problems
+
+[cols="2,4", options="header"]
+|===
+|Message or symptom
+|Resolution
+
+|A system name is not found or resolves ambiguously
+|Call `find_systems_by_name` and pass the numeric `system_id` to the next tool.
+
+|`Invalid system_id ... Provide system_id as a numeric string`
+|The `get_unscheduled_errata` tool does not accept a hostname. Supply the system ID as digits.
+
+|`You need to provide an activation key`
+|The MCP client does not support elicitation. Pass `activation_key` explicitly to `add_system`.
+
+|`UYUNI_SSH_PRIV_KEY environment variable is not set`
+|Set the complete private key with literal `\n` separators in the MCP Server environment and restart the process.
+
+|System addition reports that the process started
+|The bootstrap request exceeded the request timeout but can still be running on {productname}. Check the system list and server logs before retrying.
+
+|An operation returns `Operation cancelled`
+|The elicitation request was declined, cancelled, or not explicitly approved. Review the arguments and invoke the tool again only if the change is intended.
+|===

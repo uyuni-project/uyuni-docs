@@ -1,0 +1,84 @@
+[[automatic-client-registration]]
+= Terraformによって作成されたクライアントの自動登録
+:description: cloud-initまたはTerraformのリモート実行プロビジョナーを使用して自動クライアント登録を構成します。
+:revdate: 2024-03-05
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+
+Terraformによって作成された新しいクライアントは、{productname}に自動的に登録されます。
+登録は2つの方法で実現できます：
+
+* `cloud-init`ベースの登録
+* リモート実行プロビジョナーベースの登録
+
+
+
+[[cloud-init-based-client-registration]]
+== `cloud-init`ベースのクライアント登録
+
+
+`cloud-init`を活用して登録することは、新しく作成された仮想マシンの自動登録の推奨方法です。
+このソリューションは、ホストへのSSH接続の設定を回避します。
+クライアント作成に使用されるツールに関係なく使用できます。
+
+ユーザーは、マシンを{productname}に自動的に登録するために、Terraformを使用してイメージをデプロイする際にユーザーデータのセットを渡すことができます。`user_data`は起動時、つまりマシンを初めて起動したときのみ一度だけ実行されます。
+
+`cloud-init`を使用してクライアントを登録する前に、ユーザーは以下を設定する必要があります：
+
+* 起動スクリプト。
+  詳細については、xref:client-configuration:registration-bootstrap.adoc[]を参照してください。
+* アクティベーションキー。
+  詳細については、xref:client-configuration:activation-keys.adoc[]を参照してください。
+
+
+次のコマンドは、起動スクリプトをダウンロードし、新しいマシンが作成されるときに登録します。
+これは`cloud-init`の設定に追加する必要があります：
+
+----
+curl -s http://hub-server.tf.local/pub/bootstrap/bootstrap-default.sh | bash -s
+----
+
+[NOTE]
+====
+`user_data`がプロビジョニング変更のために更新されるたびに、Terraformはそのマシンを破棄し、新しいIPなどを使用して再作成します。
+====
+
+AWS上の`cloud-init`の詳細については、 https://registry.terraform.io/providers/hashicorp/template/latest/docs/data-sources/cloudinit_config.を参照してください。
+
+`cloud-init`の例については、 https://registry.terraform.io/providers/hashicorp/cloudinit/latest/docs/data-sources/cloudinit_config#example-usage.を参照してください。
+
+
+
+[[remote-exec-provisioner-based-client-registration]]
+== `remote-exec`プロビジョナーベースの登録
+
+新しく作成された仮想マシンの自動登録の2番目のソリューションでは、Terraformの`remote-exec`プロビジョナーを使用します。
+
+`remote-exec`プロビジョナーは、新しく作成されたマシンと相互作用します。
+それはSSH接続を開き、そのマシン上でコマンドを実行できます。
+
+[IMPORTANT]
+====
+`remote-exec`プロビジョナーを使用してクライアントを登録する際、ユーザーはTerraformを実行しているマシンが、新しく作成された仮想マシンにアクセスできることを確認する必要があります。
+====
+
+残りの要件は、<<cloud-init-based-client-registration>>を使用する場合と同じです：
+
+* 起動スクリプト。
+  詳細については、xref:client-configuration:registration-bootstrap.adoc[]を参照してください。
+* アクティベーションキー。
+  詳細については、xref:client-configuration:activation-keys.adoc[]を参照してください。
+
+次のコマンドは、起動スクリプトをダウンロードし、新しいマシンが作成されるときに登録します。
+実行するリモートコマンドとして定義する必要があります：
+
+----
+curl -s http://hub-server.tf.local/pub/bootstrap/bootstrap-default.sh | bash -s
+----
+
+`remote-exec`プロビジョナーの詳細については、 https://www.terraform.io/docs/provisioners/remote-exec.html.を参照してください。
+

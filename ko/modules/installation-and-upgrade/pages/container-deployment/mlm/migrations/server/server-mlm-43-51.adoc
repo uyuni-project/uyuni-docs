@@ -1,0 +1,385 @@
+= {productname} 서버를 컨테이너화된 환경으로 마이그레이션
+:description: SUSE Multi-Linux Manager 4.3 서버를 컨테이너 환경으로 마이그레이션하기 위해 호스트 시스템을 준비하고, 클라이언트와 GPG 키를 마이그레이션한 후 mgradm을 실행하는 방법을 배웁니다.
+:revdate: 2025-10-19
+:page-revdate: {revdate}
+:page-author: SUSE 제품 및 솔루션 문서팀
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
+// container host = new server = new server machine with the {productname} {productnumber} Server container(s)
+// old server = {productname} 4.3 Server
+
+// We need to figure out which mlm versions prior to the container release can or should be migrated. Something like any version prior to yyyy.mm and later than.
+
+
+== 요구 사항 및 고려 사항
+
+
+=== 일반 요구사항
+
+* {productname} 4.3 서버를 컨테이너 환경으로 마이그레이션하려면 {sl-micro} {microversion} 또는 {sles} {bci-mlm} 및 `mgradm`가 설치된 새로운 머신이 필요합니다.
+
+* {productname} 4.3에서 {productnumber}로의 인플레이스 마이그레이션은 지원되지 않으며, 선택한 호스트 운영 체제가 {sl-micro} {microversion} 또는 {sles} {bci-mlm}인 경우에도 마찬가지입니다.
+
+* {productname} 4.3에서 {productnumber}로 마이그레이션하기 전에 기존 전통 클라이언트와 전통 프록시를 포함한 모든 기존 클라이언트를 {salt}로 마이그레이션해야 합니다.
+전통적인 {productname} 4.3 클라이언트를 {salt} 클라이언트로 마이그레이션하는 방법에 대한 자세한 내용은 https://documentation.suse.com/suma/4.3/en/suse-manager/client-configuration/contact-methods-migrate-traditional.html[Migrate Traditional Clients to Salt Clients]를 참조하십시오.
+
+* 전통적인 연락 프로토콜은 {productname} 5.0 이상에서 더 이상 지원되지 않습니다.
+
+[IMPORTANT]
+====
+이 가이드는 {productname} 4.3에서 {productnumber}로의 마이그레이션만 다룹니다.
+
+기존 {productname} {productnumber} 인스턴스를 동일한 버전으로 마이그레이션하면서 호스트 운영 체제를 {sl-micro} {microversion}에서 {sles} {bci-mlm}으로 변경하거나 그 반대의 경우는 `mgradm migrate` 명령으로 처리되지 않습니다.
+====
+
+
+=== 호스트 이름
+
+* 현재 마이그레이션 절차에는 호스트 이름을 변경하는 기능이 포함되어 있지 않습니다.
+  그 결과, 새 서버의 완전한 도메인 이름(FQDN)은 이전 서버와 동일하게 유지됩니다.
+
+* 클라이언트가 서버에 연결할 수 있도록 IP 주소는 변경되지 않은 상태로 유지해야 합니다.
+
+
+[IMPORTANT]
+====
+마이그레이션 후에는 DHCP 및 DNS 레코드를 수동으로 업데이트하여 새 서버를 가리키도록 해야 합니다.
+====
+
+
+=== GPG 키
+
+* 자체 신뢰 GPG 키는 마이그레이션되지 않습니다.
+* RPM 데이터베이스에서만 신뢰되는 GPG 키는 마이그레이션되지 않습니다.
+  따라서 `spacewalk-repo-sync`을(를) 사용한 채널 동기화가 실패할 수 있습니다.
+* 관리자는 실제 서버 마이그레이션을 수행한 후 이러한 키를 4.3 설치에서 컨테이너 호스트로 수동으로 마이그레이션해야 합니다.
++
+.절차 4.3 GPG 키를 새 서버로 수동으로 마이그레이션합니다.
+[role=procedure]
+____
+. 4.3 서버의 키를 새 서버의 컨테이너 호스트로 복사합니다.
+
+. 그 후, 명령 `mgradm gpg add <PATH_TO_KEY_FILE>`를 사용하여 마이그레이션된 서버에 각 키를 추가합니다.
+____
+
+
+=== SSL 인증서
+
+마이그레이션 과정 중에 서버 SSL 인증서와 CA 체인은 소스 서버에서 복사되므로, 데이터베이스 인증서만 필요합니다.
+
+[NOTE]
+====
+SUSE Multi-Linux Manager 5.1부터 PostgreSQL 데이터베이스는 마이그레이션 중에 자체 SSL 인증서가 필요한 별도의 컨테이너에서 실행됩니다.
+이것이 서버 인증서와 CA 체인이 소스에서 복사되더라도 데이터베이스 인증서가 필요한 이유입니다.
+====
+
+[IMPORTANT]
+====
+이미 {productname} 4.3 설치에서 사용 중인 타사 인증서는 마이그레이션 중에 자동으로 복사됩니다.
+대부분의 시나리오에 대해 추가 구성은 필요하지 않습니다.
+====
+
+:migration-source: 4.3
+:migration-command: mgradm migrate
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-ssl-migration-certs.adoc[leveloffset=+1]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-ssl-migration-certs.adoc[leveloffset=+1]
+endif::[]
+
+== 마이그레이션
+
+===  {productname} {productnumber} 서버 호스트 준비
+
+[IMPORTANT]
+====
+준비된 {sl-micro} {microversion} 또는 {sles} {bci-mlm} 시스템에 {productname}을 미리 설치하지 마십시오.
+
+마이그레이션 프로세스는 서버 설치를 자동으로 수행하도록 설계되었습니다.
+`mgradm install`을(를) 실행한 다음 `mgradm migrate`을(를) 실행하는 것은 지원되지 않으며 지원되지 않는 시스템 상태를 초래합니다.
+
+다음 단계에서는 호스트 시스템만 준비하며 실제 {productname} {productnumber} 서버는 설치하지 않습니다.
+====
+
+{sl-micro} {microversion}를 기반으로 한 VM 이미지를 마이그레이션 대상으로 사용할 수 있습니다.
+이러한 시나리오에서는 다음에 설명된 대로 호스트 시스템을 준비할 수 있습니다.
+
+* xref:installation-and-upgrade:container-deployment/mlm/server-deployment-vm-mlm.adoc[] 
+
++
+
+또는
+
++
+
+* xref:installation-and-upgrade:container-deployment/mlm/server-deployment-vmdk-mlm.adoc[].
+
+그러나 마지막 단계에서는 `mgradm migrate <FQDN>` 대신에 `mgradm install <FQDN>` 명령을 실행합니다.
+
+
+
+[[prepare-micro-host]]
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-prepare-micro-host.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-prepare-micro-host.adoc[leveloffset=+2]
+endif::[]
+
+[[deploy-sles-host]]
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-prepare-sles-host.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-prepare-sles-host.adoc[leveloffset=+2]
+endif::[]
+
+
+=== SSH 연결 준비
+
+이 단계는 새 {productname} {productnumber} 서버가 기존 4.3 서버에 SSH를 통해 비밀번호 없이 연결할 수 있도록 보장합니다.
+여기에는 SSH 키를 생성하고 구성하고, SSH 에이전트를 설정하며, 공용 키를 이전 서버에 복사하는 과정이 포함됩니다.
+마이그레이션 프로세스를 수동 개입 없이 실행하려면 이 설정이 필요합니다.
+
+.절차 SSH 연결 준비
+[role=procedure]
+____
+. 새 `root` 서버에 대해 {productnumber}의 SSH 키가 존재하는지 확인합니다.
+  키가 존재하지 않으면 다음 명령을 사용하여 생성합니다:
+
++
+
+----
+ssh-keygen -t rsa
+----
+
+. 새 서버에서 비밀번호를 요청하지 않는 4.3 서버에 연결할 수 있도록 SSH 구성 및 에이전트가 준비되어 있어야 합니다.
+
++
+
+----
+eval $(ssh-agent); ssh-add
+----
+
++
+
+[NOTE]
+====
+비밀번호 입력을 요구하지 않고 연결을 설정하기 위해 마이그레이션 스크립트는 새 서버에서 실행 중인 SSH 에이전트에 의존합니다.
+에이전트가 아직 활성화되지 않았다면, `eval $(ssh-agent)`를 실행하여 시작합니다.
+그런 다음, 실행 중인 에이전트에 SSH 키를 추가할 때 `ssh-add` 명령 뒤에 개인 키의 경로를 입력합니다.
+이 과정에서 개인 키의 비밀번호를 입력하라는 메시지가 표시됩니다.
+====
+
+. 공용 SSH 키를 {productname} 4.3 서버(`<oldserver.fqdn>`)에 `ssh-copy-id`를 사용하여 복사합니다.
+  `<oldserver.fqdn>`을(를) 4.3 서버의 FQDN으로 교체합니다:
++
+----
+ssh-copy-id <old server.fqdn>
+----
++
+SSH 키가 이전 서버의 `~/.ssh/authorized_keys` 파일에 복사됩니다.
+자세한 내용은 `ssh-copy-id` 매뉴얼 페이지를 참조하십시오.
++
+// . This step is optional:
+//   The migration script only uses the 4.3 server's FQDN in the SSH command.
+//   This means that every other configuration required to connect, needs to be defined in the `~/.ssh/config` file.
+. 새 서버에서 이전 {productname} 서버로 SSH 연결을 설정하여 비밀번호가 필요하지 않은지 확인합니다.
+  호스트 지문에 문제가 없어야 합니다.
+  문제가 발생할 경우 `~/.ssh/known_hosts` 파일에서 오래된 지문을 제거합니다.
+  그런 다음 다시 시도하십시오.
+  지문은 로컬 `~/.ssh/known_hosts` 파일에 저장됩니다.
+
+____
+
+
+=== 마이그레이션 수행
+
+SUSE Manager 4.3에서 {productname} {productnumber}로 마이그레이션할 때는 대상 인스턴스가 기존 설정의 사양을 충족하거나 초과하는지 확인해야 합니다.
+
+여기에는 메모리(RAM), CPU 코어, 스토리지 및 네트워크 대역폭이 포함되지만, 이에 국한되지 않습니다.
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-hardened-tmpdir.adoc[leveloffset=+2]
+endif::[]
+
+
+
+[IMPORTANT]
+====
+SUSE Manager 4.3에서 마이그레이션할 때 `Password for the CA key to generate`을(를) 입력하라는 메시지가 표시됩니다.
+SUSE Manager 4.3 설치 시 사용한 동일한 CA 비밀번호를 입력하는 것이 중요합니다.
+
+잘못된 비밀번호를 입력하면 데이터베이스 인증서 생성에 실패하며, 다음과 같은 오류로 마이그레이션이 중단됩니다.
+
+----
+Error: cannot configure db container: Cannot generate database certificate: CA validation failed!
+----
+
+마이그레이션 프로세스를 시작하기 전에 올바른 CA 비밀번호가 준비되어 있는지 확인합니다.
+====
+
+
+.절차 마이그레이션 수행
+[role=procedure]
+____
+. 이 단계는 선택 사항입니다.
+  인프라에 사용자 정의 영구 스토리지가 필요한 경우 `mgr-storage-server` 도구를 사용하십시오.
+  `mgr-storage-server`에 대한 자세한 내용은 xref:installation-and-upgrade:hardware-requirements.adoc#install-hardware-requirements-storage[]를 참조하십시오.
+
+. 다음 명령을 실행하여 새 {productname} {productnumber} 서버를 마이그레이션하고 설정합니다.
+  `<oldserver.fqdn>`을(를) 4.3 서버의 FQDN으로 교체합니다:
+
++
+
+[IMPORTANT]
+====
+마이그레이션 프로세스를 시작하기 전에 4.3 서버를 업그레이드하고 모든 사용 가능한 업데이트를 적용해야 합니다.
+또한 전체 마이그레이션 시간을 줄이기 위해 불필요한 채널을 제거하십시오.
+====
+
++
+
+[NOTE]
+====
+마이그레이션은 복제해야 할 데이터의 양에 따라 매우 오랜 시간이 걸릴 수 있습니다.
+작동 중지 시간을 줄이기 위해 레거시 4.3 서버의 모든 서비스가 계속 가동되는 동안 _초기 복제_, _재복제_ 또는 _최종 복제 및 전환_ 단계로 마이그레이션을 여러 번 실행할 수 있습니다.
+
+최종 마이그레이션 중에만 이전 4.3 서버의 프로세스를 중지하면 됩니다.
+
+최종 복제가 아닌 모든 복제에 대해 이전 4.3 서버의 서비스가 자동으로 중지되지 않도록 매개변수 `--prepare`를 추가합니다.
+====
++ 
+
++
+
+[IMPORTANT]
+====
+실패한 마이그레이션을 다시 실행하면 각 실패한 마이그레이션마다 `/var/lib/containers/storage/volumes` 내부에 새로운 백업 디렉토리가 생성되어, 이로 인해 대용량의 백업 디렉토리가 누적되어 상당한 공간을 차지하게 됩니다.
+
+이 백업은 마이그레이션 도구에 의해 자동으로 제거되지 않습니다.
+마이그레이션이 실패하면 다음 시도를 위해 충분한 공간이 확보되도록 이전 백업 디렉토리들을 수동으로 검사하고 정리해야 합니다. 
+
+이 공간을 관리하지 못하면 다음 마이그레이션 시도가 실패할 수 있습니다.
+
+모든 마이그레이션 및 검증이 완료된 후에는 `var-pgsql-backup` 볼륨을 제거하십시오.
+====
+
++
+
+[WARNING]
+====
+* `--prepare` 단계는 최종 마이그레이션이 시작되지 않은 경우에만 여러 번 실행할 수 있습니다.
+* 최종 마이그레이션이 시작되어 데이터베이스 업그레이드 단계에 도달하면 데이터가 손상될 수 있으므로 `--prepare` 명령을 다시 실행하지 않아야 합니다.
+====
+
++
+
+----
+mgradm migrate podman <oldserver.fqdn> --prepare
+----
+____
+
+
+.절차 최종 마이그레이션
+[role=procedure]
+____
+. 4.3 서버에서 SUSE Manager 서비스를 중지합니다.
+
++
+
+----
+spacewalk-service stop
+----
+
+. 4.3 서버에서 PostgreSQL 서비스를 중지합니다.
+
++
+
+----
+systemctl stop postgresql
+----
+
+. {productname} {productnumber} 서버에서 최종 마이그레이션을 수행합니다.
+
++
+
+----
+mgradm migrate podman <oldserver.fqdn>
+----
+
+. 신뢰할 수 있는 SSL CA 인증서를 마이그레이션합니다.
+
+____
+
+
+==== 인증서 마이그레이션
+
+RPM의 일부로 설치되어 {productname} 4.3의 `/usr/share/pki/trust/anchors/` 디렉토리에 저장된 신뢰할 수 있는 SSL CA 인증서는 마이그레이션되지 않습니다.
+{suse}는 컨테이너에 RPM 패키지를 설치하지 않기 때문에, 관리자는 마이그레이션 후 SUSE Manager 4.3 서버에서 이러한 인증서 파일을 수동으로 마이그레이션해야 합니다.
+
+.절차 인증서 마이그레이션
+[role=procedure]
+____
+. SUSE Manager 4.3 서버에서 새 {productname} {productnumber} 서버로 파일을 복사합니다.
+   예를 들어, `/local/ca.file`처럼.
+
+. 다음을 사용하여 파일을 컨테이너에 복사합니다.
+
++
+
+----
+mgrctl cp /local/ca.file server:/etc/pki/trust/anchors/
+----
+____
+
+
+[IMPORTANT]
+====
+`mgradm migrate` 명령을 성공적으로 실행한 후에도, 모든 클라이언트의 {salt} 설정은 여전히 이전 4.3 서버를 가리킵니다.
+
+{productnumber} 서버로 리디렉션하려면 인프라 수준(DHCP 및 DNS)에서 새 서버의 이름을 4.3 서버와 동일한 FQDN 및 IP 주소로 변경해야 합니다.
+
+최신 버전은 FQDN만 사용하여 서버와 자동으로 다시 연결할 수 있으므로 최신 버전의 미니언이 클라이언트에 설치되어 있다면 IP 주소 조정을 수행하지 않아도 됩니다.
+
+====
+
+// uncomment when kubernetes support is added
+//----
+//mgradm migrate kubernetes <oldserver.fqdn>
+//----
+
+
+== 클라이언트 도구 리브랜딩
+
+{productname} {productnumber}는 모든 지원되는 운영 체제를 위한 리브랜딩된 클라이언트 도구 세트를 소개합니다. 
+이 전환은 원활하며, 새로운 제품 동기화를 수행하는 사용자는 업데이트된 채널 이름만 보게 될 것입니다.
+
+`SUSE Manager Client Tools for XYZ` 4.3 또는 5.0에 이전에 등록된 클라이언트가 사용하던 {productname} 채널은 버전 5.1에서 더 이상 사용할 수 없으며, 버전 5.1에서는 더 이상 업데이트를 수신하지 않습니다.
+
+이전 채널은 마이그레이션 후에도 기존 고객에게 할당된 상태로 유지되지만, 해당 리포지토리는 제거되었습니다.
+
+지속적인 업데이트를 보장하기 위해 사용자는 다음을 수행해야 합니다.
+
+* 관련 제품에 대한 새로운 `SUSE Multi-Linux Manager Client Tools for XYZ` 채널을 미러링하고 적절한 클라이언트에 할당하십시오.
+
+* 구식 `SUSE Manager Client Tools for XYZ` 채널을 할당 해제하십시오.
+
+이는 또한 기존 클라이언트 도구를 기반으로 한 모든 CLM 프로젝트도 이에 맞춰 조정되어야 함을 의미합니다.
+
+예제 워크플로우는 xref:common-workflows:workflow-switch-to-new-client-tools-channels.adoc[]를 참조하십시오.

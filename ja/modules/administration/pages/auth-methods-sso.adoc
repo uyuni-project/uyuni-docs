@@ -1,0 +1,118 @@
+[[auth-methods-sso]]
+= シングルサインオン(SSO)による認証
+:description: 複数のアプリケーションに対して、単一の認証情報を使用して安全にアクセスするために、シングルサインオン(SSO)を構成します。
+:revdate: 2024-05-06
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメントチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+{productname}は、セキュリティアサーションマークアップ言語 (SAML){nbsp}2プロトコルを実装することで、シングルサインオン(SSO)をサポートしています。
+
+シングルサインオンは、ユーザーが1つの認証情報で複数のアプリケーションにアクセスできる認証処理です。
+SAMLは、認証および認可データを交換するためのXMLベースの標準です。
+SAMLアイデンティティサービスプロバイダー(IdP)は、{productname}のようなサービスプロバイダー(SP)に認証および認可サービスを提供します。{productname}は、シングルサインオンのために有効にする必要がある3つのエンドポイントを公開しています。
+
+{productname}におけるSSOは次のことをサポートしています：
+
+* SSOを使用したログイン。
+* サービスプロバイダが開始したシングルログアウト(SLO)、およびIDサービスプロバイダのシングルログアウトサービス(SLS)を使用してログアウトする。
+* アサーションとnameIdの暗号化。
+* アサーションの署名。
+* AuthNRequest、LogoutRequest、およびLogoutResponderによるメッセージ署名。
+* アサーションコンシューマサービスエンドポイントの有効化。
+* シングル ログアウト サービス エンドポイントの有効化。
+* SPメタデータ(署名可能)の発行。
+
+{productname}におけるSSOは次のことをサポートしていません：
+
+* IDサービスプロバイダ(IdP)の製品の選択と実装。
+* 他の製品のSAMLサポート(各製品のドキュメントで確認してください)。
+
+SSOの実装例については、xref:administration:auth-methods-sso-example.adoc[]を参照してください。
+
+
+[IMPORTANT]
+====
+デフォルトの認証方法からシングルサインオンに変更すると、新しいSSO認証情報は{webui}にのみ適用されます。
+`mgr-sync`や`spacecmd`のようなクライアントツールは、デフォルトの認証方法でのみ動作し続けます。
+====
+
+
+
+== 前提条件
+
+
+始める前に、これらのパラメータを使用して外部アイデンティティサービスプロバイダーを構成しておく必要があります。
+手順については、IdPのドキュメントを確認してください。
+
+
+[IMPORTANT]
+====
+IdPユーザーと{productname}ユーザーのマッピングは、SAML:Attributeで指定されます。
+SAML:AttributeはIdPで構成され、SAML認証で{productname}に渡される必要があります。
+属性は`uid`という名前でなければならず、ログイン後にマッピングされた{productname}ユーザーを含む必要があります。
+{productname}ユーザーは、シングルサインオンを有効にする前に作成されなければなりません。
+====
+
+
+以下のエンドポイントが必要です。
+
+* アサーションコンシューマサービス(ACS): SAMLメッセージを受け入れてサービスプロバイダへのセッションを確立するエンドポイント。
+    {productname}におけるACSのエンドポイントは次のとおりです： https://server.example.com/rhn/manager/sso/acs
+* シングルログアウトサービス(SLS): IdPからログアウト要求を開始するエンドポイント。
+    {productname}におけるSLSのエンドポイントは次のとおりです： https://server.example.com/rhn/manager/sso/sls
+* メタデータ：SAMLの{productname}メタデータを取得するエンドポイント。
+    {productname}のメタデータのエンドポイントは次のとおりです： https://server.example.com/rhn/manager/sso/metadata
+
+ユーザー`orgadmin`を使用したIdPによる認証が成功した後、{productname}に`orgadmin`ユーザーとしてログインします。ただし、`orgadmin`ユーザーが{productname}に存在する場合に限ります。
+
+
+
+== SSOの有効化
+
+[NOTE]
+====
+SSOの使用は、他のタイプの認証と相互に排他的であり、有効か無効のいずれかです。
+SSOはデフォルトで無効になっています。
+====
+
+[IMPORTANT]
+====
+サーバーコンテナ内でステップを実行する前に、`mgrctl term`を使用してください。
+====
+
+.プロシージャ:SSOを有効にする
+
+. ユーザがまだ{productname}に存在しない場合は、まず作成してください。
+. `/etc/rhn/rhn.conf`を編集し、ファイルの末尾にこの行を追加します：
++
+----
+java.sso = true
+----
+. `/usr/share/rhn/config-defaults/rhn_java_sso.conf`内でカスタマイズするパラメーターを見つけます。
+    カスタマイズするパラメーターを`/etc/rhn/rhn.conf`に挿入し、その前に`java.sso`を付けます。
+    例えば、`/usr/share/rhn/config-defaults/rhn_java_sso.conf`で以下を見つけます：
++
+----
+onelogin.saml2.sp.assertion_consumer_service.url = https://YOUR-PRODUCT-HOSTNAME-OR-IP/rhn/manager/sso/acs
+----
++
+カスタマイズするには、オプション名の前に`java.sso.`を付けて、対応するオプションを`/etc/rhn/rhn.conf`に作成します：
++
+----
+java.sso.onelogin.saml2.sp.assertion_consumer_service.url = https://YOUR-PRODUCT-HOSTNAME-OR-IP/rhn/manager/sso/acs
+----
++
+変更が必要なすべての箇所を見つけるには、ファイル内でプレースホルダー`YOUR-PRODUCT`および`YOUR-IDP-ENTITY`を検索してください。
+すべてのパラメータには、その目的に関する簡単な説明が付いています。
+. spacewalkサービスを再起動して変更を取得します。
++
+----
+mgradm restart
+----
+
+{productname}のURLにアクセスすると、SSOのためにIdPにリダイレクトされ、認証を求められます。
+認証が成功すると、{productname} {webui}にリダイレクトされ、認証されたユーザとしてログインします。
+SSOを使用してログインする際に問題が発生した場合は、{productname}のログを確認して詳細情報を取得してください。

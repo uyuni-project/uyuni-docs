@@ -1,0 +1,55 @@
+[[contact-methods-salt]]
+= デフォルトの接続メソッド
+:description: このプロセスを使用して、SUSE Multi-Linux ManagerサーバーのSalt連絡先を構成および管理する方法を学びます。
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメンテーションチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+特別なニーズがない限り、{salt}プロトコルを使用したデフォルトの連絡方法が推奨されます。
+デフォルトでは、{salt}バンドルの実装（`venv-salt-minion`）がデプロイされます。
+一般的な{salt}に関する詳細については、xref:specialized-guides:salt/salt-overview.adoc[]を参照してください。
+
+ifeval::[{mlm-content} == true]
+
+デフォルトの連絡方法（`Default`）は、最も優れたスケーリング方法です。
+すべての新しい{productname}機能がサポートされています。
+
+[IMPORTANT]
+====
+いわゆる従来の連絡プロトコルは、{productname} 5.0以降ではサポートされなくなりました。
+{productname} 4から5にアップグレードする前に、従来のプロキシを含む既存の従来のクライアントは、{salt}に移行するか、{salt}プロキシに置き換える必要があります。
+
+従来の{productname} 4クライアントを{salt}クライアントに移行する方法についての詳細は、 https://documentation.suse.com/suma/4.3/en/suse-manager/client-configuration/contact-methods-migrate-traditional.htmlを参照してください。
+====
+
+endif::[]
+
+ソフトウェアの更新は、一般的にサーバーからクライアントにプッシュされます。
+接続はクライアントから開始されます。
+これは、サーバーでポートを開く必要があり、クライアントではないことを意味します。
+{salt}クライアントは、{salt}ミニオンとも呼ばれています。
+{productname}サーバーは、すべてのクライアントにデーモンをインストールします。
+
+切断されたセットアップで{salt}クライアントを使用する必要がある場合は、連絡方法としてSSH Pushを構成できます。
+この連絡方法を使用すると、クライアントはDMZと呼ばれるファイアウォール保護ゾーンに配置できます。
+SSH Pushに関する詳細については、xref:client-configuration:contact-methods-saltssh.adoc[]を参照してください。
+
+
+
+[[onboarding-details]]
+== オンボードの詳細
+
+
+{salt}は、ミニオンのキーを保持するための独自のデータベースを持っています。これは、{productname}データベースと同期を保つ必要があります。
+{salt}でキーが受け入れられると、{productname}でのオンボーディングプロセスが始まります。
+
+オンボーディングプロセスは、{productname}データベース内の既存システムを、`minion_id`と`machine-id`を用いて検索し、見つけ出します。
+結果に応じて、以下のシナリオが考えられます：
+
+* 何も見つからない場合、新しいシステムが作成されます。
+* `minion_id`または`machine-id`を持つエントリが見つかった場合、そのシステムは新しいシステムに一致するように移行されます。
+* 両方のエントリに一致する項目があり、それらが同じシステム上にない場合、オンボーディングプロセスは中止されてエラーが発生します。
+* この場合、管理者が少なくとも1つのシステムを削除して競合を解決する必要があります。

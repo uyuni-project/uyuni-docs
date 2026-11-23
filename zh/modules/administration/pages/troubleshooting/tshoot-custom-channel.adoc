@@ -1,0 +1,85 @@
+[[troubleshooting-customchannel]]
+= 对包含有冲突软件包的自定义通道进行查错
+:description: 学习如何在使用 YaST 工具创建自定义通道时避免冲突，以确保顺利的安装过程
+:revdate: 2025-02-06
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+////
+PUT THIS COMMENT AT THE TOP OF TROUBLESHOOTING SECTIONS
+
+Troubleshooting format:
+
+One sentence each:
+Cause: What created the problem?
+Consequence: What does the user see when this happens?
+Fix: What can the user do to fix this problem?
+Result: What happens after the user has completed the fix?
+
+If more detailed instructions are required, put them in a "Resolving" procedure:
+.Procedure: Resolving Widget Wobbles
+. First step
+. Another step
+. Last step
+////
+
+////
+Cause: Conflicting packages in custom channel
+Consequence: Creating bootstrap repo can fail
+Fix: Separate trees from each other
+Result: Clean and functional boostrap repo will be created
+////
+
+设置包含有冲突软件包的自定义通道时，某些功能（例如创建引导储存库）可能会导致未定义的行为，并使客户端注册失败。
+
+例如，可能会将版本号较高的冲突软件包包含到启动储存库中。
+此类软件包（例如`python3-zmq`或`zeromq`）可能会破坏启动储存库的创建或在客户端启动期间导致问题。
+
+当自定义通道（例如，EPEL 通道）添加到父供应商通道下方时，无法直接解决冲突软件包的问题。
+解决此问题的方法是将自定义通道与供应商通道分开。
+自定义通道需要在单独的树中创建。
+如果需要将自定义通道作为子通道交付，可以使用内容生命周期管理 (CLM) 创建这样的环境。
+可以从不同的树中将 CLM 项目中的源添加到此处。
+使用这种方法，自定义通道在构建环境中保持在父通道之下。
+然而，供应商通道树中没有自定义通道和启动储存库。
+然后，注册客户端可以正常工作。
+
+当包含冲突软件包（salt、zeromq 等）的自定义通道作为子通道创建时，以下步骤可能有助于避免该问题：
+
+.过程：升级避免自定义通道中的冲突软件包
+
+. 将自定义通道作为子通道从父通道中移除。
+  有关详细信息，请参见 xref:administration:custom-channels.adoc#_manage_custom_channels[]。
+. 在单独的树中创建自定义通道。
+  有关详细信息，请参见 xref:administration:custom-channels.adoc#_creating_custom_channels_and_repositories[]。
+. 要在内容生命周期管理 (CLM) 中添加作为子通道的自定义通道，请执行以下操作：
++
+* 在 {productname} {webui} 中，导航到 menu:内容生命周期[]，然后单击 btn:[创建项目]。
+  输入 `Name` 和 `Label`。
+* 将源关联到项目。
+  使用所需的供应商通道和自定义通道。（分享使用 CentOS8 的示例）
+* 将环境添加到项目中。 例如，使用 CentOS8。
+* 要构建环境，请单击 btn:[构建] 按钮。
+  这会创建一个包含供应商通道和自定义通道的环境，这些通道可与激活密钥相关联并用于启动客户端。
+. 重要注意事项：在 CLM 项目中，建议添加一个过滤器，以排除有问题或冲突的软件包。
+  否则，在客户端更新期间，可能会安装具有更高版本号的冲突软件包。
+  有关过滤的详细信息，请参见 xref:administration:content-lifecycle-examples.adoc#exclude-higher-kernel-version[]。
+. 要将最新补丁添加到 CLM 环境（包含供应商通道和自定义通道），请在项目中单击 btn:[构建] 按钮。
+  需要执行此操作才能重新构建环境。
+
+* 有关 CLM 的详细信息，请参见 xref:administration:content-lifecycle.adoc[]。
+
+ifeval::[{mlm-content} == true]
+
+[NOTE]
+====
+直接在 {rhel} 客户端（或兼容的：{sll}、{centos}、{oracle} 等）上使用企业 Linux 的额外软件包（EPEL）将从 EPEL 安装 {salt} 软件包，这些软件包缺少 {productname} 提供的 {salt} 软件包中的某些功能。
+这尤其重要，因为这将导致启动储存库包含非 SUSE 的 {salt} 软件包。
+因此，这是一个不受支持的场景。
+
+如果您需要启用 EPEL 储存库，请务必提前过滤掉 EPEL 提供的 {salt} 软件包（例如，在 menu:软件[管理> 通道> EPEL> 软件包] 中去除 {salt} 软件包）。
+====
+endif::[]

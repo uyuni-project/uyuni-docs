@@ -1,0 +1,275 @@
+[[auditing]]
+= 审计
+:description: 通过在 SUSE Multi-Linux Manager 中审计任务（例如检查安全补丁和确保合规性）来有效管理客户关系。
+:revdate: 2026-06-24
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+
+
+在 {productname} 中，您可以通过一系列审计任务跟踪您的客户。
+您可以检查您的客户是否已更新所有公共安全补丁（CVE），执行订阅匹配，并使用 OpenSCAP 检查规范合规性。
+
+在 {productname} {webui} 中，导航到 `Audit` 以执行审计任务。
+
+
+
+
+== CVE 审计
+
+
+CVE（常见漏洞和披露）是对公开已知安全漏洞的修复方案。
+
+[IMPORTANT]
+====
+只要有可用的 CVE，就必须在客户端上应用它们。
+====
+
+每个 CVE 包含一个识别号码、漏洞描述和进一步信息的链接。
+CVE 识别号码使用格式 `CVE-YEAR-XXXX`。
+
+在 {productname} {webui} 中，导航到 menu:审计[CVE 审计] 以查看所有客户及其当前补丁状态的列表。
+
+默认情况下，补丁数据每天在 23:00 更新。
+我们建议在开始 CVE 审计之前刷新数据，以确保您拥有最新的补丁。
+
+.过程：升级更新补丁数据
+[role=procedure]
+____
+. 在 {productname} {webui} 中，导航到 menu:Admin[任务计划] 并选择 `cve-server-channels-default` 调度。
+
+. 单击 btn:[cve-server-channels-bunch]。
+
+. 单击 btn:[单次运行安排] 以安排任务。
+  等待该任务完成，然后继续进行 CVE 审计。
+____
+
+.过程：升级验证补丁状态
+[role=procedure]
+____
+. 在 {productname} {webui} 中，导航到 menu:审计[CVE 审计]。
+
+. 要检查特定 CVE 的补丁状态，请在 `CVE Number` 字段中键入 CVE 标识符。
+
+. 选择您要查看的补丁状态，或保持选中所有状态以查看所有补丁状态。
+
+. 单击 btn:[审计服务器] 检查所有系统，或单击 btn:[审计映像] 检查所有映像。
+____
+
+有关此页面上使用的补丁状态图标的更多信息，请参见 xref:reference:audit/audit-cve-audit.adoc[]。
+
+对于每个系统，`Actions` 列提供有关您需要采取的措施以解决漏洞的信息。
+如适用，还提供候选通道或补丁的列表。
+您还可以将系统分配到 `System Set` 以进行进一步的批处理。
+
+您可以使用 {productname} API 来验证客户端的补丁状态。
+使用 `audit.listSystemsByPatchStatus` API 方法。
+有关此方法的更多信息，请参见 {productname} API 指南。
+
+
+== OVAL
+
+CVE 审计操作依赖于两个主要数据源：通道和 OVAL（开放漏洞和评估语言）。
+这两个数据源提供进行 CVE 审计所需的元数据，各自具有不同的目的。
+
+通道::
+通道包含更新后的软件包（包括补丁），并提供针对漏洞修复所需关键补丁的洞察信息。
+
+OVAL::
+与之相对，OVAL 数据提供漏洞本身的信息，以及导致系统容易因某个 CVE 而受到攻击的软件包。
+
+尽管仅使用通道数据即可进行 CVE 审计，但同步 OVAL 数据可提升结果的准确性，尤其是在处理零日漏洞或部分修补的漏洞时。
+
+OVAL 数据比通道数据轻量得多。
+例如，{opensuse} Leap 15.4 的 OVAL 数据约为 50{nbsp}MB。
+
+仅同步 OVAL 数据时，您可执行 CVE 审计并检查系统是否容易因某个 CVE 而受到攻击，但无法应用补丁，因为补丁来自通道。
+
+
+[NOTE]
+====
+OVAL 功能的核心特性包括：
+
+* *默认情况下为启用状态*：该功能默认处于启用状态，无需额外配置。
+* *可回退*：如果需要，用户可以禁用 OVAL 数据并恢复为标准的基于频道的 CVE 审计。
+  请参阅下方的 <<disable-oval-data,禁用 OVAL 数据支持>>。
+
+* OVAL 数据默认每天 23:00 更新。
+  我们建议您在开始进行 CVE 审计之前刷新数据，以确保获得最新的漏洞元数据。
+====
+
+可以使用以下过程来启用、禁用或更新 OVAL 数据。
+
+.过程：升级启用 OVAL 数据支持
+[role=procedure]
+____
+. 在容器中的 `/etc/rhn/rhn.conf` 文件内添加或修改以下设置：
+
++
+----
+java.cve_audit.enable_oval_metadata=true
+----
++
+. 重启 Tomcat 和 Taskomatic 服务：
+
++
+----
+systemctl restart tomcat taskomatic
+----
+____
+
+或者，使用禁用 OVAL 数据支持的过程。
+ 
+[[disable-oval-data]]
+.过程：升级禁用 OVAL 数据支持
+[role=procedure]
+____
+. 在 `rhn.conf` 中添加或修改以下设置：
+
++
+
+----
+java.cve_audit.enable_oval_metadata=false
+----
+
++
+
+. 重启 Tomcat 和 Taskomatic 服务：
+
++
+----
+systemctl restart tomcat taskomatic
+----
+____
+
+
+.过程：升级更新 OVAL 数据
+[role=procedure]
+____
+. 在 {productname} {webui} 中，导航到 menu:Admin[任务计划] 并选择 `oval-data-sync-default` 调度。
+
+. 单击 btn:[oval-data-sync-bunch]。
+
+. 单击 btn:[单次运行安排] 以安排任务。
+
+等待该任务完成，然后继续进行 CVE 审计。
+____
+
+
+=== 收集 CPE
+
+为了准确识别某个客户端适用的漏洞，我们需要识别该客户端使用的操作系统产品。
+为此，我们将客户端的 CPE（通用平台枚举）作为 {salt} 收集，然后将其保存到数据库中。
+
+新注册客户端的 CPE 将自动收集并保存到数据库中。
+然而，对于现有客户端，必须至少执行一次 `Update Packages List` 操作。
+
+.过程：升级更新软件包列表
+[role=procedure]
+____
+. 在 {productname} {webui} 中，导航到 menu:系统[系统列表> 全部] 并选择一个客户端。
+
+. 然后转到 `Software` 选项卡并选择 `Packages` 子选项卡。
+
+. 单击 btn:[更新软件包列表] 以更新软件包并收集客户端的 CPE。
+____
+
+
+=== OVAL 数据源
+
+为了确保 OVAL 数据的完整性和时效性，{productname} 专门从每个产品的官方维护者处获取 OVAL 数据。下面是 OVAL 数据源的列表。
+
+[[oval-sources]]
+[cols="2,3,2", options="header"]
+.OVAL 数据源
+|===
+| 产品 | 源 URL | 在 {productname} 中支持的 OVAL 版本
+| openSUSE Leap .7+.^| https://ftp.suse.com/pub/projects/security/oval |
+| openSUSE Leap Micro |
+| SUSE Linux Enterprise Server
+a|
+SUSE Linux Enterprise Server 16 +
+SUSE Linux Enterprise Server 15 +
+SUSE Linux Enterprise Server 12
+| SUSE Linux Enterprise Desktop | SUSE Linux Enterprise Desktop 15
+| SUSE Linux Enterprise Micro
+a|
+SUSE Linux Enterprise Micro 5.5 +
+SUSE Linux Enterprise Micro 5.4 +
+SUSE Linux Enterprise Micro 5.3 +
+SUSE Linux Enterprise Micro 5.2
+| SUSE Linux Micro
+a|
+SUSE Linux Micro 6.2 +
+SUSE Linux Micro 6.1 +
+SUSE Linux Micro 6.0
+| SUSE Liberty Linux
+a|
+SUSE Liberty Linux 10 +
+SUSE Liberty Linux 9 +
+SUSE Liberty Linux 8 +
+SUSE Liberty Linux 7
+| RedHat Enterprise Linux | https://www.redhat.com/security/data/oval/v2
+a|
+RedHat Enterprise Linux 9 +
+RedHat Enterprise Linux 8 +
+RedHat Enterprise Linux 7
+| Debian | https://www.debian.org/security/oval
+a|
+Debian 13 +
+Raspberry Pi OS
+| Ubuntu | https://security-metadata.canonical.com/oval
+a|
+Ubuntu 24.04 +
+Ubuntu 22.04
+| AlmaLinux | https://security.almalinux.org/oval
+a|
+AlmaLinux 10 +
+AlmaLinux 9 +
+AlmaLinux 8
+| Oracle Linux | https://linux.oracle.com/security/oval/
+a|
+Oracle Linux 10 +
+Oracle Linux 9 +
+Oracle Linux 8 +
+Oracle Linux 7
+|===
+
+
+[NOTE]
+====
+OVAL 元数据仅在部分客户端中用于 CVE 审计，即使用 openSUSE Leap、SUSE 企业产品、RHEL、Debian 或 Ubuntu 的客户端。这是由于其他产品缺乏 OVAL 漏洞定义元数据。
+====
+
+
+== CVE 状态
+
+客户端的 CVE 状态通常为 `affected`、`not affected` 或 `patched`。
+这些状态仅基于 {productname} 可用的信息。
+
+在 {productname} 中，这些定义适用：
+
+受特定漏洞影响的系统::
+系统中安装的某个软件包版本低于标记为漏洞的相关补丁中相同软件包的版本。
+
+不受特定漏洞影响的系统::
+同时包含在标记为漏洞的相关补丁中的软件包未安装在系统上。
+
+针对某个漏洞进行了修补的系统::
+系统中安装的某个软件包版本等同于或高于标记为漏洞的相关补丁中相同软件包的版本。
+
+相关补丁::
+在相关通道中，由 {productname} 知晓的补丁。
+
+相关通道::
+由 {productname} 管理的通道，该通道可能分配给系统，或是系统克隆通道的原始通道，或是与系统上安装的产品相关联的通道，或者是系统过去或将来的服务包通道。
+
+
+[NOTE]
+====
+由于在 {productname} 中使用的定义，CVE 审计结果在某些情况下可能不正确。
+例如，未管理的通道、未管理的软件包或不合规的系统可能会错误报告。
+====

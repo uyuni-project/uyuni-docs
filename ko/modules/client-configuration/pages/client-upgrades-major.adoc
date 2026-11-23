@@ -1,0 +1,157 @@
+[[client-upgrades-major]]
+= 주 버전 업그레이드
+:description: SLE12에서 SLE15로 클라이언트를 성공적으로 마이그레이션하는 방법을 배우고, YaST 도구를 사용하여 설치 미디어를 준비하고 자동 설치 배포를 선언합니다.
+:revdate: 2024-06-12
+:page-revdate: {revdate}
+:page-author: SUSE 제품 및 솔루션 문서팀
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+클라이언트는 설치된 운영 체제에 대해 최신 서비스 팩(SP)을 보유해야 하며, 모든 최신 업데이트가 적용되어 있어야 합니다.
+시작하기 전에 시스템이 최신 상태인지 확인하고 모든 업데이트가 성공적으로 설치되었는지 확인하십시오.
+
+업그레이드는 {yast} 및 {ay}에서 제어하며 Zypper는 사용하지 않습니다.
+
+
+
+== 마이그레이션 준비
+
+
+클라이언트를 SLE{nbsp}12에서 SLE{nbsp}15로 마이그레이션하기 전에 다음을 수행해야 합니다:
+
+. 설치 미디어 준비
+. 자동 설치 배포 선언
+. 활성화 키 생성
+. 자동 설치 프로파일 생성
+
+
+
+=== 설치 미디어 준비
+
+.절차 설치 미디어 준비
+. 컨테이너 호스트에서 설치 소스가 포함된 ISO 이미지를 다운로드합니다.
+
+. `mgradm`을(를) 사용하여 ISO 이미지에서 설치 데이터를 가져옵니다：
++
+----
+mgradm distribution copy <image_name>.iso <image_name>
+----
+
+. `mgradm`에서 보고된 배포 경로를 기록해 두십시오.
+  배포를 {productname}에 선언할 때 필요합니다.
+
+
+[NOTE]
+====
+이 이미지는 여러 자동 설치 배포에 사용할 수 있습니다.
+====
+
+자세한 내용은 xref:client-configuration:autoinst-distributions.adoc[]을 참조하십시오.
+
+
+
+=== 자동 설치 배포 선언
+
+.절차 자동 설치 배포 선언
+. {productname} {webui}에서 menu:시스템[자동 설치> 배포판]으로 이동합니다.
+. `Create  Distribution`을(를) 클릭하고 다음 필드를 완료하십시오：
++
+`Distribution Label` 필드에 자동 설치 가능한 배포를 식별할 수 있는 이름을 입력하십시오.
+  예를 들어, `sles15sp6-x86_64`.
+* `Tree Path` 필드에 이미 저장한 설치 미디어의 경로를 입력하십시오.
+* 일치하는 `Base Channel`을(를) 선택하십시오.
+  설치 미디어와 일치해야 합니다.
+* `Installer Generation`을(를) 선택하십시오.
+  설치 미디어와 일치해야 합니다.
+* 선택 사항: 이 배포를 부팅할 때 사용할 커널 옵션을 지정합니다.
+  커널 옵션을 제공하는 방법은 여러 가지가 있습니다.
+  여기에는 배포에 일반적인 옵션만 추가하십시오.
+. btn:[자동 설치 가능한 배포판 생성]을 클릭합니다.
+
+
+=== 활성화 키 생성
+
+예를 들어, 기존 SLE{nbsp}12 기본 채널에서 새 SLE{nbsp}15 채널로 전환하려면 활성화 키가 필요합니다.
+
+
+.절차 활성화 키 생성
+. {productname} 서버 {webui}에서 menu:시스템[활성화 키]로 이동하고 `Create Key`을(를) 클릭합니다.
+. 키에 대한 설명을 입력합니다.
+. 키를 입력하거나 공백으로 두어 자동 키를 생성합니다.
+. 선택 사항: 사용을 제한하려면 `Usage` 텍스트 필드에 값을 입력하십시오.
+. `SLE-Product-SLES15-SP6-Pool for x86_64` 기본 채널을 선택하십시오.
+. 선택 사항: `Add-On System Types`을(를) 선택하십시오.
+    자세한 내용은 {sles-base-os-documentation}/article-modules.html을 참조하십시오.
+. btn:[활성화 키 생성]을 클릭합니다.
+. `Child Channels` 탭을 클릭하고 필요한 채널을 선택하십시오.
+. btn:[업데이트 키]를 클릭합니다.
+
+
+
+=== 자동 설치 프로파일 생성
+
+자동 설치 프로파일에는 시스템 설치에 필요한 모든 설치 및 구성 데이터가 포함되어 있습니다.
+설치가 완료된 후 실행할 스크립트도 포함할 수 있습니다.
+시작 지점으로 사용할 수 있는 스크립트의 예는 https://github.com/SUSE/manager-build-profiles/tree/master/AutoYaST.을 참조하십시오.
+
+유효한 {ay} 업그레이드 설정은 https://doc.opensuse.org/projects/autoyast/#CreateProfile-upgrade.을 참조하십시오.
+
+
+.절차 자동 설치 프로파일 생성
+. {productname} {webui}에서 menu:시스템[자동 설치> 프로파일]로 이동하고 자동 설치 프로파일 스크립트를 업로드하십시오.
++
+시작 지점으로 사용할 수 있는 스크립트의 예는 다음을 참조하십시오.
++
+https://github.com/SUSE/manager-build-profiles/tree/master/AutoYaST.
+
+. `Kernel Options` 필드에 `autoupgrade=1`을(를) 입력하십시오.
++
+선택적으로 `Y2DEBUG=1` 옵션도 포함할 수 있습니다.
+디버그 설정은 필수는 아니지만 향후 발생할 수 있는 문제를 조사하는 데 도움이 될 수 있습니다.
++
+
+[IMPORTANT]
+====
+Azure 클라우드에서 실행 중인 클라이언트는 `Kernel Options`에 `textmode=1 console=ttyS0`을(를) 추가해야 합니다.
+====
+
+. 자동 설치 프로파일을 붙여 넣거나 파일 업로드 필드를 사용합니다.
+. btn:[저장하기]를 클릭합니다.
+. 업로드한 프로파일에 변수를 설정해야 하는 경우 menu:시스템[자동 설치 > 프로파일]로 이동하여 편집할 프로파일을 선택하고 `Variables` 탭으로 이동합니다.
++
+다음 형식을 사용하여 필수 변수를 지정합니다.
++
+----
+<key>=<value>
+----
+
+
+
+== 마이그레이션
+
+시작하기 전, 자동 설치 프로파일에서 참조된 모든 채널을 사용할 수 있고 완전히 동기화되었는지 확인합니다.
+
+`/var/log/rhn/reposync/<channel-label>.log`에서 미러링 진행 상황을 모니터링할 수 있습니다.
+
+
+.절차 마이그레이션
+. {productname} 서버 {webui}에서 `Systems`으로 이동하여 업그레이드할 클라이언트를 선택합니다.
+. `Provisioning` 탭으로 이동하여 업로드한 자동 설치 프로파일을 선택합니다.
+. btn:[자동 설치 예약 및 완료]를 클릭합니다.
+  시스템이 필수 파일을 다운로드하고 부트로더 항목을 변경한 후 재부팅하여 업그레이드를 시작합니다.
+
+
+클라이언트가 다음 번에 {productname} 서버와 동기화할 때 재설치 작업을 받습니다.
+재설치 작업은 새로운 커널과 initrd 패키지를 가져옵니다.
+또한 새 커널 및 initrd 패키지에 대한 포인터를 포함하는 `/boot/grub/menu.lst` (GRUB Legacy) 또는 `/boot/grub2/grub.cfg` (GRUB 2)를 작성합니다.
+
+클라이언트가 다음에 부팅할 때 grub를 사용하여 새로운 커널과 initrd로 부팅합니다.
+이 과정에서는 PXE 부팅이 사용되지 않습니다.
+
+작업을 가져온 후 약 3분이 지나면 클라이언트는 재부팅을 시작합니다.
+
+[NOTE]
+====
+클라이언트의 경우 마이그레이션이 완료된 후 `spacewalk/minion_script` 조각을 사용하여 클라이언트를 다시 등록합니다.
+====

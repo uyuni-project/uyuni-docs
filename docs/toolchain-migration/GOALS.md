@@ -31,9 +31,9 @@
 
 ## Non-goals
 
-- **Translation workflow changes** — `l10n-weblate/*.po`, `*.pot`, `.cfg` files, `make_pot.sh`,
-  and `use_po.sh` are not touched. po4a removal is a separate future project gated on the AI
-  translation tool being fully operational.
+- **Translation workflow changes** — po4a/Weblate build integration is deprecated in Phase 8.
+  Committed AsciiDoc under `{lang}/modules/` is staged via `task stage-content`. Scripts and
+  `l10n-weblate/` are retained but not invoked by the build. See [L10N-AI-MIGRATION.md](../../L10N-AI-MIGRATION.md).
 
 - **UI bundle changes** — branding directory contents, PDF themes, fonts, and Handlebars templates
   are out of scope.

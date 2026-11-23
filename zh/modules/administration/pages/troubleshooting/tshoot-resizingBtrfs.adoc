@@ -1,0 +1,157 @@
+[[troubleshooting-btrfs]]
+= 调整 BTRFS 大小
+:revdate: 2026-05-13
+:page-revdate: {revdate}
+
+
+== 在 {sles} 上调整 BTRFS LVM 分区大小
+
+在管理 {sles} 安装时，BTRFS 根文件系统可能因文件、缓存或快照而变满。
+由于不建议手动删除快照，最佳方法是调整分区大小。
+
+[NOTE]
+====
+在调整 BTRFS 分区大小时，分区必须在此过程中保持挂载。
+====
+
+以下步骤说明如何通过向卷组添加新磁盘（例如，`/dev/sdb`）来调整 BTRFS LVM 分区的大小。
+
+.过程：升级调整 BTRFS LVM 分区大小*
+[role=procedure]
+____
+. 检查磁盘信息以使用 `lsblk` 命令识别根文件系统设备和新磁盘：
+
++
+
+[source,bash]
+----
+lsblk
+----
+
+. 在新添加的磁盘上创建物理卷：
+
++
+
+[source,bash]
+----
+pvcreate /dev/sdb
+----
+
+. 扫描当前根文件系统使用的卷组：
+
++
+
+[source,bash]
+----
+vgscan
+----
+
+. 使用新创建的物理卷扩展卷组：
+
++
+
+[source,bash]
+----
+vgextend system /dev/sdb
+----
+
+. 使用扩展的卷组扩展逻辑卷：
+
++
+
+[source,bash]
+----
+lvextend -l +100%FREE /dev/system/root
+----
+
+. 调整 BTRFS 根文件系统的大小：
+
++
+
+[source,bash]
+----
+btrfs filesystem resize max /
+----
+
+. 检查结果以验证系统的根文件系统是否已成功调整为新容量：
+
++
+
+[source,bash]
+----
+lsblk
+----
+____
+
+
+
+
+
+== 在 {sl-micro} 上调整 BTRFS 根卷的大小
+
+在管理 {sle-micro} 5.5 或 {sl-micro} 6 安装时，BTRFS 根卷可能会耗尽磁盘空间并需要调整大小。
+
+尝试使用标准命令 `btrfs fi resize max /` 调整根卷的大小将导致以下错误：
+
+[source,bash]
+----
+ERROR: unable to resize '/': Read-only file system
+----
+
+这是因为根卷在 {sle-micro} 系统上以只读方式挂载。
+要在线成功完成操作，您必须将目标指向 `/.snapshots` 安装点，该安装点以读写方式挂载。
+
+[WARNING]
+====
+对分区表的更改可能会对系统造成损害。
+
+在进行分区表更改之前，请务必确保有完整的备份。
+====
+
+以下过程说明如何调整单个磁盘的大小，其中根分区为设备上最后一个分区（例如，`/dev/sda3`）。
+如果您的布局包含更多分区，操作可能会变得更加复杂，您可能需要联系{scclongform}以获得支持。
+
+.过程：升级调整BTRFS根卷的大小
+[role=procedure]
+____
+. 使用适合您环境的超级管理程序或存储工具将现有磁盘调整为新大小。
+
+. 重新扫描要调整大小的设备。
+  例如，要重新扫描 `/dev/sda`，请以 root 身份运行以下命令：
+
++
+
+[source,bash]
+----
+echo 1 > /sys/block/sda/device/rescan
+----
+
+. 使用命令 `growpart` 调整根分区的大小。
+  在此示例中，我们调整 `/dev/sda` 上的第 3 个分区的大小：
+
++
+
+[source,bash]
+----
+growpart /dev/sda 3
+----
+
+. 调整BTRFS文件系统的大小。
+  请确保使用 `/.snapshots` 而不是 `/` 以避免只读错误：
+
++
+
+[source,bash]
+----
+btrfs fi resize max /.snapshots
+----
+
+. 检查文件系统以验证新大小是否已成功应用：
+
++
+
+[source,bash]
+----
+btrfs fi show /
+----
+____

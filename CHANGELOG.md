@@ -1,3 +1,90 @@
+- Documented how to resolve outdated channel tokens on clients that were offline during a token refresh (bsc#1254483)
+- Removed old proxy SSH setup documentation
+- Removed obsolete admonition in the Installation and Upgrade Guide (bsc#1287084)
+- Added pre-migration information for proxy migration scenarios to Installation and Upgrade Guide (bsc#1272984)
+- Updated Azure timer service name for on-demand image preparation in client configuration
+- Added an Initial Setup After Installation chapter to the Installation and Upgrade Guide
+- Documented free space disk check thresholds DISKCHECKALERT_FREE_MB and DISKTHRESHOLD_FREE_MB
+- Documented cloned patch reuse for softwarechannel_clone and softwarechannel_clonetree in spacecmd reference (bsc#1282231)
+- Published the docs builder image for amd64 and arm64 so Apple Silicon builds do not emulate the amd64 Go toolchain
+- Clarified requirements for Liberty client registration (bsc#1284967)
+- Clarified FQDN requirements for Hub online synchronization (bsc#1275191)
+- Expanded and corrected RBAC Web UI documentation (bsc#1258079)
+- Documented passwordless sudo requirement for PAYG connections (bsc#1280881)
+- Documented SLES 16.1 and openSUSE Leap 16.1 support and migration paths
+- Added Multi-Linux Manager MCP Server book
+- Fixed published version numbers that dropped a trailing zero, such as 2026.10 appearing as 2026.1
+- Updated images in documentation with teh correct product name (bsc#1257074)
+- Added information about associated activation keys being deleted when channels are deleted in Administration Guide
+- Extended proxy troubleshooting section for setting the grains (bsc#1281041)
+- Updated information for hardware requirements and a reference to large deployments requirements (bsc#1268473)
+- Documented resolving obsolete libvirt-events errors in minion logs (bsc#1272813)
+- Added documentation support for Ubuntu 26.04 client systems
+- Fixed procedure block formatting and normalized section headings to sentence case
+- Documented Salt RBAC namespaces and native Salt access controls
+- Added a note to the liberate formula page for special handling of kernel during reinstall (bsc#1269223)
+- Documented new Taskomatic schedules (bsc#1273021)
+- Removed the sitemaps Antora generates from the documentation.suse.com HTML build
+- Updated the documentation.suse.com shared header to version 1.16 and marked it as the documentation portal
+- Added an English-only edit link on the documentation.suse.com and Uyuni sites so readers can propose a change to the English source
+- Clarified requirement to update to the latest maintenance update before upgrading or migrating between versions (bsc#1270262)
+- Documented PAYG connection deletion and synchronization behavior, and fixed a broken cross-reference (github#31801)
+- Renamed the server and proxy upgrade pages to maintenance update and defined maintenance update, upgrade and migration terminology
+- Stopped generating antora.yml in gen-all, where the two products wrote one file in a random order.
+  The `-content-dir` flag of gen-all went to that file alone and is gone as well; gen-antora keeps its own
+- Sped up CI by building only English, which is all the CI artifacts have ever contained
+- Clarified relationship between custom RBAC and Salt-API access
+- Extracted and relocated general sudo configuration guidelines to a new central page, and added unprivileged onboarding support references for SLE 16 (bsc#1275794)
+- Made JOBS=00 an error, which xargs read as unlimited concurrency
+- Fixed the PDF archive tasks, which failed when the checkout path contains a space
+- Sped up PDF builds by building the books concurrently. JOBS=<n> caps the number of concurrent jobs
+- Fixed PDF builds so the two products no longer share one entities file, which could put SUSE Multi-Linux Manager names into Uyuni PDFs and the other way round
+- Fixed the pdf-tar tasks, which produced no archive and packaged both products into each one
+- Made an empty or incorrect LANGUAGES stop the build instead of reporting success with no output
+- Made an exported LANGUAGES set the default language selection
+- Made every build task select languages with LANGUAGES
+- Added a CI check for the revision date of changed documentation pages
+- Removed a link to the SSL CA migration guide, which does not apply to this version
+- Fixed noindex guards so product-specific pages no longer appear in the other product's documentation search
+- Documented deprecation and support limitations of plain salt-minion manual registration (bsc#1275658)
+- Added warning about known issues in Multi-Linux Manager 5.0 and 5.1 server upgrade guides (bsc#1274875)
+- Corrected and restored Debian 12 packages in the OpenSCAP packages table (bsc#1269316)
+- Documented Web UI Reactivation Key field, Salt Bundle configuration paths, and detailed warnings/behaviors for Reactivation Keys (bsc#1211440)
+- Documented requirements and limitations for container image inspection on SLES 15 and SLES 16 (bsc#1274720)
+- Documented proxy certificate replacement using spacecmd (bsc#1271329)
+- Documented allowing diskcheck environment variables into containers (bsc#1270033)
+- Added instruction for obtaining the certificate when renaming the server (bsc#1273853)
+- Clarified availability of Salt's "virt" module in the Salt Bundle (bsc#1270694)
+- Documented how VMs are listed and referenced by virtual hosts (bsc#1273073)
+- Added a common workflow for certificate setup and rotation with ACME
+- Extended configuration instructions for Saline formula in Specialized Guides
+  (bsc#1268587)
+- Enhanced instructions for Liberate formula and reactivation key in Specialized
+  Guides (bsc#1268473)
+- Consolidated multiple duplicated activation key creation procedures into a single reusable partial snippet
+- Added instructions for enabling reporting dashboards in Specialized Guides
+  (bsc#1268228)
+- Documented apache2 parameter used for large deployments (bsc#1268673)
+- Fixed `task validate:mlm` and `task validate:uyuni` to use Antora 3 built-in xref
+  checking (`stage-content`, `gen-site`, `gen-antora`, `--log-failure-level=error`)
+  instead of the obsolete Antora 2.x `@antora/xref-validator` plugin, which was not
+  shipped in the builder image
+- Migrated the build to committed AI translation trees (`ja/`, `ko/`, `zh/modules/`)
+  with English fallback via `task stage-content`; po4a/Weblate are no longer used in the
+  build pipeline
+- Updated PDF builds to stage translated content from `{content_dir}/modules/` before
+  `gen-pdf-nav`; consolidated Uyuni CJK PDF output onto the shared `uyuni-cjk` theme
+- Fixed sibling `ifeval` blocks in SUSE Liberty Linux client registration
+  (`clients-sleses.adoc`) that caused unterminated conditional errors in CJK PDF builds
+- Documented Grafana reporting database automated setup and Hub Overview in Administration and Specialized Guides
+- Update the OpenSCAP packages table in the
+  System Security with OpenSCAP article in the Administration guide (bsc#1269316)
+- Added documentation for migrating legacy ISS v1 and ISS v2 peripheral servers
+  to ISS v3 (Hub Online Synchronization) and detailed Report DB/XMLRPC API dependencies in Specialized Guides
+- Update data file storage locations for Uyuni in Installation and Upgrade Guide
+- Documented SLES 15 SP7 to SLES 16.0 major upgrade via product migration in Client Configuration Guide
+- Added a common workflow to setup crypto policies in the server container (bsc#1253505)
+- Added mass migration using UI to Client Configuration Guide (bsc#1259594)
 - Enhanced proxy migration procedure (bsc#1269408)
 - Added procedure for allowing uploading of large files to Specialized
   Guides (bsc#1268673)

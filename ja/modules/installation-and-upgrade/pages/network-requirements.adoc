@@ -1,0 +1,389 @@
+[[installation-network-requirements]]
+= ネットワーク要件
+:description: SUSE Multi-Linux Managerのネットワーク要件の設定および管理方法（セットアップやトラブルシューティングを含む）について学びます。
+:revdate: 2025-07-08
+:page-revdate: {revdate}
+:page-author: SUSE製品およびソリューションドキュメントチーム
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+このセクションでは、{productname}のネットワークとポートの要件について詳しく説明します。
+
+[IMPORTANT]
+====
+IP転送はコンテナ化されたインストールによって有効になります。
+これは、{productname}サーバーとプロキシがルーターとして動作することを意味します。
+この動作はpodmanによって直接行われます。
+IP転送が無効になっている場合、Podmanコンテナは実行されません。
+
+ポリシーに従って、{productname}環境のネットワーク分離を実現することを検討してください。
+
+詳細については、 https://www.suse.com/support/kb/doc/?id=000020166.を参照してください。
+====
+
+
+== 完全修飾ドメイン名(FQDN)
+
+{productname}サーバーは、そのFQDNを正しく解決する必要があります。
+FQDNが解決できない場合、さまざまなコンポーネントで深刻な問題を引き起こす可能性があります。
+
+ホスト名とDNSの設定の詳細については、{sles-base-os-documentation}/cha-network.html#sec-network-yast-change-hostを参照してください。
+
+== ホスト名とIPアドレス
+{productname}ドメイン名がクライアントによって解決できるようにするためには、サーバーとクライアントの両方のマシンが動作するDNSサーバーに接続されている必要があります。
+逆引きが正しく設定されていることも確認する必要があります。
+
+DNSサーバーの設定に関する詳細については、{sles-base-os-documentation}/cha-dns.htmlを参照してください。
+
+
+== ルータ広告の再有効化
+
+{productname}が`mgradm install podman`または`mgrpxy install podman`を使用してインストールされると、Podmanがセットアップされ、IPv4およびIPv6転送が有効になります。
+これは、コンテナの外部との通信に必要です。
+
+ただし、システムで以前に`/proc/sys/net/ipv6/conf/eth0/accept_ra`が`1`に設定されていた場合、ルーターアドバタイズメントの使用が停止されます。
+その結果、ルーター広告を介してルートが取得されなくなり、デフォルトのIPv6ルートが欠落します。
+
+IPv6ルーティングの正常な機能を回復するには、次のプロシージャに従います。
+
+ * サーバーとプロキシは{bci-mlm}に基づいています（Network Managerを使用しない）。
+
+ * サーバーとプロキシは{sl-micro} {microversion}}に基づいています（Network Managerを使用する）。
+
+
+.プロシージャ:Network Managerなしでルーター広告を再有効化する
+[role=procedure]
+____
+. `/etc/sysctl.d`にファイルを作成します（例: `99-ipv6-ras.conf`）。
+. 次のパラメータと値をファイルに追加します。
+
++
+----
+net.ipv6.conf.eth0.accept_ra = 2
+----
+. 再起動します。
+____
+
+
+[WARNING]
+====
+ウィキッドがない場合、ネットワーク管理は機能していません。
+====
+
+
+
+.プロシージャ:Network Managerを使用してルーター広告を再有効化する
+[role=procedure]
+____
+. `nmcli connection show`を使用して接続を一覧表示します。
+
+. ファイル`/etc/NetworkManager/system-connections/<name of connection>.nmconnection`を作成または変更して、この設定を追加します：
+
++
+
+[source, shell]
+----
+[ipv6]
+addr-gen-mode=eui64
+----
+
+. 再起動します。
+
+. 出力は次のようになります。
+
++
+[source, shell]
+----
+[connection]
+id=Wired connection 1
+type=ethernet
+interface-name=eth0
+
+[ethernet]
+
+[ipv4]
+dns-priority=20
+method=auto
+
+[ipv6]
+addr-gen-mode=eui64
+method=auto
+
+----
+____
+
+
+== HTTPまたはHTTPSのOSIレベル7プロキシの背後での配備
+
+一部の環境では、HTTPまたはHTTPSプロキシを介してインターネットアクセスが強制されます。
+これはSquidサーバーやそれに類似したものかもしれません。
+そのような構成で{productname}サーバーにインターネットアクセスを許可するには、次の設定を行う必要があります。
+
+.プロシージャ:HTTPまたはHTTPS OSIレベル7プロキシの設定
+
+. オペレーティングシステムのインターネットアクセスのために、`/etc/sysconfig/proxy`を必要に応じて変更します：
+
++
+
+[source,shell]
+----
+PROXY_ENABLED="no"
+HTTP_PROXY=""
+HTTPS_PROXY=""
+NO_PROXY="localhost, 127.0.0.1"
+----
+
+. `Podman`コンテナのインターネットアクセスのために、`/etc/systemd/system/uyuni-server.service.d/custom.conf`を必要に応じて変更します。
+  たとえば、次のように設定します。
+
++
+
+[source,shell]
+----
+[Service]
+Environment=TZ=Europe/Berlin
+Environment="PODMAN_EXTRA_ARGS="
+Environment="https_proxy=user:password@http://192.168.10.1:3128"
+----
+
+. Javaアプリケーションのインターネットアクセスのために、`/etc/rhn/rhn.conf`を必要に応じて変更します。
+  コンテナホストで、`mgrctl term`を実行してサーバコンテナ内でコマンドラインを開きます：
+
++
+
+--
+
+.. 必要に応じて`/etc/rhn/rhn.conf`を変更します。
+   たとえば、次のように設定します。
+
++
+
+[source,shell]
+----
+# Use proxy FQDN, or FQDN:port
+server.satellite.http_proxy =
+server.satellite.http_proxy_username =
+server.satellite.http_proxy_password =
+# no_proxy is a comma seperated list
+server.satellite.no_proxy =
+----
+
+--
+
++
+
+. コンテナホストでサーバを再起動して、新しい設定を適用します。
+
++
+
+[source,shell]
+----
+systemctl restart uyuni-server.service
+----
+
+
+
+== Air-gapped配備
+内部ネットワークにいて{scclongform}にアクセスできない場合は、xref:installation-and-upgrade:container-deployment/mlm/server-air-gapped-deployment-mlm.adoc[エアギャップ(された)デプロイメント]を使用できます。
+
+
+本番環境では、{productname}サーバーとクライアントは必ずファイアウォールを使用してください。
+必要なポートの包括的なリストについては、xref:installation-and-upgrade:network-requirements.adoc#ports[]を参照してください。
+
+
+//For more information on disconnected setup and port configuration, see xref:administration:disconnected-setup.adoc[].
+
+[[ports]]
+== 必須のネットワークポート
+
+このセクションには、{productname}内でのさまざまな通信に使用されるポートの包括的なリストが含まれています。
+
+これらのすべてのポートを開く必要はありません。
+一部のポートは、それらを必要とするサービスを使用している場合にのみ開く必要があります。
+
+
+
+=== 概要
+
+==== サーバ
+
+image::ports_diagram.png[]
+
+==== プロキシ
+
+image::ports_proxy_diagram.png[]
+
+
+
+=== 外部の着信サーバポート
+
+未許可アクセスからサーバを保護するために、{productname}サーバでファイアウォールを設定する際は、外部からの着信ポートを開放する必要があります。
+
+これらのポートを開くと、外部ネットワークトラフィックが{productname}サーバにアクセスできるようになります。
+
+// | 22          |          |            | Only required if the user wants to manage the server host with {salt} SSH.
+
+[cols="1,1,1,3", options="header"]
+.{productname}サーバの外部ポート要件
+|===
+| [ポート番号] | プロトコル | 使用元:    | メモ
+| 67          | TCP/UDP  | DHCP       | クライアントがサーバからIPアドレスを要求する場合にのみ必要です。
+| 69          | TCP/UDP  | TFTP       | サーバが自動クライアントインストールのためのPXEサーバとして使用される場合に必要です。
+| 80          | TCP      | HTTP       | 一部のブートストラップリポジトリや自動インストールのために一時的に必要です。
+| 443         | TCP      | HTTPS      | {webui}、クライアント、サーバ、およびプロキシ（`tftpsync`）リクエストに対応します。
+| 4505        | TCP      | salt       | クライアントからの通信リクエストを受け入れるために必要です。
+クライアントが接続を開始し、Saltマスターからのコマンドを受け取るために接続が開いたままになります。
+| 4506        | TCP      | salt       | クライアントからの通信リクエストを受け入れるために必要です。
+クライアントが接続を開始し、Saltマスターに結果を報告するために接続が開いたままになります。
+| 5432        | TCP      | PostgreSQL | レポーティングデータベースにアクセスするために必要です。
+| 5556        | TCP      | Prometheus | Taskomatic JMXメトリクスを取得するために必要です。
+| 5557        | TCP      | Prometheus | Tomcat JMXメトリクスを取得するために必要です。
+| 9100        | TCP      | Prometheus | Node exporterメトリクスを取得するために必要です。
+| 9187        | TCP      | Prometheus | PostgreSQLメトリクスを取得するために必要です。
+| 9800        | TCP      | Prometheus | Taskomaticメトリクスを取得するために必要です。
+|===
+
+
+
+=== 外部の送信サーバポート
+
+サーバからアクセスできるアクセス先を制限するために{productname}サーバでファイアウォールを設定するには、外部の送信ポートが開いている必要があります。
+
+これらのポートを開くと、{productname}サーバからのネットワークトラフィックで外部サービスに通信できます。
+
+[cols="1,1,1,3", options="header"]
+.{productname}サーバの外部ポート要件
+|===
+| [ポート番号] | プロトコル | 使用元: | メモ
+| 80          | TCP | HTTP       | {scclongform}の場合に必要です。
+ポート80は{webui}を提供するためには使用されません。
+| 443         | TCP | HTTPS      | {scclongform}の場合に必要です。
+|===
+
+
+
+=== 内部サーバポート
+
+内部ポートは{productname}サーバによって内部で使用されます。
+内部ポートは`localhost`からのみアクセス可能です。
+
+ほとんどの場合、これらのポートを調整する必要はありません。
+
+[cols="1,3", options="header"]
+.{productname}サーバの内部ポートの要件
+|===
+| [ポート番号] | メモ
+| 2828        | TomcatおよびTaskomaticのRHNアプリケーションで使用される衛星検索API。
+| 2829        | TomcatのRHNアプリケーションで使用されるTaskomatic API。
+| 8005        | Tomcatシャットダウンポート。
+| 8009        | TomcatからApache HTTPD（AJP）へ。
+| 8080        | TomcatからApache HTTPD（HTTP）へ。
+| 9080        | TomcatおよびTaskomaticのRHNアプリケーションで使用されるSalt-API。
+| 32000       | Taskomaticおよび衛星検索を実行するJava仮想マシン（JVM）へのTCP接続用のポート。
+|===
+
+
+ポート32768以上はエフェメラルポートとして使用されます。
+これらは最も頻繁にTCP接続を受信するために使用されます。
+TCP接続要求が受信されると、送信者は宛先ポートに一致するこれらのエフェメラルポート番号のいずれかを選択します。
+
+次のコマンドを使用して、一時ポートであるポートを確認できます。
+
+----
+cat /proc/sys/net/ipv4/ip_local_port_range
+----
+
+
+
+=== 外部の着信プロキシポート
+
+未許可アクセスからプロキシを保護するために{productname}プロキシでファイアウォールを設定するには、外部の着信ポートが開いている必要があります。
+
+これらのポートを開くと、外部ネットワークトラフィックが{productname}プロキシにアクセスできるようになります。
+
+[cols="1,1,1,3", options="header"]
+.{productname}プロキシの外部ポートの要件
+|===
+| [ポート番号] | プロトコル | 使用元: | メモ
+| 22          |          |         | ユーザーが{salt} SSHでプロキシホストを管理したい場合にのみ必要です。
+| 67          | TCP/UDP  | DHCP    | クライアントがサーバからIPアドレスを要求する場合にのみ必要です。
+| 69          | TCP/UDP  | TFTP    | サーバが自動クライアントインストールのためのPXEサーバとして使用される場合に必要です。
+| 443         | TCP      | HTTPS   | {webui}、クライアント、サーバ、およびプロキシ（`tftpsync`）リクエスト。
+| 4505        | TCP      | salt    | クライアントからの通信リクエストを受け入れるために必要です。
+クライアントが接続を開始し、Saltマスターからのコマンドを受け取るために接続が開いたままになります。
+| 4506        | TCP      | salt    | クライアントからの通信リクエストを受け入れるために必要です。
+クライアントが接続を開始し、Saltマスターに結果を報告するために接続が開いたままになります。
+| 8022        |          |         | ssh-push および ssh-push-tunnel の接続方法に必要です。プロキシに接続されたクライアントは、サーバーにチェックインした後、他のクライアントに中継します。
+|===
+
+
+
+=== 外部の送信プロキシポート
+
+プロキシがアクセス可能な先を制限するため、{productname}プロキシ上でファイアウォールを設定する際、外向きのポートを開放する必要があります。
+
+これらのポートを開放することで、{productname}プロキシからのネットワークトラフィックが外部サービスと通信できるようになります。
+
+[cols="1,1,1,3", options="header"]
+.{productname}プロキシの外部ポートの要件
+|===
+| [ポート番号] | プロトコル | 使用元: | メモ
+| 80          |          |         | サーバーに到達するために使用されます。
+| 443         | TCP      | HTTPS   | {scclongform}の場合に必要です。
+| 4505        | TCP      | Salt    | Saltマスターに直接またはプロキシを介して接続するために必要です。
+| 4506        | TCP      | Salt    | Saltマスターに直接またはプロキシを介して接続するために必要です。
+|===
+
+
+
+=== 外部クライアントポート
+
+クライアントと{productname}サーバー間のファイアウォールを設定するには、外向きのクライアントポートを開放する必要があります。
+
+ほとんどの場合、これらのポートを調整する必要はありません。
+
+[cols="1,1,1,3", options="header"]
+.{productname}クライアントの外部ポート要件
+|===
+| [ポート番号] | 方向 | プロトコル | メモ
+| 22          | インバウンド   | SSH      | ssh-push および ssh-push-tunnel の接続方法に必要です。
+| 80          | アウトバウンド  |          | サーバーまたはプロキシに到達するために使用されます。
+| 443         | アウトバウンド  |          | サーバーまたはプロキシに到達するために使用されます。
+| 4505        | アウトバウンド  | TCP      | Saltマスターに直接またはプロキシを介して接続するために必要です。
+| 4506        | アウトバウンド  | TCP      | Saltマスターに直接またはプロキシを介して接続するために必要です。
+| 9090        | アウトバウンド  | TCP      | Prometheusユーザーインターフェースに必要です。
+| 9093        | アウトバウンド  | TCP      | Prometheusアラートマネージャーに必要です。
+| 9100        | アウトバウンド  | TCP      | Prometheusノードエクスポーターに必要です。
+| 9117        | アウトバウンド  | TCP      | Prometheus Apacheエクスポーターに必要です。
+| 9187        | アウトバウンド  | TCP      | Prometheus PostgreSQLに必要です。
+|===
+
+
+
+=== 必要なURL
+
+クライアントを登録し、更新を実行するために{productname}がアクセスできる必要があるURLがあります。
+ほとんどの場合、これらのURLへのアクセスを許可することが十分です：
+
+* `scc.suse.com`
+* `updates.suse.com`
+* `installer-updates.suse.com`
+* `registry.suse.com`
+* `registry-storage.suse.com`
+* `opensuse.org`
+
+さらに、SUSE以外の製品の場合は、次のURLへのアクセスが必要になる場合があります。
+
+* `download.nvidia.com`
+* `public.dhe.ibm.com`
+* `nu.novell.com`
+
+指定したURLとそれに関連するIPアドレスをホワイトリストに登録する方法の詳細については、次の記事を参照してください: https://support.scc.suse.com/s/kb/SUSE-Customer-Center-and-SUSE-registry-URLs-for-access-behind-a-firewall-and-or-through-a-proxy[ファイアウォール内および/またはプロキシ経由で{scclongform}とSUSEレジストリにアクセスする]。
+
+非-{suse}クライアントを使用している場合は、これらのオペレーティングシステム用の特定のパッケージを提供する他のサーバーへのアクセスも許可する必要があるかもしれません。
+例えば、{ubuntu}クライアントを持っている場合は、{ubuntu}サーバーにアクセスできる必要があります。
+
+非{suse}クライアントのファイアウォールアクセスのトラブルシューティングに関する詳細については、xref:administration:troubleshooting/tshoot-firewalls.adoc[]をご覧ください。
+
+

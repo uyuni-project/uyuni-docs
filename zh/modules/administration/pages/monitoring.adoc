@@ -1,0 +1,790 @@
+[[monitoring]]
+= 使用 Prometheus 和 Grafana 进行监控
+:description: 使用 Prometheus 和 Grafana 配置您的 SUSE Multi-Linux Manager 环境，以在时间序列数据库中记录实时指标
+:revdate: 2026-05-19
+:page-revdate: {revdate}
+:page-author: SUSE 产品与解决方案文档团队
+:page-image: https://www.suse.com/assets/img/suse-white-logo-green.svg
+:page-product-name: SUSE Multi-Linux Manager
+:page-product-version: 5.1
+
+您可以使用 Prometheus 和 Grafana 监控您的 {productname} 环境。
+{productname} 服务器和代理能够提供自我健康指标。
+您还可以在 Salt 客户端上安装和管理多个 Prometheus 导出器。
+
+
+
+[[monitoring-requirements]]
+== 要求
+
+
+Prometheus 和 Grafana 软件包包含在 {productname} 客户端工具中：
+
+ifeval::[{mlm-content} == true]
+
+* {sle}{nbsp}15
+* {sle}{nbsp}16
+* openSUSE Leap 15.x
+* openSUSE Leap 16.x
+
+endif::[]
+
+[NOTE]
+====
+仅支持使用上述列出的客户端作为监控服务器。
+====
+
+您需要在与 {productname} 服务器分开的机器上安装 Prometheus 和 Grafana。
+我们建议使用托管的 Salt {suse} 客户端作为您的监控服务器。
+
+Prometheus 使用拉取机制提取指标，因此服务器必须能够与受监控客户端建立 TCP 连接。
+客户端必须具有相应的开放端口，并且可以通过网络访问。
+或者，您可以使用反向代理建立连接。
+
+
+ifeval::[{mlm-content} == true]
+[NOTE]
+====
+您必须为每个要监控的客户端拥有监控附加产品订阅。
+访问 {scclongform} 以管理您的 {productname} 订阅。
+====
+endif::[]
+
+
+
+== Prometheus 和 Grafana
+
+
+=== Prometheus
+
+Prometheus 是一个开源监控工具，用于在时间序列数据库中记录实时指标。
+指标通过 HTTP 拉取，从而实现高性能和可伸缩性。
+
+Prometheus 指标是时间序列数据，或属于同一组或维度的带时间戳的值。
+指标通过其名称和标签集唯一标识。
+
+// TODO:: This should be an actual image.
+
+----
+   metric name               labels                 timestamp     value
+┌────────┴───────┐  ┌───────────┴───────────┐    ┌──────┴──────┐  ┌─┴─┐
+http_requests_total{status="200", method="GET"}  @1557331801.111  42236
+----
+
+每个受监控的应用程序或系统必须通过代码检测或 Prometheus 导出器按上述格式公开指标。
+
+
+=== Prometheus 导出器
+
+导出器是帮助将第三方系统的指标导出为 Prometheus 指标的库。
+当无法直接使用 Prometheus 指标对给定应用程序或系统进行监控时，导出器非常有用。
+多个导出器可以在被监控的主机上运行，以导出本地指标。
+
+Prometheus 社区提供了官方导出器的列表，更多的导出器可以作为社区贡献找到。
+有关更多信息和导出器的详细列表，请参见 https://prometheus.io/docs/instrumenting/exporters/.。
+
+
+=== Grafana
+
+Grafana 是一个用于数据可视化、监控和分析的工具。
+它用于创建仪表板，面板表示在一段时间内的特定指标。
+Grafana 通常与 Prometheus 一起使用，但也支持其他数据源，如 ElasticSearch、MySQL、PostgreSQL 和 Influx DB。
+有关 Grafana 的更多信息，请参见 https://grafana.com/docs/.。
+
+
+
+== 设置监控服务器
+
+要设置监控服务器，需要安装 Prometheus 和 Grafana 并对其进行配置。
+
+[NOTE]
+====
+仅支持 {suse} 客户端作为监控服务器。
+有关完整列表，请参见 xref:administration:monitoring.adoc#monitoring-requirements[]。
+====
+
+
+=== 安装 Prometheus
+
+如果您的监控服务器是 Salt 客户端，您可以使用 {productname} {webui} 安装 Prometheus 软件包。
+否则，您可以手动在监控服务器上下载并安装该软件包。
+Prometheus 软件也可用于 {productname} 代理和 {productname} {smr} 分支服务器。
+
+[IMPORTANT]
+====
+* 要访问 {productname} 服务器容器内的外壳，请在容器主机上运行 `mgrctl term`；如需仅执行一条命令，请运行 `mgrctl exec <options> -- <command>`。
+
+* 要从容器内部将文件复制到容器主机，请使用 `mgrctl cp`。
+====
+
+[NOTE]
+====
+Prometheus 期望使用 POSIX 文件系统来存储数据。
+不支持非 POSIX 兼容的文件系统。
+不支持 NFS 文件系统。
+====
+
+.过程：升级使用 {webui} 安装 Prometheus。
+[role=procedure]
+____
+. 在 {productname} {webui}，打开要安装 Prometheus 的系统的详细信息页面，并导航到 `Formulas` 选项卡。
+
+. 选中 `Prometheus` 复选框以启用监控公式，然后单击 btn:[保存]。
+
+. 在顶部菜单中导航到 `Prometheus` 选项卡。
+
+. 在 `{productname} Server` 部分，输入有效的 {productname} API 凭证。
+    确保您输入的身份凭证允许访问您要监控的系统集。
+
+. 根据需要自定义任何其他配置选项。
+
+. 单击 btn:[保存公式]。
+
+. 应用 Highstate 并确认它成功完成。
+
+. 检查 Prometheus 界面是否正常加载。在浏览器中，导航到安装了 Prometheus 的服务器的 URL，使用端口 9090（例如 `http://example.com:9090`）。
+
+____
+
+有关监控公式的更多信息，请参见 xref:specialized-guides:salt/salt-formula-monitoring.adoc[]。
+
+
+
+.过程：升级手动安装和配置 Prometheus
+[role=procedure]
+____
+
+. 在监控服务器上，安装 `golang-github-prometheus-prometheus` 软件包：
+
++
+
+[source,shell]
+----
+zypper in golang-github-prometheus-prometheus
+----
+
+. 启用 Prometheus 服务：
+
++
+
+[source,shell]
+----
+systemctl enable --now prometheus
+----
+
+. 检查 Prometheus 界面是否正常加载。
+  在浏览器中，导航到安装了 Prometheus 的服务器的 URL，使用端口 9090（例如 `http://example.com:9090`）。
+
+. 打开位于 `/etc/prometheus/prometheus.yml` 的配置文件并添加此配置信息。
+  将 `server.url` 替换为您的 {productname} 服务器 URL，并调整 `username` 和 `password` 字段以匹配您的 {productname} 凭证。
+
++
+
+----
+# {productname} self-health metrics
+scrape_configs:
+- job_name: 'mgr-server'
+  static_configs:
+    - targets:
+      - 'server.url:9100'  # Node exporter
+      - 'server.url:9187'  # PostgreSQL exporter
+      - 'server.url:5556'  # JMX exporter (Tomcat)
+      - 'server.url:5557'  # JMX exporter (Taskomatic)
+      - 'server.url:9800'  # Taskomatic
+    - targets:
+      - 'server.url:80'    # Message queue
+      labels:
+        __metrics_path__: /rhn/metrics
+
+# Managed systems metrics:
+- job_name: 'mgr-clients'
+  uyuni_sd_configs:
+   - server: "http://server.url"
+     username: "admin"
+     password: "admin"
+  relabel_configs:
+   - source_labels: [__meta_uyuni_exporter]
+     target_label: exporter
+   - source_labels: [__address__]
+     replacement: "No group"
+     target_label: groups
+   - source_labels: [__meta_uyuni_groups]
+     regex: (.+)
+     target_label: groups
+   - source_labels: [__meta_uyuni_minion_hostname]
+     target_label: hostname
+   - source_labels: [__meta_uyuni_primary_fqdn]
+     regex: (.+)
+     target_label: hostname
+   - source_labels: [hostname, __address__]
+     regex: (.*);.*:(.*)
+     replacement: ${1}:${2}
+     target_label: __address__
+   - source_labels: [__meta_uyuni_metrics_path]
+     regex: (.+)
+     target_label: __metrics_path__
+   - source_labels: [__meta_uyuni_proxy_module]
+     target_label: __param_module
+   - source_labels: [__meta_uyuni_scheme]
+     target_label: __scheme__
+----
+
+. 保存该配置文件。
+
+. 重启 Prometheus 服务：
+
++
+
+[source,shell]
+----
+systemctl restart prometheus
+----
+
+____
+
+有关 Prometheus 配置选项的更多信息，请参见官方 Prometheus 文档 https://prometheus.io/docs/prometheus/latest/configuration/configuration/.。
+
+
+
+=== 安装 Grafana
+
+如果您的监控服务器是由 {productname} 管理的客户端，您可以使用 {productname} {webui} 安装 Grafana 软件包。
+否则，您可以手动在监控服务器上下载并安装该软件包。
+
+[NOTE]
+====
+Grafana 在 {productname} 代理上无法使用。
+====
+
+.过程：升级使用 {webui} 安装 Grafana
+[role=procedure]
+____
+
+. 在 {productname} {webui}，打开要安装 Grafana 的系统的详细信息页面，并导航到 `Formulas` 选项卡。
+
+. 选中 `Grafana` 复选框以启用监控公式，然后单击 btn:[保存]。
+
+. 在顶部菜单中导航到 `Grafana` 选项卡。
+
+. 在 `Enable and configure Grafana` 部分，输入用于登录 Grafana 的管理员凭证。
+
+. 在 `Datasources` 部分，确保 Prometheus URL 字段指向运行 Prometheus 的系统。
+
+. 根据需要自定义任何其他配置选项。
+
+. 单击 btn:[保存公式]。
+
+. 应用 Highstate 并确认它成功完成。
+
+. 检查 Grafana 界面是否正常装载。在浏览器中，导航到安装了 Grafana 的服务器的 URL，使用端口 3000（例如 `http://example.com:3000`）。
+
+* 请确保防火墙已开放 3000 端口，以顺利访问 Grafana
+
+____
+
+
+[NOTE]
+====
+{productname} 提供了用于服务器自我健康、基本客户端监控等的预构建仪表板。
+您可以在公式配置页面中选择要配置的仪表板。
+====
+
+
+.过程：升级手动安装 Grafana
+[role=procedure]
+____
+
+. 安装 `grafana` 软件包：
+
++
+
+[source,shell]
+----
+zypper in grafana
+----
+
+. 启用 Grafana 服务：
+
++
+
+[source,shell]
+----
+systemctl enable --now grafana-server
+----
+
+. 在浏览器中，导航到安装了 Grafana 的服务器的 URL，使用端口 3000（例如 `http://example.com:3000`）。
+
+* 请确保防火墙已开放 3000 端口，以顺利访问 Grafana。
+
+. 在登录页面中，输入 `admin` 作为用户名和密码。
+
+. 单击 btn:[登录]。
+  如果成功登录，您将会看到要求您更改口令的提示。
+
+. 在提示中单击 btn:[确定]，然后更改您的密码。
+
+. 将光标移到边栏菜单中的齿轮图标上，配置选项即会显示。
+
+. 单击 btn:[数据源]。
+
+. 单击 btn:[添加数据源] 以查看所有支持的数据源列表。
+
+. 选择 Prometheus 数据源。
+
+. 务必指定正确的 Prometheus 服务器 URL。
+
+. 单击 btn:[保存并测试]。
+
+. 要导入仪表板，请单击侧边菜单中的 btn:[+] 图标，然后单击 btn:[导入]。
+
+. 对于 {productname} 服务器概览，请加载仪表板 ID：`17569`。
+
+. 对于 {productname} 客户端概览，请加载仪表板 ID：`17570`。
+
++
+
+image::monitoring_grafana_example.png[scaledwidth=80%]
+
+____
+
+[NOTE]
+====
+* 有关监控公式的更多信息，请参见 xref:specialized-guides:salt/salt-formula-monitoring.adoc[]。
+* 有关如何手动安装和配置 Grafana 的更多信息，请参见 https://grafana.com/docs.。
+====
+
+== 配置 {productname} 监控
+
+在 {productname}{nbsp}4 及更高版本中，您可以让服务器公开 Prometheus 自我健康指标，并且可以在客户端系统上安装和配置导出器。
+
+
+
+=== 服务器自我监控
+
+服务器自我健康指标涵盖硬件、操作系统和 {productname} 内部。
+这些指标通过 Java 应用程序的仪表化以及 Prometheus 导出器提供。
+
+这些导出器与 {productname} 服务器一起提供：
+
+* Node 导出器：`golang-github-prometheus-node_exporter`。
+** 请参见 https://github.com/prometheus/node_exporter.
+* PostgreSQL 导出器：`prometheus-postgres_exporter`。
+** 请参见 https://github.com/wrouesnel/postgres_exporter.
+* JMX 导出器：`prometheus-jmx_exporter`。
+** 请参见 https://github.com/prometheus/jmx_exporter.
+
+这些导出器软件包随 {productname} 代理一起提供：
+
+* Node 导出器：`golang-github-prometheus-node_exporter`。
+** 请参见 https://github.com/prometheus/node_exporter.
+* Squid 导出器：`golang-github-boynux-squid_exporter`。
+** 请参见 https://github.com/boynux/squid-exporter.
+
+导出器已预安装在 {productname} 服务器和代理中，但其各自的 systemd 守护程序默认已禁用。
+
+
+
+.过程：升级启用自我监控
+[role=procedure]
+____
+
+. 在 {productname} {webui} 中，导航到 menu:管理[管理器配置 > 监控]。
+
+. 点击 btn:[启用服务]。
+
+. 重启 Tomcat 和 Taskomatic。
+
+. 导航到您的 Prometheus 服务器的 URL，端口为 9090（例如 `http://example.com:9090`）
+
+. 在 Prometheus UI 中，导航到 menu:状态[目标]，并确认 `mgr-server` 组中的所有端点均处于正常状态。
+
+. 如果您还使用 {webui} 安装了 Grafana，则可以在 {productname} 服务器仪表板的 menu:管理员[管理器配置> 监控]中查看服务器洞察信息。
+
+____
+
+[IMPORTANT]
+====
+只能使用 {webui} 启用服务器自我健康监控。
+Prometheus 不会自动收集代理的指标。
+要在代理上启用自我健康监控，您需要手动安装导出器并启用它们。
+====
+
+在 {productname} 服务器上收集以下相关指标。
+
+.服务器统计数据（端口 80）
+[cols="40,15,45"]
+|===
+|指标 |类型 | 说明
+
+|uyuni_all_systems
+|仪表
+|所有系统的数量
+
+|uyuni_virtual_systems
+|仪表
+|虚拟系统的数量
+
+|uyuni_inactive_systems
+|仪表
+|非活动系统的数量
+
+|uyuni_outdated_systems
+|仪表
+|具有过时软件包的系统数量
+|===
+
+.PostgreSQL 导出器（端口 9187）
+[cols="45,15,40"]
+|===
+|指标 |类型 | 说明
+
+|pg_stat_database_tup_fetched
+|计数器
+|查询获取的行数
+
+|pg_stat_database_tup_inserted
+|计数器
+|查询插入的行数
+
+|pg_stat_database_tup_updated
+|计数器
+|查询更新的行数
+
+|pg_stat_database_tup_deleted
+|计数器
+|查询删除的行数
+
+|mgr_serveractions_completed
+|仪表
+|已完成的操作数量
+
+|mgr_serveractions_failed
+|仪表
+|失败的操作数量
+
+|mgr_serveractions_picked_up
+|仪表
+|已处理的操作数量
+
+|mgr_serveractions_queued
+|仪表
+|排队的操作数量
+|===
+
+.JMX 导出器（Tomcat 端口 5556、Taskomatic 端口 5557）
+[cols="45,15,40"]
+|===
+|指标 |类型 | 说明
+
+|java_lang_Threading_ThreadCount
+|仪表
+|活动线程的数量
+
+|java_lang_Memory_HeapMemoryUsage_used
+|仪表
+|当前堆内存使用情况
+|===
+
+.服务器消息队列（端口 80）
+[cols="40,15,45"]
+|===
+|指标 |类型 | 说明
+
+|message_queue_thread_pool_threads
+|计数器
+|曾创建的消息队列线程数量
+
+|message_queue_thread_pool_threads_active
+|仪表
+|当前活动的消息队列线程数量
+
+|message_queue_thread_pool_task_count
+|计数器
+|曾提交的任务数量
+
+|message_queue_thread_pool_completed_task_count
+|计数器
+|曾完成的任务数量
+|===
+
+.Salt 队列（端口 80）
+[cols="40,15,45"]
+|===
+|指标 |类型 | 说明
+
+|salt_queue_thread_pool_size
+|仪表
+|每个 {salt} 队列创建的线程数量
+
+|salt_queue_thread_pool_active_threads
+|仪表
+|每个队列当前活动的 {salt} 线程数量
+
+|salt_queue_thread_pool_task_total
+|计数器
+|每个队列曾提交的任务数量
+
+|salt_queue_thread_pool_completed_task_total
+|计数器
+|每个队列曾完成的任务数量
+
+|===
+
+每个 salt_queue 值都有一个名为 `queue` 的标签，其值为队列编号。
+
+
+.Taskomatic 日程安排程序（端口 9800）
+[cols="40,15,45"]
+|===
+|指标 |类型 | 说明
+
+|taskomatic_scheduler_threads
+|计数器
+|曾创建的调度线程数量
+
+|taskomatic_scheduler_threads_active
+|仪表
+|当前活动调度程序线程的数量
+
+|taskomatic_scheduler_completed_task_count
+|计数器
+|曾完成的任务数量
+|===
+
+
+=== 监控受管系统
+
+可以使用公式在 {salt} 客户端上安装和配置 Prometheus 指标导出器。
+这些软件包可以从 {productname} 客户端工具频道获取，并可以直接在 {productname} {webui} 中启用和配置。
+
+可将这些导出器安装在受管系统上：
+
+* Node 导出器：`golang-github-prometheus-node_exporter`。
+** 请参见 https://github.com/prometheus/node_exporter.
+* PostgreSQL 导出器：`prometheus-postgres_exporter`。
+** 请参见 https://github.com/wrouesnel/postgres_exporter.
+* Apache 导出器：`golang-github-lusitaniae-apache_exporter`。
+** 请参见 https://github.com/Lusitaniae/apache_exporter.
+
+[NOTE]
+====
+在 {sl-micro} 上，只能使用 Node 导出器和 Blackbox 导出器。
+====
+
+安装和配置导出器后，您可以开始使用 Prometheus 从被监控系统收集指标。
+如果您已使用 {webui} 配置了监控服务器，指标收集将自动进行。
+
+
+
+.过程：升级在客户端上配置 Prometheus 导出器
+[role=procedure]
+____
+
+. 在 {productname} {webui} 中，打开要监控的客户端的详细页面，并导航到 menu:公式[] 选项卡。
+
+. 在 `Prometheus Exporters` 公式上选中 `Enabled` 复选框。
+
+. 单击 btn:[保存]。
+
+. 导航到 menu:公式[Prometheus 导出器] 选项卡。
+
+. 选择要启用的导出器并根据需要自定义参数。
+    `Address` 字段接受冒号开头的端口号 (`:9100`) 或完全可解析的地址 (`example:9100`)。
+
+. 单击 btn:[保存公式]。
+
+. 应用 highstate。
+
+____
+
+[IMPORTANT] 
+====
+防火墙需启用以下端口，且不得拦截这些端口的通信：
+
+* 在监控端：9090/tcp
+
+* 在被监控系统上：9100/tcp、9117/tcp 和 9187/tcp
+====
+
+[NOTE]
+====
+还可为系统组配置监控公式，只需应用相应组中各个系统使用的同一种配置即可。
+====
+
+有关监控公式的更多信息，请参见 xref:specialized-guides:salt/salt-formula-monitoring.adoc[]。
+
+
+=== 更改 Grafana 口令
+
+要更改 Grafana 口令，请按照 Grafana 文档中所述的步骤操作：
+
+* https://grafana.com/docs/grafana/latest/administration/user-management/user-preferences/#change-your-grafana-password
+
+如果您忘记了 Grafana 管理员密码，可以使用以下命令将其重置为 `root`：
+----
+grafana-cli --configOverrides cfg:default.paths.data=/var/lib/grafana --homepath /usr/share/grafana admin reset-admin-password <new_password>
+----
+
+
+== 网络边界
+
+Prometheus 使用拉取机制提取指标，因此服务器必须能够与受监控客户端建立 TCP 连接。
+默认情况下，Prometheus 使用这些端口：
+
+* Node 导出器：9100
+* PostgreSQL 导出器：9187
+* Apache 导出器：9117
+
+此外，如果您不是在运行 Prometheus 的同一台主机上运行警报管理器，则还需要在所在主机上打开端口 9093。
+告警管理器是 Prometheus 解决方案的一部分。
+它处理由客户端应用程序（例如 Prometheus 服务器实例）发送的告警。
+有关告警管理器的更多信息，请参见 https://prometheus.io/docs/alerting/latest/alertmanager/.
+
+对于安装在云实例上的客户端，可以将所需的端口添加到有权访问监控服务器的安全组中。
+
+或者，您可以在导出器的本地网络中部署 Prometheus 实例，并配置联合。
+这允许主监控服务器从本地 Prometheus 实例抓取时间序列。
+如果您使用此方法，只需打开 Prometheus API 端口，即 9090。
+
+有关 Prometheus 联合的更多信息，请参见 https://prometheus.io/docs/prometheus/latest/federation/.
+
+您还可以通过网络边界来中转请求。
+PushProx 等工具会在网络屏障的两端部署代理和客户端，并允许 Prometheus 跨网络拓扑（例如 NAT）工作。
+
+有关 PushProx 的更多信息，请参见 https://github.com/RobustPerception/PushProx.
+
+
+
+=== 反向代理设置
+
+Prometheus 使用拉取机制提取指标，因此服务器必须能够与受监控客户端上的每个导出器建立 TCP 连接。
+为了简化您的防火墙配置，您可以使用反向代理使导出器在单个端口上公开所有指标。
+
+// Probably a diagram here. --LKB 2020-08-11
+
+
+
+.过程：升级安装使用反向代理的 Prometheus 导出器
+[role=procedure]
+____
+
+. 在 {productname} {webui} 中，打开要监控的系统的详细页面，并导航到 `Formulas` 选项卡。
+
+. 选中 `Prometheus Exporters` 复选框以启用导出器公式，然后单击 btn:[保存]。
+
+. 在顶部菜单中导航到 `Prometheus Exporters` 选项卡。
+
+. 选中 `Enable reverse proxy` 选项，并输入有效的反向代理端口号。
+  例如，`9999`。
+
+* 请确保防火墙已开放 9999/tcp 端口。
+
+. 根据需要自定义其他导出器。
+
+. 单击 btn:[保存公式]。
+
+. 应用 Highstate 并确认它成功完成。
+
+____
+
+有关监控公式的更多信息，请参见 xref:specialized-guides:salt/salt-formula-monitoring.adoc[]。
+
+
+
+== 安全
+
+Prometheus 服务器和 Prometheus 节点导出器提供了一种内置机制，以通过 TLS 加密和身份验证来保护其端点。{productname} {webui} 简化了所有相关组件的配置。TLS 证书必须由用户提供和部署。{productname} 提供了启用以下安全模型的功能：
+
+* Node 导出器：TLS 加密和基于客户端证书的身份验证
+* Prometheus：TLS 加密和基本身份验证
+
+有关配置所有可用选项的更多信息，请参见 xref:specialized-guides:salt/salt-formula-monitoring.adoc[]。
+
+
+=== 生成 TLS 证书
+
+默认情况下，{productname} 不提供任何证书来保护监控配置。
+为了提供安全性，您可以生成或导入自定义证书，自签名或由第三方证书颁发机构 (CA) 签名。
+
+本节说明如何为使用 {productname} CA 自我签名的 Prometheus 和 Node 导出器受控端生成客户端/服务器证书。
+
+.过程：升级创建服务器/客户端 TLS 证书
+[role=procedure]
+____
+
+. 在 {productname} 容器主机的命令行中，以 root 身份运行以下命令：
+
++
+
+.. 运行以下命令生成证书文件。
+
++
+
+确保 `set-cname` 参数是您的 {salt} 客户端的完全限定的域名 (FQDN)。
+如果需要多个别名，您可以多次使用 `set-cname` 参数：
+
++
+
+[source, shell]
+----
+mgrctl exec -ti -- mgr-ssl-tool --gen-server --dir="/root/ssl-build" --set-country="COUNTRY" \
+  --set-state="STATE" --set-city="CITY" --set-org="ORGANIZATION" \
+  --set-org-unit="ORGANIZATION UNIT" --set-email="name@example.com" \
+  --set-hostname="minion.example.com" --set-cname="minion.example.com" --no-rpm
+----
+
++
+
+命令执行的结果：
+
++
+
+----
+Generating the web server's SSL private key: /root/ssl-build/minion/server.key
+Generating web server's SSL certificate request: /root/ssl-build/minion/server.csr
+Generating/signing web server's SSL certificate: server.crt
+----
+
++
+
+.. 将 `server.crt` 和 `server.key` 文件从服务器容器复制到主机：
+
++
+
+----
+mgrctl cp server:/root/ssl-build/minion/server.key server.key
+mgrctl cp server:/root/ssl-build/minion/server.crt server.crt
+----
+
++
+
+.. 将 `server.crt` 和 `server.key` 文件从主机复制到监控客户端：
+
++
+
+----
+ssh minion.example.com 'mkdir /etc/ssl/mlm-server-certs'
+scp /root/server.* minion.example.com:/etc/ssl/mlm-server-certs
+ssh minion.example.com 'chmod go+r /etc/ssl/mlm-server-certs/server.*; ls -la /etc/ssl/mlm-server-certs'
+----
+
++
+
+. 要配置 {salt} 公式，请输入前面步骤中指定的目录名称。
+
++
+
+.. 公式 受控端
+
++
+
+----
+Server Certificate /etc/ssl/mlm-server-certs/server.crt
+Server Key /etc/ssl/mlm-server-certs/server.key
+----
+
++
+
+.. 公式 受控端
+
+____
