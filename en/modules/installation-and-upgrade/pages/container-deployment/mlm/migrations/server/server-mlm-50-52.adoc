@@ -1,11 +1,24 @@
+ifeval::[{uyuni-content} == true]
+
+:noindex:
+endif::[]
+
 = Server Upgrade from 5.0 to 5.2
-:revdate: 2026-06-30
+:description: Upgrade a server from SUSE Linux Enterprise Micro 5.5 with Server 5.0 to SUSE Linux Enterprise Micro 6.2 with Server 5.2
+:revdate: 2026-10-26
 :page-revdate: {revdate}
 
 
 [IMPORTANT]
 ====
-{productname} 5.0 must be stopped before the upgrade.
+Before upgrading to {productname} {productnumber}, you must update your {productname} 5.0 Server to the latest available maintenance update, and ensure it is running (see xref:installation-and-upgrade:container-management/updating-server-containers.adoc[Server Maintenance Update]).
+Database schema migrations require intermediate changes from prior maintenance updates.
+Upgrading directly from an older maintenance update can cause database migration errors and server startup failure.
+====
+
+[IMPORTANT]
+====
+For a list of known issues, see link:https://documentation.suse.com/releasenotes/multi-linux-manager/5.2/#known_issues[{productname} Release Notes].
 ====
 
 ifndef::backend-pdf[]
@@ -35,6 +48,7 @@ This document provides the tested procedure to upgrade a {sle-micro} 5.5 host de
 === Prerequisites
 
 * {productname} 5.0 is installed and running on {sle-micro} 5.5.
+* {productname} 5.0 is updated to the latest available maintenance update, and running (see xref:installation-and-upgrade:container-management/updating-server-containers.adoc[Server Maintenance Update]).
 * System is registered and has active subscriptions with {scc}.
 
 
@@ -42,7 +56,7 @@ This document provides the tested procedure to upgrade a {sle-micro} 5.5 host de
 
 .Procedure: Migration from {productname} 5.0 to {productname} {productnumber}
 [role=procedure]
-____
+_____
 
 . Verify current product status.
 
@@ -62,7 +76,15 @@ Confirm:
 
 +
 
-. Ensure the system is updated.
+. Ensure the host system is updated.
+
++
+
+[NOTE]
+====
+This step updates the host operating system packages and tooling (such as `mgradm`).
+Ensure the {productname} Server containers have already been updated to the latest maintenance update and are running before this procedure.
+====
 
 +
 
@@ -106,22 +128,12 @@ Follow the prompts and select the available migration to **SUSE Linux Micro 6.2*
 
 +
 
-. Clean up the unused container images to free disk space:
-
-+
-[source,shell]
-----
-podman image prune -a
-----
-
-+
-
 ifndef::backend-pdf[]
-include::installation-and-upgrade:partial$snippet-check-rpmnew-rpmsave.adoc[]
+include::installation-and-upgrade:partial$snippet-post-upgrade-cleanup.adoc[]
 endif::[]
 
 ifdef::backend-pdf[]
-include::../../../../../partials/snippet-check-rpmnew-rpmsave.adoc[]
+include::../../../../../partials/snippet-post-upgrade-cleanup.adoc[]
 endif::[]
 
 +
@@ -161,25 +173,17 @@ Expected output:
 
 +
 
-. Verify PostgreSQL database version.
-
-+
-
-[source,console]
-----
-podman ps
-----
-
-+
-
-Expected output:
-
-* `server:5.2.0` or higher
-* `server-postgresql:5.2.0` or higher
-
-+
-
 . Upgrade server containers.
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-volumes-during-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-volumes-during-upgrade.adoc[]
+endif::[]
 
 +
 
@@ -195,7 +199,7 @@ endif::[]
 
 [WARNING]
 ====
-Before running `mgradm upgrade podman`, check whether `/etc/systemd/system/uyuni-server.service` contains explicit IPv6 port bindings in the form `-p [::]:PORT:PORT`.
+Before running `mgradm upgrade`, check whether `/etc/systemd/system/uyuni-server.service` contains explicit IPv6 port bindings in the form `-p [::]:PORT:PORT`.
 These bindings are incompatible with netavark on {sl-micro} 6.2 and cause malformed nftables rules that prevent the web UI from being reachable after the upgrade.
 
 If such lines are present, remove them before proceeding:
@@ -221,7 +225,7 @@ systemctl reboot
 [source,console]
 ----
 mgradm start
-mgradm upgrade podman
+mgradm upgrade
 ----
 
 +
@@ -230,7 +234,17 @@ Follow the prompts to pull and configure the new 5.2.x containers.
 
 +
 
-. Verify running containers:
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-note-tftp-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-note-tftp-upgrade.adoc[]
+endif::[]
+
++
+
+. Verify running containers.
 
 +
 
@@ -241,36 +255,40 @@ podman ps
 
 +
 
-You should see all the expected server containers are up and running.
+Expected output:
 
-. Clean up the unused container images to free disk space:
-
-+
-[source,shell]
-----
-podman image prune -a
-----
+* `server:5.2.0` or higher
+* `server-postgresql:5.2.0` or higher
 
 +
 
 ifndef::backend-pdf[]
-include::installation-and-upgrade:partial$snippet-check-rpmnew-rpmsave.adoc[]
+include::installation-and-upgrade:partial$snippet-post-upgrade-cleanup.adoc[]
 endif::[]
 
 ifdef::backend-pdf[]
-include::../../../../../partials/snippet-check-rpmnew-rpmsave.adoc[]
+include::../../../../../partials/snippet-post-upgrade-cleanup.adoc[]
 endif::[]
 
-____
+_____
 
 
 === Migration complete
 
 The server host system is now running {sl-micro} 6.2 with updated {productname} {productnumber} Server packages.
 
-If you have a {productname} 5.0 proxy connected to this server, proceed to the xref:installation-and-upgrade:container-deployment/mlm/migrations/proxy/proxy-mlm-50-52.adoc[Proxy Migration 5.0 > 5.2] guide to upgrade the proxy host.
+If you have a {productname} 5.0 proxy connected to this server, proceed to the xref:installation-and-upgrade:container-deployment/mlm/migrations/proxy/proxy-mlm-50-52.adoc[Proxy Upgrade 5.0 > 5.2] guide to upgrade the proxy host.
 
 Validate your setup before resuming production operations.
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-sync-client-tools.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-sync-client-tools.adoc[leveloffset=+2]
+endif::[]
+
 
 ifndef::backend-pdf[]
 include::installation-and-upgrade:partial$snippet-database-backup-volume.adoc[leveloffset=+2]
@@ -289,6 +307,7 @@ This document provides the procedure to upgrade a {sles} 15 SP6 host deployed wi
 === Prerequisites
 
 * {productname} 5.0 is installed and running on {sles} 15 SP6.
+* {productname} 5.0 is updated to the latest available maintenance update, and running (see xref:installation-and-upgrade:container-management/updating-server-containers.adoc[Server Maintenance Update]).
 * System is registered and has active subscriptions with {scc}.
 
 
@@ -296,7 +315,7 @@ This document provides the procedure to upgrade a {sles} 15 SP6 host deployed wi
 
 .Procedure: Upgrade and Migrate {productname} on {sles} 15 SP6
 [role=procedure]
-____
+_____
 
 . Verify current product status.
 
@@ -316,7 +335,15 @@ Confirm:
 
 +
 
-. Ensure the system is updated.
+. Ensure the host system is updated.
+
++
+
+[NOTE]
+====
+This step updates the host operating system packages and tooling (such as `mgradm`).
+Ensure the {productname} Server containers have already been updated to the latest maintenance update and are running before this procedure.
+====
 
 +
 
@@ -412,6 +439,16 @@ Expected output:
 +
 
 ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-volumes-during-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-volumes-during-upgrade.adoc[]
+endif::[]
+
++
+
+ifndef::backend-pdf[]
 include::installation-and-upgrade:partial$snippet-ptf-loss-during-upgrade.adoc[]
 endif::[]
 
@@ -424,12 +461,22 @@ endif::[]
 [source,console]
 ----
 mgradm start
-mgradm upgrade podman
+mgradm upgrade
 ----
 
 +
 
 Follow the prompts to pull and configure the new 5.2.x containers.
+
++
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-note-tftp-upgrade.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-note-tftp-upgrade.adoc[]
+endif::[]
 
 
 . Verify containers:
@@ -448,16 +495,25 @@ Expected output:
 * `server:5.2.0` or higher
 * `server-postgresql:5.2.0` or higher
 
-____
+_____
 
 
 === Migration complete
 
 The server host system is now running {sles} 15 SP7 with updated {productname} {productnumber} Server packages.
 
-If you have a {productname} 5.0 proxy connected to this server, proceed to the xref:installation-and-upgrade:container-deployment/mlm/migrations/proxy/proxy-mlm-50-52.adoc[Proxy Migration 5.0 > 5.2] guide to upgrade the proxy host.
+If you have a {productname} 5.0 proxy connected to this server, proceed to the xref:installation-and-upgrade:container-deployment/mlm/migrations/proxy/proxy-mlm-50-52.adoc[Proxy Upgrade 5.0 > 5.2] guide to upgrade the proxy host.
 
 Validate your setup before resuming production operations.
+
+
+ifndef::backend-pdf[]
+include::installation-and-upgrade:partial$snippet-sync-client-tools.adoc[leveloffset=+2]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../../../../partials/snippet-sync-client-tools.adoc[leveloffset=+2]
+endif::[]
 
 ifndef::backend-pdf[]
 include::installation-and-upgrade:partial$snippet-database-backup-volume.adoc[leveloffset=+2]

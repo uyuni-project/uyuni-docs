@@ -108,17 +108,56 @@ task container:pdf:uyuni              # All Uyuni PDFs — all books, all langua
 task container:pdf:all                # All PDFs
 ```
 
-### Build a single PDF book
+### Limiting languages
 
-Use the `pdf` task with `BOOK=`, `PRODUCT=`, and `LANG=` variables:
+Each task builds all four languages by default. `LANGUAGES=` selects fewer:
+
+```bash
+task container:pdf:mlm LANGUAGES=en
+task container:publish:uyuni LANGUAGES="en ja"
+```
+
+`LANGUAGES=` selects the languages to build. The `translations` step always
+processes all the languages, because po4a reads the `.po` files directly.
+
+`LANGUAGES=` must give one language or more, and each name must be `en`, `ja`,
+`zh_CN` or `ko`. An empty or incorrect value stops the build. `task --dry`
+makes the same check.
+
+`export LANGUAGES=en` sets the default for the subsequent commands. A
+`LANGUAGES=` on the command line has a higher precedence.
+
+### Controlling concurrency
+
+PDF books and po4a both run one job for each core. `JOBS=` caps both:
+
+```bash
+task container:pdf:mlm LANGUAGES=en JOBS=4
+```
+
+More po4a jobs than translation configs gives no gain.
+
+Each concurrent book is a different asciidoctor-pdf process with its own fonts
+in memory. Decrease `JOBS=` if a build runs out of memory. The default obeys a
+`--cpus` limit on the container.
+
+### Build one PDF book
+
+There is no `container:pdf` task for one book. Use `container:run` with the
+`pdf` task and the `BOOK=`, `PRODUCT=`, and `LANGUAGES=` variables:
 
 ```bash
 # Build the Administration Guide for MLM in English
-task pdf BOOK=administration PRODUCT=mlm LANG=en
+task container:run -- pdf BOOK=administration PRODUCT=mlm LANGUAGES=en
 
 # Build the Installation and Upgrade Guide for Uyuni in Japanese
-task pdf BOOK=installation-and-upgrade PRODUCT=uyuni LANG=ja
+task container:run -- pdf BOOK=installation-and-upgrade PRODUCT=uyuni LANGUAGES=ja
+
+# Build one book in several languages
+task container:run -- pdf BOOK=administration PRODUCT=mlm LANGUAGES="en ja"
 ```
+
+Without `LANGUAGES=` this builds the book in every language.
 
 Available books: `installation-and-upgrade` `client-configuration` `administration` `reference` `retail` `common-workflows` `specialized-guides` `legal`
 
