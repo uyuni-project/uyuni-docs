@@ -1,7 +1,7 @@
 [[lsd-tuning]]
 = Tuning Large Scale Deployments
 :description: Tune your deployment by estimating environmental variables and adjusting configuration parameters using the dependency graph
-:revdate: 2026-10-26
+:revdate: 2026-11-23
 :page-revdate: {revdate}
 
 {productname} is designed by default to work on small and medium scale installations.
@@ -477,6 +477,31 @@ If the container does not have sufficient hardware capacity or limits are too re
 | Value recommendation | 20-100
 | Location             | `/etc/rhn/rhn.conf`
 | Example              | `taskomatic.sshminion_action_executor.parallel_threads = 40`
+|===
+
+
+[[cobbler-sync-default]]
+=== `cobbler-sync-default` schedule
+
+[cols="1,1"]
+|===
+| Description          | How often Taskomatic synchronizes autoinstallable distributions and profiles from {productname} to {cobbler}.
+                         If {cobbler} data changed since the previous run, the task also runs a full `cobbler sync`, which rebuilds the content of `/srv/tftpboot/`.
+                         A full sync takes longer when {cobbler} manages many systems, for example {saltboot} terminals.
+                         While a full sync runs, the boot configuration of {saltboot} terminals that are deployed at the same time might not be created.
+| Tune when            | A run of the task takes almost as long as the interval between two runs, or longer.
+                         To see the start and end time of each run, navigate to menu:Admin[Task Schedules] and click `cobbler-sync-bunch`.
+                         Also tune it when {saltboot} terminals are deployed successfully, but their boot configuration file in `/srv/tftpboot/grub/system/` is intermittently missing.
+| Value default        | Every 30 minutes (`0 0/30 * * * ?`)
+| Value recommendation | Every 30 minutes or less often.
+                         With many {saltboot} terminals, every hour or less often.
+                         The interval must be longer than the duration of the `cobbler sync` command.
+| Location             | menu:Admin[Task Schedules], click `cobbler-sync-default` and select `Custom Quartz format`
+| Example              | `0 0 * * * ?` (every hour)
+| Notes                | During an upgrade, this schedule changes only if it still uses the previous default of every 5 minutes (`0 0/5 * * * ?`).
+                         A customized schedule is kept.
+                         With a longer interval, autoinstallation profiles with `Always use the newest Tree for this base channel` switch to a new distribution later, and distributions added by repository synchronization take longer to become available in {cobbler}.
+| More information     | xref:administration:task-schedules.adoc[]
 |===
 
 
