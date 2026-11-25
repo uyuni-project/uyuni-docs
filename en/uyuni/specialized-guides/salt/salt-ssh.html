@@ -103,7 +103,7 @@
     <div class="panels">
 <div class="nav-panel-menu is-active" data-panel="menu">
   <nav class="nav-menu">
-    <h3 class="title"><a href="../../index.html">Uyuni 2026.10</a></h3>
+    <h3 class="title"><a href="../../index.html">Uyuni 2026.11</a></h3>
 <ul class="nav-list">
   <li class="nav-item" data-depth="0">
 <ul class="nav-list">
@@ -781,13 +781,7 @@
     <a class="nav-link" href="../../administration/mirror-sources.html">Mirror Sources</a>
   </li>
   <li class="nav-item" data-depth="3">
-    <button class="nav-item-toggle"></button>
     <a class="nav-link" href="../../administration/openscap.html">OpenSCAP</a>
-<ul class="nav-list">
-  <li class="nav-item" data-depth="4">
-    <a class="nav-link" href="../../administration/openscap-enhanced-beta.html">Enhanced SCAP Auditing (Beta)</a>
-  </li>
-</ul>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../administration/repo-metadata.html">Repository Metadata</a>
@@ -941,6 +935,9 @@
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../administration/troubleshooting/tshoot-taskomatic.html">Taskomatic</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../administration/troubleshooting/tshoot-token-refresh.html">Token Refresh</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../administration/troubleshooting/tshoot-webui-fails-load.html">Web UI Fails to Load</a>
@@ -2018,12 +2015,12 @@
 </div>
 <div class="nav-panel-explore" data-panel="explore">
   <div class="context">
-    <span class="title">Uyuni 2026.10</span>
+    <span class="title">Uyuni 2026.11</span>
     <span class="version">default</span>
   </div>
   <ul class="components">
     <li class="component is-current">
-      <a class="title" href="../../index.html">Uyuni 2026.10</a>
+      <a class="title" href="../../index.html">Uyuni 2026.11</a>
       <ul class="versions">
         <li class="version is-current is-latest">
           <a href="../../index.html">default</a>
@@ -2041,13 +2038,13 @@
   <a href="../../index.html" class="home-link"></a>
 <nav class="breadcrumbs" aria-label="breadcrumbs">
   <ul>
-    <li><a href="../../index.html">Uyuni 2026.10</a></li>
+    <li><a href="../../index.html">Uyuni 2026.11</a></li>
     <li><a href="../uyuni-specialized-guides-overview.html">Specialized Guides</a></li>
     <li><a href="salt-overview.html">Salt Guide</a></li>
     <li><a href="salt-ssh.html">Salt SSH</a></li>
   </ul>
 </nav>
-  <div class="edit-this-page"><a href="https://github.com/uyuni-project/uyuni-docs/edit/master/en/modules/specialized-guides/pages/salt/salt-ssh.adoc">Edit this Page</a></div>
+  <div class="edit-this-page"><a href="https://github.com/uyuni-project/uyuni-docs/edit/uyuni-2026.11/en/modules/specialized-guides/pages/salt/salt-ssh.adoc">Edit this Page</a></div>
 </div>
   <div class="content">
 <aside class="toc sidebar" data-title="On this page" data-levels="2">
@@ -2529,7 +2526,7 @@ This is equivalent to `ssh ... proxy2 netcat client 22` and is needed because SS
 <div class="paragraph">
 <p>To connect to a proxy, the parent server or proxy uses a specific user called <code>mgrsshtunnel</code>.
 When <code>mgrsshtunnel</code> connects, the SSH configuration of the proxy will force the execution of <code>/usr/sbin/mgr-proxy-ssh-force-cmd</code>.
-This is a simple shell script that allows only the execution of <code>scp</code>, <code>ssh</code>, or <code>cat</code> commands.</p>
+This is a simple shell script that allows only the execution of <code>scp</code>, <code>ssh</code>, <code>cat</code> or <code>ssh-keygen</code> commands.</p>
 </div>
 <div class="paragraph">
 <p>The connection to the proxy or client is authorized using SSH keys in this sequence:</p>
@@ -2586,62 +2583,7 @@ This works in cases where there is no firewall between the client and the proxy 
 </div>
 </div>
 <div class="sect1">
-<h2 id="_proxy_setup"><a class="anchor" href="#_proxy_setup"></a><a class="link" href="#_proxy_setup">11. Proxy Setup</a></h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>When the <code>spacewalk-proxy</code> package is installed on the proxy, the <code>mgrsshtunnel</code> user is created.</p>
-</div>
-<div class="paragraph">
-<p>The initial configuration with <code>configure-proxy.sh</code> occurs using this sequence:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>An SSH key pair is generated, or an existing keypair is imported.</p>
-</li>
-<li>
-<p>The SSH key of the parent server or proxy is retrieved to authorize it on the proxy.</p>
-</li>
-<li>
-<p>The <code>ssh</code> daemon on the proxy is configured to restrict the <code>mgrsshtunnel</code> user.
-This is done by the <code>mgr-proxy-ssh-push-init</code> script, which is called from <code>configure-proxy.sh</code>.
-It does not have to be manually invoked.</p>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<p>The parent key is retrieved by calling an HTTPS endpoint on the parent server or proxy.
-The first endpoint tried is <code><a href="https://$PARENT/pub/id_susemanager_ssh_push.pub" class="bare">https://$PARENT/pub/id_susemanager_ssh_push.pub</a></code>.
-If the parent is a proxy then this will return the public SSH key of the proxy.</p>
-</div>
-<div class="paragraph">
-<p>If a 404 error is received from that endpoint, then the parent is assumed to be a server not a proxy, and <code><a href="https://$PARENT/rhn/manager/download/saltssh/pubkey" class="bare">https://$PARENT/rhn/manager/download/saltssh/pubkey</a></code> is tried instead.</p>
-</div>
-<div class="paragraph">
-<p>If an SSH key exists at <code>/srv/susemanager/salt/salt_ssh/mgr_ssh_id.pub</code> on the server it is returned.</p>
-</div>
-<div class="paragraph">
-<p>If the public key does not exist because <code>salt-ssh</code> has not been invoked yet, a key will be generates by calling the <code>mgrutil.ssh_keygen</code> runner.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>Salt SSH generates a keypair the first time it is invoked with <code>/srv/susemanager/salt/salt_ssh/mgr_ssh_id</code>.
-The sequence in this section is needed if a proxy is configured before Salt SSH was invoked for the first time.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="salt.ssh.key_rotation"><a class="anchor" href="#salt.ssh.key_rotation"></a><a class="link" href="#salt.ssh.key_rotation">12. Rotate SSH keys</a></h2>
+<h2 id="salt.ssh.key_rotation"><a class="anchor" href="#salt.ssh.key_rotation"></a><a class="link" href="#salt.ssh.key_rotation">11. Rotate SSH keys</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>The SSH key is used on <code>salt-ssh</code> managed systems.
