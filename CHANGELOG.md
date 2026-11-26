@@ -1,3 +1,5 @@
+- Add multi-artifact os image collections
+- Split image building management to containers and os image pages
 - Documented the oscap options that the Advanced Arguments field passes on in the OpenSCAP chapter of the Administration Guide
 - Marked server deployment on RKE2 as a technology preview and documented the supported host operating systems
 - Removed obsolete admonition from the Administration Guide (bsc#1276909)

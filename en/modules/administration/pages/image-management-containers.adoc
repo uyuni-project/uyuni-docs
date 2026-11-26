@@ -1,0 +1,410 @@
+[[container-image-management]]
+= Container Image Building and Management
+:description: Details about build and managing container images
+:revdate: 2026-11-26
+:page-revdate: {revdate}
+
+[[at.images.docker]]
+== Container images
+
+// FIXME, bsc#1245987: replace caas pattform with container host?
+// image::image-building.png[scaledwidth=80%]
+
+
+[[at.images.docker.requirements]]
+=== Requirements
+
+The containers feature is available for {salt} clients running {sles} 12 or later.
+Before you begin, ensure your environment meets these requirements:
+
+* A published git repository containing a Dockerfile and configuration scripts.
+The repository can be public or private, and should be hosted on GitHub, GitLab, or BitBucket.
+* A properly configured image store, such as a Docker registry.
+
+For more information on containers, see https://documentation.suse.com/container/all/html/Container-guide/.
+
+
+[[at.images.docker.buildhost]]
+=== Create a build host
+
+To build images with {productname}, you need to create and configure a build host.
+Container build hosts are {salt} clients running {sle} 12 or later.
+This section guides you through the initial configuration for a build host.
+
+[IMPORTANT]
+====
+The operating system on the build host must match the operating system on the targeted image.
+
+For example, build {sles}{nbsp}15 based images on a build host running {sles}{nbsp}15 (SP2 or later) OS version.
+Build {sles}{nbsp}12 based images on a build host running {sles}{nbsp}12 SP5 or {sles}{nbsp}12 SP4 OS version.
+
+Cross-architecture builds are not supported.
+////
+2022-05-12, ke: at least for now, according to feedback, this is unsupported:
+For example, you must build Raspberry Pi {sles}{nbsp}15 SP3 images on a Raspberry Pi (aarch64 architecture) build host running {sles}{nbsp}15 SP3.
+////
+====
+
+From the {productname} {webui}, perform these steps to configure a build host:
+
+.Procedure: Building a host
+[role=procedure]
+_____
+
+. Select a {salt} client to be designated as a build host from the menu:Systems[Systems] overview page.
+
+. From the `System Details` page of the selected client assign the containers modules.
+Navigate to menu:Software[Software Channels] and enable the containers module (for example, `SLE-Module-Containers15-Pool` and `SLE-Module-Containers15-Updates`).
+Continue with btn:[Next].
+
+. Schedule the ` Software Channel Change`, and click btn:[Confirm].
+
+. From the `System Details` tab select menu:Properties[] page, and enable `Container Build Host` from the `Add-on System Types` list.
+Confirm by clicking btn:[Update Properties].
+
+. Install all required packages by applying `Highstate`.
+From the system details tab select menu:States[Highstate], and click btn:[Apply Highstate].
+Alternatively, apply `Highstate` from the {productname} Server command line:
+
++
+
+[source,shell]
+----
+salt '$your_client' state.highstate
+----
+
+_____
+
+
+
+[[at.images.docker.buildchannels]]
+=== Create an activation key for containers
+
+The containers built with {productname} use channels associated to the activation key as repositories when building the image.
+This section guides you through creating an ad-hoc activation key for this purpose.
+
+[NOTE]
+====
+To build a container, you need an activation key that is associated with a channel other than `SUSE Manager Default`.
+====
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$snippet-creating-activation-key.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../client-configuration/partials/snippet-creating-activation-key.adoc[]
+endif::[]
+
+For more information, see xref:client-configuration:activation-keys.adoc[].
+
+
+[[at.images.docker.imagestore]]
+=== Create an image store
+
+All built images are pushed to an image store.
+This section contains information about creating an image store.
+Image store is generally referenced as a registry.
+
+
+.Procedure: Creating image store
+[role=procedure]
+_____
+
+. Select menu:Images[Stores].
+
+. Click `Create` to create a new store.
+
+. From the `Store Type` select the correct type.
+
+. Define a name for the image store in the `Label` field.
+
+. Provide the path to your image registry by filling in the `URI` field, as a fully qualified domain name (FQDN) for the container registry host (whether internal or external).
+
++
+
+----
+registry.example.com
+----
+
++
+
+The Registry URI can also be used to specify an image store on a registry that is already in use.
+
++
+
+----
+registry.example.com:5000/myregistry/myproject
+----
+
+. Click btn:[Create] to add the new image store.
+
+_____
+
+
+
+[[at.images.docker.profile]]
+=== Create an image profile
+
+All container images are built using an image profile, which contains the building instructions.
+This section contains information about creating an image profile with the {productname} {webui}.
+
+.Procedure: Creating an image profile
+[role=procedure]
+_____
+
+. To create an image profile select menu:Images[Profiles] and click btn:[Create].
+
+. Provide a name for the image profile by filling in the `Label` field.
+
++
+
+[NOTE]
+====
+If your container image tag is in a format such as `myproject/myimage`, make sure your image store registry URI contains the `/myproject` suffix.
+====
+
+. Use `Dockerfile` as the `Image Type`.
+
+. Use the drop-down menu to select your registry from the `Target Image Store` field.
+
+. In the `Path` field, type a GitHub, GitLab, or BitBucket repository URL.
+The path can also be a local directory on the build host.
+The URL should be `http`, `https`, or a token authentication URL.
+For GitHub or GitLab, use one of these formats:
+
++
+
+.GitHub Path Options
+
+* GitHub single user project repository
+
++
+----
+https://github.com/USER/project.git#branchname:folder
+----
+
++
+
+* GitHub organization project repository
+
++
+----
+https://github.com/ORG/project.git#branchname:folder
+----
+
++
+
+* GitHub token authentication
+
++
+
+If your git repository is private, modify the profile's URL to include authentication.
+Use this URL format to authenticate with a GitHub token:
+
++
+
+----
+https://USER:<AUTHENTICATION_TOKEN>@github.com/USER/project.git#master:/container/
+----
+
++
+
+.GitLab Path Options
+
+* GitLab single user project repository
+
++
+
+----
+https://gitlab.example.com/USER/project.git#master:/container/
+----
+
+* GitLab groups project repository
+
++
+
+----
+https://gitlab.example.com/GROUP/project.git#master:/container/
+----
+
+* GitLab token authentication
+
++
+
+If your git repository is private and not publicly accessible, you need to modify the profile's git URL to include authentication.
+Use this URL format to authenticate with a GitLab token:
+
++
+
+----
+https://gitlab-ci-token:<AUTHENTICATION_TOKEN>@gitlab.example.com/USER/project.git#master:/container/
+----
+
++
+
+[IMPORTANT]
+====
+If you do not specify a git branch, the `master` branch is used by default.
+If a `folder` is not specified, the image sources (Dockerfile sources) are expected to be in the root directory of the GitHub or GitLab checkout.
+====
+
+. Select an `Activation Key`.
+Activation keys ensure that images using a profile are assigned to the correct channel and packages.
+
++
+
+[NOTE]
+====
+When you associate an activation key with an image profile you are ensuring any image using the profile uses the correct software channel and any packages in the channel.
+====
+
+. Click the btn:[Create] button.
+
+_____
+
+
+[[at.images.docker.sourceexample]]
+==== Example Dockerfile sources
+
+An Image Profile that can be reused is published at https://github.com/SUSE/manager-build-profiles.
+
+[NOTE]
+====
+The `ARG` parameters ensure that the built image is associated with the desired repository served by {productname}.
+The `ARG` parameters also allow you to build image versions of {sles} which may differ from the version of {sles} used by the build host itself.
+
+For example: The `ARG repo` parameter and the `echo` command pointing to the repository file, creates and then injects the correct path into the repository file for the desired channel version.
+
+The repository is determined by the activation key that you assigned to your image profile.
+====
+
+----
+FROM registry.example.com/sles12sp2
+MAINTAINER Tux Administrator "tux@example.com"
+
+### Begin: These lines are required for use with {productname}
+
+ARG repo
+ARG cert
+
+# Add the correct certificate
+RUN echo "$cert" > /etc/pki/trust/anchors/RHN-ORG-TRUSTED-SSL-CERT.pem
+
+# Update certificate trust store
+RUN update-ca-certificates
+
+# Add the repository path to the image
+RUN echo "$repo" > /etc/zypp/repos.d/susemanager:dockerbuild.repo
+
+### End: These lines are required for use with {productname}
+
+# Add the package script
+ADD add_packages.sh /root/add_packages.sh
+
+# Run the package script
+RUN /root/add_packages.sh
+
+# After building remove the repository path from image
+RUN rm -f /etc/zypp/repos.d/susemanager:dockerbuild.repo
+----
+
+==== Using custom info key-value pairs as Docker `buildargs`
+
+You can assign custom info key-value pairs to attach information to the image profiles.
+Additionally, these key-value pairs are passed to the Docker build command as `buildargs`.
+
+For more information about the available custom info keys and creating additional ones, see xref:reference:systems/custom-system-info.adoc[].
+
+
+[[at.images.docker.building]]
+=== Build an image
+
+
+There are two ways to build an image.
+The first way is to create it from scratch.
+To do that, select menu:Images[Build] from the left navigation bar, or click the build icon in the menu:Images[Profiles] list and follow the procedure.
+
+.Procedure: Building an image
+[role=procedure]
+_____
+
+. Select menu:Images[Build].
+
+. Add a different tag name if you want a version other than the default `latest` (only relevant to containers).
+
+. Select `Build Profile` and `Build Host`.
+
++
+
+[NOTE]
+====
+Notice the `Profile Summary` to the right of the build fields.
+When you have selected a build profile, detailed information about the selected profile is displayed in this area.
+====
+
+. To schedule a build click the btn:[Build] button.
+
+_____
+
+
+
+[[at.images.docker.importing]]
+=== Import an image
+
+The second way to get an image is to import and inspect arbitrary images.
+To do that, select menu:Images[Image List] from the left navigation bar.
+Complete the text boxes of the `Import` dialog.
+When it has processed, the imported image is listed on the `Image List` page.
+
+.Procedure: Importing an image
+[role=procedure]
+_____
+
+. From menu:Images[Image list] click btn:[Import] to open the `Import Image` dialog.
+
+. In the `Import Image` dialog complete these fields:
+
++
+
+Image store:::
+The registry from where the image is pulled for inspection.
+
+Image name:::
+The name of the image in the registry.
+
+Image version:::
+The version of the image in the registry.
+
+Build host:::
+The build host that pulls and inspects the image.
+
+Activation key:::
+The activation key that provides the path to the software channel that the image is inspected with.
+
+. For confirmation, click btn:[Import].
+
+_____
+
+The entry for the image is created in the database, and an `Inspect Image` action on {productname} is scheduled.
+
+When it has been processed, you can find the imported image in the `Image List`.
+It has a different icon in the `Build` column, to indicate that the image is imported.
+The status icon for the imported image can also be seen on the `Overview` tab for the image.
+
+
+
+[[at.images.docker.troubleshooting]]
+=== Troubleshooting
+
+
+
+include::../partials/image-mgmt-container-inspection.adoc[]
+
+
+==== General issues
+
+These are some known problems when working with images:
+
+* HTTPS certificates to access the registry or the git repositories should be deployed to the client by a custom state file.
+* SSH git access using Docker is currently unsupported.
