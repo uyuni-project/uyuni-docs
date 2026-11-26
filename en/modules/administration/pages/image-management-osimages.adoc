@@ -1,0 +1,650 @@
+[[osimage-image-management]]
+= Operating System Image Building and Management
+:description: Details about building and managing OS images
+:revdate: 2026-11-26
+:page-revdate: {revdate}
+
+[[at.images.kiwi]]
+== OS images
+
+OS Images are built by the Kiwi build system.
+The output image is customizable and can be PXE, QCOW2, LiveCD, or other types of images.
+
+For more information about the Kiwi build system, see the https://osinside.github.io/kiwi/[Kiwi documentation].
+
+
+
+[[at.images.kiwi.requirements]]
+=== Requirements
+
+The Kiwi image building feature is available for {salt} clients running {sles}{nbsp}15 and {sles}{nbsp}12.
+
+Kiwi image configuration files and configuration scripts must be accessible in one of these locations:
+
+* Git repository
+* HTTP or HTTPS hosted tar archive
+* Local directory on the build host
+
+For an example of a complete Kiwi repository served by git, see https://github.com/SUSE/manager-build-profiles/tree/master/OSImage.
+
+
+[NOTE]
+====
+You need at least 1{nbsp}GB of RAM available for hosts running OS Images built with Kiwi.
+Disk space depends on the actual size of the image.
+For more information, see the documentation of the underlying system.
+====
+
+
+=== Accessing Git repositories via an HTTP/HTTPS proxy when building images
+
+When a build host needs to fetch sources from a git repository that is only reachable through an HTTP/HTTPS proxy, you may see git timeouts during the build because the git client invoked by the Salt state does not always pick up system-wide proxy settings (for example `/etc/sysconfig/proxy` or environment variables).
+
+To make git use the proxy for non-interactive builds, create `/etc/gitconfig` with an `http.proxy` entry:
+
+[source,console]
+----
+# /etc/gitconfig
+[http]
+    proxy = http://proxy.example.com:3128
+# or for HTTPS
+[http]
+    proxy = https://proxy.example.com:3128
+----
+
+If the proxy requires authentication, prefer a credential helper or use a credential store instead of embedding credentials in the URL.
+
+==== Automating with {salt}
+
+You can manage `/etc/gitconfig` on build hosts through Configuration Management, the same way as on any other managed system.
+Create a Salt state file and assign it to the build host via a config channel, then apply a highstate from the {productname} UI.
+
+If you want to source the proxy address from a System Custom Info field, use the `custom_info:` pillar prefix:
+
+[source,yaml]
+----
+/etc/gitconfig:
+  file.managed:
+    - user: root
+    - group: root
+    - mode: '0644'
+    - contents: |
+        [http]
+            proxy = {{ salt['pillar.get']('custom_info:build_server:git_proxy', 'http://proxy.example.com:3128') }}
+----
+
+[[container.based.kiwi.image.build.support]]
+=== Container-based Kiwi image build support
+
+{productname} introduces a container-based Kiwi image build system, in addition to the existing legacy Kiwi and KiwiNG tools.
+
+
+==== Configuration and overrides
+
+Administrators can override the default behavior using the following pillar or custom values.
+To configure these, navigate to menu:Systems[Custom System Info] in the {webui} and create the necessary keys.
+
+The build system used depends on the underlying OS or specific pillar values:
+
+* for SLE 12: legacy Kiwi v7
+* for SLE 15: KiwiNG (v9 and containerized Kiwi 10)
+
+
+Administrators can override the default behavior using the following pillar or custom values:
+
+* `use_kiwi_ng`: force the use of Kiwi 9.
+* `use_kiwi_container`: force the use of containerized Kiwi 10.
+  To enable this, set the value to `1`.
+* `use_bundle_build`: upload additional KIWI bundle build artifacts (like `.install.tar` which contains PXE files, and `.raw.xz`) to the server.
+  To enable this, set the value to `true`.
+
+
+==== Version-specific configurations
+
+When using a containerized build host for SUSE Linux Enterprise 15 profiles, specific configurations are required because SLES 15 profiles rely on Kiwi 9, while the default container behavior uses Kiwi 10.
+
+To ensure the correct version is used for SLES 15 profiles, you must define the `kiwi_image` custom info key with the following value:
+
+* `Key`: `kiwi_image`
+* `Value`: `registry.suse.com/bci/kiwi:9`
+
+If this key is not set, the system defaults to the latest version (e.g., `registry.suse.com/bci/kiwi:10.2`), which may result in build issues for SLES 15 profiles.
+
+
+
+[[at.images.kiwi.buildhost]]
+=== Create a build host
+
+// FIXME, bsc#1245987:
+// Discussing Container-Based KIWI Image Build Support here?
+// Perhaps 2.'docker' might be 2, but the container variant might be different?
+
+To build all kinds of images with {productname}, create and configure a build host.
+OS Image build hosts are {salt} clients running on {sles}{nbsp}15 (SP2 or later) or {sles}{nbsp}12 (SP4 or later).
+
+This procedure guides you through the initial configuration for a build host.
+
+[IMPORTANT]
+====
+The operating system on the build host must match the operating system on the targeted image.
+
+For example, build {sles}{nbsp}15 based images on a build host running  {sles}{nbsp}15 (SP2 or later) OS version.
+Build {sles}{nbsp}12 based images on a build host running {sles}{nbsp}12 SP5 or {sles}{nbsp}12 SP4 OS version.
+
+Cross-architecture builds are not possible.
+For example, you must build Raspberry PI {sles}{nbsp}15 SP3 image on a Raspberry PI (aarch64 architecture) build host running {sles}{nbsp}15 SP3.
+====
+
+
+.Procedure: Configure the build host in the {productname} {webui}
+[role=procedure]
+_____
+
+. Select a client to be designated as a build host from the menu:Systems[Overview] page.
+
+. Navigate to the menu:System Details[Properties] tab, and check the `Add-on System Type` > `OS Image Build Host` box. 
+
+. Confirm with btn:[Update Properties].
+
+. Navigate to menu:System Details[Software > Software Channels], and enable the required software channels depending on the build host version.
+
++
+
+* {sles}{nbsp}12 build hosts require {productname} Client tools (`SLE-Manager-Tools12-Pool` and `SLE-Manager-Tools12-Updates`).
+
+* {sles}{nbsp}15 build hosts require {sles} modules `SLE-Module-DevTools15-SP7-Pool` and `SLE-Module-DevTools15-SP7-Updates`.
+
+*  Schedule and click btn:[Confirm].
+
+. Install Kiwi and all required packages by applying `Highstate`.
+  From the system details page select menu:States[Highstate] and click btn:[Apply Highstate].
+  Alternatively, apply Highstate from the {productname} Server command line:
+
++
+
+----
+salt '$your_client' state.highstate
+----
+_____
+
+
+==== {productname} web server public certificate RPM
+
+Build host provisioning copies the {productname} certificate RPM to the build host.
+This certificate is used for accessing repositories provided by {productname}.
+
+The certificate is packaged in RPM by the `mgr-package-rpm-certificate-osimage` package script.
+The package script is called automatically during a new {productname} installation.
+
+When you upgrade the `spacewalk-certs-tools` package, the upgrade scenario calls the package script using the default values.
+However, if the certificate path was changed or unavailable, call the package script manually using `--ca-cert-full-path <path_to_certificate>` after the upgrade procedure has finished.
+
+
+==== Package script call example
+
+[source,bash]
+----
+/usr/sbin/mgr-package-rpm-certificate-osimage --ca-cert-full-path /root/ssl-build/RHN-ORG-TRUSTED-SSL-CERT
+----
+
+The RPM package with the certificate is stored in a salt-accessible directory such as:
+----
+/usr/share/susemanager/salt/images/rhn-org-trusted-ssl-cert-osimage-1.0-1.noarch.rpm
+----
+
+The RPM package with the certificate is provided in the local build host repository:
+----
+/var/lib/Kiwi/repo
+----
+
+[IMPORTANT]
+====
+Specify the RPM package with the {productname} SSL certificate in the build source, and make sure your Kiwi configuration contains `rhn-org-trusted-ssl-cert-osimage` as a required package in the `bootstrap` section.
+
+.config.xml
+[source,xml]
+----
+...
+  <packages type="bootstrap">
+    ...
+    <package name="rhn-org-trusted-ssl-cert-osimage" bootinclude="true"/>
+  </packages>
+...
+----
+====
+
+
+
+// FIXME 2024-04-25, ke: continue here compare with container build host
+[[at.images.kiwi.buildchannels]]
+=== Create an activation key for OS images
+
+Create an activation key associated with the channel that your OS Images can use as repositories when building the image.
+
+Activation keys are mandatory for OS Image building.
+
+[NOTE]
+====
+To build OS Images, you need an activation key that is associated with a channel other than `Default` activation key.
+====
+
+ifndef::backend-pdf[]
+include::client-configuration:partial$snippet-creating-activation-key.adoc[]
+endif::[]
+
+ifdef::backend-pdf[]
+include::../../client-configuration/partials/snippet-creating-activation-key.adoc[]
+endif::[]
+
+For more information, see xref:client-configuration:activation-keys.adoc[].
+
+
+
+[[at.images.kiwi.imagestore]]
+=== Create an image store
+
+// For background info about Image Store, see the overview at the beginning of this chapter.
+
+OS Images can require a significant amount of storage space.
+By default, the image store is using the `srv-www` volume.
+
+
+[NOTE]
+====
+Image stores for Kiwi build type, used to build system, virtual, and other images, are not supported yet.
+
+
+ifeval::[{mlm-content} == true]
+The image files can be downloaded from `https://MANAGER-HOST/os-images/ORGANIZATION-ID/FILE-NAME`.
+The exact location can be determined from the image details page.
+endif::[]
+
+ifeval::[{uyuni-content} == true]
+The image files can be downloaded from `https://UYUNI-HOST/os-images/ORGANIZATION-ID/FILE-NAME`.
+The exact location can be determined from the image details page.
+endif::[]
+
+====
+
+
+
+[[at.images.kiwi.profile]]
+=== Create an image profile
+
+Manage image profiles using the {webui}.
+
+.Procedure: Creating an image profile
+[role=procedure]
+_____
+
+. To create an image profile select from menu:Images[Profiles] and click btn:[Create].
+
+. In the `Label` field, provide a name for the `Image Profile`.
+
+. Use `Kiwi` as the `Image Type`.
+
+. Image store is automatically selected.
+
+. Enter a `Config URL` to the directory containing the Kiwi configuration files.
+  For example, a git URI such as https://github.com/SUSE/manager-build-profiles#master:OSImage/SLE-Micro54.
+  Other options are a HTTP or HTTPS hosted tar archive or a local directory on the build host.
+  For more information, see source format options at the end of this section.
+
+. Enter `Kiwi options` if needed.
+  If the Kiwi configuration files specify multiple profiles, use `--profile <name>` to select the active one.
+  For other options, see Kiwi documentation.
+
+. Select an `Activation Key`.
+  Activation keys ensure that images using a profile are assigned to the correct channel and packages.
+
++
+
+[NOTE]
+====
+Associate an activation key with an image profile to ensure the image profile uses the correct software channel, and any packages.
+====
+
++
+
+. Confirm with the btn:[Create] button.
+
+
+.Source Format Options
+
+* _git/HTTP(S) URL to the repository_
+
++
+
+URL to a public or private git repository containing the sources of the image to be built.
+Depending on the layout of the repository the URL can be:
+
++
+
+----
+https://github.com/SUSE/manager-build-profiles
+----
+
++
+
+You can specify a branch after the `#` character in the URL.
+In this example, we use the `master` branch:
+
++
+
+----
+https://github.com/SUSE/manager-build-profiles#master
+----
+
++
+
+You can specify a directory that contains the image sources after the `:` character.
+In this example, we use `OSImage/POS_Image-JeOS6`:
+
++
+
+----
+https://github.com/SUSE/manager-build-profiles#master:OSImage/POS_Image-JeOS6
+----
+
+* _HTTP(S) URL to the tar archive_
+
++
+
+URL to the tar archive, compressed or uncompressed, hosted on the webserver.
+
++
+
+----
+https://myimagesourceserver.example.org/MyKiwiImage.tar.gz
+----
+
+* _Path to the directory on the build host_
+
++
+
+Enter the path to the directory with the Kiwi build system sources.
+This directory must be present on the selected build host.
+
++
+
+----
+/var/lib/Kiwi/MyKiwiImage
+----
+
+_____
+
+
+[[at.images.kiwi.sourceexample]]
+==== Example of Kiwi sources
+
+
+Kiwi sources consist at least of `config.xml`.
+Usually, `config.sh` and `images.sh` are present as well.
+Sources can also contain files to be installed in the final image under the `root` subdirectory.
+
+For information about the Kiwi build system, see the https://osinside.github.io/kiwi/[Kiwi documentation].
+
+{suse} provides examples of fully functional image sources at the https://github.com/SUSE/manager-build-profiles[SUSE/manager-build-profiles] public GitHub repository.
+
+.Example of JeOS config.xml
+// ###example-script-1###
+[source, xml]
+----
+<?xml version="1.0" encoding="utf-8"?>
+
+<image schemaversion="6.1" name="POS_Image_JeOS6">
+    <description type="system">
+        <author>Admin User</author>
+        <contact>noemail@example.com</contact>
+        <specification>SUSE Linux Enterprise 12 SP3 JeOS</specification>
+    </description>
+    <preferences>
+        <version>6.0.0</version>
+        <packagemanager>zypper</packagemanager>
+        <bootsplash-theme>SLE</bootsplash-theme>
+        <bootloader-theme>SLE</bootloader-theme>
+
+        <locale>en_US</locale>
+        <keytable>us.map.gz</keytable>
+        <timezone>Europe/Berlin</timezone>
+        <hwclock>utc</hwclock>
+
+        <rpm-excludedocs>true</rpm-excludedocs>
+        <type boot="saltboot/suse-SLES12" bootloader="grub2" checkprebuilt="true" compressed="false" filesystem="ext3" fsmountoptions="acl" fsnocheck="true" image="pxe" kernelcmdline="quiet"></type>
+    </preferences>
+    <!--    CUSTOM REPOSITORY
+    <repository type="rpm-dir">
+      <source path="this://repo"/>
+    </repository>
+    -->
+    <packages type="image">
+        <package name="patterns-sles-Minimal"/>
+        <package name="aaa_base-extras"/> <!-- wouldn't be SUSE without that ;-) -->
+        <package name="kernel-default"/>
+        <package name="venv-salt-minion"/>
+        ...
+    </packages>
+    <packages type="bootstrap">
+        ...
+        <package name="sles-release"/>
+        <!-- this certificate package is required to access {productname} repositories
+             and is provided by {productname} automatically -->
+        <package name="rhn-org-trusted-ssl-cert-osimage" bootinclude="true"/>
+
+    </packages>
+    <packages type="delete">
+        <package name="mtools"/>
+        <package name="initviocons"/>
+        ...
+    </packages>
+</image>
+----
+
+
+
+[[at.images.kiwi.building]]
+=== Build an image
+
+There are two ways to build or get an image using the {webui}.
+Either select menu:Images[Build], or click the build icon in the menu:Images[Profiles] list.
+
+.Procedure: Building an image
+[role=procedure]
+_____
+
+. Select menu:Images[Build].
+
+. Add a different tag name if you want a version other than the default `latest` (applies only to containers).
+
+. Select the `Image Profile` and a `Build Host`.
+
++
+
+[NOTE]
+====
+A `Profile Summary` is displayed to the right of the build fields.
+When you have selected a build profile, detailed information about the selected profile is shown here.
+====
+
++
+
+. To schedule a build, click the btn:[Build] button.
+
+_____
+
+
+[IMPORTANT]
+====
+The build server cannot run any form of automounter during the image building process.
+If applicable, ensure that you do not have your Gnome session running as root.
+If an automounter is running, the image build finishes successfully, but the checksum of the image is different and causes a failure.
+====
+
+
+[[at.images.kiwi.inspection]]
+
+After the image is successfully built, the inspection phase begins.
+During the inspection phase {susemgr} collects information about the image:
+
+* List of packages installed in the image
+* Checksum of the image
+* Image type and other image details
+
+[NOTE]
+====
+If the built image type is `PXE`, a {salt} pillar is also generated.
+Image pillars are stored in the database and the {salt} subsystem can access details about the generated image.
+Details include where the image files are located and provided, image checksums, information needed for network boot, and more.
+
+The generated pillar is available to all connected clients.
+====
+
+[[at.images.kiwi.collection]]
+=== Collecting build results
+
+After an image is built, Kiwi stores all relevant results, or build artifacts, in a separate directory. A list of all build artifacts is uploaded to the {productname} Server and compared against the list of recognized artifacts. Only recognized and enabled artifacts are collected.
+
+The list of recognized artifacts is stored in the database and is currently not exposed in the API or {webui}. The default list is:
+
+[cols="2,1,3,1", options="header"]
+|===
+| Extension
+| Recognized As
+| Description
+| Collection Enabled
+
+| `.gce`
+| image
+| Google Compute Engine image
+| True
+
+| `.qcow2`
+| image
+| QEMU Copy-On-Write disk image
+| True
+
+| `.vmdk`
+| image
+| Virtual Machine Disk format
+| True
+
+| `.ova`
+| image
+| Open Virtual Appliance format
+| True
+
+| `.vmx`
+| image
+| VMware configuration file
+| True
+
+| `.vhd`
+| image
+| Virtual Hard Disk format
+| True
+
+| `.vhdx`
+| image
+| Virtual Hard Disk v2 format
+| True
+
+| `.vhdfixed`
+| image
+| Fixed Virtual Hard Disk format
+| True
+
+| `.vdi`
+| image
+| VirtualBox Disk Image format
+| True
+
+| `.vagrant.libvirt.box`
+| image
+| Vagrant box for libvirt
+| True
+
+| `.vagrant.virtualbox.box`
+| image
+| Vagrant box for VirtualBox
+| True
+
+| `.gz`
+| image
+| Gzip compressed file
+| True
+
+| `.bz`
+| image
+| Bzip compressed file
+| True
+
+| `.xz`
+| image
+| XZ compressed file
+| True
+
+| `.tar.xz`
+| image
+| XZ compressed tarball
+| True
+
+| `.install.iso`
+| image
+| Installable ISO 9660 CD-ROM disk image
+| True
+
+| `.iso`
+| image
+| ISO 9660 CD-ROM disk image
+| True
+
+| `.raw`
+| image
+| Raw disk image
+| False
+
+| `.squashfs`
+| image
+| SquashFS file system image
+| True
+
+| `.kernel`
+| kernel
+| PXE boot kernel
+| True
+
+| `.initrd`
+| initrd
+| PXE boot initial ramdisk
+| True
+
+| `.spdx.json`
+| sbom
+| SPDX Software Bill of Materials (SBOM)
+| True
+|===
+
+
+[[at.images.kiwi.troubleshooting]]
+=== Troubleshooting
+
+Building an image requires several dependent steps.
+When the build fails, investigating {salt} states results and build log can help identify the source of the failure.
+You can carry out these checks when the build fails:
+
+* The build host can access the build sources
+* There is enough disk space for the image on both the build host and the {productname} server
+* The activation key has the correct channels associated with it
+* The build sources used are valid
+* The RPM package with the {productname} public certificate is up to date and available at `/usr/share/susemanager/salt/images/rhn-org-trusted-ssl-cert-osimage-1.0-1.noarch.rpm`.
+  For more on how to refresh a public certificate RPM, see <<at.images.kiwi.buildhost>>.
+
+
+
+[[at.images.kiwi.limitations]]
+=== Limitations
+
+The section contains some known issues when working with images.
+
+* HTTPS certificates used to access the HTTP sources or git repositories should be deployed to the client by a custom state file, or configured manually.
+* Importing Kiwi-based images is not supported.
