@@ -103,7 +103,7 @@
     <div class="panels">
 <div class="nav-panel-menu is-active" data-panel="menu">
   <nav class="nav-menu">
-    <h3 class="title"><a href="../index.html">Uyuni 2026.10</a></h3>
+    <h3 class="title"><a href="../index.html">Uyuni 2026.11</a></h3>
 <ul class="nav-list">
   <li class="nav-item" data-depth="0">
 <ul class="nav-list">
@@ -781,13 +781,7 @@
     <a class="nav-link" href="mirror-sources.html">미러 소스</a>
   </li>
   <li class="nav-item" data-depth="3">
-    <button class="nav-item-toggle"></button>
     <a class="nav-link" href="openscap.html">OpenSCAP</a>
-<ul class="nav-list">
-  <li class="nav-item" data-depth="4">
-    <a class="nav-link" href="openscap-enhanced-beta.html">Enhanced SCAP Auditing (Beta)</a>
-  </li>
-</ul>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="repo-metadata.html">리포지토리 메타데이터</a>
@@ -938,6 +932,9 @@
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="troubleshooting/tshoot-taskomatic.html">Taskomatic</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="troubleshooting/tshoot-token-refresh.html">Token Refresh</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="troubleshooting/tshoot-webui-fails-load.html">웹 UI 로드 실패</a>
@@ -2015,12 +2012,12 @@
 </div>
 <div class="nav-panel-explore" data-panel="explore">
   <div class="context">
-    <span class="title">Uyuni 2026.10</span>
+    <span class="title">Uyuni 2026.11</span>
     <span class="version">default</span>
   </div>
   <ul class="components">
     <li class="component is-current">
-      <a class="title" href="../index.html">Uyuni 2026.10</a>
+      <a class="title" href="../index.html">Uyuni 2026.11</a>
       <ul class="versions">
         <li class="version is-current is-latest">
           <a href="../index.html">default</a>
@@ -2038,7 +2035,7 @@
   <a href="../index.html" class="home-link"></a>
 <nav class="breadcrumbs" aria-label="breadcrumbs">
   <ul>
-    <li><a href="../index.html">Uyuni 2026.10</a></li>
+    <li><a href="../index.html">Uyuni 2026.11</a></li>
     <li><a href="uyuni-admin-overview.html">관리 가이드</a></li>
     <li><a href="space-management.html">디스크 공간 관리</a></li>
   </ul>
@@ -2060,6 +2057,9 @@
 </div>
 <div class="paragraph">
 <p>모니터링되는 디렉토리 중 하나의 사용 가능 공간이 경고 임계값 미만으로 감소하면, 구성된 이메일 주소로 메시지가 전송되고 로그인 페이지 상단에 알림이 표시됩니다.</p>
+</div>
+<div class="paragraph">
+<p>Only the file systems that hold the monitored directories are checked.</p>
 </div>
 </div>
 </div>
@@ -2197,6 +2197,106 @@ EOF</pre>
 </tr>
 </table>
 </div>
+<div class="sect2">
+<h3 id="space-management-free-space-thresholds"><a class="anchor" href="#space-management-free-space-thresholds"></a><a class="link" href="#space-management-free-space-thresholds">2.1. Free space thresholds</a></h3>
+<div class="paragraph">
+<p>On large volumes, a percentage can raise alerts while plenty of space is still available. For example, a 6&#160;TB volume that is 97% used still has about 200&#160;GB available. In this case, you can define the thresholds as available space in megabytes (MB) instead of used space percentage, with these environment variables:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>DISKCHECKALERT_FREE_MB</code></dt>
+<dd>
+<p>A warning is created when the available space falls below this value. When set, it replaces the <code>DISKCHECKALERT</code> percentage threshold.</p>
+</dd>
+<dt class="hdlist1"><code>DISKTHRESHOLD_FREE_MB</code></dt>
+<dd>
+<p>A critical alert is created, and the container health check fails, when the available space falls below this value. When set, it replaces the <code>DISKTHRESHOLD</code> percentage threshold.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>These variables are not set by default, so the percentage thresholds are used. Each variable only replaces the percentage threshold of its own level. For example, if you only set <code>DISKTHRESHOLD_FREE_MB</code>, warnings are still created using <code>DISKCHECKALERT</code>. The values must be non-negative integers.</p>
+</div>
+<div class="paragraph">
+<p>These variables can only be set as environment variables. They have no equivalent in <code class="path">/etc/rhn/rhn.conf</code>.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure: Configuring Free Space Thresholds</div>
+<ol class="arabic">
+<li>
+<p>Create systemd override directories:</p>
+<div class="listingblock">
+<div class="content">
+<pre>mkdir -p /etc/systemd/system/uyuni-server.service.d/
+mkdir -p /etc/systemd/system/uyuni-db.service.d/</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Create configuration files for both server and database services. This example creates a warning below 200&#160;GB and a critical alert below 50&#160;GB of available space:</p>
+</div>
+<div class="paragraph">
+<p>+</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>cat &gt; /etc/systemd/system/uyuni-server.service.d/diskcheck.conf &lt;&lt; 'EOF'
+[Service]
+Environment="PODMAN_EXTRA_ARGS=--env DISKCHECKALERT_FREE_MB=204800 --env DISKTHRESHOLD_FREE_MB=51200"
+EOF
+
+cat &gt; /etc/systemd/system/uyuni-db.service.d/diskcheck.conf &lt;&lt; 'EOF'
+[Service]
+Environment="PODMAN_EXTRA_ARGS=--env DISKCHECKALERT_FREE_MB=204800 --env DISKTHRESHOLD_FREE_MB=51200"
+EOF</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>+</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Each override file can only contain one <code class="systemitem">PODMAN_EXTRA_ARGS</code> value. To set several disk check variables, such as <code>DISKCHECKDIRS</code> and the thresholds, add all the <code>--env</code> options to the same line.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Apply the configuration by restarting Uyuni:</p>
+<div class="listingblock">
+<div class="content">
+<pre>mgradm restart</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The same thresholds apply to every monitored directory. If the monitored directories are on file systems of very different sizes, choose values that leave enough headroom on the smallest one.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -2206,10 +2306,13 @@ EOF</pre>
 <p>The database container has its own disk check that monitors only the PostgreSQL data directory (<code>/var/lib/pgsql/data</code>). This directory is always monitored and cannot be changed or overridden with the <code>DISKCHECKDIRS</code> environment variable.</p>
 </div>
 <div class="paragraph">
-<p>The database disk check uses the <code>DISKCHECKALERT</code> and <code>DISKTHRESHOLD</code> environment variables configured for the <code>uyuni-db</code> service.</p>
+<p>The database disk check uses the <code>DISKCHECKALERT</code>, <code>DISKTHRESHOLD</code>, <code>DISKCHECKALERT_FREE_MB</code>, and <code>DISKTHRESHOLD_FREE_MB</code> environment variables configured for the <code>uyuni-db</code> service.</p>
 </div>
 <div class="paragraph">
-<p>The database disk check runs as a PostgreSQL function and is invoked during container health checks. When the threshold is exceeded, the health check will fail and the container will be automatically stopped to prevent data corruption.</p>
+<p>The database disk check runs during the container health checks and when the container starts. When the critical threshold is exceeded, the health check will fail and the container will be automatically stopped to prevent data corruption. The container does not start while the critical threshold is exceeded.</p>
+</div>
+<div class="paragraph">
+<p>The warnings and notifications for the database are created by a PostgreSQL function that reads the thresholds every time it runs. Changes to the thresholds take effect after you restart Uyuni.</p>
 </div>
 <div class="admonitionblock important">
 <table>
@@ -2231,7 +2334,7 @@ EOF</pre>
 <h2 id="_공간_검사_비활성화"><a class="anchor" href="#_공간_검사_비활성화"></a><a class="link" href="#_공간_검사_비활성화">4. 공간 검사 비활성화</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The space checking tool is enabled by default and runs hourly via a Taskomatic scheduled task. Notification can be disabled by disabling diskcheck-task-queue-default Taskomatic job. To effectively disable disk space monitoring, set the threshold values to 99 (percent).</p>
+<p>The space checking tool is enabled by default and runs hourly via a Taskomatic scheduled task. Notification can be disabled by disabling diskcheck-task-queue-default Taskomatic job. To effectively disable disk space monitoring, set the threshold values to 99 (percent). If you use the free space thresholds, set <code>DISKCHECKALERT_FREE_MB</code> and <code>DISKTHRESHOLD_FREE_MB</code> to <code>0</code> instead, because they replace the percentage thresholds.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure: Disabling Disk Space Monitoring</div>

@@ -103,7 +103,7 @@
     <div class="panels">
 <div class="nav-panel-menu is-active" data-panel="menu">
   <nav class="nav-menu">
-    <h3 class="title"><a href="../../index.html">Uyuni 2026.10</a></h3>
+    <h3 class="title"><a href="../../index.html">Uyuni 2026.11</a></h3>
 <ul class="nav-list">
   <li class="nav-item" data-depth="0">
 <ul class="nav-list">
@@ -781,13 +781,7 @@
     <a class="nav-link" href="../../administration/mirror-sources.html">镜像源</a>
   </li>
   <li class="nav-item" data-depth="3">
-    <button class="nav-item-toggle"></button>
     <a class="nav-link" href="../../administration/openscap.html">OpenSCAP</a>
-<ul class="nav-list">
-  <li class="nav-item" data-depth="4">
-    <a class="nav-link" href="../../administration/openscap-enhanced-beta.html">Enhanced SCAP Auditing (Beta)</a>
-  </li>
-</ul>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../administration/repo-metadata.html">储存库元数据</a>
@@ -938,6 +932,9 @@
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../administration/troubleshooting/tshoot-taskomatic.html">Taskomatic</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../administration/troubleshooting/tshoot-token-refresh.html">Token Refresh</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../administration/troubleshooting/tshoot-webui-fails-load.html">Web UI 无法加载</a>
@@ -2015,12 +2012,12 @@
 </div>
 <div class="nav-panel-explore" data-panel="explore">
   <div class="context">
-    <span class="title">Uyuni 2026.10</span>
+    <span class="title">Uyuni 2026.11</span>
     <span class="version">default</span>
   </div>
   <ul class="components">
     <li class="component is-current">
-      <a class="title" href="../../index.html">Uyuni 2026.10</a>
+      <a class="title" href="../../index.html">Uyuni 2026.11</a>
       <ul class="versions">
         <li class="version is-current is-latest">
           <a href="../../index.html">default</a>
@@ -2038,7 +2035,7 @@
   <a href="../../index.html" class="home-link"></a>
 <nav class="breadcrumbs" aria-label="breadcrumbs">
   <ul>
-    <li><a href="../../index.html">Uyuni 2026.10</a></li>
+    <li><a href="../../index.html">Uyuni 2026.11</a></li>
     <li><a href="../uyuni-specialized-guides-overview.html">Specialized Guides</a></li>
     <li><a href="overview.html">Large Deployments Guide</a></li>
     <li><a href="tuning.html">Tuning Large Installations</a></li>
@@ -3709,9 +3706,11 @@ If you see lines containing <code>LOG:  temporary file:</code> try raising this 
 <td class="tableblock halign-left valign-top"><p class="tableblock">Environment variables that control disk usage monitoring thresholds for containerized deployments.
                          <code>DISKCHECKALERT</code> triggers a warning notification when disk usage exceeds the specified percentage.
                          <code>DISKTHRESHOLD</code> triggers a critical notification and causes the container health check to fail, which will automatically stop the container.
+                         <code>DISKCHECKALERT_FREE_MB</code> and <code>DISKTHRESHOLD_FREE_MB</code> define the same thresholds as available space in MB instead.
+                         When set, each of them replaces the percentage threshold of the same level.
                          In large deployments with multi-terabyte storage volumes, the default thresholds (90% and 95%) can leave excessive amounts of disk space unused.
                          For example, on a 10&#160;TB volume, 5% free space equals 500&#160;GB, which is wasteful.
-                         Increasing these thresholds allows more efficient use of available storage capacity while maintaining adequate headroom for operations.</p></td>
+                         Using free space thresholds, or increasing the percentage thresholds, allows more efficient use of available storage capacity while maintaining adequate headroom for operations.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Tune when</p></td>
@@ -3719,11 +3718,14 @@ If you see lines containing <code>LOG:  temporary file:</code> try raising this 
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Value default</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>DISKCHECKALERT=90</code>, <code>DISKTHRESHOLD=95</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>DISKCHECKALERT=90</code>, <code>DISKTHRESHOLD=95</code>.
+                         <code>DISKCHECKALERT_FREE_MB</code> and <code>DISKTHRESHOLD_FREE_MB</code> are not set.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Value recommendation</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">For deployments with 5&#160;TB+ storage: <code>DISKCHECKALERT=95</code>, <code>DISKTHRESHOLD=98</code>.
+<td class="tableblock halign-left valign-top"><p class="tableblock">For deployments with multi-terabyte storage, prefer free space thresholds, for example <code>DISKCHECKALERT_FREE_MB=204800</code> (200&#160;GB) and <code>DISKTHRESHOLD_FREE_MB=51200</code> (50&#160;GB).
+                         Alternatively, raise the percentages.
+                         For deployments with 5&#160;TB+ storage: <code>DISKCHECKALERT=95</code>, <code>DISKTHRESHOLD=98</code>.
                          For deployments with 10&#160;TB+ storage: <code>DISKCHECKALERT=96</code>, <code>DISKTHRESHOLD=99</code>.</p></td>
 </tr>
 <tr>
@@ -3744,11 +3746,12 @@ If you see lines containing <code>LOG:  temporary file:</code> try raising this 
 <td class="tableblock halign-left valign-top"><p class="tableblock">The disk check runs hourly.
                          Both the server and database containers should use the same threshold values.
                          When <code>DISKTHRESHOLD</code> is exceeded, container health checks will fail and the container will be automatically stopped.
-                         The database container only monitors <code>/var/lib/pgsql/data</code> and this cannot be overridden with <code>DISKCHECKDIRS</code>.</p></td>
+                         The database container only monitors <code>/var/lib/pgsql/data</code> and this cannot be overridden with <code>DISKCHECKDIRS</code>.
+                         The free space thresholds can only be set as environment variables, not in <code class="path">/etc/rhn/rhn.conf</code>.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">More information</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../../administration/space-management.html" class="xref page">磁盘空间管理</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../../administration/space-management.html" class="xref page">磁盘空间管理</a>, <a href="../../administration/space-management.html#space-management-free-space-thresholds" class="xref page">administration:space-management.adoc#space-management-free-space-thresholds</a></p></td>
 </tr>
 </tbody>
 </table>
@@ -3765,23 +3768,26 @@ mkdir -p /etc/systemd/system/uyuni-db.service.d/</pre>
 </div>
 </li>
 <li>
-<p>Create configuration files with higher thresholds for the server service:</p>
+<p>Create configuration files with free space thresholds for the server service:</p>
 <div class="listingblock">
 <div class="content">
 <pre>cat &gt; /etc/systemd/system/uyuni-server.service.d/diskcheck.conf &lt;&lt; 'EOF'
 [Service]
-Environment="PODMAN_EXTRA_ARGS=--env DISKCHECKALERT=95 --env DISKTHRESHOLD=98"
+Environment="PODMAN_EXTRA_ARGS=--env DISKCHECKALERT_FREE_MB=204800 --env DISKTHRESHOLD_FREE_MB=51200"
 EOF</pre>
 </div>
 </div>
+<div class="paragraph">
+<p>To use percentage thresholds instead, replace the <code>--env</code> options with, for example, <code>--env DISKCHECKALERT=95 --env DISKTHRESHOLD=98</code>.</p>
+</div>
 </li>
 <li>
-<p>Create configuration files with higher thresholds for the database service:</p>
+<p>Create configuration files with the same thresholds for the database service:</p>
 <div class="listingblock">
 <div class="content">
 <pre>cat &gt; /etc/systemd/system/uyuni-db.service.d/diskcheck.conf &lt;&lt; 'EOF'
 [Service]
-Environment="PODMAN_EXTRA_ARGS=--env DISKCHECKALERT=95 --env DISKTHRESHOLD=98"
+Environment="PODMAN_EXTRA_ARGS=--env DISKCHECKALERT_FREE_MB=204800 --env DISKTHRESHOLD_FREE_MB=51200"
 EOF</pre>
 </div>
 </div>
